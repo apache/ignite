@@ -46,6 +46,7 @@ import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -82,6 +83,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
@@ -2179,10 +2181,25 @@ public abstract class GridAbstractTest extends TestCase {
                 }
 
                 for (Ignite node: nodes) {
-                    int sizeOnNode = node.cluster().nodes().size();
+                    try {
+                        IgniteFuture<?> reconnectFut = node.cluster().clientReconnectFuture();
 
-                    if (sizeOnNode != expSize) {
-                        info("Wait for size on node [node=" + node.name() + ", size=" + sizeOnNode + ", exp=" + expSize + ']');
+                        if (reconnectFut != null && !reconnectFut.isDone()) {
+                            info("Wait for size on node, reconnect is in progress [node=" + node.name() + ']');
+
+                            return false;
+                        }
+
+                        int sizeOnNode = node.cluster().nodes().size();
+
+                        if (sizeOnNode != expSize) {
+                            info("Wait for size on node [node=" + node.name() + ", size=" + sizeOnNode + ", exp=" + expSize + ']');
+
+                            return false;
+                        }
+                    }
+                    catch (IgniteClientDisconnectedException e) {
+                        info("Wait for size on node, node disconnected [node=" + node.name() + ']');
 
                         return false;
                     }

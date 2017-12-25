@@ -98,6 +98,14 @@ class ZkRuntimeState {
     }
 
     /**
+     * @param internalOrder Node internal order.
+     * @return {@code True} if node belongs to previous cluster and should be ignored.
+     */
+    boolean ignoreAliveNode(long internalOrder) {
+        return evtsData != null && internalOrder < evtsData.startInternalOrder;
+    }
+
+    /**
      * @param err Error.
      */
     void onCloseStart(Exception err) {

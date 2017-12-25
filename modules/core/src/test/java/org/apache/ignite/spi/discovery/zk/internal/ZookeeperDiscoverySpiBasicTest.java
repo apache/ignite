@@ -279,9 +279,9 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
                     }
                 }
                 catch (Throwable e) {
-                    err = true;
-
                     error("Unexpected error [evt=" + evt + ", err=" + e + ']', e);
+
+                    err = true;
                 }
 
                 return true;
@@ -2625,57 +2625,112 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(srvs, clients);
 
-        final CountDownLatch disconnectLatch = new CountDownLatch(clients);
-        final CountDownLatch reconnectLatch = new CountDownLatch(clients);
+        for (int i = 0; i < 5; i++) {
+            info("Iteration: " + i);
 
-        IgnitePredicate<Event> p = new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event evt) {
-                if (evt.type() == EVT_CLIENT_NODE_DISCONNECTED) {
-                    log.info("Disconnected: " + evt);
+            final CountDownLatch disconnectLatch = new CountDownLatch(clients);
+            final CountDownLatch reconnectLatch = new CountDownLatch(clients);
 
-                    disconnectLatch.countDown();
+            IgnitePredicate<Event> p = new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    if (evt.type() == EVT_CLIENT_NODE_DISCONNECTED) {
+                        log.info("Disconnected: " + evt);
+
+                        disconnectLatch.countDown();
+                    }
+                    else if (evt.type() == EVT_CLIENT_NODE_RECONNECTED) {
+                        log.info("Reconnected: " + evt);
+
+                        reconnectLatch.countDown();
+
+                        return false;
+                    }
+
+                    return true;
                 }
-                else if (evt.type() == EVT_CLIENT_NODE_RECONNECTED) {
-                    log.info("Reconnected: " + evt);
+            };
 
-                    reconnectLatch.countDown();
-                }
+            for (int c = 0; c < clients; c++) {
+                Ignite client = ignite(srvs + c);
 
-                return true;
+                assertTrue(client.configuration().isClientMode());
+
+                client.events().localListen(p, EVT_CLIENT_NODE_DISCONNECTED, EVT_CLIENT_NODE_RECONNECTED);
             }
-        };
 
-        for (int i = 0; i < clients; i++) {
-            Ignite client = ignite(srvs + i);
+            log.info("Stop all servers.");
 
-            assertTrue(client.configuration().isClientMode());
+            GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
+                @Override public void apply(Integer threadIdx) {
+                    stopGrid(getTestIgniteInstanceName(threadIdx), true, false);
+                }
+            }, srvs, "stop-server");
 
-            client.events().localListen(p, EVT_CLIENT_NODE_DISCONNECTED, EVT_CLIENT_NODE_RECONNECTED);
+            waitReconnectEvent(log, disconnectLatch);
+
+            evts.clear();
+
+            client = false;
+
+            log.info("Restart servers.");
+
+            startGridsMultiThreaded(0, srvs);
+
+            waitReconnectEvent(log, reconnectLatch);
+
+            waitForTopology(srvs + clients);
+
+            log.info("Reconnect finished.");
         }
+    }
 
-        log.info("Stop all servers.");
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReconnectServersRestart() throws Exception {
+        startGrid(0);
 
-        GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-            @Override public void apply(Integer threadIdx) {
-                stopGrid(getTestIgniteInstanceName(threadIdx), true, false);
-            }
-        }, srvs, "stop-server");
+        client = true;
 
-        waitReconnectEvent(log, disconnectLatch);
+        final int CLIENTS = 10;
 
-        evts.clear();
+        startGridsMultiThreaded(1, CLIENTS);
 
         client = false;
 
-        log.info("Restart servers.");
+        long stopTime = System.currentTimeMillis() + 30_000;
 
-        startGridsMultiThreaded(0, srvs);
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-        waitReconnectEvent(log, reconnectLatch);
+        final int NODES = 1 + CLIENTS;
 
-        waitForTopology(srvs + clients);
+        int iter = 0;
 
-        log.info("Reconnect finished.");
+        while (System.currentTimeMillis() < stopTime) {
+            int restarts = rnd.nextInt(10) + 1;
+
+            info("Test iteration [iter=" + iter++ + ", restarts=" + restarts + ']');
+
+            for (int i = 0; i < restarts; i++) {
+                stopGrid(getTestIgniteInstanceName(0), true, false);
+
+                startGrid(0);
+            }
+
+            final Ignite srv = ignite(0);
+
+            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return srv.cluster().nodes().size() == NODES;
+                }
+            }, 30_000));
+
+            waitForTopology(NODES);
+
+            awaitPartitionMapExchange();
+        }
+
+        evts.clear();
     }
 
     /**

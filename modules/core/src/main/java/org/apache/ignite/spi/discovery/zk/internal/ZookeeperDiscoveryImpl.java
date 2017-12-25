@@ -308,7 +308,7 @@ public class ZookeeperDiscoveryImpl {
 
                     if (log.isInfoEnabled()) {
                         log.info("Created new communication error process future [errNode=" + node0.id() +
-                            ", err= " + err + ']');
+                            ", err=" + err + ']');
                     }
 
                     try {
@@ -1225,6 +1225,9 @@ public class ZookeeperDiscoveryImpl {
 
             Long internalId = ZkIgnitePaths.aliveInternalId(aliveNodePath);
 
+            if (rtState.ignoreAliveNode(internalId))
+                continue;
+
             aliveSrvs.put(internalId, aliveNodePath);
         }
 
@@ -1258,7 +1261,7 @@ public class ZookeeperDiscoveryImpl {
      * @throws Exception If failed.
      */
     private void checkClientsStatus(final List<String> aliveNodes) throws Exception {
-        assert locNode.isClient();
+        assert locNode.isClient() : locNode;
         assert rtState.joined;
         assert rtState.evtsData != null;
 
@@ -1271,6 +1274,9 @@ public class ZookeeperDiscoveryImpl {
 
         for (String aliveNodePath : aliveNodes) {
             Long internalId = ZkIgnitePaths.aliveInternalId(aliveNodePath);
+
+            if (rtState.ignoreAliveNode(internalId))
+                continue;
 
             if (ZkIgnitePaths.aliveNodeClientFlag(aliveNodePath))
                 aliveClients.put(internalId, aliveNodePath);
@@ -1294,23 +1300,19 @@ public class ZookeeperDiscoveryImpl {
 
                 ZkDiscoveryEventsData prevEvts = rtState.evtsData;
 
-                ZkDiscoveryEventsData newEvts;
-
                 byte[] evtsBytes = rtState.zkClient.getData(zkPaths.evtsPath, stat);
 
-                if (evtsBytes.length == 0) {
-                    // Possible if new cluster already started and removed old events,
-                    // still can try generate {@link ZkNoServersMessage}.
-                    newEvts = rtState.evtsData;
-                }
-                else
-                    newEvts = unmarshalZip(evtsBytes);
+                assert evtsBytes.length > 0;
+
+                ZkDiscoveryEventsData newEvts = unmarshalZip(evtsBytes);
 
                 if (prevEvts.clusterId.equals(newEvts.clusterId)) {
-                    U.warn(log, "All server nodes failed, notify all clients.");
+                    U.warn(log, "All server nodes failed, notify all clients [locId=" + locNode.id() + ']');
 
                     generateNoServersEvent(newEvts, stat);
                 }
+                else
+                    U.warn(log, "All server nodes failed (received events from new cluster).");
             }
         }
         else {
@@ -1445,13 +1447,15 @@ public class ZookeeperDiscoveryImpl {
             handleProcessedEvents("crd");
         }
         else {
-            if (log.isInfoEnabled())
-                log.info("Node is first server node in cluster [locId=" + locNode.id() + ']');
-
             DiscoverySpiNodeAuthenticator nodeAuth = spi.getAuthenticator();
 
             if (nodeAuth != null) {
                 try {
+                    if (log.isInfoEnabled()) {
+                        log.info("Node is first server node in cluster, try authenticate local node " +
+                            "[locId=" + locNode.id() + ']');
+                    }
+
                     localAuthentication(nodeAuth, unmarshalCredentials(locNode));
                 }
                 catch (Exception e) {
@@ -1501,7 +1505,7 @@ public class ZookeeperDiscoveryImpl {
         for (String child : aliveNodes) {
             Long internalId = ZkIgnitePaths.aliveInternalId(child);
 
-            if (internalId < rtState.evtsData.startInternalOrder) {
+            if (rtState.ignoreAliveNode(internalId)) {
                 if (log.isInfoEnabled()) {
                     LT.info(log, "Ignore node from previous cluster [startOrder=" + rtState.evtsData.startInternalOrder +
                         ", nodeOrder=" + internalId +
@@ -2037,6 +2041,8 @@ public class ZookeeperDiscoveryImpl {
      */
     @SuppressWarnings("unchecked")
     private void newClusterStarted(@Nullable ZkDiscoveryEventsData prevEvts) throws Exception {
+        assert !locNode.isClient() : locNode;
+
         long locInternalId = rtState.internalOrder;
 
         assert prevEvts == null || prevEvts.maxInternalOrder < locInternalId;
@@ -2051,6 +2057,12 @@ public class ZookeeperDiscoveryImpl {
         rtState.evtsData = ZkDiscoveryEventsData.createForNewCluster(
             prevEvts != null ? prevEvts.maxInternalOrder + 1 : -1L,
             rtState.gridStartTime);
+
+        if (log.isInfoEnabled()) {
+            log.info("New cluster started [locId=" + locNode.id() +
+                ", clusterId=" + rtState.evtsData.clusterId +
+                ", startTime=" + rtState.evtsData.gridStartTime + ']');
+        }
 
         locNode.internalId(locInternalId);
         locNode.order(1);
@@ -2074,16 +2086,7 @@ public class ZookeeperDiscoveryImpl {
             Collections.<Long, Collection<ClusterNode>>emptyMap(),
             null);
 
-        if (rtState.prevJoined) {
-            lsnr.onDiscovery(EVT_CLIENT_NODE_RECONNECTED,
-                1L,
-                locNode,
-                topSnapshot,
-                Collections.<Long, Collection<ClusterNode>>emptyMap(),
-                null);
-
-            U.quietAndWarn(log, "Client node was reconnected after it was already considered failed.");
-        }
+        rtState.zkClient.setData(zkPaths.evtsPath, marshalZip(rtState.evtsData), -1);
 
         joinFut.onDone();
     }
@@ -2097,8 +2100,6 @@ public class ZookeeperDiscoveryImpl {
         ZookeeperClient client = rtState.zkClient;
 
         // TODO ZK: use multi, better batching + max-size safe + NoNodeException safe.
-        client.setData(zkPaths.evtsPath, null, -1);
-
         List<String> evtChildren = rtState.zkClient.getChildren(zkPaths.evtsPath);
 
         for (String evtPath : evtChildren) {
@@ -2332,12 +2333,19 @@ public class ZookeeperDiscoveryImpl {
      * @return Events.
      */
     @Nullable private ZkDiscoveryEventsData processNewEvents(byte[] data) throws Exception {
-        if (data.length == 0)
+        ZkDiscoveryEventsData newEvts = data.length > 0 ? (ZkDiscoveryEventsData)unmarshalZip(data) : null;
+
+        if (rtState.joined && (newEvts == null || !rtState.evtsData.clusterId.equals(newEvts.clusterId))) {
+            assert locNode.isClient() : locNode;
+
+            throw localNodeFail("All server nodes failed, client node disconnected (received events from new custer) " +
+                "[locId=" + locNode.id() + ']', true);
+        }
+
+        if (newEvts == null)
             return null;
 
         assert !rtState.crd;
-
-        ZkDiscoveryEventsData newEvts = unmarshalZip(data);
 
         // Need keep processed custom events since they contain message object which is needed to create ack.
         if (rtState.evtsData != null) {
@@ -2368,13 +2376,6 @@ public class ZookeeperDiscoveryImpl {
      */
     @SuppressWarnings("unchecked")
     private void processNewEvents(final ZkDiscoveryEventsData evtsData) throws Exception {
-        if (rtState.joined && rtState.evtsData != null && !rtState.evtsData.clusterId.equals(evtsData.clusterId)) {
-            assert locNode.isClient() : locNode;
-
-            throw localNodeFail("All server nodes failed, client node disconnected (received events from new custer) " +
-                "[locId=" + locNode.id() + ']', true);
-        }
-
         TreeMap<Long, ZkDiscoveryEventData> evts = evtsData.evts;
 
         ZookeeperClient zkClient = rtState.zkClient;
