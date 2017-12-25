@@ -154,7 +154,11 @@ public class DdlStatementsProcessor {
         }
     }
 
-    /** FIXME */
+    /**
+     * Creates a table taking parameters from {@link SqlCreateTableCommand}.
+     * @param cmd Command to take parameters from.
+     * @throws IgniteCheckedException If failed.
+     */
     private void createTable(SqlCreateTableCommand cmd) throws IgniteCheckedException {
 
         if (!F.eq(QueryUtils.DFLT_SCHEMA, cmd.schemaName()) && cmd.schemaName() != null)
@@ -190,7 +194,12 @@ public class DdlStatementsProcessor {
         }
     }
 
-    /** FIXME */
+    /**
+     * Post-processes the {@link SqlCreateTableCommand} by setting default values or combinations of parameters
+     * to proper values.
+     *
+     * @param cmd The command to fix.
+     */
     private void postProcessCreateTableCmd(SqlCreateTableCommand cmd) {
 
         if (F.isEmpty(cmd.templateName()))
@@ -265,7 +274,12 @@ public class DdlStatementsProcessor {
             cmd.backups(0);
     }
 
-    /** FIXME */
+    /**
+     * Drops a table taking parameters from {@link SqlDropTableCommand}.
+     *
+     * @param cmd The command to take parameters from.
+     * @throws IgniteCheckedException If failed.
+     */
     private void dropTable(SqlDropTableCommand cmd) throws IgniteCheckedException {
 
         if (!F.eq(QueryUtils.DFLT_SCHEMA, cmd.schemaName()))
@@ -289,7 +303,13 @@ public class DdlStatementsProcessor {
             ctx.query().dynamicTableDrop(tbl.cacheName(), cmd.tableName(), cmd.ifExists());
     }
 
-    /** FIXME */
+    /**
+     * Creates a future for {@link SqlCreateIndexCommand}.
+     *
+     * @param cmd The command to wrap.
+     * @return A future that wraps the command.
+     * @throws SchemaOperationException If a table or a particular column cannot be found.
+     */
     private IgniteInternalFuture makeFutureForCreateIndex(SqlCreateIndexCommand cmd) throws SchemaOperationException {
         IgniteInternalFuture fut;
 
@@ -329,7 +349,13 @@ public class DdlStatementsProcessor {
         return fut;
     }
 
-    /** FIXME */
+    /**
+     * Creates a future for {@link SqlDropIndexCommand}.
+     *
+     * @param cmd The command to wrap.
+     * @return A future that wraps the command.
+     * @throws SchemaOperationException If an index cannot be found.
+     */
     private IgniteInternalFuture makeFutureForDropIndex(SqlDropIndexCommand cmd) throws SchemaOperationException {
         IgniteInternalFuture fut;
 
@@ -770,7 +796,13 @@ public class DdlStatementsProcessor {
         return res;
     }
 
-    /** FIXME */
+    /**
+     * Returns Java class name for a supported {@link SqlColumnType}.
+     *
+     * @param colType The column type.
+     * @return The Java type string.
+     * @throws IgniteSQLException if this type has no Java representation.
+     */
     private static @NotNull String getSupportedTypeName(@NotNull SqlColumnType colType) {
         assert colType != null;
 

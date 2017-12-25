@@ -228,7 +228,10 @@ public class SqlParserUtils {
         throw errorUnexpectedToken(lex, tokTyp.asString());
     }
 
-    /** FIXME */
+    /**
+     * Skips equals token if it happens to be the next.
+     * @param lex The lexer.
+     */
     public static boolean skipOptionalEqSign(SqlLexer lex) {
         if (lex.lookAhead().tokenType() == SqlLexerTokenType.EQUALS) {
             lex.shift();
@@ -238,7 +241,16 @@ public class SqlParserUtils {
             return false;
     }
 
-    /** FIXME */
+    /**
+     * Parses the next token, which shall be be either a string or an identifier and specified as a keyword
+     * (without quotes) or as a double-quoted string. The provided setter is invoked with the parsed value
+     * and optional parameters.
+     *
+     * @param lex The lexer.
+     * @param paramDesc Parameter description for error message.
+     * @param isIdentifier Should the token obey rules for identifiers?
+     * @param setter Setter to invoke with the value.
+     */
     public static void parseKeywordOrQuoted(SqlLexer lex, String paramDesc, boolean isIdentifier, Setter<String> setter) {
         SqlLexerToken nextTok = lex.lookAhead();
 
@@ -405,9 +417,26 @@ public class SqlParserUtils {
         throw error(tok, msg.toString());
     }
 
-    /** FIXME */
-    public static boolean tryParseStringParam(SqlLexer lex, String keyword, String description,
-        @Nullable Set<String> parsedParams, boolean isIdentifier, boolean allowDefault, Setter<String> setter) {
+    /**
+     * Tries to parse a string parameter, if exists and invokes the supplied setter to record the value.
+     *
+     * <p>The parameter can be defined in one of the following ways:
+     * <ul>
+     *     <li>{@code keyword <space> value},
+     *     <li>{@code keyword=value}.
+     * </ul>
+     *
+     * <p>If {@code allowDflt} is true, {@link SqlKeyword#DEFAULT} value is permitted.
+     *
+     * @param lex The lexer.
+     * @param keyword The keyword, which prefixes
+     * @param parsedParams The parameters, which has been already parsed for duplicate checking. If provided,
+     *      a duplicate parameter is not allowed.
+     * @param allowDflt Allow {@link SqlKeyword#DEFAULT} as the possible value.
+     * @param setter A closure/lambda that is called with the value to set and some options.
+     */
+    public static boolean tryParseStringParam(SqlLexer lex, String keyword, String desc,
+        @Nullable Set<String> parsedParams, boolean isIdentifier, boolean allowDflt, Setter<String> setter) {
 
         if (!matchesKeyword(lex.lookAhead(), keyword))
             return false;
@@ -419,14 +448,14 @@ public class SqlParserUtils {
 
         skipOptionalEqSign(lex);
 
-        if (allowDefault && matchesKeyword(lex.lookAhead(), DEFAULT)) {
+        if (allowDflt && matchesKeyword(lex.lookAhead(), DEFAULT)) {
 
             lex.shift();
 
             setter.apply(null, true, false);
         }
         else
-            parseKeywordOrQuoted(lex, description, isIdentifier, setter);
+            parseKeywordOrQuoted(lex, desc, isIdentifier, setter);
 
         if (parsedParams != null)
             parsedParams.add(keyword);
@@ -434,9 +463,26 @@ public class SqlParserUtils {
         return true;
     }
 
-    /** FIXME */
+    /**
+     * Tries to parse an integer parameter, if exists and invokes the supplied setter to record the value.
+     *
+     * <p>The parameter can be defined in one of the following ways:
+     * <ul>
+     *     <li>{@code keyword <space> value},
+     *     <li>{@code keyword=value}.
+     * </ul>
+     *
+     * <p>If {@code allowDflt} is true, {@link SqlKeyword#DEFAULT} value is permitted.
+     *
+     * @param lex The lexer.
+     * @param keyword The keyword, which prefixes
+     * @param parsedParams The parameters, which has been already parsed for duplicate checking. If provided,
+     *      a duplicate parameter is not allowed.
+     * @param allowDflt Allow {@link SqlKeyword#DEFAULT} as the possible value.
+     * @param setter A closure/lambda that is called with the value to set and some options.
+     */
     public static boolean tryParseIntParam(SqlLexer lex, String keyword, @Nullable Set<String> parsedParams,
-        boolean allowDefault, Setter<Integer> setter) {
+        boolean allowDflt, Setter<Integer> setter) {
 
         if (!matchesKeyword(lex.lookAhead(), keyword))
             return false;
@@ -448,7 +494,7 @@ public class SqlParserUtils {
 
         skipOptionalEqSign(lex);
 
-        if (allowDefault && matchesKeyword(lex.lookAhead(), DEFAULT)) {
+        if (allowDflt && matchesKeyword(lex.lookAhead(), DEFAULT)) {
 
             lex.shift();
 
@@ -463,10 +509,16 @@ public class SqlParserUtils {
         return true;
     }
 
-    /** FIXME */
+    /** A lambda/closure to use with {@link SqlParserUtils} tryParseXxx() methods. */
     public interface Setter<T> {
 
-        /** FIXME */
+        /**
+         * Records the value of the parameter.
+         *
+         * @param val The value read from SQL command.
+         * @param isDflt true, if {@link SqlKeyword#DEFAULT} was specified as the value.
+         * @param isQuoted true, if the value was quoted (if applicable).
+         */
         void apply(T val, boolean isDflt, boolean isQuoted);
     }
 
