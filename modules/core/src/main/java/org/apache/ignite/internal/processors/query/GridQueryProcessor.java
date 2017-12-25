@@ -1031,6 +1031,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
             else {
                 for (String name : op0.columns()) {
+                    if (err != null)
+                        break;
+
                     if (!type.hasField(name)) {
                         if (op0.ifExists()) {
                             assert op0.columns().size() == 1;
@@ -1039,7 +1042,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         }
                         else
                             err = new SchemaOperationException(SchemaOperationException.CODE_COLUMN_NOT_FOUND, name);
+
+                        break;
                     }
+
+                    err = QueryUtils.validateDropColumn(type, name);
                 }
             }
         }
@@ -1186,7 +1193,24 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         op0.tableName());
             }
             else {
-                for (String fldName : op0.columns()) {
+                Map<String, String> aliases = e.getAliases();
+
+                for (String colName : op0.columns()) {
+                    if (err != null)
+                        break;
+
+                    String fldName = colName;
+
+                    if (!F.isEmpty(aliases)) {
+                        for (Map.Entry<String, String> a : aliases.entrySet()) {
+                            if (colName.equals(a.getValue())) {
+                                fldName = a.getKey();
+
+                                break;
+                            }
+                        }
+                    }
+
                     if (!e.getFields().containsKey(fldName)) {
                         if (op0.ifExists()) {
                             assert op0.columns().size() == 1;
@@ -1195,7 +1219,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         }
                         else
                             err = new SchemaOperationException(SchemaOperationException.CODE_COLUMN_NOT_FOUND, fldName);
+
+                        break;
                     }
+
+                    err = QueryUtils.validateDropColumn(e, fldName, colName);
                 }
             }
         }

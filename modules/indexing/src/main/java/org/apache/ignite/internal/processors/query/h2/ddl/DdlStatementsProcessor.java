@@ -36,6 +36,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -385,17 +386,15 @@ public class DdlStatementsProcessor {
                             cmd.tableName());
                 }
                 else {
+                    assert tbl.rowDescriptor() != null;
+
                     if (QueryUtils.isSqlType(tbl.rowDescriptor().type().valueClass()))
                         throw new SchemaOperationException("Cannot drop column(s) because table was created " +
                             "with " + PARAM_WRAP_VALUE + "=false option.");
 
                     List<String> cols = new ArrayList<>(cmd.columns().length);
 
-                    GridH2RowDescriptor rowDesc = tbl.rowDescriptor();
-
-                    GridQueryTypeDescriptor type = rowDesc.type();
-
-                    Collection<GridQueryIndexDescriptor> indexes = type.indexes().values();
+                    GridQueryTypeDescriptor type = tbl.rowDescriptor().type();
 
                     for (String colName : cmd.columns()) {
                         if (!tbl.doesColumnExist(colName)) {
@@ -410,41 +409,17 @@ public class DdlStatementsProcessor {
                             }
                         }
 
-                        Column col = tbl.getColumn(colName);
+                        SchemaOperationException err = QueryUtils.validateDropColumn(type, colName);
 
-                        int colId = col.getColumnId();
-
-                        if (rowDesc.isKeyColumn(colId))
-                            throw new IgniteSQLException("Cannot drop column \"" + colName +
-                                "\" because it represents an entire cache key",
-                                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-                        if (rowDesc.isValueColumn(col.getColumnId()))
-                            throw new IgniteSQLException("Cannot drop column \"" + colName +
-                                "\" because it represents an entire cache value",
-                                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-                        GridQueryProperty prop = type.property(colName);
-
-                        if (prop != null && prop.key())
-                            throw new IgniteSQLException("Cannot drop column \"" + colName +
-                                "\" because it is a part of a cache key", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-                        for (GridQueryIndexDescriptor idxDesc : indexes) {
-                            if (idxDesc.fields().contains(colName))
-                                throw new IgniteSQLException("Cannot drop column \"" + colName +
-                                    "\" because an index exists (\"" + idxDesc.name() + "\") that uses the column.",
-                                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-                        }
+                        if (err != null)
+                            throw err;
 
                         cols.add(colName);
                     }
 
                     if (cols != null) {
-                        assert tbl.rowDescriptor() != null;
-
                         fut = ctx.query().dynamicColumnRemove(tbl.cacheName(), cmd.schemaName(),
-                            tbl.rowDescriptor().type().tableName(), cols, cmd.ifTableExists(), cmd.ifExists());
+                            type.tableName(), cols, cmd.ifTableExists(), cmd.ifExists());
                     }
                 }
             }

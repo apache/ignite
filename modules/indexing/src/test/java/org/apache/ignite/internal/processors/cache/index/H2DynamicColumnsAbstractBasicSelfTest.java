@@ -278,6 +278,8 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
             assertEquals(2500000, (int)city.field("population"));
         }
 
+        run(cache, "ALTER TABLE \"City\".City DROP COLUMN JOB");
+
         cache.destroy();
     }
 
@@ -363,6 +365,28 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
             run("ALTER TABLE test DROP COLUMN IF EXISTS a");
 
             assertThrowsAnyCause("ALTER TABLE test DROP COLUMN a", JdbcSQLException.class, "Column \"A\" not found");
+        }
+        finally {
+            run("DROP TABLE IF EXISTS test");
+        }
+    }
+
+    /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testDroppedColumnMeta() throws Exception {
+        try {
+            run("CREATE TABLE test (id INT PRIMARY KEY, a INT, b CHAR)");
+
+            QueryField fld = getColumnMeta(grid(nodeIndex()), QueryUtils.DFLT_SCHEMA, "TEST", "A");
+
+            assertEquals("A", fld.name());
+            assertEquals(Integer.class.getName(), fld.typeName());
+
+            run("ALTER TABLE test DROP COLUMN a");
+
+            assertNull(getColumnMeta(grid(nodeIndex()), QueryUtils.DFLT_SCHEMA, "TEST", "A"));
         }
         finally {
             run("DROP TABLE IF EXISTS test");
@@ -521,6 +545,22 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     }
 
     /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testDropColumnThatIsValue() throws Exception {
+        try {
+            run("CREATE TABLE test(id INT PRIMARY KEY, a INT, b CHAR)");
+
+            assertThrows("ALTER TABLE test DROP COLUMN _val",
+                "Cannot drop column \"_VAL\" because it represents an entire cache value");
+        }
+        finally {
+            run("DROP TABLE IF EXISTS test");
+        }
+    }
+
+    /**
      * Test that {@code ADD COLUMN} fails for tables that have flat value.
      * @param tblName table name.
      */
@@ -579,6 +619,9 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
         @QuerySqlField
         private String state;
 
+        @QuerySqlField(name = "job", index = true)
+        private String j1;
+
         /**
          * @return City id.
          */
@@ -620,5 +663,14 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
         public void state(String state) {
             this.state = state;
         }
+
+        public String j1() {
+            return j1;
+        }
+
+        public void j1(String j1) {
+            this.j1 = j1;
+        }
+
     }
 }
