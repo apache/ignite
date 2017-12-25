@@ -9,18 +9,30 @@ import org.apache.ignite.ml.math.Vector;
 public class LinearRegressionModel implements Model<Vector, Double> {
 
     /** */
-    private final Vector wVector;
+    private final Vector weights;
+
+    private final double intercept;
 
     /** */
-    LinearRegressionModel(Vector wVector) {
-        this.wVector = wVector;
+    LinearRegressionModel(Vector weights, double intercept) {
+        this.weights = weights;
+        this.intercept = intercept;
     }
 
     /**
      * {@inheritDoc}
      */
-    @Override public Double predict(Vector val) {
-        Vector result = val.toMatrixPlusOne(true, 1.0).times(wVector);
-        return result.get(0);
+    @Override public Double apply(Vector input) {
+        return input.dot(weights) + intercept;
+    }
+
+    /** */
+    public Vector getWeights() {
+        return weights;
+    }
+
+    /** */
+    public double getIntercept() {
+        return intercept;
     }
 }

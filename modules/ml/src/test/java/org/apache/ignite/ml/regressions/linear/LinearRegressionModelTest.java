@@ -12,36 +12,36 @@ import org.junit.Test;
 public class LinearRegressionModelTest {
 
     /** */
-    private static final double PRECISION = 1E-12;
+    private static final double PRECISION = 1e-6;
 
     /** */
     @Test
     public void testPredict() {
-        Vector weights = new DenseLocalOnHeapVector(new double[]{1.0, 2.0, 3.0});
-        LinearRegressionModel model = new LinearRegressionModel(weights);
+        Vector weights = new DenseLocalOnHeapVector(new double[]{2.0, 3.0});
+        LinearRegressionModel model = new LinearRegressionModel(weights, 1.0);
 
         Vector observation = new DenseLocalOnHeapVector(new double[]{1.0, 1.0});
-        TestUtils.assertEquals(1.0 + 2.0 * 1.0 + 3.0 * 1.0, model.predict(observation), PRECISION);
+        TestUtils.assertEquals(1.0 + 2.0 * 1.0 + 3.0 * 1.0, model.apply(observation), PRECISION);
 
         observation = new DenseLocalOnHeapVector(new double[]{2.0, 1.0});
-        TestUtils.assertEquals(1.0 + 2.0 * 2.0 + 3.0 * 1.0, model.predict(observation), PRECISION);
+        TestUtils.assertEquals(1.0 + 2.0 * 2.0 + 3.0 * 1.0, model.apply(observation), PRECISION);
 
         observation = new DenseLocalOnHeapVector(new double[]{1.0, 2.0});
-        TestUtils.assertEquals(1.0 + 2.0 * 1.0 + 3.0 * 2.0, model.predict(observation), PRECISION);
+        TestUtils.assertEquals(1.0 + 2.0 * 1.0 + 3.0 * 2.0, model.apply(observation), PRECISION);
 
         observation = new DenseLocalOnHeapVector(new double[]{-2.0, 1.0});
-        TestUtils.assertEquals(1.0 - 2.0 * 2.0 + 3.0 * 1.0, model.predict(observation), PRECISION);
+        TestUtils.assertEquals(1.0 - 2.0 * 2.0 + 3.0 * 1.0, model.apply(observation), PRECISION);
 
         observation = new DenseLocalOnHeapVector(new double[]{1.0, -2.0});
-        TestUtils.assertEquals(1.0 + 2.0 * 1.0 - 3.0 * 2.0, model.predict(observation), PRECISION);
+        TestUtils.assertEquals(1.0 + 2.0 * 1.0 - 3.0 * 2.0, model.apply(observation), PRECISION);
     }
 
     /** */
     @Test(expected = CardinalityException.class)
     public void testPredictOnAnObservationWithWrongCardinality() {
-        Vector weights = new DenseLocalOnHeapVector(new double[]{1.0, 2.0, 3.0});
-        LinearRegressionModel model = new LinearRegressionModel(weights);
+        Vector weights = new DenseLocalOnHeapVector(new double[]{2.0, 3.0});
+        LinearRegressionModel model = new LinearRegressionModel(weights, 1.0);
         Vector observation = new DenseLocalOnHeapVector(new double[]{1.0});
-        model.predict(observation);
+        model.apply(observation);
     }
 }
