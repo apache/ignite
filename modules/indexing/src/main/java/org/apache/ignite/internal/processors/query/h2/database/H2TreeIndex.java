@@ -103,10 +103,11 @@ public class H2TreeIndex extends GridH2IndexBase {
             pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
 
         if (tbl.rowDescriptor() != null) {
-            name = (cctx.binaryMarshaller()
-                        ? Integer.toString(tbl.rowDescriptor().type().typeId())
-                        : mangleClassName(tbl.rowDescriptor().type().valueClass()))
-                    + '_' + name;
+            int typeId = cctx.binaryMarshaller()
+                ? tbl.rowDescriptor().type().typeId()
+                : tbl.rowDescriptor().type().valueClass().hashCode();
+
+            name = String.format("%d_%s", typeId, name);
         }
 
         name = BPlusTree.treeName(name, "H2Tree");
@@ -148,41 +149,6 @@ public class H2TreeIndex extends GridH2IndexBase {
         }
 
         initDistributedJoinMessaging(tbl);
-    }
-
-    /**
-     * Mangles class name by convert it to a short human-understandable string as unique as possible.
-     *
-     * <p>Most difference comes in the prefix to speed up key comparison in
-     * {@link org.apache.ignite.internal.processors.cache.persistence.MetadataStorage}.
-     *
-     * @param klazz Class to mangle the name.
-     * @return Mangled class name.
-     */
-    private static String mangleClassName(Class<?> klazz) {
-        assert klazz != null;
-
-        String name = klazz.getName();
-
-        StringBuilder sb = new StringBuilder();
-
-        int hc = name.hashCode();
-        hc = (hc & 0xFFFF) ^ (hc >>> 16);
-
-        String[] components = name.split("[.$]");
-        assert components.length > 0;
-
-        sb.append(Integer.toHexString(hc))
-            .append('.')
-            .append(components[components.length - 1])
-            .append('.');
-
-        for (int i = 0; i < components.length - 1; i++) {
-            assert !components[i].isEmpty();
-            sb.append(components[i].charAt(0));
-        }
-
-        return sb.toString();
     }
 
     /**

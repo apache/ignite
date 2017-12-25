@@ -42,8 +42,7 @@ public class QueryFieldAccessor implements QueryPropertyAccessor {
             return fld.get(obj);
         }
         catch (Exception e) {
-            throw new IgniteCheckedException("Failed to get field value" +
-                "[type=" + getType() + ", fld=" + fld + ", obj=" + S.excSafeToString(obj) + ']', e);
+            throw new IgniteCheckedException("Failed to get field value", e);
         }
     }
 
@@ -53,9 +52,7 @@ public class QueryFieldAccessor implements QueryPropertyAccessor {
             fld.set(obj, newVal);
         }
         catch (Exception e) {
-            throw new IgniteCheckedException("Failed to set field value" +
-                "[type=" + getType() + ", fld=" + fld + ", obj=" + S.excSafeToString(obj) +
-                ", newVal='" + S.excSafeToString(newVal) + "']", e);
+            throw new IgniteCheckedException("Failed to set field value", e);
         }
     }
 

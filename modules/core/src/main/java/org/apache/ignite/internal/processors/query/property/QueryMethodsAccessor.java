@@ -56,8 +56,7 @@ public class QueryMethodsAccessor implements QueryPropertyAccessor {
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to invoke getter method " +
-                "[type=" + getType() + ", property=" + propName +
-                ", obj=" + S.excSafeToString(obj) + ", getter=" + getter + ']', e);
+                "[type=" + getType() + ", property=" + propName + ']', e);
         }
     }
 
@@ -68,8 +67,7 @@ public class QueryMethodsAccessor implements QueryPropertyAccessor {
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to invoke setter method " +
-                "[type=" + getType() + ", property=" + propName +
-                ", obj=" + S.excSafeToString(obj) + ", setter=" + getter + ']', e);
+                "[type=" + getType() + ", property=" + propName + ']', e);
         }
     }
 
