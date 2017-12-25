@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.property;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.lang.reflect.Method;
 
