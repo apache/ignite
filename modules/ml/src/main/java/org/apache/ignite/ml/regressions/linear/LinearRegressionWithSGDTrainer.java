@@ -12,7 +12,7 @@ import org.apache.ignite.ml.optimization.SimpleUpdater;
 import org.apache.ignite.ml.optimization.Updater;
 
 /**
- * Linear regression trainer based on gradient descent algorithm.
+ * Linear regression trainer based on least squares loss function and gradient descent optimization algorithm.
  */
 public class LinearRegressionWithSGDTrainer implements Trainer<LinearRegressionModel, Matrix> {
 
