@@ -31,12 +31,6 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "FileIOFactory"
         };
 
-        /** Properties that are missing on .NET side. */
-        private static readonly string[] MissingProperties =
-        {
-            "WalAutoArchiveAfterInactivity"
-        };
-
         /// <summary>
         /// Tests the ignite configuration parity.
         /// </summary>
@@ -46,8 +40,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             ParityTest.CheckConfigurationParity(
                 @"modules\core\src\main\java\org\apache\ignite\configuration\DataStorageConfiguration.java", 
                 typeof(DataStorageConfiguration),
-                UnneededProperties,
-                MissingProperties);
+                UnneededProperties);
         }
     }
 }
