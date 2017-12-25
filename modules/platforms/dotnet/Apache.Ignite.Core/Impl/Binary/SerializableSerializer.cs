@@ -403,7 +403,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     writer.WriteByteArray(entry.Name, (byte[]) entry.Value);
                 }
-                if (type == typeof(sbyte))
+                else if (type == typeof(sbyte))
                 {
                     writer.WriteByte(entry.Name, (byte) (sbyte) entry.Value);
                 }

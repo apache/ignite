@@ -33,6 +33,8 @@ namespace Apache.Ignite.Core.Tests
         {
             TestLogger.Instance.Info("GetTestConfiguration: " + GetTestName());
 
+            Environment.SetEnvironmentVariable("IGNITE_NATIVE_TEST_CLASSPATH", "true");
+
             return new IgniteConfiguration
             {
                 DiscoverySpi = GetStaticDiscovery(),
