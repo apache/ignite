@@ -1400,16 +1400,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @throws IgniteCheckedException If failed to get the version.
      */
     private int nodeJavaMajorVersion(ClusterNode node) throws IgniteCheckedException {
-        try {
-            // The format is identical for Oracle JDK, OpenJDK and IBM JDK.
-            return Integer.parseInt(node.<String>attribute("java.version").split("\\.")[1]);
-        }
-        catch (Exception e) {
-            U.error(log, "Failed to get java major version (unknown 'java.version' format) [ver=" +
-                node.<String>attribute("java.version") + "]", e);
+        String verStr = node.<String>attribute("java.version");
 
-            return 0;
+        int res = U.majorJavaVersion(verStr);
+
+        if (res == 0) {
+            U.error(log, "Failed to get java major version (unknown 'java.version' format) [ver=" +
+                node.<String>attribute("java.version") + "]");
         }
+
+        return res;
     }
 
     /**

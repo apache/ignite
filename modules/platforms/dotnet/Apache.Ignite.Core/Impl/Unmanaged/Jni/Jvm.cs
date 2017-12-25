@@ -92,6 +92,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// </summary>
         private static Callbacks GetCallbacksFromDefaultDomain()
         {
+#if !NETCOREAPP2_0
             // JVM exists once per process, and JVM callbacks exist once per process.
             // We should register callbacks ONLY from the default AppDomain (which can't be unloaded).
             // Non-default appDomains should delegate this logic to the default one.
@@ -109,6 +110,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             var helper = (CallbackAccessor)defDomain.CreateInstance(type.Assembly.FullName, type.FullName).Unwrap();
 
             return helper.GetCallbacks();
+#else
+            throw new IgniteException("Multiple domains are not supported on .NET Core.");
+#endif
         }
 
         /// <summary>

@@ -182,7 +182,7 @@ if (!$skipDotNet) {
 
 	# Restore NuGet packages
 	echo "Restoring NuGet..."
-	& $ng restore
+	& $ng restore Apache.Ignite.sln
 
 	# Build
 	$targets = if ($clean) {"Clean;Rebuild"} else {"Build"}
