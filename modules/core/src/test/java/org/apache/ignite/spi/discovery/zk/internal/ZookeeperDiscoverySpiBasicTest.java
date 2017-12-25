@@ -256,7 +256,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
                 try {
                     DiscoveryEvent discoveryEvt = (DiscoveryEvent)evt;
 
-                    UUID locId = ignite.cluster().localNode().id();
+                    UUID locId = ((IgniteKernal)ignite).context().localNodeId();
 
                     Map<Long, DiscoveryEvent> nodeEvts = evts.get(locId);
 
@@ -281,7 +281,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
                 catch (Throwable e) {
                     err = true;
 
-                    info("Unexpected error: " + e);
+                    error("Unexpected error [evt=" + evt + ", err=" + e + ']', e);
                 }
 
                 return true;
@@ -2572,13 +2572,110 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             }
         });
 
+        U.sleep(3000);
+
         waitSpi(getTestIgniteInstanceName(0));
+
+        client = false;
 
         startGrid(1);
 
         fut.get();
 
         waitForTopology(2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDisconnectOnServersLeft_1() throws Exception {
+        disconnectOnServersLeft(1, 1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDisconnectOnServersLeft_2() throws Exception {
+        disconnectOnServersLeft(5, 1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDisconnectOnServersLeft_3() throws Exception {
+        disconnectOnServersLeft(1, 10);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDisconnectOnServersLeft_4() throws Exception {
+        disconnectOnServersLeft(5, 10);
+    }
+
+    /**
+     * @param srvs Number of servers.
+     * @param clients Number of clients.
+     * @throws Exception If failed.
+     */
+    private void disconnectOnServersLeft(int srvs, int clients) throws Exception {
+        startGridsMultiThreaded(srvs);
+
+        client = true;
+
+        startGridsMultiThreaded(srvs, clients);
+
+        final CountDownLatch disconnectLatch = new CountDownLatch(clients);
+        final CountDownLatch reconnectLatch = new CountDownLatch(clients);
+
+        IgnitePredicate<Event> p = new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                if (evt.type() == EVT_CLIENT_NODE_DISCONNECTED) {
+                    log.info("Disconnected: " + evt);
+
+                    disconnectLatch.countDown();
+                }
+                else if (evt.type() == EVT_CLIENT_NODE_RECONNECTED) {
+                    log.info("Reconnected: " + evt);
+
+                    reconnectLatch.countDown();
+                }
+
+                return true;
+            }
+        };
+
+        for (int i = 0; i < clients; i++) {
+            Ignite client = ignite(srvs + i);
+
+            assertTrue(client.configuration().isClientMode());
+
+            client.events().localListen(p, EVT_CLIENT_NODE_DISCONNECTED, EVT_CLIENT_NODE_RECONNECTED);
+        }
+
+        log.info("Stop all servers.");
+
+        GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
+            @Override public void apply(Integer threadIdx) {
+                stopGrid(getTestIgniteInstanceName(threadIdx), true, false);
+            }
+        }, srvs, "stop-server");
+
+        waitReconnectEvent(log, disconnectLatch);
+
+        evts.clear();
+
+        client = false;
+
+        log.info("Restart servers.");
+
+        startGridsMultiThreaded(0, srvs);
+
+        waitReconnectEvent(log, reconnectLatch);
+
+        waitForTopology(srvs + clients);
+
+        log.info("Reconnect finished.");
     }
 
     /**

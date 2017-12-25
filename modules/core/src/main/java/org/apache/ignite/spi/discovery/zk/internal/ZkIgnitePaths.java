@@ -201,7 +201,7 @@ class ZkIgnitePaths {
      * @param path Alive node zk path.
      * @return {@code True} if node is client.
      */
-    static boolean aliveClientNode(String path) {
+    static boolean aliveNodeClientFlag(String path) {
         return (aliveFlags(path) & CLIENT_NODE_FLAG_MASK) != 0;
     }
 

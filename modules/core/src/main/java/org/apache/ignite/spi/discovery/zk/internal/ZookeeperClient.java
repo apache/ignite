@@ -534,7 +534,7 @@ public class ZookeeperClient implements Watcher {
      * @throws InterruptedException If interrupted.
      */
     void setData(String path, byte[] data, int ver)
-        throws ZookeeperClientFailedException, InterruptedException, KeeperException.NoNodeException
+        throws ZookeeperClientFailedException, InterruptedException, KeeperException.NoNodeException, KeeperException.BadVersionException
     {
         if (data == null)
             data = EMPTY_BYTES;
@@ -546,6 +546,34 @@ public class ZookeeperClient implements Watcher {
                 zk.setData(path, data, ver);
 
                 return;
+            }
+            catch (KeeperException.NoNodeException e) {
+                throw e;
+            }
+            catch (KeeperException.BadVersionException e) {
+                throw e;
+            }
+            catch (Exception e) {
+                onZookeeperError(connStartTime, e);
+            }
+        }
+    }
+
+    /**
+     * @param path Path.
+     * @param stat Optional {@link Stat} instance to return znode state.
+     * @return Data.
+     * @throws KeeperException.NoNodeException If target node does not exist.
+     * @throws ZookeeperClientFailedException If connection to zk was lost.
+     * @throws InterruptedException If interrupted.
+     */
+    byte[] getData(String path, @Nullable Stat stat)
+        throws KeeperException.NoNodeException, ZookeeperClientFailedException, InterruptedException {
+        for (;;) {
+            long connStartTime = this.connStartTime;
+
+            try {
+                return zk.getData(path, false, stat);
             }
             catch (KeeperException.NoNodeException e) {
                 throw e;
@@ -566,19 +594,7 @@ public class ZookeeperClient implements Watcher {
     byte[] getData(String path)
         throws KeeperException.NoNodeException, ZookeeperClientFailedException, InterruptedException
     {
-        for (;;) {
-            long connStartTime = this.connStartTime;
-
-            try {
-                return zk.getData(path, false, null);
-            }
-            catch (KeeperException.NoNodeException e) {
-                throw e;
-            }
-            catch (Exception e) {
-                onZookeeperError(connStartTime, e);
-            }
-        }
+        return getData(path, null);
     }
 
     /**

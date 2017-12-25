@@ -1209,19 +1209,18 @@ public class ZookeeperDiscoveryImpl {
     }
 
     /**
-     * @param rc Callback result code.
      * @param aliveNodes Alive nodes.
      * @throws Exception If failed.
      */
-    private void checkIsCoordinator(int rc, final List<String> aliveNodes) throws Exception {
-        assert rc == 0 : KeeperException.Code.get(rc);
+    private void checkIsCoordinator(final List<String> aliveNodes) throws Exception {
+        assert !locNode.isClient();
 
         TreeMap<Long, String> aliveSrvs = new TreeMap<>();
 
         long locInternalOrder = rtState.internalOrder;
 
         for (String aliveNodePath : aliveNodes) {
-            if (ZkIgnitePaths.aliveClientNode(aliveNodePath))
+            if (ZkIgnitePaths.aliveNodeClientFlag(aliveNodePath))
                 continue;
 
             Long internalId = ZkIgnitePaths.aliveInternalId(aliveNodePath);
@@ -1245,30 +1244,137 @@ public class ZookeeperDiscoveryImpl {
             if (log.isInfoEnabled()) {
                 log.info("Discovery coordinator already exists, watch for previous server node [" +
                     "locId=" + locNode.id() +
-                    ", prevPath=" + prevE.getValue() + ']');
+                    ", watchPath=" + prevE.getValue() + ']');
              }
 
-            PreviousNodeWatcher watcher = new PreviousNodeWatcher(rtState);
+            PreviousNodeWatcher watcher = new ServerPreviousNodeWatcher(rtState);
 
             rtState.zkClient.existsAsync(zkPaths.aliveNodesDir + "/" + prevE.getValue(), watcher, watcher);
         }
     }
 
     /**
-     *
+     * @param aliveNodes Alive nodes.
+     * @throws Exception If failed.
      */
-    private void onPreviousNodeFail() {
-        // TODO ZK:
-//        if (locInternalId == crdInternalId + 1) {
-//            if (log.isInfoEnabled())
-//                log.info("Previous discovery coordinator failed [locId=" + locNode.id() + ']');
-//
-//            onBecomeCoordinator(aliveNodes, locInternalId);
-//        }
-        if (log.isInfoEnabled())
-            log.info("Previous node failed, check is node new coordinator [locId=" + locNode.id() + ']');
+    private void checkClientsStatus(final List<String> aliveNodes) throws Exception {
+        assert locNode.isClient();
+        assert rtState.joined;
+        assert rtState.evtsData != null;
 
-        rtState.zkClient.getChildrenAsync(zkPaths.aliveNodesDir, null, new CheckCoordinatorCallback(rtState));
+        TreeMap<Long, String> aliveClients = new TreeMap<>();
+
+        String srvPath = null;
+        Long srvInternalOrder = null;
+
+        long locInternalOrder = rtState.internalOrder;
+
+        for (String aliveNodePath : aliveNodes) {
+            Long internalId = ZkIgnitePaths.aliveInternalId(aliveNodePath);
+
+            if (ZkIgnitePaths.aliveNodeClientFlag(aliveNodePath))
+                aliveClients.put(internalId, aliveNodePath);
+            else {
+                if (srvInternalOrder == null || internalId < srvInternalOrder) {
+                    srvPath = aliveNodePath;
+                    srvInternalOrder = internalId;
+                }
+            }
+        }
+
+        assert !aliveClients.isEmpty();
+
+        Map.Entry<Long, String> oldest = aliveClients.firstEntry();
+
+        boolean oldestClient = locInternalOrder == oldest.getKey();
+
+        if (srvPath == null) {
+            if (oldestClient) {
+                Stat stat = new Stat();
+
+                ZkDiscoveryEventsData prevEvts = rtState.evtsData;
+
+                ZkDiscoveryEventsData newEvts;
+
+                byte[] evtsBytes = rtState.zkClient.getData(zkPaths.evtsPath, stat);
+
+                if (evtsBytes.length == 0) {
+                    // Possible if new cluster already started and removed old events,
+                    // still can try generate {@link ZkNoServersMessage}.
+                    newEvts = rtState.evtsData;
+                }
+                else
+                    newEvts = unmarshalZip(evtsBytes);
+
+                if (prevEvts.clusterId.equals(newEvts.clusterId)) {
+                    U.warn(log, "All server nodes failed, notify all clients.");
+
+                    generateNoServersEvent(newEvts, stat);
+                }
+            }
+        }
+        else {
+            String watchPath;
+
+            if (oldestClient) {
+                watchPath = srvPath;
+
+                if (log.isInfoEnabled()) {
+                    log.info("Servers exists, watch for server node [locId=" + locNode.id() +
+                        ", watchPath=" + watchPath + ']');
+                }
+            }
+            else {
+                assert aliveClients.size() > 1 : aliveClients;
+
+                Map.Entry<Long, String> prevE = aliveClients.floorEntry(locInternalOrder - 1);
+
+                assert prevE != null;
+
+                watchPath = prevE.getValue();
+
+                if (log.isInfoEnabled()) {
+                    log.info("Servers exists, watch for previous node [locId=" + locNode.id() +
+                        ", watchPath=" + watchPath + ']');
+                }
+            }
+
+            PreviousNodeWatcher watcher = new ClientPreviousNodeWatcher(rtState);
+
+            rtState.zkClient.existsAsync(zkPaths.aliveNodesDir + "/" + watchPath, watcher, watcher);
+        }
+    }
+
+    /**
+     * @param evtsData Events data.
+     * @param evtsStat Events zookeeper state.
+     * @throws Exception If failed.
+     */
+    private void generateNoServersEvent(ZkDiscoveryEventsData evtsData, Stat evtsStat) throws Exception {
+        evtsData.evtIdGen++;
+
+        ZkDiscoveryCustomEventData evtData = new ZkDiscoveryCustomEventData(
+            evtsData.evtIdGen,
+            evtsData.topVer,
+            locNode.id(),
+            new ZkNoServersMessage(),
+            null,
+            false);
+
+        Collection<ZookeeperClusterNode> nodesToAck = Collections.emptyList();
+
+        evtsData.addEvent(nodesToAck, evtData);
+
+        byte[] newEvtsBytes = marshalZip(evtsData);
+
+        try {
+            rtState.zkClient.setData(zkPaths.evtsPath, newEvtsBytes, evtsStat.getVersion());
+        }
+        catch (KeeperException.BadVersionException e) {
+            // Version can change if new cluster started and saved new events.
+            if (log.isDebugEnabled())
+                log.debug("Failed to save no servers message");
+        }
     }
 
     /**
@@ -1395,8 +1501,15 @@ public class ZookeeperDiscoveryImpl {
         for (String child : aliveNodes) {
             Long internalId = ZkIgnitePaths.aliveInternalId(child);
 
-            if (internalId < rtState.evtsData.startInternalOrder)
+            if (internalId < rtState.evtsData.startInternalOrder) {
+                if (log.isInfoEnabled()) {
+                    LT.info(log, "Ignore node from previous cluster [startOrder=" + rtState.evtsData.startInternalOrder +
+                        ", nodeOrder=" + internalId +
+                        ", znode=" + child + ']');
+                }
+
                 continue;
+            }
 
             Object old = alives.put(internalId, child);
 
@@ -1924,23 +2037,20 @@ public class ZookeeperDiscoveryImpl {
      */
     @SuppressWarnings("unchecked")
     private void newClusterStarted(@Nullable ZkDiscoveryEventsData prevEvts) throws Exception {
-        assert prevEvts == null || prevEvts.maxInternalOrder < locNode.internalId();
+        long locInternalId = rtState.internalOrder;
+
+        assert prevEvts == null || prevEvts.maxInternalOrder < locInternalId;
 
         spi.getSpiContext().removeTimeoutObject(rtState.joinErrTimeoutObj);
 
         cleanupPreviousClusterData();
 
-        long locInternalId = rtState.internalOrder;
-
         rtState.joined = true;
+        rtState.gridStartTime = System.currentTimeMillis();
 
-        rtState.gridStartTime = U.currentTimeMillis();
-
-        rtState.evtsData = new ZkDiscoveryEventsData(
-            prevEvts != null ? prevEvts.maxInternalOrder + 1 : locInternalId,
-            rtState.gridStartTime,
-            1L,
-            new TreeMap<Long, ZkDiscoveryEventData>());
+        rtState.evtsData = ZkDiscoveryEventsData.createForNewCluster(
+            prevEvts != null ? prevEvts.maxInternalOrder + 1 : -1L,
+            rtState.gridStartTime);
 
         locNode.internalId(locInternalId);
         locNode.order(1);
@@ -2229,7 +2339,7 @@ public class ZookeeperDiscoveryImpl {
 
         ZkDiscoveryEventsData newEvts = unmarshalZip(data);
 
-        // Need keep processed custom events since they contains message object.
+        // Need keep processed custom events since they contain message object which is needed to create ack.
         if (rtState.evtsData != null) {
             for (Map.Entry<Long, ZkDiscoveryEventData> e : rtState.evtsData.evts.entrySet()) {
                 ZkDiscoveryEventData evtData = e.getValue();
@@ -2246,7 +2356,8 @@ public class ZookeeperDiscoveryImpl {
 
         processNewEvents(newEvts);
 
-        rtState.evtsData = newEvts;
+        if (rtState.joined)
+            rtState.evtsData = newEvts;
 
         return newEvts;
     }
@@ -2257,6 +2368,13 @@ public class ZookeeperDiscoveryImpl {
      */
     @SuppressWarnings("unchecked")
     private void processNewEvents(final ZkDiscoveryEventsData evtsData) throws Exception {
+        if (rtState.joined && rtState.evtsData != null && !rtState.evtsData.clusterId.equals(evtsData.clusterId)) {
+            assert locNode.isClient() : locNode;
+
+            throw localNodeFail("All server nodes failed, client node disconnected (received events from new custer) " +
+                "[locId=" + locNode.id() + ']', true);
+        }
+
         TreeMap<Long, ZkDiscoveryEventData> evts = evtsData.evts;
 
         ZookeeperClient zkClient = rtState.zkClient;
@@ -2504,6 +2622,9 @@ public class ZookeeperDiscoveryImpl {
         joinFut.onDone();
 
         deleteDataForJoinedAsync(evtData);
+
+        if (locNode.isClient())
+            rtState.zkClient.getChildrenAsync(zkPaths.aliveNodesDir, null, new CheckClientsStatusCallback(rtState));
     }
 
     /**
@@ -2523,6 +2644,19 @@ public class ZookeeperDiscoveryImpl {
             processCommunicationErrorResolveFinishMessage(
                 (ZkCommunicationErrorResolveFinishMessage)msg);
         }
+        else if (msg instanceof ZkNoServersMessage)
+            processNoServersMessage((ZkNoServersMessage)msg);
+    }
+
+    /**
+     * @param msg Message.
+     * @throws Exception If failed.
+     */
+    private void processNoServersMessage(ZkNoServersMessage msg) throws Exception {
+        assert locNode.isClient() : locNode;
+
+        throw localNodeFail("All server nodes failed, client node disconnected " +
+            "(received 'no-servers' message ) [locId=" + locNode.id() + ']', true);
     }
 
     /**
@@ -3654,7 +3788,7 @@ public class ZookeeperDiscoveryImpl {
     /**
      *
      */
-    private class PreviousNodeWatcher extends ZkAbstractWatcher implements AsyncCallback.StatCallback {
+    private abstract class PreviousNodeWatcher extends ZkAbstractWatcher implements AsyncCallback.StatCallback {
         /**
          * @param rtState Runtime state.
          */
@@ -3689,6 +3823,62 @@ public class ZookeeperDiscoveryImpl {
                 onProcessError(e);
             }
         }
+
+        /**
+         *
+         */
+        abstract void onPreviousNodeFail();
+    }
+
+    /**
+     *
+     */
+    private class ServerPreviousNodeWatcher extends PreviousNodeWatcher {
+        /**
+         * @param rtState Runtime state.
+         */
+        ServerPreviousNodeWatcher(ZkRuntimeState rtState) {
+            super(rtState);
+
+            assert !locNode.isClient() : locNode;
+        }
+
+        /** {@inheritDoc} */
+        @Override void onPreviousNodeFail() {
+            // TODO ZK:
+//        if (locInternalId == crdInternalId + 1) {
+//            if (log.isInfoEnabled())
+//                log.info("Previous discovery coordinator failed [locId=" + locNode.id() + ']');
+//
+//            onBecomeCoordinator(aliveNodes, locInternalId);
+//        }
+            if (log.isInfoEnabled())
+                log.info("Previous server node failed, check is node new coordinator [locId=" + locNode.id() + ']');
+
+            rtState.zkClient.getChildrenAsync(zkPaths.aliveNodesDir, null, new CheckCoordinatorCallback(rtState));
+        }
+    }
+
+    /**
+     *
+     */
+    private class ClientPreviousNodeWatcher extends PreviousNodeWatcher {
+        /**
+         * @param rtState Runtime state.
+         */
+        ClientPreviousNodeWatcher(ZkRuntimeState rtState) {
+            super(rtState);
+
+            assert locNode.isClient() : locNode;
+        }
+
+        /** {@inheritDoc} */
+        @Override void onPreviousNodeFail() {
+            if (log.isInfoEnabled())
+                log.info("Watched node failed, check if there are alive servers [locId=" + locNode.id() + ']');
+
+            rtState.zkClient.getChildrenAsync(zkPaths.aliveNodesDir, null, new CheckClientsStatusCallback(rtState));
+        }
     }
 
     /**
@@ -3703,10 +3893,33 @@ public class ZookeeperDiscoveryImpl {
         }
 
         /** {@inheritDoc} */
-        @Override public void processResult0(int rc, String path, Object ctx, List<String> children, Stat stat) throws Exception {
+        @Override public void processResult0(int rc, String path, Object ctx, List<String> children, Stat stat)
+            throws Exception
+        {
             assert rc == 0 : KeeperException.Code.get(rc);
 
-            checkIsCoordinator(rc, children);
+            checkIsCoordinator(children);
+        }
+    }
+
+    /**
+     *
+     */
+    class CheckClientsStatusCallback extends ZkAbstractChildrenCallback {
+        /**
+         * @param rtState Runtime state.
+         */
+        CheckClientsStatusCallback(ZkRuntimeState rtState) {
+            super(rtState, ZookeeperDiscoveryImpl.this);
+        }
+
+        /** {@inheritDoc} */
+        @Override void processResult0(int rc, String path, Object ctx, List<String> children, Stat stat)
+            throws Exception
+        {
+            assert rc == 0 : KeeperException.Code.get(rc);
+
+            checkClientsStatus(children);
         }
     }
 
