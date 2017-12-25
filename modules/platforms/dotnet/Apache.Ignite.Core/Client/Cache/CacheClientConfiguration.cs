@@ -116,7 +116,7 @@ namespace Apache.Ignite.Core.Client.Cache
             {
                 using (var stream = IgniteManager.Memory.Allocate().GetStream())
                 {
-                    ClientCacheConfigurationSerializer.Write(stream, other);
+                    ClientCacheConfigurationSerializer.Write(stream, other, true);
 
                     stream.SynchronizeOutput();
                     stream.Seek(0, SeekOrigin.Begin);

@@ -195,7 +195,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             using (var stream = new BinaryHeapStream(128))
             {
-                ClientCacheConfigurationSerializer.Write(stream, cfg);
+                ClientCacheConfigurationSerializer.Write(stream, cfg, true);
                 stream.Seek(0, SeekOrigin.Begin);
                 return new CacheClientConfiguration(stream);
             }
