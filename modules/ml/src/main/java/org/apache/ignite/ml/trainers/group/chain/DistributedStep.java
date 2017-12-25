@@ -43,7 +43,7 @@ public interface DistributedStep<L, K, V, C, I, O extends Serializable> {
      */
     C extractRemoteContext(I input, L locCtx);
 
-    ResultAndUpdates<O> worker(I input, L locCtx, EntryAndContext<K, V, C> entryAndCtx);
+    ResultAndUpdates<O> worker(EntryAndContext<K, V, C> entryAndCtx);
 
     IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keysSupplier(I input, L locCtx);
 

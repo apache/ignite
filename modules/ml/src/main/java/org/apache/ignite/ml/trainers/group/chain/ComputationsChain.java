@@ -75,7 +75,7 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> extend
      * Add a distributed step
      *
      * @param remoteCtxExtractor
-     * @param distributedWorker
+     * @param worker
      * @param kf
      * @param identity
      * @param reducer
@@ -85,7 +85,7 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> extend
      */
     default <O1 extends Serializable, G> ComputationsChain<L, K, V, I, O1> thenDistributedForEntries(
         IgniteBiFunction<O, L, G> remoteCtxExtractor,
-        IgniteTriFunction<O, L, EntryAndContext<K, V, G>, ResultAndUpdates<O1>> distributedWorker,
+        IgniteFunction<EntryAndContext<K, V, G>, ResultAndUpdates<O1>> worker,
         IgniteBiFunction<O, L, IgniteSupplier<Stream<GroupTrainerCacheKey<K>>>> kf,
         O1 identity,
         IgniteBinaryOperator<O1> reducer) {
@@ -100,16 +100,15 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> extend
 
             // Apply first argument locally because it is common for all nodes.
             IgniteSupplier<G> extractor = Functions.outputSupplier(Functions.curry(remoteCtxExtractor).apply(input)).apply(locCtx);
-            IgniteFunction<EntryAndContext<K, V, G>, ResultAndUpdates<O1>> dWorker = Functions.curry(distributedWorker).apply(input).apply(locCtx);
 
-            return ignite.compute(grp).execute(new GroupTrainerEntriesProcessorTask<>(trainingUUID, extractor, dWorker, keysSupplier, reducer, identity, cacheName, ignite), null);
+            return ignite.compute(grp).execute(new GroupTrainerEntriesProcessorTask<>(trainingUUID, extractor, worker, keysSupplier, reducer, identity, cacheName, ignite), null);
         };
         return then(nextStep);
     }
 
     default <O1 extends Serializable, G> ComputationsChain<L, K, V, I, O1> thenDistributedForKeys(
         IgniteBiFunction<O, L, G> remoteCtxExtractor,
-        IgniteTriFunction<O, L, KeyAndContext<K, G>, ResultAndUpdates<O1>> distributedWorker,
+        IgniteFunction<KeyAndContext<K, G>, ResultAndUpdates<O1>> distributedWorker,
         IgniteBiFunction<O, L, IgniteSupplier<Stream<GroupTrainerCacheKey<K>>>> kf,
         O1 identity,
         IgniteBinaryOperator<O1> reducer) {
@@ -124,9 +123,8 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> extend
 
             // Apply first argument locally because it is common for all nodes.
             IgniteSupplier<G> extractor = Functions.outputSupplier(Functions.curry(remoteCtxExtractor).apply(input)).apply(locCtx);
-            IgniteFunction<KeyAndContext<K, G>, ResultAndUpdates<O1>> dWorker = Functions.curry(distributedWorker).apply(input).apply(locCtx);
 
-            return ignite.compute(grp).execute(new GroupTrainerKeysProcessorTask<>(trainingUUID, extractor, dWorker, keysSupplier, reducer, identity, cacheName, ignite), null);
+            return ignite.compute(grp).execute(new GroupTrainerKeysProcessorTask<>(trainingUUID, extractor, distributedWorker, keysSupplier, reducer, identity, cacheName, ignite), null);
         };
         return then(nextStep);
     }
@@ -136,12 +134,12 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> extend
     }
 
     default <O1 extends Serializable> ComputationsChain<L, K, V, I, O1> thenDistributedForKeys(
-        IgniteBiFunction<O, GroupTrainerCacheKey<K>, ResultAndUpdates<O1>> distributedWorker,
+        IgniteFunction<GroupTrainerCacheKey<K>, ResultAndUpdates<O1>> distributedWorker,
         IgniteBiFunction<O, L, IgniteSupplier<Stream<GroupTrainerCacheKey<K>>>> kf,
         O1 identity,
         IgniteBinaryOperator<O1> reducer) {
 
-        return thenDistributedForKeys((o, lc) -> null, (o, lc, context) -> distributedWorker.apply(o, context.key()), kf, identity, reducer);
+        return thenDistributedForKeys((o, lc) -> null, (context) -> distributedWorker.apply(context.key()), kf, identity, reducer);
     }
 
     default <O1 extends Serializable> ComputationsChain<L, K, V, I, O1> thenDistributedForKeys(
@@ -149,7 +147,7 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> extend
         IgniteBiFunction<O, L, IgniteSupplier<Stream<GroupTrainerCacheKey<K>>>> kf,
         IgniteBinaryOperator<O1> reducer) {
 
-        return thenDistributedForKeys((o, lc) -> null, (o, lc, context) -> distributedWorker.apply(o, context.key()), kf, null, reducer);
+        return thenDistributedForKeys((o, lc) -> o, (context) -> distributedWorker.apply(context.context(), context.key()), kf, null, reducer);
     }
 
     default ComputationsChain<L, K, V, I, O> thenWhile(IgniteBiPredicate<O, L> cond, ComputationsChain<L, K, V, O, O> chain) {

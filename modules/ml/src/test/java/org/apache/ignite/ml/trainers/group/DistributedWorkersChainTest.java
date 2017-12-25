@@ -165,7 +165,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         assertMapEqualsCache(m, testCache);
     }
 
-    private ResultAndUpdates<Integer> readAndIncrement(Integer prevData, TestLocalContext lc, EntryAndContext<Double, Integer, Void> ec) {
+    private ResultAndUpdates<Integer> readAndIncrement(EntryAndContext<Double, Integer, Void> ec) {
         Integer val = ec.entry().getValue();
 
         ResultAndUpdates<Integer> res = ResultAndUpdates.of(val);

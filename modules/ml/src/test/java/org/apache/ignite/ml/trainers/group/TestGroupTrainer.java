@@ -86,8 +86,7 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
         return TestGroupTrainingCache.allKeys(locCtx.limit(), locCtx.eachNumberCnt(), locCtx.trainingUUID());
     }
 
-    @Override protected ResultAndUpdates<Integer> getFinalResults(Double data, TestGroupTrainerLocalContext locCtx,
-        EntryAndContext<Double, Integer, Void> entryAndCtx) {
+    @Override protected ResultAndUpdates<Integer> getFinalResults(EntryAndContext<Double, Integer, Void> entryAndCtx) {
         Integer val = entryAndCtx.entry().getValue();
         return ResultAndUpdates.of(val % 2 == 0 ? val : 0);
     }

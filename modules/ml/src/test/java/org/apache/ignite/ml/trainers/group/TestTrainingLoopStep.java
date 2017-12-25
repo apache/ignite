@@ -29,8 +29,7 @@ public class TestTrainingLoopStep implements DistributedStep<TestGroupTrainerLoc
         return null;
     }
 
-    @Override public ResultAndUpdates<Double> worker(Double input, TestGroupTrainerLocalContext locCtx,
-        EntryAndContext<Double, Integer, Void> entryAndContext) {
+    @Override public ResultAndUpdates<Double> worker(EntryAndContext<Double, Integer, Void> entryAndContext) {
         Integer oldVal = entryAndContext.entry().getValue();
         double v = oldVal * oldVal;
         ResultAndUpdates<Double> res = ResultAndUpdates.of(v);

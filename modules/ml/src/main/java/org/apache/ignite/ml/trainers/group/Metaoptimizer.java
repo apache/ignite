@@ -38,7 +38,7 @@ public interface Metaoptimizer<IR, LC, X, Y, I, D, O> {
 
     I locallyProcessInitData(D data, LC locCtx);
 
-    X distributedPreprocess(I inputData, X dataToProcess);
+    X distributedPreprocess(X dataToProcess);
 
     O distributedPostprocess(Y procOut);
 
@@ -65,8 +65,8 @@ public interface Metaoptimizer<IR, LC, X, Y, I, D, O> {
                 return new IgniteBiTuple<>(me.locallyProcessInitData(data.get1(), locCtx), other.locallyProcessInitData(data.get2(), locCtx));
             }
 
-            @Override public X distributedPreprocess(IgniteBiTuple<I, I1> inputData, X dataToProcess) {
-                return other.distributedPreprocess(inputData.get2(), me.distributedPreprocess(inputData.get1(), dataToProcess));
+            @Override public X distributedPreprocess(X dataToProcess) {
+                return other.distributedPreprocess(me.distributedPreprocess(dataToProcess));
             }
 
             @Override public IgniteBiTuple<O, O1> distributedPostprocess(Y procOut) {

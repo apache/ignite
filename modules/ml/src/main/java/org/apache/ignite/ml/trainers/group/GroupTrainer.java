@@ -169,12 +169,10 @@ public abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends 
     /**
      * Get final result from each key specified in finalResultKeys.
      *
-     * @param data Data returned from the last training loop step.
-     * @param locCtx Local context.
      * @param entryAndCtx Cache entry for given key and context returned by extractContextForFinalResultCreation.
      * @return ResultAndUpdates object.
      */
-    protected abstract ResultAndUpdates<R> getFinalResults(I data, LC locCtx, EntryAndContext<K, V, G> entryAndCtx);
+    protected abstract ResultAndUpdates<R> getFinalResults(EntryAndContext<K, V, G> entryAndCtx);
 
     /**
      * Default final result. Should be identity for reduceFinalResults.
