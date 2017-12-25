@@ -75,20 +75,6 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
-    public void testShort() throws Exception {
-        short val = (short)RND.nextLong();
-
-        stream.writeShort(val);
-
-        buff.rewind();
-
-        assertEquals(val, getShortByByteLE(outArr));
-        assertEquals(val, stream.readShort());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testShortArray() throws Exception {
         short[] arr = new short[ARR_LEN];
 
@@ -103,20 +89,6 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
             assertEquals(arr[i], getShortByByteLE(outArr, i * 2 + LEN_BYTES));
 
         assertArrayEquals(arr, stream.readShortArray());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testChar() throws Exception {
-        char val = (char)RND.nextLong();
-
-        stream.writeChar(val);
-
-        buff.rewind();
-
-        assertEquals(val, getCharByByteLE(outArr));
-        assertEquals(val, stream.readChar());
     }
 
     /**
@@ -179,20 +151,6 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
-    public void testFloat() throws Exception {
-        float val = RND.nextFloat();
-
-        stream.writeFloat(val);
-
-        buff.rewind();
-
-        assertEquals(val, getFloatByByteLE(outArr), 0);
-        assertEquals(val, stream.readFloat(), 0);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testFloatArray() throws Exception {
         float[] arr = new float[ARR_LEN];
 
@@ -212,20 +170,6 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
-    public void testDouble() throws Exception {
-        double val = RND.nextDouble();
-
-        stream.writeDouble(val);
-
-        buff.rewind();
-
-        assertEquals(val, getDoubleByByteLE(outArr), 0);
-        assertEquals(val, stream.readDouble(), 0);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testDoubleArray() throws Exception {
         double[] arr = new double[ARR_LEN];
 
@@ -240,5 +184,272 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
             assertEquals(arr[i], getDoubleByByteLE(outArr, i * 8 + LEN_BYTES), 0);
 
         assertArrayEquals(arr, stream.readDoubleArray(), 0);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testShortArrayOverflow() throws Exception {
+        DirectByteBufferStream readStream = readStream();
+
+        short[] arr = new short[ARR_LEN];
+
+        for (int i = 0; i < ARR_LEN; i++)
+            arr[i] = (short)RND.nextLong();
+
+        int typeSize = 2;
+
+        int outLen = ARR_LEN * typeSize + LEN_BYTES;
+
+        buff.limit(outLen - 1);
+
+        // Write and read the first part.
+        stream.writeShortArray(arr);
+
+        assertFalse(stream.lastFinished());
+
+        buff.rewind();
+
+        assertEquals(null, readStream.readShortArray());
+
+        assertFalse(readStream.lastFinished());
+
+        buff.rewind();
+
+        // Write and read the second part.
+        stream.writeShortArray(arr);
+
+        assertTrue(stream.lastFinished());
+
+        buff.rewind();
+
+        assertArrayEquals(arr, readStream.readShortArray());
+
+        assertTrue(readStream.lastFinished());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCharArrayOverflow() throws Exception {
+        DirectByteBufferStream readStream = readStream();
+
+        char[] arr = new char[ARR_LEN];
+
+        for (int i = 0; i < ARR_LEN; i++)
+            arr[i] = (char)RND.nextLong();
+
+        int typeSize = 2;
+
+        int outLen = ARR_LEN * typeSize + LEN_BYTES;
+
+        buff.limit(outLen - 1);
+
+        // Write and read the first part.
+        stream.writeCharArray(arr);
+
+        assertFalse(stream.lastFinished());
+
+        buff.rewind();
+
+        assertEquals(null, readStream.readCharArray());
+
+        assertFalse(readStream.lastFinished());
+
+        buff.rewind();
+
+        // Write and read the second part.
+        stream.writeCharArray(arr);
+
+        assertTrue(stream.lastFinished());
+
+        buff.rewind();
+
+        assertArrayEquals(arr, readStream.readCharArray());
+
+        assertTrue(readStream.lastFinished());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIntArrayOverflow() throws Exception {
+        DirectByteBufferStream readStream = readStream();
+
+        int[] arr = new int[ARR_LEN];
+
+        for (int i = 0; i < ARR_LEN; i++)
+            arr[i] = RND.nextInt();
+
+        int typeSize = 4;
+
+        int outLen = ARR_LEN * typeSize + LEN_BYTES;
+
+        buff.limit(outLen - 1);
+
+        // Write and read the first part.
+        stream.writeIntArray(arr);
+
+        assertFalse(stream.lastFinished());
+
+        buff.rewind();
+
+        assertEquals(null, readStream.readIntArray());
+
+        assertFalse(readStream.lastFinished());
+
+        buff.rewind();
+
+        // Write and read the second part.
+        stream.writeIntArray(arr);
+
+        assertTrue(stream.lastFinished());
+
+        buff.rewind();
+
+        assertArrayEquals(arr, readStream.readIntArray());
+
+        assertTrue(readStream.lastFinished());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLongArrayOverflow() throws Exception {
+        DirectByteBufferStream readStream = readStream();
+
+        long[] arr = new long[ARR_LEN];
+
+        for (int i = 0; i < ARR_LEN; i++)
+            arr[i] = RND.nextLong();
+
+        int typeSize = 8;
+
+        int outLen = ARR_LEN * typeSize + LEN_BYTES;
+
+        buff.limit(outLen - 1);
+
+        // Write and read the first part.
+        stream.writeLongArray(arr);
+
+        assertFalse(stream.lastFinished());
+
+        buff.rewind();
+
+        assertEquals(null, readStream.readLongArray());
+
+        assertFalse(readStream.lastFinished());
+
+        buff.rewind();
+
+        // Write and read the second part.
+        stream.writeLongArray(arr);
+
+        assertTrue(stream.lastFinished());
+
+        buff.rewind();
+
+        assertArrayEquals(arr, readStream.readLongArray());
+
+        assertTrue(readStream.lastFinished());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFloatArrayOverflow() throws Exception {
+        DirectByteBufferStream readStream = readStream();
+
+        float[] arr = new float[ARR_LEN];
+
+        for (int i = 0; i < ARR_LEN; i++)
+            arr[i] = RND.nextFloat();
+
+        int typeSize = 4;
+
+        int outLen = ARR_LEN * typeSize + LEN_BYTES;
+
+        buff.limit(outLen - 1);
+
+        // Write and read the first part.
+        stream.writeFloatArray(arr);
+
+        assertFalse(stream.lastFinished());
+
+        buff.rewind();
+
+        assertEquals(null, readStream.readFloatArray());
+
+        assertFalse(readStream.lastFinished());
+
+        buff.rewind();
+
+        // Write and read the second part.
+        stream.writeFloatArray(arr);
+
+        assertTrue(stream.lastFinished());
+
+        buff.rewind();
+
+        assertArrayEquals(arr, readStream.readFloatArray(), 0);
+
+        assertTrue(readStream.lastFinished());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDoubleArrayOverflow() throws Exception {
+        DirectByteBufferStream readStream = readStream();
+
+        double[] arr = new double[ARR_LEN];
+
+        for (int i = 0; i < ARR_LEN; i++)
+            arr[i] = RND.nextDouble();
+
+        int typeSize = 8;
+
+        int outLen = ARR_LEN * typeSize + LEN_BYTES;
+
+        buff.limit(outLen - 1);
+
+        // Write and read the first part.
+        stream.writeDoubleArray(arr);
+
+        assertFalse(stream.lastFinished());
+
+        buff.rewind();
+
+        assertEquals(null, readStream.readDoubleArray());
+
+        assertFalse(readStream.lastFinished());
+
+        buff.rewind();
+
+        // Write and read the second part.
+        stream.writeDoubleArray(arr);
+
+        assertTrue(stream.lastFinished());
+
+        buff.rewind();
+
+        assertArrayEquals(arr, readStream.readDoubleArray(), 0);
+
+        assertTrue(readStream.lastFinished());
+    }
+
+    /**
+     * Create DirectByteBufferStream for reading from {@code buff}.
+     */
+    private DirectByteBufferStream readStream() {
+        DirectByteBufferStream readStream = new DirectByteBufferStreamImplV2(new MessageFactory() {
+            @Nullable @Override public Message create(short type) {
+                return null;
+            }
+        });
+
+        readStream.setBuffer(buff);
+
+        return readStream;
     }
 }
