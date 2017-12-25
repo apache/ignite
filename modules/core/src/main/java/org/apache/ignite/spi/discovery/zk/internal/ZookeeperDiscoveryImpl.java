@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -480,7 +479,7 @@ public class ZookeeperDiscoveryImpl {
     private void onSegmented(Exception e) {
         rtState.errForClose = e;
 
-        if (rtState.joined) {
+        if (rtState.joined || joinFut.isDone()) {
             synchronized (stateMux) {
                 connState = ConnectionState.STOPPED;
             }
@@ -495,12 +494,15 @@ public class ZookeeperDiscoveryImpl {
      *
      */
     private void notifySegmented() {
-        assert rtState.evtsData != null;
+        List<ClusterNode> nodes = rtState.top.topologySnapshot();
+
+        if (nodes.isEmpty())
+            nodes = Collections.singletonList((ClusterNode)locNode);
 
         lsnr.onDiscovery(EventType.EVT_NODE_SEGMENTED,
-            rtState.evtsData.topVer,
+            rtState.evtsData != null ? rtState.evtsData.topVer : 1L,
             locNode,
-            rtState.top.topologySnapshot(),
+            nodes,
             Collections.<Long, Collection<ClusterNode>>emptyMap(),
             null);
     }
@@ -992,9 +994,6 @@ public class ZookeeperDiscoveryImpl {
         catch (IgniteCheckedException | ZookeeperClientFailedException e) {
             throw new IgniteSpiException("Failed to initialize Zookeeper nodes", e);
         }
-        finally {
-            connStartLatch.countDown();
-        }
     }
 
     /**
@@ -1194,18 +1193,6 @@ public class ZookeeperDiscoveryImpl {
             if (evt.getType() == Event.EventType.NodeDataChanged)
                 rtState.zkClient.getDataAsync(evt.getPath(), this, this);
         }
-    }
-
-    /** TODO ZK */
-    private final CountDownLatch connStartLatch = new CountDownLatch(1);
-
-    /**
-     * For testing only.
-     *
-     * @throws Exception If failed.
-     */
-    void waitConnectStart() throws Exception {
-        connStartLatch.await();
     }
 
     /**
@@ -3846,13 +3833,6 @@ public class ZookeeperDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override void onPreviousNodeFail() {
-            // TODO ZK:
-//        if (locInternalId == crdInternalId + 1) {
-//            if (log.isInfoEnabled())
-//                log.info("Previous discovery coordinator failed [locId=" + locNode.id() + ']');
-//
-//            onBecomeCoordinator(aliveNodes, locInternalId);
-//        }
             if (log.isInfoEnabled())
                 log.info("Previous server node failed, check is node new coordinator [locId=" + locNode.id() + ']');
 

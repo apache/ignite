@@ -157,6 +157,9 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     private long joinTimeout;
 
     /** */
+    private boolean clientReconnectDisabled;
+
+    /** */
     private ConcurrentHashMap<String, ZookeeperDiscoverySpi> spis = new ConcurrentHashMap<>();
 
     /** */
@@ -199,6 +202,8 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             zkSpi.setJoinTimeout(joinTimeout);
 
         zkSpi.setSessionTimeout(sesTimeout > 0 ? sesTimeout : 10_000);
+
+        zkSpi.setClientReconnectDisabled(clientReconnectDisabled);
 
         // Set authenticator for basic sanity tests.
         if (auth != null) {
@@ -821,7 +826,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         final CountDownLatch l = new CountDownLatch(1);
 
         node0.events().localListen(new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event event) {
+            @Override public boolean apply(Event evt) {
                 l.countDown();
 
                 return false;
@@ -857,7 +862,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         final CountDownLatch l = new CountDownLatch(1);
 
         node0.events().localListen(new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event event) {
+            @Override public boolean apply(Event evt) {
                 l.countDown();
 
                 return false;
@@ -887,7 +892,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         final CountDownLatch l = new CountDownLatch(1);
 
         node0.events().localListen(new IgnitePredicate<Event>() {
-            @Override public boolean apply(Event event) {
+            @Override public boolean apply(Event evt) {
                 l.countDown();
 
                 return false;
@@ -1085,7 +1090,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      * @param failCnt Number of nodes to stop after coordinator loose connection.
      * @throws Exception If failed.
      */
-    private void connectionRestore_Coordinator(int initNodes, int startNodes, int failCnt) throws Exception {
+    private void connectionRestore_Coordinator(final int initNodes, int startNodes, int failCnt) throws Exception {
         sesTimeout = 30_000;
         testSockNio = true;
 
@@ -1123,11 +1128,15 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         final List<String> failedZkNodes = new ArrayList<>(failCnt);
 
         for (int i = initNodes; i < initNodes + startNodes; i++) {
-            ZookeeperDiscoverySpi spi = waitSpi(getTestIgniteInstanceName(i));
+            final ZookeeperDiscoverySpi spi = waitSpi(getTestIgniteInstanceName(i));
 
-            ZookeeperDiscoveryImpl impl = GridTestUtils.getFieldValue(spi, "impl");
+            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    long internalOrder = GridTestUtils.getFieldValue(spi, "impl", "rtState", "internalOrder");
 
-            impl.waitConnectStart();
+                    return internalOrder > 0;
+                }
+            }, 10_000));
 
             if (cnt++ < failCnt) {
                 ZkTestClientCnxnSocketNIO c = ZkTestClientCnxnSocketNIO.forNode(getTestIgniteInstanceName(i));
@@ -2581,6 +2590,45 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testServersLeft_FailOnTimeout() throws Exception {
+        startGrid(0);
+
+        final int CLIENTS = 5;
+
+        joinTimeout = 3000;
+
+        clientMode(true);
+
+        startGridsMultiThreaded(1, CLIENTS);
+
+        waitForTopology(CLIENTS + 1);
+
+        final CountDownLatch l = new CountDownLatch(CLIENTS);
+
+        for (int i = 0; i < CLIENTS; i++) {
+            Ignite node = ignite(i + 1);
+
+            node.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    info("Segmented!");
+
+                    l.countDown();
+
+                    return false;
+                }
+            }, EventType.EVT_NODE_SEGMENTED);
+        }
+
+        stopGrid(getTestIgniteInstanceName(0), true, false);
+
+        assertTrue(l.await(10, SECONDS));
+
+        evts.clear();
+    }
+
+    /**
      *
      */
     public void testStartNoServers_FailOnTimeout() {
@@ -2675,6 +2723,15 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDisconnectOnServersLeft_4() throws Exception {
+        disconnectOnServersLeft(5, 10);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDisconnectOnServersLeft_5() throws Exception {
+        joinTimeout = 10_000;
+
         disconnectOnServersLeft(5, 10);
     }
 
