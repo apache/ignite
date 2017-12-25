@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.util;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import org.apache.ignite.IgniteException;
@@ -26,48 +25,74 @@ import org.apache.ignite.IgniteException;
  * The facade for Cleaner classes for compatibility between java 8 and 9.
  */
 public class GridCleaner {
-    /** Cleaner create method. */
-    private static final Method cleanerCreateMtd;
+    /** Pre-java9 cleaner class name. */
+    private static final String PRE_JAVA9_CLEANER_CLASS_NAME = "sun.misc.Cleaner";
+
+    /** Java9 cleaner class name. */
+    private static final String JAVA9_CLEANER_CLASS_NAME = "java.lang.ref.Cleaner";
+
+    /** Cleaner class. */
+    private static final Class<?> cleanerCls;
+
+    /** Cleaner object. */
+    private static final Object cleanerObj;
+
+    /** Cleaner register method. */
+    private static final Method cleanerRegMtd;
 
     static {
-        final String[] cleanerClsNames = {"sun.misc.Cleaner", "jdk.internal.ref.Cleaner"};
+        cleanerCls = findCleanerClass();
+
+        try {
+            final String cleanerRegMtdName;
+
+            if (JAVA9_CLEANER_CLASS_NAME.equals(cleanerCls.getName())) {
+                cleanerObj = cleanerCls.getMethod("create").invoke(null);
+
+                cleanerRegMtdName = "register";
+            }
+            else {
+                cleanerObj = null;
+
+                cleanerRegMtdName = "create";
+            }
+
+            cleanerRegMtd = cleanerCls.getMethod(cleanerRegMtdName, Object.class, Runnable.class);
+        }
+        catch (ReflectiveOperationException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
+
+    /**
+     *
+     */
+    private static Class<?> findCleanerClass() {
+        final String[] cleanerClsNames = {PRE_JAVA9_CLEANER_CLASS_NAME, JAVA9_CLEANER_CLASS_NAME};
 
         final ClassLoader sysClsLdr = ClassLoader.getSystemClassLoader();
 
-        Class<?> cleanerCls = null;
-
         for (String cleanerClsName : cleanerClsNames) {
             try {
-                cleanerCls = Class.forName(cleanerClsName, true, sysClsLdr);
-
-                break;
+                return Class.forName(cleanerClsName, true, sysClsLdr);
             }
             catch (ClassNotFoundException e) {
                 // ignored;
             }
         }
 
-        if (cleanerCls != null) {
-            try {
-                cleanerCreateMtd = cleanerCls.getMethod("create", Object.class, Runnable.class);
-            }
-            catch (NoSuchMethodException e) {
-                throw new ExceptionInInitializerError(e);
-            }
-        }
-        else
-            throw new ExceptionInInitializerError("None of cleaner classes found: " + Arrays.toString(cleanerClsNames));
+        throw new IllegalStateException("None of cleaner classes found: " + Arrays.toString(cleanerClsNames));
     }
 
     /**
      * @param obj Object.
-     * @param run Run.
+     * @param act Action.
      */
-    public static Object create(Object obj, Runnable run) {
+    public static Object create(Object obj, Runnable act) {
         try {
-            return cleanerCreateMtd.invoke(null, obj, run);
+            return cleanerRegMtd.invoke(cleanerObj, obj, act);
         }
-        catch (IllegalAccessException | InvocationTargetException e) {
+        catch (ReflectiveOperationException e) {
             throw new IgniteException(e);
         }
     }
