@@ -311,7 +311,19 @@ public final class GridTestUtils {
         throw new AssertionError("Exception has not been thrown.");
     }
 
-    /** FIXME */
+    /**
+     * Handles the case when {@link #assertThrows(IgniteLogger, Callable, Class, String)} throws an exception:
+     * it compares the actually thrown exception with the required one and fails the test, if they don't match.
+     *
+     * @param log The logger.
+     * @param cls The exception class to expect.
+     * @param msgStrOrRe Exception message (optional). If provided exception message
+     *      and this message should be equal. If message starts with "re:", the rest of
+     *      string is interpreted as regular expression that should occur somewhere in the exception message.
+     * @param e The exception actually thrown.
+     * @return The thrown exception if the actual and required ones matched.
+     * @throws AssertionError if the exceptions did not match.
+     */
     @NotNull
     private static Throwable handleAssertThrowsException(@Nullable IgniteLogger log, Class<? extends Throwable> cls,
         @Nullable String msgStrOrRe, Throwable e) {

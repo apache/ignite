@@ -52,13 +52,24 @@ public abstract class SqlParserAbstractSelfTest extends GridCommonAbstractTest {
         }, SqlParseException.class, msgRe);
     }
 
-    /** FIXME */
+    /**
+     * Tests that SQL command parameter is handled correctly by creating SQL command with a parameter,
+     * parsing it and checking field value inside the {@link SqlCommand} subclass created by the parser.
+     *
+     * @param schema The schema.
+     * @param cmdPrefix Start of the SQL command to which the parameter is appended.
+     * @param paramDef Parameter definition.
+     * @param otherParamVals Default values of the other parameters (which are not specified). If
+     *      not null, values of these not specified parameters are checked as well in the fields
+     *      of {@link SqlCommand} subclass.
+     * @param <T> Parameter type.
+     * @throws AssertionError if testing fails.
+     */
     @SuppressWarnings("unchecked")
-    protected <T> void testParameter(final String schema, final String cmdPrefix, TestParamDef<T> def,
-        @Nullable List<TestParamDef.DefValPair<?>> defaultParamVals)
-        throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+    protected <T> void testParameter(final String schema, final String cmdPrefix, TestParamDef<T> paramDef,
+        @Nullable List<TestParamDef.DefValPair<?>> otherParamVals) {
 
-        for (TestParamDef.Value<T> val : def.testValues()) {
+        for (TestParamDef.Value<T> val : paramDef.testValues()) {
 
             for (TestParamDef.Syntax syn : TestParamDef.Syntax.values()) {
 
@@ -67,7 +78,7 @@ public abstract class SqlParserAbstractSelfTest extends GridCommonAbstractTest {
 
                 try {
                     String sql = ParamTestUtils.makeSqlWithParams(cmdPrefix,
-                        new TestParamDef.DefValPair<>(def, val, syn));
+                        new TestParamDef.DefValPair<>(paramDef, val, syn));
 
                     if (val instanceof TestParamDef.InvalidValue)
 
@@ -78,29 +89,40 @@ public abstract class SqlParserAbstractSelfTest extends GridCommonAbstractTest {
 
                         SqlCommand cmd = new SqlParser(schema, sql).nextCommand();
 
-                        checkField(cmd, def, val);
+                        checkField(cmd, paramDef, val);
 
-                        if (defaultParamVals != null) {
+                        if (otherParamVals != null) {
 
-                            for (TestParamDef.DefValPair<?> defValPair : defaultParamVals) {
+                            for (TestParamDef.DefValPair<?> otherParamDefVal : otherParamVals) {
 
-                                if (!defValPair.def().cmdFieldName().equals(def.cmdFieldName()))
+                                if (!otherParamDefVal.def().cmdFieldName().equals(paramDef.cmdFieldName()))
                                     checkField(cmd,
-                                        (TestParamDef<Object>)defValPair.def(),
-                                        (TestParamDef.Value<Object>)defValPair.val());
+                                        (TestParamDef<Object>)otherParamDefVal.def(),
+                                        (TestParamDef.Value<Object>)otherParamDefVal.val());
                             }
                         }
                     }
                 }
                 catch (Exception | AssertionError e) {
                     throw new AssertionError(
-                        "When testing " + def + " with expected value " + val + "\n" + e.getMessage(), e);
+                        "When testing " + paramDef + " with expected value " + val + "\n" + e.getMessage(), e);
                 }
             }
         }
     }
 
-    /** FIXME */
+    /**
+     * Checks that the field in {@link SqlCommand} is set correctly. The method expects the command class
+     * to have a getter with the same name as the field.
+     *
+     * @param cmd The command class to look up the field in.
+     * @param def The parameter definition.
+     * @param val The value to expect in the command class field.
+     * @param <T> The type of the value in the command class.
+     * @throws NoSuchMethodException If there is no getter with the same name as the parameter.
+     * @throws InvocationTargetException If the getter cannot be called.
+     * @throws IllegalAccessException If we don't have access to the getter.
+     */
     protected <T> void checkField(SqlCommand cmd, TestParamDef<T> def, TestParamDef.Value<T> val)
         throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 
