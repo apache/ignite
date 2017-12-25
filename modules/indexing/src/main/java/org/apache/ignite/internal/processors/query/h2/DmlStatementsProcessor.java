@@ -355,6 +355,9 @@ public class DmlStatementsProcessor {
         if (cctx.mvccEnabled()) {
             assert cctx.transactional();
 
+            if(cctx.isReplicated())
+                throw new UnsupportedOperationException("Only partitioned caches are supported at the moment");
+
             DmlDistributedPlanInfo distributedPlan = plan.distributedPlan();
 
             if (!plan.hasRows() && distributedPlan == null)
