@@ -136,6 +136,9 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     private boolean client;
 
     /** */
+    private static ThreadLocal<Boolean> clientThreadLoc = new ThreadLocal<>();
+
+    /** */
     private static ConcurrentHashMap<UUID, Map<Long, DiscoveryEvent>> evts = new ConcurrentHashMap<>();
 
     /** */
@@ -239,7 +242,12 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg);
 
-        cfg.setClientMode(client);
+        Boolean clientMode = clientThreadLoc.get();
+
+        if (clientMode != null)
+            cfg.setClientMode(clientMode);
+        else
+            cfg.setClientMode(client);
 
         if (userAttrs != null)
             cfg.setUserAttributes(userAttrs);
@@ -307,6 +315,20 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             cfg.setCommunicationProblemResolver(commProblemRslvr.apply());
 
         return cfg;
+    }
+
+    /**
+     * @param clientMode Client mode flag for started nodes.
+     */
+    private void clientMode(boolean clientMode) {
+        client = clientMode;
+    }
+
+    /**
+     * @param clientMode Client mode flag for nodes started from current thread.
+     */
+    private void clientModeThreadLocal(boolean clientMode) {
+        clientThreadLoc.set(clientMode);
     }
 
     /** {@inheritDoc} */
@@ -489,7 +511,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     public void testNodeAddresses() throws Exception {
         startGridsMultiThreaded(3);
 
-        client = true;
+        clientMode(true);
 
         startGridsMultiThreaded(3, 3);
 
@@ -514,7 +536,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     public void testSetConsistentId() throws Exception {
         startGridsMultiThreaded(3);
 
-        client = true;
+        clientMode(true);
 
         startGridsMultiThreaded(3, 3);
 
@@ -541,7 +563,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(3);
 
-        client = true;
+        clientMode(true);
 
         startGridsMultiThreaded(3, 3);
 
@@ -568,7 +590,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             assertEquals(1, node.cluster().forServers().nodes().size());
         }
 
-        client = true;
+        clientMode(true);
 
         startGrid(1);
 
@@ -577,11 +599,11 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             assertEquals(1, node.cluster().forServers().nodes().size());
         }
 
-        client = false;
+        clientMode(false);
 
         startGrid(2);
 
-        client = true;
+        clientMode(true);
 
         startGrid(3);
 
@@ -646,13 +668,13 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         checkTestSecuritySubject(1);
 
         {
-            client = false;
+            clientMode(false);
             checkStartFail(1);
 
-            client = true;
+            clientMode(true);
             checkStartFail(1);
 
-            client = false;
+            clientMode(false);
         }
 
         startGrid(2);
@@ -673,15 +695,15 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         checkStartFail(1);
 
-        client = false;
+        clientMode(false);
 
         startGrid(3);
 
-        client = true;
+        clientMode(true);
 
         startGrid(4);
 
-        client = false;
+        clientMode(false);
 
         startGrid(0);
 
@@ -690,7 +712,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         checkStartFail(1);
         checkStartFail(5);
 
-        client = true;
+        clientMode(true);
 
         checkStartFail(1);
         checkStartFail(5);
@@ -1207,6 +1229,41 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testConcurrentStartWithClient() throws Exception {
+        final int NODES = 20;
+
+        for (int i = 0; i < 3; i++) {
+            info("Iteration: " + i);
+
+            final int srvIdx = ThreadLocalRandom.current().nextInt(NODES);
+
+            final AtomicInteger idx = new AtomicInteger();
+
+            GridTestUtils.runMultiThreaded(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    int threadIdx = idx.getAndIncrement();
+
+                    clientModeThreadLocal(threadIdx == srvIdx || ThreadLocalRandom.current().nextBoolean());
+
+                    startGrid(threadIdx);
+
+                    return null;
+                }
+            }, NODES, "start-node");
+
+            waitForTopology(NODES);
+
+            stopAllGrids();
+
+            checkEventsConsistency();
+
+            evts.clear();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testConcurrentStartStop1() throws Exception {
        concurrentStartStop(1);
     }
@@ -1482,7 +1539,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         startGrids(SRVS);
 
-        client = true;
+        clientMode(true);
 
         final int THREADS = 30;
 
@@ -1673,11 +1730,11 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeployService2() throws Exception {
-        client = false;
+        clientMode(false);
 
         startGrid(0);
 
-        client = true;
+        clientMode(true);
 
         startGrid(1);
 
@@ -1688,13 +1745,21 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeployService3() throws Exception {
-        client = true;
+        IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable() {
+            @Override public Object call() throws Exception {
+                clientModeThreadLocal(true);
 
-        startGrid(0);
+                startGrid(0);
 
-        client = false;
+                return null;
+            }
+        }, "start-node");
+
+        clientModeThreadLocal(false);
 
         startGrid(1);
+
+        fut.get();
 
         grid(0).services(grid(0).cluster()).deployNodeSingleton("test", new GridCacheAbstractFullApiSelfTest.DummyServiceImpl());
     }
@@ -1747,7 +1812,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             else
                 userAttrs = null;
 
-            client = i > 5;
+            clientMode(i > 5);
 
             startGrid(i);
         }
@@ -1822,7 +1887,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         startGrid(0);
 
         sesTimeout = 2000;
-        client = true;
+        clientMode(true);
         testSockNio = true;
 
         Ignite client = startGrid(1);
@@ -1841,14 +1906,14 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
      */
     public void testClientReconnectSessionExpire2() throws Exception {
         sesTimeout = 2000;
-        client = true;
+        clientMode(true);
         testSockNio = true;
 
         Ignite client0 = startGrid(0);
 
         reconnectClientNodes(log, Collections.singletonList(client0), null, true);
 
-        client = false;
+        clientMode(false);
 
         client0.configuration().getMarshaller().marshal(new DummyCallable(null));
 
@@ -1865,7 +1930,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         startGrids(SRVS);
 
-        client = true;
+        clientMode(true);
 
         startGrid(SRVS);
 
@@ -1890,7 +1955,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         startGrids(SRVS);
 
-        client = true;
+        clientMode(true);
 
         startGrid(SRVS);
 
@@ -2354,7 +2419,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(10);
 
-        client = true;
+        clientMode(true);
 
         startGridsMultiThreaded(10, 5);
 
@@ -2380,7 +2445,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
                 // No-op.
             }
 
-            client = ThreadLocalRandom.current().nextBoolean();
+            clientMode(ThreadLocalRandom.current().nextBoolean());
 
             startGrid(nodeIdx++);
 
@@ -2423,7 +2488,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         startGrids(3);
 
-        client = true;
+        clientMode(true);
 
         startGridsMultiThreaded(3, 2);
 
@@ -2521,7 +2586,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     public void testStartNoServers_FailOnTimeout() {
         joinTimeout = 3000;
 
-        client = true;
+        clientMode(true);
 
         long start = System.currentTimeMillis();
 
@@ -2564,7 +2629,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                client = true;
+                clientModeThreadLocal(true);
 
                 startGrid(0);
 
@@ -2576,7 +2641,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         waitSpi(getTestIgniteInstanceName(0));
 
-        client = false;
+        clientModeThreadLocal(false);
 
         startGrid(1);
 
@@ -2621,7 +2686,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     private void disconnectOnServersLeft(int srvs, int clients) throws Exception {
         startGridsMultiThreaded(srvs);
 
-        client = true;
+        clientMode(true);
 
         startGridsMultiThreaded(srvs, clients);
 
@@ -2670,7 +2735,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
             evts.clear();
 
-            client = false;
+            clientMode(false);
 
             log.info("Restart servers.");
 
@@ -2687,22 +2752,37 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testReconnectServersRestart() throws Exception {
-        startGrid(0);
+    public void testReconnectServersRestart_1() throws Exception {
+        reconnectServersRestart(1);
+    }
 
-        client = true;
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReconnectServersRestart_2() throws Exception {
+        reconnectServersRestart(3);
+    }
+
+    /**
+     * @param srvs Number of server nodes in test.
+     * @throws Exception If failed.
+     */
+    private void reconnectServersRestart(int srvs) throws Exception {
+        startGridsMultiThreaded(srvs);
+
+        clientMode(true);
 
         final int CLIENTS = 10;
 
-        startGridsMultiThreaded(1, CLIENTS);
+        startGridsMultiThreaded(srvs, CLIENTS);
 
-        client = false;
+        clientMode(false);
 
         long stopTime = System.currentTimeMillis() + 30_000;
 
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-        final int NODES = 1 + CLIENTS;
+        final int NODES = srvs + CLIENTS;
 
         int iter = 0;
 
@@ -2712,9 +2792,13 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             info("Test iteration [iter=" + iter++ + ", restarts=" + restarts + ']');
 
             for (int i = 0; i < restarts; i++) {
-                stopGrid(getTestIgniteInstanceName(0), true, false);
+                GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
+                    @Override public void apply(Integer threadIdx) {
+                        stopGrid(getTestIgniteInstanceName(threadIdx), true, false);
+                    }
+                }, srvs, "stop-server");
 
-                startGrid(0);
+                startGridsMultiThreaded(0, srvs);
             }
 
             final Ignite srv = ignite(0);
@@ -2729,6 +2813,42 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange();
         }
+
+        evts.clear();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReconnectServersRestart_3() throws Exception {
+        startGrid(0);
+
+        clientMode(true);
+
+        startGridsMultiThreaded(10, 10);
+
+        stopGrid(getTestIgniteInstanceName(0), true, false);
+
+        final int srvIdx = ThreadLocalRandom.current().nextInt(10);
+
+        final AtomicInteger idx = new AtomicInteger();
+
+        info("Restart nodes.");
+
+        // Test concurrent start when there are disconnected nodes from previous cluster.
+        GridTestUtils.runMultiThreaded(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                int threadIdx = idx.getAndIncrement();
+
+                clientModeThreadLocal(threadIdx == srvIdx || ThreadLocalRandom.current().nextBoolean());
+
+                startGrid(threadIdx);
+
+                return null;
+            }
+        }, 10, "start-node");
+
+        waitForTopology(20);
 
         evts.clear();
     }
@@ -2781,11 +2901,11 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         for (int i = 0; i < 3; i++) {
             info("Iteration: " + i);
 
-            client = false;
+            clientMode(false);
 
             startGridsMultiThreaded(4);
 
-            client = true;
+            clientMode(true);
 
             startGridsMultiThreaded(4, 3);
 
@@ -2979,6 +3099,8 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         catch (Exception e) {
             error("Failed to delete DB files: " + e, e);
         }
+
+        clientThreadLoc.set(null);
     }
 
     /**
