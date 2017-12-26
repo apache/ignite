@@ -213,7 +213,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             };
             var cfg2 = new IgniteConfiguration(GetPersistentConfiguration())
             {
-                ConsistentId = "node2"
+                ConsistentId = "node2",
+                IgniteInstanceName = "2"
             };
 
             using (var ignite = Ignition.Start(cfg1))
