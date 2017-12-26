@@ -2592,6 +2592,47 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testReconnectDisabled_ConnectionLost() throws Exception {
+        clientReconnectDisabled = true;
+
+        startGrid(0);
+
+        sesTimeout = 3000;
+        testSockNio = true;
+        client = true;
+
+        Ignite client = startGrid(1);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        client.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                latch.countDown();
+
+                return false;
+            }
+        }, EventType.EVT_NODE_SEGMENTED);
+
+        ZkTestClientCnxnSocketNIO nio = ZkTestClientCnxnSocketNIO.forNode(client);
+
+        nio.closeSocket(true);
+
+        try {
+            waitNoAliveZkNodes(log,
+                zkCluster.getConnectString(),
+                Collections.singletonList(aliveZkNodePath(client)),
+                10_000);
+        }
+        finally {
+            nio.allowConnect();
+        }
+
+        assertTrue(latch.await(10, SECONDS));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testServersLeft_FailOnTimeout() throws Exception {
         startGrid(0);
 
@@ -2605,16 +2646,14 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         waitForTopology(CLIENTS + 1);
 
-        final CountDownLatch l = new CountDownLatch(CLIENTS);
+        final CountDownLatch latch = new CountDownLatch(CLIENTS);
 
         for (int i = 0; i < CLIENTS; i++) {
             Ignite node = ignite(i + 1);
 
             node.events().localListen(new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event evt) {
-                    info("Segmented!");
-
-                    l.countDown();
+                    latch.countDown();
 
                     return false;
                 }
@@ -2623,7 +2662,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         stopGrid(getTestIgniteInstanceName(0), true, false);
 
-        assertTrue(l.await(10, SECONDS));
+        assertTrue(latch.await(10, SECONDS));
 
         evts.clear();
     }

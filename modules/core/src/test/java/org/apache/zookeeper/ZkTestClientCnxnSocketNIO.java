@@ -113,7 +113,7 @@ public class ZkTestClientCnxnSocketNIO extends ClientCnxnSocketNIO {
      *
      */
     public void allowConnect() {
-        assert blockConnectLatch != null && blockConnectLatch.getCount() == 1;
+        assert blockConnectLatch != null && blockConnectLatch.getCount() == 1 : blockConnectLatch;
 
         log.info("ZkTestClientCnxnSocketNIO allowConnect [node=" + nodeName + ']');
 
