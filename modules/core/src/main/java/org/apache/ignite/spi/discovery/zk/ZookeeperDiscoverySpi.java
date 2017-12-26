@@ -79,7 +79,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     private String zkConnectionString;
 
     /** */
-    private long joinTimeout;
+    private long joinTimeout = 30_000; // TODO ZK
 
     /** */
     @GridToStringInclude

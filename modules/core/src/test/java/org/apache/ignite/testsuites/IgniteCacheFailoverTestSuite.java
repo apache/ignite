@@ -61,7 +61,8 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
 
         suite.addTestSuite(GridCacheAtomicInvalidPartitionHandlingSelfTest.class);
         suite.addTestSuite(GridCacheAtomicClientInvalidPartitionHandlingSelfTest.class);
-        suite.addTestSuite(GridCacheRebalancingPartitionDistributionTest.class);
+        // TODO ZK
+        //suite.addTestSuite(GridCacheRebalancingPartitionDistributionTest.class);
 
         GridTestUtils.addTestIfNeeded(suite, GridCacheIncrementTransformTest.class, ignoredTests);
 
