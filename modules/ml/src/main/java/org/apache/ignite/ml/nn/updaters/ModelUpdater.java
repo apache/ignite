@@ -15,33 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.optimization;
-
-import org.apache.ignite.ml.math.Vector;
+package org.apache.ignite.ml.nn.updaters;
 
 /**
- * Simple updater with fixed learning rate which doesn't guarantee convergence.
+ * A common interface for model updaters.
+ *
+ * @param <T> Type of object to be updated with this params.
  */
-public class SimpleUpdater implements Updater {
-
-    /** */
-    private static final long serialVersionUID = 6417716224818162225L;
-
-    /** */
-    private final double learningRate;
-
-    /** */
-    public SimpleUpdater(double learningRate) {
-        if (learningRate <= 0)
-            throw new IllegalArgumentException("Learning rate must be positive but got " + learningRate);
-        this.learningRate = learningRate;
-    }
-
+public interface ModelUpdater<T> {
     /**
-     * {@inheritDoc}
+     * Update given obj with this parameters.
+     *
+     * @param obj Object to be updated.
      */
-    @Override
-    public Vector compute(Vector oldWeights, Vector oldGradient, Vector weights, Vector gradient, int iteration) {
-        return weights.minus(gradient.times(learningRate));
-    }
+    <M extends T> M updateModel(M obj);
 }

@@ -28,10 +28,10 @@ import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainer;
 import org.apache.ignite.ml.nn.updaters.NesterovUpdater;
-import org.apache.ignite.ml.nn.updaters.ParameterUpdater;
+import org.apache.ignite.ml.nn.updaters.ModelUpdaterBuilder;
 import org.apache.ignite.ml.nn.updaters.RPropUpdater;
 import org.apache.ignite.ml.nn.updaters.SimpleGDUpdater;
-import org.apache.ignite.ml.nn.updaters.UpdaterParams;
+import org.apache.ignite.ml.nn.updaters.ModelUpdater;
 import org.junit.Test;
 
 /**
@@ -67,7 +67,7 @@ public class MLPLocalTrainerTest {
      * @param updaterSupplier Updater supplier.
      * @param <P> Updater parameters type.
      */
-    private <P extends UpdaterParams<? super MultilayerPerceptron>> void xorTest(IgniteSupplier<ParameterUpdater<? super MultilayerPerceptron, P>> updaterSupplier) {
+    private <P extends ModelUpdater<? super MultilayerPerceptron>> void xorTest(IgniteSupplier<ModelUpdaterBuilder<? super MultilayerPerceptron, P>> updaterSupplier) {
         Matrix xorInputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}},
             StorageConstants.ROW_STORAGE_MODE).transpose();
 

@@ -18,8 +18,6 @@
 package org.apache.ignite.yardstick.ml.regression;
 
 import java.util.Map;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.regressions.OLSMultipleLinearRegression;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.apache.ignite.yardstick.ml.DataChanger;
 
@@ -64,29 +62,29 @@ public class IgniteOLSMultipleLinearRegressionBenchmark extends IgniteAbstractBe
         final int nvars = 6;
 
         // Estimate the model
-        OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
-        mdl.newSampleData(design, nobs, nvars, new DenseLocalOnHeapMatrix());
-
-        // Check expected beta values from NIST
-        mdl.estimateRegressionParameters();
-
-        // Check expected residuals from R
-        mdl.estimateResiduals();
-
-        // Check standard errors from NIST
-        mdl.estimateRegressionParametersStandardErrors();
-
-        // Estimate model without intercept
-        mdl.setNoIntercept(true);
-        mdl.newSampleData(design, nobs, nvars, new DenseLocalOnHeapMatrix());
-
-        // Check expected beta values from R
-        mdl.estimateRegressionParameters();
-
-        // Check standard errors from R
-        mdl.estimateRegressionParametersStandardErrors();
-
-        // Check expected residuals from R
-        mdl.estimateResiduals();
+//        OLSMultipleLinearRegression mdl = new OLSMultipleLinearRegression();
+//        mdl.newSampleData(design, nobs, nvars, new DenseLocalOnHeapMatrix());
+//
+//        // Check expected beta values from NIST
+//        mdl.estimateRegressionParameters();
+//
+//        // Check expected residuals from R
+//        mdl.estimateResiduals();
+//
+//        // Check standard errors from NIST
+//        mdl.estimateRegressionParametersStandardErrors();
+//
+//        // Estimate model without intercept
+//        mdl.setNoIntercept(true);
+//        mdl.newSampleData(design, nobs, nvars, new DenseLocalOnHeapMatrix());
+//
+//        // Check expected beta values from R
+//        mdl.estimateRegressionParameters();
+//
+//        // Check standard errors from R
+//        mdl.estimateRegressionParametersStandardErrors();
+//
+//        // Check expected residuals from R
+//        mdl.estimateResiduals();
     }
 }

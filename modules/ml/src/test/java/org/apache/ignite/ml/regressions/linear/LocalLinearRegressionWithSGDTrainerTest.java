@@ -15,33 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.optimization;
+package org.apache.ignite.ml.regressions.linear;
 
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
- * Simple updater with fixed learning rate which doesn't guarantee convergence.
+ * Tests for {@link LinearRegressionWithSGDTrainer}.
  */
-public class SimpleUpdater implements Updater {
+public class LocalLinearRegressionWithSGDTrainerTest extends GenericLinearRegressionTrainerTest {
 
-    /** */
-    private static final long serialVersionUID = 6417716224818162225L;
-
-    /** */
-    private final double learningRate;
-
-    /** */
-    public SimpleUpdater(double learningRate) {
-        if (learningRate <= 0)
-            throw new IllegalArgumentException("Learning rate must be positive but got " + learningRate);
-        this.learningRate = learningRate;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Vector compute(Vector oldWeights, Vector oldGradient, Vector weights, Vector gradient, int iteration) {
-        return weights.minus(gradient.times(learningRate));
+    public LocalLinearRegressionWithSGDTrainerTest() {
+        super(
+            new LinearRegressionWithSGDTrainer(500_000, 0.5, 0, 0.001),
+            DenseLocalOnHeapMatrix::new,
+            DenseLocalOnHeapVector::new,
+            1e-1);
     }
 }

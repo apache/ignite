@@ -1,8 +1,25 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.ml.optimization;
 
-import java.util.Random;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.util.Utils;
 
 /**
  * Gradient descent optimizer.
@@ -25,9 +42,9 @@ public class GradientDescent {
     private int maxIterations = 1000;
 
     /**
-     * Flag which reflects if stochastic gradient descent will be used.
+     * Fraction of data to be used for each SGD iteration.
      */
-    private boolean stochastic = false;
+    private double miniBatchFraction = 1.0;
 
     /**
      * Convergence tolerance is condition which decides iteration termination.
@@ -59,13 +76,16 @@ public class GradientDescent {
     }
 
     /**
-     * Sets batch fraction.
+     * Set fraction of data to be used for each SGD iteration.
      *
-     * @param stochastic Flag which reflects if stochastic gradient descent will be used
+     * @param miniBatchFraction Fraction of data to be used for each SGD iteration
      * @return This gradient descent instance
      */
-    public GradientDescent withStochastic(boolean stochastic) {
-        this.stochastic = stochastic;
+    public GradientDescent withMiniBatchFraction(double miniBatchFraction) {
+        if (miniBatchFraction <= 0 || miniBatchFraction > 1.0)
+            throw new IllegalArgumentException("Fraction for mini-batch SGD must be in range (0, 1] but got "
+                + miniBatchFraction);
+        this.miniBatchFraction = miniBatchFraction;
         return this;
     }
 
@@ -104,6 +124,7 @@ public class GradientDescent {
                 weights = newWeights;
             }
         }
+        System.out.println("All iterations");
         return weights;
     }
 
@@ -133,13 +154,17 @@ public class GradientDescent {
     private Batch computeBatch(Matrix inputs, Vector groundTruth) {
         Matrix batchInputs = inputs;
         Vector batchGroundTruth = groundTruth;
-        if (stochastic && inputs.rowSize() > 0) {
-            Random random = new Random();
-            int index = random.nextInt(inputs.rowSize());
-            batchInputs = batchInputs.like(1, batchInputs.columnSize());
-            batchGroundTruth = batchGroundTruth.like(1);
-            batchInputs.assignRow(0, inputs.getRow(index));
-            batchGroundTruth.set(0, groundTruth.get(index));
+        if (inputs.rowSize() > 0 && miniBatchFraction < 1.0) {
+            int miniBatchSize = (int)(inputs.rowSize() * miniBatchFraction);
+            if (miniBatchSize == 0)
+                miniBatchSize = 1;
+            int[] indexes = Utils.selectKDistinct(inputs.rowSize(), miniBatchSize);
+            batchInputs = batchInputs.like(miniBatchSize, batchInputs.columnSize());
+            batchGroundTruth = batchGroundTruth.like(miniBatchSize);
+            for (int i = 0; i < miniBatchSize; i++) {
+                batchInputs.assignRow(i, inputs.getRow(indexes[i]));
+                batchGroundTruth.set(i, groundTruth.get(indexes[i]));
+            }
         }
         return new Batch(batchInputs, batchGroundTruth);
     }

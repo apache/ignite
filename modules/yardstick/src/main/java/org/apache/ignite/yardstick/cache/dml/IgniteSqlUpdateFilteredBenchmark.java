@@ -56,7 +56,7 @@ public class IgniteSqlUpdateFilteredBenchmark extends IgniteCacheAbstractBenchma
 
             double maxSalary = salary + 1000;
 
-            Long res = (Long)cache().query(new SqlFieldsQuery("update Person set salary = (salary - ?1 + ?2) / 2 " +
+            Long res = (Long)cache().query(new SqlFieldsQuery("updateModel Person set salary = (salary - ?1 + ?2) / 2 " +
                 "where salary >= ?1 and salary <= ?2").setArgs(salary, maxSalary)).getAll().get(0).get(0);
 
             updItemsCnt.getAndAdd(res);

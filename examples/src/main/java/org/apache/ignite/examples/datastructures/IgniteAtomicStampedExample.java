@@ -94,7 +94,7 @@ public final class IgniteAtomicStampedExample {
     }
 
     /**
-     * Performs update of on an atomic stamped variable in cache.
+     * Performs updateModel of on an atomic stamped variable in cache.
      */
     private static class StampedUpdateClosure implements IgniteRunnable {
         /** Atomic stamped variable name. */

@@ -26,7 +26,7 @@ import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
  * <p>
  * See <a href="https://paginas.fe.up.pt/~ee02162/dissertacao/RPROP%20paper.pdf">RProp</a>.</p>
  */
-public class RPropUpdaterParams implements UpdaterParams<SmoothParametrized> {
+public class RPropUpdaterParams implements ModelUpdater<SmoothParametrized> {
     /**
      * Previous iteration weights updates. In original paper they are labeled with "delta w".
      */
@@ -42,7 +42,7 @@ public class RPropUpdaterParams implements UpdaterParams<SmoothParametrized> {
     protected Vector deltas;
 
     /**
-     * Updates mask (values by which update is multiplied).
+     * Updates mask (values by which updateModel is multiplied).
      */
     protected Vector updatesMask;
 
@@ -50,7 +50,7 @@ public class RPropUpdaterParams implements UpdaterParams<SmoothParametrized> {
      * Construct RPropUpdaterParams.
      *
      * @param paramsCnt Parameters count.
-     * @param initUpdate Initial update (in original work labeled as "delta_0").
+     * @param initUpdate Initial updateModel (in original work labeled as "delta_0").
      */
     RPropUpdaterParams(int paramsCnt, double initUpdate) {
         prevIterationUpdates = new DenseLocalOnHeapVector(paramsCnt);
@@ -107,16 +107,16 @@ public class RPropUpdaterParams implements UpdaterParams<SmoothParametrized> {
     }
 
     /**
-     * Get updates mask (values by which update is multiplied).
+     * Get updates mask (values by which updateModel is multiplied).
      *
-     * @return Updates mask (values by which update is multiplied).
+     * @return Updates mask (values by which updateModel is multiplied).
      */
     public Vector updatesMask() {
         return updatesMask;
     }
 
     /**
-     * Set updates mask (values by which update is multiplied).
+     * Set updates mask (values by which updateModel is multiplied).
      *
      * @param updatesMask New updatesMask.
      */
@@ -128,7 +128,7 @@ public class RPropUpdaterParams implements UpdaterParams<SmoothParametrized> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <M extends SmoothParametrized> M update(M obj) {
+    @Override public <M extends SmoothParametrized> M updateModel(M obj) {
         Vector updatesToAdd = VectorUtils.elementWiseTimes(updatesMask.copy(), prevIterationUpdates);
         return (M)obj.setParameters(obj.parameters().plus(updatesToAdd));
     }

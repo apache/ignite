@@ -104,7 +104,7 @@ public class CacheClientBinaryPutGetExample {
             "Microsoft", // Name.
             new Address("1096 Eddy Street, San Francisco, CA", 94109), // Address.
             OrganizationType.PRIVATE, // Type.
-            new Timestamp(System.currentTimeMillis())); // Last update time.
+            new Timestamp(System.currentTimeMillis())); // Last updateModel time.
 
         // Put created data entry to cache.
         cache.put(1, org);
@@ -127,7 +127,7 @@ public class CacheClientBinaryPutGetExample {
             "Microsoft", // Name.
             new Address("1096 Eddy Street, San Francisco, CA", 94109), // Address.
             OrganizationType.PRIVATE, // Type.
-            new Timestamp(System.currentTimeMillis())); // Last update time.
+            new Timestamp(System.currentTimeMillis())); // Last updateModel time.
 
         // Put created data entry to cache.
         cache.put(1, org);
@@ -157,13 +157,13 @@ public class CacheClientBinaryPutGetExample {
             "Microsoft", // Name.
             new Address("1096 Eddy Street, San Francisco, CA", 94109), // Address.
             OrganizationType.PRIVATE, // Type.
-            new Timestamp(System.currentTimeMillis())); // Last update time.
+            new Timestamp(System.currentTimeMillis())); // Last updateModel time.
 
         Organization org2 = new Organization(
             "Red Cross", // Name.
             new Address("184 Fidler Drive, San Antonio, TX", 78205), // Address.
             OrganizationType.NON_PROFIT, // Type.
-            new Timestamp(System.currentTimeMillis())); // Last update time.
+            new Timestamp(System.currentTimeMillis())); // Last updateModel time.
 
         Map<Integer, Organization> map = new HashMap<>();
 
@@ -195,13 +195,13 @@ public class CacheClientBinaryPutGetExample {
             "Microsoft", // Name.
             new Address("1096 Eddy Street, San Francisco, CA", 94109), // Address.
             OrganizationType.PRIVATE, // Type.
-            new Timestamp(System.currentTimeMillis())); // Last update time.
+            new Timestamp(System.currentTimeMillis())); // Last updateModel time.
 
         Organization org2 = new Organization(
             "Red Cross", // Name.
             new Address("184 Fidler Drive, San Antonio, TX", 78205), // Address.
             OrganizationType.NON_PROFIT, // Type.
-            new Timestamp(System.currentTimeMillis())); // Last update time.
+            new Timestamp(System.currentTimeMillis())); // Last updateModel time.
 
         Map<Integer, Organization> map = new HashMap<>();
 

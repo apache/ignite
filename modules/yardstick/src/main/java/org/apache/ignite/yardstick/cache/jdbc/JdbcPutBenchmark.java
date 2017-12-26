@@ -59,7 +59,7 @@ public class JdbcPutBenchmark extends JdbcAbstractBenchmark {
                 break;
 
             case "MySQL":
-                stmt = conn.prepareStatement("insert into SAMPLE(id, val) values(?, ?) on duplicate key update val = ?");
+                stmt = conn.prepareStatement("insert into SAMPLE(id, val) values(?, ?) on duplicate key updateModel val = ?");
 
                 stmt.setInt(3, newVal);
 
@@ -67,7 +67,7 @@ public class JdbcPutBenchmark extends JdbcAbstractBenchmark {
 
             case "PostgreSQL":
                 stmt = conn.prepareStatement("insert into SAMPLE(id, val) values(?, ?) on conflict(id) do " +
-                    "update set val = ?");
+                    "updateModel set val = ?");
 
                 stmt.setInt(3, newVal);
 

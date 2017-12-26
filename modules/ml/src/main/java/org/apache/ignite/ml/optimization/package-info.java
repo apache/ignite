@@ -15,18 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.optimization;
-
-import java.io.Serializable;
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Vector;
-
 /**
- * Function which computes gradient of the loss function at any given point.
+ * <!-- Package description. -->
+ * Contains implementations of optimization algorithms and related classes.
  */
-@FunctionalInterface
-public interface GradientFunction extends Serializable {
-
-    /** */
-    Vector compute(Matrix inputs, Vector groundTruth, Vector point);
-}
+package org.apache.ignite.ml.optimization;

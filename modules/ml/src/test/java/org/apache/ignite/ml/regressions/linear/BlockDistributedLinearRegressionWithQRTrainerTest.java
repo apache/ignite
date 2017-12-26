@@ -15,18 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.optimization;
+package org.apache.ignite.ml.regressions.linear;
 
-import java.io.Serializable;
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
+import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
 
-/**
- * Function which computes gradient of the loss function at any given point.
- */
-@FunctionalInterface
-public interface GradientFunction extends Serializable {
+public class BlockDistributedLinearRegressionWithQRTrainerTest extends GridAwareAbstractLinearRegressionTrainerTest {
 
-    /** */
-    Vector compute(Matrix inputs, Vector groundTruth, Vector point);
+    public BlockDistributedLinearRegressionWithQRTrainerTest() {
+        super(
+            new LinearRegressionWithQRTrainer(),
+            SparseBlockDistributedMatrix::new,
+            SparseBlockDistributedVector::new,
+            1e-6
+        );
+    }
 }

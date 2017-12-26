@@ -29,9 +29,9 @@ import org.apache.ignite.ml.math.util.MatrixUtil;
  * <p>
  * See <a href="https://paginas.fe.up.pt/~ee02162/dissertacao/RPROP%20paper.pdf">RProp</a>.</p>
  */
-public class RPropUpdater implements ParameterUpdater<SmoothParametrized, RPropUpdaterParams> {
+public class RPropUpdater implements ModelUpdaterBuilder<SmoothParametrized, RPropUpdaterParams> {
     /**
-     * Default initial update.
+     * Default initial updateModel.
      */
     private static double DFLT_INIT_UPDATE = 0.1;
 
@@ -46,7 +46,7 @@ public class RPropUpdater implements ParameterUpdater<SmoothParametrized, RPropU
     private static double DFLT_DEACCELERATION_RATE = 0.5;
 
     /**
-     * Initial update.
+     * Initial updateModel.
      */
     private final double initUpdate;
 
@@ -61,12 +61,12 @@ public class RPropUpdater implements ParameterUpdater<SmoothParametrized, RPropU
     private final double deaccelerationRate;
 
     /**
-     * Maximal value for update.
+     * Maximal value for updateModel.
      */
     private final static double UPDATE_MAX = 50.0;
 
     /**
-     * Minimal value for update.
+     * Minimal value for updateModel.
      */
     private final static double UPDATE_MIN = 1E-6;
 
@@ -78,7 +78,7 @@ public class RPropUpdater implements ParameterUpdater<SmoothParametrized, RPropU
     /**
      * Construct RPropUpdater.
      *
-     * @param initUpdate Initial update.
+     * @param initUpdate Initial updateModel.
      * @param accelerationRate Acceleration rate.
      * @param deaccelerationRate Deacceleration rate.
      */
@@ -103,7 +103,7 @@ public class RPropUpdater implements ParameterUpdater<SmoothParametrized, RPropU
     }
 
     /** {@inheritDoc} */
-    @Override public RPropUpdaterParams updateParams(SmoothParametrized mdl, RPropUpdaterParams updaterParams,
+    @Override public RPropUpdaterParams buildModelUpdater(SmoothParametrized mdl, RPropUpdaterParams updaterParams,
         int iteration, Matrix inputs, Matrix groundTruth) {
         Vector gradient = mdl.differentiateByParameters(loss, inputs, groundTruth);
         Vector prevGradient = updaterParams.prevIterationGradient();

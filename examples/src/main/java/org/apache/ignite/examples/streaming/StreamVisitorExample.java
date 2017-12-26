@@ -86,7 +86,7 @@ public class StreamVisitorExample {
                     final String instTypeName = Instrument.class.getName();
 
                     // Note that we receive market data, but do not populate 'mktCache' (it remains empty).
-                    // Instead we update the instruments in the 'instCache'.
+                    // Instead we updateModel the instruments in the 'instCache'.
                     // Since both, 'instCache' and 'mktCache' use the same key, updates are collocated.
                     mktStmr.receiver(new StreamVisitor<String, Double>() {
                         @Override public void apply(IgniteCache<String, Double> cache, Map.Entry<String, Double> e) {
@@ -111,7 +111,7 @@ public class StreamVisitorExample {
                             else
                                 instBuilder = inst.toBuilder();
 
-                            // Instrument.update() logic.
+                            // Instrument.updateModel() logic.
                             Double open = instBuilder.<Double>getField("open");
 
                             if (open == null || open == 0)
