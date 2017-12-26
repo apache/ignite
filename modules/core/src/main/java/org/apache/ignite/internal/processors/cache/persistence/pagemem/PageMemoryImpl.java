@@ -124,7 +124,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** Invalid relative pointer value. */
     private static final long INVALID_REL_PTR = RELATIVE_PTR_MASK;
 
-    /** */
+    /** Pointer which means that this page is outdated (for example, cache was destroyed, partition eviction'd happened */
     private static final long OUTDATED_REL_PTR = INVALID_REL_PTR + 1;
 
     /** Address mask to avoid ABA problem. */
