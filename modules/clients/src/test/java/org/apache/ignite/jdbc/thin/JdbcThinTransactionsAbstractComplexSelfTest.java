@@ -17,6 +17,7 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -226,6 +227,83 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
             l(6, "John", "Dock", 2, 2),
             l(7, "Mary", "Lee", 1, 3)
         ), execute("SELECT * FROM \"Person\".Person where id >= 5 order by id"));
+    }
+
+    /**
+     *
+     */
+    public void testBatchDmlStatements() throws SQLException {
+        doBatchedInsert();
+
+        assertEquals(l(
+            l(6, "John", "Doe", 2, 2),
+            l(7, "Mary", "Lee", 1, 3)
+        ), execute("SELECT * FROM \"Person\".Person where id > 5 order by id"));
+    }
+
+    /**
+     *
+     */
+    public void testBatchDmlStatementsIntermediateFailure() throws SQLException {
+        insertPerson(6, "John", "Doe", 2, 2);
+
+        IgniteException e = (IgniteException)GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                doBatchedInsert();
+
+                return null;
+            }
+        }, IgniteException.class, "Duplicate key during INSERT [key=6]");
+
+        assertTrue(e.getCause() instanceof BatchUpdateException);
+
+        assertTrue(e.getCause().getMessage().contains("Duplicate key during INSERT [key=6]"));
+
+        // First we insert id 7, then 6. Still, 7 is not in the cache as long as the while batch has failed inside tx.
+        assertEquals(Collections.emptyList(), execute("SELECT * FROM \"Person\".Person where id > 6 order by id"));
+    }
+
+    /**
+     *
+     */
+    private void doBatchedInsert() throws SQLException {
+        executeInTransaction(new TransactionClosure() {
+            @Override public void apply(Connection conn) {
+                try {
+                    try (PreparedStatement ps = conn.prepareStatement("INSERT INTO \"Person\".person " +
+                        "(id, firstName, lastName, cityId, companyId) values (?, ?, ?, ?, ?)")) {
+                        ps.setInt(1, 7);
+
+                        ps.setString(2, "Mary");
+
+                        ps.setString(3, "Lee");
+
+                        ps.setInt(4, 1);
+
+                        ps.setInt(5, 3);
+
+                        ps.addBatch();
+
+                        ps.setInt(1, 6);
+
+                        ps.setString(2, "John");
+
+                        ps.setString(3, "Doe");
+
+                        ps.setInt(4, 2);
+
+                        ps.setInt(5, 2);
+
+                        ps.addBatch();
+
+                        ps.executeBatch();
+                    }
+                }
+                catch (SQLException e) {
+                    throw new IgniteException(e);
+                }
+            }
+        });
     }
 
     /**
