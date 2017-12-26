@@ -28,6 +28,7 @@
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/message.h"
 #include "ignite/odbc/config/configuration.h"
+#include "ignite/odbc/ssl/ssl_mode.h"
 #include "ignite/odbc/ssl/secure_socket_client.h"
 #include "ignite/odbc/system/tcp_socket_client.h"
 
@@ -119,6 +120,8 @@ namespace ignite
 
         SqlResult::Type Connection::InternalEstablish(const config::Configuration cfg)
         {
+            using ssl::SslMode;
+
             config = cfg;
 
             if (socket.get() != 0)
@@ -128,7 +131,9 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
-            if (cfg.GetSslMode() != "disable")
+            SslMode::T sslMode = SslMode::FromString(cfg.GetSslMode(), SslMode::DISABLE);
+
+            if (sslMode != SslMode::DISABLE)
                 socket.reset(new ssl::SecureSocketClient(cfg.GetSslCertFile(), cfg.GetSslKeyFile(), cfg.GetSslCaFile()));
             else
                 socket.reset(new system::TcpSocketClient());
