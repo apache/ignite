@@ -136,6 +136,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private static final MvccVersion ISOLATED_STREAMER_MVCC_VER =
         new MvccVersionWithoutTxs(1L, MvccProcessor.MVCC_START_CNTR, 0L);
 
+    /** Version which is less then any version generated on coordinator (for remove). */
+    private static final MvccVersion ISOLATED_STREAMER_MVCC_VER_RMV =
+        new MvccVersionWithoutTxs(MvccProcessor.createVersionForRemovedValue(1L), MvccProcessor.MVCC_START_CNTR, 0L);
+
     /** Cache receiver. */
     private StreamReceiver<K, V> rcvr = ISOLATED_UPDATER;
 
@@ -2102,9 +2106,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                     boolean primary = cctx.affinity().primaryByKey(cctx.localNode(), entry.key(), topVer);
 
+                    MvccVersion mvccVer = e.getValue() == null ?
+                        ISOLATED_STREAMER_MVCC_VER_RMV : ISOLATED_STREAMER_MVCC_VER;
+
                     entry.initialValue(e.getValue(),
                         ver,
-                        ISOLATED_STREAMER_MVCC_VER,
+                        mvccVer,
                         ttl,
                         expiryTime,
                         false,
