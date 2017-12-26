@@ -984,16 +984,15 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     }
 
     /**
-     * Sets size of events history. Specified size should be greater than or equal to default size
-     * {@link #DFLT_EVT_HISTORY_SIZE}.
+     * Sets size of events history. Specified size should be greater than 0.
      *
      * @param evtHistSize Size of events history.
      * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
     public TcpDiscoverySpi setEvtHistorySize(int evtHistSize) {
-        if (evtHistSize < DFLT_EVT_HISTORY_SIZE) {
-            U.warn(log, "Events history size should be greater than or equal to default size. " +
+        if (evtHistSize < 0) {
+            U.warn(log, "Events history size should be greater than 0. " +
                 "Specified size will not be set [curSize=" + this.evtHistSize + ", specifiedSize=" + evtHistSize +
                 ", defaultSize=" + DFLT_EVT_HISTORY_SIZE + ']');
 
