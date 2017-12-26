@@ -546,7 +546,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 case CACHE_REMOVE_ALL: {
                     Map<Object, Object> map = req0.values();
 
-                    // HashSet wrapping for correct serialization
+                    // HashSet wrapping for correct serializationclear
                     Set<Object> keys = map == null ? null : new HashSet<>(map.keySet());
 
                     fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
@@ -560,7 +560,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
                     // HashSet wrapping for correct serialization
                     Set<Object> cacheNames = map == null ?
-                        new HashSet<Object>(ctx.cache().publicCaches()) : new HashSet<>(map.keySet());
+                        new HashSet<Object>(ctx.cache().publicCacheNames()) : new HashSet<>(map.keySet());
 
                     GridCompoundFuture compFut = new GridCompoundFuture();
 
