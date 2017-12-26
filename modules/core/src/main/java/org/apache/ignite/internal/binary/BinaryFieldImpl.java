@@ -105,9 +105,6 @@ public class BinaryFieldImpl implements BinaryFieldEx {
     @Override public <T> T value(BinaryObject obj) {
         BinaryObjectExImpl obj0 = (BinaryObjectExImpl)obj;
 
-        if (obj0.schemaId() == 0)
-            return null;
-
         int order = fieldOrder(obj0);
 
         return order != BinarySchema.ORDER_NOT_FOUND ? (T)obj0.fieldByOrder(order) : null;
@@ -282,6 +279,9 @@ public class BinaryFieldImpl implements BinaryFieldEx {
         }
 
         int schemaId = obj.schemaId();
+
+        if (schemaId == 0)
+            return BinarySchema.ORDER_NOT_FOUND;
 
         BinarySchema schema = schemas.schema(schemaId);
 

@@ -692,13 +692,14 @@ public class QueryEntity implements Serializable {
             F.eq(aliases, entity.aliases) &&
             F.eqNotOrdered(idxs, entity.idxs) &&
             F.eq(tableName, entity.tableName) &&
-            F.eq(_notNullFields, entity._notNullFields);
+            F.eq(_notNullFields, entity._notNullFields) &&
+            F.eq(fieldsDefaultValues, entity.fieldsDefaultValues);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(keyType, valType, keyFieldName, valueFieldName, fields, keyFields, aliases, idxs,
-            tableName, _notNullFields);
+            tableName, _notNullFields, fieldsDefaultValues);
     }
 
     /** {@inheritDoc} */
