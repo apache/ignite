@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.ServiceProcess;
@@ -56,6 +57,8 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestStopFromJava()
         {
+            var startTime = DateTime.Now.AddSeconds(-1);
+
             var exePath = typeof(IgniteRunner).Assembly.Location;
             var springPath = Path.GetFullPath(@"config\compute\compute-grid1.xml");
 
@@ -71,14 +74,14 @@ namespace Apache.Ignite.Core.Tests
             var service = GetIgniteService();
             Assert.IsNotNull(service);
 
+            service.Start();  // see IGNITE_HOME\work\log for service instance logs
+            WaitForStatus(service, startTime, ServiceControllerStatus.Running);
+
             using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = springPath
             }))
             {
-                service.Start();  // see IGNITE_HOME\work\log for service instance logs
-                service.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
-
                 Assert.IsTrue(ignite.WaitTopology(2), "Failed to join with service node");
 
                 // Stop remote node via Java task
@@ -89,8 +92,33 @@ namespace Apache.Ignite.Core.Tests
 
                 Assert.IsTrue(ignite.WaitTopology(1), "Failed to stop remote node");
 
-                // Check that service has stopped
-                service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
+                // Check that service has stopped.
+                WaitForStatus(service, startTime, ServiceControllerStatus.Stopped);
+            }
+        }
+
+        /// <summary>
+        /// Waits for service status.
+        /// </summary>
+        private static void WaitForStatus(ServiceController service, DateTime startTime,
+            ServiceControllerStatus status)
+        {
+            try
+            {
+                service.WaitForStatus(status, TimeSpan.FromSeconds(30));
+            }
+            catch (Exception ex)
+            {
+                // Check Windows log for more details.
+                var log = EventLog.GetEventLogs().Single(x => x.Log == "Application");
+                var entries = log.Entries;
+                var recentEntries = Enumerable.Range(0, entries.Count)
+                    .Select(x => entries[x])
+                    .Where(x => x.TimeGenerated >= startTime)
+                    .Select(x => x.Message);
+                var msg = string.Join("\n===\n", recentEntries);
+
+                throw new Exception("Failed to start service. Event entries:\n" + msg, ex);
             }
         }
 
