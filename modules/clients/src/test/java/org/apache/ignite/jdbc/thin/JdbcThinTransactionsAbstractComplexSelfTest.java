@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -34,9 +36,12 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 
 /**
@@ -45,6 +50,9 @@ import org.apache.ignite.lang.IgniteInClosure;
 public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcThinAbstractSelfTest {
     /** Client node index. */
     final static int CLI_IDX = 1;
+
+    /** Total number of nodes. */
+    final static int NODES_CNT = 4;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String testIgniteInstanceName) throws Exception {
@@ -79,13 +87,16 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
         execute("ALTER TABLE \"Person\".person add if not exists companyid int");
 
         execute("CREATE TABLE City (id int primary key, name varchar, population int) WITH " +
-            "\"atomicity=transactional,template=partitioned,cache_name=City\"");
+            "\"atomicity=transactional,template=partitioned,backups=3,cache_name=City\"");
 
         execute("CREATE TABLE Company (id int, \"cityid\" int, name varchar, primary key (id, \"cityid\")) WITH " +
             "\"atomicity=transactional,template=partitioned,backups=1,wrap_value=false,affinity_key=cityid," +
             "cache_name=Company\"");
 
-        execute("CREATE INDEX IF NOT EXISTS pidx ON \"Person\".person(cityid)");
+        execute("CREATE TABLE Product (id int primary key, name varchar, companyid int) WITH " +
+            "\"atomicity=transactional,template=partitioned,backups=2,cache_name=Product\"");
+
+        execute("CREATE INDEX IF NOT EXISTS pidx ON Product(companyid)");
 
         insertPerson(1, "John", "Smith", 1, 1);
 
@@ -103,7 +114,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
 
         insertCity(3, "New York", 12000);
 
-        insertCity(4, "Palo Alto", 400);
+        insertCity(4, "Cupertino", 400);
 
         insertCompany(1, "Microsoft", 2);
 
@@ -114,6 +125,12 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
         insertCompany(4, "Uber", 1);
 
         insertCompany(5, "Apple", 4);
+
+        insertProduct(1, "Search", 2);
+
+        insertProduct(2, "Windows", 1);
+
+        insertProduct(3, "Mac", 5);
     }
 
     /** {@inheritDoc} */
@@ -189,10 +206,57 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
             }
         });
 
-
         assertEquals(l(l(5, "St Petersburg", 6000, 6, 5, "VK", 6, "Peter", "Sergeev", 5, 6)),
             execute("SELECT * FROM City left join Company on City.id = Company.\"cityid\" " +
-                "left join \"Person\".Person p on City.id = p.cityid WHERE p.id = 6"));
+                "left join \"Person\".Person p on City.id = p.cityid WHERE p.id = 6 or company.id = 6"));
+    }
+
+    /**
+     *
+     */
+    public void testColocatedJoinSelectAndInsertInTransaction() throws SQLException {
+        // We'd like to put some Google into cities with over 1K population which don't have it yet
+        executeInTransaction(new TransactionClosure() {
+            @Override public void apply(Connection conn) {
+                List<Integer> ids = flat(execute(conn, "SELECT distinct City.id from City left join Company c on " +
+                    "City.id = c.\"cityid\" where population >= 1000 and c.name <> 'Google' order by City.id"));
+
+                assertEqualsCollections(l(1, 2), ids);
+
+                int i = 5;
+
+                for (int l : ids)
+                    insertCompany(conn, ++i, "Google", l);
+            }
+        });
+
+        assertEqualsCollections(l("Los Angeles", "Seattle", "New York"), flat(execute("SELECT City.name from City " +
+            "left join Company c on city.id = c.\"cityid\" WHERE c.name = 'Google' order by City.id")));
+    }
+
+    /**
+     *
+     */
+    public void testDistributedJoinSelectAndInsertInTransaction() throws SQLException {
+        try (Connection c = connect("distributedJoins=true")) {
+            // We'd like to put some Google into cities with over 1K population which don't have it yet
+            executeInTransaction(c, new TransactionClosure() {
+                @Override public void apply(Connection conn) {
+                    List<?> res = flat(execute(conn, "SELECT p.id,p.name,c.id from Company c left join Product p on " +
+                        "c.id = p.companyid left join City on city.id = c.\"cityid\" WHERE c.name <> 'Microsoft' " +
+                        "and population < 1000"));
+
+                    assertEqualsCollections(l(3, "Mac", 5), res);
+
+                    insertProduct(conn, 4, (String)res.get(1), 1);
+                }
+            });
+        }
+
+        try (Connection c = connect("distributedJoins=true")) {
+            assertEqualsCollections(l("Windows", "Mac"), flat(execute(c, "SELECT p.name from Company c left join " +
+                "Product p on c.id = p.companyid WHERE c.name = 'Microsoft' order by p.id")));
+        }
     }
 
     /**
@@ -202,11 +266,83 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
         fail("https://issues.apache.org/jira/browse/IGNITE-7300");
 
         executeInTransaction(new TransactionClosure() {
-            @Override public void apply(Connection connection) {
-                execute(connection, "insert into city (id, name, population) values (? + 1, ?, ?)",
+            @Override public void apply(Connection conn) {
+                execute(conn, "insert into city (id, name, population) values (? + 1, ?, ?)",
                     8, "Moscow", 15000);
             }
         });
+    }
+
+    /**
+     *
+     */
+    public void testAutoRollback() throws SQLException {
+        try (Connection c = connect()) {
+            begin(c);
+
+            insertPerson(c, 6, "John", "Doe", 2, 2);
+        }
+
+        // Connection has not hung on close and update has not been applied.
+        assertNull(personCache().get(6));
+    }
+
+    public void testRepeatableRead() throws Exception {
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        final CountDownLatch initLatch = new CountDownLatch(1);
+
+        IgniteInternalFuture<?> transFut = multithreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                executeInTransaction(new TransactionClosure() {
+                    @Override public void apply(Connection conn) {
+                        List<?> before = flat(execute(conn, "SELECT * from \"Person\".Person where id = 1"));
+
+                        assertEqualsCollections(l(1, "John", "Smith", 1, 1), before);
+
+                        initLatch.countDown();
+
+                        try {
+                            U.await(latch);
+                        }
+                        catch (IgniteInterruptedCheckedException e) {
+                            throw new RuntimeException(e);
+                        }
+
+                        List<?> after = flat(execute(conn, "SELECT * from \"Person\".Person where id = 1"));
+
+                        assertEqualsCollections(before, after);
+                    }
+                });
+
+                return null;
+            }
+        }, 1);
+
+        IgniteInternalFuture<?> conModFut = multithreadedAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                executeInTransaction(new TransactionClosure() {
+                    @Override public void apply(Connection conn) {
+                        try {
+                            U.await(initLatch);
+                        }
+                        catch (IgniteInterruptedCheckedException e) {
+                            throw new RuntimeException(e);
+                        }
+
+                        execute(conn, "DELETE FROM \"Person\".Person where id = 1");
+
+                        latch.countDown();
+                    }
+                });
+
+                return null;
+            }
+        }, 1);
+
+        conModFut.get();
+
+        transFut.get();
     }
 
     /**
@@ -431,8 +567,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
 
     private void insertCompany(final int id, final String name, final int cityId) throws SQLException {
         executeInTransaction(new TransactionClosure() {
-            @Override
-            public void apply(Connection conn) {
+            @Override public void apply(Connection conn) {
                 insertCompany(conn, id, name, cityId);
             }
         });
@@ -440,6 +575,18 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
 
     private void insertCompany(Connection c, int id, String name, int cityId) {
         execute(c, "INSERT INTO company (id, name, \"cityid\") values (?, ?, ?)", id, name, cityId);
+    }
+
+    private void insertProduct(final int id, final String name, final int companyId) throws SQLException {
+        executeInTransaction(new TransactionClosure() {
+            @Override public void apply(Connection conn) {
+                insertProduct(conn, id, name, companyId);
+            }
+        });
+    }
+
+    private void insertProduct(Connection c, int id, String name, int companyId) {
+        execute(c, "INSERT INTO product (id, name, companyid) values (?, ?, ?)", id, name, companyId);
     }
 
     /**
@@ -471,5 +618,15 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      */
     private static List<?> l(Object... args) {
         return F.asList(args);
+    }
+
+    /**
+     * Flatten rows.
+     * @param rows Rows.
+     * @return Rows as a single list.
+     */
+    @SuppressWarnings("unchecked")
+    private static <T> List<T> flat(Collection<? extends Collection<?>> rows) {
+        return new ArrayList<>(F.flatCollections((Collection<? extends Collection<T>>)rows));
     }
 }

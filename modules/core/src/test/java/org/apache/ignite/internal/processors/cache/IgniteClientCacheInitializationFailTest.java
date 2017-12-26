@@ -230,6 +230,11 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
      */
     private static class FailedIndexing implements GridQueryIndexing {
         /** {@inheritDoc} */
+        @Override public void onClientDisconnect() throws IgniteCheckedException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
         @Override public void start(GridKernalContext ctx, GridSpinBusyLock busyLock) throws IgniteCheckedException {
             // No-op
         }

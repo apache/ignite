@@ -154,7 +154,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         log = ctx.log(getClass());
 
         if (ctx.grid().configuration().isMvccEnabled())
-            worker = new JdbcRequestHandlerWorker(ctx.igniteInstanceName(), log, this);
+            worker = new JdbcRequestHandlerWorker(ctx.igniteInstanceName(), log, this, ctx);
         else
             worker = null;
     }
@@ -282,13 +282,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             try
             {
-                try {
-                    ctx.query().getIndexing().onClientDisconnect();
-                }
-                catch (IgniteCheckedException e) {
-                    // No-op.
-                }
-
                 for (JdbcQueryCursor cursor : qryCursors.values())
                     cursor.close();
             }
