@@ -54,13 +54,10 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /** Client node index. */
     final static int CLI_IDX = 1;
 
-    /** Total number of nodes. */
-    final static int NODES_CNT = 4;
-
     /**
      * Closure to perform ordinary delete after repeatable read.
      */
-    private final IgniteInClosure<Connection> afterReadDelete = new IgniteInClosure<Connection>() {
+    private final IgniteInClosure<Connection> afterReadDel = new IgniteInClosure<Connection>() {
         @Override public void apply(Connection conn) {
             execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
         }
@@ -69,7 +66,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      * Closure to perform fast delete after repeatable read.
      */
-    private final IgniteInClosure<Connection> afterReadFastDelete = new IgniteInClosure<Connection>() {
+    private final IgniteInClosure<Connection> afterReadFastDel = new IgniteInClosure<Connection>() {
         @Override public void apply(Connection conn) {
             execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
         }
@@ -369,7 +366,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
             @Override public void apply(Connection conn) {
                 execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
             }
-        }, afterReadDelete);
+        }, afterReadDel);
     }
 
     /**
@@ -380,7 +377,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
             @Override public void apply(Connection conn) {
                 execute(conn, "DELETE FROM \"Person\".Person where id = 1");
             }
-        }, afterReadDelete);
+        }, afterReadDel);
     }
 
     /**
@@ -391,7 +388,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
             @Override public void apply(Connection conn) {
                 personCache().remove(1);
             }
-        }, afterReadDelete);
+        }, afterReadDel);
     }
 
     /**
@@ -402,7 +399,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
             @Override public void apply(Connection conn) {
                 execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
             }
-        }, afterReadFastDelete);
+        }, afterReadFastDel);
     }
 
     /**
@@ -413,7 +410,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
             @Override public void apply(Connection conn) {
                 execute(conn, "DELETE FROM \"Person\".Person where id = 1");
             }
-        }, afterReadFastDelete);
+        }, afterReadFastDel);
     }
 
     /**
@@ -424,7 +421,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
             @Override public void apply(Connection conn) {
                 personCache().remove(1);
             }
-        }, afterReadFastDelete);
+        }, afterReadFastDel);
     }
 
     /** */
@@ -553,7 +550,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
         conModFut.get();
 
         if (afterReadClo != null) {
-            IgniteCheckedException ex = (IgniteCheckedException)GridTestUtils.assertThrows(null, new Callable<Object>() {
+            IgniteCheckedException ex = (IgniteCheckedException)GridTestUtils.assertThrows(null, new Callable() {
                 @Override public Object call() throws Exception {
                     readFut.get();
 
@@ -615,16 +612,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
             execute(c, "COMMIT");
         else
             c.commit();
-    }
-
-    /**
-     * @param c Connection to rollback a transaction on.
-     */
-    private void rollback(Connection c) throws SQLException {
-        if (autoCommit())
-            execute(c, "ROLLBACK");
-        else
-            c.rollback();
     }
 
     /**
@@ -761,7 +748,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      * @param lastName Second name.
      * @param cityId City id.
      * @param companyId Company id.
-     * @throws SQLException
+     * @throws SQLException if failed.
      */
     private void insertPerson(final int id, final String firstName, final String lastName, final int cityId,
         final int companyId) throws SQLException {
@@ -772,11 +759,25 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
         });
     }
 
+    /**
+     * @param c Connection.
+     * @param id New person's id.
+     * @param firstName First name.
+     * @param lastName Second name.
+     * @param cityId City id.
+     * @param companyId Company id.
+     */
     private void insertPerson(Connection c, int id, String firstName, String lastName, int cityId, int companyId) {
         execute(c, "INSERT INTO \"Person\".person (id, firstName, lastName, cityId, companyId) values (?, ?, ?, ?, ?)",
             id, firstName, lastName, cityId, companyId);
     }
 
+    /**
+     * @param id New city's id.
+     * @param name City name.
+     * @param population Number of people.
+     * @throws SQLException if failed.
+     */
     private void insertCity(final int id, final String name, final int population) throws SQLException {
         executeInTransaction(new TransactionClosure() {
             @Override public void apply(Connection conn) {
@@ -785,10 +786,22 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
         });
     }
 
+    /**
+     * @param c Connection.
+     * @param id New city's id.
+     * @param name City name.
+     * @param population Number of people.
+     */
     private void insertCity(Connection c, int id, String name, int population) {
         execute(c, "INSERT INTO city (id, name, population) values (?, ?, ?)", id, name, population);
     }
 
+    /**
+     * @param id New company's id.
+     * @param name Company name.
+     * @param cityId City id.
+     * @throws SQLException if failed.
+     */
     private void insertCompany(final int id, final String name, final int cityId) throws SQLException {
         executeInTransaction(new TransactionClosure() {
             @Override public void apply(Connection conn) {
@@ -797,10 +810,22 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
         });
     }
 
+    /**
+     * @param c Connection.
+     * @param id New company's id.
+     * @param name Company name.
+     * @param cityId City id.
+     */
     private void insertCompany(Connection c, int id, String name, int cityId) {
         execute(c, "INSERT INTO company (id, name, \"cityid\") values (?, ?, ?)", id, name, cityId);
     }
 
+    /**
+     * @param id New product's id.
+     * @param name Product name.
+     * @param companyId Company id..
+     * @throws SQLException if failed.
+     */
     private void insertProduct(final int id, final String name, final int companyId) throws SQLException {
         executeInTransaction(new TransactionClosure() {
             @Override public void apply(Connection conn) {
@@ -809,6 +834,12 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
         });
     }
 
+    /**
+     * @param c Connection.
+     * @param id New product's id.
+     * @param name Product name.
+     * @param companyId Company id..
+     */
     private void insertProduct(Connection c, int id, String name, int companyId) {
         execute(c, "INSERT INTO product (id, name, companyid) values (?, ?, ?)", id, name, companyId);
     }
