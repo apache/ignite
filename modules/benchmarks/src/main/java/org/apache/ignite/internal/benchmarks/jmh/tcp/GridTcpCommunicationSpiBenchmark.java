@@ -1,11 +1,27 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.benchmarks.jmh.tcp;
 
 import java.text.DecimalFormat;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -19,7 +35,9 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.benchmarks.jmh.cache.JmhCacheAbstractBenchmark;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.messaging.MessagingListenActor;
+import org.openjdk.jmh.annotations.AuxCounters;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Level;
@@ -29,6 +47,7 @@ import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.results.BenchmarkResult;
 import org.openjdk.jmh.results.RunResult;
@@ -37,172 +56,190 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 /**
- *
+ * Tests for SPI compression and SSL.
  */
-@Warmup(iterations = 20)
+@Warmup(iterations = 15)
 @Measurement(iterations = 20)
 @Fork(1)
+@Threads(1)
 public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark {
-    /** Number threads per node. */
-    static final int THREADS_PER_NODE = 1;
+    /** */
+    static Ignite snd = null;
 
     /** */
-    static Ignite from;
+    static Ignite receiver = null;
 
     /** */
-    static Ignite to;
-
-    /** */
-    @State(Scope.Thread)
-    public static class IoSendReceiveBaselineState {
-        final IgniteMessaging messaging;
-
-        final Object msg;
-
-        final AtomicReference<CountDownLatch> latch = new AtomicReference<>();
-
-        /** */
-        public IoSendReceiveBaselineState() {
-            messaging = from.message(from.cluster().forNodeId(to.cluster().localNode().id()));
-
-            msg = new Object();
-            //msg = String.valueOf(System.nanoTime());
-
-            to.message().localListen(null, new MessagingListenActor<Object>() {
-                @Override protected void receive(UUID nodeId, Object rcvMsg) throws Throwable {
-                    latch.get().countDown();
-                }
-            });
-        }
-    }
-
-    /**
-     * Test IgniteCache.lock() with fixed key and no-op inside.
-     */
-    @Benchmark
-    public void sendAndReceiveBaseline(final IoSendReceiveBaselineState state) {
-        state.latch.set(new CountDownLatch(1));
-
-        state.messaging.send(null, state.msg);
-        try {
-            state.latch.get().await();
-        }
-        catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /** */
-    @State(Scope.Benchmark)
-    public static class IoSendReceiveSizeState {
-        final IgniteMessaging messaging;
-
-        byte[] msg;
-
-        final AtomicReference<CountDownLatch> latch = new AtomicReference<>();
-
-        @Param({"1000", "10000", "100000" ,"1000000"})
-        int size = 1024*1024;
-
-        /** */
-        public IoSendReceiveSizeState() {
-            messaging = from.message(from.cluster().forNodeId(to.cluster().localNode().id()));
-
-            to.message().localListen(null, new MessagingListenActor<byte[]>() {
-                @Override protected void receive(UUID nodeId, byte[] rcvMsg) throws Throwable {
-                    latch.get().countDown();
-                }
-            });
-        }
-
-        @Setup(Level.Trial)
-        public void setup() {
-            msg = new byte[size];
-            Random random = new Random();
-            random.nextBytes(msg);
-        }
-    }
-
-    /**
-     * Test IgniteCache.lock() with fixed key and no-op inside.
-     */
-    @Benchmark
-    public void sendAndReceiveSize(final IoSendReceiveSizeState state) {
-        state.latch.set(new CountDownLatch(1));
-
-        state.messaging.send(null, state.msg);
-        try {
-            state.latch.get().await();
-        }
-        catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /** */
-    @State(Scope.Benchmark)
-    public static class IoSendReceiveSizeNiceState {
-        final IgniteMessaging messaging;
-
-        byte[] msg;
-
-        final AtomicReference<CountDownLatch> latch = new AtomicReference<>();
-
-        @Param({"1000", "10000", "100000" ,"1000000"})
-        int size = 1024*1024;
-
-        /** */
-        public IoSendReceiveSizeNiceState() {
-            messaging = from.message(from.cluster().forNodeId(to.cluster().localNode().id()));
-
-            to.message().localListen(null, new MessagingListenActor<byte[]>() {
-                @Override protected void receive(UUID nodeId, byte[] rcvMsg) throws Throwable {
-                    latch.get().countDown();
-                }
-            });
-        }
-
-        @Setup(Level.Trial)
-        public void setup() {
-            msg = new byte[size];
-        }
-    }
-
-    /**
-     * Test IgniteCache.lock() with fixed key and no-op inside.
-     */
-    @Benchmark
-    public void sendAndReceiveSizeNice(final IoSendReceiveSizeNiceState state) {
-        state.latch.set(new CountDownLatch(1));
-
-        state.messaging.send(null, state.msg);
-        try {
-            state.latch.get().await();
-        }
-        catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-
     @Param({"false", "true"})
     boolean isCompress = false;
 
-    @Override protected boolean isCompress(){
+    /** */
+    @Param({"false", "true"})
+    boolean isSsl = false;
+
+    /** {@inheritDoc} */
+    @Override protected final boolean isCompress() {
         return isCompress;
     }
 
+    /** {@inheritDoc} */
+    @Override protected final boolean isSsl() {
+        return isSsl;
+    }
+
+    /** */
+    @State(Scope.Benchmark)
+    public static class IoSendReceiveBaselineState extends IoState {
+        /** */
+        public IoSendReceiveBaselineState() {
+            super();
+
+            msg = new Object();
+        }
+    }
+
+    /**
+     * Send and receive the least message without statistic.
+     */
+    @Benchmark
+    public final void sendAndReceiveBaseline(IoSendReceiveBaselineState state) {
+        state.latch.set(new CountDownLatch(1));
+
+        state.messaging.send(null, state.msg);
+
+        try {
+            state.latch.get().await();
+        }
+        catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Send and receive the least message.
+     */
+    @Benchmark
+    public final void sendAndReceiveStatBaseline(IoSendReceiveBaselineState state, EventCounters counters) {
+        sendAndReceive(state, counters);
+    }
+
+    public static class IoState {
+        /** */
+        final IgniteMessaging messaging;
+
+        /** */
+        Object msg = null;
+
+        /** */
+        final AtomicReference<CountDownLatch> latch = new AtomicReference<>();
+
+        public IoState() {
+            messaging = snd.message(snd.cluster().forNodeId(receiver.cluster().localNode().id()));
+
+            receiver.message().localListen(null, new MessagingListenActor<byte[]>() {
+                @Override protected void receive(UUID nodeId, byte[] rcvMsg) throws Throwable {
+                    latch.get().countDown();
+                }
+            });
+        }
+    }
+
+    /** */
+    @State(Scope.Benchmark)
+    public static class IoSendReceiveSizeState extends IoState {
+        /** */
+        @Param({"1000", "10000", "100000", "1000000"})
+        int size = 1000;
+
+        /** */
+        public IoSendReceiveSizeState() {
+            super();
+        }
+
+        /** */
+        @Setup(Level.Trial)
+        public final void setup() {
+            byte[] bytes = new byte[size];
+
+            new Random(31415L).nextBytes(bytes);
+
+            msg = bytes;
+        }
+    }
+
+    public final void sendAndReceive(IoState state, EventCounters counters) {
+        long b = snd.cluster().localNode().metrics().getSentBytesCount();
+
+        state.latch.set(new CountDownLatch(1));
+
+        state.messaging.send(null, state.msg);
+
+        try {
+            state.latch.get().await();
+        }
+        catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        counters.sentBytes += (snd.cluster().localNode().metrics().getSentBytesCount() - b);
+
+        counters.sentMessages++;
+    }
+
+    /**
+     * Send and receive message with random data.
+     */
+    @Benchmark
+    public final void sendAndReceiveSize(final IoSendReceiveSizeState state, final EventCounters counters) {
+        sendAndReceive(state, counters);
+    }
+
+    /** */
+    @State(Scope.Thread)
+    @AuxCounters(AuxCounters.Type.EVENTS)
+    public static class EventCounters {
+        /** This field would be counted as metric */
+        public int sentBytes = 0;
+
+        /** This field would be counted as metric */
+        public int sentMessages = 0;
+    }
+
+    /** */
+    @State(Scope.Benchmark)
+    public static class IoSendReceiveSizeGoodState extends IoState {
+        /** */
+        @Param({"1000", "10000", "100000", "1000000"})
+        int size = 1000;
+
+        /** */
+        public IoSendReceiveSizeGoodState() {
+            super();
+        }
+
+        /** */
+        @Setup(Level.Trial)
+        public final void setup() {
+            msg = RegularDataUtils.generateRegularData(size, 10);
+        }
+    }
+
+    /**
+     * Send and receive message with regular data.
+     */
+    @Benchmark
+    public final void sendAndReceiveSizeGood(IoSendReceiveSizeGoodState state, EventCounters counters) {
+        sendAndReceive(state, counters);
+    }
 
     /**
      * Create locks and put values in the cache.
      */
     @Setup(Level.Trial)
-    public void setup1() throws Exception {
-        //super.setup();
+    public final void setup1() {
+        snd = node;
 
-        from = node;
-
-        to = Ignition.start(configuration("node" + 147));
+        receiver = Ignition.start(configuration("node" + 147));
     }
 
     /**
@@ -211,166 +248,182 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
      * @param args Arguments.
      * @throws Exception If failed.
      */
-    public static void main(String[] args) throws Exception {
-        final String simpleClsName = GridTcpCommunicationSpiBenchmark.class.getSimpleName();
-        final int threads = THREADS_PER_NODE;
-        final boolean client = false;
-        final CacheAtomicityMode atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
-        final CacheWriteSynchronizationMode writeSyncMode = CacheWriteSynchronizationMode.FULL_SYNC;
+    public static void main(String... args) throws Exception {
+        // Use in linux for emulate slow network:
+        // sudo tc qdisc add dev lo root tbf rate 1Gbit burst 100kb latency 5ms
+        // And remove it: sudo tc qdisc del dev lo root
+        // Check your network: sudo tc -s qdisc ls dev lo
 
-        final String output = simpleClsName +
-            "-" + threads + "-threads" +
-            "-" + (client ? "client" : "data") +
-            "-" + atomicityMode +
-            "-" + writeSyncMode;
+        String simpleClsName = GridTcpCommunicationSpiBenchmark.class.getSimpleName();
+        boolean client = false;
+        CacheAtomicityMode atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
+        CacheWriteSynchronizationMode writeSyncMode = CacheWriteSynchronizationMode.FULL_SYNC;
 
-        final Options opt1 = new OptionsBuilder()
-            .threads(threads)
+        Options opt = new OptionsBuilder()
             .include(simpleClsName)
-            //.output(output + ".jmh.log")
             .timeUnit(TimeUnit.MICROSECONDS)
             .mode(Mode.AverageTime)
             .jvmArgs(
                 "-Xms1g",
                 "-Xmx1g",
-                //"-XX:+UnlockCommercialFeatures",
                 JmhIdeBenchmarkRunner.createProperty(PROP_ATOMICITY_MODE, atomicityMode),
                 JmhIdeBenchmarkRunner.createProperty(PROP_WRITE_SYNC_MODE, writeSyncMode),
                 JmhIdeBenchmarkRunner.createProperty(PROP_DATA_NODES, 1),
                 JmhIdeBenchmarkRunner.createProperty(PROP_CLIENT_MODE, client)).build();
 
-        Collection<RunResult> results1 = new Runner(opt1).run();
+        Collection<RunResult> results = new Runner(opt).run();
 
         System.out.println("-----------------------------------");
 
-        System.out.println(results1.size());
+        EnumMap<Type, Result> baseline = new EnumMap<>(Type.class);
 
-        EnumMap<Type, Result> baseline = new EnumMap<Type, Result>(Type.class);
+        EnumMap<Type, Result> baselineStat = new EnumMap<>(Type.class);
 
         TreeMap<Integer, EnumMap<Type, Result>> sizedResults = new TreeMap<>();
 
         TreeMap<Integer, EnumMap<Type, Result>> sizedNiceResults = new TreeMap<>();
 
-        for (RunResult result : results1) {
-            System.out.println(result.getBenchmarkResults().size());
+        for (RunResult result : results) {
             for (BenchmarkResult benchmarkResult : result.getBenchmarkResults()) {
                 Type type = Type.getType(benchmarkResult.getParams().getParam("isCompress"),
                     benchmarkResult.getParams().getParam("isSsl"));
 
-                double value = benchmarkResult.getPrimaryResult().getScore();
+                double val = benchmarkResult.getPrimaryResult().getScore();
                 double error = benchmarkResult.getPrimaryResult().getScoreError();
 
+                if (benchmarkResult.getPrimaryResult().getLabel().equals("sendAndReceiveBaseline")) {
+                    baseline.put(type, new Result(val, error, 0));
+
+                    continue;
+                }
+
+                double avgSize = benchmarkResult.getSecondaryResults().get("sentBytes").getScore() /
+                    benchmarkResult.getSecondaryResults().get("sentMessages").getScore();
+
                 switch (benchmarkResult.getPrimaryResult().getLabel()) {
-                    case "sendAndReceiveBaseline" :
-                        baseline.put(type, new Result(value, error));
+                    case "sendAndReceiveStatBaseline":
+                        baselineStat.put(type, new Result(val, error, avgSize));
+
                         break;
-                    case "sendAndReceiveSize" : {
+                    case "sendAndReceiveSize": {
                         int size = Integer.valueOf(benchmarkResult.getParams().getParam("size"));
 
                         EnumMap<Type, Result> map = sizedResults.get(size);
+
                         if (map == null) {
-                            map = new EnumMap<Type, Result>(Type.class);
+                            map = new EnumMap<>(Type.class);
+
                             sizedResults.put(size, map);
                         }
 
-                        map.put(type, new Result(value, error));
+                        map.put(type, new Result(val, error, avgSize));
+
                         break;
                     }
-                    case "sendAndReceiveSizeNice" : {
+                    case "sendAndReceiveSizeGood": {
                         int size = Integer.valueOf(benchmarkResult.getParams().getParam("size"));
 
                         EnumMap<Type, Result> map = sizedNiceResults.get(size);
+
                         if (map == null) {
-                            map = new EnumMap<Type, Result>(Type.class);
+                            map = new EnumMap<>(Type.class);
+
                             sizedNiceResults.put(size, map);
                         }
 
-                        map.put(type, new Result(value, error));
+                        map.put(type, new Result(val, error, avgSize));
+
                         break;
                     }
                 }
             }
         }
 
-        DecimalFormat df = new DecimalFormat("#0.00");
-
-        for (Map.Entry<Integer, EnumMap<Type, Result>> entry : sizedResults.entrySet()) {
-            int size = entry.getKey();
-
-            for (Map.Entry<Type, Result> resultEntry : entry.getValue().entrySet()) {
-                double baselineValue = baseline.get(resultEntry.getKey()).value;
-                double baselineError = baseline.get(resultEntry.getKey()).error;
-
-                double value = resultEntry.getValue().value;
-                double error = resultEntry.getValue().error;
-
-                double minTime = (value-error)-(baselineValue+baselineError);
-                double maxTime = (value+error)-(baselineValue-baselineError);
-                if (minTime < 0)
-                    minTime = 0;
-                double mean = value-baselineValue;
-                if (mean < 0)
-                    mean = 0;
-
-                System.out.println("Throughput for "+ size +" "+ resultEntry.getKey() +" : " + df.format(size/mean/1000*8) +
-                    " ∈ ["+df.format(size/maxTime/1000*8)+" : "+df.format(size/minTime/1000*8)+"] Gb/s");
-            }
+        for (Entry<Type, Result> entry : baseline.entrySet()) {
+            System.out.println("Latency:" + U.nl() + "\tType = " + entry.getKey() + U.nl() + "\tTime = " +
+                entry.getValue().val + " ± " + entry.getValue().error +
+                U.nl() + "\tNet footprint = " + baselineStat.get(entry.getKey()).avgSize);
         }
 
-        for (Map.Entry<Integer, EnumMap<Type, Result>> entry : sizedNiceResults.entrySet()) {
+        printThroughput(sizedResults, baselineStat, baseline, "bad case");
+        printThroughput(sizedNiceResults, baselineStat, baseline, "good case");
+    }
+
+    /** */
+    private static void printThroughput(Map<Integer, EnumMap<Type, Result>> results, EnumMap<Type, Result> baselineStat,
+        EnumMap<Type, Result> baseline, String name) {
+
+        DecimalFormat df = new DecimalFormat("#0.00");
+
+        for (Entry<Integer, EnumMap<Type, Result>> entry : results.entrySet()) {
             int size = entry.getKey();
 
-            for (Map.Entry<Type, Result> resultEntry : entry.getValue().entrySet()) {
-                double baselineValue = baseline.get(resultEntry.getKey()).value;
-                double baselineError = baseline.get(resultEntry.getKey()).error;
+            for (Entry<Type, Result> resultEntry : entry.getValue().entrySet()) {
+                double statTime = baselineStat.get(resultEntry.getKey()).val - baseline.get(resultEntry.getKey()).val;
 
-                double value = resultEntry.getValue().value;
+                double baselineAvgSize = baselineStat.get(resultEntry.getKey()).avgSize;
+                double val = resultEntry.getValue().val - statTime;
                 double error = resultEntry.getValue().error;
+                double avgSize = resultEntry.getValue().avgSize;
 
-                double minTime = (value-error)-(baselineValue+baselineError);
-                double maxTime = (value+error)-(baselineValue-baselineError);
-                if (minTime < 0)
-                    minTime = 0;
-                double mean = value-baselineValue;
-                if (mean < 0)
-                    mean = 0;
-
-                System.out.println("Throughput nice for "+ size +" "+ resultEntry.getKey() +" : " + df.format(size/mean/1000*8) +
-                    " ∈ ["+df.format(size/maxTime/1000*8)+" : "+df.format(size/minTime/1000*8)+"] Gb/s");
+                System.out.println("Throughput " + name + ". Type = " + resultEntry.getKey() +
+                    ". Message size = " + size +
+                    U.nl() + "\tMessage/s = " + df.format(1.0E6 / val) + " ∈ [" +
+                    df.format(1.0E6 / (val + error)) + " : " + df.format(1.0E6 / (val - error)) + "]" +
+                    U.nl() + "\tReal Mbit/s = " + df.format(avgSize / val * 8) + " ∈ [" +
+                    df.format(avgSize / (val + error) * 8) + " : " +
+                    df.format(avgSize / (val - error) * 8) + "]" +
+                    U.nl() + "\tEffective Mbit/s = " + df.format(size / val * 8) + " ∈ [" +
+                    df.format(size / (val + error) * 8) + " : " +
+                    df.format(size / (val - error) * 8) + "]" +
+                    U.nl() + "\tCompression rate = " + df.format(size / (avgSize - baselineAvgSize)));
             }
         }
     }
 
-    static enum Type {
+    /** */
+    private enum Type {
+        /** */
         No,
-        Comp,
+        /** */
+        Compression,
+        /** */
         Ssl,
-        CompSsl;
+        /** */
+        CompressionSsl;
 
-        static Type getType(String comp0, String ssl0) {
+        /** */
+        private static Type getType(String comp0, String ssl0) {
             boolean comp = Boolean.valueOf(comp0);
             boolean ssl = Boolean.valueOf(ssl0);
 
             if (comp && ssl)
-                return CompSsl;
+                return CompressionSsl;
             if (comp && !ssl)
-                return Comp;
+                return Compression;
             if (!comp && ssl)
                 return Ssl;
-            if (!comp && !ssl)
-                return No;
 
             return No;
         }
     }
 
-    static class Result {
-        final double value;
-        final double error;
+    /** */
+    private static class Result {
+        /** */
+        private final double val;
 
-        Result(double value, double error) {
-            this.value = value;
+        /** */
+        private final double error;
+
+        /** */
+        private final double avgSize;
+
+        /** */
+        private Result(double val, double error, double avgSize) {
+            this.val = val;
             this.error = error;
+            this.avgSize = avgSize;
         }
     }
 }
