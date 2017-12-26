@@ -71,14 +71,14 @@ namespace Apache.Ignite.Core.Tests
             var service = GetIgniteService();
             Assert.IsNotNull(service);
 
-            service.Start();  // see IGNITE_HOME\work\log for service instance logs
-            service.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
-
             using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = springPath
             }))
             {
+                service.Start();  // see IGNITE_HOME\work\log for service instance logs
+                service.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
+
                 Assert.IsTrue(ignite.WaitTopology(2), "Failed to join with service node");
 
                 // Stop remote node via Java task
