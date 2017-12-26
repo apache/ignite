@@ -375,6 +375,8 @@ public class DmlStatementsProcessor {
             if (implicit)
                 tx = idx.txStart(cctx, fieldsQry.getTimeout());
 
+            idx.requestMvccVersion(cctx, tx);
+
             try (GridNearTxLocal toCommit = commit ? tx : null) {
                 UpdateResult res;
 
