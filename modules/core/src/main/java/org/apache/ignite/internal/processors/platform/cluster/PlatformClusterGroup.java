@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform.cluster;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
 
 import org.apache.ignite.DataRegionMetrics;
@@ -29,6 +30,7 @@ import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.ClusterGroupEx;
@@ -152,6 +154,12 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
     /** */
     private static final int OP_DATA_STORAGE_METRICS = 37;
+
+    /** */
+    private static final int OP_SET_BASELINE_TOPOLOGY_VER = 38;
+
+    /** */
+    private static final int OP_SET_BASELINE_TOPOLOGY_NODES = 39;
 
     /** Projection. */
     private final ClusterGroupEx prj;
@@ -344,7 +352,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
             case OP_PING_NODE:
                 return pingNode(reader.readUuid()) ? TRUE : FALSE;
 
-            case OP_RESET_LOST_PARTITIONS:
+            case OP_RESET_LOST_PARTITIONS: {
                 int cnt = reader.readInt();
 
                 Collection<String> cacheNames = new ArrayList<>(cnt);
@@ -356,6 +364,33 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 platformCtx.kernalContext().grid().resetLostPartitions(cacheNames);
 
                 return TRUE;
+            }
+
+            case OP_SET_BASELINE_TOPOLOGY_NODES: {
+                int cnt = reader.readInt();
+                Collection<BaselineNode> nodes = new ArrayList<>(cnt);
+
+                for (int i = 0; i < cnt; i++) {
+                    UUID id = reader.readUuid();
+                    nodes.add(new BaselineNode() {
+                        @Override public Object consistentId() {
+                            return id;
+                        }
+
+                        @Override public <T> T attribute(String name) {
+                            return null;
+                        }
+
+                        @Override public Map<String, Object> attributes() {
+                            return null;
+                        }
+                    });
+                }
+
+                prj.ignite().cluster().setBaselineTopology(nodes);
+
+                return TRUE;
+            }
 
             default:
                 return super.processInStreamOutLong(type, reader);
@@ -480,6 +515,10 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
             case OP_IS_ACTIVE: {
                 return prj.ignite().active() ? TRUE : FALSE;
+            }
+
+            case OP_SET_BASELINE_TOPOLOGY_VER: {
+                prj.ignite().cluster().setBaselineTopology(val);
             }
         }
 
