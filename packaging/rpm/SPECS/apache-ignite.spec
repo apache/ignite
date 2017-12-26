@@ -59,8 +59,6 @@ case $1 in
         useradd -r -d %{_datadir}/%{name} -s /usr/sbin/nologin %{user}
         # Change ownership for work and log directories
         chown -vR %{user}:%{user} %{_sharedstatedir}/%{name} %{_var}/log/%{name}
-        # Enable service autostart on boot
-        systemctl enable %{name}.service
         # Install alternatives
         update-alternatives --install %{_bindir}/ignitevisorcmd ignitevisorcmd %{_datadir}/%{name}/bin/ignitevisorcmd.sh 0
         update-alternatives --auto ignitevisorcmd
@@ -83,9 +81,6 @@ esac
 %preun
 case $1 in
     0)
-        # Stop and disable service autostart on boot
-        systemctl stop %{name}.service
-        systemctl disable %{name}.service
         update-alternatives --remove ignitevisorcmd /usr/share/%{name}/bin/ignitevisorcmd.sh
         update-alternatives --display ignitevisorcmd || true
         ;;
@@ -158,19 +153,17 @@ ln -sf %{_libdir}/%{name} %{buildroot}%{_datadir}/%{name}/libs
 # Setup configuration
 cp -rf config %{buildroot}%{_sysconfdir}/%{name}
 ln -sf %{_sysconfdir}/%{name} %{buildroot}%{_datadir}/%{name}/config
-cp -rf %{_sourcedir}/default-config.xml %{buildroot}%{_sysconfdir}/%{name}/
 
 # Setup systemctl service
-cp -rf %{_sourcedir}/name.service %{buildroot}%{_sysconfdir}/systemd/system/%{name}.service
+cp -rf %{_sourcedir}/name.service %{buildroot}%{_sysconfdir}/systemd/system/%{name}@.service
 cp -rf %{_sourcedir}/service.sh %{buildroot}%{_datadir}/%{name}/bin/
 chmod +x %{buildroot}%{_datadir}/%{name}/bin/service.sh
-for file in %{buildroot}%{_sysconfdir}/systemd/system/%{name}.service %{buildroot}%{_datadir}/%{name}/bin/service.sh
+for file in %{buildroot}%{_sysconfdir}/systemd/system/%{name}@.service %{buildroot}%{_datadir}/%{name}/bin/service.sh
 do
     sed -i -r -e "s|#name#|%{name}|g" \
               -e "s|#user#|%{user}|g" \
         ${file}
 done
-echo "pathToConfig=\"\"" > %{buildroot}%{_sysconfdir}/%{name}/node.cfg
 
 # Map work and log directories
 ln -sf %{_sharedstatedir}/%{name} %{buildroot}%{_datadir}/%{name}/work
@@ -195,7 +188,7 @@ ln -sf %{_var}/log/%{name} %{buildroot}%{_sharedstatedir}/%{name}/log
 %{_datadir}/%{name}/work
 %{_datadir}/doc/%{name}-%{version}/bin
 %{_libdir}/%{name}
-%{_sysconfdir}/systemd/system/%{name}.service
+%{_sysconfdir}/systemd/system/%{name}@.service
 %{_sharedstatedir}/%{name}/log
 
 %config(noreplace) %{_sysconfdir}/%{name}/*

@@ -108,7 +108,7 @@ Install and Run Apache Ignite from RPM
 
 2) Start Apache Ignite service
 
-        systemctl start apache-ignite
+        systemctl start apache-ignite@<config name>
 
 3) See logs in /var/log/apache-ignite or execute journalctl -xe
 
