@@ -18,10 +18,6 @@
 package org.apache.ignite.internal.util.tostring;
 
 import org.apache.ignite.internal.util.GridStringBuilder;
-import org.apache.ignite.internal.util.typedef.internal.SB;
-import sun.plugin2.jvm.CircularByteBuffer;
-
-import java.util.ArrayDeque;
 import java.util.Arrays;
 
 /**
