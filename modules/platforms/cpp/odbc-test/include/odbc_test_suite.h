@@ -42,6 +42,11 @@ namespace ignite
         struct OdbcTestSuite
         {
             /**
+             * Prepare environment.
+             */
+            void Prepare();
+
+            /**
              * Establish connection to node.
              *
              * @param connectStr Connection string.
