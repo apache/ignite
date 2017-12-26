@@ -1065,7 +1065,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     boolean rmvIdx = !cache.context().group().persistenceEnabled();
 
-                    ctx.query().onCacheStop0(cctx.name(), rmvIdx);
+                    ctx.query().onCacheStop0(cctx, rmvIdx);
                     ctx.query().onCacheStart0(cctx, desc.schema());
                 }
             }

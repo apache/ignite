@@ -132,7 +132,7 @@ public class H2RowCache implements GridQueryRowCacheCleaner {
      * @throws IgniteCheckedException On error.
      */
     private void touch(long link) throws IgniteCheckedException {
-        PageMemory mem = grpCtx.memoryPolicy().pageMemory();
+        PageMemory mem = grpCtx.dataRegion().pageMemory();
 
         int grpId = grpCtx.groupId();
 

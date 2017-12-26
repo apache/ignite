@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
+import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 
 /**
  * Data store for H2 rows.
@@ -43,6 +44,9 @@ public class RowStore {
     /** */
     private final boolean persistenceEnabled;
 
+    /** Row cache cleaner. */
+    private final GridQueryRowCacheCleaner rowCacheCleaner;
+
     /**
      * @param grp Cache group.
      * @param freeList Free list.
@@ -58,6 +62,8 @@ public class RowStore {
         pageMem = grp.dataRegion().pageMemory();
 
         persistenceEnabled = grp.dataRegion().config().isPersistenceEnabled();
+
+        rowCacheCleaner = ctx.kernalContext().query().getIndexing().rowCacheCleaner(grp.groupId());
     }
 
     /**
@@ -66,6 +72,8 @@ public class RowStore {
      */
     public void removeRow(long link) throws IgniteCheckedException {
         assert link != 0;
+
+        rowCacheCleaner.remove(link);
 
         if (!persistenceEnabled)
             freeList.removeDataRowByLink(link);
@@ -108,6 +116,8 @@ public class RowStore {
      */
     public boolean updateRow(long link, CacheDataRow row) throws IgniteCheckedException {
         assert !persistenceEnabled || ctx.database().checkpointLockIsHeldByThread();
+
+        rowCacheCleaner.remove(link);
 
         return freeList.updateDataRow(link, row);
     }
