@@ -95,6 +95,12 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
             super();
 
             msg = new Object();
+
+            receiver.message().localListen(null, new MessagingListenActor<Object>() {
+                @Override protected void receive(UUID nodeId, Object rcvMsg) throws Throwable {
+                    latch.get().countDown();
+                }
+            });
         }
     }
 
@@ -135,12 +141,6 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
 
         public IoState() {
             messaging = snd.message(snd.cluster().forNodeId(receiver.cluster().localNode().id()));
-
-            receiver.message().localListen(null, new MessagingListenActor<byte[]>() {
-                @Override protected void receive(UUID nodeId, byte[] rcvMsg) throws Throwable {
-                    latch.get().countDown();
-                }
-            });
         }
     }
 
@@ -154,6 +154,12 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         /** */
         public IoSendReceiveSizeState() {
             super();
+
+            receiver.message().localListen(null, new MessagingListenActor<byte[]>() {
+                @Override protected void receive(UUID nodeId, byte[] rcvMsg) throws Throwable {
+                    latch.get().countDown();
+                }
+            });
         }
 
         /** */
@@ -215,6 +221,12 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         /** */
         public IoSendReceiveSizeGoodState() {
             super();
+
+            receiver.message().localListen(null, new MessagingListenActor<byte[]>() {
+                @Override protected void receive(UUID nodeId, byte[] rcvMsg) throws Throwable {
+                    latch.get().countDown();
+                }
+            });
         }
 
         /** */
