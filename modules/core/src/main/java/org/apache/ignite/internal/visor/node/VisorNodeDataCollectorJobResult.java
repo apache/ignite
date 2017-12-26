@@ -90,6 +90,9 @@ public class VisorNodeDataCollectorJobResult extends VisorDataTransferObject {
     /** Exception while collecting persistence metrics. */
     private VisorExceptionWrapper persistenceMetricsEx;
 
+    /** Rebalance percent. */
+    private double rebalance;
+
     /**
      * Default constructor.
      */
@@ -302,6 +305,25 @@ public class VisorNodeDataCollectorJobResult extends VisorDataTransferObject {
         this.persistenceMetricsEx = persistenceMetricsEx;
     }
 
+    /**
+     * @return Rebalance progress.
+     */
+    public double getRebalance() {
+        return rebalance;
+    }
+
+    /**
+     * @param  rebalance Rebalance progress.
+     */
+    public void setRebalance(double rebalance) {
+        this.rebalance = rebalance;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, gridName);
@@ -321,6 +343,7 @@ public class VisorNodeDataCollectorJobResult extends VisorDataTransferObject {
         out.writeBoolean(hasPendingExchange);
         out.writeObject(persistenceMetrics);
         out.writeObject(persistenceMetricsEx);
+        out.writeDouble(rebalance);
     }
 
     /** {@inheritDoc} */
@@ -342,6 +365,7 @@ public class VisorNodeDataCollectorJobResult extends VisorDataTransferObject {
         hasPendingExchange = in.readBoolean();
         persistenceMetrics = (VisorPersistenceMetrics)in.readObject();
         persistenceMetricsEx = (VisorExceptionWrapper)in.readObject();
+        rebalance = (protoVer > V1) ? in.readDouble() : -1;
     }
 
     /** {@inheritDoc} */
