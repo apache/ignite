@@ -1815,7 +1815,13 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     public void testLargeUserAttribute3() throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
+        long stopTime = System.currentTimeMillis() + 60_000;
+
+        int nodes = 0;
+
         for (int i = 0; i < 25; i++) {
+            info("Iteration: " + i);
+
             if (rnd.nextBoolean())
                 initLargeAttribute();
             else
@@ -1824,9 +1830,14 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             clientMode(i > 5);
 
             startGrid(i);
+
+            nodes++;
+
+            if (System.currentTimeMillis() >= stopTime)
+                break;
         }
 
-        waitForTopology(25);
+        waitForTopology(nodes);
     }
 
     /**
