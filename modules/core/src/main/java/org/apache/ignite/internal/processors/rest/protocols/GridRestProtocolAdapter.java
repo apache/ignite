@@ -20,11 +20,9 @@ package org.apache.ignite.internal.processors.rest.protocols;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.StringTokenizer;
@@ -37,6 +35,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.util.GridUnsafe.encodeBase64;
 
 /**
  * Abstract protocol adapter.
@@ -107,11 +107,9 @@ public abstract class GridRestProtocolAdapter implements GridRestProtocol {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-1");
 
-            Base64.Encoder enc = Base64.getEncoder();
-
             md.update(s.getBytes(UTF_8));
 
-            String compHash = new String(enc.encode(md.digest()), StandardCharsets.ISO_8859_1) ;
+            String compHash = encodeBase64(md.digest());
 
             return hash.equalsIgnoreCase(compHash);
         }
