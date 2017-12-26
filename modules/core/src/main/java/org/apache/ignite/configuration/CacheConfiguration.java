@@ -210,7 +210,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private boolean onheapCache;
 
-    /** */
+    /** Use on-heap cache for rows for SQL queries. */
     private boolean sqlOnheapCache;
 
     /** Eviction filter. */
