@@ -88,6 +88,19 @@ namespace Apache.Ignite.Core.Cluster
         /// <value>
         /// The reconnect task.
         /// </value>
-        Task<bool> ClientReconnectTask { get; } 
+        Task<bool> ClientReconnectTask { get; }
+
+        /// <summary>
+        /// Changes Ignite grid state to active or inactive.
+        /// </summary>
+        void SetActive(bool isActive);
+
+        /// <summary>
+        /// Determines whether this grid is in active state.
+        /// </summary>
+        /// <returns>
+        ///   <c>true</c> if the grid is active; otherwise, <c>false</c>.
+        /// </returns>
+        bool IsActive();
     }
 }
