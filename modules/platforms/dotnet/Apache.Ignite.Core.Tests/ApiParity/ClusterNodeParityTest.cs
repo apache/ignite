@@ -25,14 +25,10 @@
     /// </summary>
     public class ClusterNodeParityTest
     {
-        /** Members that are not needed on .NET side. */
-        private static readonly string[] UnneededMembers =
-        {
-        };
-
         /** Members that are missing on .NET side and should be added in future. */
         private static readonly string[] MissingMembers =
         {
+            "version"  // IGNITE-7101
         };
 
         /// <summary>
@@ -42,9 +38,8 @@
         public void TestClusterNode()
         {
             ParityTest.CheckInterfaceParity(
-                @"modules\core\src\main\java\org\apache\ignite\clister\ClusterNode.java",
-                typeof(IClusterNode),
-                UnneededMembers, MissingMembers);
+                @"modules\core\src\main\java\org\apache\ignite\cluster\ClusterNode.java",
+                typeof(IClusterNode), MissingMembers);
         }
     }
 }
