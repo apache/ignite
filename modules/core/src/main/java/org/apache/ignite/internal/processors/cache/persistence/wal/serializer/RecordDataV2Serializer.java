@@ -33,6 +33,9 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.record.Header
  * Record data V2 serializer.
  */
 public class RecordDataV2Serializer implements RecordDataSerializer {
+    /** Length of HEADER record data. */
+    static final int HEADER_RECORD_DATA_SIZE = /*Magic*/8 + /*Version*/4;
+
     /** V1 data serializer delegate. */
     private final RecordDataV1Serializer delegateSerializer;
 
@@ -47,10 +50,10 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
 
     /** {@inheritDoc} */
     @Override public int size(WALRecord record) throws IgniteCheckedException {
-        if (record instanceof HeaderRecord)
-            throw new UnsupportedOperationException("Getting size of header records is forbidden since version 2 of serializer");
-
         switch (record.type()) {
+            case HEADER_RECORD:
+                return HEADER_RECORD_DATA_SIZE;
+
             case DATA_RECORD:
                 return delegateSerializer.size(record) + 8/*timestamp*/;
 
