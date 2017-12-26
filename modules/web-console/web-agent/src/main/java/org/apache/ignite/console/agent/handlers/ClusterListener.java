@@ -202,6 +202,9 @@ public class ClusterListener implements AutoCloseable {
     /** */
     private static class TopologySnapshot {
         /** */
+        private String cloudId;
+
+        /** */
         private String clusterName;
 
         /** */
@@ -251,6 +254,9 @@ public class ClusterListener implements AutoCloseable {
 
                 Map<String, Object> attrs = node.getAttributes();
 
+                if (F.isEmpty(cloudId))
+                    cloudId = attribute(attrs, "GRIDGAIN_CLOUD_ID");
+
                 if (F.isEmpty(clusterName))
                     clusterName = attribute(attrs, IGNITE_CLUSTER_NAME);
 
@@ -275,6 +281,13 @@ public class ClusterListener implements AutoCloseable {
                     clusterVerStr = nodeVerStr;
                 }
             }
+        }
+
+        /**
+         * @return Cloud id.
+         */
+        public String getCloudId() {
+            return cloudId;
         }
 
         /**

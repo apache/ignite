@@ -32,7 +32,6 @@ const LAZY_QUERY_SINCE = [['2.1.4-p1', '2.2.0'], '2.2.1'];
 
 class ConnectionState {
     constructor(cluster) {
-        this.agents = [];
         this.cluster = cluster;
         this.clusters = [];
         this.state = State.DISCONNECTED;
@@ -66,19 +65,7 @@ class ConnectionState {
             this.state = State.CLUSTER_DISCONNECTED;
     }
 
-    useConnectedCluster() {
-        if (_.nonEmpty(this.clusters) && !this.cluster.connected) {
-            this.cluster = _.head(this.clusters);
-
-            this.cluster.connected = true;
-
-            this.state = State.CONNECTED;
-        }
-    }
-
     disconnect() {
-        this.agents = [];
-
         if (this.cluster)
             this.cluster.disconnect = true;
 
@@ -240,6 +227,20 @@ export default class IgniteAgentManager {
         return this.awaitConnectionState(State.CONNECTED, State.CLUSTER_DISCONNECTED);
     }
 
+    _useConnectedCluster() {
+        const conn = this.connectionSbj.getValue();
+
+        if (_.nonEmpty(conn.clusters) && !conn.cluster.connected) {
+            conn.cluster = _.head(conn.clusters);
+
+            conn.cluster.connected = true;
+
+            conn.state = State.CONNECTED;
+
+            this.connectionSbj.next(conn);
+        }
+    }
+
     /**
      * @param {String} backText
      * @param {String} [backState]
@@ -251,11 +252,7 @@ export default class IgniteAgentManager {
         self.backText = backText;
         self.backState = backState;
 
-        const conn = self.connectionSbj.getValue();
-
-        conn.useConnectedCluster();
-
-        self.connectionSbj.next(conn);
+        this._useConnectedCluster();
 
         this.modalSubscription && this.modalSubscription.unsubscribe();
 
@@ -293,11 +290,7 @@ export default class IgniteAgentManager {
         self.backText = backText;
         self.backState = backState;
 
-        const conn = self.connectionSbj.getValue();
-
-        conn.useConnectedCluster();
-
-        self.connectionSbj.next(conn);
+        this._useConnectedCluster();
 
         this.modalSubscription && this.modalSubscription.unsubscribe();
 
@@ -325,7 +318,11 @@ export default class IgniteAgentManager {
             }
         });
 
-        self.$transitions.onExit({}, () => self.stopWatch());
+        const stopWatchUnsubscribe = self.$transitions.onExit({}, () => {
+            self.stopWatch();
+
+            stopWatchUnsubscribe();
+        });
 
         return self.awaitCluster();
     }
