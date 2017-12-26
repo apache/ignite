@@ -182,7 +182,7 @@ namespace ignite
 
                     const char* val = config.GetSslMode().c_str();
                     sslModeLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT, "SSL Mode:", ChildId::SSL_MODE_LABEL);
-                    sslModeComboBox = CreateComboBox(editPosX, rowPos, editSizeX, ROW_HEIGHT, val, ChildId::SSL_MODE_COMBO_BOX);
+                    sslModeComboBox = CreateComboBox(editPosX, rowPos, editSizeX, ROW_HEIGHT, "", ChildId::SSL_MODE_COMBO_BOX);
 
                     sslModeComboBox->AddString("disable");
                     sslModeComboBox->AddString("require");
@@ -392,11 +392,69 @@ namespace ignite
 
                 void DsnConfigurationWindow::RetrieveParameters(config::Configuration& cfg) const
                 {
+                    RetrieveConnectionParameters(cfg);
+                    RetrieveSslParameters(cfg);
+                    RetrieveAdditionalParameters(cfg);
+                }
+
+                void DsnConfigurationWindow::RetrieveConnectionParameters(config::Configuration& cfg) const
+                {
                     std::string dsn;
                     std::string address;
                     std::string schema;
-                    std::string pageSizeStr;
                     std::string version;
+
+                    nameEdit->GetText(dsn);
+                    addressEdit->GetText(address);
+                    schemaEdit->GetText(schema);
+                    protocolVersionComboBox->GetText(version);
+
+                    common::StripSurroundingWhitespaces(address);
+                    common::StripSurroundingWhitespaces(dsn);
+                    // Stripping of whitespaces off the schema skipped intentionally
+
+                    LOG_MSG("Retriving arguments:");
+                    LOG_MSG("DSN:                " << dsn);
+                    LOG_MSG("Address:            " << address);
+                    LOG_MSG("Schema:             " << schema);
+                    LOG_MSG("Protocol version:   " << version);
+
+                    if (dsn.empty())
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "DSN name can not be empty.");
+
+                    cfg.SetDsn(dsn);
+                    cfg.SetAddress(address);
+                    cfg.SetSchema(schema);
+                    cfg.SetProtocolVersion(version);
+                }
+
+                void DsnConfigurationWindow::RetrieveSslParameters(config::Configuration& cfg) const
+                {
+                    std::string sslMode;
+                    std::string sslKey;
+                    std::string sslCert;
+                    std::string sslCa;
+
+                    sslModeComboBox->GetText(sslMode);
+                    sslKeyFileEdit->GetText(sslKey);
+                    sslCertFileEdit->GetText(sslCert);
+                    sslCaFileEdit->GetText(sslCa);
+
+                    LOG_MSG("Retriving arguments:");
+                    LOG_MSG("SSL Mode:           " << sslMode);
+                    LOG_MSG("SSL Key:            " << sslKey);
+                    LOG_MSG("SSL Certificate:    " << sslCert);
+                    LOG_MSG("SSL CA:             " << sslCa);
+
+                    cfg.SetSslMode(sslMode);
+                    cfg.SetSslKeyFile(sslKey);
+                    cfg.SetSslCertFile(sslCert);
+                    cfg.SetSslCaFile(sslCa);
+                }
+
+                void DsnConfigurationWindow::RetrieveAdditionalParameters(config::Configuration& cfg) const
+                {
+                    std::string pageSizeStr;
 
                     bool distributedJoins;
                     bool enforceJoinOrder;
@@ -405,10 +463,6 @@ namespace ignite
                     bool lazy;
                     bool skipReducerOnUpdate;
 
-                    nameEdit->GetText(dsn);
-                    addressEdit->GetText(address);
-                    schemaEdit->GetText(schema);
-                    protocolVersionComboBox->GetText(version);
                     pageSizeEdit->GetText(pageSizeStr);
 
                     int32_t pageSize = common::LexicalCast<int32_t>(pageSizeStr);
@@ -416,39 +470,23 @@ namespace ignite
                     if (pageSize <= 0)
                         pageSize = config.GetPageSize();
 
-                    common::StripSurroundingWhitespaces(address);
-                    common::StripSurroundingWhitespaces(dsn);
-
-                    distributedJoins = distributedJoinsCheckBox->IsEnabled() && distributedJoinsCheckBox->IsChecked();
-                    enforceJoinOrder = enforceJoinOrderCheckBox->IsEnabled() && enforceJoinOrderCheckBox->IsChecked();
-                    replicatedOnly = replicatedOnlyCheckBox->IsEnabled() && replicatedOnlyCheckBox->IsChecked();
-                    collocated = collocatedCheckBox->IsEnabled() && collocatedCheckBox->IsChecked();
-                    lazy = lazyCheckBox->IsEnabled() && lazyCheckBox->IsChecked();
-
-                    skipReducerOnUpdate =
-                        skipReducerOnUpdateCheckBox->IsEnabled() && skipReducerOnUpdateCheckBox->IsChecked();
+                    distributedJoins = distributedJoinsCheckBox->IsChecked();
+                    enforceJoinOrder = enforceJoinOrderCheckBox->IsChecked();
+                    replicatedOnly = replicatedOnlyCheckBox->IsChecked();
+                    collocated = collocatedCheckBox->IsChecked();
+                    lazy = lazyCheckBox->IsChecked();
+                    skipReducerOnUpdate = skipReducerOnUpdateCheckBox->IsChecked();
 
                     LOG_MSG("Retriving arguments:");
-                    LOG_MSG("DSN:                " << dsn);
-                    LOG_MSG("Address:            " << address);
-                    LOG_MSG("Schema:             " << schema);
-                    LOG_MSG("Page size:          " << pageSize);
-                    LOG_MSG("Protocol version:   " << version);
-                    LOG_MSG("Distributed Joins:  " << (distributedJoins ? "true" : "false"));
-                    LOG_MSG("Enforce Join Order: " << (enforceJoinOrder ? "true" : "false"));
-                    LOG_MSG("Replicated only:    " << (replicatedOnly ? "true" : "false"));
-                    LOG_MSG("Collocated:         " << (collocated ? "true" : "false"));
-                    LOG_MSG("Lazy:               " << (lazy ? "true" : "false"));
-                    LOG_MSG("Skip reducer on update:   " << (skipReducerOnUpdate ? "true" : "false"));
+                    LOG_MSG("Page size:                 " << pageSize);
+                    LOG_MSG("Distributed Joins:         " << (distributedJoins ? "true" : "false"));
+                    LOG_MSG("Enforce Join Order:        " << (enforceJoinOrder ? "true" : "false"));
+                    LOG_MSG("Replicated only:           " << (replicatedOnly ? "true" : "false"));
+                    LOG_MSG("Collocated:                " << (collocated ? "true" : "false"));
+                    LOG_MSG("Lazy:                      " << (lazy ? "true" : "false"));
+                    LOG_MSG("Skip reducer on update:    " << (skipReducerOnUpdate ? "true" : "false"));
 
-                    if (dsn.empty())
-                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "DSN name can not be empty.");
-
-                    cfg.SetDsn(dsn);
-                    cfg.SetAddress(address);
-                    cfg.SetSchema(schema);
                     cfg.SetPageSize(pageSize);
-                    cfg.SetProtocolVersion(version);
                     cfg.SetDistributedJoins(distributedJoins);
                     cfg.SetEnforceJoinOrder(enforceJoinOrder);
                     cfg.SetReplicatedOnly(replicatedOnly);

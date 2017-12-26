@@ -128,6 +128,30 @@ namespace ignite
                     void RetrieveParameters(config::Configuration& cfg) const;
 
                     /**
+                     * Retrieves current values from the connection UI group and
+                     * stores them to the specified configuration.
+                     *
+                     * @param cfg Configuration.
+                     */
+                    void RetrieveConnectionParameters(config::Configuration& cfg) const;
+
+                    /**
+                     * Retrieves current values from the SSL UI group and
+                     * stores them to the specified configuration.
+                     *
+                     * @param cfg Configuration.
+                     */
+                    void RetrieveSslParameters(config::Configuration& cfg) const;
+
+                    /**
+                     * Retrieves current values from the additional UI group and
+                     * stores them to the specified configuration.
+                     *
+                     * @param cfg Configuration.
+                     */
+                    void RetrieveAdditionalParameters(config::Configuration& cfg) const;
+
+                    /**
                      * Create connection settings group box.
                      *
                      * @param posX X position.
