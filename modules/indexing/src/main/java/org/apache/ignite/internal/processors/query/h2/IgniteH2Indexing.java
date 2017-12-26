@@ -170,6 +170,7 @@ import org.h2.server.web.WebServer;
 import org.h2.table.IndexColumn;
 import org.h2.tools.Server;
 import org.h2.util.JdbcUtils;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -1568,7 +1569,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 switch (nestedTxMode) {
                     case COMMIT:
-                        tx.commit();
+                        doCommit(tx);
 
                         txStart(null, qry.getTimeout(), false);
 
@@ -1594,14 +1595,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         else if (cmd instanceof SqlCommitTransactionCommand) {
             // Do nothing if there's no transaction.
             if (tx != null)
-                tx.commit();
+                doCommit(tx);
         }
         else {
             assert cmd instanceof SqlRollbackTransactionCommand;
 
             // Do nothing if there's no transaction.
             if (tx != null)
-                tx.rollback();
+                doRollback(tx);
         }
     }
 
@@ -1630,6 +1631,50 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             cctx == null || !cctx.skipStore(),
             0
         );
+    }
+
+    /**
+     * Commit and properly close transaction.
+     * @param tx Transaction.
+     * @throws IgniteCheckedException if failed.
+     */
+    @SuppressWarnings("ThrowFromFinallyBlock")
+    private void doCommit(@NotNull GridNearTxLocal tx) throws IgniteCheckedException {
+        try {
+            tx.commit();
+        }
+        finally {
+            closeTx(tx);
+        }
+    }
+
+    /**
+     * Rollback and properly close transaction.
+     * @param tx Transaction.
+     * @throws IgniteCheckedException if failed.
+     */
+    @SuppressWarnings("ThrowFromFinallyBlock")
+    private void doRollback(@NotNull GridNearTxLocal tx) throws IgniteCheckedException {
+        try {
+            tx.rollback();
+        }
+        finally {
+            closeTx(tx);
+        }
+    }
+
+    /**
+     * Properly close transaction.
+     * @param tx Transaction.
+     * @throws IgniteCheckedException if failed.
+     */
+    private void closeTx(@NotNull GridNearTxLocal tx) throws IgniteCheckedException {
+        try {
+            tx.close();
+        }
+        finally {
+            ctx.cache().context().tm().resetContext();
+        }
     }
 
     /**
@@ -2732,6 +2777,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (log.isDebugEnabled())
             log.debug("Cache query index stopped.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onClientDisconnect() throws IgniteCheckedException {
+        if (!mvccEnabled())
+            return;
+
+        GridNearTxLocal tx = userTx();
+
+        if (tx != null)
+            doRollback(tx);
     }
 
     /**

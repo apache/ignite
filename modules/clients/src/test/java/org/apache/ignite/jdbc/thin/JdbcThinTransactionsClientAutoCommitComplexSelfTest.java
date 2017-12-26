@@ -3,14 +3,14 @@ package org.apache.ignite.jdbc.thin;
 /**
  *
  */
-public class JdbcThinTransactionsServerNoAutoCommitComplexSelfTest extends JdbcThinTransactionsAbstractComplexSelfTest {
+public class JdbcThinTransactionsClientAutoCommitComplexSelfTest extends JdbcThinTransactionsAbstractComplexSelfTest {
     /** {@inheritDoc} */
     @Override boolean autoCommit() {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override int nodeIndex() {
-        return 0;
+        return CLI_IDX;
     }
 }

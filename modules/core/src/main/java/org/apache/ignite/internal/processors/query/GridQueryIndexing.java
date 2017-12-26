@@ -63,6 +63,13 @@ public interface GridQueryIndexing {
     public void stop() throws IgniteCheckedException;
 
     /**
+     * Performs necessary actions on disconnect of a stateful client (say, one associated with a transaction).
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onClientDisconnect() throws IgniteCheckedException;
+
+    /**
      * Parses SQL query into two step query and executes it.
      *
      * @param schemaName Schema name.
