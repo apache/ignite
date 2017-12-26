@@ -1322,7 +1322,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
      * @param bytes Length in bytes.
      * @return Whether array was fully written.
      */
-    private boolean writeArray(Object arr, long off, int len, int bytes) {
+    boolean writeArray(Object arr, long off, int len, int bytes) {
         assert arr != null;
         assert arr.getClass().isArray() && arr.getClass().getComponentType().isPrimitive();
         assert off > 0;
@@ -1369,7 +1369,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
      * @param shiftCnt Shift for length.
      * @return Whether array was fully written.
      */
-    private boolean writeArrayLE(Object arr, long off, int len, int typeSize, int shiftCnt) {
+    boolean writeArrayLE(Object arr, long off, int len, int typeSize, int shiftCnt) {
         assert arr != null;
         assert arr.getClass().isArray() && arr.getClass().getComponentType().isPrimitive();
         assert off > 0;
@@ -1443,7 +1443,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
      * @return Array or special value if it was not fully read.
      */
     @SuppressWarnings("unchecked")
-    private <T> T readArray(ArrayCreator<T> creator, int lenShift, long off) {
+    <T> T readArray(ArrayCreator<T> creator, int lenShift, long off) {
         assert creator != null;
 
         if (tmpArr == null) {
@@ -1507,7 +1507,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
      * @return Array or special value if it was not fully read.
      */
     @SuppressWarnings("unchecked")
-    private <T> T readArrayLE(ArrayCreator<T> creator, int typeSize, int lenShift, long off) {
+    <T> T readArrayLE(ArrayCreator<T> creator, int typeSize, int lenShift, long off) {
         assert creator != null;
 
         if (tmpArr == null) {
@@ -1795,7 +1795,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     /**
      * Array creator.
      */
-    private interface ArrayCreator<T> {
+    interface ArrayCreator<T> {
         /**
          * @param len Array length or {@code -1} if array was not fully read.
          * @return New array.

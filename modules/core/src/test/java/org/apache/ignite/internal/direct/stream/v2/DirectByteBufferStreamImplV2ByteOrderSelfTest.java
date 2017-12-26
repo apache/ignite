@@ -17,10 +17,15 @@
 
 package org.apache.ignite.internal.direct.stream.v2;
 
+import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import junit.framework.TestCase;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
@@ -199,254 +204,241 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
-    public void testShortArrayOverflow() throws Exception {
-        DirectByteBufferStream readStream = createStream(buff);
-
-        short[] arr = new short[ARR_LEN];
-
-        for (int i = 0; i < ARR_LEN; i++)
-            arr[i] = (short)RND.nextLong();
-
-        int typeSize = 2;
-
-        int outLen = ARR_LEN * typeSize + LEN_BYTES;
-
-        buff.limit(outLen - 1);
-
-        // Write and read the first part.
-        stream.writeShortArray(arr);
-
-        assertFalse(stream.lastFinished());
-
-        buff.rewind();
-
-        assertEquals(null, readStream.readShortArray());
-
-        assertFalse(readStream.lastFinished());
-
-        buff.rewind();
-
-        // Write and read the second part.
-        stream.writeShortArray(arr);
-
-        assertTrue(stream.lastFinished());
-
-        buff.rewind();
-
-        assertArrayEquals(arr, readStream.readShortArray());
-
-        assertTrue(readStream.lastFinished());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCharArrayOverflow() throws Exception {
-        DirectByteBufferStream readStream = createStream(buff);
-
+    public void testCharArrayOverflow() {
         char[] arr = new char[ARR_LEN];
 
         for (int i = 0; i < ARR_LEN; i++)
-            arr[i] = (char)RND.nextLong();
+            arr[i] = (char)RND.nextInt();
 
-        int typeSize = 2;
-
-        int outLen = ARR_LEN * typeSize + LEN_BYTES;
-
-        buff.limit(outLen - 1);
-
-        // Write and read the first part.
-        stream.writeCharArray(arr);
-
-        assertFalse(stream.lastFinished());
-
-        buff.rewind();
-
-        assertEquals(null, readStream.readCharArray());
-
-        assertFalse(readStream.lastFinished());
-
-        buff.rewind();
-
-        // Write and read the second part.
-        stream.writeCharArray(arr);
-
-        assertTrue(stream.lastFinished());
-
-        buff.rewind();
-
-        assertArrayEquals(arr, readStream.readCharArray());
-
-        assertTrue(readStream.lastFinished());
+        testWriteArrayOverflow(arr, false, false, 1);
+        testWriteArrayOverflow(arr, false, true, 1);
+        testWriteArrayOverflow(arr, true, false, 1);
+        testWriteArrayOverflow(arr, true, true, 1);
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
-    public void testIntArrayOverflow() throws Exception {
-        DirectByteBufferStream readStream = createStream(buff);
+    public void testShortArrayOverflow() {
+        short[] arr = new short[ARR_LEN];
 
+        for (int i = 0; i < ARR_LEN; i++)
+            arr[i] = (short) RND.nextInt();
+
+        testWriteArrayOverflow(arr, false, false, 1);
+        testWriteArrayOverflow(arr, false, true, 1);
+        testWriteArrayOverflow(arr, true, false, 1);
+        testWriteArrayOverflow(arr, true, true, 1);
+    }
+
+    /**
+     *
+     */
+    public void testIntArrayOverflow() {
         int[] arr = new int[ARR_LEN];
 
         for (int i = 0; i < ARR_LEN; i++)
             arr[i] = RND.nextInt();
 
-        int typeSize = 4;
-
-        int outLen = ARR_LEN * typeSize + LEN_BYTES;
-
-        buff.limit(outLen - 1);
-
-        // Write and read the first part.
-        stream.writeIntArray(arr);
-
-        assertFalse(stream.lastFinished());
-
-        buff.rewind();
-
-        assertEquals(null, readStream.readIntArray());
-
-        assertFalse(readStream.lastFinished());
-
-        buff.rewind();
-
-        // Write and read the second part.
-        stream.writeIntArray(arr);
-
-        assertTrue(stream.lastFinished());
-
-        buff.rewind();
-
-        assertArrayEquals(arr, readStream.readIntArray());
-
-        assertTrue(readStream.lastFinished());
+        testWriteArrayOverflow(arr, false, false,2);
+        testWriteArrayOverflow(arr, false, true,2);
+        testWriteArrayOverflow(arr, true, false,2);
+        testWriteArrayOverflow(arr, true, true,2);
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
-    public void testLongArrayOverflow() throws Exception {
-        DirectByteBufferStream readStream = createStream(buff);
-
+    public void testLongArrayOverflow() {
         long[] arr = new long[ARR_LEN];
 
         for (int i = 0; i < ARR_LEN; i++)
             arr[i] = RND.nextLong();
 
-        int typeSize = 8;
-
-        int outLen = ARR_LEN * typeSize + LEN_BYTES;
-
-        buff.limit(outLen - 1);
-
-        // Write and read the first part.
-        stream.writeLongArray(arr);
-
-        assertFalse(stream.lastFinished());
-
-        buff.rewind();
-
-        assertEquals(null, readStream.readLongArray());
-
-        assertFalse(readStream.lastFinished());
-
-        buff.rewind();
-
-        // Write and read the second part.
-        stream.writeLongArray(arr);
-
-        assertTrue(stream.lastFinished());
-
-        buff.rewind();
-
-        assertArrayEquals(arr, readStream.readLongArray());
-
-        assertTrue(readStream.lastFinished());
+        testWriteArrayOverflow(arr, false, false, 3);
+        testWriteArrayOverflow(arr, false, true, 3);
+        testWriteArrayOverflow(arr, true, false, 3);
+        testWriteArrayOverflow(arr, true, true, 3);
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
-    public void testFloatArrayOverflow() throws Exception {
-        DirectByteBufferStream readStream = createStream(buff);
-
+    public void testFloatArrayOverflow() {
         float[] arr = new float[ARR_LEN];
 
         for (int i = 0; i < ARR_LEN; i++)
             arr[i] = RND.nextFloat();
 
-        int typeSize = 4;
-
-        int outLen = ARR_LEN * typeSize + LEN_BYTES;
-
-        buff.limit(outLen - 1);
-
-        // Write and read the first part.
-        stream.writeFloatArray(arr);
-
-        assertFalse(stream.lastFinished());
-
-        buff.rewind();
-
-        assertEquals(null, readStream.readFloatArray());
-
-        assertFalse(readStream.lastFinished());
-
-        buff.rewind();
-
-        // Write and read the second part.
-        stream.writeFloatArray(arr);
-
-        assertTrue(stream.lastFinished());
-
-        buff.rewind();
-
-        assertArrayEquals(arr, readStream.readFloatArray(), 0);
-
-        assertTrue(readStream.lastFinished());
+        testWriteArrayOverflow(arr, false, false, 2);
+        testWriteArrayOverflow(arr, false, true, 2);
+        testWriteArrayOverflow(arr, true, false, 2);
+        testWriteArrayOverflow(arr, true, true, 2);
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
-    public void testDoubleArrayOverflow() throws Exception {
-        DirectByteBufferStream readStream = createStream(buff);
-
+    public void testDoubleArrayOverflow() {
         double[] arr = new double[ARR_LEN];
 
         for (int i = 0; i < ARR_LEN; i++)
             arr[i] = RND.nextDouble();
 
-        int typeSize = 8;
+        testWriteArrayOverflow(arr, false, false, 3);
+        testWriteArrayOverflow(arr, false, true, 3);
+        testWriteArrayOverflow(arr, true, false, 3);
+        testWriteArrayOverflow(arr, true, true, 3);
+    }
 
-        int outLen = ARR_LEN * typeSize + LEN_BYTES;
+    /**
+     * @param srcArr Source array.
+     * @param writeBigEndian If {@code true}, then write in big-endian mode.
+     * @param readBigEndian If {@code true}, then read in big-endian mode.
+     * @param lenShift Length shift.
+     * @param <T> Array type.
+     */
+    private <T> void testWriteArrayOverflow(T srcArr, boolean writeBigEndian, boolean readBigEndian, int lenShift) {
+        DirectByteBufferStreamImplV2 writeStream = createStream(buff);
+        DirectByteBufferStreamImplV2 readStream = createStream(buff);
 
-        buff.limit(outLen - 1);
+        int outBytes = (ARR_LEN << lenShift) + LEN_BYTES;
+        int typeSize = 1 << lenShift;
+        long baseOff = baseOffset(srcArr);
 
-        // Write and read the first part.
-        stream.writeDoubleArray(arr);
-
-        assertFalse(stream.lastFinished());
-
+        buff.limit(outBytes - 1);
         buff.rewind();
 
-        assertEquals(null, readStream.readDoubleArray());
+        // Write and read the first part.
+        boolean writeRes;
 
-        assertFalse(readStream.lastFinished());
+        if (writeBigEndian)
+            writeRes = writeStream.writeArrayLE(srcArr, baseOff, ARR_LEN, typeSize, lenShift);
+        else
+            writeRes = writeStream.writeArray(srcArr, baseOff, ARR_LEN, outBytes);
 
+        assertFalse(writeRes);
+
+        buff.limit(buff.position());
+        buff.rewind();
+
+        DirectByteBufferStreamImplV2.ArrayCreator<T> arrCreator = arrayCreator(srcArr);
+
+        T resArr;
+
+        if (readBigEndian)
+            resArr = readStream.readArrayLE(arrCreator, typeSize, lenShift, baseOff);
+        else
+            resArr = readStream.readArray(arrCreator, lenShift, baseOff);
+
+        assertEquals(null, resArr);
+
+        buff.limit(outBytes);
         buff.rewind();
 
         // Write and read the second part.
-        stream.writeDoubleArray(arr);
+        if (writeBigEndian)
+            writeRes = writeStream.writeArrayLE(srcArr, baseOff, ARR_LEN, typeSize, lenShift);
+        else
+            writeRes = writeStream.writeArray(srcArr, baseOff, ARR_LEN, outBytes);
 
-        assertTrue(stream.lastFinished());
+        assertTrue(writeRes);
 
+        buff.limit(buff.position());
         buff.rewind();
 
-        assertArrayEquals(arr, readStream.readDoubleArray(), 0);
+        if (readBigEndian)
+            resArr = readStream.readArrayLE(arrCreator, typeSize, lenShift, baseOff);
+        else
+            resArr = readStream.readArray(arrCreator, lenShift, baseOff);
 
-        assertTrue(readStream.lastFinished());
+        assertNotNull(resArr);
+
+        if (readBigEndian != writeBigEndian)
+            revertByteOrder(resArr, baseOff, typeSize);
+
+        assertEquals(toList(srcArr), toList(resArr));
+    }
+
+    /**
+     * Convert provided array into a list.
+     *
+     * @param arr Source array.
+     * @param <T> Array type.
+     * @return {@code List}, containing all elements from the array.
+     */
+    private <T> List toList(T arr) {
+        List list = new ArrayList<>();
+
+        int len = Array.getLength(arr);
+
+        for (int i = 0; i < len; i++)
+            list.add(Array.get(arr, i));
+
+        return list;
+    }
+
+    /**
+     * Change byte order for the provided array.
+     *
+     * @param arr Source array.
+     * @param baseOff Base offset for the provided array.
+     * @param typeSize Type size.
+     * @param <T> Array type.
+     */
+    private <T> void revertByteOrder(T arr, long baseOff, int typeSize) {
+        int len = Array.getLength(arr);
+
+        byte[] tmp = new byte[typeSize];
+
+        for (int i = 0; i < len; i++) {
+            for (int j = 0; j < typeSize; j++)
+                tmp[j] = GridUnsafe.getByteField(arr, baseOff + i * typeSize + j);
+
+            for (int j = 0; j < typeSize; j++)
+                GridUnsafe.putByteField(arr, baseOff + i * typeSize + j, tmp[typeSize - j - 1]);
+        }
+    }
+
+    /**
+     * Construct {@code ArrayCreator} for a type of a provided array.
+     *
+     * @param arr Reference array.
+     * @param <T> Array type.
+     * @return {@code ArrayCreator} for a required type.
+     */
+    private <T> DirectByteBufferStreamImplV2.ArrayCreator<T> arrayCreator(final T arr) {
+        return new DirectByteBufferStreamImplV2.ArrayCreator<T>() {
+            @Override public T create(int len) {
+                if (len < 0)
+                    throw new IgniteException("Invalid array length: " + len);
+                else
+                    return (T)Array.newInstance(arr.getClass().getComponentType(), len);
+            }
+        };
+    }
+
+    /**
+     * @param arr Array.
+     * @param <T> Array type.
+     * @return Base offset for the provided array type.
+     */
+    private <T> long baseOffset(T arr) {
+        if (arr.getClass().getComponentType() == char.class)
+            return GridUnsafe.CHAR_ARR_OFF;
+        else if (arr.getClass().getComponentType() == short.class)
+            return GridUnsafe.SHORT_ARR_OFF;
+        else if (arr.getClass().getComponentType() == int.class)
+            return GridUnsafe.INT_ARR_OFF;
+        else if (arr.getClass().getComponentType() == long.class)
+            return GridUnsafe.LONG_ARR_OFF;
+        else if (arr.getClass().getComponentType() == float.class)
+            return GridUnsafe.FLOAT_ARR_OFF;
+        else if (arr.getClass().getComponentType() == double.class)
+            return GridUnsafe.DOUBLE_ARR_OFF;
+        else
+            throw new IllegalArgumentException("Unsupported array type");
     }
 }
