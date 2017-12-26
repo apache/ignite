@@ -57,6 +57,33 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /** Total number of nodes. */
     final static int NODES_CNT = 4;
 
+    /**
+     * Closure to perform ordinary delete after repeatable read.
+     */
+    private final IgniteInClosure<Connection> afterReadDelete = new IgniteInClosure<Connection>() {
+        @Override public void apply(Connection conn) {
+            execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
+        }
+    };
+
+    /**
+     * Closure to perform fast delete after repeatable read.
+     */
+    private final IgniteInClosure<Connection> afterReadFastDelete = new IgniteInClosure<Connection>() {
+        @Override public void apply(Connection conn) {
+            execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
+        }
+    };
+
+    /**
+     * Closure to perform ordinary update after repeatable read.
+     */
+    private final IgniteInClosure<Connection> afterReadUpdate = new IgniteInClosure<Connection>() {
+        @Override public void apply(Connection conn) {
+            execute(conn, "UPDATE \"Person\".Person set firstname = 'Joe' where firstname = 'John'");
+        }
+    };
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String testIgniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(testIgniteInstanceName);
@@ -304,7 +331,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
             @Override public void apply(Connection conn) {
                 execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
             }
-        }, false);
+        }, null);
     }
 
     /**
@@ -315,7 +342,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
             @Override public void apply(Connection conn) {
                 execute(conn, "DELETE FROM \"Person\".Person where id = 1");
             }
-        }, false);
+        }, null);
     }
 
     /**
@@ -326,7 +353,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
             @Override public void apply(Connection conn) {
                 personCache().remove(1);
             }
-        }, false);
+        }, null);
     }
 
     /**
@@ -337,7 +364,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
             @Override public void apply(Connection conn) {
                 execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
             }
-        }, true);
+        }, afterReadDelete);
     }
 
     /**
@@ -348,7 +375,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
             @Override public void apply(Connection conn) {
                 execute(conn, "DELETE FROM \"Person\".Person where id = 1");
             }
-        }, true);
+        }, afterReadDelete);
     }
 
     /**
@@ -359,19 +386,110 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
             @Override public void apply(Connection conn) {
                 personCache().remove(1);
             }
-        }, true);
+        }, afterReadDelete);
+    }
+
+    /**
+     *
+     */
+    public void testRepeatableReadAndFastDeleteWithConcurrentDelete() throws Exception {
+        doTestRepeatableRead(new IgniteInClosure<Connection>() {
+            @Override public void apply(Connection conn) {
+                execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
+            }
+        }, afterReadFastDelete);
+    }
+
+    /**
+     *
+     */
+    public void testRepeatableReadAndFastDeleteWithConcurrentFastDelete() throws Exception {
+        doTestRepeatableRead(new IgniteInClosure<Connection>() {
+            @Override public void apply(Connection conn) {
+                execute(conn, "DELETE FROM \"Person\".Person where id = 1");
+            }
+        }, afterReadFastDelete);
+    }
+
+    /**
+     *
+     */
+    public void testRepeatableReadAndFastDeleteWithConcurrentCacheRemove() throws Exception {
+        doTestRepeatableRead(new IgniteInClosure<Connection>() {
+            @Override public void apply(Connection conn) {
+                personCache().remove(1);
+            }
+        }, afterReadFastDelete);
+    }
+
+    /** */
+
+    /**
+     *
+     */
+    public void testRepeatableReadWithConcurrentUpdate() throws Exception {
+        doTestRepeatableRead(new IgniteInClosure<Connection>() {
+            @Override public void apply(Connection conn) {
+                execute(conn, "UPDATE \"Person\".Person SET secondname = 'Fix' where firstname = 'John'");
+            }
+        }, null);
+    }
+
+    /**
+     *
+     */
+    public void testRepeatableReadWithConcurrentCacheReplace() throws Exception {
+        doTestRepeatableRead(new IgniteInClosure<Connection>() {
+            @Override public void apply(Connection conn) {
+                Person p = new Person();
+
+                p.id = 1;
+                p.firstName = "Luke";
+                p.lastName = "Maxwell";
+
+                personCache().replace(1, p);
+            }
+        }, null);
+    }
+
+    /**
+     *
+     */
+    public void testRepeatableReadAndUpdateWithConcurrentUpdate() throws Exception {
+        doTestRepeatableRead(new IgniteInClosure<Connection>() {
+            @Override public void apply(Connection conn) {
+                execute(conn, "UPDATE \"Person\".Person SET secondname = 'Fix' where firstname = 'John'");
+            }
+        }, afterReadUpdate);
+    }
+
+    /**
+     *
+     */
+    public void testRepeatableReadAndUpdateWithConcurrentCacheReplace() throws Exception {
+        doTestRepeatableRead(new IgniteInClosure<Connection>() {
+            @Override public void apply(Connection conn) {
+                Person p = new Person();
+
+                p.id = 1;
+                p.firstName = "Luke";
+                p.lastName = "Maxwell";
+
+                personCache().replace(1, p);
+            }
+        }, afterReadUpdate);
     }
 
     /**
      * Perform repeatable reads and concurrent changes.
-     * @param clo Updating closure.
-     * @param modifyAfterRead Whether write should also be made inside repeatable read transaction
+     * @param concurrentWriteClo Updating closure.
+     * @param afterReadClo Closure making write changes that should also be made inside repeatable read transaction
      *     (must yield an exception).
      * @throws Exception if failed.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    private void doTestRepeatableRead(final IgniteInClosure<Connection> clo, final boolean modifyAfterRead)
-        throws Exception {
+    private void doTestRepeatableRead(final IgniteInClosure<Connection> concurrentWriteClo,
+        final IgniteInClosure<Connection> afterReadClo) throws Exception {
         final CountDownLatch repeatableReadLatch = new CountDownLatch(1);
 
         final CountDownLatch initLatch = new CountDownLatch(1);
@@ -397,8 +515,8 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
 
                         assertEqualsCollections(before, after);
 
-                        if (modifyAfterRead)
-                            execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
+                        if (afterReadClo != null)
+                            afterReadClo.apply(conn);
                     }
                 });
 
@@ -417,7 +535,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
                             throw new IgniteException(e);
                         }
 
-                        clo.apply(conn);
+                        concurrentWriteClo.apply(conn);
 
                         repeatableReadLatch.countDown();
                     }
@@ -429,7 +547,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
 
         conModFut.get();
 
-        if (modifyAfterRead) {
+        if (afterReadClo != null) {
             IgniteCheckedException ex = (IgniteCheckedException)GridTestUtils.assertThrows(null, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     readFut.get();
