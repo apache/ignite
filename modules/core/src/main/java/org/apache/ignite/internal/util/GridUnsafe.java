@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.util;
 
 import java.lang.reflect.Field;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import org.apache.ignite.IgniteSystemProperties;
@@ -96,6 +98,9 @@ public abstract class GridUnsafe {
 
     /** */
     public static final long BOOLEAN_ARR_OFF = UNSAFE.arrayBaseOffset(boolean[].class);
+
+    /** {@link java.nio.Buffer#address} field offset. */
+    private static final long DIRECT_BUF_ADDR_OFF = bufferAddressOffset();
 
     /**
      * Ensure singleton.
@@ -1320,6 +1325,25 @@ public abstract class GridUnsafe {
     }
 
     /**
+     * Returns page size.
+     *
+     * @return Page size.
+     */
+    public static int pageSize() {
+        return UNSAFE.pageSize();
+    }
+
+    /**
+     * Returns address of {@link Buffer} instance.
+     *
+     * @param buf Buffer.
+     * @return Buffer memory address.
+     */
+    public static long bufferAddress(ByteBuffer buf) {
+        return UNSAFE.getLong(buf, DIRECT_BUF_ADDR_OFF);
+    }
+
+    /**
      * Returns unaligned flag.
      */
     private static boolean unaligned() {
@@ -1357,6 +1381,31 @@ public abstract class GridUnsafe {
                 throw new RuntimeException("Could not initialize intrinsics.", e.getCause());
             }
         }
+    }
+
+    /** */
+    private static long bufferAddressOffset() {
+        final ByteBuffer maybeDirectBuf = ByteBuffer.allocateDirect(1);
+
+        Field addrField = AccessController.doPrivileged(new PrivilegedAction<Field>() {
+            @Override public Field run() {
+                try {
+                    Field addrFld = Buffer.class.getDeclaredField("address");
+
+                    addrFld.setAccessible(true);
+
+                    if (addrFld.getLong(maybeDirectBuf) == 0)
+                        throw new RuntimeException("java.nio.DirectByteBuffer.address field is unavailable.");
+
+                    return addrFld;
+                }
+                catch (Exception e) {
+                    throw new RuntimeException("java.nio.DirectByteBuffer.address field is unavailable.", e);
+                }
+            }
+        });
+
+        return UNSAFE.objectFieldOffset(addrField);
     }
 
     /**
@@ -1661,13 +1710,5 @@ public abstract class GridUnsafe {
             UNSAFE.putByte(addr + 1, (byte)(val >> 8));
             UNSAFE.putByte(addr, (byte)(val));
         }
-    }
-
-    /**
-     * @param buf Direct buffer.
-     * @return Buffer memory address.
-     */
-    public static long bufferAddress(ByteBuffer buf) {
-        return ((DirectBuffer)buf).address();
     }
 }
