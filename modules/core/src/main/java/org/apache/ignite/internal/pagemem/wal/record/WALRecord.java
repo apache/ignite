@@ -43,7 +43,7 @@ public abstract class WALRecord {
         /** Checkpoint (begin) record */
         CHECKPOINT_RECORD,
 
-        /** */
+        /** WAL segment header record. */
         HEADER_RECORD,
 
         // Delta records.
@@ -163,8 +163,10 @@ public abstract class WALRecord {
         BTREE_META_PAGE_INIT_ROOT2,
 
         /** Partition destroy. */
-        PARTITION_DESTROY
-        ;
+        PARTITION_DESTROY,
+
+        /** Snapshot record. */
+        SNAPSHOT;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();
@@ -186,28 +188,11 @@ public abstract class WALRecord {
     private int size;
 
     /** */
-    private int chainSize;
-
-    /** */
     @GridToStringExclude
     private WALRecord prev;
 
     /** */
     private WALPointer pos;
-
-    /**
-     * @param chainSize Chain size in bytes.
-     */
-    public void chainSize(int chainSize) {
-        this.chainSize = chainSize;
-    }
-
-    /**
-     * @return Get chain size in bytes.
-     */
-    public int chainSize() {
-        return chainSize;
-    }
 
     /**
      * @return Previous record in chain.

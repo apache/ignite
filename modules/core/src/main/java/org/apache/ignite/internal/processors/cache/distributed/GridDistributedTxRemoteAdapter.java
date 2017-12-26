@@ -324,18 +324,24 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
     /** {@inheritDoc} */
     @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
-        try {
-            if (hasWriteKey(entry.txKey())) {
-                commitIfLocked();
+        if (!hasWriteKey(entry.txKey()))
+            return false;
 
-                return true;
-            }
+        try {
+            commitIfLocked();
+
+            return true;
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to commit remote transaction: " + this, e);
-        }
 
-        return false;
+            invalidate(true);
+            systemInvalidate(true);
+
+            rollbackRemoteTx();
+
+            return false;
+        }
     }
 
     /** {@inheritDoc} */
@@ -556,7 +562,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                                             GridCacheVersion dhtVer = cached.isNear() ? writeVersion() : null;
 
-                                            if (!near() && cctx.wal() != null && op != NOOP && op != RELOAD && op != READ) {
+                                            if (!near() && cacheCtx.group().persistenceEnabled() &&
+                                                op != NOOP && op != RELOAD && op != READ) {
                                                 if (dataEntries == null)
                                                     dataEntries = new ArrayList<>(entries.size());
 
@@ -741,7 +748,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                 }
                             }
 
-                            if (!near() && cctx.wal() != null)
+                            if (!near() && !F.isEmpty(dataEntries) && cctx.wal() != null)
                                 cctx.wal().log(new DataRecord(dataEntries));
 
                             if (ptr != null)
@@ -855,7 +862,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             // Note that we don't evict near entries here -
             // they will be deleted by their corresponding transactions.
             if (state(ROLLING_BACK) || state() == UNKNOWN) {
-                cctx.tm().rollbackTx(this);
+                cctx.tm().rollbackTx(this, false);
 
                 state(ROLLED_BACK);
             }

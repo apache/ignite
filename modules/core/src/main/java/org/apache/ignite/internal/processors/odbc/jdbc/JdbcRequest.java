@@ -21,12 +21,12 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
+import org.apache.ignite.internal.processors.odbc.ClientListenerRequestNoId;
 
 /**
  * JDBC request.
  */
-public class JdbcRequest extends SqlListenerRequest implements JdbcRawBinarylizable {
+public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBinarylizable {
     /** Execute sql query request. */
     static final byte QRY_EXEC = 2;
 

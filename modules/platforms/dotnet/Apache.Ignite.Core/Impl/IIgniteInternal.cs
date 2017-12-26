@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl
 {
     using System;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cluster;
@@ -27,12 +28,12 @@ namespace Apache.Ignite.Core.Impl
     /// <summary>
     /// Internal Ignite interface.
     /// </summary>
-    internal interface IIgniteInternal : IIgnite
+    internal interface IIgniteInternal
     {
         /// <summary>
         /// Gets the binary processor.
         /// </summary>
-        BinaryProcessor BinaryProcessor { get; }
+        IBinaryProcessor BinaryProcessor { get; }
 
         /// <summary>
         /// Configuration.
@@ -65,5 +66,15 @@ namespace Apache.Ignite.Core.Impl
         /// Gets the data streamer.
         /// </summary>
         IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName, bool keepBinary);
+
+        /// <summary>
+        /// Gets the public Ignite API.
+        /// </summary>
+        IIgnite GetIgnite();
+
+        /// <summary>
+        /// Gets the binary API.
+        /// </summary>
+        IBinary GetBinary();
     }
 }

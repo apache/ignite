@@ -35,12 +35,14 @@
                     <property name="name" value="p"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
+                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="pa"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="ATOMIC"/>
+                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                 </bean>
             </list>
         </property>

@@ -95,25 +95,40 @@ namespace Apache.Ignite.Core.Tests.Dataload
         {
             using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
+                Assert.AreEqual(CacheName, ldr.CacheName);
+                Assert.AreEqual(0, ldr.AutoFlushFrequency);
+
+                Assert.IsFalse(ldr.AllowOverwrite);
                 ldr.AllowOverwrite = true;
                 Assert.IsTrue(ldr.AllowOverwrite);
                 ldr.AllowOverwrite = false;
                 Assert.IsFalse(ldr.AllowOverwrite);
 
+                Assert.IsFalse(ldr.SkipStore);
                 ldr.SkipStore = true;
                 Assert.IsTrue(ldr.SkipStore);
                 ldr.SkipStore = false;
                 Assert.IsFalse(ldr.SkipStore);
 
+                Assert.AreEqual(DataStreamerDefaults.DefaultPerNodeBufferSize, ldr.PerNodeBufferSize);
                 ldr.PerNodeBufferSize = 1;
                 Assert.AreEqual(1, ldr.PerNodeBufferSize);
                 ldr.PerNodeBufferSize = 2;
                 Assert.AreEqual(2, ldr.PerNodeBufferSize);
 
-                ldr.PerNodeParallelOperations = 1;
-                Assert.AreEqual(1, ldr.PerNodeParallelOperations);
+                Assert.AreEqual(0, ldr.PerNodeParallelOperations);
+                var ops = DataStreamerDefaults.DefaultParallelOperationsMultiplier *
+                          IgniteConfiguration.DefaultThreadPoolSize;
+                ldr.PerNodeParallelOperations = ops;
+                Assert.AreEqual(ops, ldr.PerNodeParallelOperations);
                 ldr.PerNodeParallelOperations = 2;
                 Assert.AreEqual(2, ldr.PerNodeParallelOperations);
+
+                Assert.AreEqual(DataStreamerDefaults.DefaultTimeout, ldr.Timeout);
+                ldr.Timeout = TimeSpan.MaxValue;
+                Assert.AreEqual(TimeSpan.MaxValue, ldr.Timeout);
+                ldr.Timeout = TimeSpan.FromSeconds(1.5);
+                Assert.AreEqual(1.5, ldr.Timeout.TotalSeconds);
             }
         }
 
@@ -123,28 +138,37 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]        
         public void TestAddRemove()
         {
-            using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
+            IDataStreamer<int, int> ldr;
+
+            using (ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
+                Assert.IsFalse(ldr.Task.IsCompleted);
+
                 ldr.AllowOverwrite = true;
 
                 // Additions.
-                ldr.AddData(1, 1);
+                var task = ldr.AddData(1, 1);
                 ldr.Flush();                
                 Assert.AreEqual(1, _cache.Get(1));
+                Assert.IsTrue(task.IsCompleted);
+                Assert.IsFalse(ldr.Task.IsCompleted);
 
-                ldr.AddData(new KeyValuePair<int, int>(2, 2));
+                task = ldr.AddData(new KeyValuePair<int, int>(2, 2));
                 ldr.Flush();
                 Assert.AreEqual(2, _cache.Get(2));
+                Assert.IsTrue(task.IsCompleted);
 
-                ldr.AddData(new List<KeyValuePair<int, int>> { new KeyValuePair<int, int>(3, 3), new KeyValuePair<int, int>(4, 4) });
+                task = ldr.AddData(new [] { new KeyValuePair<int, int>(3, 3), new KeyValuePair<int, int>(4, 4) });
                 ldr.Flush();
                 Assert.AreEqual(3, _cache.Get(3));
                 Assert.AreEqual(4, _cache.Get(4));
+                Assert.IsTrue(task.IsCompleted);
 
                 // Removal.
-                ldr.RemoveData(1);
+                task = ldr.RemoveData(1);
                 ldr.Flush();
                 Assert.IsFalse(_cache.ContainsKey(1));
+                Assert.IsTrue(task.IsCompleted);
 
                 // Mixed.
                 ldr.AddData(5, 5);                
@@ -165,6 +189,48 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 for (int i = 5; i < 13; i++)
                     Assert.AreEqual(i, _cache.Get(i));
             }
+
+            Assert.IsTrue(ldr.Task.IsCompleted);
+        }
+
+        /// <summary>
+        /// Tests object graphs with loops.
+        /// </summary>
+        [Test]
+        public void TestObjectGraphs()
+        {
+            var obj1 = new Container();
+            var obj2 = new Container();
+            var obj3 = new Container();
+            var obj4 = new Container();
+
+            obj1.Inner = obj2;
+            obj2.Inner = obj1;
+            obj3.Inner = obj1;
+            obj4.Inner = new Container();
+
+            using (var ldr = _grid.GetDataStreamer<int, Container>(CacheName))
+            {
+                ldr.AllowOverwrite = true;
+
+                ldr.AddData(1, obj1);
+                ldr.AddData(2, obj2);
+                ldr.AddData(3, obj3);
+                ldr.AddData(4, obj4);
+            }
+
+            var cache = _grid.GetCache<int, Container>(CacheName);
+
+            var res = cache[1];
+            Assert.AreEqual(res, res.Inner.Inner);
+
+            Assert.IsNotNull(cache[2].Inner);
+            Assert.IsNotNull(cache[2].Inner.Inner);
+            Assert.IsNotNull(cache[3].Inner);
+            Assert.IsNotNull(cache[3].Inner.Inner);
+            
+            Assert.IsNotNull(cache[4].Inner);
+            Assert.IsNull(cache[4].Inner.Inner);
         }
 
         /// <summary>
@@ -477,6 +543,16 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
                 for (var i = 0; i < 100; i++)
                     Assert.AreEqual(i + 1, cache.Get(i).Val);
+
+                // Repeating WithKeepBinary call: valid args.
+                Assert.AreSame(ldr, ldr.WithKeepBinary<int, IBinaryObject>());
+
+                // Invalid type args.
+                var ex = Assert.Throws<InvalidOperationException>(() => ldr.WithKeepBinary<string, IBinaryObject>());
+
+                Assert.AreEqual(
+                    "Can't change type of binary streamer. WithKeepBinary has been called on an instance of " +
+                    "binary streamer with incompatible generic arguments.", ex.Message);
             }
         }
 
@@ -572,5 +648,14 @@ namespace Apache.Ignite.Core.Tests.Dataload
         {
             public int Val { get; set; }
         }
+
+        /// <summary>
+        /// Container class.
+        /// </summary>
+        private class Container
+        {
+            public Container Inner;
+        }
+
     }
 }

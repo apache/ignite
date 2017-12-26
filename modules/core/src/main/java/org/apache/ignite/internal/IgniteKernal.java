@@ -49,6 +49,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
 import javax.management.JMException;
 import javax.management.ObjectName;
+import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.DataRegionMetricsAdapter;
+import org.apache.ignite.DataStorageMetrics;
+import org.apache.ignite.DataStorageMetricsAdapter;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicSequence;
@@ -85,6 +89,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
@@ -114,7 +119,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
@@ -129,7 +135,7 @@ import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.OsDiscoveryNodeValidationProcessor;
-import org.apache.ignite.internal.processors.odbc.SqlListenerProcessor;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformNoopProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.platform.plugin.PlatformPluginProcessor;
@@ -175,7 +181,8 @@ import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.marshaller.MarshallerExclusions;
-import org.apache.ignite.mxbean.ClusterLocalNodeMetricsMXBean;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.mxbean.StripedExecutorMXBean;
 import org.apache.ignite.mxbean.ThreadPoolMXBean;
@@ -213,6 +220,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DAEMON;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STORAGE_CONFIG;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STREAMER_POOL_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
@@ -230,10 +238,10 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_US
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MEMORY_CONFIG;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_RESTART_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_PORT_RANGE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SPI_CLASS;
@@ -292,6 +300,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** */
     @GridToStringExclude
     private ObjectName locNodeMBean;
+
+    /** */
+    @GridToStringExclude
+    private ObjectName allNodesMBean;
 
     /** */
     @GridToStringExclude
@@ -802,6 +814,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ackOsInfo();
         ackLanguageRuntime();
         ackRemoteManagement();
+        ackLogger();
         ackVmArguments(rtBean);
         ackClassPaths(rtBean);
         ackSystemProperties();
@@ -930,13 +943,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             // Assign discovery manager to context before other processors start so they
             // are able to register custom event listener.
-            GridManager discoMgr = new GridDiscoveryManager(ctx);
+            final GridManager discoMgr = new GridDiscoveryManager(ctx);
 
             ctx.add(discoMgr, false);
 
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
             try {
+                startProcessor(new PdsConsistentIdProcessor(ctx));
                 startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));
                 startProcessor(new  GridAffinityProcessor(ctx));
                 startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
@@ -944,7 +958,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startProcessor(new GridClusterStateProcessor(ctx));
                 startProcessor(new GridCacheProcessor(ctx));
                 startProcessor(new GridQueryProcessor(ctx));
-                startProcessor(new SqlListenerProcessor(ctx));
+                startProcessor(new ClientListenerProcessor(ctx));
                 startProcessor(new GridServiceProcessor(ctx));
                 startProcessor(new GridTaskSessionProcessor(ctx));
                 startProcessor(new GridJobProcessor(ctx));
@@ -1070,7 +1084,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             // Register MBeans.
             registerKernalMBean();
-            registerLocalNodeMBean();
+            registerClusterMetricsMBeans();
             registerExecutorMBeans(execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc, restExecSvc, qryExecSvc,
                 schemaExecSvc);
 
@@ -1243,10 +1257,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                             int loadedPages = 0;
 
-                            Collection<MemoryPolicy> policies = ctx.cache().context().database().memoryPolicies();
+                            Collection<DataRegion> policies = ctx.cache().context().database().dataRegions();
 
                             if (!F.isEmpty(policies)) {
-                                for (MemoryPolicy memPlc : policies)
+                                for (DataRegion memPlc : policies)
                                     loadedPages += memPlc.pageMemory().loadedPages();
                             }
 
@@ -1254,7 +1268,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                             String msg = NL +
                                 "Metrics for local node (to disable set 'metricsLogFrequency' to 0)" + NL +
-                                "    ^-- Node [id=" + id + ", name=" + name() + ", uptime=" + getUpTimeFormatted() + "]" + NL +
+                                "    ^-- Node [id=" + id + (name() != null ? ", name=" + name() : "") + ", uptime=" +
+                                getUpTimeFormatted() + "]" + NL +
                                 "    ^-- H/N/C [hosts=" + hosts + ", nodes=" + nodes + ", CPUs=" + cpus + "]" + NL +
                                 "    ^-- CPU [cur=" + dblFmt.format(cpuLoadPct) + "%, avg=" +
                                 dblFmt.format(avgCpuLoadPct) + "%, GC=" + dblFmt.format(gcPct) + "%]" + NL +
@@ -1420,8 +1435,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             long safeToUse = ram - Math.max(4L << 30, (long)(ram * 0.2));
 
             if (total > safeToUse) {
-                U.quietAndWarn(log, "Nodes started on local machine require more than 80% of physical RAM what can " +
-                    "lead to significant slowdown due to swapping (please decrease JVM heap size, memory policy " +
+                U.quietAndWarn(log, "Nodes started on local machine require more than 20% of physical RAM what can " +
+                    "lead to significant slowdown due to swapping (please decrease JVM heap size, data region " +
                     "size or checkpoint buffer size) [required=" + (total >> 20) + "MB, available=" +
                     (ram >> 20) + "MB]");
             }
@@ -1601,8 +1616,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (cfg.getConnectorConfiguration() != null)
             add(ATTR_REST_PORT_RANGE, cfg.getConnectorConfiguration().getPortRange());
 
-        // Save database configuration.
-        add(ATTR_MEMORY_CONFIG, cfg.getMemoryConfiguration());
+        // Save data storage configuration.
+        addDataStorageConfigurationAttributes();
 
         // Save transactions configuration.
         add(ATTR_TX_CONFIG, cfg.getTransactionConfiguration());
@@ -1627,6 +1642,25 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 ctx.addNodeAttribute(e.getKey(), e.getValue());
             }
         }
+    }
+
+    /**
+     *
+     */
+    private void addDataStorageConfigurationAttributes() throws IgniteCheckedException {
+        MemoryConfiguration memCfg = cfg.getMemoryConfiguration();
+
+        // Save legacy memory configuration if it's present.
+        if (memCfg != null) {
+            // Page size initialization is suspended, see IgniteCacheDatabaseSharedManager#checkPageSize.
+            // We should copy initialized value from new configuration.
+            memCfg.setPageSize(cfg.getDataStorageConfiguration().getPageSize());
+
+            add(ATTR_MEMORY_CONFIG, memCfg);
+        }
+
+        // Save data storage configuration.
+        add(ATTR_DATA_STORAGE_CONFIG, new JdkMarshaller().marshal(cfg.getDataStorageConfiguration()));
     }
 
     /**
@@ -1667,30 +1701,41 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
     }
 
-    /** @throws IgniteCheckedException If registration failed. */
-    private void registerLocalNodeMBean() throws IgniteCheckedException {
+    /**
+     * Register instance of ClusterMetricsMBean.
+     *
+     * @param mbean MBean instance to register.
+     * @throws IgniteCheckedException If registration failed.
+     */
+    private ObjectName registerClusterMetricsMBean(ClusterMetricsMXBean mbean) throws IgniteCheckedException {
         if(U.IGNITE_MBEANS_DISABLED)
-            return;
+            return null;
 
-        ClusterLocalNodeMetricsMXBean mbean = new ClusterLocalNodeMetricsMXBeanImpl(ctx.discovery().localNode());
+        ObjectName objName;
 
         try {
-            locNodeMBean = U.registerMBean(
+            objName = U.registerMBean(
                 cfg.getMBeanServer(),
                 cfg.getIgniteInstanceName(),
                 "Kernal",
                 mbean.getClass().getSimpleName(),
                 mbean,
-                ClusterLocalNodeMetricsMXBean.class);
+                ClusterMetricsMXBean.class);
 
             if (log.isDebugEnabled())
-                log.debug("Registered local node MBean: " + locNodeMBean);
+                log.debug("Registered MBean: " + objName);
+
+            return objName;
         }
         catch (JMException e) {
-            locNodeMBean = null;
-
-            throw new IgniteCheckedException("Failed to register local node MBean.", e);
+            throw new IgniteCheckedException("Failed to register MBean: " + mbean.getClass().getSimpleName(), e);
         }
+    }
+
+    /** @throws IgniteCheckedException If registration failed. */
+    private void registerClusterMetricsMBeans() throws IgniteCheckedException {
+        locNodeMBean = registerClusterMetricsMBean(new ClusterLocalNodeMetricsMXBeanImpl(ctx.discovery()));
+        allNodesMBean = registerClusterMetricsMBean(new ClusterMetricsMXBeanImpl(cluster()));
     }
 
     /**
@@ -1933,6 +1978,16 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
+     * Acks Logger configuration.
+     */
+    private void ackLogger() {
+        assert log != null;
+
+        if (log.isInfoEnabled())
+            log.info("Logger: " + log.getLoggerInfo() );
+    }
+
+    /**
      * Acks ASCII-logo. Thanks to http://patorjk.com/software/taag
      */
     private void ackAsciiLogo() {
@@ -1975,6 +2030,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 if (fileName != null)
                     U.quiet(false, "  ^-- Logging to file '" + fileName + '\'');
+
+                U.quiet(false, "  ^-- Logging by '" + log.getLoggerInfo() + '\'');
 
                 U.quiet(false,
                     "  ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or \"-v\" to ignite.{sh|bat}",
@@ -2242,6 +2299,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     unregisterMBean(p2PExecSvcMBean) &
                     unregisterMBean(kernalMBean) &
                     unregisterMBean(locNodeMBean) &
+                    unregisterMBean(allNodesMBean) &
                     unregisterMBean(restExecSvcMBean) &
                     unregisterMBean(qryExecSvcMBean) &
                     unregisterMBean(schemaExecSvcMBean) &
@@ -2506,14 +2564,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      *
      */
     private void ackMemoryConfiguration() {
-        MemoryConfiguration memCfg = cfg.getMemoryConfiguration();
+        DataStorageConfiguration memCfg = cfg.getDataStorageConfiguration();
 
         if (memCfg == null)
             return;
 
-        U.log(log, "System cache's MemoryPolicy size is configured to " +
-            (memCfg.getSystemCacheInitialSize() / (1024 * 1024)) + " MB. " +
-            "Use MemoryConfiguration.systemCacheMemorySize property to change the setting.");
+        U.log(log, "System cache's DataRegion size is configured to " +
+            (memCfg.getSystemRegionInitialSize() / (1024 * 1024)) + " MB. " +
+            "Use DataStorageConfiguration.systemCacheMemorySize property to change the setting.");
     }
 
     /**
@@ -2532,12 +2590,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             for (CacheConfiguration c : cacheCfgs) {
                 String cacheName = U.maskName(c.getName());
 
-                String memPlcName = c.getMemoryPolicyName();
+                String memPlcName = c.getDataRegionName();
 
                 if (CU.isSystemCache(cacheName))
                     memPlcName = "sysMemPlc";
-                else if (memPlcName == null && cfg.getMemoryConfiguration() != null)
-                    memPlcName = cfg.getMemoryConfiguration().getDefaultMemoryPolicyName();
+                else if (memPlcName == null && cfg.getDataStorageConfiguration() != null)
+                    memPlcName = cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName();
 
                 if (!memPlcNamesMapping.containsKey(memPlcName))
                     memPlcNamesMapping.put(memPlcName, new ArrayList<String>());
@@ -2548,7 +2606,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }
 
             for (Map.Entry<String, ArrayList<String>> e : memPlcNamesMapping.entrySet()) {
-                sb.a("in '").a(e.getKey()).a("' memoryPolicy: [");
+                sb.a("in '").a(e.getKey()).a("' dataRegion: [");
 
                 for (String s : e.getValue())
                     sb.a("'").a(s).a("', ");
@@ -2834,7 +2892,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             ctx.cache().dynamicStartCaches(cacheCfgs,
                 true,
-                true).get();
+                true,
+                false).get();
 
             List<IgniteCache> createdCaches = new ArrayList<>(cacheCfgs.size());
 
@@ -2920,9 +2979,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             ctx.cache().dynamicStartCaches(cacheCfgs,
                 false,
-                true).get();
+                true,
+                false).get();
 
             List<IgniteCache> createdCaches = new ArrayList<>(cacheCfgs.size());
 
@@ -3165,6 +3227,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
+            checkClusterState();
+
             return ctx.cache().dynamicDestroyCaches(cacheNames, checkThreadTx, false);
         }
         finally {
@@ -3502,7 +3566,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<MemoryMetrics> memoryMetrics() {
+    @Override public Collection<DataRegionMetrics> dataRegionMetrics() {
         guard();
 
         try {
@@ -3514,7 +3578,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
+    @Nullable @Override public DataRegionMetrics dataRegionMetrics(String memPlcName) {
         guard();
 
         try {
@@ -3526,7 +3590,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public PersistenceMetrics persistentStoreMetrics() {
+    @Override public DataStorageMetrics dataStorageMetrics() {
         guard();
 
         try {
@@ -3535,6 +3599,21 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         finally {
             unguard();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<MemoryMetrics> memoryMetrics() {
+        return DataRegionMetricsAdapter.collectionOf(dataRegionMetrics());
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
+        return DataRegionMetricsAdapter.valueOf(dataRegionMetrics(memPlcName));
+    }
+
+    /** {@inheritDoc} */
+    @Override public PersistenceMetrics persistentStoreMetrics() {
+        return DataStorageMetricsAdapter.valueOf(dataStorageMetrics());
     }
 
     /** {@inheritDoc} */
@@ -3764,7 +3843,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (!ctx.state().publicApiActiveState()) {
             throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
                 "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
-                "join the cluster. To activate the cluster call Ignite.activate(true).");
+                "join the cluster. To activate the cluster call Ignite.active(true).");
         }
     }
 

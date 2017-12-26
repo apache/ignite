@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
@@ -84,5 +85,10 @@ public class MetaPageInitRecord extends InitNewPageRecord {
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.META_PAGE_INIT;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MetaPageInitRecord.class, this, "super", super.toString());
     }
 }

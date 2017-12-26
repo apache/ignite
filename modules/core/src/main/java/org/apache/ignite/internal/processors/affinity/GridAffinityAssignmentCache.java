@@ -392,7 +392,7 @@ public class GridAffinityAssignmentCache {
                 log.debug("Completing topology ready future right away [head=" + aff.topologyVersion() +
                     ", topVer=" + topVer + ']');
 
-            fut.onDone(topVer);
+            fut.onDone(aff.topologyVersion());
         }
         else if (stopErr != null)
             fut.onDone(stopErr);
@@ -589,8 +589,20 @@ public class GridAffinityAssignmentCache {
 
             IgniteInternalFuture<AffinityTopologyVersion> fut = readyFuture(topVer);
 
-            if (fut != null)
-                fut.get();
+            if (fut != null) {
+                Thread curTh = Thread.currentThread();
+
+                String threadName = curTh.getName();
+
+                try {
+                    curTh.setName(threadName + " (waiting " + topVer + ")");
+
+                    fut.get();
+                }
+                finally {
+                    curTh.setName(threadName);
+                }
+            }
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to wait for affinity ready future for topology version: " + topVer,

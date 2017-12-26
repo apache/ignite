@@ -19,6 +19,7 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
@@ -78,5 +79,10 @@ public class PartitionMetaStateRecord extends WALRecord {
      */
     public long updateCounter() {
         return updateCounter;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PartitionMetaStateRecord.class, this, "super", super.toString());
     }
 }

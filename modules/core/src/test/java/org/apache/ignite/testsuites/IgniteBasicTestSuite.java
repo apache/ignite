@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheClientRe
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheConcurrentReadWriteTest;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheFSRestoreTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteRejectConnectOnNodeStopTest;
+import org.apache.ignite.internal.processors.closure.GridClosureProcessorRemoteTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorSelfTest;
 import org.apache.ignite.internal.processors.closure.GridClosureSerializationTest;
 import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
@@ -53,7 +54,7 @@ import org.apache.ignite.internal.processors.database.BPlusTreeFakeReuseSelfTest
 import org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeSelfTest;
 import org.apache.ignite.internal.processors.database.FreeListImplSelfTest;
-import org.apache.ignite.internal.processors.database.MemoryMetricsSelfTest;
+import org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest;
 import org.apache.ignite.internal.processors.database.MetadataStorageSelfTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
@@ -127,6 +128,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(GridProductVersionSelfTest.class);
         suite.addTestSuite(GridAffinityProcessorRendezvousSelfTest.class);
         suite.addTestSuite(GridClosureProcessorSelfTest.class);
+        suite.addTestSuite(GridClosureProcessorRemoteTest.class);
         suite.addTestSuite(GridClosureSerializationTest.class);
         suite.addTestSuite(ClosureServiceClientsNodesTest.class);
         suite.addTestSuite(GridStartStopSelfTest.class);
@@ -173,7 +175,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(BPlusTreeReuseSelfTest.class);
         suite.addTestSuite(MetadataStorageSelfTest.class);
         suite.addTestSuite(FreeListImplSelfTest.class);
-        suite.addTestSuite(MemoryMetricsSelfTest.class);
+        suite.addTestSuite(DataRegionMetricsSelfTest.class);
         suite.addTestSuite(SwapPathConstructionSelfTest.class);
 
         suite.addTestSuite(IgniteMarshallerCacheFSRestoreTest.class);

@@ -16,6 +16,8 @@
 */
 package org.apache.ignite.configuration;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * This enum defines order of writing pages to disk storage during checkpoint.
  */
@@ -29,5 +31,21 @@ public enum CheckpointWriteOrder {
      * All checkpoint pages are collected into single list and sorted by page index.
      * Provides almost sequential disk writes, which can be much faster on some SSD models.
      */
-    SEQUENTIAL
+    SEQUENTIAL;
+
+    /**
+     * Enumerated values.
+     */
+    private static final CheckpointWriteOrder[] VALS = values();
+
+    /**
+     * Efficiently gets enumerated value from its ordinal.
+     *
+     * @param ord Ordinal value.
+     * @return Enumerated value or {@code null} if ordinal out of range.
+     */
+    @Nullable
+    public static CheckpointWriteOrder fromOrdinal(int ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    }
 }

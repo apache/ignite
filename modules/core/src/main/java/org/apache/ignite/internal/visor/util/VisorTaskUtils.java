@@ -23,14 +23,19 @@ import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.math.BigDecimal;
 import java.net.InetAddress;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,13 +50,12 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.eviction.EvictionPolicy;
-import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicyMBean;
-import org.apache.ignite.cache.eviction.lru.LruEvictionPolicyMBean;
+import org.apache.ignite.cache.eviction.AbstractEvictionPolicyFactory;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
@@ -66,6 +70,7 @@ import org.apache.ignite.internal.visor.log.VisorLogFile;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.System.getProperty;
@@ -525,14 +530,45 @@ public class VisorTaskUtils {
     }
 
     /**
+     * @param path Path to resolve only relative to IGNITE_HOME.
+     * @return Resolved path as file, or {@code null} if path cannot be resolved.
+     * @throws IOException If failed to resolve path.
+     */
+    public static File resolveIgnitePath(String path) throws IOException {
+        File folder = U.resolveIgnitePath(path);
+
+        if (folder == null)
+            return null;
+
+        if (!folder.toPath().toRealPath(LinkOption.NOFOLLOW_LINKS).startsWith(Paths.get(U.getIgniteHome())))
+            return null;
+
+        return folder;
+    }
+
+    /**
+     * @param file File to resolve.
+     * @return Resolved file if it is a symbolic link or original file.
+     * @throws IOException If failed to resolve symlink.
+     */
+    public static File resolveSymbolicLink(File file) throws IOException {
+        Path path = file.toPath();
+
+        return Files.isSymbolicLink(path) ? Files.readSymbolicLink(path).toFile() : file;
+    }
+
+    /**
      * Finds all files in folder and in it's sub-tree of specified depth.
      *
      * @param file Starting folder
      * @param maxDepth Depth of the tree. If 1 - just look in the folder, no sub-folders.
      * @param filter file filter.
      * @return List of found files.
+     * @throws IOException If failed to list files.
      */
-    public static List<VisorLogFile> fileTree(File file, int maxDepth, @Nullable FileFilter filter) {
+    public static List<VisorLogFile> fileTree(File file, int maxDepth, @Nullable FileFilter filter) throws IOException {
+        file = resolveSymbolicLink(file);
+
         if (file.isDirectory()) {
             File[] files = (filter == null) ? file.listFiles() : file.listFiles(filter);
 
@@ -556,12 +592,13 @@ public class VisorTaskUtils {
     }
 
     /**
-     * @param fld Folder with files to match.
+     * @param file Folder with files to match.
      * @param ptrn Pattern to match against file name.
      * @return Collection of matched files.
+     * @throws IOException If failed to filter files.
      */
-    public static List<VisorLogFile> matchedFiles(File fld, final String ptrn) {
-        List<VisorLogFile> files = fileTree(fld, MAX_FOLDER_DEPTH,
+    public static List<VisorLogFile> matchedFiles(File file, final String ptrn) throws IOException {
+        List<VisorLogFile> files = fileTree(file, MAX_FOLDER_DEPTH,
             new FileFilter() {
                 @Override public boolean accept(File f) {
                     return !f.isHidden() && (f.isDirectory() || f.isFile() && f.getName().matches(ptrn));
@@ -721,12 +758,9 @@ public class VisorTaskUtils {
      * @param plc Eviction policy.
      * @return Extracted max size.
      */
-    public static Integer evictionPolicyMaxSize(@Nullable EvictionPolicy plc) {
-        if (plc instanceof LruEvictionPolicyMBean)
-            return ((LruEvictionPolicyMBean)plc).getMaxSize();
-
-        if (plc instanceof FifoEvictionPolicyMBean)
-            return ((FifoEvictionPolicyMBean)plc).getMaxSize();
+    public static Integer evictionPolicyMaxSize(@Nullable Factory plc) {
+        if (plc instanceof AbstractEvictionPolicyFactory)
+            return ((AbstractEvictionPolicyFactory) plc).getMaxSize();
 
         return null;
     }
@@ -1077,5 +1111,141 @@ public class VisorTaskUtils {
      */
     public static boolean joinTimedOut(String msg) {
         return msg != null && msg.startsWith("Join process timed out.");
+    }
+
+    /**
+     * Special wrapper over address that can be sorted in following order:
+     *     IPv4, private IPv4, IPv4 local host, IPv6.
+     *     Lower addresses first.
+     */
+    private static class SortableAddress implements Comparable<SortableAddress> {
+        /** */
+        private int type;
+
+        /** */
+        private BigDecimal bits;
+
+        /** */
+        private String addr;
+
+        /**
+         * Constructor.
+         *
+         * @param addr Address as string.
+         */
+        private SortableAddress(String addr) {
+            this.addr = addr;
+
+            if (addr.indexOf(':') > 0)
+                type = 4; // IPv6
+            else {
+                try {
+                    InetAddress inetAddr = InetAddress.getByName(addr);
+
+                    if (inetAddr.isLoopbackAddress())
+                        type = 3;  // localhost
+                    else if (inetAddr.isSiteLocalAddress())
+                        type = 2;  // private IPv4
+                    else
+                        type = 1; // other IPv4
+                }
+                catch (UnknownHostException ignored) {
+                    type = 5;
+                }
+            }
+
+            bits = BigDecimal.valueOf(0L);
+
+            try {
+                String[] octets = addr.contains(".") ? addr.split(".") : addr.split(":");
+
+                int len = octets.length;
+
+                for (int i = 0; i < len; i++) {
+                    long oct = F.isEmpty(octets[i]) ? 0 : Long.valueOf( octets[i]);
+                    long pow = Double.valueOf(Math.pow(256, octets.length - 1 - i)).longValue();
+
+                    bits = bits.add(BigDecimal.valueOf(oct * pow));
+                }
+            }
+            catch (Exception ignore) {
+                // No-op.
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public int compareTo(@NotNull SortableAddress o) {
+            return (type == o.type ? bits.compareTo(o.bits) : Integer.compare(type, o.type));
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            SortableAddress other = (SortableAddress)o;
+
+            return addr != null ? addr.equals(other.addr) : other.addr == null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return addr != null ? addr.hashCode() : 0;
+        }
+
+        /**
+         * @return Address.
+         */
+        public String address() {
+            return addr;
+        }
+    }
+
+    /**
+     * Sort addresses: IPv4 & real addresses first.
+     *
+     * @param addrs Addresses to sort.
+     * @return Sorted list.
+     */
+    public static Collection<String> sortAddresses(Collection<String> addrs) {
+        if (F.isEmpty(addrs))
+            return Collections.emptyList();
+
+        int sz = addrs.size();
+
+        List<SortableAddress> sorted = new ArrayList<>(sz);
+
+        for (String addr : addrs)
+            sorted.add(new SortableAddress(addr));
+
+        Collections.sort(sorted);
+
+        Collection<String> res = new ArrayList<>(sz);
+
+        for (SortableAddress sa : sorted)
+            res.add(sa.address());
+
+        return res;
+    }
+
+    /**
+     * Split addresses.
+     *
+     * @param s String with comma separted addresses.
+     * @return Collection of addresses.
+     */
+    public static Collection<String> splitAddresses(String s) {
+        if (F.isEmpty(s))
+            return Collections.emptyList();
+
+        String[] addrs = s.split(",");
+
+        for (int i = 0; i < addrs.length; i++)
+            addrs[i] = addrs[i].trim();
+
+        return Arrays.asList(addrs);
     }
 }

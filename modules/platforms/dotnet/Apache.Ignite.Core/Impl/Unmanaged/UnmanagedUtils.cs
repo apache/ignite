@@ -17,12 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Unmanaged
 {
-    using System;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Runtime.InteropServices;
-    using Apache.Ignite.Core.Common;
-    using JNI = IgniteJniNativeMethods;
+    using Apache.Ignite.Core.Impl.Unmanaged.Jni;
 
     /// <summary>
     /// Unmanaged utility classes.
@@ -32,90 +27,44 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Interop factory ID for .Net. */
         private const int InteropFactoryId = 1;
 
-        /// <summary>
-        /// Initializer.
-        /// </summary>
-        [SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
-        static UnmanagedUtils()
-        {
-            var platform = Environment.Is64BitProcess ? "x64" : "x86";
-
-            var resName = string.Format("{0}.{1}", platform, IgniteUtils.FileIgniteJniDll);
-
-            var path = IgniteUtils.UnpackEmbeddedResource(resName, IgniteUtils.FileIgniteJniDll);
-
-            var ptr = NativeMethods.LoadLibrary(path);
-
-            if (ptr == IntPtr.Zero)
-            {
-                var err = Marshal.GetLastWin32Error();
-
-                throw new IgniteException(string.Format("Failed to load {0} from {1}: [{2}]",
-                    IgniteUtils.FileIgniteJniDll, path, IgniteUtils.FormatWin32Error(err)));
-            }
-
-            AppDomain.CurrentDomain.DomainUnload += CurrentDomain_DomainUnload;
-
-            JNI.SetConsoleHandler(UnmanagedCallbacks.ConsoleWriteHandler);
-        }
-
-        /// <summary>
-        /// Handles the DomainUnload event of the current AppDomain.
-        /// </summary>
-        private static void CurrentDomain_DomainUnload(object sender, EventArgs e)
-        {
-            // Clean the handler to avoid JVM crash.
-            var removedCnt = JNI.RemoveConsoleHandler(UnmanagedCallbacks.ConsoleWriteHandler);
-
-            Debug.Assert(removedCnt == 1);
-        }
-
-        /// <summary>
-        /// No-op initializer used to force type loading and static constructor call.
-        /// </summary>
-        internal static void Initialize()
-        {
-            // No-op.
-        }
-
         #region NATIVE METHODS: PROCESSOR
 
-        internal static void IgnitionStart(UnmanagedContext ctx, string cfgPath, string gridName,
-            bool clientMode, bool userLogger)
+        internal static void IgnitionStart(Env env, string cfgPath, string gridName,
+            bool clientMode, bool userLogger, long igniteId, bool redirectConsole)
         {
             using (var mem = IgniteManager.Memory.Allocate().GetStream())
+            using (var cfgPath0 = env.NewStringUtf(cfgPath))
+            using (var gridName0 = env.NewStringUtf(gridName))
             {
                 mem.WriteBool(clientMode);
                 mem.WriteBool(userLogger);
+                mem.WriteBool(redirectConsole);
 
-                sbyte* cfgPath0 = IgniteUtils.StringToUtf8Unmanaged(cfgPath);
-                sbyte* gridName0 = IgniteUtils.StringToUtf8Unmanaged(gridName);
+                long* args = stackalloc long[5];
+                args[0] = cfgPath == null ? 0 : cfgPath0.Target.ToInt64();
+                args[1] = gridName == null ? 0 : gridName0.Target.ToInt64();
+                args[2] = InteropFactoryId;
+                args[3] = igniteId;
+                args[4] = mem.SynchronizeOutput();
 
-                try
-                {
-                    // OnStart receives InteropProcessor referece and stores it.
-                    JNI.IgnitionStart(ctx.NativeContext, cfgPath0, gridName0, InteropFactoryId,
-                        mem.SynchronizeOutput());
-                }
-                finally
-                {
-                    Marshal.FreeHGlobal(new IntPtr(cfgPath0));
-                    Marshal.FreeHGlobal(new IntPtr(gridName0));
-                }
+                // OnStart receives InteropProcessor reference and stores it.
+                var methodId = env.Jvm.MethodId;
+                env.CallStaticVoidMethod(methodId.PlatformIgnition, methodId.PlatformIgnitionStart, args);
             }
         }
 
-        internal static bool IgnitionStop(void* ctx, string gridName, bool cancel)
+        internal static bool IgnitionStop(string gridName, bool cancel)
         {
-            sbyte* gridName0 = IgniteUtils.StringToUtf8Unmanaged(gridName);
+            var env = Jvm.Get().AttachCurrentThread();
+            var methodId = env.Jvm.MethodId;
 
-            try
+            using (var gridName1 = env.NewStringUtf(gridName))
             {
-                return JNI.IgnitionStop(ctx, gridName0, cancel);
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(new IntPtr(gridName0));
+                long* args = stackalloc long[2];
+                args[0] = gridName == null ? 0 : gridName1.Target.ToInt64();
+                args[1] = cancel ? 1 : 0;
+
+                return env.CallStaticBoolMethod(methodId.PlatformIgnition, methodId.PlatformIgnitionStop, args);
             }
         }
 
@@ -123,63 +72,110 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region NATIVE METHODS: TARGET
 
-        internal static long TargetInLongOutLong(IUnmanagedTarget target, int opType, long memPtr)
+        internal static long TargetInLongOutLong(GlobalRef target, int opType, long memPtr)
         {
-            return JNI.TargetInLongOutLong(target.Context, target.Target, opType, memPtr);
+            var jvm = target.Jvm;
+
+            long* args = stackalloc long[2];
+            args[0] = opType;
+            args[1] = memPtr;
+
+            return jvm.AttachCurrentThread().CallLongMethod(target, jvm.MethodId.TargetInLongOutLong, args);
         }
 
-        internal static long TargetInStreamOutLong(IUnmanagedTarget target, int opType, long memPtr)
+        internal static long TargetInStreamOutLong(GlobalRef target, int opType, long memPtr)
         {
-            return JNI.TargetInStreamOutLong(target.Context, target.Target, opType, memPtr);
+            var jvm = target.Jvm;
+
+            long* args = stackalloc long[2];
+            args[0] = opType;
+            args[1] = memPtr;
+
+            return jvm.AttachCurrentThread().CallLongMethod(target, jvm.MethodId.TargetInStreamOutLong, args);
         }
 
-        internal static void TargetInStreamOutStream(IUnmanagedTarget target, int opType, long inMemPtr, long outMemPtr)
+        internal static void TargetInStreamOutStream(GlobalRef target, int opType, long inMemPtr,
+            long outMemPtr)
         {
-            JNI.TargetInStreamOutStream(target.Context, target.Target, opType, inMemPtr, outMemPtr);
+            var jvm = target.Jvm;
+
+            long* args = stackalloc long[3];
+            args[0] = opType;
+            args[1] = inMemPtr;
+            args[2] = outMemPtr;
+
+            jvm.AttachCurrentThread().CallVoidMethod(target, jvm.MethodId.TargetInStreamOutStream, args);
         }
 
-        internal static IUnmanagedTarget TargetInStreamOutObject(IUnmanagedTarget target, int opType, long inMemPtr)
+        internal static GlobalRef TargetInStreamOutObject(GlobalRef target, int opType, long inMemPtr)
         {
-            void* res = JNI.TargetInStreamOutObject(target.Context, target.Target, opType, inMemPtr);
+            var jvm = target.Jvm;
 
-            if (res == null)
-                return null;
+            long* args = stackalloc long[2];
+            args[0] = opType;
+            args[1] = inMemPtr;
 
-            return target.ChangeTarget(res);
+            return jvm.AttachCurrentThread().CallObjectMethod(
+                target, jvm.MethodId.TargetInStreamOutObject, args);
         }
 
-        internal static IUnmanagedTarget TargetInObjectStreamOutObjectStream(IUnmanagedTarget target, int opType, void* arg, long inMemPtr, long outMemPtr)
+        internal static GlobalRef TargetInObjectStreamOutObjectStream(GlobalRef target, int opType, 
+            GlobalRef arg, long inMemPtr, long outMemPtr)
         {
-            void* res = JNI.TargetInObjectStreamOutObjectStream(target.Context, target.Target, opType, arg, inMemPtr, outMemPtr);
+            var jvm = target.Jvm;
 
-            if (res == null)
-                return null;
+            long* args = stackalloc long[4];
+            args[0] = opType;
+            args[1] = (long) arg.Target;
+            args[2] = inMemPtr;
+            args[3] = outMemPtr;
 
-            return target.ChangeTarget(res);
+            return jvm.AttachCurrentThread().CallObjectMethod(
+                target, jvm.MethodId.TargetInObjectStreamOutObjectStream, args);
         }
 
-        internal static void TargetOutStream(IUnmanagedTarget target, int opType, long memPtr)
+        internal static void TargetOutStream(GlobalRef target, int opType, long memPtr)
         {
-            JNI.TargetOutStream(target.Context, target.Target, opType, memPtr);
+            var jvm = target.Jvm;
+
+            long* args = stackalloc long[4];
+            args[0] = opType;
+            args[1] = memPtr;
+
+            jvm.AttachCurrentThread().CallVoidMethod(target, jvm.MethodId.TargetOutStream, args);
         }
 
-        internal static IUnmanagedTarget TargetOutObject(IUnmanagedTarget target, int opType)
+        internal static GlobalRef TargetOutObject(GlobalRef target, int opType)
         {
-            void* res = JNI.TargetOutObject(target.Context, target.Target, opType);
+            var jvm = target.Jvm;
 
-            return target.ChangeTarget(res);
+            long opType0 = opType;
+
+            return jvm.AttachCurrentThread().CallObjectMethod(
+                target, jvm.MethodId.TargetOutObject, &opType0);
         }
 
-        internal static void TargetInStreamAsync(IUnmanagedTarget target, int opType, long memPtr)
+        internal static void TargetInStreamAsync(GlobalRef target, int opType, long memPtr)
         {
-            JNI.TargetInStreamAsync(target.Context, target.Target, opType, memPtr);
+            var jvm = target.Jvm;
+
+            long* args = stackalloc long[4];
+            args[0] = opType;
+            args[1] = memPtr;
+
+            jvm.AttachCurrentThread().CallVoidMethod(target, jvm.MethodId.TargetInStreamAsync, args);
         }
 
-        internal static IUnmanagedTarget TargetInStreamOutObjectAsync(IUnmanagedTarget target, int opType, long memPtr)
+        internal static GlobalRef TargetInStreamOutObjectAsync(GlobalRef target, int opType, long memPtr)
         {
-            void* res = JNI.TargetInStreamOutObjectAsync(target.Context, target.Target, opType, memPtr);
+            var jvm = target.Jvm;
 
-            return target.ChangeTarget(res);
+            long* args = stackalloc long[4];
+            args[0] = opType;
+            args[1] = memPtr;
+
+            return jvm.AttachCurrentThread().CallObjectMethod(
+                target, jvm.MethodId.TargetInStreamOutObjectAsync, args);
         }
 
         #endregion
@@ -188,57 +184,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal static void Reallocate(long memPtr, int cap)
         {
-            int res = JNI.Reallocate(memPtr, cap);
+            var jvm = Jvm.Get();
+            var methodId = jvm.MethodId;
 
-            if (res != 0)
-                throw new IgniteException("Failed to reallocate external memory [ptr=" + memPtr + 
-                    ", capacity=" + cap + ']');
-        }
+            long* args = stackalloc long[4];
+            args[0] = memPtr;
+            args[1] = cap;
 
-        internal static IUnmanagedTarget Acquire(UnmanagedContext ctx, void* target)
-        {
-            void* target0 = JNI.Acquire(ctx.NativeContext, target);
-
-            return new UnmanagedTarget(ctx, target0);
-        }
-
-        internal static void Release(IUnmanagedTarget target)
-        {
-            JNI.Release(target.Target);
-        }
-
-        internal static void ThrowToJava(void* ctx, Exception e)
-        {
-            char* msgChars = (char*)IgniteUtils.StringToUtf8Unmanaged(e.Message);
-
-            try
-            {
-                JNI.ThrowToJava(ctx, msgChars);
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(new IntPtr(msgChars));
-            }
-        }
-
-        internal static int HandlersSize()
-        {
-            return JNI.HandlersSize();
-        }
-
-        internal static void* CreateContext(void* opts, int optsLen, void* cbs)
-        {
-            return JNI.CreateContext(opts, optsLen, cbs);
-        }
-
-        internal static void DeleteContext(void* ctx)
-        {
-            JNI.DeleteContext(ctx);
-        }
-
-        internal static void DestroyJvm(void* ctx)
-        {
-            JNI.DestroyJvm(ctx);
+            jvm.AttachCurrentThread().CallStaticVoidMethod(methodId.PlatformUtils, methodId.PlatformUtilsReallocate,
+                args);
         }
 
         #endregion

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -47,9 +46,12 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcColumnMeta;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataResult;
 
 /**
@@ -185,7 +187,7 @@ public class JdbcThinResultSet implements ResultSet {
             this.fetchSize = fetchSize;
             this.rows = rows;
 
-            rowsIter = rows.iterator();
+            rowsIter = rows != null ? rows.iterator() : null;
         }
         else
             this.updCnt = updCnt;
@@ -197,22 +199,12 @@ public class JdbcThinResultSet implements ResultSet {
         ensureNotClosed();
 
         if ((rowsIter == null || !rowsIter.hasNext()) && !finished) {
-            try {
-                JdbcQueryFetchResult res = stmt.connection().io().queryFetch(qryId, fetchSize);
+            JdbcQueryFetchResult res = stmt.conn.sendRequest(new JdbcQueryFetchRequest(qryId, fetchSize));
 
-                rows = res.items();
-                finished = res.last();
+            rows = res.items();
+            finished = res.last();
 
-                rowsIter = rows.iterator();
-            }
-            catch (IOException e) {
-                stmt.connection().close();
-
-                throw new SQLException("Failed to query Ignite.", e);
-            }
-            catch (IgniteCheckedException e) {
-                throw new SQLException("Failed to query Ignite.", e);
-            }
+            rowsIter = rows.iterator();
         }
 
         if (rowsIter != null) {
@@ -236,10 +228,10 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public void close() throws SQLException {
-        if (closeStmt)
-            stmt.close();
-
         close0();
+
+        if (closeStmt)
+            stmt.closeIfAllResultsClosed();
     }
 
     /**
@@ -249,20 +241,10 @@ public class JdbcThinResultSet implements ResultSet {
         if (isClosed())
             return;
 
-        try {
-            if (!finished || (isQuery && !autoClose))
-                stmt.connection().io().queryClose(qryId);
+        if (!finished || (isQuery && !autoClose))
+            stmt.conn.sendRequest(new JdbcQueryCloseRequest(qryId));
 
-            closed = true;
-        }
-        catch (IOException e) {
-            stmt.connection().close();
-
-            throw new SQLException("Failed to close Ignite query.", e);
-        }
-        catch (IgniteCheckedException e) {
-            throw new SQLException("Failed to close Ignite query.", e);
-        }
+        closed = true;
     }
 
     /** {@inheritDoc} */
@@ -298,11 +280,11 @@ public class JdbcThinResultSet implements ResultSet {
                 return Integer.parseInt(val.toString()) != 0;
             }
             catch (NumberFormatException e) {
-                throw new SQLException("Cannot convert to boolean: " + val, e);
+                throw new SQLException("Cannot convert to boolean: " + val, SqlStateCode.CONVERSION_FAILED, e);
             }
         }
         else
-            throw new SQLException("Cannot convert to boolean: " + val);
+            throw new SQLException("Cannot convert to boolean: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
@@ -323,11 +305,11 @@ public class JdbcThinResultSet implements ResultSet {
                 return Byte.parseByte(val.toString());
             }
             catch (NumberFormatException e) {
-                throw new SQLException("Cannot convert to byte: " + val, e);
+                throw new SQLException("Cannot convert to byte: " + val, SqlStateCode.CONVERSION_FAILED, e);
             }
         }
         else
-            throw new SQLException("Cannot convert to byte: " + val);
+            throw new SQLException("Cannot convert to byte: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
@@ -348,11 +330,11 @@ public class JdbcThinResultSet implements ResultSet {
                 return Short.parseShort(val.toString());
             }
             catch (NumberFormatException e) {
-                throw new SQLException("Cannot convert to short: " + val, e);
+                throw new SQLException("Cannot convert to short: " + val, SqlStateCode.CONVERSION_FAILED, e);
             }
         }
         else
-            throw new SQLException("Cannot convert to short: " + val);
+            throw new SQLException("Cannot convert to short: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
@@ -373,11 +355,11 @@ public class JdbcThinResultSet implements ResultSet {
                 return Integer.parseInt(val.toString());
             }
             catch (NumberFormatException e) {
-                throw new SQLException("Cannot convert to int: " + val, e);
+                throw new SQLException("Cannot convert to int: " + val, SqlStateCode.CONVERSION_FAILED, e);
             }
         }
         else
-            throw new SQLException("Cannot convert to int: " + val);
+            throw new SQLException("Cannot convert to int: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
@@ -398,11 +380,11 @@ public class JdbcThinResultSet implements ResultSet {
                 return Long.parseLong(val.toString());
             }
             catch (NumberFormatException e) {
-                throw new SQLException("Cannot convert to long: " + val, e);
+                throw new SQLException("Cannot convert to long: " + val, SqlStateCode.CONVERSION_FAILED, e);
             }
         }
         else
-            throw new SQLException("Cannot convert to long: " + val);
+            throw new SQLException("Cannot convert to long: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
@@ -423,11 +405,11 @@ public class JdbcThinResultSet implements ResultSet {
                 return Float.parseFloat(val.toString());
             }
             catch (NumberFormatException e) {
-                throw new SQLException("Cannot convert to float: " + val, e);
+                throw new SQLException("Cannot convert to float: " + val, SqlStateCode.CONVERSION_FAILED, e);
             }
         }
         else
-            throw new SQLException("Cannot convert to float: " + val);
+            throw new SQLException("Cannot convert to float: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
@@ -448,11 +430,11 @@ public class JdbcThinResultSet implements ResultSet {
                 return Double.parseDouble(val.toString());
             }
             catch (NumberFormatException e) {
-                throw new SQLException("Cannot convert to double: " + val, e);
+                throw new SQLException("Cannot convert to double: " + val, SqlStateCode.CONVERSION_FAILED, e);
             }
         }
         else
-            throw new SQLException("Cannot convert to double: " + val);
+            throw new SQLException("Cannot convert to double: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
@@ -494,7 +476,7 @@ public class JdbcThinResultSet implements ResultSet {
         else if (cls == String.class)
             return ((String)val).getBytes();
         else
-            throw new SQLException("Cannot convert to byte[]: " + val);
+            throw new SQLException("Cannot convert to byte[]: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
@@ -511,7 +493,7 @@ public class JdbcThinResultSet implements ResultSet {
         else if (cls == java.util.Date.class || cls == Time.class || cls == Timestamp.class)
             return new Date(((java.util.Date)val).getTime());
         else
-            throw new SQLException("Cannot convert to date: " + val);
+            throw new SQLException("Cannot convert to date: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
@@ -528,7 +510,7 @@ public class JdbcThinResultSet implements ResultSet {
         else if (cls == java.util.Date.class || cls == Date.class || cls == Timestamp.class)
             return new Time(((java.util.Date)val).getTime());
         else
-            throw new SQLException("Cannot convert to time: " + val);
+            throw new SQLException("Cannot convert to time: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
@@ -545,7 +527,7 @@ public class JdbcThinResultSet implements ResultSet {
         else if (cls == java.util.Date.class || cls == Date.class || cls == Time.class)
             return new Timestamp(((java.util.Date)val).getTime());
         else
-            throw new SQLException("Cannot convert to timestamp: " + val);
+            throw new SQLException("Cannot convert to timestamp: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
@@ -564,11 +546,11 @@ public class JdbcThinResultSet implements ResultSet {
                 return new URL(val.toString());
             }
             catch (MalformedURLException e) {
-                throw new SQLException("Cannot convert to URL: " + val, e);
+                throw new SQLException("Cannot convert to URL: " + val, SqlStateCode.CONVERSION_FAILED, e);
             }
         }
         else
-            throw new SQLException("Cannot convert to URL: " + val);
+            throw new SQLException("Cannot convert to URL: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
 
@@ -753,7 +735,7 @@ public class JdbcThinResultSet implements ResultSet {
         Integer order = columnOrder().get(colLb.toUpperCase());
 
         if (order == null)
-            throw new SQLException("Column not found: " + colLb);
+            throw new SQLException("Column not found: " + colLb, SqlStateCode.PARSING_EXCEPTION);
 
         assert order >= 0;
 
@@ -794,11 +776,11 @@ public class JdbcThinResultSet implements ResultSet {
                 return (BigDecimal)decimalFormat.get().parse(val.toString());
             }
             catch (ParseException e) {
-                throw new SQLException("Cannot convert to BigDecimal: " + val, e);
+                throw new SQLException("Cannot convert to BigDecimal: " + val, SqlStateCode.CONVERSION_FAILED, e);
             }
         }
         else
-            throw new SQLException("Cannot convert to BigDecimal: " + val);
+            throw new SQLException("Cannot convert to BigDecimal: " + val, SqlStateCode.CONVERSION_FAILED);
     }
 
     /** {@inheritDoc} */
@@ -1834,7 +1816,8 @@ public class JdbcThinResultSet implements ResultSet {
             if (targetCls == cls)
                 return val;
             else
-                throw new SQLException("Cannot convert to " + targetCls.getName() + ": " + val);
+                throw new SQLException("Cannot convert to " + targetCls.getName() + ": " + val,
+                    SqlStateCode.CONVERSION_FAILED);
         }
     }
 
@@ -1858,7 +1841,7 @@ public class JdbcThinResultSet implements ResultSet {
             return val;
         }
         catch (IndexOutOfBoundsException e) {
-            throw new SQLException("Invalid column index: " + colIdx, e);
+            throw new SQLException("Invalid column index: " + colIdx, SqlStateCode.PARSING_EXCEPTION, e);
         }
     }
 
@@ -1869,7 +1852,7 @@ public class JdbcThinResultSet implements ResultSet {
      */
     private void ensureNotClosed() throws SQLException {
         if (closed)
-            throw new SQLException("Result set is closed.");
+            throw new SQLException("Result set is closed.", SqlStateCode.INVALID_CURSOR_STATE);
     }
 
     /**
@@ -1888,24 +1871,14 @@ public class JdbcThinResultSet implements ResultSet {
      */
     private List<JdbcColumnMeta> meta() throws SQLException {
         if (finished && (!isQuery || autoClose))
-            throw new SQLException("Server cursor is already closed.");
+            throw new SQLException("Server cursor is already closed.", SqlStateCode.INVALID_CURSOR_STATE);
 
         if (!metaInit) {
-            try {
-                JdbcQueryMetadataResult res = stmt.connection().io().queryMeta(qryId);
+          JdbcQueryMetadataResult res = stmt.conn.sendRequest(new JdbcQueryMetadataRequest(qryId));
 
-                meta = res.meta();
+           meta = res.meta();
 
-                metaInit = true;
-            }
-            catch (IOException e) {
-                stmt.connection().close();
-
-                throw new SQLException("Failed to get query metadata.", e);
-            }
-            catch (IgniteCheckedException e) {
-                throw new SQLException("Failed to get query metadata.", e);
-            }
+           metaInit = true;
         }
 
         return meta;

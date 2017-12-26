@@ -90,6 +90,6 @@ using (var ignite = Ignition.Start())
 		.Dump("Persons with age less than 40:");
 		
 	// Run SQL fields query.
-	cache.QueryFields(new SqlFieldsQuery("select name from Person order by name"))
+	cache.Query(new SqlFieldsQuery("select name from Person order by name"))
 		.Dump("All person names:");
 }

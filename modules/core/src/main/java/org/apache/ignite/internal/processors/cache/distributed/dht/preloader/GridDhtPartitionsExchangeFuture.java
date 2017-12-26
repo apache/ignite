@@ -588,9 +588,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     exchange = onCacheChangeRequest(crdNode);
                 }
                 else if (msg instanceof SnapshotDiscoveryMessage) {
-                    exchange = CU.clientNode(firstDiscoEvt.eventNode()) ?
-                        onClientNodeEvent(crdNode) :
-                        onServerNodeEvent(crdNode);
+                    exchange = onCustomMessageNoAffinityChange(crdNode);
                 }
                 else {
                     assert affChangeMsg != null : this;
@@ -711,12 +709,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> caches =
             cctx.cache().cachesToStartOnLocalJoin();
 
-        if (cctx.database().persistenceEnabled() && !cctx.kernalContext().clientNode()) {
+        if (!cctx.kernalContext().clientNode()) {
             List<DynamicCacheDescriptor> startDescs = new ArrayList<>();
 
             if (caches != null) {
-                for (T2<DynamicCacheDescriptor, NearCacheConfiguration> c : caches)
-                    startDescs.add(c.get1());
+                for (T2<DynamicCacheDescriptor, NearCacheConfiguration> c : caches) {
+                    DynamicCacheDescriptor startDesc = c.get1();
+
+                    if (CU.isPersistentCache(startDesc.cacheConfiguration(), cctx.gridConfig().getDataStorageConfiguration()))
+                        startDescs.add(startDesc);
+                }
             }
 
             cctx.database().readCheckpointAndRestoreMemory(startDescs);
@@ -805,11 +807,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             try {
                 cctx.activate();
 
-                if (cctx.database().persistenceEnabled() && !cctx.kernalContext().clientNode()) {
+                if (!cctx.kernalContext().clientNode()) {
                     List<DynamicCacheDescriptor> startDescs = new ArrayList<>();
 
-                    for (ExchangeActions.CacheActionData startReq : exchActions.cacheStartRequests())
-                        startDescs.add(startReq.descriptor());
+                    for (ExchangeActions.CacheActionData startReq : exchActions.cacheStartRequests()) {
+                        DynamicCacheDescriptor desc = startReq.descriptor();
+
+                        if (CU.isPersistentCache(desc.cacheConfiguration(), cctx.gridConfig().getDataStorageConfiguration()))
+                            startDescs.add(desc);
+                    }
 
                     cctx.database().readCheckpointAndRestoreMemory(startDescs);
                 }
@@ -880,6 +886,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         assert !exchActions.clientOnlyExchange() : exchActions;
 
         cctx.affinity().onCacheChangeRequest(this, crd, exchActions);
+
+        return cctx.kernalContext().clientNode() ? ExchangeType.CLIENT : ExchangeType.ALL;
+    }
+
+    /**
+     * @param crd Coordinator flag.
+     * @return Exchange type.
+     */
+    private ExchangeType onCustomMessageNoAffinityChange(boolean crd) {
+        cctx.affinity().onCustomMessageNoAffinityChange(this, crd, exchActions);
 
         return cctx.kernalContext().clientNode() ? ExchangeType.CLIENT : ExchangeType.ALL;
     }
@@ -1415,7 +1431,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 cacheCtx.continuousQueries().flushBackupQueue(res);
             }
-       }
+        }
 
         if (err == null) {
             if (centralizedAff) {
@@ -1458,7 +1474,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             grpValidRes = m;
         }
 
-        tryToPerformLocalSnapshotOperation();
+        if (!cctx.localNode().isClient())
+            tryToPerformLocalSnapshotOperation();
 
         cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
 
@@ -2436,22 +2453,21 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      *
      */
     private void assignPartitionsStates() {
-        if (cctx.database().persistenceEnabled()) {
-            for (Map.Entry<Integer, CacheGroupDescriptor> e : cctx.affinity().cacheGroups().entrySet()) {
-                if (e.getValue().config().getCacheMode() == CacheMode.LOCAL)
-                    continue;
+        for (Map.Entry<Integer, CacheGroupDescriptor> e : cctx.affinity().cacheGroups().entrySet()) {
+            CacheGroupDescriptor grpDesc = e.getValue();
+            if (grpDesc.config().getCacheMode() == CacheMode.LOCAL)
+                continue;
 
-                GridDhtPartitionTopology top;
+            if (!CU.isPersistentCache(grpDesc.config(), cctx.gridConfig().getDataStorageConfiguration()))
+                continue;
 
-                CacheGroupContext grpCtx = cctx.cache().cacheGroup(e.getKey());
+            CacheGroupContext grpCtx = cctx.cache().cacheGroup(e.getKey());
 
-                if (grpCtx != null)
-                    top = grpCtx.topology();
-                else
-                    top = cctx.exchange().clientTopology(e.getKey(), events().discoveryCache());
+            GridDhtPartitionTopology top = grpCtx != null ?
+                grpCtx.topology() :
+                cctx.exchange().clientTopology(e.getKey(), events().discoveryCache());
 
-                assignPartitionStates(top);
-            }
+            assignPartitionStates(top);
         }
     }
 

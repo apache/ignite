@@ -32,10 +32,9 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -48,6 +47,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jsr166.LongAdder8;
 
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -89,12 +89,12 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 
     /** {@inheritDoc} */
@@ -122,26 +122,21 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
 
         cfg.setTransactionConfiguration(txCfg);
 
-        cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
-                .setWalHistorySize(1)
-                .setCheckpointingFrequency(CHECKPOINT_FREQUENCY)
-        );
+        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
-
-        memPlcCfg.setName("dfltMemPlc");
+        memPlcCfg.setName("dfltDataRegion");
         memPlcCfg.setInitialSize(PAGE_CACHE_SIZE * 1024 * 1024);
         memPlcCfg.setMaxSize(PAGE_CACHE_SIZE * 1024 * 1024);
+        memPlcCfg.setPersistenceEnabled(true);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
-        memCfg.setMemoryPolicies(memPlcCfg);
-        memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
-
+        memCfg.setDefaultDataRegionConfiguration(memPlcCfg);
+        memCfg.setWalHistorySize(1);
+        memCfg.setCheckpointFrequency(CHECKPOINT_FREQUENCY);
         memCfg.setPageSize(PAGE_SIZE * 1024);
 
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
     }
@@ -209,7 +204,7 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
                             }
                         }
                         catch (Throwable e) {
-                            System.out.println(e.toString());
+                            log.error("Unexpected exception:", e);
 
                             throw new RuntimeException(e);
                         }
@@ -234,14 +229,14 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
                     max = Math.max(max, sum);
                     min = Math.min(min, sum);
 
-                    System.out.println("Operation count: " + sum + " min=" + min + " max=" + max + " avg=" + totalOperations / (periods - WARM_UP_PERIOD));
+                    log.info("Operation count: " + sum + " min=" + min + " max=" + max + " avg=" + totalOperations / (periods - WARM_UP_PERIOD));
                 }
             }
 
             interrupt.set(true);
 
             threadPool.shutdown();
-            System.out.println("Test complete");
+            log.info("Test complete");
 
             threadPool.awaitTermination(getTestTimeout(), TimeUnit.MILLISECONDS);
 

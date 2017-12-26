@@ -331,7 +331,6 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
             null,
             false,
             /*skip store*/false,
-            /*can remap*/true,
             false
         ).get().get(keyValue(false));
     }
@@ -372,7 +371,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
             synchronized (this) {
                 checkObsolete();
 
-                if (cctx.cache().configuration().isStatisticsEnabled())
+                if (cctx.statisticsEnabled())
                     cctx.cache().metrics0().onRead(false);
 
                 boolean ret = false;
@@ -380,7 +379,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                 CacheObject old = this.val;
                 boolean hasVal = hasValueUnlocked();
 
-                if (this.dhtVer == null || this.dhtVer.compareTo(dhtVer) < 0) {
+                if (this.dhtVer == null || this.dhtVer.compareTo(dhtVer) < 0 || !valid(topVer)) {
                     primaryNode(primaryNodeId, topVer);
 
                     update(val, expireTime, ttl, ver, true);

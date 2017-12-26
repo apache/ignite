@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -118,5 +119,10 @@ public class CheckpointRecord extends WALRecord {
      */
     public WALPointer checkpointMark() {
         return cpMark;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CheckpointRecord.class, this, "super", super.toString());
     }
 }

@@ -25,11 +25,12 @@ namespace Apache.Ignite.Core.Impl
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Memory;
-    using Apache.Ignite.Core.Impl.Unmanaged;
+    using Apache.Ignite.Core.Impl.Unmanaged.Jni;
     using Apache.Ignite.Core.Interop;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
@@ -55,7 +56,7 @@ namespace Apache.Ignite.Core.Impl
             };
         
         /** Unmanaged target. */
-        private readonly IUnmanagedTarget _target;
+        private readonly GlobalRef _target;
 
         /** Marshaller. */
         private readonly Marshaller _marsh;
@@ -65,7 +66,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
-        public PlatformJniTarget(IUnmanagedTarget target, Marshaller marsh)
+        public PlatformJniTarget(GlobalRef target, Marshaller marsh)
         {
             Debug.Assert(target != null);
             Debug.Assert(marsh != null);
@@ -77,7 +78,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Gets the target.
         /// </summary>
-        public IUnmanagedTarget Target
+        public GlobalRef Target
         {
             get { return _target; }
         }
@@ -88,43 +89,71 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public long InStreamOutLong(int type, Action<IBinaryStream> writeAction)
         {
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            try
             {
-                writeAction(stream);
+                using (var stream = IgniteManager.Memory.Allocate().GetStream())
+                {
+                    writeAction(stream);
 
-                return UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
+                    return UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
+                }
+            }
+            catch (JavaException jex)
+            {
+                throw ConvertException(jex);
             }
         }
 
         /** <inheritdoc /> */
         public IPlatformTargetInternal InStreamOutObject(int type, Action<IBinaryStream> writeAction)
         {
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            try
             {
-                writeAction(stream);
+                using (var stream = IgniteManager.Memory.Allocate().GetStream())
+                {
+                    writeAction(stream);
 
-                var target = UU.TargetInStreamOutObject(_target, type, stream.SynchronizeOutput());
+                    var target = UU.TargetInStreamOutObject(_target, type, stream.SynchronizeOutput());
 
-                return target == null ? null : new PlatformJniTarget(target, _marsh);
+                    return target == null ? null : new PlatformJniTarget(target, _marsh);
+                }
+            }
+            catch (JavaException jex)
+            {
+                throw ConvertException(jex);
             }
         }
 
         /** <inheritdoc /> */
         public IPlatformTargetInternal OutObjectInternal(int type)
         {
-            return GetPlatformTarget(UU.TargetOutObject(_target, type));
+            try
+            {
+                return GetPlatformTarget(UU.TargetOutObject(_target, type));
+            }
+            catch (JavaException jex)
+            {
+                throw ConvertException(jex);
+            }
         }
 
         /** <inheritdoc /> */
         public T OutStream<T>(int type, Func<IBinaryStream, T> readAction)
         {
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            try
             {
-                UU.TargetOutStream(_target, type, stream.MemoryPointer);
+                using (var stream = IgniteManager.Memory.Allocate().GetStream())
+                {
+                    UU.TargetOutStream(_target, type, stream.MemoryPointer);
 
-                stream.SynchronizeInput();
+                    stream.SynchronizeInput();
 
-                return readAction(stream);
+                    return readAction(stream);
+                }
+            }
+            catch (JavaException jex)
+            {
+                throw ConvertException(jex);
             }
         }
 
@@ -132,16 +161,23 @@ namespace Apache.Ignite.Core.Impl
         public TR InStreamOutStream<TR>(int type, Action<IBinaryStream> writeAction, 
             Func<IBinaryStream, TR> readAction)
         {
-            using (var outStream = IgniteManager.Memory.Allocate().GetStream())
-            using (var inStream = IgniteManager.Memory.Allocate().GetStream())
+            try
             {
-                writeAction(outStream);
+                using (var outStream = IgniteManager.Memory.Allocate().GetStream())
+                using (var inStream = IgniteManager.Memory.Allocate().GetStream())
+                {
+                    writeAction(outStream);
 
-                UU.TargetInStreamOutStream(_target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
+                    UU.TargetInStreamOutStream(_target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
 
-                inStream.SynchronizeInput();
+                    inStream.SynchronizeInput();
 
-                return readAction(inStream);
+                    return readAction(inStream);
+                }
+            }
+            catch (JavaException jex)
+            {
+                throw ConvertException(jex);
             }
         }
 
@@ -149,32 +185,40 @@ namespace Apache.Ignite.Core.Impl
         public TR InStreamOutLong<TR>(int type, Action<IBinaryStream> outAction, Func<IBinaryStream, long, TR> inAction, 
             Func<IBinaryStream, Exception> readErrorAction)
         {
-            Debug.Assert(readErrorAction != null);
-
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            try
             {
-                outAction(stream);
+                Debug.Assert(readErrorAction != null);
 
-                var res = UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
-
-                if (res != PlatformTargetAdapter.Error && inAction == null)
-                    return default(TR);  // quick path for void operations
-
-                stream.SynchronizeInput();
-
-                stream.Seek(0, SeekOrigin.Begin);
-
-                if (res != PlatformTargetAdapter.Error)
+                using (var stream = IgniteManager.Memory.Allocate().GetStream())
                 {
-                    return inAction != null ? inAction(stream, res) : default(TR);
-                }
+                    outAction(stream);
 
-                throw readErrorAction(stream);
+                    var res = UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
+
+                    if (res != PlatformTargetAdapter.Error && inAction == null)
+                        return default(TR);  // quick path for void operations
+
+                    stream.SynchronizeInput();
+
+                    stream.Seek(0, SeekOrigin.Begin);
+
+                    if (res != PlatformTargetAdapter.Error)
+                    {
+                        return inAction != null ? inAction(stream, res) : default(TR);
+                    }
+
+                    throw readErrorAction(stream);
+                }
+            }
+            catch (JavaException jex)
+            {
+                throw ConvertException(jex);
             }
         }
 
         /** <inheritdoc /> */
-        public unsafe TR InObjectStreamOutObjectStream<TR>(int type, Action<IBinaryStream> writeAction, 
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
+        public TR InObjectStreamOutObjectStream<TR>(int type, Action<IBinaryStream> writeAction, 
             Func<IBinaryStream, IPlatformTargetInternal, TR> readAction, IPlatformTargetInternal arg)
         {
             PlatformMemoryStream outStream = null;
@@ -198,8 +242,8 @@ namespace Apache.Ignite.Core.Impl
                     inPtr = inStream.MemoryPointer;
                 }
 
-                var res = UU.TargetInObjectStreamOutObjectStream(_target, type, 
-                    ((PlatformJniTarget)arg).Target.Target, outPtr, inPtr);
+                var res = UU.TargetInObjectStreamOutObjectStream(_target, type,
+                    ((PlatformJniTarget) arg).Target, outPtr, inPtr);
 
                 if (readAction == null)
                     return default(TR);
@@ -210,6 +254,10 @@ namespace Apache.Ignite.Core.Impl
 
                 return readAction(inStream, target);
 
+            }
+            catch (JavaException jex)
+            {
+                throw ConvertException(jex);
             }
             finally
             {
@@ -244,7 +292,8 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="keepBinary">Keep binary flag, only applicable to object futures. False by default.</param>
         /// <param name="convertFunc">The function to read future result from stream.</param>
         /// <returns>Created future.</returns>
-        private Future<T> GetFuture<T>(Func<long, int, IUnmanagedTarget> listenAction, bool keepBinary = false,
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
+        private Future<T> GetFuture<T>(Func<long, int, GlobalRef> listenAction, bool keepBinary = false,
             Func<BinaryReader, T> convertFunc = null)
         {
             var futType = FutureType.Object;
@@ -260,7 +309,7 @@ namespace Apache.Ignite.Core.Impl
 
             var futHnd = _marsh.Ignite.HandleRegistry.Allocate(fut);
 
-            IUnmanagedTarget futTarget;
+            GlobalRef futTarget;
 
             try
             {
@@ -321,62 +370,93 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public long InLongOutLong(int type, long val)
         {
-            return UU.TargetInLongOutLong(_target, type, val);
-        }
-
-        /** <inheritdoc /> */
-        public long InStreamOutLong(int type, Action<IBinaryRawWriter> writeAction)
-        {
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            try
             {
-                var writer = _marsh.StartMarshal(stream);
-
-                writeAction(writer);
-
-                FinishMarshal(writer);
-
-                return UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
+                return UU.TargetInLongOutLong(_target, type, val);
+            }
+            catch (JavaException jex)
+            {
+                throw ConvertException(jex);
             }
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
+        public long InStreamOutLong(int type, Action<IBinaryRawWriter> writeAction)
+        {
+            try
+            {
+                using (var stream = IgniteManager.Memory.Allocate().GetStream())
+                {
+                    var writer = _marsh.StartMarshal(stream);
+
+                    writeAction(writer);
+
+                    FinishMarshal(writer);
+
+                    return UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
+                }
+            }
+            catch (JavaException jex)
+            {
+                throw ConvertException(jex);
+            }
+        }
+
+        /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public T InStreamOutStream<T>(int type, Action<IBinaryRawWriter> writeAction, 
             Func<IBinaryRawReader, T> readAction)
         {
-            using (var outStream = IgniteManager.Memory.Allocate().GetStream())
-            using (var inStream = IgniteManager.Memory.Allocate().GetStream())
+            try
             {
-                var writer = _marsh.StartMarshal(outStream);
+                using (var outStream = IgniteManager.Memory.Allocate().GetStream())
+                using (var inStream = IgniteManager.Memory.Allocate().GetStream())
+                {
+                    var writer = _marsh.StartMarshal(outStream);
 
-                writeAction(writer);
+                    writeAction(writer);
 
-                FinishMarshal(writer);
+                    FinishMarshal(writer);
 
-                UU.TargetInStreamOutStream(_target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
+                    UU.TargetInStreamOutStream(_target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
 
-                inStream.SynchronizeInput();
+                    inStream.SynchronizeInput();
 
-                return readAction(_marsh.StartUnmarshal(inStream));
+                    return readAction(_marsh.StartUnmarshal(inStream));
+                }
+            }
+            catch (JavaException jex)
+            {
+                throw ConvertException(jex);
             }
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public IPlatformTarget InStreamOutObject(int type, Action<IBinaryRawWriter> writeAction)
         {
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            try
             {
-                var writer = _marsh.StartMarshal(stream);
+                using (var stream = IgniteManager.Memory.Allocate().GetStream())
+                {
+                    var writer = _marsh.StartMarshal(stream);
 
-                writeAction(writer);
+                    writeAction(writer);
 
-                FinishMarshal(writer);
+                    FinishMarshal(writer);
 
-                return GetPlatformTarget(UU.TargetInStreamOutObject(_target, type, stream.SynchronizeOutput()));
+                    return GetPlatformTarget(UU.TargetInStreamOutObject(_target, type, stream.SynchronizeOutput()));
+                }
+            }
+            catch (JavaException jex)
+            {
+                throw ConvertException(jex);
             }
         }
 
         /** <inheritdoc /> */
-        public unsafe T InObjectStreamOutObjectStream<T>(int type, IPlatformTarget arg, 
+        public T InObjectStreamOutObjectStream<T>(int type, IPlatformTarget arg, 
             Action<IBinaryRawWriter> writeAction, Func<IBinaryRawReader, IPlatformTarget, T> readAction)
         {
             PlatformMemoryStream outStream = null;
@@ -412,6 +492,10 @@ namespace Apache.Ignite.Core.Impl
                 return readAction(_marsh.StartUnmarshal(inStream), GetPlatformTarget(res));
 
             }
+            catch (JavaException jex)
+            {
+                throw ConvertException(jex);
+            }
             finally
             {
                 try
@@ -429,15 +513,23 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public T OutStream<T>(int type, Func<IBinaryRawReader, T> readAction)
         {
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            try
             {
-                UU.TargetOutStream(_target, type, stream.MemoryPointer);
+                using (var stream = IgniteManager.Memory.Allocate().GetStream())
+                {
+                    UU.TargetOutStream(_target, type, stream.MemoryPointer);
 
-                stream.SynchronizeInput();
+                    stream.SynchronizeInput();
 
-                return readAction(_marsh.StartUnmarshal(stream));
+                    return readAction(_marsh.StartUnmarshal(stream));
+                }
+            }
+            catch (JavaException jex)
+            {
+                throw ConvertException(jex);
             }
         }
 
@@ -470,7 +562,14 @@ namespace Apache.Ignite.Core.Impl
                         FinishMarshal(writer);
                     }
 
-                    UU.TargetInStreamAsync(_target, type, stream.SynchronizeOutput());
+                    try
+                    {
+                        UU.TargetInStreamAsync(_target, type, stream.SynchronizeOutput());
+                    }
+                    catch (JavaException jex)
+                    {
+                        throw ConvertException(jex);
+                    }
                 }
             }, false, convertFunc).Task;
         }
@@ -499,7 +598,14 @@ namespace Apache.Ignite.Core.Impl
                         FinishMarshal(writer);
                     }
 
-                    return UU.TargetInStreamOutObjectAsync(_target, type, stream.SynchronizeOutput());
+                    try
+                    {
+                        return UU.TargetInStreamOutObjectAsync(_target, type, stream.SynchronizeOutput());
+                    }
+                    catch (JavaException jex)
+                    {
+                        throw ConvertException(jex);
+                    }
                 }
             }, false, convertFunc).GetTask(cancellationToken);
         }
@@ -507,7 +613,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Gets the platform target.
         /// </summary>
-        private IPlatformTargetInternal GetPlatformTarget(IUnmanagedTarget target)
+        private IPlatformTargetInternal GetPlatformTarget(GlobalRef target)
         {
             return target == null ? null : new PlatformJniTarget(target, _marsh);
         }
@@ -515,9 +621,17 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Gets the target pointer.
         /// </summary>
-        private static unsafe void* GetTargetPtr(IPlatformTarget target)
+        private static GlobalRef GetTargetPtr(IPlatformTarget target)
         {
-            return target == null ? null : ((PlatformJniTarget) target)._target.Target;
+            return target == null ? null : ((PlatformJniTarget) target)._target;
+        }
+
+        /// <summary>
+        /// Converts the exception.
+        /// </summary>
+        private Exception ConvertException(JavaException jex)
+        {
+            return ExceptionUtils.GetException(_marsh.Ignite, jex);
         }
 
         #endregion

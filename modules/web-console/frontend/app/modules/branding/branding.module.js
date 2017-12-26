@@ -17,7 +17,7 @@
 
 import angular from 'angular';
 
-import IgniteBranding from './branding.provider';
+import IgniteBranding from './branding.service';
 
 import igniteHeaderLogo from './header-logo.directive';
 import igniteHeaderTitle from './header-title.directive';
@@ -30,7 +30,7 @@ angular
 .module('ignite-console.branding', [
     'tf.metatags'
 ])
-.provider(...IgniteBranding)
+.service('IgniteBranding', IgniteBranding)
 .config(['tfMetaTagsProvider', (tfMetaTagsProvider) => {
     tfMetaTagsProvider.setDefaults({
         title: 'Apache Ignite - Management Tool and Configuration Wizard',

@@ -1638,10 +1638,10 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     private RuntimeException cacheException(Exception e) {
         GridFutureAdapter<Void> restartFut = this.restartFut.get();
 
-        if (restartFut != null && !restartFut.isDone()) {
+        if (restartFut != null) {
             if (X.hasCause(e, CacheStoppedException.class) || X.hasSuppressed(e, CacheStoppedException.class))
                 throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(restartFut), "Cache is restarting: " +
-                        ctx.name());
+                        ctx.name(), e);
         }
 
         if (e instanceof IgniteCheckedException)
@@ -1696,6 +1696,16 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /** {@inheritDoc} */
+    @Override public void enableStatistics(boolean enabled) {
+        try {
+            ctx.kernalContext().cache().enableStatistics(Collections.singleton(getName()), enabled);
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(ctx);
 
@@ -1723,22 +1733,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             return new IgniteFinishedFutureImpl<>();
 
         return new IgniteFutureImpl<>(fut);
-    }
-
-    /**
-     * Gets value without waiting for toplogy changes.
-     *
-     * @param key Key.
-     * @return Value.
-     */
-    @Override
-    public V getTopologySafe(K key) {
-        try {
-            return delegate.getTopologySafe(key);
-        }
-        catch (IgniteCheckedException | IgniteException e) {
-            throw cacheException(e);
-        }
     }
 
     /**
@@ -1792,9 +1786,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         this.ctx = ctx;
         this.delegate = delegate;
 
-        restartFut.onDone();
-
         this.restartFut.compareAndSet(restartFut, null);
+
+        restartFut.onDone();
     }
 
     /** {@inheritDoc} */

@@ -218,24 +218,24 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
     @Override public void deploy(ServiceConfiguration cfg) {
         A.notNull(cfg, "cfg");
 
-        deployAll(Collections.singleton(cfg), false);
+        deployAll(Collections.singleton(cfg));
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> deployAsync(ServiceConfiguration cfg) {
         A.notNull(cfg, "cfg");
 
-        return deployAllAsync(Collections.singleton(cfg), false);
+        return deployAllAsync(Collections.singleton(cfg));
     }
 
     /** {@inheritDoc} */
-    @Override public void deployAll(Collection<ServiceConfiguration> cfgs, boolean allOrNone) {
+    @Override public void deployAll(Collection<ServiceConfiguration> cfgs) {
         A.notNull(cfgs, "cfgs");
 
         guard();
 
         try {
-            saveOrGet(ctx.service().deployAll(cfgs, allOrNone));
+            saveOrGet(ctx.service().deployAll(prj, cfgs));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -246,14 +246,13 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> deployAllAsync(Collection<ServiceConfiguration> cfgs,
-        boolean allOrNone) {
+    @Override public IgniteFuture<Void> deployAllAsync(Collection<ServiceConfiguration> cfgs) {
         A.notNull(cfgs, "cfgs");
 
         guard();
 
         try {
-            return (IgniteFuture<Void>)new IgniteFutureImpl<>(ctx.service().deployAll(cfgs, allOrNone));
+            return (IgniteFuture<Void>)new IgniteFutureImpl<>(ctx.service().deployAll(prj, cfgs));
         }
         finally {
             unguard();

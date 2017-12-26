@@ -22,9 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -33,16 +31,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /** */
 public class GridServiceDeploymentCompoundFutureSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static GridKernalContext ctx;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        IgniteKernal kernal = (IgniteKernal)startGrid(0);
-
-        ctx = kernal.context();
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
@@ -51,8 +39,8 @@ public class GridServiceDeploymentCompoundFutureSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testWaitForCompletionOnFailingFuturePartial() throws Exception {
-        GridServiceDeploymentCompoundFuture compFut = new GridServiceDeploymentCompoundFuture(false, ctx);
+    public void testWaitForCompletionOnFailingFuture() throws Exception {
+        GridServiceDeploymentCompoundFuture compFut = new GridServiceDeploymentCompoundFuture();
 
         int failingFutsNum = 2;
 
@@ -80,7 +68,7 @@ public class GridServiceDeploymentCompoundFutureSelfTest extends GridCommonAbstr
             compFut.add(fut);
         }
 
-        compFut.serviceDeploymentMarkInitialized();
+        compFut.markInitialized();
 
         List<Exception> causes = new ArrayList<>();
 
@@ -122,109 +110,6 @@ public class GridServiceDeploymentCompoundFutureSelfTest extends GridCommonAbstr
 
             for (int i = 0; i < failingFutsNum; i++)
                 assertEquals(causes.get(i), supErrs[i].getCause());
-        }
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    public void testFailAllAfterInitialized() throws Exception {
-        GridServiceDeploymentCompoundFuture compFut = new GridServiceDeploymentCompoundFuture(true, ctx);
-
-        ServiceConfiguration failingCfg = config("Failed");
-
-        GridServiceDeploymentFuture failingFut = new GridServiceDeploymentFuture(failingCfg);
-
-        compFut.add(failingFut);
-
-        int futsNum = 5;
-
-        List<ServiceConfiguration> cfgs = new ArrayList<>(futsNum + 1);
-
-        cfgs.add(failingCfg);
-
-        for (int i = 0; i < futsNum; i++) {
-            ServiceConfiguration cfg = config(String.valueOf(i));
-
-            cfgs.add(cfg);
-
-            compFut.add(new GridServiceDeploymentFuture(cfg));
-        }
-
-        compFut.serviceDeploymentMarkInitialized();
-
-        Exception expCause = new Exception("Test error");
-
-        failingFut.onDone(expCause);
-
-        assertFailAll(compFut, cfgs, expCause);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    public void testFailAllBeforeInitialized() throws Exception {
-        GridServiceDeploymentCompoundFuture compFut = new GridServiceDeploymentCompoundFuture(true, ctx);
-
-        ServiceConfiguration failingCfg = config("Failed");
-
-        GridServiceDeploymentFuture failingFut = new GridServiceDeploymentFuture(failingCfg);
-
-        Exception expCause = new Exception("Test error");
-
-        failingFut.onDone(expCause);
-
-        compFut.add(failingFut);
-
-        assertFalse(compFut.isDone());
-
-        int futsNum = 5;
-
-        List<ServiceConfiguration> cfgs = new ArrayList<>(futsNum + 1);
-
-        cfgs.add(failingCfg);
-
-        for (int i = 0; i < futsNum; i++) {
-            ServiceConfiguration cfg = config(String.valueOf(i));
-
-            cfgs.add(cfg);
-
-            compFut.add(new GridServiceDeploymentFuture(cfg));
-        }
-
-        compFut.serviceDeploymentMarkInitialized();
-
-        assertFailAll(compFut, cfgs, expCause);
-    }
-
-    /**
-     * Try waiting for the future completion and check that a proper exception is thrown.
-     *
-     * @param fut Future.
-     * @param expCfgs Expected cfgs.
-     * @param expCause Expected cause.
-     */
-    private void assertFailAll(GridServiceDeploymentCompoundFuture fut, Collection<ServiceConfiguration> expCfgs,
-        Exception expCause) {
-        try {
-            fut.get();
-
-            fail("Should never reach here.");
-        }
-        catch (IgniteCheckedException ce) {
-            log.info("Expected exception: " + ce.getMessage());
-
-            IgniteException e = U.convertException(ce);
-
-            assertTrue(e instanceof ServiceDeploymentException);
-
-            assertEqualsCollections(expCfgs, ((ServiceDeploymentException)e).getFailedConfigurations());
-
-            Throwable actCause = e.getCause();
-
-            assertTrue(actCause instanceof IgniteCheckedException);
-
-            assertEquals(expCause, actCause.getCause());
         }
     }
 

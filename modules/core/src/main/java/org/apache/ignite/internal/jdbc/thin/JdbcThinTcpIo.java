@@ -20,44 +20,44 @@ package org.apache.ignite.internal.jdbc.thin;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
 import java.net.Socket;
+import java.net.URL;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
-import org.apache.ignite.internal.processors.odbc.SqlListenerNioListener;
-import org.apache.ignite.internal.processors.odbc.SqlListenerProtocolVersion;
-import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
-import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaColumnsRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaColumnsResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaIndexesRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaIndexesResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaParamsRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaParamsResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaPrimaryKeysRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaPrimaryKeysResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaSchemasRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaSchemasResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaTablesRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaTablesResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
 import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 
@@ -65,11 +65,17 @@ import org.apache.ignite.lang.IgniteProductVersion;
  * JDBC IO layer implementation based on blocking IPC streams.
  */
 public class JdbcThinTcpIo {
-    /** Current version. */
-    private static final SqlListenerProtocolVersion CURRENT_VER = SqlListenerProtocolVersion.create(2, 1, 5);
-
     /** Version 2.1.0. */
-    private static final SqlListenerProtocolVersion VER_2_1_0 = SqlListenerProtocolVersion.create(2, 1, 0);
+    private static final ClientListenerProtocolVersion VER_2_1_0 = ClientListenerProtocolVersion.create(2, 1, 0);
+
+    /** Version 2.1.5: added "lazy" flag. */
+    private static final ClientListenerProtocolVersion VER_2_1_5 = ClientListenerProtocolVersion.create(2, 1, 5);
+
+    /** Version 2.3.1. */
+    private static final ClientListenerProtocolVersion VER_2_3_0 = ClientListenerProtocolVersion.create(2, 3, 0);
+
+    /** Current version. */
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_3_0;
 
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;
@@ -89,38 +95,8 @@ public class JdbcThinTcpIo {
     /** Initial output for query close message. */
     private static final int QUERY_CLOSE_MSG_SIZE = 9;
 
-    /** Host. */
-    private final String host;
-
-    /** Port. */
-    private final int port;
-
-    /** Distributed joins. */
-    private final boolean distributedJoins;
-
-    /** Enforce join order. */
-    private final boolean enforceJoinOrder;
-
-    /** Collocated flag. */
-    private final boolean collocated;
-
-    /** Replicated only flag. */
-    private final boolean replicatedOnly;
-
-    /** Lazy execution query flag. */
-    private final boolean lazy;
-
-    /** Flag to automatically close server cursor. */
-    private final boolean autoCloseServerCursor;
-
-    /** Socket send buffer. */
-    private final int sockSndBuf;
-
-    /** Socket receive buffer. */
-    private final int sockRcvBuf;
-
-    /** TCP no delay flag. */
-    private final boolean tcpNoDelay;
+    /** Connection properties. */
+    private final ConnectionProperties connProps;
 
     /** Endpoint. */
     private IpcClientTcpEndpoint endpoint;
@@ -137,92 +113,72 @@ public class JdbcThinTcpIo {
     /** Ignite server version. */
     private IgniteProductVersion igniteVer;
 
-    /** Ignite server protocol version. */
-    private SqlListenerProtocolVersion srvProtocolVer;
-
     /**
      * Constructor.
      *
-     * @param host Host.
-     * @param port Port.
-     * @param distributedJoins Distributed joins flag.
-     * @param enforceJoinOrder Enforce join order flag.
-     * @param collocated Collocated flag.
-     * @param replicatedOnly Replicated only flag.
-     * @param autoCloseServerCursor Flag to automatically close server cursors.
-     * @param lazy Lazy execution query flag.
-     * @param sockSndBuf Socket send buffer.
-     * @param sockRcvBuf Socket receive buffer.
-     * @param tcpNoDelay TCP no delay flag.
+     * @param connProps Connection properties.
      */
-    JdbcThinTcpIo(String host, int port, boolean distributedJoins, boolean enforceJoinOrder, boolean collocated,
-        boolean replicatedOnly, boolean autoCloseServerCursor, boolean lazy, int sockSndBuf, int sockRcvBuf,
-        boolean tcpNoDelay) {
-        this.host = host;
-        this.port = port;
-        this.distributedJoins = distributedJoins;
-        this.enforceJoinOrder = enforceJoinOrder;
-        this.collocated = collocated;
-        this.replicatedOnly = replicatedOnly;
-        this.autoCloseServerCursor = autoCloseServerCursor;
-        this.lazy = lazy;
-        this.sockSndBuf = sockSndBuf;
-        this.sockRcvBuf = sockRcvBuf;
-        this.tcpNoDelay = tcpNoDelay;
+    JdbcThinTcpIo(ConnectionProperties connProps) {
+        this.connProps = connProps;
     }
 
     /**
-     * @throws IgniteCheckedException On error.
+     * @throws SQLException On connection error or reject.
      * @throws IOException On IO error in handshake.
      */
-    public void start() throws IgniteCheckedException, IOException {
+    public void start() throws SQLException, IOException {
         Socket sock = new Socket();
 
-        if (sockSndBuf != 0)
-            sock.setSendBufferSize(sockSndBuf);
+        if (connProps.getSocketSendBuffer() != 0)
+            sock.setSendBufferSize(connProps.getSocketSendBuffer());
 
-        if (sockRcvBuf != 0)
-            sock.setReceiveBufferSize(sockRcvBuf);
+        if (connProps.getSocketReceiveBuffer() != 0)
+            sock.setReceiveBufferSize(connProps.getSocketReceiveBuffer());
 
-        sock.setTcpNoDelay(tcpNoDelay);
+        sock.setTcpNoDelay(connProps.isTcpNoDelay());
 
         try {
-            sock.connect(new InetSocketAddress(host, port));
+            sock.connect(new InetSocketAddress(connProps.getHost(), connProps.getPort()));
+
+            endpoint = new IpcClientTcpEndpoint(sock);
+
+            out = new BufferedOutputStream(endpoint.outputStream());
+            in = new BufferedInputStream(endpoint.inputStream());
         }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Failed to connect to server [host=" + host + ", port=" + port + ']', e);
+        catch (IOException | IgniteCheckedException e) {
+            throw new SQLException("Failed to connect to server [host=" + connProps.getHost() +
+                ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
         }
 
-        endpoint = new IpcClientTcpEndpoint(sock);
-
-        out = new BufferedOutputStream(endpoint.outputStream());
-        in = new BufferedInputStream(endpoint.inputStream());
-
-        handshake();
+        handshake(CURRENT_VER);
     }
 
     /**
-     * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
+     * Used for versions: 2.1.5 and 2.3.0. The protocol version is changed but handshake format isn't changed.
+     *
+     * @param ver JDBC client version.
+     * @throws IOException On IO error.
+     * @throws SQLException On connection reject.
      */
-    public void handshake() throws IOException, IgniteCheckedException {
+    public void handshake(ClientListenerProtocolVersion ver) throws IOException, SQLException {
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
             null, null);
 
-        writer.writeByte((byte)SqlListenerRequest.HANDSHAKE);
+        writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
 
-        writer.writeShort(CURRENT_VER.major());
-        writer.writeShort(CURRENT_VER.minor());
-        writer.writeShort(CURRENT_VER.maintenance());
+        writer.writeShort(ver.major());
+        writer.writeShort(ver.minor());
+        writer.writeShort(ver.maintenance());
 
-        writer.writeByte(SqlListenerNioListener.JDBC_CLIENT);
+        writer.writeByte(ClientListenerNioListener.JDBC_CLIENT);
 
-        writer.writeBoolean(distributedJoins);
-        writer.writeBoolean(enforceJoinOrder);
-        writer.writeBoolean(collocated);
-        writer.writeBoolean(replicatedOnly);
-        writer.writeBoolean(autoCloseServerCursor);
-        writer.writeBoolean(lazy);
+        writer.writeBoolean(connProps.isDistributedJoins());
+        writer.writeBoolean(connProps.isEnforceJoinOrder());
+        writer.writeBoolean(connProps.isCollocated());
+        writer.writeBoolean(connProps.isReplicatedOnly());
+        writer.writeBoolean(connProps.isAutoCloseServerCursor());
+        writer.writeBoolean(connProps.isLazy());
+        writer.writeBoolean(connProps.isSkipReducerOnUpdate());
 
         send(writer.array());
 
@@ -246,8 +202,6 @@ public class JdbcThinTcpIo {
             }
             else
                 igniteVer = new IgniteProductVersion((byte)2, (byte)0, (byte)0, "Unknown", 0L, null);
-
-            srvProtocolVer = CURRENT_VER;
         }
         else {
             short maj = reader.readShort();
@@ -256,13 +210,16 @@ public class JdbcThinTcpIo {
 
             String err = reader.readString();
 
-            srvProtocolVer = SqlListenerProtocolVersion.create(maj, min, maintenance);
+            ClientListenerProtocolVersion srvProtocolVer = ClientListenerProtocolVersion.create(maj, min, maintenance);
 
-            if (VER_2_1_0.equals(srvProtocolVer))
+            if (VER_2_1_5.equals(srvProtocolVer))
+                handshake(VER_2_1_5);
+            else if (VER_2_1_0.equals(srvProtocolVer))
                 handshake_2_1_0();
             else {
-                throw new IgniteCheckedException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
-                    ", remoteNodeProtocolVer=" + srvProtocolVer + ", err=" + err + ']');
+                throw new SQLException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
+                    ", remoteNodeProtocolVer=" + srvProtocolVer + ", err=" + err + ']',
+                    SqlStateCode.CONNECTION_REJECTED);
             }
         }
     }
@@ -270,26 +227,26 @@ public class JdbcThinTcpIo {
     /**
      * Compatibility handshake for server version 2.1.0
      *
-     * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
+     * @throws IOException On IO error.
+     * @throws SQLException On connection reject.
      */
-    public void handshake_2_1_0() throws IOException, IgniteCheckedException {
+    private void handshake_2_1_0() throws IOException, SQLException {
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
             null, null);
 
-        writer.writeByte((byte)SqlListenerRequest.HANDSHAKE);
+        writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
 
         writer.writeShort(VER_2_1_0.major());
         writer.writeShort(VER_2_1_0.minor());
         writer.writeShort(VER_2_1_0.maintenance());
 
-        writer.writeByte(SqlListenerNioListener.JDBC_CLIENT);
+        writer.writeByte(ClientListenerNioListener.JDBC_CLIENT);
 
-        writer.writeBoolean(distributedJoins);
-        writer.writeBoolean(enforceJoinOrder);
-        writer.writeBoolean(collocated);
-        writer.writeBoolean(replicatedOnly);
-        writer.writeBoolean(autoCloseServerCursor);
+        writer.writeBoolean(connProps.isDistributedJoins());
+        writer.writeBoolean(connProps.isEnforceJoinOrder());
+        writer.writeBoolean(connProps.isCollocated());
+        writer.writeBoolean(connProps.isReplicatedOnly());
+        writer.writeBoolean(connProps.isAutoCloseServerCursor());
 
         send(writer.array());
 
@@ -307,39 +264,22 @@ public class JdbcThinTcpIo {
 
             String err = reader.readString();
 
-            SqlListenerProtocolVersion ver = SqlListenerProtocolVersion.create(maj, min, maintenance);
+            ClientListenerProtocolVersion ver = ClientListenerProtocolVersion.create(maj, min, maintenance);
 
-            throw new IgniteCheckedException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
-                ", remoteNodeProtocolVer=" + ver + ", err=" + err + ']');
+            throw new SQLException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
+                ", remoteNodeProtocolVer=" + ver + ", err=" + err + ']', SqlStateCode.CONNECTION_REJECTED);
         }
     }
 
     /**
-     * @param cache Cache name.
-     * @param fetchSize Fetch size.
-     * @param maxRows Max rows.
-     * @param sql SQL statement.
-     * @param args Query parameters.
-     * @return Execute query results.
-     * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
-     */
-    public JdbcQueryExecuteResult queryExecute(String cache, int fetchSize, int maxRows,
-        String sql, List<Object> args)
-        throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcQueryExecuteRequest(cache, fetchSize, maxRows, sql,
-            args == null ? null : args.toArray(new Object[args.size()])), DYNAMIC_SIZE_MSG_CAP);
-    }
-
-    /**
      * @param req Request.
-     * @param cap Initial ouput stream capacity.
      * @return Server response.
-     * @throws IOException On IO error.
-     * @throws IgniteCheckedException On error.
+     * @throws IOException In case of IO error.
      */
     @SuppressWarnings("unchecked")
-    public <R extends JdbcResult> R sendRequest(JdbcRequest req, int cap) throws IOException, IgniteCheckedException {
+    JdbcResponse sendRequest(JdbcRequest req) throws IOException {
+        int cap = guessCapacity(req);
+
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap), null, null);
 
         req.writeBinary(writer);
@@ -352,125 +292,33 @@ public class JdbcThinTcpIo {
 
         res.readBinary(reader);
 
-        if (res.status() != SqlListenerResponse.STATUS_SUCCESS)
-            throw new IgniteCheckedException("Error server response: [req=" + req + ", resp=" + res + ']');
-
-        return (R)res.response();
+        return res;
     }
 
     /**
-     * @param qryId Query ID.
-     * @param pageSize pageSize.
-     * @return Fetch results.
-     * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
+     * Try to guess request capacity.
+     *
+     * @param req Request.
+     * @return Expected capacity.
      */
-    public JdbcQueryFetchResult queryFetch(Long qryId, int pageSize)
-        throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcQueryFetchRequest(qryId, pageSize), QUERY_FETCH_MSG_SIZE);
-    }
+    private static int guessCapacity(JdbcRequest req) {
+        int cap;
 
+        if (req instanceof JdbcBatchExecuteRequest) {
+            int cnt = Math.min(MAX_BATCH_QRY_CNT, ((JdbcBatchExecuteRequest)req).queries().size());
 
-    /**
-     * @param qryId Query ID.
-     * @return Fetch results.
-     * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
-     */
-    public JdbcQueryMetadataResult queryMeta(Long qryId)
-        throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcQueryMetadataRequest(qryId), QUERY_META_MSG_SIZE);
-    }
+            cap = cnt * DYNAMIC_SIZE_MSG_CAP;
+        }
+        else if (req instanceof JdbcQueryCloseRequest)
+            cap = QUERY_CLOSE_MSG_SIZE;
+        else if (req instanceof JdbcQueryMetadataRequest)
+            cap = QUERY_META_MSG_SIZE;
+        else if (req instanceof JdbcQueryFetchRequest)
+            cap = QUERY_FETCH_MSG_SIZE;
+        else
+            cap = DYNAMIC_SIZE_MSG_CAP;
 
-    /**
-     * @param qryId Query ID.
-     * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
-     */
-    public void queryClose(long qryId) throws IOException, IgniteCheckedException {
-        sendRequest(new JdbcQueryCloseRequest(qryId), QUERY_CLOSE_MSG_SIZE);
-    }
-
-    /**
-     * @param schemaName Schema.
-     * @param batch Batch queries.
-     * @return Result.
-     * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
-     */
-    public JdbcBatchExecuteResult batchExecute(String schemaName, List<JdbcQuery> batch)
-        throws IOException, IgniteCheckedException {
-        int cnt = Math.min(MAX_BATCH_QRY_CNT, batch.size());
-
-        return sendRequest(new JdbcBatchExecuteRequest(schemaName, batch), DYNAMIC_SIZE_MSG_CAP * cnt);
-    }
-
-    /**
-     * @param schemaPtrn Schema name pattern.
-     * @param tablePtrn Table name pattern.
-     * @return Result.
-     * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
-     */
-    public JdbcMetaTablesResult tablesMeta(String schemaPtrn, String tablePtrn)
-        throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcMetaTablesRequest(schemaPtrn, tablePtrn), DYNAMIC_SIZE_MSG_CAP);
-    }
-
-    /**
-     * @param schemaPtrn Schema name pattern.
-     * @param tablePtrn Table name pattern.
-     * @param columnPtrn Column name pattern.
-     * @return Result.
-     * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
-     */
-    public JdbcMetaColumnsResult columnsMeta(String schemaPtrn, String tablePtrn, String columnPtrn)
-        throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcMetaColumnsRequest(schemaPtrn, tablePtrn, columnPtrn), DYNAMIC_SIZE_MSG_CAP);
-    }
-
-    /**
-     * @param schemaPtrn Schema name pattern.
-     * @param tablePtrn Table name pattern.
-     * @return Result.
-     * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
-     */
-    public JdbcMetaIndexesResult indexMeta(String schemaPtrn, String tablePtrn) throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcMetaIndexesRequest(schemaPtrn, tablePtrn), DYNAMIC_SIZE_MSG_CAP);
-    }
-
-    /**
-     * @param schemaPtrn Schema name pattern.
-     * @param sql SQL query.
-     * @return Result.
-     * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
-     */
-    public JdbcMetaParamsResult parametersMeta(String schemaPtrn, String sql) throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcMetaParamsRequest(schemaPtrn, sql), DYNAMIC_SIZE_MSG_CAP);
-    }
-
-    /**
-     * @param schemaPtrn Schema name pattern.
-     * @param tablePtrn Table name pattern.
-     * @return Result.
-     * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
-     */
-    public JdbcMetaPrimaryKeysResult primaryKeysMeta(String schemaPtrn, String tablePtrn) throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcMetaPrimaryKeysRequest(schemaPtrn, tablePtrn), DYNAMIC_SIZE_MSG_CAP);
-    }
-
-    /**
-     * @param schemaPtrn Schema name pattern.
-     * @return Result.
-     * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
-     */
-    public JdbcMetaSchemasResult schemasMeta(String schemaPtrn) throws IOException, IgniteCheckedException {
-        return sendRequest(new JdbcMetaSchemasRequest(schemaPtrn), DYNAMIC_SIZE_MSG_CAP);
+        return cap;
     }
 
     /**
@@ -493,9 +341,8 @@ public class JdbcThinTcpIo {
     /**
      * @return Bytes of a response from server.
      * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
      */
-    private byte[] read() throws IOException, IgniteCheckedException {
+    private byte[] read() throws IOException {
         byte[] sizeBytes = read(4);
 
         int msgSize  = (((0xFF & sizeBytes[3]) << 24) | ((0xFF & sizeBytes[2]) << 16)
@@ -508,9 +355,8 @@ public class JdbcThinTcpIo {
      * @param size Count of bytes to read from stream.
      * @return Read bytes.
      * @throws IOException On error.
-     * @throws IgniteCheckedException On error.
      */
-    private byte [] read(int size) throws IOException, IgniteCheckedException {
+    private byte [] read(int size) throws IOException {
         int off = 0;
 
         byte[] data = new byte[size];
@@ -519,7 +365,7 @@ public class JdbcThinTcpIo {
             int res = in.read(data, off, size - off);
 
             if (res == -1)
-                throw new IgniteCheckedException("Failed to read incoming message (not enough data).");
+                throw new IOException("Failed to read incoming message (not enough data).");
 
             off += res;
         }
@@ -545,72 +391,16 @@ public class JdbcThinTcpIo {
     }
 
     /**
-     * @return Distributed joins flag.
+     * @return Connection properties.
      */
-    public boolean distributedJoins() {
-        return distributedJoins;
+    public ConnectionProperties connectionProperties() {
+        return connProps;
     }
 
     /**
-     * @return Enforce join order flag.
-     */
-    public boolean enforceJoinOrder() {
-        return enforceJoinOrder;
-    }
-
-    /**
-     * @return Collocated flag.
-     */
-    public boolean collocated() {
-        return collocated;
-    }
-
-    /**
-     * @return Replicated only flag.
-     */
-    public boolean replicatedOnly() {
-        return replicatedOnly;
-    }
-
-    /**
-     * @return Auto close server cursors flag.
-     */
-    public boolean autoCloseServerCursor() {
-        return autoCloseServerCursor;
-    }
-
-    /**
-     * @return Socket send buffer size.
-     */
-    public int socketSendBuffer() {
-        return sockSndBuf;
-    }
-
-    /**
-     * @return Socket receive buffer size.
-     */
-    public int socketReceiveBuffer() {
-        return sockRcvBuf;
-    }
-
-    /**
-     * @return TCP no delay flag.
-     */
-    public boolean tcpNoDelay() {
-        return tcpNoDelay;
-    }
-
-    /**
-     * @return Ignnite server version.
+     * @return Ignite server version.
      */
     IgniteProductVersion igniteVersion() {
         return igniteVer;
-    }
-
-    /**
-     * @return Lazy query execution flag.
-     */
-    public boolean lazy() {
-        return lazy;
     }
 }

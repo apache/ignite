@@ -428,7 +428,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 cctx.cache().prepareCacheStart(desc.cacheConfiguration(),
                     desc,
                     startReq.nearCacheConfiguration(),
-                    topVer);
+                    topVer,
+                    startReq.disabledAfterStart());
 
                 startedInfos.put(desc.cacheId(), startReq.nearCacheConfiguration() != null);
 
@@ -683,6 +684,28 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @param fut Exchange future.
+     * @param crd Coordinator flag.
+     * @param exchActions Exchange actions.
+     */
+    public void onCustomMessageNoAffinityChange(
+        GridDhtPartitionsExchangeFuture fut,
+        boolean crd,
+        @Nullable final ExchangeActions exchActions
+    ) {
+        final ExchangeDiscoveryEvents evts = fut.context().events();
+
+        forAllCacheGroups(crd, new IgniteInClosureX<GridAffinityAssignmentCache>() {
+            @Override public void applyx(GridAffinityAssignmentCache aff) {
+                if (exchActions != null && exchActions.cacheGroupStopping(aff.groupId()))
+                    return;
+
+                aff.clientEventTopologyChange(evts.lastEvent(), evts.topologyVersion());
+            }
+        });
+    }
+
+    /**
      * Called on exchange initiated for cache start/stop request.
      *
      * @param fut Exchange future.
@@ -702,14 +725,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         caches.updateCachesInfo(exchActions);
 
         // Affinity did not change for existing caches.
-        forAllCacheGroups(crd, new IgniteInClosureX<GridAffinityAssignmentCache>() {
-            @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
-                if (exchActions.cacheGroupStopping(aff.groupId()))
-                    return;
-
-                aff.clientEventTopologyChange(evts.lastEvent(), evts.topologyVersion());
-            }
-        });
+        onCustomMessageNoAffinityChange(fut, crd, exchActions);
 
         for (ExchangeActions.CacheActionData action : exchActions.cacheStartRequests()) {
             DynamicCacheDescriptor cacheDesc = action.descriptor();
@@ -751,7 +767,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     cctx.cache().prepareCacheStart(req.startCacheConfiguration(),
                         cacheDesc,
                         nearCfg,
-                        evts.topologyVersion());
+                        evts.topologyVersion(),
+                        req.disabledAfterStart());
 
                     if (fut.cacheAddedOnExchange(cacheDesc.cacheId(), cacheDesc.receivedFrom())) {
                         if (fut.events().discoveryCache().cacheGroupAffinityNodes(cacheDesc.groupId()).isEmpty())
@@ -2500,7 +2517,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          * @param desc Description.
          */
         private DynamicCacheDescriptor registerCache(DynamicCacheDescriptor desc) {
-            saveCacheConfiguration(desc.cacheConfiguration());
+            saveCacheConfiguration(desc.cacheConfiguration(), desc.sql());
 
             return registeredCaches.put(desc.cacheId(), desc);
         }
@@ -2509,8 +2526,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          * @param grpDesc Group description.
          */
         private CacheGroupDescriptor registerGroup(CacheGroupDescriptor grpDesc) {
-            saveCacheConfiguration(grpDesc.config());
-
             return registeredGrps.put(grpDesc.groupId(), grpDesc);
         }
 
@@ -2591,13 +2606,17 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
     /**
      * @param cfg cache configuration
+     * @param sql SQL flag.
      */
-    private void saveCacheConfiguration(CacheConfiguration<?, ?> cfg) {
-        if (cctx.pageStore() != null && cctx.database().persistenceEnabled() && !cctx.kernalContext().clientNode()) {
+    private void saveCacheConfiguration(CacheConfiguration<?, ?> cfg, boolean sql) {
+        if (cctx.pageStore() != null && CU.isPersistentCache(cfg, cctx.gridConfig().getDataStorageConfiguration()) &&
+            !cctx.kernalContext().clientNode()) {
             try {
-                cctx.pageStore().storeCacheData(
-                    new StoredCacheData(cfg)
-                );
+                StoredCacheData data = new StoredCacheData(cfg);
+
+                data.sql(sql);
+
+                cctx.pageStore().storeCacheData(data, false);
             }
             catch (IgniteCheckedException e) {
                 U.error(log(), "Error while saving cache configuration on disk, cfg = " + cfg, e);

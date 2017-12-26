@@ -20,7 +20,6 @@
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
@@ -45,7 +44,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         private const string CacheName = "cache";
 
         /** Path to XML configuration. */
-        private const string CfgPath = "config\\cache-query.xml";
+        private const string CfgPath = "Config\\cache-query.xml";
 
         /** Maximum amount of items in cache. */
         private const int MaxItemCnt = 100;
@@ -75,7 +74,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// </summary>
         protected virtual IBinaryNameMapper GetNameMapper()
         {
-            return BinaryBasicNameMapper.FullNameInstance;
+            return new BinaryBasicNameMapper {IsSimpleName = false};
         }
 
         /// <summary>
@@ -156,7 +155,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestValidationSqlFields()
         {
             // 1. No sql.
-            Assert.Throws<ArgumentException>(() => { Cache().QueryFields(new SqlFieldsQuery(null)); });
+            Assert.Throws<ArgumentException>(() => { Cache().Query(new SqlFieldsQuery(null)); });
         }
 
         /// <summary>
@@ -285,11 +284,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Cache().Put(3, new QueryPerson("Sidorov", 50));
 
             // 1. Empty result set.
-            using (
-                IQueryCursor<IList> cursor = Cache().QueryFields(
-                    new SqlFieldsQuery("SELECT age FROM QueryPerson WHERE age < ?", 50)))
+            using (var cursor = Cache().Query(new SqlFieldsQuery("SELECT age FROM QueryPerson WHERE age < ?", 50)))
             {
-                foreach (IList entry in cursor.GetAll())
+                foreach (var entry in cursor.GetAll())
                     Assert.IsTrue((int) entry[0] < 50);
             }
         }
@@ -369,7 +366,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// </summary>
         [Test]
         public void TestSqlFieldsQuery([Values(true, false)] bool loc, [Values(true, false)] bool distrJoin, 
-            [Values(true, false)] bool enforceJoinOrder)
+            [Values(true, false)] bool enforceJoinOrder, [Values(true, false)] bool lazy)
         {
             int cnt = MaxItemCnt;
 
@@ -386,10 +383,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 Colocated = !distrJoin,
                 ReplicatedOnly = false,
                 Local = loc,
-                Timeout = TimeSpan.FromSeconds(2)
+                Timeout = TimeSpan.FromSeconds(2),
+                Lazy = lazy
             };
 
-            using (IQueryCursor<IList> cursor = cache.QueryFields(qry))
+            using (var cursor = cache.Query(qry))
             {
                 HashSet<int> exp0 = new HashSet<int>(exp);
 
@@ -402,9 +400,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 }
 
                 Assert.AreEqual(0, exp0.Count);
+                Assert.AreEqual(new[] {"NAME", "AGE"}, cursor.FieldNames);
             }
 
-            using (IQueryCursor<IList> cursor = cache.QueryFields(qry))
+            // Test old API as well.
+#pragma warning disable 618
+            using (var cursor = cache.QueryFields(qry))
             {
                 HashSet<int> exp0 = new HashSet<int>(exp);
 
@@ -417,6 +418,38 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
                 Assert.AreEqual(0, exp0.Count);
             }
+#pragma warning restore 618
+        }
+
+        /// <summary>
+        /// Tests that query configuration propagates from Spring XML correctly.
+        /// </summary>
+        [Test]
+        public void TestQueryConfiguration()
+        {
+            var qe = Cache().GetConfiguration().QueryEntities.Single();
+
+            Assert.AreEqual(typeof(QueryPerson).FullName, qe.ValueTypeName);
+
+            var age = qe.Fields.First();
+            Assert.AreEqual("age", age.Name);
+            Assert.AreEqual(typeof(int), age.FieldType);
+            Assert.IsFalse(age.IsKeyField);
+
+            var name = qe.Fields.Last();
+            Assert.AreEqual("name", name.Name);
+            Assert.AreEqual(typeof(string), name.FieldType);
+            Assert.IsFalse(name.IsKeyField);
+
+            var textIdx = qe.Indexes.First();
+            Assert.AreEqual(QueryIndexType.FullText, textIdx.IndexType);
+            Assert.AreEqual("name", textIdx.Fields.Single().Name);
+            Assert.AreEqual(QueryIndex.DefaultInlineSize, textIdx.InlineSize);
+
+            var sqlIdx = qe.Indexes.Last();
+            Assert.AreEqual(QueryIndexType.Sorted, sqlIdx.IndexType);
+            Assert.AreEqual("age", sqlIdx.Fields.Single().Name);
+            Assert.AreEqual(2345, sqlIdx.InlineSize);
         }
 
         /// <summary>
@@ -590,7 +623,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             strings[1] = "foo";
 
             // Default schema.
-            var res = doubles.QueryFields(new SqlFieldsQuery(
+            var res = doubles.Query(new SqlFieldsQuery(
                     "select S._val from double as D join \"strings\".string as S on S._key = D._key"))
                 .Select(x => (string) x[0])
                 .Single();
@@ -598,7 +631,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual("foo", res);
 
             // Custom schema.
-            res = doubles.QueryFields(new SqlFieldsQuery(
+            res = doubles.Query(new SqlFieldsQuery(
                     "select S._val from \"doubles\".double as D join string as S on S._key = D._key")
                 {
                     Schema = strings.Name
@@ -635,13 +668,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var sql = "select T0.Age from QueryPerson as T0 " +
                       "inner join QueryPerson as T1 on ((? - T1.Age - 1) = T0._key)";
 
-            var res = cache.QueryFields(new SqlFieldsQuery(sql, count)).GetAll().Distinct().Count();
+            var res = cache.Query(new SqlFieldsQuery(sql, count)).GetAll().Distinct().Count();
 
             Assert.Greater(res, 0);
             Assert.Less(res, count);
 
             // Test distributed join: returns complete results
-            res = cache.QueryFields(new SqlFieldsQuery(sql, count) {EnableDistributedJoins = true})
+            res = cache.Query(new SqlFieldsQuery(sql, count) {EnableDistributedJoins = true})
                 .GetAll().Distinct().Count();
 
             Assert.AreEqual(count, res);
@@ -655,8 +688,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var entity = Cache().GetConfiguration().QueryEntities.Single();
 
-            Assert.AreEqual(typeof(int), entity.Fields.Single(x => x.Name == "age").FieldType);
-            Assert.AreEqual(typeof(string), entity.Fields.Single(x => x.Name == "name").FieldType);
+            var ageField = entity.Fields.Single(x => x.Name == "age");
+            Assert.AreEqual(typeof(int), ageField.FieldType);
+            Assert.IsFalse(ageField.NotNull);
+            Assert.IsFalse(ageField.IsKeyField);
+
+            var nameField = entity.Fields.Single(x => x.Name == "name");
+            Assert.AreEqual(typeof(string), nameField.FieldType);
+            Assert.IsTrue(nameField.NotNull);
+            Assert.IsFalse(nameField.IsKeyField);
         }
 
         /// <summary>
@@ -670,7 +710,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             cache[1] = new QueryPerson("Joe", 48);
 
-            var row = cache.QueryFields(new SqlFieldsQuery("select * from QueryPerson")).GetAll()[0];
+            var row = cache.Query(new SqlFieldsQuery("select * from QueryPerson")).GetAll()[0];
             Assert.AreEqual(2, row.Count);
             Assert.AreEqual(48, row[0]);
             Assert.AreEqual("Joe", row[1]);
@@ -697,7 +737,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             cache[1] = new QueryPerson("John", 33);
 
-            row = cache.QueryFields(new SqlFieldsQuery("select * from QueryPerson")).GetAll()[0];
+            row = cache.Query(new SqlFieldsQuery("select * from QueryPerson")).GetAll()[0];
             
             Assert.AreEqual(3, row.Count);
             Assert.AreEqual(33, row[0]);
@@ -707,7 +747,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual("John", person.Name);
 
             // Check explicit select.
-            row = cache.QueryFields(new SqlFieldsQuery("select FullKey from QueryPerson")).GetAll()[0];
+            row = cache.Query(new SqlFieldsQuery("select FullKey from QueryPerson")).GetAll()[0];
             Assert.AreEqual(1, row[0]);
         }
 
@@ -715,6 +755,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Tests query timeouts.
         /// </summary>
         [Test]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestSqlQueryTimeout()
         {
             var cache = Cache();
@@ -734,6 +775,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Tests fields query timeouts.
         /// </summary>
         [Test]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestSqlFieldsQueryTimeout()
         {
             var cache = Cache();
@@ -745,8 +787,44 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             };
 
             // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-            var ex = Assert.Throws<CacheException>(() => cache.QueryFields(fieldsQry).ToArray());
+            var ex = Assert.Throws<CacheException>(() => cache.Query(fieldsQry).ToArray());
             Assert.IsTrue(ex.ToString().Contains("QueryCancelledException: The query was cancelled while executing."));
+        }
+
+        /// <summary>
+        /// Tests the FieldNames property.
+        /// </summary>
+        [Test]
+        public void TestFieldNames()
+        {
+            var cache = Cache();
+            PopulateCache(cache, false, 5, x => true);
+
+            // Get before iteration.
+            var qry = new SqlFieldsQuery("SELECT * FROM QueryPerson");
+            var cur = cache.Query(qry);
+            var names = cur.FieldNames;
+
+            Assert.AreEqual(new[] {"AGE", "NAME" }, names);
+            
+            cur.Dispose();
+            Assert.AreSame(names, cur.FieldNames);
+
+            Assert.Throws<NotSupportedException>(() => cur.FieldNames.Add("x"));
+
+            // Custom order, key-val, get after iteration.
+            qry.Sql = "SELECT NAME, _key, AGE, _val FROM QueryPerson";
+            cur = cache.Query(qry);
+            cur.GetAll();
+
+            Assert.AreEqual(new[] { "NAME", "_KEY", "AGE", "_VAL" }, cur.FieldNames);
+
+            // Get after disposal.
+            qry.Sql = "SELECT 1, AGE FROM QueryPerson";
+            cur = cache.Query(qry);
+            cur.Dispose();
+            
+            Assert.AreEqual(new[] { "1", "AGE" }, cur.FieldNames);
         }
 
         /// <summary>

@@ -45,10 +45,18 @@ include /app/helpers/jade/mixins
                             include /app/modules/states/configuration/clusters/binary
                             include /app/modules/states/configuration/clusters/cache-key-cfg
                             include /app/modules/states/configuration/clusters/checkpoint
+
+                            //- Since ignite 2.3
+                            include /app/modules/states/configuration/clusters/client-connector
+
                             include /app/modules/states/configuration/clusters/collision
                             include /app/modules/states/configuration/clusters/communication
                             include /app/modules/states/configuration/clusters/connector
                             include /app/modules/states/configuration/clusters/deployment
+
+                            //- Since ignite 2.3
+                            include /app/modules/states/configuration/clusters/data-storage
+
                             include /app/modules/states/configuration/clusters/discovery
                             include /app/modules/states/configuration/clusters/events
                             include /app/modules/states/configuration/clusters/failover
@@ -58,7 +66,7 @@ include /app/helpers/jade/mixins
                             include /app/modules/states/configuration/clusters/logger
                             include /app/modules/states/configuration/clusters/marshaller
 
-                            //- Since ignite 2.0
+                            //- Since ignite 2.0, deprecated in ignite 2.3
                             include /app/modules/states/configuration/clusters/memory
 
                             include /app/modules/states/configuration/clusters/misc
@@ -67,8 +75,10 @@ include /app/helpers/jade/mixins
                             //- Deprecated in ignite 2.1
                             include /app/modules/states/configuration/clusters/odbc
 
-                            //- Since ignite 2.1
+                            //- Since ignite 2.1, deprecated in ignite 2.3
                             include /app/modules/states/configuration/clusters/persistence
+
+                            //- Deprecated in ignite 2.3
                             include /app/modules/states/configuration/clusters/sql-connector
 
                             include /app/modules/states/configuration/clusters/service

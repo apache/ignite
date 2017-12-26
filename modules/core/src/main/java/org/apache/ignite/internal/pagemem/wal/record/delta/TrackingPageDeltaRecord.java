@@ -20,6 +20,7 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Delta record for updates in tracking pages
@@ -37,14 +38,14 @@ public class TrackingPageDeltaRecord extends PageDeltaRecord {
     /**
      * @param grpId Cache group id.
      * @param pageId Page id.
-     * @param nextSnapshotId
-     * @param lastSuccessfulSnapshotId
+     * @param nextSnapshotTag next snapshot tag
+     * @param lastSuccessfulSnapshotId last successful snapshot id
      */
-    public TrackingPageDeltaRecord(int grpId, long pageId, long pageIdToMark, long nextSnapshotId, long lastSuccessfulSnapshotId) {
+    public TrackingPageDeltaRecord(int grpId, long pageId, long pageIdToMark, long nextSnapshotTag, long lastSuccessfulSnapshotId) {
         super(grpId, pageId);
 
         this.pageIdToMark = pageIdToMark;
-        this.nextSnapshotId = nextSnapshotId;
+        this.nextSnapshotId = nextSnapshotTag;
         this.lastSuccessfulSnapshotId = lastSuccessfulSnapshotId;
     }
 
@@ -81,5 +82,10 @@ public class TrackingPageDeltaRecord extends PageDeltaRecord {
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.TRACKING_PAGE_DELTA;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TrackingPageDeltaRecord.class, this, "super", super.toString());
     }
 }

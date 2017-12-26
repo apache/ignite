@@ -22,7 +22,9 @@ import org.apache.ignite.configuration.PersistentStoreConfiguration;
 
 /**
  * An MX bean allowing to monitor and tune persistence metrics.
+ * @deprecated Part of old API. Metrics are accessible through {@link DataStorageMetricsMXBean}.
  */
+@Deprecated
 public interface PersistenceMetricsMXBean extends PersistenceMetrics {
     /** {@inheritDoc} */
     @MXBeanDescription("Average number of WAL records per second written during the last time interval.")

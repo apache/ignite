@@ -70,6 +70,9 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /** Marshaller. */
         private readonly Marshaller _marshaller;
 
+        /** Schema. */
+        private readonly BinaryObjectSchema _schema = new BinaryObjectSchema();
+
         /// <summary>
         /// Initializes the <see cref="BinaryType"/> class.
         /// </summary>
@@ -128,7 +131,8 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// Initializes a new instance of the <see cref="BinaryType" /> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public BinaryType(BinaryReader reader)
+        /// <param name="readSchemas">Whether to read schemas.</param>
+        public BinaryType(BinaryReader reader, bool readSchemas = false)
         {
             _typeId = reader.ReadInt();
             _typeName = reader.ReadString();
@@ -160,6 +164,16 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
                 }
 
                 _enumValueToName = _enumNameToValue.ToDictionary(x => x.Value, x => x.Key);
+            }
+
+            if (readSchemas)
+            {
+                var cnt = reader.ReadInt();
+
+                for (var i = 0; i < cnt; i++)
+                {
+                    _schema.Add(reader.ReadInt(), reader.ReadIntArray());
+                }
             }
 
             _marshaller = reader.Marshaller;
@@ -316,6 +330,14 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         public IDictionary<string, int> EnumValuesMap
         {
             get { return _enumNameToValue; }
+        }
+
+        /// <summary>
+        /// Gets the schema.
+        /// </summary>
+        public BinaryObjectSchema Schema
+        {
+            get { return _schema; }
         }
 
         /// <summary>

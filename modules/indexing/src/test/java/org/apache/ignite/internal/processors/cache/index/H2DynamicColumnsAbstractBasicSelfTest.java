@@ -17,19 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.testframework.config.GridTestProperties;
+
+import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
 
 /**
  * Test to check dynamic columns related features.
@@ -92,31 +94,40 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     }
 
     /**
+     * Check table state on default node.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param cols Columns to look for.
+     * @throws SQLException if failed.
+     */
+    private void checkTableState(String schemaName, String tblName, QueryField... cols) throws SQLException {
+        checkTableState(grid(nodeIndex()), schemaName, tblName, cols);
+    }
+
+    /**
      * Test column addition to the end of the columns list.
      */
-    public void testAddColumnSimple() {
+    public void testAddColumnSimple() throws SQLException {
         run("ALTER TABLE Person ADD COLUMN age int");
 
         doSleep(500);
 
         QueryField c = c("AGE", Integer.class.getName());
 
-        for (Ignite node : Ignition.allGrids())
-            checkNodeState((IgniteEx)node, QueryUtils.DFLT_SCHEMA, "PERSON", c);
+        checkTableState(QueryUtils.DFLT_SCHEMA, "PERSON", c);
     }
 
     /**
      * Test column addition to the end of the columns list.
      */
-    public void testAddFewColumnsSimple() {
+    public void testAddFewColumnsSimple() throws SQLException {
         run("ALTER TABLE Person ADD COLUMN (age int, \"city\" varchar)");
 
         doSleep(500);
 
-        for (Ignite node : Ignition.allGrids())
-            checkNodeState((IgniteEx)node, QueryUtils.DFLT_SCHEMA, "PERSON",
-                c("AGE", Integer.class.getName()),
-                c("city", String.class.getName()));
+        checkTableState(QueryUtils.DFLT_SCHEMA, "PERSON", c("AGE", Integer.class.getName()),
+            c("city", String.class.getName()));
     }
 
     /**
@@ -156,9 +167,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
         run(cache, "ALTER TABLE Person ADD COLUMN city varchar");
 
         run(cache, "INSERT INTO Person (id, name, city) values (1, 'John Doe', 'New York')");
-
         run(cache, "INSERT INTO Person (id, name, city) values (2, 'Mike Watts', 'Denver')");
-
         run(cache, "INSERT INTO Person (id, name, city) values (3, 'Ann Pierce', 'New York')");
 
         run(cache, "CREATE INDEX pidx1 ON Person(name, city desc)");
@@ -202,11 +211,8 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
         run(cache, "CREATE INDEX pidx2 on Person(age desc)");
 
         run(cache, "DROP INDEX pidx2");
-
         run(cache, "DROP INDEX pidx1");
-
         run(cache, "DROP INDEX cidx2");
-
         run(cache, "DROP INDEX cidx1");
 
         run(cache, "DELETE FROM Person where age > 10");
@@ -219,26 +225,25 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     /**
      * Test that we can add columns dynamically to tables associated with non dynamic caches as well.
      */
-    public void testAddColumnToNonDynamicCache() {
+    public void testAddColumnToNonDynamicCache() throws SQLException {
         run("ALTER TABLE \"idx\".PERSON ADD COLUMN CITY varchar");
 
         doSleep(500);
 
         QueryField c = c("CITY", String.class.getName());
 
-        for (Ignite node : Ignition.allGrids())
-            checkNodeState((IgniteEx)node, "idx", "PERSON", c);
+        checkTableState("idx", "PERSON", c);
     }
 
     /**
      * Test that we can add columns dynamically to tables associated with non dynamic caches storing user types as well.
      */
     @SuppressWarnings("unchecked")
-    public void testAddColumnToNonDynamicCacheWithRealValueType() {
+    public void testAddColumnToNonDynamicCacheWithRealValueType() throws SQLException {
         CacheConfiguration<Integer, City> ccfg = defaultCacheConfiguration().setName("City")
             .setIndexedTypes(Integer.class, City.class);
 
-        IgniteCache<Integer, City> cache = ignite(nodeIndex()).getOrCreateCache(ccfg);
+        IgniteCache<Integer, ?> cache = ignite(nodeIndex()).getOrCreateCache(ccfg);
 
         run(cache, "ALTER TABLE \"City\".City ADD COLUMN population int");
 
@@ -246,8 +251,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
         QueryField c = c("POPULATION", Integer.class.getName());
 
-        for (Ignite node : Ignition.allGrids())
-            checkNodeState((IgniteEx)node, "City", "CITY", c);
+        checkTableState("City", "CITY", c);
 
         run(cache, "INSERT INTO \"City\".City (_key, id, name, state, population) values " +
             "(1, 1, 'Washington', 'DC', 2500000)");
@@ -256,13 +260,92 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
         assertEquals(Collections.singletonList(Arrays.asList(1, 1, "Washington", "DC", 2500000)), res);
 
-        City city = cache.get(1);
+        if (!Boolean.valueOf(GridTestProperties.getProperty(BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER))) {
+            City city = (City)cache.get(1);
 
-        assertEquals(1, city.id());
-        assertEquals("Washington", city.name());
-        assertEquals("DC", city.state());
+            assertEquals(1, city.id());
+            assertEquals("Washington", city.name());
+            assertEquals("DC", city.state());
+        }
+        else {
+            BinaryObject city = (BinaryObject)cache.withKeepBinary().get(1);
+
+            assertEquals(1, (int)city.field("id"));
+            assertEquals("Washington", (String)city.field("name"));
+            assertEquals("DC", (String)city.field("state"));
+            assertEquals(2500000, (int)city.field("population"));
+        }
 
         cache.destroy();
+    }
+
+    /**
+     * Test addition of column with not null constraint.
+     */
+    public void testAddNotNullColumn() throws SQLException {
+        run("ALTER TABLE Person ADD COLUMN age int NOT NULL");
+
+        doSleep(500);
+
+        QueryField c = new QueryField("AGE", Integer.class.getName(), false);
+
+        checkTableState(QueryUtils.DFLT_SCHEMA, "PERSON", c);
+    }
+
+    /**
+     * Test addition of column explicitly defined as nullable.
+     */
+    public void testAddNullColumn() throws SQLException {
+        run("ALTER TABLE Person ADD COLUMN age int NULL");
+
+        doSleep(500);
+
+        QueryField c = new QueryField("AGE", Integer.class.getName(), true);
+
+        checkTableState(QueryUtils.DFLT_SCHEMA, "PERSON", c);
+    }
+
+    /**
+     * Test that {@code ADD COLUMN} fails for non dynamic table that has flat value.
+     */
+    @SuppressWarnings({"unchecked", "ThrowFromFinallyBlock"})
+    public void testTestAlterTableOnFlatValueNonDynamicTable() {
+        CacheConfiguration c =
+            new CacheConfiguration("ints").setIndexedTypes(Integer.class, Integer.class)
+                .setSqlSchema(QueryUtils.DFLT_SCHEMA);
+
+        try {
+            grid(nodeIndex()).getOrCreateCache(c);
+
+            doTestAlterTableOnFlatValue("INTEGER");
+        }
+        finally {
+            grid(nodeIndex()).destroyCache("ints");
+        }
+    }
+
+    /**
+     * Test that {@code ADD COLUMN} fails for dynamic table that has flat value.
+     */
+    @SuppressWarnings({"unchecked", "ThrowFromFinallyBlock"})
+    public void testTestAlterTableOnFlatValueDynamicTable() {
+        try {
+            run("CREATE TABLE TEST (id int primary key, x varchar) with \"wrap_value=false\"");
+
+            doTestAlterTableOnFlatValue("TEST");
+        }
+        finally {
+            run("DROP TABLE TEST");
+        }
+    }
+
+    /**
+     * Test that {@code ADD COLUMN} fails for tables that have flat value.
+     * @param tblName table name.
+     */
+    private void doTestAlterTableOnFlatValue(String tblName) {
+        assertThrows("ALTER TABLE " + tblName + " ADD COLUMN y varchar",
+            "Cannot add column(s) because table was created with WRAP_VALUE=false option.");
     }
 
     /**

@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Services
 {
     using System;
     using System.Collections;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
@@ -56,7 +57,9 @@ namespace Apache.Ignite.Core.Impl.Services
                 {
                     // Write as is
                     foreach (var arg in arguments)
-                        writer.WriteObject(arg);
+                    {
+                        writer.WriteObjectDetached(arg);
+                    }
                 }
                 else
                 {
@@ -183,13 +186,28 @@ namespace Apache.Ignite.Core.Impl.Services
                 return;
             }
 
+            // read failed configurations
+            ICollection<ServiceConfiguration> failedCfgs;
+
+            try
+            {
+                // switch to BinaryMode.Deserialize mode to avoid IService casting exception
+                reader = marsh.StartUnmarshal(stream);
+                failedCfgs = reader.ReadNullableCollectionRaw(f => new ServiceConfiguration(f));
+            }
+            catch (Exception e)
+            {
+                throw new ServiceDeploymentException("Service deployment failed with an exception. " +
+                                                     "Examine InnerException for details.", e);
+            }
+
             var binErr = err as IBinaryObject;
 
             throw binErr != null
                 ? new ServiceDeploymentException("Service deployment failed with a binary error. " +
-                                                 "Examine BinaryCause for details.", binErr)
+                                                 "Examine BinaryCause for details.", binErr, failedCfgs)
                 : new ServiceDeploymentException("Service deployment failed with an exception. " +
-                                                 "Examine InnerException for details.", (Exception) err);
+                                                 "Examine InnerException for details.", (Exception) err, failedCfgs);
         }
 
         /// <summary>
@@ -200,9 +218,13 @@ namespace Apache.Ignite.Core.Impl.Services
             var hnd = GetPlatformArgWriter(param, arg);
 
             if (hnd != null)
+            {
                 hnd(writer, arg);
+            }
             else
-                writer.WriteObject(arg);
+            {
+                writer.WriteObjectDetached(arg);
+            }
         }
 
         /// <summary>

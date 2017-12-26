@@ -282,4 +282,24 @@ public interface CacheMetricsMXBean extends CacheStatisticsMXBean, CacheMXBean, 
     /** {@inheritDoc} */
     @MXBeanDescription("True when a cache is in write-through mode.")
     public boolean isWriteThrough();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("True when a cache topology is valid for read operations.")
+    public boolean isValidForReading();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("True when a cache topology is valid for write operations.")
+    public boolean isValidForWriting();
+
+    /**
+     * Enable statistic collection for the cache.
+     */
+    @MXBeanDescription("Enable statistic collection for the cache.")
+    public void enableStatistics();
+
+    /**
+     * Disable statistic collection for the cache.
+     */
+    @MXBeanDescription("Disable statistic collection for the cache.")
+    public void disableStatistics();
 }

@@ -55,7 +55,7 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
         super(name,
             grp.groupId(),
             pageMem,
-            grp.shared().wal(),
+            grp.dataRegion().config().isPersistenceEnabled() ? grp.shared().wal() : null,
             grp.offheap().globalRemoveId(),
             metaPageId,
             reuseList,
@@ -63,6 +63,8 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
             grp.sharedGroup() ? CacheIdAwarePendingEntryLeafIO.VERSIONS : PendingEntryLeafIO.VERSIONS);
 
         this.grp = grp;
+
+        assert !grp.dataRegion().config().isPersistenceEnabled()  || grp.shared().database().checkpointLockIsHeldByThread();
 
         initTree(initNew);
     }

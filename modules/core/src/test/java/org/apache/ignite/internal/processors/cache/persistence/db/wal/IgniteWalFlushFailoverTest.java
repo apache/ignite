@@ -20,17 +20,19 @@ package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.file.OpenOption;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -43,11 +45,15 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+
 /**
  *
  */
 public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
-
     /** */
     private static final String TEST_CACHE = "testCache";
 
@@ -61,6 +67,8 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
         deleteWorkFiles();
     }
 
@@ -78,23 +86,15 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheCfg);
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration()
-                .setName("dfltMemPlc")
-                .setInitialSize(2 * 1024L * 1024L * 1024L);
-
-        MemoryConfiguration memCfg = new MemoryConfiguration()
-                .setMemoryPolicies(memPlcCfg)
-                .setDefaultMemoryPolicyName(memPlcCfg.getName());
-
-        cfg.setMemoryConfiguration(memCfg);
-
-        PersistentStoreConfiguration storeCfg = new PersistentStoreConfiguration()
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(
+                 new DataRegionConfiguration().setMaxSize(2048L * 1024 * 1024).setPersistenceEnabled(true))
                 .setFileIOFactory(new FailingFileIOFactory())
                 .setWalMode(WALMode.BACKGROUND)
-                // Setting WAL Segment size to high values forces flushing by timeout.
+                .setWalBufferSize(128 * 1024)// Setting WAL Segment size to high values forces flushing by timeout.
                 .setWalSegmentSize(flushByTimeout ? 500_000 : 50_000);
 
-        cfg.setPersistentStoreConfiguration(storeCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
     }
@@ -124,16 +124,24 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
      */
     private void flushingErrorTest() throws Exception {
         final IgniteEx grid = startGrid(0);
-        grid.active(true);
 
-        IgniteCache<Object, Object> cache = grid.cache(TEST_CACHE);
+        IgniteWriteAheadLogManager wal = grid.context().cache().context().wal();
 
-        final int iterations = 100;
+        boolean mmap = GridTestUtils.getFieldValue(wal, "mmap");
+
+        if (mmap)
+            return;
 
         try {
+            grid.active(true);
+
+            IgniteCache<Object, Object> cache = grid.cache(TEST_CACHE);
+
+            final int iterations = 100;
+
             for (int i = 0; i < iterations; i++) {
                 Transaction tx = grid.transactions().txStart(
-                        TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED);
+                    TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED);
 
                 cache.put(i, "testValue" + i);
 
@@ -148,47 +156,53 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
 
         // We should await successful stop of node.
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override
-            public boolean apply() {
+            @Override public boolean apply() {
                 return grid.context().gateway().getState() == GridKernalState.STOPPED;
             }
         }, getTestTimeout());
     }
 
     /**
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 
     /**
      * Create File I/O which fails after second attempt to write to File
      */
     private static class FailingFileIOFactory implements FileIOFactory {
+        /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
+        /** Delegate factory. */
         private final FileIOFactory delegateFactory = new RandomAccessFileIOFactory();
 
-        @Override
-        public FileIO create(File file) throws IOException {
-            return create(file, "rw");
+        /** {@inheritDoc} */
+        @Override public FileIO create(File file) throws IOException {
+            return create(file, CREATE, READ, WRITE);
         }
 
-        @Override
-        public FileIO create(File file, String mode) throws IOException {
-            FileIO delegate = delegateFactory.create(file, mode);
+        /** {@inheritDoc} */
+        @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+            final FileIO delegate = delegateFactory.create(file, modes);
 
             return new FileIODecorator(delegate) {
                 int writeAttempts = 2;
 
-                @Override
-                public int write(ByteBuffer sourceBuffer) throws IOException {
+                @Override public int write(ByteBuffer srcBuf) throws IOException {
                     if (--writeAttempts == 0)
                         throw new RuntimeException("Test exception. Unable to write to file.");
 
-                    return super.write(sourceBuffer);
+                    return super.write(srcBuf);
                 }
+
+                /** {@inheritDoc} */
+                @Override public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
+                    return delegate.map(maxWalSegmentSize);
+                }
+
             };
         }
     }

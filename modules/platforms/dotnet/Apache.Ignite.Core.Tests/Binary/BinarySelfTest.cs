@@ -1532,6 +1532,101 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
+        /// Tests the jagged arrays.
+        /// </summary>
+        [Test]
+        public void TestJaggedArrays()
+        {
+            int[][] ints = {new[] {1, 2, 3}, new[] {4, 5, 6}};
+            Assert.AreEqual(ints, TestUtils.SerializeDeserialize(ints));
+
+            uint[][][] uints = {new[] {new uint[] {1, 2, 3}, new uint[] {4, 5}}};
+            Assert.AreEqual(uints, TestUtils.SerializeDeserialize(uints));
+
+            PropertyType[][][] objs = {new[] {new[] {new PropertyType {Field1 = 42}}}};
+            Assert.AreEqual(42, TestUtils.SerializeDeserialize(objs)[0][0][0].Field1);
+
+            var obj = new MultidimArrays { JaggedInt = ints, JaggedUInt = uints };
+            var resObj = TestUtils.SerializeDeserialize(obj);
+            Assert.AreEqual(obj.JaggedInt, resObj.JaggedInt);
+            Assert.AreEqual(obj.JaggedUInt, resObj.JaggedUInt);
+
+            var obj2 = new MultidimArraysBinarizable { JaggedInt = ints, JaggedUInt = uints };
+            var resObj2 = TestUtils.SerializeDeserialize(obj);
+            Assert.AreEqual(obj2.JaggedInt, resObj2.JaggedInt);
+            Assert.AreEqual(obj2.JaggedUInt, resObj2.JaggedUInt);
+        }
+
+        /// <summary>
+        /// Tests the multidimensional arrays.
+        /// </summary>
+        [Test]
+        public void TestMultidimensionalArrays()
+        {
+            int[,] ints = {{1, 2, 3}, {4, 5, 6}};
+            Assert.AreEqual(ints, TestUtils.SerializeDeserialize(ints));
+
+            uint[,,] uints = {{{1, 2, 3}, {4, 5, 6}}, {{7, 8, 9}, {10, 11, 12}}};
+            Assert.AreEqual(uints, TestUtils.SerializeDeserialize(uints));
+
+            PropertyType[,] objs = {{new PropertyType {Field1 = 123}}};
+            Assert.AreEqual(123, TestUtils.SerializeDeserialize(objs)[0, 0].Field1);
+            
+            var obj = new MultidimArrays { MultidimInt = ints, MultidimUInt = uints };
+            var resObj = TestUtils.SerializeDeserialize(obj);
+            Assert.AreEqual(obj.MultidimInt, resObj.MultidimInt);
+            Assert.AreEqual(obj.MultidimUInt, resObj.MultidimUInt);
+
+            var obj2 = new MultidimArraysBinarizable { MultidimInt = ints, MultidimUInt = uints };
+            var resObj2 = TestUtils.SerializeDeserialize(obj);
+            Assert.AreEqual(obj2.MultidimInt, resObj2.MultidimInt);
+            Assert.AreEqual(obj2.MultidimUInt, resObj2.MultidimUInt);
+        }
+
+        /// <summary>
+        /// Tests pointer types.
+        /// </summary>
+        [Test]
+        public unsafe void TestPointers([Values(false, true)] bool raw)
+        {
+            // Values.
+            var vals = new[] {IntPtr.Zero, new IntPtr(long.MinValue), new IntPtr(long.MaxValue)};
+            foreach (var intPtr in vals)
+            {
+                Assert.AreEqual(intPtr, TestUtils.SerializeDeserialize(intPtr));
+            }
+
+            var uvals = new[] {UIntPtr.Zero, new UIntPtr(long.MaxValue), new UIntPtr(ulong.MaxValue)};
+            foreach (var uintPtr in uvals)
+            {
+                Assert.AreEqual(uintPtr, TestUtils.SerializeDeserialize(uintPtr));
+            }
+
+            // Type fields.
+            var ptrs = new Pointers
+            {
+                ByteP = (byte*) 123,
+                IntP = (int*) 456,
+                VoidP = (void*) 789,
+                IntPtr = new IntPtr(long.MaxValue),
+                UIntPtr = new UIntPtr(ulong.MaxValue),
+                IntPtrs = new[] {new IntPtr(long.MinValue)},
+                UIntPtrs = new[] {new UIntPtr(long.MaxValue), new UIntPtr(ulong.MaxValue)}
+            };
+
+            var res = TestUtils.SerializeDeserialize(ptrs, raw);
+            
+            Assert.IsTrue(ptrs.ByteP == res.ByteP);
+            Assert.IsTrue(ptrs.IntP == res.IntP);
+            Assert.IsTrue(ptrs.VoidP == res.VoidP);
+
+            Assert.AreEqual(ptrs.IntPtr, res.IntPtr);
+            Assert.AreEqual(ptrs.IntPtrs, res.IntPtrs);
+            Assert.AreEqual(ptrs.UIntPtr, res.UIntPtr);
+            Assert.AreEqual(ptrs.UIntPtrs, res.UIntPtrs);
+        }
+
+        /// <summary>
         /// Tests the compact footer setting.
         /// </summary>
         [Test]
@@ -2603,6 +2698,53 @@ namespace Apache.Ignite.Core.Tests.Binary
             {
                 return !left.Equals(right);
             }
+        }
+
+        private class MultidimArrays
+        {
+            public int[][] JaggedInt { get; set; }
+            public uint[][][] JaggedUInt { get; set; }
+
+            public int[,] MultidimInt { get; set; }
+            public uint[,,] MultidimUInt { get; set; }
+        }
+
+        private class MultidimArraysBinarizable : IBinarizable
+        {
+            public int[][] JaggedInt { get; set; }
+            public uint[][][] JaggedUInt { get; set; }
+
+            public int[,] MultidimInt { get; set; }
+            public uint[,,] MultidimUInt { get; set; }
+            
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                writer.WriteObject("JaggedInt", JaggedInt);
+                writer.WriteObject("JaggedUInt", JaggedUInt);
+
+                writer.WriteObject("MultidimInt", MultidimInt);
+                writer.WriteObject("MultidimUInt", MultidimUInt);
+            }
+
+            public void ReadBinary(IBinaryReader reader)
+            {
+                JaggedInt = reader.ReadObject<int[][]>("JaggedInt");
+                JaggedUInt = reader.ReadObject<uint[][][]>("JaggedUInt");
+
+                MultidimInt = reader.ReadObject<int[,]>("MultidimInt");
+                MultidimUInt = reader.ReadObject<uint[,,]>("MultidimUInt");
+            }
+        }
+
+        private unsafe class Pointers
+        {
+            public IntPtr IntPtr { get; set; }
+            public IntPtr[] IntPtrs { get; set; }
+            public UIntPtr UIntPtr { get; set; }
+            public UIntPtr[] UIntPtrs { get; set; }
+            public byte* ByteP { get; set; }
+            public int* IntP { get; set; }
+            public void* VoidP { get; set; }
         }
     }
 }

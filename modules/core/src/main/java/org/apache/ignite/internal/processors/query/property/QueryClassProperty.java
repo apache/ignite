@@ -44,18 +44,27 @@ public class QueryClassProperty implements GridQueryProperty {
     /** */
     private final CacheObjectContext coCtx;
 
+    /** */
+    private final boolean notNull;
+
     /**
      * Constructor.
      *
      * @param accessor Way of accessing the property.
+     * @param key {@code true} if key property, {@code false} otherwise.
+     * @param name Property name.
+     * @param notNull {@code true} if null value is not allowed.
+     * @param coCtx Cache Object Context.
      */
     public QueryClassProperty(QueryPropertyAccessor accessor, boolean key, String name,
-        @Nullable CacheObjectContext coCtx) {
+        boolean notNull, @Nullable CacheObjectContext coCtx) {
         this.accessor = accessor;
 
         this.key = key;
 
         this.name = !F.isEmpty(name) ? name : accessor.getPropertyName();
+
+        this.notNull = notNull;
 
         this.coCtx = coCtx;
     }
@@ -126,5 +135,10 @@ public class QueryClassProperty implements GridQueryProperty {
     /** {@inheritDoc} */
     @Override public GridQueryProperty parent() {
         return parent;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean notNull() {
+        return notNull;
     }
 }
