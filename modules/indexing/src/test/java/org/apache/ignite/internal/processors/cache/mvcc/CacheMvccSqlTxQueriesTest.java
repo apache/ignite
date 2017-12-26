@@ -28,6 +28,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.CacheException;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
@@ -40,7 +41,6 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1186,7 +1186,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
 
                 return null;
             }
-        }, IgniteSQLException.class, "Failed to INSERT some keys because they are already in cache");
+        }, CacheException.class, "One row cannot be changed twice in the same transaction. Operation is unsupported at the moment.");
 
         for (int i = 1; i <= 6; i++)
             assertNull(cache.get(1));
