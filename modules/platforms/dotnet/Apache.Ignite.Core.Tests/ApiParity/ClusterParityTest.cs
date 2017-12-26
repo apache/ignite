@@ -41,7 +41,6 @@
             "enableStatistics",  // IGNITE-7276
             
             // IGNITE-7301
-            "active",
             "setBaselineTopology"
         };
 
