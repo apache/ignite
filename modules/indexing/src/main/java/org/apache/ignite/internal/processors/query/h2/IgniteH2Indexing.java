@@ -146,7 +146,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
-import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -1374,31 +1373,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (tx != null) {
             try {
-                tx.addActiveCache(cctx, false);
+                requestMvccVersion(cctx, tx);
 
-                MvccProcessor mvccProc = cctx.shared().coordinators();
-                MvccCoordinator crd = mvccProc.currentCoordinator();
-
-                assert crd != null : tx.topologyVersion();
-
-                if (tx.mvccInfo() == null) {
-                    if (crd.nodeId().equals(cctx.localNodeId())) {
-                        tx.mvccInfo(new MvccTxInfo(crd.nodeId(), mvccProc.requestTxCounterOnCoordinator(tx)));
-
-                        return new MvccQueryTracker(cctx, crd, tx.mvccInfo().version());
-                    }
-                    else {
-                        try {
-                            return mvccProc.requestTxCounter(crd, new MvccTxResponseListener(tx), tx.nearXidVersion())
-                                .chain(new MvccVersionToTrackerProcessor(cctx)).get();
-                        }
-                        catch (IgniteCheckedException e) {
-                            throw new CacheException(e);
-                        }
-                    }
-                }
-                else
-                    return new MvccQueryTracker(cctx, crd, tx.mvccInfo().version());
+                return new MvccQueryTracker(cctx, cctx.shared().coordinators().currentCoordinator(), tx.mvccInfo().version());
             }
             catch (IgniteCheckedException e) {
                 tx.setRollbackOnly();
@@ -3145,6 +3122,41 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
+     * @param cctx Cache context.
+     * @param tx Transaction.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void requestMvccVersion(GridCacheContext cctx, GridNearTxLocal tx) throws IgniteCheckedException {
+        try {
+            tx.addActiveCache(cctx, false);
+
+            if (tx.mvccInfo() == null) {
+                MvccProcessor mvccProc = cctx.shared().coordinators();
+                MvccCoordinator crd = mvccProc.currentCoordinator();
+
+                assert crd != null : tx.topologyVersion();
+
+                if (crd.nodeId().equals(cctx.localNodeId())) {
+                    tx.mvccInfo(new MvccTxInfo(crd.nodeId(), mvccProc.requestTxCounterOnCoordinator(tx)));
+                }
+                else {
+                    try {
+                        mvccProc.requestTxCounter(crd, new MvccTxResponseListener(tx), tx.nearXidVersion()).get();
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new CacheException(e);
+                    }
+                }
+            }
+        }
+        catch (IgniteCheckedException | RuntimeException | Error e) {
+            tx.setRollbackOnly();
+
+            throw e;
+        }
+    }
+
+    /**
      * Closeable iterator.
      */
     private interface ClIter<X> extends AutoCloseable, Iterator<X> {
@@ -3171,24 +3183,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** {@inheritDoc} */
         @Override public void onMvccError(IgniteCheckedException e) {
             // No-op.
-        }
-    }
-
-    /** */
-    private static class MvccVersionToTrackerProcessor extends CX1<IgniteInternalFuture<MvccVersion>, MvccQueryTracker> {
-        /** */
-        private final GridCacheContext cctx;
-
-        /**
-         * @param cctx Cache context.
-         */
-        MvccVersionToTrackerProcessor(GridCacheContext cctx) {
-            this.cctx = cctx;
-        }
-
-        /** {@inheritDoc} */
-        @Override public MvccQueryTracker applyx(IgniteInternalFuture<MvccVersion> future) throws IgniteCheckedException {
-            return new MvccQueryTracker(cctx, cctx.shared().coordinators().currentCoordinator(), future.get());
         }
     }
 }
