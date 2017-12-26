@@ -194,7 +194,6 @@ import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiVersionCheckException;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
@@ -1044,7 +1043,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             if (recon)
                 reconnectState.waitFirstReconnect();
 
-            // register MBeans
+            // Register MBeans.
             mBeansMgr.registerAllMBeans(utilityCachePool, execSvc, svcExecSvc, sysExecSvc, stripedExecSvc, p2pExecSvc,
                 mgmtExecSvc, igfsExecSvc, dataStreamExecSvc, restExecSvc, affExecSvc, idxExecSvc, callbackExecSvc,
                 qryExecSvc, schemaExecSvc, customExecSvcs);
@@ -1215,10 +1214,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                             if (customExecSvcs != null) {
                                 StringBuilder customSvcsMsg = new StringBuilder();
+
                                 for (Map.Entry<String, ? extends ExecutorService> entry : customExecSvcs.entrySet()) {
                                     customSvcsMsg.append(NL).append("    ^-- ")
                                         .append(createExecutorDescription(entry.getKey(), entry.getValue()));
                                 }
+
                                 msg = msg + customSvcsMsg;
                             }
 
@@ -1267,7 +1268,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param execSvcName name of the service
      * @param execSvc service to create a description for
      */
-    @NotNull private String createExecutorDescription(String execSvcName, ExecutorService execSvc) {
+    private String createExecutorDescription(String execSvcName, ExecutorService execSvc) {
         int poolActiveThreads = 0;
         int poolIdleThreads = 0;
         int poolQSize = 0;
@@ -3970,8 +3971,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * Class that registers and unregisters MBeans for kernal.
      */
     private class MBeansManager {
-
-        /** MBean names stored to be unregistered later */
+        /** MBean names stored to be unregistered later. */
         private final Set<ObjectName> mBeanNames = new HashSet<>();
 
         /**
@@ -4013,7 +4013,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             ExecutorService schemaExecSvc,
             @Nullable final Map<String, ? extends ExecutorService> customExecSvcs
         ) throws IgniteCheckedException {
-            if(U.IGNITE_MBEANS_DISABLED)
+            if (U.IGNITE_MBEANS_DISABLED)
                 return;
 
             // Kernal
@@ -4054,9 +4054,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }
 
             if (customExecSvcs != null) {
-                for (Map.Entry<String, ? extends ExecutorService> entry : customExecSvcs.entrySet()) {
+                for (Map.Entry<String, ? extends ExecutorService> entry : customExecSvcs.entrySet())
                     registerExecutorMBean(entry.getKey(), entry.getValue());
-                }
             }
         }
 
@@ -4068,7 +4067,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
          *
          * @throws IgniteCheckedException if registration fails.
          */
-        private void registerExecutorMBean(@NotNull String name, @NotNull ExecutorService exec) throws IgniteCheckedException {
+        private void registerExecutorMBean(String name, ExecutorService exec) throws IgniteCheckedException {
             registerMBean("Thread Pools", name, new ThreadPoolMXBeanAdapter(exec), ThreadPoolMXBean.class);
         }
 
@@ -4083,9 +4082,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
          *
          * @throws IgniteCheckedException if registration fails
          */
-        private <T> void registerMBean(@NotNull String grp, @NotNull String name,
-            @NotNull T impl, @NotNull Class<T> itf
-        ) throws IgniteCheckedException {
+        private <T> void registerMBean(String grp, String name, T impl, Class<T> itf) throws IgniteCheckedException {
             assert !U.IGNITE_MBEANS_DISABLED;
 
             try {
@@ -4111,9 +4108,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
          */
         private boolean unregisterAllMBeans() {
             boolean success = true;
-            for (ObjectName name : mBeanNames) {
+
+            for (ObjectName name : mBeanNames)
                 success = success && unregisterMBean(name);
-            }
+
             return success;
         }
 
@@ -4123,7 +4121,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
          * @param mbean MBean to unregister.
          * @return {@code true} if successfully unregistered, {@code false} otherwise.
          */
-        private boolean unregisterMBean(@NotNull ObjectName mbean) {
+        private boolean unregisterMBean(ObjectName mbean) {
             assert !U.IGNITE_MBEANS_DISABLED;
 
             try {

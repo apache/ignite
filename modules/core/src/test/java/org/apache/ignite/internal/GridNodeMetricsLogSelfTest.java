@@ -38,6 +38,7 @@ import org.apache.log4j.WriterAppender;
 public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
     /** Executor name for setExecutorConfiguration */
     private static final String CUSTOM_EXECUTOR_0 = "Custom executor 0";
+
     /** Executor name for setExecutorConfiguration */
     private static final String CUSTOM_EXECUTOR_1 = "Custom executor 1";
 
