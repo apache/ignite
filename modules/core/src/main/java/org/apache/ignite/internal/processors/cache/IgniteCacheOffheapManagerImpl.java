@@ -1488,9 +1488,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     }
                 }
 
-                boolean old = dataTree.putx(updateRow);
-
-                assert !old;
+                dataTree.putx(updateRow);
 
                 if (val != null) {
                     incrementSize(cctx.cacheId());
