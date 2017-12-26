@@ -229,6 +229,8 @@ public abstract class AbstractWalRecordsIterator
 
             ptr.length(rec.size());
 
+            rec.position(ptr);
+
             // cast using diamond operator here can break compile for 7
             return new IgniteBiTuple<>((WALPointer)ptr, postProcessRecord(rec));
         }

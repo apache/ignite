@@ -398,8 +398,8 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
-    @Override public long writeLock(int cacheId, long pageId, long page, boolean restore) {
-        return writeLockPage(page, new FullPageId(pageId, cacheId), !restore);
+    @Override public long writeLock(int grpId, long pageId, long page, boolean restore) {
+        return writeLockPage(page, new FullPageId(pageId, grpId), !restore);
     }
 
     /** {@inheritDoc} */
@@ -414,9 +414,9 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeUnlock(int cacheId, long pageId, long page, Boolean walPlc,
+    @Override public void writeUnlock(int grpId, long pageId, long page, Boolean walPlc,
         boolean dirtyFlag, boolean restore) {
-        writeUnlockPage(page, new FullPageId(pageId, cacheId), walPlc, dirtyFlag, restore);
+        writeUnlockPage(page, new FullPageId(pageId, grpId), walPlc, dirtyFlag, restore);
     }
 
     /** {@inheritDoc} */
@@ -528,12 +528,12 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
-    @Override public long metaPageId(int cacheId) throws IgniteCheckedException {
-        return storeMgr.metaPageId(cacheId);
+    @Override public long metaPageId(int grpId) throws IgniteCheckedException {
+        return storeMgr.metaPageId(grpId);
     }
 
     /** {@inheritDoc} */
-    @Override public long partitionMetaPageId(int cacheId, int partId) throws IgniteCheckedException {
+    @Override public long partitionMetaPageId(int grpId, int partId) throws IgniteCheckedException {
         return PageIdUtils.pageId(partId, PageIdAllocator.FLAG_DATA, 0);
     }
 
@@ -1054,14 +1054,14 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
-    @Override public int invalidate(int cacheId, int partId) {
+    @Override public int invalidate(int grpId, int partId) {
         int tag = 0;
 
         for (Segment seg : segments) {
             seg.writeLock().lock();
 
             try {
-                int newTag = seg.incrementPartTag(cacheId, partId);
+                int newTag = seg.incrementPartTag(grpId, partId);
 
                 if (tag == 0)
                     tag = newTag;
