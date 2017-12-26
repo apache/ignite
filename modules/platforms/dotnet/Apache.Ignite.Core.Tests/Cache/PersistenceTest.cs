@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             // Start Ignite, put data, stop.
             using (var ignite = Ignition.Start(cfg))
             {
-                ignite.SetActive(true);
+                ignite.GetCluster().SetActive(true);
 
                 // Create cache with default region (persistence enabled), add data.
                 var cache = ignite.CreateCache<int, int>(cacheName);
@@ -110,7 +110,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             // Start Ignite, verify data survival.
             using (var ignite = Ignition.Start(cfg))
             {
-                ignite.SetActive(true);
+                ignite.GetCluster().SetActive(true);
 
                 // Persistent cache already exists and contains data.
                 var cache = ignite.GetCache<int, int>(cacheName);
@@ -127,7 +127,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             // Start Ignite, verify data loss.
             using (var ignite = Ignition.Start(cfg))
             {
-                ignite.SetActive(true);
+                ignite.GetCluster().SetActive(true);
 
                 Assert.IsFalse(ignite.GetCacheNames().Contains(cacheName));
             }
@@ -168,10 +168,10 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 CheckIsActive(ignite, false);
 
-                ignite.SetActive(true);
+                ignite.GetCluster().SetActive(true);
                 CheckIsActive(ignite, true);
 
-                ignite.SetActive(false);
+                ignite.GetCluster().SetActive(false);
                 CheckIsActive(ignite, false);
             }
         }
@@ -189,10 +189,10 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 CheckIsActive(ignite, true);
 
-                ignite.SetActive(false);
+                ignite.GetCluster().SetActive(false);
                 CheckIsActive(ignite, false);
 
-                ignite.SetActive(true);
+                ignite.GetCluster().SetActive(true);
                 CheckIsActive(ignite, true);
             }
 
@@ -202,10 +202,10 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 CheckIsActive(ignite, false);
 
-                ignite.SetActive(true);
+                ignite.GetCluster().SetActive(true);
                 CheckIsActive(ignite, true);
 
-                ignite.SetActive(false);
+                ignite.GetCluster().SetActive(false);
                 CheckIsActive(ignite, false);
             }
         }
@@ -215,7 +215,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// </summary>
         private static void CheckIsActive(IIgnite ignite, bool isActive)
         {
-            Assert.AreEqual(isActive, ignite.IsActive());
+            Assert.AreEqual(isActive, ignite.GetCluster().IsActive());
 
             if (isActive)
             {

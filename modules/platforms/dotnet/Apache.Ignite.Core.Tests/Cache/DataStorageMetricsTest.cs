@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             using (var ignite = Ignition.Start(cfg))
             {
-                ignite.SetActive(true);
+                ignite.GetCluster().SetActive(true);
 
                 var cache = ignite.CreateCache<int, object>("c");
 

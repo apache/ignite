@@ -1377,7 +1377,7 @@ namespace Apache.Ignite.Core
 
         /// <summary>
         /// Gets or sets a value indicating whether grid should be active on start.
-        /// See also <see cref="IIgnite.IsActive"/> and <see cref="IIgnite.SetActive"/>.
+        /// See also <see cref="ICluster.IsActive"/> and <see cref="ICluster.SetActive"/>.
         /// <para />
         /// This property is ignored when <see cref="DataStorageConfiguration"/> is present:
         /// cluster is always inactive on start when Ignite Persistence is enabled.
