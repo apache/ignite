@@ -40,19 +40,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Class for set of labeled vectors.
  */
-public class LabeledDataset implements Serializable {
-    /** Data to keep. */
-    private final LabeledVector[] data;
-
-    /** Feature names (one name for each attribute in vector). */
-    private String[] featureNames;
-
-    /** Amount of instances. */
-    private int rowSize;
-
-    /** Amount of attributes in each vector. */
-    private int colSize;
-
+public class LabeledDataset<L> extends Dataset implements Serializable {
     /**
      * Creates new Labeled Dataset by given data.
      *
@@ -61,29 +49,6 @@ public class LabeledDataset implements Serializable {
      */
     public LabeledDataset(LabeledVector[] data, int colSize) {
         this(data, null, colSize);
-    }
-
-    /**
-     * Creates new Labeled Dataset by given data.
-     *
-     * @param data Given data. Should be initialized with one vector at least.
-     * @param featureNames Column names.
-     * @param colSize Amount of observed attributes in each vector.
-     */
-    public LabeledDataset(LabeledVector[] data, String[] featureNames, int colSize) {
-        assert data != null;
-        assert data.length > 0;
-
-        this.data = data;
-        this.rowSize = data.length;
-        this.colSize = colSize;
-
-        if(featureNames == null) generateFeatureNames();
-        else {
-            assert colSize == featureNames.length;
-            this.featureNames = featureNames;
-        }
-
     }
 
     /**
@@ -116,17 +81,8 @@ public class LabeledDataset implements Serializable {
      * @param isDistributed Use distributed data structures to keep data.
      */
     public LabeledDataset(int rowSize, int colSize, String[] featureNames, boolean isDistributed){
-        assert rowSize > 0;
-        assert colSize > 0;
 
-        if(featureNames == null) generateFeatureNames();
-        else {
-            assert colSize == featureNames.length;
-            this.featureNames = featureNames;
-        }
-
-        this.rowSize = rowSize;
-        this.colSize = colSize;
+        super(rowSize, colSize, featureNames);
 
         data = new LabeledVector[rowSize];
         for (int i = 0; i < rowSize; i++)
@@ -184,76 +140,10 @@ public class LabeledDataset implements Serializable {
         }
     }
 
-    /** */
-    private void generateFeatureNames() {
-        featureNames = new String[colSize];
-
-        for (int i = 0; i < colSize; i++)
-            featureNames[i] = "f_" + i;
+    public LabeledDataset(DatasetRow<Vector>[] data, FeatureMetadata[] meta) {
+        super(data, meta);
     }
-
-
-    /**
-     * Get vectors and their labels.
-     *
-     * @return Array of Label Vector instances.
-     */
-    public LabeledVector[] data() {
-        return data;
-    }
-
-    /**
-     * Gets amount of observation.
-     *
-     * @return Amount of rows in dataset.
-     */
-    public int rowSize(){
-        return rowSize;
-    }
-
-    /**
-     * Returns feature name for column with given index.
-     *
-     * @param i The given index.
-     * @return Feature name.
-     */
-    public String getFeatureName(int i){
-        return featureNames[i];
-    }
-
-    /**
-     * Gets amount of attributes.
-     *
-     * @return Amount of attributes in each Labeled Vector.
-     */
-    public int colSize(){
-        return colSize;
-    }
-
-    /**
-     * Retrieves Labeled Vector by given index.
-     *
-     * @param idx Index of observation.
-     * @return Labeled features.
-     */
-    public LabeledVector getRow(int idx){
-        return data[idx];
-    }
-
-    /**
-     * Get the features.
-     *
-     * @param idx Index of observation.
-     * @return Vector with features.
-     */
-    public Vector features(int idx){
-        assert idx < rowSize;
-        assert data != null;
-        assert data[idx] != null;
-
-        return data[idx].features();
-    }
-
+    
     /**
      * Returns label if label is attached or null if label is missed.
      *

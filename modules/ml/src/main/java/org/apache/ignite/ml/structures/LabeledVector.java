@@ -24,14 +24,11 @@ import org.apache.ignite.ml.math.Vector;
  * Class for vector with label.
  *
  * @param <V> Some class extending {@link Vector}.
- * @param <T> Type of label.
+ * @param <L> Type of label.
  */
-public class LabeledVector<V extends Vector, T> implements Serializable {
-    /** Vector. */
-    private final V vector;
-
+public class LabeledVector<V extends Vector, L> extends DatasetRow<V> implements Serializable {
     /** Label. */
-    private T lb;
+    private L lb;
 
     /**
      * Construct labeled vector.
@@ -39,18 +36,9 @@ public class LabeledVector<V extends Vector, T> implements Serializable {
      * @param vector Vector.
      * @param lb Label.
      */
-    public LabeledVector(V vector, T lb) {
-        this.vector = vector;
+    public LabeledVector(V vector, L lb) {
+        super(vector);
         this.lb = lb;
-    }
-
-    /**
-     * Get the vector.
-     *
-     * @return Vector.
-     */
-    public V features() {
-        return vector;
     }
 
     /**
@@ -58,7 +46,7 @@ public class LabeledVector<V extends Vector, T> implements Serializable {
      *
      * @return Label.
      */
-    public T label() {
+    public L label() {
         return lb;
     }
 
@@ -67,7 +55,7 @@ public class LabeledVector<V extends Vector, T> implements Serializable {
      *
      * @param lb Label.
      */
-    public void setLabel(T lb) {
+    public void setLabel(L lb) {
         this.lb = lb;
     }
 
