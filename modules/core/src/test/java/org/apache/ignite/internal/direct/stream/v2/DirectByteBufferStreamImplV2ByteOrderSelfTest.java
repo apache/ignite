@@ -59,17 +59,29 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     @Override public void setUp() throws Exception {
         super.setUp();
 
-        stream = new DirectByteBufferStreamImplV2(new MessageFactory() {
+        outArr = new byte[ARR_LEN * 8 + LEN_BYTES];
+
+        buff = ByteBuffer.wrap(outArr);
+
+        stream = createStream(buff);
+    }
+
+    /**
+     * Creates a dummy stream on top of the provided buffer.
+     *
+     * @param buff Buffer.
+     * @return Stream.
+     */
+    private static DirectByteBufferStreamImplV2 createStream(ByteBuffer buff) {
+        DirectByteBufferStreamImplV2 stream = new DirectByteBufferStreamImplV2(new MessageFactory() {
             @Nullable @Override public Message create(short type) {
                 return null;
             }
         });
 
-        outArr = new byte[ARR_LEN * 8 + LEN_BYTES];
-
-        buff = ByteBuffer.wrap(outArr);
-
         stream.setBuffer(buff);
+
+        return stream;
     }
 
     /**
@@ -190,7 +202,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testShortArrayOverflow() throws Exception {
-        DirectByteBufferStream readStream = readStream();
+        DirectByteBufferStream readStream = createStream(buff);
 
         short[] arr = new short[ARR_LEN];
 
@@ -232,7 +244,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testCharArrayOverflow() throws Exception {
-        DirectByteBufferStream readStream = readStream();
+        DirectByteBufferStream readStream = createStream(buff);
 
         char[] arr = new char[ARR_LEN];
 
@@ -274,7 +286,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testIntArrayOverflow() throws Exception {
-        DirectByteBufferStream readStream = readStream();
+        DirectByteBufferStream readStream = createStream(buff);
 
         int[] arr = new int[ARR_LEN];
 
@@ -316,7 +328,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testLongArrayOverflow() throws Exception {
-        DirectByteBufferStream readStream = readStream();
+        DirectByteBufferStream readStream = createStream(buff);
 
         long[] arr = new long[ARR_LEN];
 
@@ -358,7 +370,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testFloatArrayOverflow() throws Exception {
-        DirectByteBufferStream readStream = readStream();
+        DirectByteBufferStream readStream = createStream(buff);
 
         float[] arr = new float[ARR_LEN];
 
@@ -400,7 +412,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testDoubleArrayOverflow() throws Exception {
-        DirectByteBufferStream readStream = readStream();
+        DirectByteBufferStream readStream = createStream(buff);
 
         double[] arr = new double[ARR_LEN];
 
@@ -436,22 +448,5 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
         assertArrayEquals(arr, readStream.readDoubleArray(), 0);
 
         assertTrue(readStream.lastFinished());
-    }
-
-    /**
-     * Create DirectByteBufferStream for reading from {@code buff}.
-     *
-     * @return read stream.
-     */
-    private DirectByteBufferStream readStream() {
-        DirectByteBufferStream readStream = new DirectByteBufferStreamImplV2(new MessageFactory() {
-            @Nullable @Override public Message create(short type) {
-                return null;
-            }
-        });
-
-        readStream.setBuffer(buff);
-
-        return readStream;
     }
 }
