@@ -215,26 +215,53 @@ public final class Functions {
     }
 
     /**
-     * Curry bifunction.
+     * Curry bi-function.
      *
-     * @param f Bifunction to curry.
+     * @param f Bi-function to curry.
      * @param <A> Type of first argument of {@code f}.
      * @param <B> Type of second argument of {@code f}.
      * @param <C> Return type of {@code f}.
-     * @return Curried bifunction.
+     * @return Curried bi-function.
      */
     public static <A, B, C> IgniteCurriedBiFunction<A, B, C> curry(BiFunction<A, B, C> f) {
         return a -> b -> f.apply(a, b);
     }
 
-    public static <A, B, C, D> IgniteCurriedTriFunction<A, B, C, D> curry(IgniteTriFunction<A, B, C, D> f) {
-        return a -> b -> c -> f.apply(a, b, c);
-    }
-
+    /**
+     * Transform bi-function of the form (a, b) -> c into a function of form a -> (b -> c).
+     *
+     * @param f Function to be curried.
+     * @param <A> Type of first argument of function to be transformed.
+     * @param <B> Type of second argument of function to be transformed.
+     * @param <C> Type of third argument of function to be transformed.
+     * @return Curried bi-function.
+     */
     public static <A, B, C> IgniteCurriedBiFunction<A, B, C> curry(IgniteBiFunction<A, B, C> f) {
         return a -> b -> f.apply(a, b);
     }
 
+    /**
+     * Transform tri-function of the form (a, b, c) -> d into a function of form a -> (b -> (c -> d)).
+     *
+     * @param f Function to be curried.
+     * @param <A> Type of first argument of function to be transformed.
+     * @param <B> Type of second argument of function to be transformed.
+     * @param <C> Type of third argument of function to be transformed.
+     * @param <D> Type output of function to be transformed.
+     * @return Curried tri-function.
+     */
+    public static <A, B, C, D> IgniteCurriedTriFunction<A, B, C, D> curry(IgniteTriFunction<A, B, C, D> f) {
+        return a -> b -> c -> f.apply(a, b, c);
+    }
+
+    /**
+     * Transform function of form a -> b into a -> (() -> b).
+     *
+     * @param f Function to be transformed.
+     * @param <A> Type of input of function to be transformed.
+     * @param <B> Type of output of function to be transformed.
+     * @return Transformed function.
+     */
     public static <A, B> IgniteFunction<A, IgniteSupplier<B>> outputSupplier(IgniteFunction<A, B> f) {
         return a -> {
             B res = f.apply(a);
@@ -242,6 +269,15 @@ public final class Functions {
         };
     }
 
+    /**
+     * Transform function of form (a, b) -> c into (a, b) - () -> c.
+     *
+     * @param f Function to be transformed.
+     * @param <A> Type of first argument of function to be transformed.
+     * @param <B> Type of second argument of function to be transformed.
+     * @param <C> Type of output of function to be transformed.
+     * @return Transformed function.
+     */
     public static <A, B, C> IgniteBiFunction<A, B, IgniteSupplier<C>> outputSupplier(IgniteBiFunction<A, B, C> f) {
         return (a, b) -> {
             C res = f.apply(a, b);
