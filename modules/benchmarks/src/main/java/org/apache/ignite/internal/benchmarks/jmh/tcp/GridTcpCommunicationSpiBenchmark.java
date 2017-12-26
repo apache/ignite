@@ -35,6 +35,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.benchmarks.jmh.cache.JmhCacheAbstractBenchmark;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.messaging.MessagingListenActor;
 import org.openjdk.jmh.annotations.AuxCounters;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -339,9 +340,9 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         }
 
         for (Entry<Type, Result> entry : baseline.entrySet()) {
-            System.out.println("Latency:\n\tType = " + entry.getKey() + "\n\tTime = " +
+            System.out.println("Latency:" + U.nl() + "\tType = " + entry.getKey() + U.nl() + "\tTime = " +
                 entry.getValue().val + " ± " + entry.getValue().error +
-                "\n\tNet footprint = " + baselineStat.get(entry.getKey()).avgSize);
+                U.nl() + "\tNet footprint = " + baselineStat.get(entry.getKey()).avgSize);
         }
 
         printThroughput(sizedResults, baselineStat, baseline, "bad case");
@@ -358,22 +359,24 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
             int size = entry.getKey();
 
             for (Entry<Type, Result> resultEntry : entry.getValue().entrySet()) {
-                double statTime = baselineStat.get(resultEntry.getKey()).val -
-                    baseline.get(resultEntry.getKey()).val;
+                double statTime = baselineStat.get(resultEntry.getKey()).val - baseline.get(resultEntry.getKey()).val;
 
                 double baselineAvgSize = baselineStat.get(resultEntry.getKey()).avgSize;
                 double val = resultEntry.getValue().val - statTime;
                 double error = resultEntry.getValue().error;
                 double avgSize = resultEntry.getValue().avgSize;
 
-                System.out.println("Throughput " + name + ". Type = " + resultEntry.getKey() + ". Message size = " + size +
-                    "\n\tMessage/s = " + df.format(1.0E6 / val) + " ∈ [" +
+                System.out.println("Throughput " + name + ". Type = " + resultEntry.getKey() +
+                    ". Message size = " + size +
+                    U.nl() + "\tMessage/s = " + df.format(1.0E6 / val) + " ∈ [" +
                     df.format(1.0E6 / (val + error)) + " : " + df.format(1.0E6 / (val - error)) + "]" +
-                    "\n\tReal Mbit/s = " + df.format(avgSize / val * 8) + " ∈ [" +
-                    df.format(avgSize / (val + error) * 8) + " : " + df.format(avgSize / (val - error) * 8) + "]" +
-                    "\n\tEffective Mbit/s = " + df.format(size / val * 8) + " ∈ [" +
-                    df.format(size / (val + error) * 8) + " : " + df.format(size / (val - error) * 8) + "]" +
-                    "\n\tCompression rate = " + df.format(size / (avgSize - baselineAvgSize)));
+                    U.nl() + "\tReal Mbit/s = " + df.format(avgSize / val * 8) + " ∈ [" +
+                    df.format(avgSize / (val + error) * 8) + " : " +
+                    df.format(avgSize / (val - error) * 8) + "]" +
+                    U.nl() + "\tEffective Mbit/s = " + df.format(size / val * 8) + " ∈ [" +
+                    df.format(size / (val + error) * 8) + " : " +
+                    df.format(size / (val - error) * 8) + "]" +
+                    U.nl() + "\tCompression rate = " + df.format(size / (avgSize - baselineAvgSize)));
             }
         }
     }
