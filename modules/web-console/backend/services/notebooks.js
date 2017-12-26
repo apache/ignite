@@ -51,6 +51,8 @@ module.exports.factory = (mongo, spacesService, errors) => {
             .catch((err) => {
                 if (err.code === mongo.errCodes.DUPLICATE_KEY_UPDATE_ERROR || err.code === mongo.errCodes.DUPLICATE_KEY_ERROR)
                     throw new errors.DuplicateKeyException('Notebook with name: "' + notebook.name + '" already exist.');
+                else
+                    throw err;
             });
     };
 
@@ -65,6 +67,8 @@ module.exports.factory = (mongo, spacesService, errors) => {
             .catch((err) => {
                 if (err.code === mongo.errCodes.DUPLICATE_KEY_ERROR)
                     throw new errors.DuplicateKeyException('Notebook with name: "' + notebook.name + '" already exist.');
+                else
+                    throw err;
             });
     };
 
