@@ -1750,6 +1750,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         AffinityTopologyVersion exchTopVer
     ) throws IgniteCheckedException {
         if (!F.isEmpty(caches)) {
+            sharedCtx.affinity().initCachesOnLocalJoin();
+
             for (T2<DynamicCacheDescriptor, NearCacheConfiguration> t : caches) {
                 DynamicCacheDescriptor desc = t.get1();
 

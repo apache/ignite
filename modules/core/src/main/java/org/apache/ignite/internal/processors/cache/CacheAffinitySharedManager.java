@@ -126,9 +126,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     /** */
     private final ThreadLocal<ClientCacheChangeDiscoveryMessage> clientCacheChanges = new ThreadLocal<>();
 
-    /** Caches initialized flag (initialized when join activate cluster or after activation. */
-    private boolean cachesInitialized;
-
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
         @Override public void onEvent(Event evt) {
@@ -167,16 +164,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         if (state.transition() || !state.active())
             return;
 
-        if (type == EVT_NODE_JOINED && node.isLocal()) {
-            // Clean-up in case of client reconnect.
-            caches.clear();
-
+        if (type == EVT_NODE_JOINED && node.isLocal())
             lastAffVer = null;
-
-            caches.init(cctx.cache().cacheGroupDescriptors(), cctx.cache().cacheDescriptors());
-
-            cachesInitialized = true;
-        }
 
         if (!CU.clientNode(node) && (type == EVT_NODE_FAILED || type == EVT_NODE_JOINED || type == EVT_NODE_LEFT)) {
             synchronized (mux) {
@@ -185,6 +174,16 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 lastAffVer = topVer;
             }
         }
+    }
+
+    /**
+     * Must be called from exchange thread.
+     */
+    public void initCachesOnLocalJoin() {
+        // Clean-up in case of client reconnect.
+        caches.clear();
+
+        caches.init(cctx.cache().cacheGroupDescriptors(), cctx.cache().cacheDescriptors());
     }
 
     /**
