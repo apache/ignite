@@ -216,14 +216,19 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
             @Override public void apply(Connection conn) {
                 insertPerson(conn, 6, "John", "Doe", 2, 2);
 
-                insertPerson(conn, 7, "Mary", "Lee", 1, 3);
+                execute(conn, "INSERT INTO \"Person\".person (id, firstName, lastName, cityId, companyId) values " +
+                    "(?, ?, ?, ?, ?)", 7, "Mary", "Lee", 1, 3);
+
+                execute(conn, "UPDATE \"Person\".person SET lastname = 'Dock' where lastname = 'Doe'");
+
+                execute(conn, "DELETE FROM \"Person\".person where id = 5");
             }
         });
 
         assertEquals(l(
-            l(6, "John", "Doe", 2, 2),
+            l(6, "John", "Dock", 2, 2),
             l(7, "Mary", "Lee", 1, 3)
-        ), execute("SELECT * FROM \"Person\".Person where id > 5 order by id"));
+        ), execute("SELECT * FROM \"Person\".Person where id >= 5 order by id"));
     }
 
     /**
