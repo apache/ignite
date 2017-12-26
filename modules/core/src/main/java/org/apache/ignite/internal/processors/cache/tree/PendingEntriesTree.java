@@ -64,6 +64,8 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
 
         this.grp = grp;
 
+        assert !grp.dataRegion().config().isPersistenceEnabled()  || grp.shared().database().checkpointLockIsHeldByThread();
+
         initTree(initNew);
     }
 

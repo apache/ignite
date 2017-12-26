@@ -1054,17 +1054,26 @@ namespace Apache.Ignite.Core.Impl.Cache
         #region Queries
 
         /** <inheritDoc /> */
+        public IFieldsQueryCursor Query(SqlFieldsQuery qry)
+        {
+            var cursor = QueryFieldsInternal(qry);
+
+            return new FieldsQueryCursor(cursor, _flagKeepBinary, 
+                (reader, count) => ReadFieldsArrayList(reader, count));
+        }
+
+        /** <inheritDoc /> */
         public IQueryCursor<IList> QueryFields(SqlFieldsQuery qry)
         {
-            return QueryFields(qry, ReadFieldsArrayList);
+            return Query(qry, (reader, count) => (IList) ReadFieldsArrayList(reader, count));
         }
 
         /// <summary>
         /// Reads the fields array list.
         /// </summary>
-        private static IList ReadFieldsArrayList(IBinaryRawReader reader, int count)
+        private static List<object> ReadFieldsArrayList(IBinaryRawReader reader, int count)
         {
-            IList res = new ArrayList(count);
+            var res = new List<object>(count);
 
             for (var i = 0; i < count; i++)
                 res.Add(reader.ReadObject<object>());
@@ -1073,15 +1082,21 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public IQueryCursor<T> QueryFields<T>(SqlFieldsQuery qry, Func<IBinaryRawReader, int, T> readerFunc)
+        public IQueryCursor<T> Query<T>(SqlFieldsQuery qry, Func<IBinaryRawReader, int, T> readerFunc)
+        {
+            var cursor = QueryFieldsInternal(qry);
+
+            return new FieldsQueryCursor<T>(cursor, _flagKeepBinary, readerFunc);
+        }
+
+        private IPlatformTargetInternal QueryFieldsInternal(SqlFieldsQuery qry)
         {
             IgniteArgumentCheck.NotNull(qry, "qry");
-            IgniteArgumentCheck.NotNull(readerFunc, "readerFunc");
 
             if (string.IsNullOrEmpty(qry.Sql))
                 throw new ArgumentException("Sql cannot be null or empty");
 
-            var cursor = DoOutOpObject((int) CacheOp.QrySqlFields, writer =>
+            return DoOutOpObject((int) CacheOp.QrySqlFields, writer =>
             {
                 writer.WriteBoolean(qry.Local);
                 writer.WriteString(qry.Sql);
@@ -1097,8 +1112,6 @@ namespace Apache.Ignite.Core.Impl.Cache
                 writer.WriteBoolean(qry.Colocated);
                 writer.WriteString(qry.Schema); // Schema
             });
-        
-            return new FieldsQueryCursor<T>(cursor, _flagKeepBinary, readerFunc);
         }
 
         /** <inheritDoc /> */
