@@ -90,9 +90,9 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
-    public void testShortArray() throws Exception {
+    public void testShortArray() {
         short[] arr = new short[ARR_LEN];
 
         for (int i = 0; i < ARR_LEN; i++)
@@ -109,9 +109,9 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
-    public void testCharArray() throws Exception {
+    public void testCharArray() {
         char[] arr = new char[ARR_LEN];
 
         for (int i = 0; i < ARR_LEN; i++)
@@ -128,9 +128,9 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
-    public void testIntArray() throws Exception {
+    public void testIntArray() {
         int[] arr = new int[ARR_LEN];
 
         for (int i = 0; i < ARR_LEN; i++)
@@ -147,9 +147,9 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
-    public void testLongArray() throws Exception {
+    public void testLongArray() {
         long[] arr = new long[ARR_LEN];
 
         for (int i = 0; i < ARR_LEN; i++)
@@ -166,9 +166,9 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
-    public void testFloatArray() throws Exception {
+    public void testFloatArray() {
         float[] arr = new float[ARR_LEN];
 
         for (int i = 0; i < ARR_LEN; i++)
@@ -185,9 +185,9 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
-    public void testDoubleArray() throws Exception {
+    public void testDoubleArray() {
         double[] arr = new double[ARR_LEN];
 
         for (int i = 0; i < ARR_LEN; i++)
@@ -369,6 +369,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
      * @param <T> Array type.
      * @return {@code List}, containing all elements from the array.
      */
+    @SuppressWarnings("unchecked")
     private <T> List toList(T arr) {
         List list = new ArrayList<>();
 
@@ -409,6 +410,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
      * @param <T> Array type.
      * @return {@code ArrayCreator} for a required type.
      */
+    @SuppressWarnings("unchecked")
     private <T> DirectByteBufferStreamImplV2.ArrayCreator<T> arrayCreator(final T arr) {
         return new DirectByteBufferStreamImplV2.ArrayCreator<T>() {
             @Override public T create(int len) {
