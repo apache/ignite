@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -65,22 +66,30 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.discovery.CustomEventListener;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.SecurityCredentials;
@@ -812,6 +821,329 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         waitForEventsAcks(srv0);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCustomEvents_FastStopProcess_1() throws Exception {
+        customEvents_FastStopProcess(1, 0);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCustomEvents_FastStopProcess_2() throws Exception {
+        customEvents_FastStopProcess(5, 5);
+    }
+
+    /**
+     * @param srvs Servers number.
+     * @param clients Clients number.
+     * @throws Exception If failed.
+     */
+    private void customEvents_FastStopProcess(int srvs, int clients) throws Exception {
+        ackEveryEventSystemProperty();
+
+        Map<UUID, List<T3<AffinityTopologyVersion, UUID, DiscoveryCustomMessage>>> rcvdMsgs =
+            new ConcurrentHashMap<>();
+
+        Ignite crd = startGrid(0);
+
+        UUID crdId = crd.cluster().localNode().id();
+
+        if (srvs > 1)
+            startGridsMultiThreaded(1, srvs - 1);
+
+        if (clients > 0) {
+            client = true;
+
+            startGridsMultiThreaded(srvs, clients);
+        }
+
+        awaitPartitionMapExchange();
+
+        List<Ignite> nodes = G.allGrids();
+
+        assertEquals(srvs + clients, nodes.size());
+
+        for (Ignite node : nodes)
+            registerTestEventListeners(node, rcvdMsgs);
+
+        int payload = 0;
+
+        AffinityTopologyVersion topVer = ((IgniteKernal)crd).context().discovery().topologyVersionEx();
+
+        for (Ignite node : nodes) {
+            UUID sndId = node.cluster().localNode().id();
+
+            info("Send from node: " + sndId);
+
+            GridDiscoveryManager discoveryMgr = ((IgniteKernal)node).context().discovery();
+
+            {
+                List<T3<AffinityTopologyVersion, UUID, DiscoveryCustomMessage>> expCrdMsgs = new ArrayList<>();
+                List<T3<AffinityTopologyVersion, UUID, DiscoveryCustomMessage>> expNodesMsgs = Collections.emptyList();
+
+                TestFastStopProcessCustomMessage msg = new TestFastStopProcessCustomMessage(false, payload++);
+
+                expCrdMsgs.add(new T3<AffinityTopologyVersion, UUID, DiscoveryCustomMessage>(topVer, sndId, msg));
+
+                discoveryMgr.sendCustomEvent(msg);
+
+                doSleep(200); // Wait some time to check extra messages are not received.
+
+                checkEvents(crd, rcvdMsgs, expCrdMsgs);
+
+                for (Ignite node0 : nodes) {
+                    if (node0 != crd)
+                        checkEvents(node0, rcvdMsgs, expNodesMsgs);
+                }
+
+                rcvdMsgs.clear();
+            }
+            {
+                List<T3<AffinityTopologyVersion, UUID, DiscoveryCustomMessage>> expCrdMsgs = new ArrayList<>();
+                List<T3<AffinityTopologyVersion, UUID, DiscoveryCustomMessage>> expNodesMsgs = new ArrayList<>();
+
+                TestFastStopProcessCustomMessage msg = new TestFastStopProcessCustomMessage(true, payload++);
+
+                expCrdMsgs.add(new T3<AffinityTopologyVersion, UUID, DiscoveryCustomMessage>(topVer, sndId, msg));
+
+                discoveryMgr.sendCustomEvent(msg);
+
+                TestFastStopProcessCustomMessageAck ackMsg = new TestFastStopProcessCustomMessageAck(msg.payload);
+
+                expCrdMsgs.add(new T3<AffinityTopologyVersion, UUID, DiscoveryCustomMessage>(topVer, crdId, ackMsg));
+                expNodesMsgs.add(new T3<AffinityTopologyVersion, UUID, DiscoveryCustomMessage>(topVer, crdId, ackMsg));
+
+                doSleep(200); // Wait some time to check extra messages are not received.
+
+                checkEvents(crd, rcvdMsgs, expCrdMsgs);
+
+                for (Ignite node0 : nodes) {
+                    if (node0 != crd)
+                        checkEvents(node0, rcvdMsgs, expNodesMsgs);
+                }
+
+                rcvdMsgs.clear();
+            }
+
+            waitForEventsAcks(crd);
+        }
+    }
+
+    /**
+     * @param node Node to check.
+     * @param rcvdMsgs Received messages.
+     * @param expMsgs Expected messages.
+     * @throws Exception If failed.
+     */
+    private void checkEvents(
+        Ignite node,
+        final Map<UUID, List<T3<AffinityTopologyVersion, UUID, DiscoveryCustomMessage>>> rcvdMsgs,
+        final List<T3<AffinityTopologyVersion, UUID, DiscoveryCustomMessage>> expMsgs) throws Exception {
+        final UUID nodeId = node.cluster().localNode().id();
+
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                List<T3<AffinityTopologyVersion, UUID, DiscoveryCustomMessage>> msgs = rcvdMsgs.get(nodeId);
+
+                int size = msgs == null ? 0 : msgs.size();
+
+                return size >= expMsgs.size();
+            }
+        }, 5000));
+
+        List<T3<AffinityTopologyVersion, UUID, DiscoveryCustomMessage>> msgs = rcvdMsgs.get(nodeId);
+
+        if (msgs == null)
+            msgs = Collections.emptyList();
+
+        assertEqualsCollections(expMsgs, msgs);
+    }
+
+    /**
+     * @param node Node.
+     * @param rcvdMsgs Map to store received events.
+     */
+    private void registerTestEventListeners(Ignite node,
+        final Map<UUID, List<T3<AffinityTopologyVersion, UUID, DiscoveryCustomMessage>>> rcvdMsgs) {
+        GridDiscoveryManager discoveryMgr = ((IgniteKernal)node).context().discovery();
+
+        final UUID nodeId = node.cluster().localNode().id();
+
+        discoveryMgr.setCustomEventListener(TestFastStopProcessCustomMessage.class,
+            new CustomEventListener<TestFastStopProcessCustomMessage>() {
+                @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, TestFastStopProcessCustomMessage msg) {
+                    List<T3<AffinityTopologyVersion, UUID, DiscoveryCustomMessage>> list = rcvdMsgs.get(nodeId);
+
+                    if (list == null)
+                        rcvdMsgs.put(nodeId, list = new ArrayList<>());
+
+                    list.add(new T3<>(topVer, snd.id(), (DiscoveryCustomMessage)msg));
+                }
+            }
+        );
+        discoveryMgr.setCustomEventListener(TestFastStopProcessCustomMessageAck.class,
+            new CustomEventListener<TestFastStopProcessCustomMessageAck>() {
+                @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, TestFastStopProcessCustomMessageAck msg) {
+                    List<T3<AffinityTopologyVersion, UUID, DiscoveryCustomMessage>> list = rcvdMsgs.get(nodeId);
+
+                    if (list == null)
+                        rcvdMsgs.put(nodeId, list = new ArrayList<>());
+
+                    list.add(new T3<>(topVer, snd.id(), (DiscoveryCustomMessage)msg));
+                }
+            }
+        );
+    }
+
+    /**
+     *
+     */
+    static class TestFastStopProcessCustomMessage implements DiscoveryCustomMessage {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final IgniteUuid id = IgniteUuid.randomUuid();;
+
+        /** */
+        private final boolean createAck;
+
+        /** */
+        private final int payload;
+
+        /**
+         * @param createAck Create ack message flag.
+         * @param payload Payload.
+         */
+        TestFastStopProcessCustomMessage(boolean createAck, int payload) {
+            this.createAck = createAck;
+            this.payload = payload;
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteUuid id() {
+            return id;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+            return createAck ? new TestFastStopProcessCustomMessageAck(payload) : null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isMutable() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean stopProcess() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
+            AffinityTopologyVersion topVer,
+            DiscoCache discoCache) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TestFastStopProcessCustomMessage that = (TestFastStopProcessCustomMessage)o;
+
+            return createAck == that.createAck && payload == that.payload;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(createAck, payload);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(TestFastStopProcessCustomMessage.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    static class TestFastStopProcessCustomMessageAck implements DiscoveryCustomMessage {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final IgniteUuid id = IgniteUuid.randomUuid();;
+
+        /** */
+        private final int payload;
+
+        /**
+         * @param payload Payload.
+         */
+        TestFastStopProcessCustomMessageAck(int payload) {
+            this.payload = payload;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteUuid id() {
+            return id;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isMutable() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean stopProcess() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
+            AffinityTopologyVersion topVer,
+            DiscoCache discoCache) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TestFastStopProcessCustomMessageAck that = (TestFastStopProcessCustomMessageAck)o;
+            return payload == that.payload;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(payload);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(TestFastStopProcessCustomMessageAck.class, this);
+        }
     }
 
     /**

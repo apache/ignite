@@ -30,7 +30,7 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final int CUSTOM_MSG_ACK_FLAG = 0x01;
+    final long origEvtId;
 
     /** */
     final UUID sndNodeId;
@@ -46,37 +46,36 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
 
     /**
      * @param evtId Event ID.
+     * @param origEvtId For acknowledge events ID of original event.
      * @param topVer Topology version.
      * @param sndNodeId Sender node ID.
      * @param msg Message instance.
      * @param evtPath Event path.
-     * @param ack Acknowledge event flag.
      */
-    ZkDiscoveryCustomEventData(long evtId,
+    ZkDiscoveryCustomEventData(
+        long evtId,
+        long origEvtId,
         long topVer,
         UUID sndNodeId,
         DiscoverySpiCustomMessage msg,
-        String evtPath,
-        boolean ack)
+        String evtPath)
     {
         super(evtId, DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT, topVer);
 
         assert sndNodeId != null;
-        assert msg != null || ack || !F.isEmpty(evtPath);
+        assert msg != null || origEvtId != 0 || !F.isEmpty(evtPath);
 
+        this.origEvtId = origEvtId;
         this.msg = msg;
         this.sndNodeId = sndNodeId;
         this.evtPath = evtPath;
-
-        if (ack)
-            flags |= CUSTOM_MSG_ACK_FLAG;
     }
 
     /**
      * @return {@code True} for custom event ack message.
      */
     boolean ackEvent() {
-        return flagSet(CUSTOM_MSG_ACK_FLAG);
+        return origEvtId != 0;
     }
 
     /** {@inheritDoc} */

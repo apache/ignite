@@ -42,7 +42,7 @@ public class StartRoutineDiscoveryMessageV2 extends AbstractContinuousMessage {
      * @param startReqData Start request data.
      * @param keepBinary Keep binary flag.
      */
-    public StartRoutineDiscoveryMessageV2(UUID routineId, StartRequestDataV2 startReqData, boolean keepBinary) {
+    StartRoutineDiscoveryMessageV2(UUID routineId, StartRequestDataV2 startReqData, boolean keepBinary) {
         super(routineId);
 
         this.startReqData = startReqData;

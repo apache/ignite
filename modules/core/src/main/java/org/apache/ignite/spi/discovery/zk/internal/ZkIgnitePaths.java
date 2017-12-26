@@ -322,11 +322,13 @@ class ZkIgnitePaths {
     }
 
     /**
-     * @param evtId Event ID.
+     * @param origEvtId ID of original custom event.
      * @return Path for custom event ack.
      */
-    String ackEventDataPath(long evtId) {
-        return customEvtsAcksDir + "/" + String.valueOf(evtId);
+    String ackEventDataPath(long origEvtId) {
+        assert origEvtId != 0;
+
+        return customEvtsAcksDir + "/" + String.valueOf(origEvtId);
     }
 
     /**

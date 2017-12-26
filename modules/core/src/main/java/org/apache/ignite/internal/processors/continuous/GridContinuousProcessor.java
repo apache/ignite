@@ -165,12 +165,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        DiscoverySpi discoSpi = ctx.config().getDiscoverySpi();
-
-        boolean nonMutableCustomEvts = (discoSpi instanceof IgniteDiscoverySpi) &&
-            !((IgniteDiscoverySpi)discoSpi).supportsMutableCustomEvents();
-
-        discoProtoVer = nonMutableCustomEvts ? 2 : 1;
+        discoProtoVer = ctx.discovery().unmutableCustomMessages() ? 2 : 1;
 
         if (ctx.config().isDaemon())
             return;

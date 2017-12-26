@@ -39,6 +39,11 @@ class ZkNoServersMessage implements DiscoverySpiCustomMessage, ZkInternalMessage
     }
 
     /** {@inheritDoc} */
+    @Override public boolean stopProcess() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ZkNoServersMessage.class, this);
     }

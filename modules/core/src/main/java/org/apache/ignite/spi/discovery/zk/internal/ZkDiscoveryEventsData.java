@@ -30,31 +30,31 @@ class ZkDiscoveryEventsData implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Unique cluster ID (generated when first node in cluster starts). */
     final UUID clusterId;
 
-    /** */
-    int procCustEvt = -1;
+    /** Internal order of last processed custom event. */
+    long procCustEvt = -1;
 
-    /** */
+    /** Event ID counter. */
     long evtIdGen;
 
-    /** */
+    /** Current topology version. */
     long topVer;
 
-    /** */
+    /** Max node internal order in cluster. */
     long maxInternalOrder;
 
-    /** */
+    /** Min internal order in cluster. */
     final long startInternalOrder;
 
-    /** */
-    final long gridStartTime;
+    /** Cluster start time (recorded when first node in cluster starts). */
+    final long clusterStartTime;
 
-    /** */
+    /** Events to process. */
     final TreeMap<Long, ZkDiscoveryEventData> evts;
 
-    /** */
+    /** ID of current active communication error resolve process. */
     private UUID commErrFutId;
 
     /**
@@ -77,19 +77,19 @@ class ZkDiscoveryEventsData implements Serializable {
      * @param clusterId Cluster ID.
      * @param startInternalOrder Starting internal order for cluster.
      * @param topVer Current topology version.
-     * @param gridStartTime Cluster start time.
+     * @param clusterStartTime Cluster start time.
      * @param evts Events history.
      */
     private ZkDiscoveryEventsData(
         UUID clusterId,
         long startInternalOrder,
-        long gridStartTime,
+        long clusterStartTime,
         long topVer,
         TreeMap<Long, ZkDiscoveryEventData> evts)
     {
         this.clusterId = clusterId;
         this.startInternalOrder = startInternalOrder;
-        this.gridStartTime = gridStartTime;
+        this.clusterStartTime = clusterStartTime;
         this.topVer = topVer;
         this.evts = evts;
     }

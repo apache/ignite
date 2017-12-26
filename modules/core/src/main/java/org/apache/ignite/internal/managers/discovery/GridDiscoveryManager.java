@@ -2394,6 +2394,17 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * @return {@code True} if configured {@link DiscoverySpi} does not support mutable custom messages.
+     */
+    public boolean unmutableCustomMessages() {
+        DiscoverySpi spi = getSpi();
+
+        return (spi instanceof IgniteDiscoverySpi) &&
+            !((IgniteDiscoverySpi)spi).supportsMutableCustomEvents();
+
+    }
+
+    /**
      * @param node Problem node.
      * @param err Error.
      */
