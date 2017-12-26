@@ -156,9 +156,9 @@ public class DmlBatchSender {
 
         if (pageRes.error() != null) {
             if (err == null)
-                err = error();
+                err = pageRes.error();
             else
-                err.setNextException(error());
+                err.setNextException(pageRes.error());
         }
     }
 

@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLo
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -283,7 +284,7 @@ public class DmlStatementsProcessor {
                         if (!F.isEmpty(plan.selectQuery())) {
                             GridQueryFieldsResult res = idx.queryLocalSqlFields(idx.schema(cctx.name()),
                                 plan.selectQuery(), F.asList(U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY)),
-                                null, false, 0, null);
+                                null, false, false, 0, null);
 
                             it = res.iterator();
                         }
@@ -354,6 +355,9 @@ public class DmlStatementsProcessor {
         if (cctx.mvccEnabled()) {
             assert cctx.transactional();
 
+            if(cctx.isReplicated())
+                throw new UnsupportedOperationException("Only partitioned caches are supported at the moment");
+
             DmlDistributedPlanInfo distributedPlan = plan.distributedPlan();
 
             if (!plan.hasRows() && distributedPlan == null)
@@ -366,95 +370,68 @@ public class DmlStatementsProcessor {
 
             boolean implicit = (tx == null);
 
+            boolean commit = implicit && (!(fieldsQry instanceof SqlFieldsQueryEx) || ((SqlFieldsQueryEx)fieldsQry).isAutoCommit());
+
             if (implicit)
-                tx = idx.txStart(cctx, fieldsQry.getTimeout(), false);
+                tx = idx.txStart(cctx, fieldsQry.getTimeout());
 
-            IgniteCheckedException ex = null;
+            try (GridNearTxLocal toCommit = commit ? tx : null) {
+                UpdateResult res;
 
-            try {
-                UpdateResult fastResult = plan.processFast(fieldsQry.getArgs());
-
-                if (fastResult != null)
-                    return fastResult;
-
-                if (plan.hasRows())
-                    return processDmlSelectResult(plan, plan.createRows(fieldsQry.getArgs()), fieldsQry.getPageSize());
-
-                int[] ids = U.toIntArray(distributedPlan.getCacheIds());
-
-                int flags = 0;
-
-                if (fieldsQry.isEnforceJoinOrder())
-                    flags |= GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER;
-
-                if (distributedPlan.isReplicatedOnly())
-                    flags |= GridH2QueryRequest.FLAG_REPLICATED;
-
-                long timeout;
-
-                if (implicit)
-                    timeout = tx.remainingTime();
+                if (plan.fastResult())
+                    res = plan.processFast(fieldsQry.getArgs());
+                else if (plan.hasRows())
+                    res = processDmlSelectResult(plan, plan.createRows(fieldsQry.getArgs()), fieldsQry.getPageSize());
                 else {
-                    long tm1 = tx.remainingTime(), tm2 = fieldsQry.getTimeout();
+                    int[] ids = U.toIntArray(distributedPlan.getCacheIds());
 
-                    timeout = tm1 > 0 && tm2 > 0 ? Math.min(tm1, tm2) : Math.max(tm1, tm2);
+                    int flags = 0;
+
+                    if (fieldsQry.isEnforceJoinOrder())
+                        flags |= GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER;
+
+                    if (distributedPlan.isReplicatedOnly())
+                        flags |= GridH2QueryRequest.FLAG_REPLICATED;
+
+                    long timeout;
+
+                    if (implicit)
+                        timeout = tx.remainingTime();
+                    else {
+                        long tm1 = tx.remainingTime(), tm2 = fieldsQry.getTimeout();
+
+                        timeout = tm1 > 0 && tm2 > 0 ? Math.min(tm1, tm2) : Math.max(tm1, tm2);
+                    }
+
+                    int[] parts = fieldsQry.getPartitions();
+
+                    IgniteInternalFuture<Long> fut = tx.updateAsync(
+                        cctx,
+                        ids,
+                        parts,
+                        schemaName,
+                        fieldsQry.getSql(),
+                        fieldsQry.getArgs(),
+                        flags,
+                        fieldsQry.getPageSize(),
+                        timeout);
+
+                    res = new UpdateResult(fut.get(), X.EMPTY_OBJECT_ARRAY);
                 }
 
-                int[] parts = fieldsQry.getPartitions();
+                if (commit)
+                    toCommit.commit();
 
-                IgniteInternalFuture<Long> fut = tx.updateAsync(
-                    cctx,
-                    ids,
-                    parts,
-                    schemaName,
-                    fieldsQry.getSql(),
-                    fieldsQry.getArgs(),
-                    flags,
-                    fieldsQry.getPageSize(),
-                    timeout);
-
-                Long res = fut.get();
-
-                return new UpdateResult(res, X.EMPTY_OBJECT_ARRAY);
-            }
+                return res;
+             }
             catch (IgniteCheckedException e) {
-                ex = e;
+                U.error(log, "Error during update [localNodeId=" + cctx.localNodeId() + "]", e);
 
-                tx.setRollbackOnly();
+                throw new CacheException("Failed to run update. " + e.getMessage(), e);
             }
             finally {
-                if (implicit) {
-                    try {
-                        if (!tx.isRollbackOnly())
-                            tx.commit();
-                        else
-                            tx.rollback();
-                    }
-                    catch (IgniteCheckedException e) {
-                        if (ex != null)
-                            ex.addSuppressed(e);
-                        else
-                            ex = e;
-                    }
-
-                    try {
-                        tx.close();
-                    }
-                    catch (IgniteCheckedException e) {
-                        if (ex != null)
-                            ex.addSuppressed(e);
-                        else
-                            ex = e;
-                    }
-
+                if (commit)
                     cctx.tm().resetContext();
-                }
-            }
-
-            if (ex != null) {
-                U.error(log, "Error during update [localNodeId=" + cctx.localNodeId() + "]", ex);
-
-                throw new CacheException("Failed to run update. " + ex.getMessage(), ex);
             }
         }
 
@@ -492,7 +469,7 @@ public class DmlStatementsProcessor {
             cur = plan.createRows(fieldsQry.getArgs());
         else {
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(schemaName, plan.selectQuery(),
-                F.asList(fieldsQry.getArgs()), filters, fieldsQry.isEnforceJoinOrder(), fieldsQry.getTimeout(), cancel);
+                F.asList(fieldsQry.getArgs()), filters, fieldsQry.isEnforceJoinOrder(), false, fieldsQry.getTimeout(), cancel);
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
@@ -861,12 +838,13 @@ public class DmlStatementsProcessor {
                 .setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
 
             cur = (QueryCursorImpl<List<?>>)idx.queryDistributedSqlFields(schema, newFieldsQry, true,
-                cancel, cctx.cacheId(), true, new MvccQueryTracker(cctx, mvccVer, topVer)).get(0);
+                cancel, cctx.cacheId(), true, new MvccQueryTracker(cctx,
+                    cctx.shared().coordinators().currentCoordinator(), mvccVer)).get(0);
         }
         else {
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(schema, plan.selectQuery(),
-                F.asList(qry.getArgs()), filter, qry.isEnforceJoinOrder(), qry.getTimeout(), cancel,
-                new MvccQueryTracker(cctx, mvccVer, topVer));
+                F.asList(qry.getArgs()), filter, qry.isEnforceJoinOrder(), false, qry.getTimeout(), cancel,
+                new MvccQueryTracker(cctx, cctx.shared().coordinators().currentCoordinator(), mvccVer));
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
