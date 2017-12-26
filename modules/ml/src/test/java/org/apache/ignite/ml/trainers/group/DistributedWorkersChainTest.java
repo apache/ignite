@@ -145,7 +145,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
 
         cache.putAll(m);
 
-        IgniteBiFunction<Integer, TestLocalContext, IgniteSupplier<Stream<GroupTrainerCacheKey<Double>>>> function = (o, l) -> (() -> keys);
+        IgniteBiFunction<Integer, TestLocalContext, Stream<GroupTrainerCacheKey<Double>>> function = (o, l) -> keys;
         IgniteBinaryOperator<Integer> max = Integer::max;
 
         Integer res = chain.

@@ -23,7 +23,6 @@ import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.trainers.Trainer;
 import org.apache.ignite.ml.trainers.group.chain.ComputationsChain;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
@@ -81,10 +80,10 @@ public abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends 
         ComputationsChain<LC, K, V, T, T> chain = (i, c) -> i;
 
         M res = chain.
-            thenDistributedForKeys(this::initDistributed, (t, lc) -> () -> data.initialKeys(trainingUUID), this::reduceDistributedInitData).
+            thenDistributedForKeys(this::initDistributed, (t, lc) -> data.initialKeys(trainingUUID), this::reduceDistributedInitData).
             thenLocally(this::locallyProcessInitData).
             thenWhile(this::shouldContinue, trainingLoopStep()).
-            thenDistributedForEntries(this::extractContextForFinalResultCreation, this::getFinalResults, Functions.outputSupplier(this::finalResultKeys), this::reduceFinalResults, defaultFinalResult()).
+            thenDistributedForEntries(this::extractContextForFinalResultCreation, this::getFinalResults, this::finalResultKeys, this::reduceFinalResults, defaultFinalResult()).
             thenLocally(this::mapFinalResult).
             process(data, ctx);
 
@@ -198,5 +197,10 @@ public abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends 
      */
     protected abstract M mapFinalResult(R res, LC locCtx);
 
+    /**
+     * Performs cleanups of temporary objects created by this trainer.
+     *
+     * @param locCtx Local context.
+     */
     protected abstract void cleanup(LC locCtx);
 }

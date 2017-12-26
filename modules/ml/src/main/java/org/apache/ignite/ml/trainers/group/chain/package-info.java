@@ -15,32 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.trainers.group;
-
-import org.apache.ignite.ml.Model;
-
 /**
- * Model which outputs given constant.
- *
- * @param <T> Type of constant.
+ * <!-- Package description. -->
+ * Contains classes related to computations chain.
  */
-public class ConstModel<T> implements Model<T, T> {
-    /**
-     * Constant to be returned by this model.
-     */
-    private T c;
-
-    /**
-     * Create instance of this class specified by input parameters.
-     *
-     * @param c Constant to be returned by this model.
-     */
-    public ConstModel(T c) {
-        this.c = c;
-    }
-
-    /** {@inheritDoc} */
-    @Override public T apply(T val) {
-        return c;
-    }
-}
+package org.apache.ignite.ml.trainers.group.chain;

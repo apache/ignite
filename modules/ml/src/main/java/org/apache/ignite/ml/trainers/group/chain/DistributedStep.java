@@ -44,7 +44,7 @@ public interface DistributedStep<L, K, V, C, I, O extends Serializable> {
     C extractRemoteContext(I input, L locCtx);
 
     /**
-     * Function applied to each cache entry specified by keysSupplier.
+     * Function applied to each cache entry specified by keys.
      *
      * @param entryAndCtx Cache entry and context.
      * @return ResultAndUpdates object.
@@ -52,13 +52,13 @@ public interface DistributedStep<L, K, V, C, I, O extends Serializable> {
     ResultAndUpdates<O> worker(EntryAndContext<K, V, C> entryAndCtx);
 
     /**
-     * Supplier of keys for worker.
+     * Get of keys for worker.
      *
      * @param input Input to this step.
      * @param locCtx Local context.
-     * @return Supplier of keys for worker.
+     * @return Keys for worker.
      */
-    IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keysSupplier(I input, L locCtx);
+    Stream<GroupTrainerCacheKey<K>> keys(I input, L locCtx);
 
     /**
      * Function used to reduce results returned by worker.

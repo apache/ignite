@@ -37,9 +37,9 @@ public class TestTrainingLoopStep implements DistributedStep<TestGroupTrainerLoc
         return res;
     }
 
-    @Override public IgniteSupplier<Stream<GroupTrainerCacheKey<Double>>> keysSupplier(Double input,
+    @Override public Stream<GroupTrainerCacheKey<Double>> keys(Double input,
         TestGroupTrainerLocalContext locCtx) {
-        return () -> TestGroupTrainingCache.allKeys(locCtx.limit(), locCtx.eachNumberCnt(), locCtx.trainingUUID());
+        return TestGroupTrainingCache.allKeys(locCtx.limit(), locCtx.eachNumberCnt(), locCtx.trainingUUID());
     }
 
     @Override public Double identity() {

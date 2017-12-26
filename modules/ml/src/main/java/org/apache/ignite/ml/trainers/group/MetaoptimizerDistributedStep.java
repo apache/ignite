@@ -47,9 +47,9 @@ class MetaoptimizerDistributedStep<L extends HasTrainingUUID, K, V, G, I extends
         return ResultAndUpdates.of(postprocessRes).setUpdates(res.updates());
     }
 
-    @Override public IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keysSupplier(I input, L locCtx) {
+    @Override public Stream<GroupTrainerCacheKey<K>> keys(I input, L locCtx) {
         // TODO: watch this code carefully.
-        return () -> trainer.keysToProcessInTrainingLoop(locCtx);
+        return trainer.keysToProcessInTrainingLoop(locCtx);
     }
 
     @Override public O identity() {
