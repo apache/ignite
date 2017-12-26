@@ -204,7 +204,7 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
                             }
                         }
                         catch (Throwable e) {
-                            System.out.println(e.toString());
+                            log.error("Unexpected exception:", e);
 
                             throw new RuntimeException(e);
                         }
@@ -229,14 +229,14 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
                     max = Math.max(max, sum);
                     min = Math.min(min, sum);
 
-                    System.out.println("Operation count: " + sum + " min=" + min + " max=" + max + " avg=" + totalOperations / (periods - WARM_UP_PERIOD));
+                    log.info("Operation count: " + sum + " min=" + min + " max=" + max + " avg=" + totalOperations / (periods - WARM_UP_PERIOD));
                 }
             }
 
             interrupt.set(true);
 
             threadPool.shutdown();
-            System.out.println("Test complete");
+            log.info("Test complete");
 
             threadPool.awaitTermination(getTestTimeout(), TimeUnit.MILLISECONDS);
 
