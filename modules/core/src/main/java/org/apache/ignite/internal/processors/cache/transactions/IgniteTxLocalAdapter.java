@@ -1239,12 +1239,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                 res = entryProcessor.process(invokeEntry, t.get2());
 
-                val0 = invokeEntry.value();
+                val0 = invokeEntry.getValue(txEntry.keepBinary());
 
                 key0 = invokeEntry.key();
             }
 
-            ctx.validateKeyAndValue(txEntry.key(), ctx.toCacheObject(val0));
+            if (val0 != null) // no validation for remove case
+                ctx.validateKeyAndValue(txEntry.key(), ctx.toCacheObject(val0));
 
             if (res != null)
                 ret.addEntryProcessResult(ctx, txEntry.key(), key0, res, null, txEntry.keepBinary());
