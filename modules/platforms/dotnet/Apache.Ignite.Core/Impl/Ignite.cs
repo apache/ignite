@@ -780,6 +780,24 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public void SetBaselineTopology(long topologyVersion)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public void SetBaselineTopology(IEnumerable<IClusterNode> nodes)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public ICollection<IClusterNode> GetBaselineTopology()
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
 #pragma warning disable 618
         public IPersistentStoreMetrics GetPersistentStoreMetrics()
         {

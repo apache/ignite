@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 {
     using System;
     using System.IO;
+    using System.Linq;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
@@ -151,17 +152,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestGridActivationWithPersistence()
         {
-            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
-            {
-                DataStorageConfiguration = new DataStorageConfiguration
-                {
-                    DefaultDataRegionConfiguration = new DataRegionConfiguration
-                    {
-                        PersistenceEnabled = true,
-                        Name = "foo"
-                    }
-                }
-            };
+            var cfg = GetPersistentConfiguration();
 
             // Default config, inactive by default (IsActiveOnStart is ignored when persistence is enabled).
             using (var ignite = Ignition.Start(cfg))
@@ -211,6 +202,60 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /// <summary>
+        /// Tests the baseline topology.
+        /// </summary>
+        [Test]
+        public void TestBaselineTopology()
+        {
+            var cfg1 = new IgniteConfiguration(GetPersistentConfiguration())
+            {
+                ConsistentId = "node1"
+            };
+            var cfg2 = new IgniteConfiguration(GetPersistentConfiguration())
+            {
+                ConsistentId = "node2"
+            };
+
+            using (var ignite = Ignition.Start(cfg1))
+            using (Ignition.Start(cfg2))
+            {
+                var cluster = ignite.GetCluster();
+                Assert.AreEqual(2, cluster.TopologyVersion);
+
+                // Can not set baseline while inactive.
+                var ex = Assert.Throws<IgniteException>(() => cluster.SetBaselineTopology(2));
+                Assert.AreEqual("", ex.Message);
+
+                // Set with version.
+                cluster.SetActive(true);
+                cluster.SetBaselineTopology(2);
+
+                var res = cluster.GetBaselineTopology();
+                CollectionAssert.AreEquivalent(new[] {"node1", "node2"}, res.Select(x => x.ConsistentId));
+
+                cluster.SetBaselineTopology(1);
+                Assert.AreEqual("node1", cluster.GetBaselineTopology().Single().ConsistentId);
+
+                // Set with nodes.
+                cluster.SetBaselineTopology(cluster.GetNodes());
+                
+                res = cluster.GetBaselineTopology();
+                CollectionAssert.AreEquivalent(new[] { "node1", "node2" }, res.Select(x => x.ConsistentId));
+            }
+
+            // Check auto activation on cluster restart.
+            using (var ignite = Ignition.Start(cfg1))
+            using (Ignition.Start(cfg2))
+            {
+                var cluster = ignite.GetCluster();
+                Assert.IsTrue(cluster.IsActive());
+                
+                var res = cluster.GetBaselineTopology();
+                CollectionAssert.AreEquivalent(new[] { "node1", "node2" }, res.Select(x => x.ConsistentId));
+            }
+        }
+
+        /// <summary>
         /// Checks active state.
         /// </summary>
         private static void CheckIsActive(IIgnite ignite, bool isActive)
@@ -229,6 +274,24 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.AreEqual("Can not perform the operation because the cluster is inactive.",
                     ex.Message.Substring(0, 62));
             }
+        }
+
+        /// <summary>
+        /// Gets the persistent configuration.
+        /// </summary>
+        private static IgniteConfiguration GetPersistentConfiguration()
+        {
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                DataStorageConfiguration = new DataStorageConfiguration
+                {
+                    DefaultDataRegionConfiguration = new DataRegionConfiguration
+                    {
+                        PersistenceEnabled = true,
+                        Name = "foo"
+                    }
+                }
+            };
         }
     }
 }
