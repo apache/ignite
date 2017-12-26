@@ -124,11 +124,15 @@ import pageConfigureAdvanced from './components/page-configure-advanced';
 import pageQueries from './components/page-queries';
 import gridColumnSelector from './components/grid-column-selector';
 import gridItemSelected from './components/grid-item-selected';
+import gridNoData from './components/grid-no-data';
+import gridExport from './components/grid-export';
 import bsSelectMenu from './components/bs-select-menu';
 import protectFromBsSelectRender from './components/protect-from-bs-select-render';
 import uiGridHovering from './components/ui-grid-hovering';
+import uiGridFilters from './components/ui-grid-filters';
 import listEditable from './components/list-editable';
 import clusterSelector from './components/cluster-selector';
+import connectedClusters from './components/connected-clusters';
 
 import igniteServices from './services';
 
@@ -200,13 +204,17 @@ angular.module('ignite-console', [
     pageQueries.name,
     gridColumnSelector.name,
     gridItemSelected.name,
+    gridNoData.name,
+    gridExport.name,
     bsSelectMenu.name,
     uiGridHovering.name,
+    uiGridFilters.name,
     protectFromBsSelectRender.name,
     AngularStrapTooltip.name,
     AngularStrapSelect.name,
     listEditable.name,
     clusterSelector.name,
+    connectedClusters.name,
     // Ignite modules.
     IgniteModules.name
 ])

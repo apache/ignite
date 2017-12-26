@@ -734,6 +734,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                             break;
                         else if (!spi.failureDetectionTimeoutEnabled() && reconCnt == spi.getReconnectCount())
                             break;
+
+                        if (spi.isNodeStopping0()) {
+                            if (log.isDebugEnabled())
+                                log.debug("Stop pinging node, because node is stopping: [rmtNodeId=" + nodeId + ']');
+
+                            break;
+                        }
                     }
                     finally {
                         U.closeQuiet(sock);
