@@ -36,6 +36,7 @@ import scala.reflect.ClassTag
 class JavaIgniteContext[K, V](
     @transient val sc: JavaSparkContext,
     val cfgF: IgniteOutClosure[IgniteConfiguration],
+    @deprecated("Embedded mode is deprecated and will be discontinued. Consider using standalone mode instead.")
     standalone: Boolean = true
     ) extends Serializable {
 
@@ -51,6 +52,7 @@ class JavaIgniteContext[K, V](
         })
     }
 
+    @deprecated("Embedded mode is deprecated and will be discontinued. Consider using standalone mode instead.")
     def this(sc: JavaSparkContext, springUrl: String, standalone: Boolean) {
         this(sc, new IgniteOutClosure[IgniteConfiguration] {
             override def apply() = IgnitionEx.loadConfiguration(springUrl).get1()
