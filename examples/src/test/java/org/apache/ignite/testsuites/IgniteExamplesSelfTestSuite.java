@@ -43,6 +43,7 @@ import org.apache.ignite.examples.MonteCarloExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.MonteCarloExamplesSelfTest;
 import org.apache.ignite.examples.SpringBeanExamplesSelfTest;
 import org.apache.ignite.examples.SpringDataExampleSelfTest;
+import org.apache.ignite.examples.SqlExamplesSelfTest;
 import org.apache.ignite.examples.TaskExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.TaskExamplesSelfTest;
 
@@ -63,6 +64,7 @@ public class IgniteExamplesSelfTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Examples Test Suite");
 
         suite.addTest(new TestSuite(CacheExamplesSelfTest.class));
+        suite.addTest(new TestSuite(SqlExamplesSelfTest.class));
         suite.addTest(new TestSuite(BasicExamplesSelfTest.class));
         suite.addTest(new TestSuite(ContinuationExamplesSelfTest.class));
         suite.addTest(new TestSuite(ContinuousMapperExamplesSelfTest.class));
