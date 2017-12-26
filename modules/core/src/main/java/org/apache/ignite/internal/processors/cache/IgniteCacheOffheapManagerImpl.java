@@ -636,24 +636,29 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 if (next != null)
                     return true;
 
-                CacheDataRow nextRow = null;
+                while (true) {
+                    CacheDataRow nextRow = null;
 
-                if (it.hasNext())
-                    nextRow = it.next();
+                    if (it.hasNext())
+                        nextRow = it.next();
 
-                if (nextRow != null && !nextRow.removed()) {
-                    KeyCacheObject key = nextRow.key();
-                    CacheObject val = nextRow.value();
+                    if (nextRow != null) {
+                        if (nextRow.removed())
+                            continue;;
 
-                    Object key0 = cctx.unwrapBinaryIfNeeded(key, keepBinary, false);
-                    Object val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false);
+                        KeyCacheObject key = nextRow.key();
+                        CacheObject val = nextRow.value();
 
-                    next = new CacheEntryImplEx(key0, val0, nextRow.version());
+                        Object key0 = cctx.unwrapBinaryIfNeeded(key, keepBinary, false);
+                        Object val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false);
 
-                    return true;
+                        next = new CacheEntryImplEx(key0, val0, nextRow.version());
+
+                        return true;
+                    }
+
+                    return false;
                 }
-
-                return false;
             }
         };
     }
@@ -684,10 +689,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 if (next != null)
                     return true;
 
-                if (cur.next()) {
+                while (cur.next()) {
                     CacheDataRow row = cur.get();
 
+                    if (row.removed())
+                        continue;
+
                     next = row.key();
+
+                    break;
                 }
 
                 return next != null;
