@@ -108,8 +108,7 @@ public class SqlParserCreateTableSelfTest extends SqlParserAbstractSelfTest {
         PARAM_TESTS.add(new TestParamDef<>(AFFINITY_KEY, "affinityKey", String.class,
             Arrays.asList(
                 new TestParamDef.MissingValue<String>(null),
-                new TestParamDef.ValidValue<>('"' + PK_NAME + '"', PK_NAME.toUpperCase()),
-                new TestParamDef.ValidIdentityValue<>(PK_NAME.toUpperCase()),
+                new TestParamDef.ValidValue<>('"' + PK_NAME + '"', PK_NAME),
                 new TestParamDef.InvalidValue<String>(WRONG_PK_NAME,
                     "Affinity key column with given name not found")
             )));
@@ -214,31 +213,6 @@ public class SqlParserCreateTableSelfTest extends SqlParserAbstractSelfTest {
     }
 
     /**
-     * Tests for column definition section in CREATE TABLE command.
-     *
-     * @throws AssertionError If failed.
-     */
-    public void testColumnNames() {
-        try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(true)) {
-            assertParseError(null,
-                "CREATE TABLE tbl (_key INT)",
-                "Direct specification of _KEY and _VAL columns is forbidden");
-
-            assertParseError(null,
-                "CREATE TABLE tbl (_val INT)",
-                "Direct specification of _KEY and _VAL columns is forbidden");
-
-            assertParseError(null,
-                "CREATE TABLE tbl (a INT)",
-                "No PRIMARY KEY columns specified");
-
-            assertParseError(null,
-                "CREATE TABLE tbl (a INT PRIMARY KEY, b VARCHAR PRIMARY KEY)",
-                "Table must have at least one non PRIMARY KEY column.");
-        }
-    }
-
-    /**
      * Tests for parameters of CREATE TABLE command. Each parameter is tested with a list of options.
      *
      * @throws AssertionError If failed.
@@ -247,41 +221,10 @@ public class SqlParserCreateTableSelfTest extends SqlParserAbstractSelfTest {
 
         try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(true)) {
 
-            String baseCmd = "CREATE TABLE tbl (" + PK_NAME + " INT PRIMARY KEY, b VARCHAR)";
+            String baseCmd = "CREATE TABLE tbl (\"" + PK_NAME + "\" INT PRIMARY KEY, b VARCHAR)";
 
             for (TestParamDef testParamDef : PARAM_TESTS)
                 testParameter(null, baseCmd, testParamDef, DEFAULT_PARAM_VALS);
-        }
-    }
-
-    /**
-     * Tests for wrapping-related parameters for CREATE TABLE command.
-     *
-     * @throws AssertionError If failed.
-     */
-    public void testWrapParams() {
-
-        try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(true)) {
-
-            assertParseError(null,
-                "CREATE TABLE tbl (a INT PRIMARY KEY, b LONG PRIMARY KEY, c VARCHAR) NO_WRAP_KEY",
-                "WRAP_KEY cannot be false when composite primary key exists.");
-
-            assertParseError(null,
-                "CREATE TABLE tbl (a INT PRIMARY KEY, b LONG PRIMARY KEY, c VARCHAR) NO_WRAP_KEY KEY_TYPE KeyType",
-                "WRAP_KEY cannot be false when KEY_TYPE is set.");
-
-            assertParseError(null,
-                "CREATE TABLE tbl (a INT PRIMARY KEY, b LONG PRIMARY KEY, c VARCHAR, d INT) NO_WRAP_VALUE",
-                "WRAP_VALUE cannot be false when multiple non-primary key columns exist.");
-
-            assertParseError(null,
-                "CREATE TABLE tbl (a INT PRIMARY KEY, b LONG PRIMARY KEY, c VARCHAR, d INT) NO_WRAP_VALUE VALUE_TYPE ValueType",
-                "WRAP_VALUE cannot be false when VALUE_TYPE is set.");
-
-            assertParseError(null,
-                "CREATE TABLE tbl (a INT PRIMARY KEY, b LONG PRIMARY KEY, c VARCHAR, d INT) KEY_TYPE KvType VALUE_TYPE KvType",
-                "Key and value type names should be different for CREATE TABLE: KvType");
         }
     }
 }

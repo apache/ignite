@@ -2050,7 +2050,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test behavior for given combination of wrap flags.
      * @param wrapKey Whether key wrap should be enforced.
      * @param wrapVal Whether value wrap should be enforced.
-     * @param useInternalCmd
+     * @param useInternalCmd Use internal CREATE TABLE command instead of H2 one.
      * @throws SQLException if failed.
      */
     private void doTestKeyValueWrap(boolean wrapKey, boolean wrapVal, boolean useInternalCmd) throws SQLException {
@@ -2191,7 +2191,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Execute {@code CREATE TABLE} w/given params.
      * @param params Engine parameters.
-     * @param useInternalCmd
+     * @param useInternalCmd Use internal CREATE TABLE command
      */
     private void createTableWithParams(final String params, boolean useInternalCmd) {
         try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(useInternalCmd)) {
@@ -2250,7 +2250,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Execute {@code CREATE TABLE} w/given params expecting a particular error.
      * @param params Engine parameters.
      * @param expErrMsg Expected error message.
-     * @param useInternalCmd
+     * @param useInternalCmd Use internal CREATE TABLE command
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void assertCreateTableWithParamsThrows(final String params, String expErrMsg, final boolean useInternalCmd) {
@@ -2318,6 +2318,63 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         finally {
             execute("drop table t1 if exists");
             execute("drop table t2 if exists");
+        }
+    }
+
+    /**
+     * Tests for reserved columns definitions in the internal CREATE TABLE command.
+     *
+     * @throws AssertionError If failed.
+     */
+    public void testReservedColumnNamesInternal() {
+        try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(true)) {
+            assertDdlCommandThrows(
+                "CREATE TABLE tbl (_KEY INT)",
+                "Direct specification of _KEY and _VAL columns is forbidden");
+
+            assertDdlCommandThrows(
+                "CREATE TABLE tbl (_val INT)",
+                "Direct specification of _KEY and _VAL columns is forbidden");
+        }
+    }
+
+    /**
+     * Tests for primary key column definition errors in the internal CREATE TABLE command.
+     *
+     * @throws AssertionError If failed.
+     */
+    public void testPrimaryKeyColumnsInternal() {
+        try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(true)) {
+            assertDdlCommandThrows(
+                "CREATE TABLE tbl (a INT)",
+                "No PRIMARY KEY columns specified");
+
+            assertDdlCommandThrows(
+                "CREATE TABLE tbl (a INT, b VARCHAR, PRIMARY KEY (a, b))",
+                "Table must have at least one non PRIMARY KEY column.");
+        }
+    }
+
+    /**
+     * Tests for wrapping-related parameters for the internal CREATE TABLE command.
+     *
+     * @throws AssertionError If failed.
+     */
+    public void testCreateTableWrapParamsInternal() {
+
+        try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(true)) {
+
+            assertDdlCommandThrows(
+                "CREATE TABLE tbl (a INT, b LONG, c VARCHAR, PRIMARY KEY (a)) NO_WRAP_KEY KEY_TYPE KeyType",
+                "WRAP_KEY cannot be false when KEY_TYPE is set.");
+
+            assertDdlCommandThrows(
+                "CREATE TABLE tbl (a INT, b LONG, c VARCHAR, d INT, PRIMARY KEY (a, b, c)) WRAP_KEY NO_WRAP_VALUE VALUE_TYPE ValueType",
+                "WRAP_VALUE cannot be false when VALUE_TYPE is set.");
+
+            assertDdlCommandThrows(
+                "CREATE TABLE tbl (a INT, b LONG, c VARCHAR, d INT, PRIMARY KEY (a, b)) KEY_TYPE KvType VALUE_TYPE KvType",
+                "Key and value type names should be different for CREATE TABLE: KVTYPE");
         }
     }
 

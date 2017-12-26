@@ -213,7 +213,7 @@ public class DdlStatementsProcessor {
                 IgniteQueryErrorCode.PARSING);
 
         if (F.isEmpty(cmd.primaryKeyColumnNames()))
-            throw new AssertionError("No PRIMARY KEY columns specified");
+            throw new IgniteSQLException("No PRIMARY KEY columns specified");
 
         int keyColsNum = cmd.primaryKeyColumnNames().size();
         int valColsNum = cols.size() - keyColsNum;
