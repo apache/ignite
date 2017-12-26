@@ -56,7 +56,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -2573,10 +2573,10 @@ public class GridNioServer<T> {
 
                 if (directBuf) {
                     if (ses.writeBuffer() != null)
-                        IgniteUtils.cleanDirectBuffer(ses.writeBuffer());
+                        GridUnsafe.cleanDirectBuffer(ses.writeBuffer());
 
                     if (ses.readBuffer() != null)
-                        IgniteUtils.cleanDirectBuffer(ses.readBuffer());
+                        GridUnsafe.cleanDirectBuffer(ses.readBuffer());
                 }
 
                 closeKey(ses.key());

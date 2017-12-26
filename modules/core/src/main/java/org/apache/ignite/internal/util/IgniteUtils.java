@@ -305,9 +305,6 @@ public abstract class IgniteUtils {
     /** Default user version. */
     public static final String DFLT_USER_VERSION = "0";
 
-    /** Cleaner code for direct {@code java.nio.ByteBuffer}. */
-    public static final DirectBufCleaner DIRECT_BYTE_BUFFER_CLEANER;
-
     /** Cache for {@link GridPeerDeployAware} fields to speed up reflection. */
     private static final ConcurrentMap<String, IgniteBiTuple<Class<?>, Collection<Field>>> p2pFields =
         new ConcurrentHashMap8<>();
@@ -783,10 +780,6 @@ public abstract class IgniteUtils {
             else if ("toString".equals(mtd.getName()))
                 toStringMtd = mtd;
         }
-
-        DIRECT_BYTE_BUFFER_CLEANER = majorJavaVersion(IgniteUtils.jdkVer) < 9
-            ? new DirectBufCleanerJRE8()
-            : new DirectBufCleanerJRE9();
     }
 
     /**
@@ -3069,17 +3062,6 @@ public abstract class IgniteUtils {
         String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (si ? "" : "i");
 
         return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
-    }
-
-    /**
-     * Cleans direct {@code java.nio.ByteBuffer}
-     *
-     * @param buf Direct buffer.
-     */
-    public static void cleanDirectBuffer(ByteBuffer buf) {
-        assert buf.isDirect();
-
-        DIRECT_BYTE_BUFFER_CLEANER.clean(buf);
     }
 
     /**

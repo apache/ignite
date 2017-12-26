@@ -32,6 +32,8 @@ import sun.misc.SharedSecrets;
 import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
 
+import static org.apache.ignite.internal.util.IgniteUtils.majorJavaVersion;
+
 /**
  * <p>Wrapper for {@link sun.misc.Unsafe} class.</p>
  *
@@ -99,6 +101,12 @@ public abstract class GridUnsafe {
 
     /** */
     public static final long BOOLEAN_ARR_OFF = UNSAFE.arrayBaseOffset(boolean[].class);
+
+    /** Cleaner code for direct {@code java.nio.ByteBuffer}. */
+    public static final DirectBufCleaner DIRECT_BYTE_BUFFER_CLEANER =
+        majorJavaVersion(System.getProperty("java.specification.version")) < 9
+            ? new DirectBufCleanerJRE8()
+            : new DirectBufCleanerJRE9();
 
     /**
      * Ensure singleton.
@@ -1687,5 +1695,16 @@ public abstract class GridUnsafe {
         catch (IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException("Unsafe invocation failed", e);
         }
+    }
+
+    /**
+     * Cleans direct {@code java.nio.ByteBuffer}
+     *
+     * @param buf Direct buffer.
+     */
+    public static void cleanDirectBuffer(ByteBuffer buf) {
+        assert buf.isDirect();
+
+        DIRECT_BYTE_BUFFER_CLEANER.clean(buf);
     }
 }
