@@ -321,7 +321,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         isValidForReading = m.isValidForReading();
         isValidForWriting = m.isValidForWriting();
 
-
         totalPartitionsCnt = entriesStat.totalPartitionsCount();
         rebalancingPartitionsCnt = entriesStat.rebalancingPartitionsCount();
 
