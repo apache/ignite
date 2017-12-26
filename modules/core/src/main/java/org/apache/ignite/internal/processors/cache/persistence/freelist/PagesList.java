@@ -240,11 +240,10 @@ public abstract class PagesList extends DataStructure {
                     }
 
                     boolean ok = casBucket(bucket, null, tails);
+
                     assert ok;
 
                     bucketsSize[bucket].set(bucketSize);
-
-                    changed = true;
                 }
             }
         }
