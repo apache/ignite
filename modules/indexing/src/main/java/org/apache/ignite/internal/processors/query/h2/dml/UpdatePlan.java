@@ -355,6 +355,13 @@ public final class UpdatePlan {
     }
 
     /**
+     * @return {@code True} if DML can be fast processed.
+     */
+    public boolean fastResult() {
+        return fastUpdate != null;
+    }
+
+    /**
      * Process fast DML operation if possible.
      *
      * @param args QUery arguments.
