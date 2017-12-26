@@ -17,38 +17,33 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.sql.SqlJdbcExample;
+import org.apache.ignite.examples.sql.SqlDdlExample;
+import org.apache.ignite.examples.sql.SqlDmlExample;
+import org.apache.ignite.examples.sql.SqlQueriesExample;
+import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
 /**
- * Cache examples multi-node self test.
+ * SQL examples self test.
  */
-public class CacheExamplesMultiNodeSelfTest extends CacheExamplesSelfTest {
-    /** {@inheritDoc} */
-    @Override protected String defaultConfig() {
-        return "examples/config/example-ignite.xml";
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        startRemoteNodes();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return 10 * 60 * 1000;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testCacheLockExample() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-4309");
-
-        super.testCacheLockExample();
+public class SqlExamplesSelfTest extends GridAbstractExamplesTest {
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSqlJavaExample() throws Exception {
+        SqlQueriesExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testJdbcThinExample() throws Exception {
-        SqlJdbcExample.main(EMPTY_ARGS);
+    public void testSqlDmlExample() throws Exception {
+        SqlDmlExample.main(EMPTY_ARGS);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSqlDdlExample() throws Exception {
+        SqlDdlExample.main(EMPTY_ARGS);
     }
 }
