@@ -177,13 +177,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             cachesInitialized = true;
         }
-        else if (customMsg instanceof ChangeGlobalStateFinishMessage) {
-            if (!cachesInitialized && ((ChangeGlobalStateFinishMessage)customMsg).clusterActive()) {
-                caches.init(cctx.cache().cacheGroupDescriptors(), cctx.cache().cacheDescriptors());
-
-                cachesInitialized = true;
-            }
-        }
 
         if (!CU.clientNode(node) && (type == EVT_NODE_FAILED || type == EVT_NODE_JOINED || type == EVT_NODE_LEFT)) {
             synchronized (mux) {
