@@ -65,6 +65,7 @@ class VisorConsole {
         org.apache.ignite.visor.commands.cache.VisorCacheResetCommand
         org.apache.ignite.visor.commands.cache.VisorCacheRebalanceCommand
         org.apache.ignite.visor.commands.cache.VisorCacheCommand
+        org.apache.ignite.visor.commands.cache.VisorCacheModifyCommand
         org.apache.ignite.visor.commands.config.VisorConfigurationCommand
         org.apache.ignite.visor.commands.deploy.VisorDeployCommand
         org.apache.ignite.visor.commands.disco.VisorDiscoveryCommand
@@ -161,7 +162,7 @@ class VisorConsole {
                 visor.batchMode = true
                 visor.quiet = quiet
 
-                val script = if (noBatchQuit) cmd else cmd + "\nquit\n"
+                val script = cmd + (if (cmd.last == '\n') "" else "\n") + (if (noBatchQuit) "" else "quit\n")
 
                 new ByteArrayInputStream(script.getBytes("UTF-8"))
 

@@ -17,6 +17,13 @@
 
 package org.apache.ignite.visor
 
+import java.io._
+import java.lang.{Boolean => JavaBoolean, Byte => JavaByte, Character => JavaCharacter, Double => JavaDouble, Float => JavaFloat, Integer => JavaInteger, Long => JavaLong, Short => JavaShort}
+import java.text._
+import java.util.concurrent._
+import java.util.{Collection => JavaCollection, HashSet => JavaHashSet, _}
+
+import jline.console.ConsoleReader
 import org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER
 import org.apache.ignite._
 import org.apache.ignite.cluster.{ClusterGroup, ClusterGroupEmptyException, ClusterMetrics, ClusterNode}
@@ -28,24 +35,15 @@ import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef._
 import org.apache.ignite.internal.util.{GridConfigurationFinder, IgniteUtils => U}
-import org.apache.ignite.lang._
-import org.apache.ignite.thread.{IgniteThreadFactory, IgniteThreadPoolExecutor}
-import org.apache.ignite.visor.commands.common.VisorTextTable
-import jline.console.ConsoleReader
-import org.jetbrains.annotations.Nullable
-import java.io._
-import java.lang.{Boolean => JavaBoolean}
-import java.net._
-import java.text._
-import java.util.concurrent._
-import java.util.{Collection => JavaCollection, HashSet => JavaHashSet, _}
-
 import org.apache.ignite.internal.visor.cache._
-import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTaskArg
-import org.apache.ignite.internal.visor.node._
+import org.apache.ignite.internal.visor.node.{VisorNodeEventsCollectorTaskArg, _}
 import org.apache.ignite.internal.visor.util.VisorEventMapper
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 import org.apache.ignite.internal.visor.{VisorMultiNodeTask, VisorTaskArgument}
+import org.apache.ignite.lang._
+import org.apache.ignite.thread.{IgniteThreadFactory, IgniteThreadPoolExecutor}
+import org.apache.ignite.visor.commands.common.VisorTextTable
+import org.jetbrains.annotations.Nullable
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable
@@ -134,6 +132,32 @@ object visor extends VisorTag {
     /** Type alias for general event filter. */
     type EventFilter = Event => Boolean
 
+    private final val LOC = Locale.US
+
+    /** Date format. */
+    private final val dateFmt = new SimpleDateFormat("yyyy-MM-dd", LOC)
+
+    /** Date time format. */
+    private final val timeFmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", LOC)
+
+    final val INPUT_TYPES: Seq[(String, (String => Object), Class[_])] = Seq(
+        ("java.lang.String", (value: String) => value, classOf[String]),
+        ("java.lang.Character", (value: String) => JavaCharacter.valueOf(value.head), classOf[JavaCharacter]),
+        ("java.lang.Integer", (value: String) => JavaInteger.valueOf(value), classOf[JavaInteger]),
+        ("java.lang.Long", (value: String) => JavaLong.valueOf(value), classOf[JavaLong]),
+        ("java.lang.Short", (value: String) => JavaShort.valueOf(value), classOf[JavaShort]),
+        ("java.lang.Byte", (value: String) => JavaByte.valueOf(value), classOf[JavaByte]),
+        ("java.lang.Float", (value: String) => JavaFloat.valueOf(value), classOf[JavaFloat]),
+        ("java.lang.Double", (value: String) => JavaDouble.valueOf(value), classOf[JavaDouble]),
+        ("java.lang.Boolean", (value: String) => JavaBoolean.valueOf(value), classOf[JavaBoolean]),
+        ("java.util.Date - Value in format yyyy-MM-dd {HH:mm:ss}",
+            (value: String) => try
+                timeFmt.parse(value)
+            catch {
+                case e: ParseException => dateFmt.parse(value)
+            }, classOf[Date]),
+        ("java.util.UUID - Value like this: CC03C3B0-C03D-4B02-82AF-3E0F85414BA6", (value: String) => UUID.fromString(value), classOf[UUID]))
+
     /** `Nil` is for empty list, `Til` is for empty tuple. */
     val Til: Arg = (null, null)
 
@@ -172,14 +196,6 @@ object visor extends VisorTag {
 
     /** */
     @volatile private var conTs: Long = 0
-
-    private final val LOC = Locale.US
-
-    /** Date time format. */
-    private final val dtFmt = new SimpleDateFormat("MM/dd/yy, HH:mm:ss", LOC)
-
-    /** Date format. */
-    private final val dFmt = new SimpleDateFormat("dd MMMM yyyy", LOC)
 
     private final val DEC_FMT_SYMS = new DecimalFormatSymbols(LOC)
 
@@ -240,7 +256,7 @@ object visor extends VisorTag {
 
     var batchMode: Boolean = false
 
-    /** Quiet mode to disable node log and information messages output. */
+    /** Quiet mode to disable internal node log and information messages output. */
     var quiet: Boolean = false
 
     def reader(reader: ConsoleReader) {
@@ -652,7 +668,7 @@ object visor extends VisorTag {
     private def clearNamespace(namespace: String) {
         assert(namespace != null)
 
-        mem.keySet.foreach(k => {
+        mem.keys().foreach(k => {
             if (k.matches(s"$namespace\\d+"))
                 mem.remove(k)
         })
@@ -1166,7 +1182,7 @@ object visor extends VisorTag {
      * @param ts Timestamp.
      */
     def formatDateTime(ts: Long): String =
-        dtFmt.format(ts)
+        timeFmt.format(ts)
 
     /**
      * Returns string representation of the date provided. Result formatted using
@@ -1175,7 +1191,7 @@ object visor extends VisorTag {
      * @param date Date.
      */
     def formatDateTime(date: Date): String =
-        dtFmt.format(date)
+        timeFmt.format(date)
 
     /**
      * Returns string representation of the timestamp provided. Result formatted
@@ -1184,7 +1200,7 @@ object visor extends VisorTag {
      * @param ts Timestamp.
      */
     def formatDate(ts: Long): String =
-        dFmt.format(ts)
+        dateFmt.format(ts)
 
     /**
      * Returns string representation of the date provided. Result formatted using
@@ -1193,7 +1209,7 @@ object visor extends VisorTag {
      * @param date Date.
      */
     def formatDate(date: Date): String =
-        dFmt.format(date)
+        dateFmt.format(date)
 
     /**
      * Base class for memory units.
@@ -1329,13 +1345,19 @@ object visor extends VisorTag {
     }
 
     /**
-     * Prints standard 'not connected' error message.
+     * Check connection state and show inform message when Visor console is not connected to cluster.
+     *
+     * @return `True` when Visor console is connected to cluster.
      */
-    def adviseToConnect() {
-        warn(
-            "Visor is disconnected.",
-            "Type 'open' to connect Visor console or 'help open' to get help."
-        )
+    def checkConnected(): Boolean = {
+        isCon || {
+            warn(
+                "Visor is disconnected.",
+                "Type 'open' to connect Visor console or 'help open' to get help."
+            )
+
+            false
+        }
     }
 
     /**
@@ -2076,6 +2098,50 @@ object visor extends VisorTag {
         }
     }
 
+    def askTypedValue(name: String): Option[Object] = {
+        val t = VisorTextTable()
+
+        t #= ("#", "Type description")
+
+        INPUT_TYPES.indices.foreach(i => t += (i, INPUT_TYPES(i)._1))
+
+        println("Available " + name + " types:")
+
+        t.render()
+
+        val a = ask("\nChoose " + name + " type ('c' to cancel) [0]: ", "0")
+
+        if (a.toLowerCase == "c")
+            None
+        else {
+            try {
+                val parser = INPUT_TYPES(a.toInt)._2
+
+                try {
+                    val input = readLineOpt("Input " + name + ": ")
+
+                    input.map(parser)
+                }
+                catch {
+                    case e: Throwable =>
+                        nl()
+
+                        warn("Failed to parse value to specified type")
+
+                        None
+                }
+            }
+            catch {
+                case e: Throwable =>
+                    nl()
+
+                    warn("Invalid selection: " + a)
+
+                    None
+            }
+        }
+    }
+
     /**
      * Safe `readLine` version.
      *
@@ -2090,41 +2156,6 @@ object visor extends VisorTag {
         }
         catch {
             case _: Throwable => None
-        }
-    }
-
-    /**
-     * Asks user to choose node id8.
-     *
-     * @return `Option` for node id8.
-     */
-    def askNodeId(): Option[String] = {
-        assert(isConnected)
-
-        val ids = ignite.cluster.forRemotes().nodes().map(nid8).toList
-
-        ids.indices.foreach(i => println((i + 1) + ": " + ids(i)))
-
-        nl()
-
-        println("C: Cancel")
-
-        nl()
-
-        readLineOpt("Choose node: ") match {
-            case Some("c") | Some("C") | None => None
-            case Some(idx) =>
-                try
-                    Some(ids(idx.toInt - 1))
-                catch {
-                    case _: Throwable =>
-                        if (idx.isEmpty)
-                            warn("Index can't be empty.")
-                        else
-                            warn("Invalid index: " + idx + ".")
-
-                        None
-                }
         }
     }
 
@@ -2184,9 +2215,7 @@ object visor extends VisorTag {
      * Disconnects from the grid.
      */
     def close() {
-        if (!isConnected)
-            adviseToConnect()
-        else {
+        if (checkConnected()) {
             if (pool != null) {
                 pool.shutdown()
 
@@ -2321,9 +2350,7 @@ object visor extends VisorTag {
     def log(args: String) {
         assert(args != null)
 
-        if (!isConnected)
-            adviseToConnect()
-        else {
+        if (checkConnected()) {
             def scold(errMsgs: Any*) {
                 assert(errMsgs != null)
 

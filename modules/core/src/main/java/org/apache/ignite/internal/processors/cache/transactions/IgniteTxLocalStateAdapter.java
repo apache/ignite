@@ -30,7 +30,7 @@ public abstract class IgniteTxLocalStateAdapter implements IgniteTxLocalState {
      * @param commit {@code False} if transaction rolled back.
      */
     protected final void onTxEnd(GridCacheContext cacheCtx, IgniteInternalTx tx, boolean commit) {
-        if (cacheCtx.cache().configuration().isStatisticsEnabled()) {
+        if (cacheCtx.statisticsEnabled()) {
             // Convert start time from ms to ns.
             if (commit)
                 cacheCtx.cache().metrics0().onTxCommit((U.currentTimeMillis() - tx.startTime()) * 1000);

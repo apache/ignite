@@ -104,6 +104,11 @@ namespace Apache.Ignite.Core.Configuration
         public const int DefaultMetricsSubIntervalCount = 5;
 
         /// <summary>
+        /// Default value for <see cref="WalFlushFrequency"/>.
+        /// </summary>
+        public static readonly TimeSpan DefaultWalAutoArchiveAfterInactivity = TimeSpan.FromMilliseconds(-1);
+
+        /// <summary>
         /// The default rate time interval.
         /// </summary>
         public static readonly TimeSpan DefaultMetricsRateTimeInterval = TimeSpan.FromSeconds(60);
@@ -183,6 +188,7 @@ namespace Apache.Ignite.Core.Configuration
             SystemRegionInitialSize = DefaultSystemRegionInitialSize;
             SystemRegionMaxSize = DefaultSystemRegionMaxSize;
             PageSize = DefaultPageSize;
+            WalAutoArchiveAfterInactivity = DefaultWalAutoArchiveAfterInactivity;
         }
 
         /// <summary>
@@ -219,6 +225,7 @@ namespace Apache.Ignite.Core.Configuration
             SystemRegionMaxSize = reader.ReadLong();
             PageSize = reader.ReadInt();
             ConcurrencyLevel = reader.ReadInt();
+            WalAutoArchiveAfterInactivity = reader.ReadLongAsTimespan();
 
             var count = reader.ReadInt();
 
@@ -269,6 +276,7 @@ namespace Apache.Ignite.Core.Configuration
             writer.WriteLong(SystemRegionMaxSize);
             writer.WriteInt(PageSize);
             writer.WriteInt(ConcurrencyLevel);
+            writer.WriteTimeSpanAsLong(WalAutoArchiveAfterInactivity);
 
             if (DataRegionConfigurations != null)
             {
@@ -458,6 +466,12 @@ namespace Apache.Ignite.Core.Configuration
         /// </summary>
         [DefaultValue(DefaultConcurrencyLevel)]
         public int ConcurrencyLevel { get; set; }
+
+        /// <summary>
+        /// Gets or sets the inactivity time after which to run WAL segment auto archiving.
+        /// </summary>
+        [DefaultValue(typeof(TimeSpan), "-00:00:00.001")]
+        public TimeSpan WalAutoArchiveAfterInactivity { get; set; }
 
         /// <summary>
         /// Gets or sets the data region configurations.

@@ -26,12 +26,20 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
 import org.apache.ignite.testsuites.IgniteIgnore;
 import org.apache.ignite.testsuites.IgniteS3TestSuite;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Abstract TcpDiscoveryS3IpFinder to test with different ways of setting AWS credentials.
  */
 abstract class TcpDiscoveryS3IpFinderAbstractSelfTest
     extends TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryS3IpFinder> {
+
+    /** Bucket endpoint */
+    protected @Nullable String bucketEndpoint;
+
+    /** Server-side encryption algorithm for Amazon S3-managed encryption keys. */
+    protected @Nullable String SSEAlgorithm;
+
     /**
      * Constructor.
      *
@@ -51,6 +59,7 @@ abstract class TcpDiscoveryS3IpFinderAbstractSelfTest
         setAwsCredentials(finder);
         setBucketEndpoint(finder);
         setBucketName(finder);
+        setSSEAlgorithm(finder);
 
         for (int i = 0; i < 5; i++) {
             Collection<InetSocketAddress> addrs = finder.getRegisteredAddresses();
@@ -85,8 +94,17 @@ abstract class TcpDiscoveryS3IpFinderAbstractSelfTest
      * Set Bucket endpoint into the provided {@code finder}.
      * @param finder finder endpoint to set into.
      */
-    protected void setBucketEndpoint(TcpDiscoveryS3IpFinder finder) {
-        // No-op.
+    private void setBucketEndpoint(TcpDiscoveryS3IpFinder finder) {
+        finder.setBucketEndpoint(bucketEndpoint);
+    }
+
+    /**
+     * Set server-side encryption algorithm for Amazon S3-managed encryption keys into the provided {@code finder}.
+     *
+     * @param finder finder encryption algorithm to set into.
+     */
+    private void setSSEAlgorithm(TcpDiscoveryS3IpFinder finder) {
+        finder.setSSEAlgorithm(SSEAlgorithm);
     }
 
     /**

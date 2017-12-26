@@ -365,7 +365,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 }
 
                 MiniFuture fut = new MiniFuture(n, mappedKeys, saved, topVer,
-                    CU.createBackupPostProcessingClosure(topVer, log, cctx, null, readThrough, skipVals));
+                    CU.createBackupPostProcessingClosure(topVer, log, cctx, null, expiryPlc, readThrough, skipVals));
 
                 GridCacheMessage req = new GridNearGetRequest(
                     cctx.cacheId(),
@@ -491,7 +491,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         return saved;
                     }
 
-                    if (cctx.cache().configuration().isStatisticsEnabled() && !skipVals && !affNode.isLocal())
+                    if (cctx.statisticsEnabled() && !skipVals && !affNode.isLocal())
                         cache().metrics0().onRead(false);
 
                     LinkedHashMap<KeyCacheObject, Boolean> keys = mapped.get(affNode);
@@ -619,7 +619,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 }
 
                 if (v != null) {
-                    if (cctx.cache().configuration().isStatisticsEnabled() && !skipVals)
+                    if (cctx.statisticsEnabled() && !skipVals)
                         cache().metrics0().onRead(true);
 
                     addResult(key, v, ver);

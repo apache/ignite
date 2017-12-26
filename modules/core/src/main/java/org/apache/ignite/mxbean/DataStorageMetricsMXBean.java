@@ -41,6 +41,10 @@ public interface DataStorageMetricsMXBean extends DataStorageMetrics {
     @Override float getWalFsyncTimeAverage();
 
     /** {@inheritDoc} */
+    @MXBeanDescription("WAL buffer poll spins number over the last time interval.")
+    @Override long getWalBuffPollSpinsRate();
+
+    /** {@inheritDoc} */
     @MXBeanDescription("Duration of the last checkpoint in milliseconds.")
     @Override long getLastCheckpointDuration();
 

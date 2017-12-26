@@ -21,8 +21,8 @@ import java.util.Arrays;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.FuzzyCMeansModelFormat;
-import org.apache.ignite.ml.math.DistanceMeasure;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.distances.DistanceMeasure;
 
 /** This class incapsulates result of clusterization. */
 public class FuzzyCMeansModel implements ClusterizationModel<Vector, Integer>, Exportable<FuzzyCMeansModelFormat> {
@@ -64,7 +64,7 @@ public class FuzzyCMeansModel implements ClusterizationModel<Vector, Integer>, E
      * @param val Vector.
      * @return Index of the closest center or -1 if it can't be found.
      */
-    @Override public Integer predict(Vector val) {
+    @Override public Integer apply(Vector val) {
         int idx = -1;
         double minDistance = Double.POSITIVE_INFINITY;
 
