@@ -455,12 +455,12 @@ public class JdbcThinTcpIo {
      */
     private SSLSocketFactory getSSLSocketFactory() throws SQLException {
         String sslFactory = connProps.getSslFactory();
-        String cliCertKeyStoreUrl = connProps.getClientCertificateKeyStoreUrl();
-        String cliCertKeyStorePwd = connProps.getClientCertificateKeyStorePassword();
-        String cliCertKeyStoreType = connProps.getClientCertificateKeyStoreType();
-        String trustCertKeyStoreUrl = connProps.getTrustCertificateKeyStoreUrl();
-        String trustCertKeyStorePwd = connProps.getTrustCertificateKeyStorePassword();
-        String trustCertKeyStoreType = connProps.getTrustCertificateKeyStoreType();
+        String cliCertKeyStoreUrl = connProps.getSslClientCertificateKeyStoreUrl();
+        String cliCertKeyStorePwd = connProps.getSslClientCertificateKeyStorePassword();
+        String cliCertKeyStoreType = connProps.getSslClientCertificateKeyStoreType();
+        String trustCertKeyStoreUrl = connProps.getSslTrustCertificateKeyStoreUrl();
+        String trustCertKeyStorePwd = connProps.getSslTrustCertificateKeyStorePassword();
+        String trustCertKeyStoreType = connProps.getSslTrustCertificateKeyStoreType();
 
         if (!F.isEmpty(sslFactory)) {
             try {
@@ -566,7 +566,7 @@ public class JdbcThinTcpIo {
 
         List<TrustManager> tms;
 
-        if (connProps.isTrustAll())
+        if (connProps.isSslTrustAll())
             tms = Collections.<TrustManager>singletonList(TRUST_ALL_MANAGER);
         else {
             tms = new ArrayList<>();
@@ -633,7 +633,7 @@ public class JdbcThinTcpIo {
             return sslContext.getSocketFactory();
         }
         catch (NoSuchAlgorithmException e) {
-            throw new SQLException("TLS is not a valid SSL protocol.", SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+            throw new SQLException(connProps.sslProtocol() + " is not a valid SSL protocol.", SqlStateCode.CLIENT_CONNECTION_FAILED, e);
         }
         catch (KeyManagementException e) {
             throw new SQLException("Cannot init SSL context.", SqlStateCode.CLIENT_CONNECTION_FAILED, e);

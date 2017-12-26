@@ -99,35 +99,41 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         "SSL protocol name", "TLS",  null, false, null);
 
     /** Client certificate key store url. */
-    private StringProperty clientCertificateKeyStoreUrl = new StringProperty("clientCertificateKeyStoreUrl",
+    private StringProperty sslClientCertificateKeyStoreUrl =
+        new StringProperty("sslClientCertificateKeyStoreUrl",
         "Client certificate key store URL",
         System.getProperty("javax.net.ssl.keyStore"), null, false, null);
 
     /** Client certificate key store password. */
-    private StringProperty clientCertificateKeyStorePassword = new StringProperty("clientCertificateKeyStorePassword",
+    private StringProperty sslClientCertificateKeyStorePassword =
+        new StringProperty("sslClientCertificateKeyStorePassword",
         "Client certificate key store password",
         System.getProperty("javax.net.ssl.keyStorePassword"), null, false, null);
 
     /** Client certificate key store type. */
-    private StringProperty clientCertificateKeyStoreType = new StringProperty("clientCertificateKeyStoreType",
+    private StringProperty sslClientCertificateKeyStoreType =
+        new StringProperty("sslClientCertificateKeyStoreType",
         "Client certificate key store type",
         System.getProperty("javax.net.ssl.keyStoreType", "JKS"), null, false, null);
 
     /** Trusted certificate key store url. */
-    private StringProperty trustCertificateKeyStoreUrl = new StringProperty("trustCertificateKeyStoreUrl",
+    private StringProperty sslTrustCertificateKeyStoreUrl =
+        new StringProperty("sslTrustCertificateKeyStoreUrl",
         "Trusted certificate key store URL", System.getProperty("javax.net.ssl.trustStore"), null, false, null);
 
     /** Trusted certificate key store password. */
-    private StringProperty trustCertificateKeyStorePassword = new StringProperty("trustCertificateKeyStorePassword",
+    private StringProperty sslTrustCertificateKeyStorePassword =
+        new StringProperty("trustCertificateKeyStorePassword",
         "Trusted certificate key store password", System.getProperty("javax.net.ssl.trustStorePassword"), null, false, null);
 
     /** Trusted certificate key store type. */
-    private StringProperty trustCertificateKeyStoreType = new StringProperty("trustCertificateKeyStoreType",
+    private StringProperty sslTrustCertificateKeyStoreType =
+        new StringProperty("trustCertificateKeyStoreType",
         "Trusted certificate key store type",
         System.getProperty("javax.net.ssl.trustStoreType", "JKS"), null, false, null);
 
     /** Trust all certificates. */
-    private BooleanProperty trustAll = new BooleanProperty("trustAll",
+    private BooleanProperty sslTrustAll = new BooleanProperty("sslTrustAll",
         "Trust all certificates",false, false);
 
     /** Custom class name that implements Factory&lt;SSLSocketFactory&gt;. */
@@ -135,7 +141,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         "Custom class name that implements Factory<SSLSocketFactory>", null, null, false, null);
 
     /** Trust all certificates. */
-    private BooleanProperty useDefault = new BooleanProperty("useDefault",
+    private BooleanProperty sslUseDefault = new BooleanProperty("sslUseDefault",
         "Use default SSL context",false, false);
 
     /** Properties array. */
@@ -144,9 +150,9 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
         tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate,
         useSSL, sslProtocol,
-        clientCertificateKeyStoreUrl, clientCertificateKeyStorePassword, clientCertificateKeyStoreType,
-        trustCertificateKeyStoreUrl, trustCertificateKeyStorePassword, trustCertificateKeyStoreType,
-        trustAll, sslFactory, useDefault
+        sslClientCertificateKeyStoreUrl, sslClientCertificateKeyStorePassword, sslClientCertificateKeyStoreType,
+        sslTrustCertificateKeyStoreUrl, sslTrustCertificateKeyStorePassword, sslTrustCertificateKeyStoreType,
+        sslTrustAll, sslFactory, sslUseDefault
     };
 
     /** {@inheritDoc} */
@@ -290,73 +296,73 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
-    @Override public String getClientCertificateKeyStoreUrl() {
-        return clientCertificateKeyStoreUrl.value();
+    @Override public String getSslClientCertificateKeyStoreUrl() {
+        return sslClientCertificateKeyStoreUrl.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void setClientCertificateKeyStoreUrl(String url) {
-        clientCertificateKeyStoreUrl.setValue(url);
+    @Override public void setSslClientCertificateKeyStoreUrl(String url) {
+        sslClientCertificateKeyStoreUrl.setValue(url);
     }
 
     /** {@inheritDoc} */
-    @Override public String getClientCertificateKeyStorePassword() {
-        return clientCertificateKeyStorePassword.value();
+    @Override public String getSslClientCertificateKeyStorePassword() {
+        return sslClientCertificateKeyStorePassword.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void setClientCertificateKeyStorePassword(String passwd) {
-        clientCertificateKeyStorePassword.setValue(passwd);
+    @Override public void setSslClientCertificateKeyStorePassword(String passwd) {
+        sslClientCertificateKeyStorePassword.setValue(passwd);
     }
 
     /** {@inheritDoc} */
-    @Override public String getClientCertificateKeyStoreType() {
-        return clientCertificateKeyStoreType.value();
+    @Override public String getSslClientCertificateKeyStoreType() {
+        return sslClientCertificateKeyStoreType.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void setClientCertificateKeyStoreType(String ksType) {
-        clientCertificateKeyStoreType.setValue(ksType);
+    @Override public void setSslClientCertificateKeyStoreType(String ksType) {
+        sslClientCertificateKeyStoreType.setValue(ksType);
     }
 
     /** {@inheritDoc} */
-    @Override public String getTrustCertificateKeyStoreUrl() {
-        return trustCertificateKeyStoreUrl.value();
+    @Override public String getSslTrustCertificateKeyStoreUrl() {
+        return sslTrustCertificateKeyStoreUrl.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void setTrustCertificateKeyStoreUrl(String url) {
-        trustCertificateKeyStoreUrl.setValue(url);
+    @Override public void setSslTrustCertificateKeyStoreUrl(String url) {
+        sslTrustCertificateKeyStoreUrl.setValue(url);
     }
 
     /** {@inheritDoc} */
-    @Override public String getTrustCertificateKeyStorePassword() {
-        return trustCertificateKeyStorePassword.value();
+    @Override public String getSslTrustCertificateKeyStorePassword() {
+        return sslTrustCertificateKeyStorePassword.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void setTrustCertificateKeyStorePassword(String passwd) {
-        trustCertificateKeyStorePassword.setValue(passwd);
+    @Override public void setSslTrustCertificateKeyStorePassword(String passwd) {
+        sslTrustCertificateKeyStorePassword.setValue(passwd);
     }
 
     /** {@inheritDoc} */
-    @Override public String getTrustCertificateKeyStoreType() {
-        return trustCertificateKeyStoreType.value();
+    @Override public String getSslTrustCertificateKeyStoreType() {
+        return sslTrustCertificateKeyStoreType.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void setTrustCertificateKeyStoreType(String ksType) {
-        trustCertificateKeyStoreType.setValue(ksType);
+    @Override public void setSslTrustCertificateKeyStoreType(String ksType) {
+        sslTrustCertificateKeyStoreType.setValue(ksType);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isTrustAll() {
-        return trustAll.value();
+    @Override public boolean isSslTrustAll() {
+        return sslTrustAll.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void setTrustAll(boolean trustAll) {
-        this.trustAll.setValue(trustAll);
+    @Override public void setSslTrustAll(boolean trustAll) {
+        this.sslTrustAll.setValue(trustAll);
     }
 
     /** {@inheritDoc} */
@@ -371,12 +377,12 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
     /** {@inheritDoc} */
     @Override public boolean isSslUseDefault() {
-        return useDefault.value();
+        return sslUseDefault.value();
     }
 
     /** {@inheritDoc} */
     @Override public void setSslUseDefault(boolean useDefault) {
-        this.useDefault.setValue(useDefault);
+        this.sslUseDefault.setValue(useDefault);
     }
 
     /**

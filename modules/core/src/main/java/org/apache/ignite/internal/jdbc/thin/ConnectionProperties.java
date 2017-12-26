@@ -169,72 +169,72 @@ public interface ConnectionProperties {
     /**
      * @return Client certificate KeyStore URL.
      */
-    public String getClientCertificateKeyStoreUrl();
+    public String getSslClientCertificateKeyStoreUrl();
 
     /**
      * @param url Client certificate KeyStore URL.
      */
-    public void setClientCertificateKeyStoreUrl(String url);
+    public void setSslClientCertificateKeyStoreUrl(String url);
 
     /**
      * @return Client certificate KeyStore password.
      */
-    public String getClientCertificateKeyStorePassword();
+    public String getSslClientCertificateKeyStorePassword();
 
     /**
      * @param passwd Client certificate KeyStore password.
      */
-    public void setClientCertificateKeyStorePassword(String passwd);
+    public void setSslClientCertificateKeyStorePassword(String passwd);
 
     /**
      * @return Client certificate KeyStore type.
      */
-    public String getClientCertificateKeyStoreType();
+    public String getSslClientCertificateKeyStoreType();
 
     /**
      * @param ksType Client certificate KeyStore type.
      */
-    public void setClientCertificateKeyStoreType(String ksType);
+    public void setSslClientCertificateKeyStoreType(String ksType);
 
     /**
      * @return Trusted certificate KeyStore URL.
      */
-    public String getTrustCertificateKeyStoreUrl();
+    public String getSslTrustCertificateKeyStoreUrl();
 
     /**
      * @param url Trusted certificate KeyStore URL.
      */
-    public void setTrustCertificateKeyStoreUrl(String url);
+    public void setSslTrustCertificateKeyStoreUrl(String url);
 
     /**
      * @return Trusted certificate KeyStore password.
      */
-    public String getTrustCertificateKeyStorePassword();
+    public String getSslTrustCertificateKeyStorePassword();
 
     /**
      * @param passwd Trusted certificate KeyStore password.
      */
-    public void setTrustCertificateKeyStorePassword(String passwd);
+    public void setSslTrustCertificateKeyStorePassword(String passwd);
 
     /**
      * @return Trusted certificate KeyStore type.
      */
-    public String getTrustCertificateKeyStoreType();
+    public String getSslTrustCertificateKeyStoreType();
 
     /**
      * @param ksType Trusted certificate KeyStore type.
      */
-    public void setTrustCertificateKeyStoreType(String ksType);
+    public void setSslTrustCertificateKeyStoreType(String ksType);
 
     /**
      * @return Trust all certificates flag.
      */
-    public boolean isTrustAll();
+    public boolean isSslTrustAll();
 
     /**
      * @param trustAll Trust all certificates flag.
      */
-    public void setTrustAll(boolean trustAll);
+    public void setSslTrustAll(boolean trustAll);
 
     /**
      * @return Custom class name that implements Factory&lt;SSLSocketFactory&gt;.
