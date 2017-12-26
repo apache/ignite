@@ -50,7 +50,7 @@ public class IgniteKNNRegressionBenchmark extends IgniteAbstractBenchmark {
             @Override public void run() {
                 // IMPL NOTE originally taken from KNNRegressionExample.
                 // Obtain shuffled dataset.
-                LabeledDataset dataset = new IrisDataset().shuffle((int)(DataChanger.next()));
+                LabeledDataset dataset = new Datasets().shuffleClearedMachines((int)(DataChanger.next()));
 
                 // Normalize dataset
                 dataset.normalizeWith(Normalization.MINIMAX);

@@ -48,7 +48,7 @@ public class IgniteKNNClassificationBenchmark extends IgniteAbstractBenchmark {
             @Override public void run() {
                 // IMPL NOTE originally taken from KNNClassificationExample.
                 // Obtain shuffled dataset.
-                LabeledDataset dataset = new IrisDataset().shuffle((int)(DataChanger.next()));
+                LabeledDataset dataset = new Datasets().shuffleIris((int)(DataChanger.next()));
 
                 // Random splitting of iris data as 70% train and 30% test datasets.
                 LabeledDatasetTestTrainPair split = new LabeledDatasetTestTrainPair(dataset, 0.3);
