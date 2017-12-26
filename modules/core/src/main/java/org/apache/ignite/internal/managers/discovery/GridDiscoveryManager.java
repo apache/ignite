@@ -1687,7 +1687,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 throw new IgniteClientDisconnectedCheckedException(reconnectFut, e.getMessage());
             }
 
-            throw e;
+            LT.warn(log, "Ping failed with error [node=" + nodeId + ", err=" + e + ']');
+
+            return true;
         }
         finally {
             busyLock.leaveBusy();

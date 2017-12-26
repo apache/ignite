@@ -103,7 +103,8 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
      * @return boolean {@code True} if client's grid must be started last, {@code false} if it must be started first.
      */
     protected boolean isClientStartedLast() {
-        return false;
+        // TODO ZK
+        return true;
     }
 
     /**
