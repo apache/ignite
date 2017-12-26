@@ -1454,10 +1454,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                         cacheId);
                 }
 
+                rowStore.addRow(updateRow);
+
                 if (grp.sharedGroup() && updateRow.cacheId() == CU.UNDEFINED_CACHE_ID)
                     updateRow.cacheId(cctx.cacheId());
-
-                rowStore.addRow(updateRow);
 
                 if (newVal) {
                     GridCursor<CacheDataRow> cur = dataTree.find(
