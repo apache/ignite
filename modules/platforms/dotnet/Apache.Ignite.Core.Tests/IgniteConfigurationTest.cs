@@ -426,6 +426,7 @@ namespace Apache.Ignite.Core.Tests
                 using (var ignite = Ignition.Start(cfg))
                 {
                     Assert.AreEqual(id, ignite.GetConfiguration().ConsistentId);
+                    Assert.AreEqual(id, ignite.GetCluster().GetLocalNode().ConsistentId);
                 }
             }
         }
