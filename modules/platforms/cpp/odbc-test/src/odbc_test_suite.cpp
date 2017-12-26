@@ -40,7 +40,7 @@ namespace ignite
 {
     namespace odbc
     {
-        void OdbcTestSuite::Connect(const std::string& connectStr)
+        void OdbcTestSuite::Prepare()
         {
             // Allocate an environment handle
             SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env);
@@ -54,6 +54,11 @@ namespace ignite
             SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
 
             BOOST_REQUIRE(dbc != NULL);
+        }
+
+        void OdbcTestSuite::Connect(const std::string& connectStr)
+        {
+            Prepare();
 
             // Connect string
             std::vector<SQLCHAR> connectStr0;

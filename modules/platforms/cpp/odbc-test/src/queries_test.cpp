@@ -228,7 +228,7 @@ struct QueriesTestSuiteFixture : odbc::OdbcTestSuite
 
     static Ignite StartAdditionalNode(const char* name)
     {
-        return StartTestNode("queries-test-noodbc.xml", name);
+        return StartTestNode("queries-test.xml", name);
     }
 
     /** Node started during the test. */
