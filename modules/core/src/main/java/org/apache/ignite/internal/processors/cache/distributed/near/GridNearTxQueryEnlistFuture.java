@@ -526,15 +526,15 @@ public class GridNearTxQueryEnlistFuture extends GridCacheCompoundIdentityFuture
 
     /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable Long res, @Nullable Throwable err) {
+        if (err != null)
+            tx.setRollbackOnly();
+
         if (super.onDone(res, err)) {
             // Clean up.
             cctx.mvcc().removeVersionedFuture(this);
 
             if (timeoutObj != null)
                 cctx.time().removeTimeoutObject(timeoutObj);
-
-            if (err != null)
-                tx.setRollbackOnly();
 
             return true;
         }
