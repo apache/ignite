@@ -19,6 +19,7 @@
 #include <Shlwapi.h>
 
 #include "ignite/odbc/log.h"
+#include "ignite/odbc/ssl/ssl_mode.h"
 
 #include "ignite/odbc/system/ui/dsn_configuration_window.h"
 
@@ -171,6 +172,8 @@ namespace ignite
 
                 int DsnConfigurationWindow::CreateSslSettingsGroup(int posX, int posY, int sizeX)
                 {
+                    using ssl::SslMode;
+
                     enum { LABEL_WIDTH = 120 };
 
                     int labelPosX = posX + INTERVAL;
@@ -181,13 +184,15 @@ namespace ignite
                     int rowPos = posY + 2 * INTERVAL;
 
                     const char* val = config.GetSslMode().c_str();
+                    SslMode::T sslMode = SslMode::FromString(val, SslMode::DISABLE);
+
                     sslModeLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT, "SSL Mode:", ChildId::SSL_MODE_LABEL);
                     sslModeComboBox = CreateComboBox(editPosX, rowPos, editSizeX, ROW_HEIGHT, "", ChildId::SSL_MODE_COMBO_BOX);
 
                     sslModeComboBox->AddString("disable");
                     sslModeComboBox->AddString("require");
 
-                    sslModeComboBox->SetSelection(0);
+                    sslModeComboBox->SetSelection(sslMode);
 
                     rowPos += INTERVAL + ROW_HEIGHT;
 
@@ -217,6 +222,10 @@ namespace ignite
 
                     sslSettingsGroupBox = CreateGroupBox(posX, posY, sizeX, rowPos - posY,
                         "SSL settings", ChildId::SSL_SETTINGS_GROUP_BOX);
+
+                    sslKeyFileEdit->SetEnabled(sslMode != SslMode::DISABLE);
+                    sslCertFileEdit->SetEnabled(sslMode != SslMode::DISABLE);
+                    sslCaFileEdit->SetEnabled(sslMode != SslMode::DISABLE);
 
                     return rowPos - posY;
                 }
@@ -365,6 +374,22 @@ namespace ignite
                                     ProtocolVersion version = ProtocolVersion::FromString(versionStr);
                                     lazyCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_1_5);
                                     skipReducerOnUpdateCheckBox->SetEnabled(version >= ProtocolVersion::VERSION_2_3_0);
+
+                                    break;
+                                }
+
+                                case ChildId::SSL_MODE_COMBO_BOX:
+                                {
+                                    using ssl::SslMode;
+
+                                    std::string sslModeStr;
+                                    sslModeComboBox->GetText(sslModeStr);
+
+                                    SslMode::T sslMode = SslMode::FromString(sslModeStr, SslMode::DISABLE);
+
+                                    sslKeyFileEdit->SetEnabled(sslMode != SslMode::DISABLE);
+                                    sslCertFileEdit->SetEnabled(sslMode != SslMode::DISABLE);
+                                    sslCaFileEdit->SetEnabled(sslMode != SslMode::DISABLE);
 
                                     break;
                                 }

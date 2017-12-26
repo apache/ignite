@@ -154,6 +154,9 @@
     <ClCompile Include="..\..\os\win\src\system\tcp_socket_client.cpp">
       <Filter>Code\system</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ssl\ssl_mode.cpp">
+      <Filter>Code\ssl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def">
@@ -295,6 +298,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\system\tcp_socket_client.h">
       <Filter>Code\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_mode.h">
+      <Filter>Code\ssl</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
