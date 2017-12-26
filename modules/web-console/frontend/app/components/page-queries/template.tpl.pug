@@ -364,12 +364,12 @@ mixin paragraph-query
         .row(ng-if='notebook' bs-affix style='margin-bottom: 20px;')
             +notebook-rename
 
-        -var example = `CREATE TABLE Person(ID INTEGER PRIMARY KEY, NAME VARCHAR(100));\nINSERT INTO Person(ID, NAME) VALUES (1, "Ed"), (2, "Ann"), (3, "Emma");\nSELECT * FROM Person;`;
+        -var example = `CREATE TABLE Person(ID INTEGER PRIMARY KEY, NAME VARCHAR(100));\nINSERT INTO Person(ID, NAME) VALUES (1, 'Ed'), (2, 'Ann'), (3, 'Emma');\nSELECT * FROM Person;`;
 
         ignite-information(
             data-title='With query notebook you can'
             style='margin-bottom: 30px'
-            ng-init=`example = '${example}'`
+            ng-init=`example = "${example}"`
         )
             ul
                 li Create any number of queries
