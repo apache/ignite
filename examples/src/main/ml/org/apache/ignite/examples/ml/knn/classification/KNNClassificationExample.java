@@ -19,6 +19,7 @@ package org.apache.ignite.examples.ml.knn.classification;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -50,7 +51,7 @@ public class KNNClassificationExample {
     private static final String SEPARATOR = "\t";
 
     /** Path to the Iris dataset. */
-    static final String KNN_IRIS_TXT = "datasets/knn/iris.txt";
+    private static final String KNN_IRIS_TXT = "datasets/knn/iris.txt";
 
     /**
      * Executes example.
@@ -68,7 +69,11 @@ public class KNNClassificationExample {
 
                 try {
                     // Prepare path to read
-                    Path path = Paths.get(KNNClassificationExample.class.getClassLoader().getResource(KNN_IRIS_TXT).toURI());
+                    URL url = KNNClassificationExample.class.getClassLoader().getResource(KNN_IRIS_TXT);
+                    if (url == null)
+                        throw new RuntimeException("Can't get URL for: " + KNN_IRIS_TXT);
+
+                    Path path = Paths.get(url.toURI());
 
                     // Read dataset from file
                     LabeledDataset dataset = LabeledDataset.loadTxt(path, SEPARATOR, true, false);
@@ -136,7 +141,7 @@ public class KNNClassificationExample {
                 }
                 catch (URISyntaxException | IOException e) {
                     e.printStackTrace();
-                    System.out.println("\n>>> Check resources");
+                    System.out.println("\n>>> Unexpected exception, check resources: " + e);
                 }
                 finally {
                     System.out.println("\n>>> kNN classification example completed.");
