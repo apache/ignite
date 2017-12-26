@@ -38,6 +38,7 @@ public final class GridTestUtils {
 
         factory.setKeyStoreFilePath(
             U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.path")).getAbsolutePath());
+
         factory.setKeyStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
 
         factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
