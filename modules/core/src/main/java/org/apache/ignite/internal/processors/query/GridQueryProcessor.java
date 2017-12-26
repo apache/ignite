@@ -515,7 +515,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 if (cacheDesc != null && F.eq(cacheDesc.deploymentId(), proposeMsg.deploymentId())) {
                     cacheDesc.schemaChangeFinish(msg);
 
-                    saveCacheConfiguration(cacheDesc);
+                    try {
+                        ctx.cache().saveCacheConfiguration(cacheDesc);
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Error while saving cache configuration on disk, cfg = "
+                            + cacheDesc.cacheConfiguration(), e);
+                    }
                 }
             }
 
@@ -2573,32 +2579,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     ", sndNodeId=" + msg.senderNodeId() + ']');
         }
     }
-    /**
-     * @param desc cache descriptor.
-     */
-    private void saveCacheConfiguration(DynamicCacheDescriptor desc) {
-        GridCacheSharedContext cctx = ctx.cache().context();
-
-        if (cctx.pageStore() != null && !cctx.kernalContext().clientNode() &&
-            CU.isPersistentCache(desc.cacheConfiguration(), cctx.gridConfig().getDataStorageConfiguration())) {
-            CacheConfiguration cfg = desc.cacheConfiguration();
-
-            try {
-                StoredCacheData data = new StoredCacheData(cfg);
-
-                if (desc.schema() != null)
-                    data.queryEntities(desc.schema().entities());
-
-                data.sql(desc.sql());
-
-                cctx.pageStore().storeCacheData(data, true);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Error while saving cache configuration on disk, cfg = " + cfg, e);
-            }
-        }
-    }
-
 
     /**
      * Unwind pending messages for particular operation.

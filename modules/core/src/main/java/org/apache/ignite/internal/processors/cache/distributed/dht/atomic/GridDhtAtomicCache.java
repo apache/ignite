@@ -1561,7 +1561,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     if (!success)
                         break;
-                    else if (!skipVals && ctx.config().isStatisticsEnabled())
+                    else if (!skipVals && ctx.statisticsEnabled())
                         metrics0().onRead(true);
                 }
 

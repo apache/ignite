@@ -292,7 +292,7 @@ public class GridDhtPartitionDemander {
             rebalanceFut = fut;
 
             for (final GridCacheContext cctx : grp.caches()) {
-                if (cctx.config().isStatisticsEnabled()) {
+                if (cctx.statisticsEnabled()) {
                     final CacheMetricsImpl metrics = cctx.cache().metrics0();
 
                     metrics.clearRebalanceCounters();
@@ -355,7 +355,7 @@ public class GridDhtPartitionDemander {
         }
         else if (delay > 0) {
             for (GridCacheContext cctx : grp.caches()) {
-                if (cctx.config().isStatisticsEnabled()) {
+                if (cctx.statisticsEnabled()) {
                     final CacheMetricsImpl metrics = cctx.cache().metrics0();
 
                     metrics.startRebalance(delay);
@@ -625,7 +625,7 @@ public class GridDhtPartitionDemander {
 
         if (grp.sharedGroup()) {
             for (GridCacheContext cctx : grp.caches()) {
-                if (cctx.config().isStatisticsEnabled()) {
+                if (cctx.statisticsEnabled()) {
                     long keysCnt = supply.keysForCache(cctx.cacheId());
 
                     if (keysCnt != -1)
@@ -639,7 +639,7 @@ public class GridDhtPartitionDemander {
         else {
             GridCacheContext cctx = grp.singleCacheContext();
 
-            if (cctx.config().isStatisticsEnabled()) {
+            if (cctx.statisticsEnabled()) {
                 if (supply.estimatedKeysCount() != -1)
                     cctx.cache().metrics0().onRebalancingKeysCountEstimateReceived(supply.estimatedKeysCount());
 
@@ -685,7 +685,7 @@ public class GridDhtPartitionDemander {
                                 if (grp.sharedGroup() && (cctx == null || cctx.cacheId() != entry.cacheId()))
                                     cctx = ctx.cacheContext(entry.cacheId());
 
-                                if(cctx != null && cctx.config().isStatisticsEnabled())
+                                if(cctx != null && cctx.statisticsEnabled())
                                     cctx.cache().metrics0().onRebalanceKeyReceived();
                             }
 
