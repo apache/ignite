@@ -71,27 +71,12 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
 
     /** */
     @State(Scope.Benchmark)
-    public static class IoSendReceiveBaselineState {
-        /** */
-        final IgniteMessaging messaging;
-
-        /** */
-        final Object msg;
-
-        /** */
-        final AtomicReference<CountDownLatch> latch = new AtomicReference<>();
-
+    public static class IoSendReceiveBaselineState extends IoState {
         /** */
         public IoSendReceiveBaselineState() {
-            messaging = snd.message(snd.cluster().forNodeId(receiver.cluster().localNode().id()));
+            super();
 
             msg = new Object();
-
-            receiver.message().localListen(null, new MessagingListenActor<Object>() {
-                @Override protected void receive(UUID nodeId, Object rcvMsg) throws Throwable {
-                    latch.get().countDown();
-                }
-            });
         }
     }
 
@@ -99,7 +84,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
      * Send and receive the least message without statistic.
      */
     @Benchmark
-    public final void sendAndReceiveBaseline(final IoSendReceiveBaselineState state) {
+    public final void sendAndReceiveBaseline(IoSendReceiveBaselineState state) {
         state.latch.set(new CountDownLatch(1));
 
         state.messaging.send(null, state.msg);
@@ -116,43 +101,21 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
      * Send and receive the least message.
      */
     @Benchmark
-    public final void sendAndReceiveStatBaseline(final IoSendReceiveBaselineState state, final EventCounters counters) {
-        final long b = snd.cluster().localNode().metrics().getSentBytesCount();
-
-        state.latch.set(new CountDownLatch(1));
-
-        state.messaging.send(null, state.msg);
-
-        try {
-            state.latch.get().await();
-        }
-        catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        counters.sentBytes += (snd.cluster().localNode().metrics().getSentBytesCount() - b);
-
-        counters.sentMessages++;
+    public final void sendAndReceiveStatBaseline(IoSendReceiveBaselineState state, EventCounters counters) {
+        sendAndReceive(state, counters);
     }
 
-    /** */
-    @State(Scope.Benchmark)
-    public static class IoSendReceiveSizeState {
+    public static class IoState {
         /** */
         final IgniteMessaging messaging;
 
         /** */
-        byte[] msg = null;
+        Object msg = null;
 
         /** */
         final AtomicReference<CountDownLatch> latch = new AtomicReference<>();
 
-        /** */
-        @Param({"1000", "10000", "100000", "1000000"})
-        int size = 1000;
-
-        /** */
-        public IoSendReceiveSizeState() {
+        public IoState() {
             messaging = snd.message(snd.cluster().forNodeId(receiver.cluster().localNode().id()));
 
             receiver.message().localListen(null, new MessagingListenActor<byte[]>() {
@@ -161,22 +124,33 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
                 }
             });
         }
+    }
+
+    /** */
+    @State(Scope.Benchmark)
+    public static class IoSendReceiveSizeState extends IoState {
+        /** */
+        @Param({"1000", "10000", "100000", "1000000"})
+        int size = 1000;
+
+        /** */
+        public IoSendReceiveSizeState() {
+            super();
+        }
 
         /** */
         @Setup(Level.Trial)
         public final void setup() {
-            msg = new byte[size];
+            byte[] bytes = new byte[size];
 
-            new Random(31415L).nextBytes(msg);
+            new Random(31415L).nextBytes(bytes);
+
+            msg = bytes;
         }
     }
 
-    /**
-     * Send and receive message with random data.
-     */
-    @Benchmark
-    public final void sendAndReceiveSize(final IoSendReceiveSizeState state, final EventCounters counters) {
-        final long b = snd.cluster().localNode().metrics().getSentBytesCount();
+    public final void sendAndReceive(IoState state, EventCounters counters) {
+        long b = snd.cluster().localNode().metrics().getSentBytesCount();
 
         state.latch.set(new CountDownLatch(1));
 
@@ -192,6 +166,14 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         counters.sentBytes += (snd.cluster().localNode().metrics().getSentBytesCount() - b);
 
         counters.sentMessages++;
+    }
+
+    /**
+     * Send and receive message with random data.
+     */
+    @Benchmark
+    public final void sendAndReceiveSize(final IoSendReceiveSizeState state, final EventCounters counters) {
+        sendAndReceive(state, counters);
     }
 
     /** */
@@ -207,29 +189,14 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
 
     /** */
     @State(Scope.Benchmark)
-    public static class IoSendReceiveSizeGoodState {
-        /** */
-        final IgniteMessaging messaging;
-
-        /** */
-        byte[] msg = null;
-
-        /** */
-        final AtomicReference<CountDownLatch> latch = new AtomicReference<>();
-
+    public static class IoSendReceiveSizeGoodState extends IoState {
         /** */
         @Param({"1000", "10000", "100000", "1000000"})
         int size = 1000;
 
         /** */
         public IoSendReceiveSizeGoodState() {
-            messaging = snd.message(snd.cluster().forNodeId(receiver.cluster().localNode().id()));
-
-            receiver.message().localListen(null, new MessagingListenActor<byte[]>() {
-                @Override protected void receive(UUID nodeId, byte[] rcvMsg) throws Throwable {
-                    latch.get().countDown();
-                }
-            });
+            super();
         }
 
         /** */
@@ -243,23 +210,8 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
      * Send and receive message with regular data.
      */
     @Benchmark
-    public final void sendAndReceiveSizeGood(final IoSendReceiveSizeGoodState state, final EventCounters counters) {
-        final long b = snd.cluster().localNode().metrics().getSentBytesCount();
-
-        state.latch.set(new CountDownLatch(1));
-
-        state.messaging.send(null, state.msg);
-
-        try {
-            state.latch.get().await();
-        }
-        catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        counters.sentBytes += (snd.cluster().localNode().metrics().getSentBytesCount() - b);
-
-        counters.sentMessages++;
+    public final void sendAndReceiveSizeGood(IoSendReceiveSizeGoodState state, EventCounters counters) {
+        sendAndReceive(state, counters);
     }
 
     /**
@@ -284,12 +236,12 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         // And remove it: sudo tc qdisc del dev lo root
         // Check your network: sudo tc -s qdisc ls dev lo
 
-        final String simpleClsName = GridTcpCommunicationSpiBenchmark.class.getSimpleName();
-        final boolean client = false;
-        final CacheAtomicityMode atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
-        final CacheWriteSynchronizationMode writeSyncMode = CacheWriteSynchronizationMode.FULL_SYNC;
+        String simpleClsName = GridTcpCommunicationSpiBenchmark.class.getSimpleName();
+        boolean client = false;
+        CacheAtomicityMode atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
+        CacheWriteSynchronizationMode writeSyncMode = CacheWriteSynchronizationMode.FULL_SYNC;
 
-        final Options opt = new OptionsBuilder()
+        Options opt = new OptionsBuilder()
             .include(simpleClsName)
             .timeUnit(TimeUnit.MICROSECONDS)
             .mode(Mode.AverageTime)
@@ -301,25 +253,25 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
                 JmhIdeBenchmarkRunner.createProperty(PROP_DATA_NODES, 1),
                 JmhIdeBenchmarkRunner.createProperty(PROP_CLIENT_MODE, client)).build();
 
-        final Collection<RunResult> results = new Runner(opt).run();
+        Collection<RunResult> results = new Runner(opt).run();
 
         System.out.println("-----------------------------------");
 
-        final EnumMap<Type, Result> baseline = new EnumMap<>(Type.class);
+        EnumMap<Type, Result> baseline = new EnumMap<>(Type.class);
 
-        final EnumMap<Type, Result> baselineStat = new EnumMap<>(Type.class);
+        EnumMap<Type, Result> baselineStat = new EnumMap<>(Type.class);
 
-        final TreeMap<Integer, EnumMap<Type, Result>> sizedResults = new TreeMap<>();
+        TreeMap<Integer, EnumMap<Type, Result>> sizedResults = new TreeMap<>();
 
-        final TreeMap<Integer, EnumMap<Type, Result>> sizedNiceResults = new TreeMap<>();
+        TreeMap<Integer, EnumMap<Type, Result>> sizedNiceResults = new TreeMap<>();
 
-        for (final RunResult result : results) {
-            for (final BenchmarkResult benchmarkResult : result.getBenchmarkResults()) {
-                final Type type = Type.getType(benchmarkResult.getParams().getParam("isCompress"),
+        for (RunResult result : results) {
+            for (BenchmarkResult benchmarkResult : result.getBenchmarkResults()) {
+                Type type = Type.getType(benchmarkResult.getParams().getParam("isCompress"),
                     benchmarkResult.getParams().getParam("isSsl"));
 
-                final double val = benchmarkResult.getPrimaryResult().getScore();
-                final double error = benchmarkResult.getPrimaryResult().getScoreError();
+                double val = benchmarkResult.getPrimaryResult().getScore();
+                double error = benchmarkResult.getPrimaryResult().getScoreError();
 
                 if (benchmarkResult.getPrimaryResult().getLabel().equals("sendAndReceiveBaseline")) {
                     baseline.put(type, new Result(val, error, 0));
@@ -327,7 +279,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
                     continue;
                 }
 
-                final double avgSize = benchmarkResult.getSecondaryResults().get("sentBytes").getScore() /
+                double avgSize = benchmarkResult.getSecondaryResults().get("sentBytes").getScore() /
                     benchmarkResult.getSecondaryResults().get("sentMessages").getScore();
 
                 switch (benchmarkResult.getPrimaryResult().getLabel()) {
@@ -336,7 +288,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
 
                         break;
                     case "sendAndReceiveSize": {
-                        final int size = Integer.valueOf(benchmarkResult.getParams().getParam("size"));
+                        int size = Integer.valueOf(benchmarkResult.getParams().getParam("size"));
 
                         EnumMap<Type, Result> map = sizedResults.get(size);
 
@@ -351,7 +303,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
                         break;
                     }
                     case "sendAndReceiveSizeGood": {
-                        final int size = Integer.valueOf(benchmarkResult.getParams().getParam("size"));
+                        int size = Integer.valueOf(benchmarkResult.getParams().getParam("size"));
 
                         EnumMap<Type, Result> map = sizedNiceResults.get(size);
 
@@ -369,7 +321,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
             }
         }
 
-        for (final Entry<Type, Result> entry : baseline.entrySet()) {
+        for (Entry<Type, Result> entry : baseline.entrySet()) {
             System.out.println("Latency:\n\tType = " + entry.getKey() + "\n\tTime = " +
                 entry.getValue().val + " ± " + entry.getValue().error +
                 "\n\tNet footprint = " + baselineStat.get(entry.getKey()).avgSize);
@@ -380,22 +332,22 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
     }
 
     /** */
-    private static void printThroughput(final Map<Integer, EnumMap<Type, Result>> results, final EnumMap<Type, Result> baselineStat,
-        final EnumMap<Type, Result> baseline, final String name) {
+    private static void printThroughput(Map<Integer, EnumMap<Type, Result>> results, EnumMap<Type, Result> baselineStat,
+        EnumMap<Type, Result> baseline, String name) {
 
-        final DecimalFormat df = new DecimalFormat("#0.00");
+        DecimalFormat df = new DecimalFormat("#0.00");
 
-        for (final Entry<Integer, EnumMap<Type, Result>> entry : results.entrySet()) {
-            final int size = entry.getKey();
+        for (Entry<Integer, EnumMap<Type, Result>> entry : results.entrySet()) {
+            int size = entry.getKey();
 
-            for (final Entry<Type, Result> resultEntry : entry.getValue().entrySet()) {
-                final double statTime = baselineStat.get(resultEntry.getKey()).val -
+            for (Entry<Type, Result> resultEntry : entry.getValue().entrySet()) {
+                double statTime = baselineStat.get(resultEntry.getKey()).val -
                     baseline.get(resultEntry.getKey()).val;
 
-                final double baselineAvgSize = baselineStat.get(resultEntry.getKey()).avgSize;
-                final double val = resultEntry.getValue().val - statTime;
-                final double error = resultEntry.getValue().error;
-                final double avgSize = resultEntry.getValue().avgSize;
+                double baselineAvgSize = baselineStat.get(resultEntry.getKey()).avgSize;
+                double val = resultEntry.getValue().val - statTime;
+                double error = resultEntry.getValue().error;
+                double avgSize = resultEntry.getValue().avgSize;
 
                 System.out.println("Throughput " + name + ". Type = " + resultEntry.getKey() + ". Message size = " + size +
                     "\n\tMessage/s = " + df.format(1.0E6 / val) + " ∈ [" +
@@ -421,9 +373,9 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         CompressionSsl;
 
         /** */
-        private static Type getType(final String comp0, final String ssl0) {
-            final boolean comp = Boolean.valueOf(comp0);
-            final boolean ssl = Boolean.valueOf(ssl0);
+        private static Type getType(String comp0, String ssl0) {
+            boolean comp = Boolean.valueOf(comp0);
+            boolean ssl = Boolean.valueOf(ssl0);
 
             if (comp && ssl)
                 return CompressionSsl;
@@ -448,7 +400,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         private final double avgSize;
 
         /** */
-        private Result(final double val, final double error, final double avgSize) {
+        private Result(double val, double error, double avgSize) {
             this.val = val;
             this.error = error;
             this.avgSize = avgSize;

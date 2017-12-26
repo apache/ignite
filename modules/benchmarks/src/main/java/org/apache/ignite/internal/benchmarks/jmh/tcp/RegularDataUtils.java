@@ -8,7 +8,7 @@ final class RegularDataUtils {
     /**
      * Poisson distribution.
      */
-    private static double poisson(final int k, final double a) {
+    private static double poisson(int k, double a) {
         double x = StrictMath.exp(-a);
 
         for (int i = 1; i < k; i++)
@@ -20,12 +20,12 @@ final class RegularDataUtils {
     /**
      * Distribution for Ziph's law.
      */
-    private static double ziph(final int k) {
+    private static double ziph(int k) {
         return 1.0 / k;
     }
 
     /** Convert weights to distribution. */
-    private static void normalize(final double... x) {
+    private static void normalize(double... x) {
         if (x.length < 1)
             return;
 
@@ -41,17 +41,17 @@ final class RegularDataUtils {
     }
 
     /** Return lengths of words. */
-    private static int[] getLengths(final int n) {
-        final double[] probabilities = new double[n];
+    private static int[] getLengths(int n) {
+        double[] probabilities = new double[n];
 
         for (int i = 0; i < n; i++)
             probabilities[i] = poisson(i, StrictMath.log(n));
 
         normalize(probabilities);
 
-        final int[] lengths = new int[n];
+        int[] lengths = new int[n];
 
-        final Random random = new Random(31L);
+        Random random = new Random(31L);
 
         for (int i = 0; i < n; i++)
             lengths[i] = 1 + getIndex(probabilities, random.nextDouble());
@@ -60,7 +60,7 @@ final class RegularDataUtils {
     }
 
     /** Help to get weighted random index. */
-    private static int getIndex(final double[] ps, final double x) {
+    private static int getIndex(double[] ps, double x) {
         int i = 0;
 
         while (x > ps[i])
@@ -70,22 +70,22 @@ final class RegularDataUtils {
     }
 
     /** */
-    private static Language generateLanguage(final int n) {
-        final int[] lengths = getLengths(n);
+    private static Language generateLanguage(int n) {
+        int[] lengths = getLengths(n);
 
-        final double[] probabilities = new double[n];
+        double[] probabilities = new double[n];
 
         for (int i = 0; i < n; i++)
             probabilities[i] = ziph(lengths[i]);
 
         normalize(probabilities);
 
-        final byte[][] words = new byte[n][];
+        byte[][] words = new byte[n][];
 
-        final Random random = new Random(314L);
+        Random random = new Random(314L);
 
         for (int i = 0; i < n; i++) {
-            final byte[] word = new byte[lengths[i]];
+            byte[] word = new byte[lengths[i]];
 
             random.nextBytes(word);
 
@@ -107,7 +107,7 @@ final class RegularDataUtils {
         private final byte[][] words;
 
         /** */
-        private Language(final int[] lengths, final double[] probabilities, final byte[][] words) {
+        private Language(int[] lengths, double[] probabilities, byte[][] words) {
             this.lengths = lengths;
             this.probabilities = probabilities;
             this.words = words;
@@ -115,15 +115,15 @@ final class RegularDataUtils {
     }
 
     /** Return regular data with statistics close to native texts. */
-    static byte[] generateRegularData(final int size, final int n) {
-        final ByteBuffer buf = ByteBuffer.allocate(size);
+    static byte[] generateRegularData(int size, int n) {
+        ByteBuffer buf = ByteBuffer.allocate(size);
 
-        final Language language = generateLanguage(n);
+        Language language = generateLanguage(n);
 
-        final Random random = new Random(3L);
+        Random random = new Random(3L);
 
         while (buf.hasRemaining()) {
-            final byte[] word = language.words[getIndex(language.probabilities, random.nextDouble())];
+            byte[] word = language.words[getIndex(language.probabilities, random.nextDouble())];
 
             buf.put(word, 0, (buf.remaining() < word.length) ? buf.remaining() : word.length);
         }
