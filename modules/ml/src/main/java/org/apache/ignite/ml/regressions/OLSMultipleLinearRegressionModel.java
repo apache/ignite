@@ -47,7 +47,7 @@ public class OLSMultipleLinearRegressionModel implements Model<Vector, Vector>,
     }
 
     /** {@inheritDoc} */
-    @Override public Vector predict(Vector val) {
+    @Override public Vector apply(Vector val) {
         return xMatrix.times(solver.solve(val));
     }
 

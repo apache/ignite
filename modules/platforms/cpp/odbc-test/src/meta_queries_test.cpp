@@ -164,6 +164,29 @@ struct MetaQueriesTestSuiteFixture
     }
 
     /**
+     * Check string column.
+     *
+     * @param stmt Statement.
+     * @param colId Column ID to check.
+     * @param value Expected value.
+     */
+    void CheckStringColumn(SQLHSTMT stmt, int colId, const std::string& value)
+    {
+        char buf[1024];
+        SQLLEN bufLen = sizeof(buf);
+
+        SQLRETURN ret = SQLGetData(stmt, colId, SQL_C_CHAR, buf, sizeof(buf), &bufLen);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        if (bufLen <= 0)
+            BOOST_CHECK(value.empty());
+        else
+            BOOST_CHECK_EQUAL(std::string(buf, static_cast<size_t>(bufLen)), value);
+    }
+
+    /**
      * Constructor.
      */
     MetaQueriesTestSuiteFixture() :
@@ -348,6 +371,82 @@ BOOST_AUTO_TEST_CASE(TestGetInfoScrollOptions)
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_DBC, dbc));
 
     BOOST_CHECK_NE(val, 0);
+}
+
+BOOST_AUTO_TEST_CASE(TestDdlTablesMeta)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=PUBLIC");
+
+    SQLCHAR createTable[] = "create table TestTable(id int primary key, testColumn varchar)";
+    SQLRETURN ret = SQLExecDirect(stmt, createTable, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    SQLCHAR empty[] = "";
+    SQLCHAR table[] = "TestTable";
+
+    ret = SQLTables(stmt, empty, SQL_NTS, empty, SQL_NTS, table, SQL_NTS, empty, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFetch(stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    CheckStringColumn(stmt, 1, "");
+    CheckStringColumn(stmt, 2, "\"PUBLIC\"");
+    CheckStringColumn(stmt, 3, "TESTTABLE");
+    CheckStringColumn(stmt, 4, "TABLE");
+
+    ret = SQLFetch(stmt);
+
+    BOOST_REQUIRE_EQUAL(ret, SQL_NO_DATA);
+}
+
+BOOST_AUTO_TEST_CASE(TestDdlColumnsMeta)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=PUBLIC");
+
+    SQLCHAR createTable[] = "create table TestTable(id int primary key, testColumn varchar)";
+    SQLRETURN ret = SQLExecDirect(stmt, createTable, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    SQLCHAR empty[] = "";
+    SQLCHAR table[] = "TestTable";
+
+    ret = SQLColumns(stmt, empty, SQL_NTS, empty, SQL_NTS, table, SQL_NTS, empty, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFetch(stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    CheckStringColumn(stmt, 1, "");
+    CheckStringColumn(stmt, 2, "\"PUBLIC\"");
+    CheckStringColumn(stmt, 3, "TESTTABLE");
+    CheckStringColumn(stmt, 4, "ID");
+
+    ret = SQLFetch(stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    CheckStringColumn(stmt, 1, "");
+    CheckStringColumn(stmt, 2, "\"PUBLIC\"");
+    CheckStringColumn(stmt, 3, "TESTTABLE");
+    CheckStringColumn(stmt, 4, "TESTCOLUMN");
+
+    ret = SQLFetch(stmt);
+
+    BOOST_REQUIRE_EQUAL(ret, SQL_NO_DATA);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Common
     /// <summary>
     /// IgniteHome resolver.
     /// </summary>
-    internal static class IgniteHome
+    public static class IgniteHome
     {
         /** Environment variable: IGNITE_HOME. */
         internal const string EnvIgniteHome = "IGNITE_HOME";

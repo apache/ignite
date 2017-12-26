@@ -17,6 +17,8 @@
 
 package org.apache.ignite.cache;
 
+import javax.cache.processor.EntryProcessor;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,16 +46,47 @@ public enum CacheAtomicityMode {
      * In addition to transactions and locking, one of the main differences in {@code ATOMIC} mode
      * is that bulk writes, such as {@code putAll(...)}, {@code removeAll(...)}, and {@code transformAll(...)}
      * methods, become simple batch operations which can partially fail. In case of partial
-     * failure {@link org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException} will be thrown
+     * failure {@link CachePartialUpdateException} will be thrown
      * which will contain a list of keys for which the update failed. It is recommended that bulk writes are used
      * whenever multiple keys need to be inserted or updated in cache, as they reduce number of network trips and
      * provide better performance.
      * <p>
-     * Note that even without locking and transactions, {@code ATOMIC} mode still provides
-     * full consistency guarantees across all cache nodes.
+     * Note that even without locking and transactions, {@code ATOMIC} mode makes best effort to provide
+     * full consistency guarantees across all cache nodes. However, in following scenarios (but not limited to)
+     * full consistency is not possible and {@link #TRANSACTIONAL} mode should be used or custom defined recovery
+     * logic should be applied to restore data consistency:
+     * <ul>
+     *     <li>
+     *         Node that originated update has left together with at least one primary node
+     *         for this update operation, and left primary node has not finished update propagation
+     *         to all nodes holding backup partitions. This way backup copies may differ. And also if
+     *         persistent store is configured it may come to an inconsistent state as well.
+     *     </li>
+     *     <li>
+     *         If update originating node is alive then update is retried by default and for operations
+     *         {@code put(...)}, {@code putAll(...)}, {@code remove(K, V)} and {@code removeAll(Set<K>)}
+     *         all copies of partitions will come to a consistent state.
+     *     </li>
+     *     <li>
+     *         If {@link EntryProcessor} is used and processor is not idempotent then failure of primary node
+     *         may result in applying the same processor on next chosen primary which may have already been
+     *         updated within current operation. If processor is not idempotent it is recommended to disable
+     *         automatic retries and manually restore consistency between key-value copies in case of update failure.
+     *     </li>
+     *     <li>
+     *         For operations {@code putIfAbsent(K, V)}, {@code replace(K, V, V)} and {@code remove(K, V)} return
+     *         value on primary node crash may be incorrect because of the automatic retries. It is recommended
+     *         to disable retries with {@link IgniteCache#withNoRetries()} and manually restore primary-backup
+     *         consistency in case of update failure.
+     *     </li>
+     * </ul>
      * <p>
      * Also note that all data modifications in {@code ATOMIC} mode are guaranteed to be atomic
      * and consistent with writes to the underlying persistent store, if one is configured.
+     * <p>
+     * Note! Consistency behavior of atomic cache will be improved in future releases.
+     *
+     * @see IgniteCache#withNoRetries()
      */
     ATOMIC;
 
