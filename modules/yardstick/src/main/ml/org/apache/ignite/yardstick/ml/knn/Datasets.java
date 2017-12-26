@@ -440,12 +440,12 @@ class Datasets {
     private static final List<Vector> vectorsClearedMachines = new ArrayList<>();
 
     static {
-        Arrays.stream(dataIris).forEachOrdered(e -> {
+        Arrays.stream(dataIris).forEach(e -> {
             labelsIris.add(e[0]);
             vectorsIris.add(new DenseLocalOnHeapVector(new double[] {e[1], e[2], e[3], e[4]}));
         });
 
-        Arrays.stream(dataClearedMachines).forEachOrdered(e -> {
+        Arrays.stream(dataClearedMachines).forEach(e -> {
             labelsClearedMachines.add(e[0]);
             vectorsClearedMachines.add(new DenseLocalOnHeapVector(new double[] {e[1], e[2], e[3], e[4]}));
         });
