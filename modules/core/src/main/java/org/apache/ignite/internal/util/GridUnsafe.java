@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.util;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -29,7 +31,8 @@ import org.apache.ignite.IgniteSystemProperties;
 import sun.misc.JavaNioAccess;
 import sun.misc.SharedSecrets;
 import sun.misc.Unsafe;
-import sun.nio.ch.DirectBuffer;
+
+import static org.apache.ignite.internal.util.IgniteUtils.majorJavaVersion;
 
 /**
  * <p>Wrapper for {@link sun.misc.Unsafe} class.</p>
@@ -102,6 +105,12 @@ public abstract class GridUnsafe {
     /** {@link java.nio.Buffer#address} field offset. */
     private static final long DIRECT_BUF_ADDR_OFF = bufferAddressOffset();
 
+    /** Cleaner code for direct {@code java.nio.ByteBuffer}. */
+    private static final DirectBufferCleaner DIRECT_BUF_CLEANER =
+        majorJavaVersion(System.getProperty("java.specification.version")) < 9
+            ? new ReflectiveDirectBufferCleaner()
+            : new UnsafeDirectBufferCleaner();
+
     /**
      * Ensure singleton.
      */
@@ -117,7 +126,7 @@ public abstract class GridUnsafe {
     public static ByteBuffer wrapPointer(long ptr, int len) {
         ByteBuffer buf = nioAccess.newDirectByteBuffer(ptr, len, null);
 
-        assert buf instanceof DirectBuffer;
+        assert buf.isDirect();
 
         buf.order(NATIVE_BYTE_ORDER);
 
@@ -1341,6 +1350,32 @@ public abstract class GridUnsafe {
      */
     public static long bufferAddress(ByteBuffer buf) {
         return UNSAFE.getLong(buf, DIRECT_BUF_ADDR_OFF);
+    }
+
+    /**
+     * Invokes some method on {@code sun.misc.Unsafe} instance.
+     *
+     * @param mtd Method.
+     * @param args Arguments.
+     */
+    public static Object invoke(Method mtd, Object... args) {
+        try {
+            return mtd.invoke(UNSAFE, args);
+        }
+        catch (IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException("Unsafe invocation failed [cls=" + UNSAFE.getClass() + ", mtd=" + mtd + ']', e);
+        }
+    }
+
+    /**
+     * Cleans direct {@code java.nio.ByteBuffer}
+     *
+     * @param buf Direct buffer.
+     */
+    public static void cleanDirectBuffer(ByteBuffer buf) {
+        assert buf.isDirect();
+
+        DIRECT_BUF_CLEANER.clean(buf);
     }
 
     /**
