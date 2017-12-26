@@ -3085,6 +3085,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         int connectAttempts = 1;
 
         for (InetSocketAddress addr : addrs) {
+            if (addr.getAddress().isLoopbackAddress() && addr.getPort() == boundTcpPort) {
+                if (log.isDebugEnabled())
+                    log.debug("Skipping local address [addr=" + addr +
+                        ", locAddrs=" + node.attribute(createSpiAttributeName(ATTR_ADDRS)) +
+                        ", node=" + node + ']');
+                continue;
+            }
+
             long connTimeout0 = connTimeout;
 
             int attempt = 1;
@@ -3095,14 +3103,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             int lastWaitingTimeout = 1;
 
             while (!conn) { // Reconnection on handshake timeout.
-                if (addr.getAddress().isLoopbackAddress() && addr.getPort() == boundTcpPort) {
-                    if (log.isDebugEnabled())
-                        log.debug("Skipping local address [addr=" + addr +
-                            ", locAddrs=" + node.attribute(createSpiAttributeName(ATTR_ADDRS)) +
-                            ", node=" + node + ']');
-                    continue;
-                }
-
                 try {
                     SocketChannel ch = SocketChannel.open();
 
