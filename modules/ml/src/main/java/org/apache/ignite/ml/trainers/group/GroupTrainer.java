@@ -23,6 +23,9 @@ import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.Trainer;
 import org.apache.ignite.ml.trainers.group.chain.ComputationsChain;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
@@ -47,7 +50,7 @@ import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
  * @param <T> Type of input to this trainer.
  * @param <G> Type of distributed context which is needed for forming final result which is send from each node to trainer for final model creation.
  */
-public abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends Serializable, R extends Serializable, I extends Serializable, M extends Model, T extends GroupTrainerInput<K>, G> implements Trainer<M, T> {
+abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends Serializable, R extends Serializable, I extends Serializable, M extends Model, T extends GroupTrainerInput<K>, G> implements Trainer<M, T> {
     /**
      * Cache on which training is performed. For example it can be cache of neural networks.
      */
@@ -80,10 +83,10 @@ public abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends 
         ComputationsChain<LC, K, V, T, T> chain = (i, c) -> i;
 
         M res = chain.
-            thenDistributedForKeys(this::initDistributed, (t, lc) -> data.initialKeys(trainingUUID), this::reduceDistributedInitData).
+            thenDistributedForKeys(this::initDistributed, (t, lc) -> data.initialKeys(trainingUUID), reduceDistributedInitData()).
             thenLocally(this::locallyProcessInitData).
             thenWhile(this::shouldContinue, trainingLoopStep()).
-            thenDistributedForEntries(this::extractContextForFinalResultCreation, this::getFinalResults, this::finalResultKeys, this::reduceFinalResults, defaultFinalResult()).
+            thenDistributedForEntries(this::extractContextForFinalResultCreation, finalResultsExtractor(), this::finalResultKeys, finalResultsReducer(), defaultFinalResult()).
             thenLocally(this::mapFinalResult).
             process(data, ctx);
 
@@ -111,13 +114,11 @@ public abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends 
     protected abstract ResultAndUpdates<IN> initDistributed(T data, GroupTrainerCacheKey<K> key);
 
     /**
-     * Reduces data from initialization of each key specified in initial key set.
+     * Get reducer to reduce data collected from initialization of each key specified in initial key set.
      *
-     * @param data1 First operand of reducer.
-     * @param data2 Second operand of reducer.
-     * @return Result of reducing.
+     * @return Reducer to reduce data collected from initialization of each key specified in initial key set.
      */
-    protected abstract IN reduceDistributedInitData(IN data1, IN data2);
+    protected abstract IgniteBinaryOperator<IN> reduceDistributedInitData();
 
     /**
      * Transform data from initialization step into data which is fed as input to first step of training loop.
@@ -146,14 +147,14 @@ public abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends 
 
     /**
      * Extract context for final result creation. Each key from the final keys set will be processed with
-     * getFinalResults. While entry data (i.e. key and value) for each key varies, some data can be common for all
+     * finalResultsExtractor. While entry data (i.e. key and value) for each key varies, some data can be common for all
      * processed entries. This data is called context.
      *
      * @param data Data returned from last training loop step.
      * @param locCtx Local context.
      * @return Context.
      */
-    protected abstract G extractContextForFinalResultCreation(I data, LC locCtx);
+    protected abstract IgniteSupplier<G> extractContextForFinalResultCreation(I data, LC locCtx);
 
     /**
      * Keys for final result creation.
@@ -162,31 +163,28 @@ public abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends 
      * @param locCtx Local context.
      * @return Stream of keys for final result creation.
      */
-    protected abstract Stream<GroupTrainerCacheKey<K>> finalResultKeys(I data, LC locCtx);
+    protected abstract IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> finalResultKeys(I data, LC locCtx);
 
     /**
-     * Get final result from each key specified in finalResultKeys.
+     * Get function for extracting final result from each key specified in finalResultKeys.
      *
-     * @param entryAndCtx Cache entry for given key and context returned by extractContextForFinalResultCreation.
-     * @return ResultAndUpdates object.
+     * @return Function for extracting final result from each key specified in finalResultKeys.
      */
-    protected abstract ResultAndUpdates<R> getFinalResults(EntryAndContext<K, V, G> entryAndCtx);
+    protected abstract IgniteFunction<EntryAndContext<K, V, G>, ResultAndUpdates<R>> finalResultsExtractor();
 
     /**
-     * Default final result. Should be identity for reduceFinalResults.
+     * Default final result. Should be identity for finalResultsReducer.
      *
      * @return Default final result.
      */
     protected abstract R defaultFinalResult();
 
     /**
-     * Function for reducing final results.
+     * Get function for reducing final results.
      *
-     * @param res1 First reducer argument.
-     * @param res2 Second reducer argument.
-     * @return Result of reducing.
+     * @return Function for reducing final results.
      */
-    protected abstract R reduceFinalResults(R res1, R res2);
+    protected abstract IgniteBinaryOperator<R> finalResultsReducer();
 
     /**
      * Map final result to model which is returned by trainer.

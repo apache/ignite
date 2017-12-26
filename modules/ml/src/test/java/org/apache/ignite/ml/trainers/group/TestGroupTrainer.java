@@ -23,6 +23,10 @@ import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.math.functions.Functions;
+import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.chain.ComputationsChain;
 import org.apache.ignite.ml.trainers.group.chain.Chains;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
@@ -51,8 +55,8 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
         return res;
     }
 
-    @Override protected Integer reduceDistributedInitData(Integer data1, Integer data2) {
-        return data1 + data2;
+    @Override protected IgniteBinaryOperator<Integer> reduceDistributedInitData() {
+        return (a, b) -> a + b;
     }
 
     @Override protected Double locallyProcessInitData(Integer data, TestGroupTrainerLocalContext locCtx) {
@@ -76,27 +80,33 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
         return locCtx.cnt() < locCtx.maxCnt();
     }
 
-    @Override protected Void extractContextForFinalResultCreation(Double data, TestGroupTrainerLocalContext locCtx) {
+    @Override protected IgniteSupplier<Void> extractContextForFinalResultCreation(Double data, TestGroupTrainerLocalContext locCtx) {
         // No context is needed.
-        return null;
+        return () -> null;
     }
 
     @Override
-    protected Stream<GroupTrainerCacheKey<Double>> finalResultKeys(Double data, TestGroupTrainerLocalContext locCtx) {
-        return TestGroupTrainingCache.allKeys(locCtx.limit(), locCtx.eachNumberCnt(), locCtx.trainingUUID());
+    protected IgniteSupplier<Stream<GroupTrainerCacheKey<Double>>> finalResultKeys(Double data, TestGroupTrainerLocalContext locCtx) {
+        int limit = locCtx.limit();
+        int cnt = locCtx.eachNumberCnt();
+        UUID uuid = locCtx.trainingUUID();
+
+        return () -> TestGroupTrainingCache.allKeys(limit, cnt, uuid);
     }
 
-    @Override protected ResultAndUpdates<Integer> getFinalResults(EntryAndContext<Double, Integer, Void> entryAndCtx) {
-        Integer val = entryAndCtx.entry().getValue();
-        return ResultAndUpdates.of(val % 2 == 0 ? val : 0);
+    @Override protected IgniteFunction<EntryAndContext<Double, Integer, Void>, ResultAndUpdates<Integer>> finalResultsExtractor() {
+        return entryAndCtx -> {
+            Integer val = entryAndCtx.entry().getValue();
+            return ResultAndUpdates.of(val % 2 == 0 ? val : 0);
+        };
     }
 
     @Override protected Integer defaultFinalResult() {
         return 0;
     }
 
-    @Override protected Integer reduceFinalResults(Integer res1, Integer res2) {
-        return res1 + res2;
+    @Override protected IgniteBinaryOperator<Integer> finalResultsReducer() {
+        return (a, b) -> a + b;
     }
 
     @Override protected ConstModel<Integer> mapFinalResult(Integer res, TestGroupTrainerLocalContext locCtx) {

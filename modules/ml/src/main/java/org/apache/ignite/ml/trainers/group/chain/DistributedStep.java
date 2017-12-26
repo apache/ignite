@@ -35,13 +35,13 @@ import org.apache.ignite.ml.trainers.group.ResultAndUpdates;
  */
 public interface DistributedStep<L, K, V, C, I, O extends Serializable> {
     /**
-     * Extracts context used by worker.
+     * Create supplier of context used by worker.
      *
      * @param input Input.
      * @param locCtx Local context.
      * @return Context used by worker.
      */
-    C extractRemoteContext(I input, L locCtx);
+    IgniteSupplier<C> remoteContextSupplier(I input, L locCtx);
 
     /**
      * Function applied to each cache entry specified by keys.
@@ -52,13 +52,13 @@ public interface DistributedStep<L, K, V, C, I, O extends Serializable> {
     ResultAndUpdates<O> worker(EntryAndContext<K, V, C> entryAndCtx);
 
     /**
-     * Get of keys for worker.
+     * Get of keys supplier for worker.
      *
      * @param input Input to this step.
      * @param locCtx Local context.
      * @return Keys for worker.
      */
-    Stream<GroupTrainerCacheKey<K>> keys(I input, L locCtx);
+    IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keys(I input, L locCtx);
 
     /**
      * Function used to reduce results returned by worker.

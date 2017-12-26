@@ -145,11 +145,11 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
 
         cache.putAll(m);
 
-        IgniteBiFunction<Integer, TestLocalContext, Stream<GroupTrainerCacheKey<Double>>> function = (o, l) -> keys;
+        IgniteBiFunction<Integer, TestLocalContext, IgniteSupplier<Stream<GroupTrainerCacheKey<Double>>>> function = (o, l) -> () -> keys;
         IgniteBinaryOperator<Integer> max = Integer::max;
 
         Integer res = chain.
-            thenDistributedForEntries((integer, context) -> null, this::readAndIncrement, function, max, Integer.MIN_VALUE).
+            thenDistributedForEntries((integer, context) -> () -> null, this::readAndIncrement, function, max, Integer.MIN_VALUE).
             process(init, new GroupTrainingContext<>(locCtx, cache, ignite));
 
         int localMax = m.values().stream().max(Comparator.comparingInt(i -> i)).orElse(Integer.MIN_VALUE);

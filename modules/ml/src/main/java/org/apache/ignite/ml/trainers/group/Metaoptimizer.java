@@ -17,6 +17,9 @@
 
 package org.apache.ignite.ml.trainers.group;
 
+import java.util.function.Function;
+import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
+
 /**
  * Class encapsulating logic of group training in {@link MetaoptimizerGroupTrainer}, which is adapter of
  * {@link GroupTrainer}.
@@ -32,11 +35,13 @@ package org.apache.ignite.ml.trainers.group;
 public interface Metaoptimizer<IR, LC, X, Y, I, D, O> {
     D initialDistributedPostProcess(IR res);
 
-    D initialReducer(D arg1, D arg2);
+    IgniteBinaryOperator<D> initialReducer();
 
     I locallyProcessInitData(D data, LC locCtx);
 
-    X distributedPreprocess(X dataToProcess);
+    default X distributedPreprocess(X dataToProc) {
+        return dataToProc;
+    }
 
     O distributedPostprocess(Y procOut);
 

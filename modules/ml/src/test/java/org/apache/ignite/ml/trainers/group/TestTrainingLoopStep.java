@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.trainers.group;
 
+import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
@@ -24,9 +25,9 @@ import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 import org.apache.ignite.ml.trainers.group.chain.DistributedStep;
 
 public class TestTrainingLoopStep implements DistributedStep<TestGroupTrainerLocalContext, Double, Integer, Void, Double, Double> {
-    @Override public Void extractRemoteContext(Double input, TestGroupTrainerLocalContext locCtx) {
+    @Override public IgniteSupplier<Void> remoteContextSupplier(Double input, TestGroupTrainerLocalContext locCtx) {
         // No context is needed.
-        return null;
+        return () -> null;
     }
 
     @Override public ResultAndUpdates<Double> worker(EntryAndContext<Double, Integer, Void> entryAndContext) {
@@ -37,9 +38,14 @@ public class TestTrainingLoopStep implements DistributedStep<TestGroupTrainerLoc
         return res;
     }
 
-    @Override public Stream<GroupTrainerCacheKey<Double>> keys(Double input,
+    @Override public IgniteSupplier<Stream<GroupTrainerCacheKey<Double>>> keys(Double input,
         TestGroupTrainerLocalContext locCtx) {
-        return TestGroupTrainingCache.allKeys(locCtx.limit(), locCtx.eachNumberCnt(), locCtx.trainingUUID());
+        // Copying here because otherwise locCtx will be serialized with supplier returned in result.
+        int limit = locCtx.limit();
+        int cnt = locCtx.eachNumberCnt();
+        UUID uuid = locCtx.trainingUUID();
+
+        return () -> TestGroupTrainingCache.allKeys(limit, cnt, uuid);
     }
 
     @Override public Double identity() {

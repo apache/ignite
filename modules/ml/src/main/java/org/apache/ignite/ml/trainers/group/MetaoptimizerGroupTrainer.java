@@ -22,6 +22,8 @@ import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.chain.ComputationsChain;
 import org.apache.ignite.ml.trainers.group.chain.Chains;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
@@ -34,34 +36,39 @@ G, O extends Serializable, IR, X, Y> extends
     GroupTrainer<LC, K, V, D, R, I, M, T, G> {
     private Metaoptimizer<IR, LC, X, Y, I, D, O> metaoptimizer;
 
-    public MetaoptimizerGroupTrainer(
+    public MetaoptimizerGroupTrainer(Metaoptimizer<IR, LC, X, Y, I, D, O> metaoptimizer,
         IgniteCache<GroupTrainerCacheKey<K>, V> cache,
         Ignite ignite) {
         super(cache, ignite);
+        this.metaoptimizer = metaoptimizer;
     }
 
-    protected abstract X extractDataToProcessInTrainingLoop(EntryAndContext<K, V, G> entryAndContext);
+    abstract X extractDataToProcessInTrainingLoop(EntryAndContext<K, V, G> entryAndCtx);
 
-    protected abstract Stream<GroupTrainerCacheKey<K>> keysToProcessInTrainingLoop(LC locCtx);
+    protected abstract IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keysToProcessInTrainingLoop(LC locCtx);
 
-    protected abstract G extractRemoteContext(I input, LC ctx);
+    protected abstract IgniteSupplier<G> extractRemoteContext(I input, LC ctx);
 
     protected abstract ResultAndUpdates<Y> processData(X data);
 
+    /** {@inheritDoc} */
     @Override protected ComputationsChain<LC, K, V, I, I> trainingLoopStep() {
         ComputationsChain<LC, K, V, I, O> chain = Chains.create(new MetaoptimizerDistributedStep<>(metaoptimizer, this));
         return chain.thenLocally(metaoptimizer::localProcessor);
     }
 
+    /** {@inheritDoc} */
     @Override protected I locallyProcessInitData(D data, LC locCtx) {
         return metaoptimizer.locallyProcessInitData(data, locCtx);
     }
 
+    /** {@inheritDoc} */
     @Override protected boolean shouldContinue(I data, LC locCtx) {
         return metaoptimizer.shouldContinue(data, locCtx);
     }
 
-    @Override protected D reduceDistributedInitData(D data1, D data2) {
-        return metaoptimizer.initialReducer(data1, data2);
+    /** {@inheritDoc} */
+    @Override protected IgniteBinaryOperator<D> reduceDistributedInitData() {
+        return metaoptimizer.initialReducer();
     }
 }

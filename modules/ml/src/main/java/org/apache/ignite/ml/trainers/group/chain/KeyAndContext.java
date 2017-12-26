@@ -40,11 +40,11 @@ public class KeyAndContext<K, C> {
      * Construct instance of this class.
      *
      * @param key Cache key.
-     * @param context Remote context.
+     * @param ctx Remote context.
      */
-    public KeyAndContext(GroupTrainerCacheKey<K> key, C context) {
+    public KeyAndContext(GroupTrainerCacheKey<K> key, C ctx) {
         this.key = key;
-        this.context = context;
+        this.context = ctx;
     }
 
     /**

@@ -19,35 +19,55 @@ package org.apache.ignite.ml.trainers.group;
 
 import java.io.Serializable;
 import java.util.stream.Stream;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.chain.DistributedStep;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 
+/**
+ * Distributed step
+ *
+ * @param <L>
+ * @param <K>
+ * @param <V>
+ * @param <G>
+ * @param <I>
+ * @param <O>
+ * @param <IR>
+ * @param <X>
+ * @param <Y>
+ * @param <D>
+ */
 class MetaoptimizerDistributedStep<L extends HasTrainingUUID, K, V, G, I extends Serializable, O extends Serializable, IR, X, Y, D extends Serializable> implements DistributedStep<L,K,V,G,I,O> {
     private final Metaoptimizer<IR, L, X, Y, I, D, O> metaoptimizer;
     private final MetaoptimizerGroupTrainer<L, K, V, D, ?, I, ?, ?, G, O, IR, X, Y> trainer;
+    private final IgniteFunction<EntryAndContext<K, V, G>, X> ctxExtractor;
+    private final IgniteFunction<X, ResultAndUpdates<Y>> dataProcessor;
 
     public MetaoptimizerDistributedStep(Metaoptimizer<IR, L, X, Y, I, D, O> metaoptimizer,
         MetaoptimizerGroupTrainer<L, K, V, D, ?, I, ?, ?, G, O, IR, X, Y> trainer) {
         this.metaoptimizer = metaoptimizer;
         this.trainer = trainer;
+        ctxExtractor = trainer::extractDataToProcessInTrainingLoop;
+        dataProcessor = trainer::processData;
+
     }
 
-    @Override public G extractRemoteContext(I input, L locCtx) {
+    @Override public IgniteSupplier<G> remoteContextSupplier(I input, L locCtx) {
         return trainer.extractRemoteContext(input, locCtx);
     }
 
-    @Override public ResultAndUpdates<O> worker(EntryAndContext<K, V, G> entryAndContext) {
-        X apply = trainer.extractDataToProcessInTrainingLoop(entryAndContext);
+    @Override public ResultAndUpdates<O> worker(EntryAndContext<K, V, G> entryAndCtx) {
+        X apply = ctxExtractor.apply(entryAndCtx);
         metaoptimizer.distributedPreprocess(apply);
-        ResultAndUpdates<Y> res = trainer.processData(apply);
+        ResultAndUpdates<Y> res = dataProcessor.apply(apply);
         O postprocessRes = metaoptimizer.distributedPostprocess(res.result());
 
         return ResultAndUpdates.of(postprocessRes).setUpdates(res.updates());
     }
 
-    @Override public Stream<GroupTrainerCacheKey<K>> keys(I input, L locCtx) {
+    @Override public IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keys(I input, L locCtx) {
         // TODO: watch this code carefully.
         return trainer.keysToProcessInTrainingLoop(locCtx);
     }

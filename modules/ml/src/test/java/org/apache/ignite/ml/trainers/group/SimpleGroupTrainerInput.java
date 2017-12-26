@@ -20,6 +20,7 @@ package org.apache.ignite.ml.trainers.group;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
 
 public class SimpleGroupTrainerInput implements GroupTrainerInput<Double> {
     private int limit;
@@ -32,8 +33,10 @@ public class SimpleGroupTrainerInput implements GroupTrainerInput<Double> {
         this.iterCnt = iterCnt;
     }
 
-    @Override public Stream<GroupTrainerCacheKey<Double>> initialKeys(UUID trainingUUID) {
-        return IntStream.range(0, limit).mapToObj(i -> new GroupTrainerCacheKey<>(i, 0.0, trainingUUID));
+    @Override public IgniteSupplier<Stream<GroupTrainerCacheKey<Double>>> initialKeys(UUID trainingUUID) {
+        int lim = limit;
+        UUID uuid = trainingUUID;
+        return () -> IntStream.range(0, lim).mapToObj(i -> new GroupTrainerCacheKey<>(i, 0.0, uuid));
     }
 
     public int limit() {

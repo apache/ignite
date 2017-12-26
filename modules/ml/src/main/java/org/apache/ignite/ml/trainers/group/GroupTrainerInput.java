@@ -19,6 +19,7 @@ package org.apache.ignite.ml.trainers.group;
 
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
 
 /**
  * Interface for inputs fot {@link GroupTrainer}.
@@ -27,10 +28,10 @@ import java.util.stream.Stream;
  */
 public interface GroupTrainerInput<K> {
     /**
-     * Get stream of keys used for initialization of {@link GroupTrainer}.
+     * Get supplier of stream of keys used for initialization of {@link GroupTrainer}.
      *
      * @param trainingUUID UUID of training.
-     * @return Stream of keys used for initialization of {@link GroupTrainer}.
+     * @return Supplier of stream of keys used for initialization of {@link GroupTrainer}.
      */
-    Stream<GroupTrainerCacheKey<K>> initialKeys(UUID trainingUUID);
+    IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> initialKeys(UUID trainingUUID);
 }

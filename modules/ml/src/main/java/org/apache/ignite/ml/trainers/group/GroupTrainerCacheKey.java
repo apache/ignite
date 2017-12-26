@@ -36,7 +36,7 @@ public class GroupTrainerCacheKey<K> {
      * Part of key for key-to-node affinity.
      */
     @AffinityKeyMapped
-    private Long nodeLocalEntityIndex;
+    private Long nodeLocEntityIdx;
 
     /**
      * UUID of training.
@@ -56,7 +56,7 @@ public class GroupTrainerCacheKey<K> {
      * @param trainingUUID Training UUID.
      */
     public GroupTrainerCacheKey(long nodeLocEntityIdx, K data, UUID trainingUUID) {
-        this.nodeLocalEntityIndex = nodeLocEntityIdx;
+        this.nodeLocEntityIdx = nodeLocEntityIdx;
         this.trainingUUID = trainingUUID;
         this.data = data;
     }
@@ -78,7 +78,7 @@ public class GroupTrainerCacheKey<K> {
      * @return Part of key used for key-to-node affinity.
      */
     public Long nodeLocalEntityIndex() {
-        return nodeLocalEntityIndex;
+        return nodeLocEntityIdx;
     }
 
     /**
@@ -108,7 +108,7 @@ public class GroupTrainerCacheKey<K> {
 
         GroupTrainerCacheKey<?> key = (GroupTrainerCacheKey<?>)o;
 
-        if (nodeLocalEntityIndex != null ? !nodeLocalEntityIndex.equals(key.nodeLocalEntityIndex) : key.nodeLocalEntityIndex != null)
+        if (nodeLocEntityIdx != null ? !nodeLocEntityIdx.equals(key.nodeLocEntityIdx) : key.nodeLocEntityIdx != null)
             return false;
         if (trainingUUID != null ? !trainingUUID.equals(key.trainingUUID) : key.trainingUUID != null)
             return false;
@@ -117,7 +117,7 @@ public class GroupTrainerCacheKey<K> {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int res = nodeLocalEntityIndex != null ? nodeLocalEntityIndex.hashCode() : 0;
+        int res = nodeLocEntityIdx != null ? nodeLocEntityIdx.hashCode() : 0;
         res = 31 * res + (trainingUUID != null ? trainingUUID.hashCode() : 0);
         res = 31 * res + (data != null ? data.hashCode() : 0);
         return res;
