@@ -65,21 +65,17 @@ public class AuthenticationRestartTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientReconnect() throws Exception {
+        stopGrid("server");
+
         final IgniteEx client = grid("client");
 
-        if (tcpDiscovery()) {
-            stopGrid("server");
+        waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return client.cluster().clientReconnectFuture() != null;
+            }
+        }, 10_000);
 
-            waitForCondition(new GridAbsPredicate() {
-                @Override public boolean apply() {
-                    return client.cluster().clientReconnectFuture() != null;
-                }
-            }, 10_000);
-
-            startGrid("server");
-        }
-        else
-            reconnectClient(log, client);
+        startGrid("server");
 
         IgniteFuture<?> fut = client.cluster().clientReconnectFuture();
 

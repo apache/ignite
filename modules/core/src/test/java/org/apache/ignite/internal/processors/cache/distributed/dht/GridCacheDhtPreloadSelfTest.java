@@ -309,7 +309,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
                 // Check all left nodes.
                 checkActiveState(ignites);
 
-                awaitPartitionMapExchange(); // Need wait, otherwise test logic is broken if node fail exchanges are merged.
+                awaitPartitionMapExchange(); // Need wait, otherwise test logic is broken if EVT_NODE_FAILED exchanges are merged.
             }
 
             info("Waiting for preload futures: " + F.view(futs, new IgnitePredicate<IgniteFuture<?>>() {

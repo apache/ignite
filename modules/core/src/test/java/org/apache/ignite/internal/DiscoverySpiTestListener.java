@@ -34,7 +34,9 @@ import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
- *
+ * Test callback for discovery SPI.
+ * <p>
+ * Allows block/delay node join and custom event sending.
  */
 public class DiscoverySpiTestListener implements IgniteDiscoverySpiInternalListener {
     /** */

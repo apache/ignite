@@ -114,10 +114,7 @@ public class GridCacheQueueClientDisconnectTest extends GridCommonAbstractTest {
 
             U.sleep(5000);
 
-            if (tcpDiscovery())
-                server.close();
-            else
-                reconnectClient(log, client);
+            server.close();
 
             boolean countReachedZero = latch.await(FAILURE_DETECTION_TIMEOUT * 2, TimeUnit.MILLISECONDS);
 

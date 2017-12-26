@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.continuous;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -196,5 +197,10 @@ public class ContinuousRoutineStartResultMessage implements Message {
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(ContinuousRoutineStartResultMessage.class, this);
     }
 }

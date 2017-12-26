@@ -466,12 +466,33 @@ public class ZookeeperDiscoveryImpl {
             joinTopology(rtState);
         }
         catch (Exception e) {
+            if (stopping()) {
+                if (log.isDebugEnabled())
+                    log.debug("Reconnect failed, node is stopping [err=" + e + ']');
+
+                return;
+            }
+
             U.error(log, "Failed to reconnect: " + e, e);
 
             onSegmented(e);
         }
     }
 
+    /**
+     * @return {@code True} if started to stop.
+     */
+    private boolean stopping() {
+        if (stop.get())
+            return true;
+
+        synchronized (stateMux) {
+            if (connState == ConnectionState.STOPPED)
+                return true;
+        }
+
+        return false;
+    }
 
     /**
      * @param e Error.
@@ -3425,6 +3446,8 @@ public class ZookeeperDiscoveryImpl {
             rtState.onCloseStart(err);
         }
 
+        IgniteUtils.shutdownNow(ZookeeperDiscoveryImpl.class, utilityPool, log);
+
         busyLock.block();
 
         busyLock.unblock();
@@ -3437,8 +3460,6 @@ public class ZookeeperDiscoveryImpl {
             zkClient.close();
 
         finishFutures(err);
-
-        IgniteUtils.shutdownNow(ZookeeperDiscoveryImpl.class, utilityPool, log);
     }
 
     /**
@@ -3466,7 +3487,7 @@ public class ZookeeperDiscoveryImpl {
 
         Ignite ignite = spi.ignite();
 
-        if (connState == ConnectionState.STOPPED || ignite == null)
+        if (stopping() || ignite == null)
             return;
 
         U.error(log, "Fatal error in ZookeeperDiscovery. " +

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.continuous;
 
 import java.io.Serializable;
 import java.util.List;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
@@ -30,7 +31,15 @@ public class ContinuousRoutinesCommonDiscoveryData implements Serializable {
     /** */
     final List<ContinuousRoutineInfo> startedRoutines;
 
+    /**
+     * @param startedRoutines Routines started in cluster.
+     */
     ContinuousRoutinesCommonDiscoveryData(List<ContinuousRoutineInfo> startedRoutines) {
         this.startedRoutines = startedRoutines;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(ContinuousRoutinesCommonDiscoveryData.class, this);
     }
 }

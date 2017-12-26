@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.LoggerResource;
 
@@ -29,6 +30,7 @@ import org.apache.ignite.resources.LoggerResource;
  *
  */
 public class DefaultCommunicationProblemResolver implements CommunicationProblemResolver {
+    /** */
     @LoggerResource
     private IgniteLogger log;
 
@@ -294,5 +296,10 @@ public class DefaultCommunicationProblemResolver implements CommunicationProblem
 
             return (words[wordIndex] & (1L << bitIndex)) != 0;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DefaultCommunicationProblemResolver.class, this);
     }
 }

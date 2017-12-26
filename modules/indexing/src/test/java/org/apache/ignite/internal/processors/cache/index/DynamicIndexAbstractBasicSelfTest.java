@@ -90,6 +90,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      * @param mode Mode.
      * @param atomicityMode Atomicity mode.
      * @param near Near flag.
+     * @throws Exception If failed.
      */
     private void initialize(CacheMode mode, CacheAtomicityMode atomicityMode, boolean near)
         throws Exception {

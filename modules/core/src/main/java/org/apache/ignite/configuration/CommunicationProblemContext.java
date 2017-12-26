@@ -18,7 +18,6 @@
 package org.apache.ignite.configuration;
 
 import java.util.List;
-import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 

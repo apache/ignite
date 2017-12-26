@@ -118,6 +118,8 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
 
     /**
      * Test cluster group metrics in case of statistics disabled.
+     *
+     * @throws Exception If failed.
      */
     public void testMetricsStatisticsDisabled() throws Exception {
         createCaches(false);
@@ -172,7 +174,9 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
     }
 
     /**
-     * Wait for {@link EventType#EVT_NODE_METRICS_UPDATED} event will be receieved.
+     * Wait for {@link EventType#EVT_NODE_METRICS_UPDATED} event will be received.
+     *
+     * @throws InterruptedException If interrupted.
      */
     private void awaitMetricsUpdate() throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch((GRID_CNT + 1) * 2);

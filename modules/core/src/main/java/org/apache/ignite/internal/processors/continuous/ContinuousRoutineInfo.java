@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.continuous;
 
 import java.io.Serializable;
 import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
@@ -52,11 +53,13 @@ class ContinuousRoutineInfo implements Serializable {
     transient boolean disconnected;
 
     /**
-     * @param hnd
-     * @param nodeFilter
-     * @param bufSize
-     * @param interval
-     * @param autoUnsubscribe
+     * @param srcNodeId Source node ID.
+     * @param routineId Routine ID.
+     * @param hnd Marshalled handler.
+     * @param nodeFilter Marshalled node filter.
+     * @param bufSize Handler buffer size.
+     * @param interval Time interval.
+     * @param autoUnsubscribe Auto unsubscribe flag.
      */
     ContinuousRoutineInfo(
         UUID srcNodeId,
@@ -76,11 +79,22 @@ class ContinuousRoutineInfo implements Serializable {
         this.autoUnsubscribe = autoUnsubscribe;
     }
 
+    /**
+     * @param srcNodeId Source node ID.
+     */
     void sourceNodeId(UUID srcNodeId) {
         this.srcNodeId = srcNodeId;
     }
 
+    /**
+     *
+     */
     void onDisconnected() {
         disconnected = true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(ContinuousRoutineInfo.class, this);
     }
 }

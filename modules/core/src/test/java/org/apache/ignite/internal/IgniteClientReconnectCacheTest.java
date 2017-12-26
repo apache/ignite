@@ -960,10 +960,6 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
      * @throws Exception If failed.
      */
     public void testReconnectClusterRestart() throws Exception {
-        // TODO ZK
-        if (!tcpDiscovery())
-            return;
-
         clientMode = true;
 
         final Ignite client = startGrid(SRV_CNT);
@@ -1028,10 +1024,6 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
      * @throws Exception If failed.
      */
     public void testReconnectClusterRestartMultinode() throws Exception {
-        // TODO ZK
-        if (!tcpDiscovery())
-            return;
-
         clientMode = true;
 
         final int CLIENTS = 5;
@@ -1270,30 +1262,35 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
      *
      */
     static class TestClass1 implements Serializable {
+        // No-op.
     }
 
     /**
      *
      */
     static class TestClass2 implements Serializable {
+        // No-op.
     }
 
     /**
      *
      */
     static class TestClass3 implements Serializable {
+        // No-op.
     }
 
     /**
      *
      */
     static class TestClass4 implements Serializable {
+        // No-op.
     }
 
     /**
      *
      */
     static class TestClass5 implements Serializable {
+        // No-op.
     }
 
     /**

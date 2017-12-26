@@ -586,6 +586,13 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     ", srcNodeId=" + routineInfo.srcNodeId + ']', e);
             }
         }
+        else {
+            if (log.isDebugEnabled()) {
+                log.debug("Do not register continuous routine, rejected by node filter [" +
+                    "routineId=" + routineInfo.routineId +
+                    ", srcNodeId=" + routineInfo.srcNodeId + ']');
+            }
+        }
     }
 
     /**
@@ -747,6 +754,17 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         return routineId;
     }
 
+    /**
+     * @param srcNodeId Source node ID.
+     * @param routineId Routine ID.
+     * @param hnd Handler.
+     * @param nodeFilter Node filter.
+     * @param bufSize Handler buffer size.
+     * @param interval Time interval.
+     * @param autoUnsubscribe Auto unsubscribe flag.
+     * @return Routine info instance.
+     * @throws IgniteCheckedException If failed.
+     */
     private ContinuousRoutineInfo createRoutineInfo(
         UUID srcNodeId,
         UUID routineId,

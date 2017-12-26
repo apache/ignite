@@ -66,10 +66,6 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
      * @throws Exception If failed.
      */
     public void testCollectionsReconnectClusterRestart() throws Exception {
-        // TODO ZK
-        if (!tcpDiscovery())
-            return;
-
         Ignite client = grid(serverCount());
 
         assertTrue(client.cluster().localNode().isClient());

@@ -256,7 +256,6 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
 
         Ignite srv1 = startGrid("server1");
 
-        // TODO ZK
         if (!tcpDiscovery())
             return;
 

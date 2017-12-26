@@ -25,7 +25,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
- * TODO ZK
+ *
  */
 public interface IgniteClusterNode extends ClusterNode {
     /**

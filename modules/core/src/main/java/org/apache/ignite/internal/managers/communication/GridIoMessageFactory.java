@@ -886,7 +886,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-
             case 130:
                 msg = new ContinuousRoutineStartResultMessage();
 

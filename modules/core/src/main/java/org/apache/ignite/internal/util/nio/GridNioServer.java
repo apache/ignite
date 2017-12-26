@@ -485,6 +485,9 @@ public class GridNioServer<T> {
         return fut;
     }
 
+    /**
+     * @param ses Session.
+     */
     public void closeFromWorkerThread(GridNioSession ses) {
         assert ses instanceof GridSelectorNioSessionImpl : ses;
 

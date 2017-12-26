@@ -114,8 +114,16 @@ public class ClusterProcessor extends GridProcessorAdapter {
     private final AtomicLong diagFutId = new AtomicLong();
 
     /** */
-    @GridDirectMap(keyType = UUID.class, valueType = byte[].class)
     private final Map<UUID, byte[]> allNodesMetrics = new ConcurrentHashMap<>();
+
+    /** */
+    private final JdkMarshaller marsh = new JdkMarshaller();
+
+    /** */
+    private DiscoveryMetricsProvider metricsProvider;
+
+    /** */
+    private boolean sndMetrics;
 
     /**
      * @param ctx Kernal context.
@@ -126,6 +134,8 @@ public class ClusterProcessor extends GridProcessorAdapter {
         notifyEnabled.set(IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER, true));
 
         cluster = new IgniteClusterImpl(ctx);
+
+        sndMetrics = !(ctx.config().getDiscoverySpi() instanceof TcpDiscoverySpi);
     }
 
     /**
@@ -134,12 +144,6 @@ public class ClusterProcessor extends GridProcessorAdapter {
     public boolean diagnosticEnabled() {
         return getBoolean(IGNITE_DIAGNOSTIC_ENABLED, true);
     }
-
-    /** */
-    private final JdkMarshaller marsh = new JdkMarshaller();
-
-    /** */
-    private DiscoveryMetricsProvider metricsProvider;
 
     /**
      * @throws IgniteCheckedException If failed.
@@ -253,7 +257,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
             }
         });
 
-        if (!(ctx.config().getDiscoverySpi() instanceof TcpDiscoverySpi)) {
+        if (sndMetrics) {
             ctx.io().addMessageListener(TOPIC_METRICS, new GridMessageListener() {
                 @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                     if (msg instanceof ClusterMetricsUpdateMessage)
@@ -364,7 +368,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (!(ctx.config().getDiscoverySpi() instanceof TcpDiscoverySpi)) {
+        if (sndMetrics) {
             metricsProvider = ctx.discovery().createMetricsProvider();
 
             long updateFreq = ctx.config().getMetricsUpdateFrequency();
@@ -440,7 +444,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
             ctx.discovery().metricsUpdateEvent(discoCache, node0);
         }
         catch (IgniteCheckedException e) {
-            U.warn(log, "Failed to unmarshal node metrics: ");
+            U.warn(log, "Failed to unmarshal node metrics: " + e);
         }
     }
 

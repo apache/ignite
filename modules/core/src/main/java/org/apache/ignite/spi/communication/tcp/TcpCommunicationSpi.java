@@ -405,8 +405,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     }
                 }
                 else {
-                    ConnectionKey connId = ses.meta(CONN_IDX_META);
-
                     if (log.isInfoEnabled())
                         log.info("Established outgoing communication connection [locAddr=" + ses.localAddress() +
                             ", rmtAddr=" + ses.remoteAddress() + ']');
@@ -3413,7 +3411,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     "(make sure that destination node is alive and " +
                     "operating system firewall is disabled on local and remote hosts) " +
                     "[addrs=" + addrs + ']');
-
 
             boolean commErrResolve = false;
 

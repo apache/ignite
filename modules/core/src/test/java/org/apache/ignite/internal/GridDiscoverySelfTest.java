@@ -159,10 +159,10 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
 
         final AtomicInteger cnt = new AtomicInteger();
 
-        /** Joined nodes counter. */
+        // Joined nodes counter.
         final CountDownLatch joinedCnt = new CountDownLatch(NODES_CNT);
 
-        /** Left nodes counter. */
+        // Left nodes counter.
         final CountDownLatch leftCnt = new CountDownLatch(NODES_CNT);
 
         IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
@@ -186,7 +186,10 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
             }
         };
 
-        ignite.events().localListen(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED, EVT_NODE_JOINED);
+        int[] evts = tcpDiscovery() ? new int[]{EVT_NODE_LEFT, EVT_NODE_JOINED} :
+            new int[]{EVT_NODE_LEFT, EVT_NODE_FAILED, EVT_NODE_JOINED};
+
+        ignite.events().localListen(lsnr, evts);
 
         try {
             for (int i = 0; i < NODES_CNT; i++)
