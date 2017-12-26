@@ -232,6 +232,9 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     /** */
     private int tmpArrOff;
 
+    /** Number of bytes of the boundary value, read from previous message. */
+    private int valReadBytes;
+
     /** */
     private int tmpArrBytes;
 
@@ -1533,14 +1536,30 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
             }
         }
 
-        int toRead = (tmpArrBytes - tmpArrOff) >> lenShift;
-        int remaining = buf.remaining() >> lenShift;
+        int toRead = tmpArrBytes - tmpArrOff - valReadBytes;
+        int remaining = buf.remaining();
 
         lastFinished = toRead <= remaining;
 
-        if (lastFinished) {
-            readArrayLE(typeSize, off, toRead);
+        if (!lastFinished)
+            toRead = remaining;
 
+        int pos = buf.position();
+
+        for (int i = 0; i < toRead; i++) {
+            byte b = GridUnsafe.getByte(heapArr, baseOff + pos + i);
+
+            GridUnsafe.putByteField(tmpArr, off + tmpArrOff + (typeSize - valReadBytes - 1), b);
+
+            if (++valReadBytes == typeSize) {
+                valReadBytes = 0;
+                tmpArrOff += typeSize;
+            }
+        }
+
+        buf.position(pos + toRead);
+
+        if (lastFinished) {
             T arr = (T)tmpArr;
 
             tmpArr = null;
@@ -1549,41 +1568,8 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
 
             return arr;
         }
-        else {
-            for (int i = 0; i < remaining; i++) {
-                int pos = buf.position();
-
-                for (int j = 0; j < typeSize; j++) {
-                    byte b = GridUnsafe.getByte(heapArr, baseOff + pos + (typeSize - j - 1));
-
-                    GridUnsafe.putByteField(tmpArr, off + tmpArrOff + j, b);
-                }
-
-                buf.position(pos + typeSize);
-                tmpArrOff += typeSize;
-            }
-
+        else
             return null;
-        }
-    }
-
-    /**
-     * @param typeSize Primitive type size in bytes.
-     * @param off Offset.
-     * @param toRead To read.
-     */
-    private void readArrayLE(int typeSize, long off, int toRead) {
-        for (int i = 0; i < toRead; i++) {
-            int pos = buf.position();
-
-            for (int j = 0; j < typeSize; j++) {
-                byte b = GridUnsafe.getByte(heapArr, baseOff + pos + (typeSize - j - 1));
-
-                GridUnsafe.putByteField(tmpArr, off + tmpArrOff++, b);
-            }
-
-            buf.position(pos + typeSize);
-        }
     }
 
     /**
