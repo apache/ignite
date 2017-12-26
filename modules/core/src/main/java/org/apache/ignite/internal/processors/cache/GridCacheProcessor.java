@@ -1736,23 +1736,24 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @return Caches to be started when this node starts.
      */
-    @NotNull public List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> cachesToStartOnLocalJoin() {
-        return cachesInfo.cachesToStartOnLocalJoin();
+    @Nullable public LocalJoinCachesContext localJoinCachesContext() {
+        return cachesInfo.localJoinCachesContext();
     }
 
     /**
-     * @param caches Caches to start.
+     * @param locJoinCtx Local join cache context.
      * @param exchTopVer Current exchange version.
      * @throws IgniteCheckedException If failed.
      */
     public void startCachesOnLocalJoin(
-        List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> caches,
+        LocalJoinCachesContext locJoinCtx,
         AffinityTopologyVersion exchTopVer
     ) throws IgniteCheckedException {
         if (!F.isEmpty(caches)) {
-            sharedCtx.affinity().initCachesOnLocalJoin();
+            sharedCtx.affinity().initCachesOnLocalJoin(
+                locJoinCtx.cacheGroupDescriptors(), locJoinCtx.cacheDescriptors());
 
-            for (T2<DynamicCacheDescriptor, NearCacheConfiguration> t : caches) {
+            for (T2<DynamicCacheDescriptor, NearCacheConfiguration> t : locJoinCtx.caches()) {
                 DynamicCacheDescriptor desc = t.get1();
 
                 prepareCacheStart(
