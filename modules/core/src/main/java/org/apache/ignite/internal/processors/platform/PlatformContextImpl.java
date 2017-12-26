@@ -226,6 +226,7 @@ public class PlatformContextImpl implements PlatformContext {
             w.writeBoolean(node.isLocal());
             w.writeBoolean(node.isDaemon());
             w.writeBoolean(node.isClient());
+            w.writeObjectDetached(node.consistentId());
             writeClusterMetrics(w, node.metrics());
 
             out.synchronize();

@@ -131,5 +131,10 @@ namespace Apache.Ignite.Core.Cluster
         /// <returns>Runtime metrics snapshot for this node.</returns>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         IClusterMetrics GetMetrics();
+
+        /// <summary>
+        /// Gets the consistent ID from <see cref="IgniteConfiguration.ConsistentId"/>.
+        /// </summary>
+        object ConsistentId { get; }
     }
 }

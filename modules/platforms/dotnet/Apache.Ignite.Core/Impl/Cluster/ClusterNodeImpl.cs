@@ -55,6 +55,9 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** Client flag. */
         private readonly bool _isClient;
 
+        /** Consistent id. */
+        private readonly object _consistentId;
+
         /** Metrics. */
         private volatile ClusterMetricsImpl _metrics;
         
@@ -80,6 +83,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
             _isLocal = reader.ReadBoolean();
             _isDaemon = reader.ReadBoolean();
             _isClient = reader.ReadBoolean();
+            _consistentId = reader.ReadObject<object>();
 
             _metrics = reader.ReadBoolean() ? new ClusterMetricsImpl(reader) : null;
         }
@@ -179,6 +183,9 @@ namespace Apache.Ignite.Core.Impl.Cluster
 
             return oldMetrics;
         }
+
+        /** <inheritDoc /> */
+        public object ConsistentId { get { return _consistentId; } }
 
         /** <inheritDoc /> */
         public bool IsClient
