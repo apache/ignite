@@ -2111,6 +2111,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /** {@inheritDoc} */
+    @Override public boolean supportsMutableCustomEvents() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public void resolveCommunicationError(ClusterNode node, Exception err) {
         throw new UnsupportedOperationException();
     }

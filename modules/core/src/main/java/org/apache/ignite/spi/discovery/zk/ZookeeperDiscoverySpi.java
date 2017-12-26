@@ -246,6 +246,11 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     }
 
     /** {@inheritDoc} */
+    @Override public boolean supportsMutableCustomEvents() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public void resolveCommunicationError(ClusterNode node, Exception err) {
         impl.resolveCommunicationError(node, err);
     }
