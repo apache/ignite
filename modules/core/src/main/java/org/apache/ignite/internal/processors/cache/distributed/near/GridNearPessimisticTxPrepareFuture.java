@@ -313,7 +313,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 else
                     nodes = cacheCtx.affinity().nodesByKey(txEntry.key(), topVer);
 
-                if (mvccCrd == null && cacheCtx.mvccEnabled()) {
+                if (tx.mvccInfo() == null && mvccCrd == null && cacheCtx.mvccEnabled()) {
                     mvccCrd = cacheCtx.affinity().mvccCoordinator(topVer);
 
                     if (mvccCrd == null) {
@@ -346,7 +346,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             }
         }
 
-        assert !tx.txState().mvccEnabled(cctx) || mvccCrd != null || queryMapped;
+        assert !tx.txState().mvccEnabled(cctx) || tx.mvccInfo() != null || mvccCrd != null;
 
         tx.transactionNodes(txMapping.transactionNodes());
 

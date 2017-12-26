@@ -85,13 +85,11 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryReq
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.transactions.TransactionException;
@@ -532,6 +530,8 @@ public class GridReduceQueryExecutor {
         final int[] parts,
         boolean lazy,
         MvccQueryTracker mvccTracker) {
+        assert !qry.mvccEnabled() || mvccTracker != null;
+
         if (F.isEmpty(params))
             params = EMPTY_PARAMS;
 
@@ -565,28 +565,6 @@ public class GridReduceQueryExecutor {
             }
 
             List<Integer> cacheIds = qry.cacheIds();
-
-            if (qry.mvccEnabled() && mvccTracker == null) {
-                assert !cacheIds.isEmpty();
-
-                final GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
-
-                mvccTracker = new MvccQueryTracker(cacheContext(cacheIds.get(0)), true,
-                    new IgniteBiInClosure<AffinityTopologyVersion, IgniteCheckedException>() {
-                    @Override public void apply(AffinityTopologyVersion topVer, IgniteCheckedException e) {
-                        fut.onDone(null, e);
-                    }
-                });
-
-                mvccTracker.requestVersion(topVer);
-
-                try {
-                    fut.get();
-                }
-                catch (IgniteCheckedException e) {
-                    throw new CacheException(e);
-                }
-            }
 
             Collection<ClusterNode> nodes;
 
@@ -828,7 +806,9 @@ public class GridReduceQueryExecutor {
                                 timeoutMillis,
                                 cancel);
 
-                            resIter = new H2FieldsIterator(res);
+                            resIter = new H2FieldsIterator(res, mvccTracker);
+
+                            mvccTracker = null; // To prevent callback inside finally block;
                         }
                         finally {
                             GridH2QueryContext.clearThreadLocal();
