@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -43,6 +45,7 @@ import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Test to check various transactional scenarios.
@@ -68,7 +71,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
-        ccfg.setCacheMode(CacheMode.REPLICATED);
+        ccfg.setCacheMode(CacheMode.PARTITIONED);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -96,7 +99,9 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
         execute("CREATE TABLE Product (id int primary key, name varchar, companyid int) WITH " +
             "\"atomicity=transactional,template=partitioned,backups=2,cache_name=Product\"");
 
-        execute("CREATE INDEX IF NOT EXISTS pidx ON Product(companyid)");
+        execute("CREATE INDEX IF NOT EXISTS prodidx ON Product(companyid)");
+
+        execute("CREATE INDEX IF NOT EXISTS persidx ON \"Person\".person(cityid)");
 
         insertPerson(1, "John", "Smith", 1, 1);
 
@@ -161,6 +166,8 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
 
         execute("DROP TABLE Company");
 
+        execute("DROP TABLE Product");
+
         super.afterTest();
     }
 
@@ -206,9 +213,11 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
             }
         });
 
-        assertEquals(l(l(5, "St Petersburg", 6000, 6, 5, "VK", 6, "Peter", "Sergeev", 5, 6)),
-            execute("SELECT * FROM City left join Company on City.id = Company.\"cityid\" " +
-                "left join \"Person\".Person p on City.id = p.cityid WHERE p.id = 6 or company.id = 6"));
+        try (Connection c = connect("distributedJoins=true")) {
+            assertEquals(l(l(5, "St Petersburg", 6000, 6, 5, "VK", 6, "Peter", "Sergeev", 5, 6)),
+                execute(c, "SELECT * FROM City left join Company on City.id = Company.\"cityid\" " +
+                    "left join \"Person\".Person p on City.id = p.cityid WHERE p.id = 6 or company.id = 6"));
+        }
     }
 
     /**
@@ -287,12 +296,87 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
         assertNull(personCache().get(6));
     }
 
-    public void testRepeatableRead() throws Exception {
-        final CountDownLatch latch = new CountDownLatch(1);
+    /**
+     *
+     */
+    public void testRepeatableReadWithConcurrentDelete() throws Exception {
+        doTestRepeatableRead(new IgniteInClosure<Connection>() {
+            @Override public void apply(Connection conn) {
+                execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
+            }
+        }, false);
+    }
+
+    /**
+     *
+     */
+    public void testRepeatableReadWithConcurrentFastDelete() throws Exception {
+        doTestRepeatableRead(new IgniteInClosure<Connection>() {
+            @Override public void apply(Connection conn) {
+                execute(conn, "DELETE FROM \"Person\".Person where id = 1");
+            }
+        }, false);
+    }
+
+    /**
+     *
+     */
+    public void testRepeatableReadWithConcurrentCacheRemove() throws Exception {
+        doTestRepeatableRead(new IgniteInClosure<Connection>() {
+            @Override public void apply(Connection conn) {
+                personCache().remove(1);
+            }
+        }, false);
+    }
+
+    /**
+     *
+     */
+    public void testRepeatableReadAndDeleteWithConcurrentDelete() throws Exception {
+        doTestRepeatableRead(new IgniteInClosure<Connection>() {
+            @Override public void apply(Connection conn) {
+                execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
+            }
+        }, true);
+    }
+
+    /**
+     *
+     */
+    public void testRepeatableReadAndDeleteWithConcurrentFastDelete() throws Exception {
+        doTestRepeatableRead(new IgniteInClosure<Connection>() {
+            @Override public void apply(Connection conn) {
+                execute(conn, "DELETE FROM \"Person\".Person where id = 1");
+            }
+        }, true);
+    }
+
+    /**
+     *
+     */
+    public void testRepeatableReadAndDeleteWithConcurrentCacheRemove() throws Exception {
+        doTestRepeatableRead(new IgniteInClosure<Connection>() {
+            @Override public void apply(Connection conn) {
+                personCache().remove(1);
+            }
+        }, true);
+    }
+
+    /**
+     * Perform repeatable reads and concurrent changes.
+     * @param clo Updating closure.
+     * @param modifyAfterRead Whether write should also be made inside repeatable read transaction
+     *     (must yield an exception).
+     * @throws Exception if failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    private void doTestRepeatableRead(final IgniteInClosure<Connection> clo, final boolean modifyAfterRead)
+        throws Exception {
+        final CountDownLatch repeatableReadLatch = new CountDownLatch(1);
 
         final CountDownLatch initLatch = new CountDownLatch(1);
 
-        IgniteInternalFuture<?> transFut = multithreadedAsync(new Callable<Object>() {
+        final IgniteInternalFuture<?> readFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 executeInTransaction(new TransactionClosure() {
                     @Override public void apply(Connection conn) {
@@ -303,15 +387,18 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
                         initLatch.countDown();
 
                         try {
-                            U.await(latch);
+                            U.await(repeatableReadLatch);
                         }
                         catch (IgniteInterruptedCheckedException e) {
-                            throw new RuntimeException(e);
+                            throw new IgniteException(e);
                         }
 
                         List<?> after = flat(execute(conn, "SELECT * from \"Person\".Person where id = 1"));
 
                         assertEqualsCollections(before, after);
+
+                        if (modifyAfterRead)
+                            execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
                     }
                 });
 
@@ -327,12 +414,12 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
                             U.await(initLatch);
                         }
                         catch (IgniteInterruptedCheckedException e) {
-                            throw new RuntimeException(e);
+                            throw new IgniteException(e);
                         }
 
-                        execute(conn, "DELETE FROM \"Person\".Person where id = 1");
+                        clo.apply(conn);
 
-                        latch.countDown();
+                        repeatableReadLatch.countDown();
                     }
                 });
 
@@ -342,7 +429,21 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
 
         conModFut.get();
 
-        transFut.get();
+        if (modifyAfterRead) {
+            IgniteCheckedException ex = (IgniteCheckedException)GridTestUtils.assertThrows(null, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    readFut.get();
+
+                    return null;
+                }
+            }, IgniteCheckedException.class, "Failed to run update. Mvcc version mismatch.");
+
+            assertTrue(ex.getCause() instanceof SQLException);
+
+            assertTrue(ex.getCause().getMessage().contains("Failed to run update. Mvcc version mismatch."));
+        }
+        else
+            readFut.get();
     }
 
     /**
@@ -454,7 +555,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
             }
         }
         catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new IgniteException(e);
         }
     }
 

@@ -423,11 +423,11 @@ public class DmlStatementsProcessor {
                     toCommit.commit();
 
                 return res;
-             }
+            }
             catch (IgniteCheckedException e) {
                 U.error(log, "Error during update [localNodeId=" + cctx.localNodeId() + "]", e);
 
-                throw new CacheException("Failed to run update. " + e.getMessage(), e);
+                throw new IgniteSQLException("Failed to run update. " + e.getMessage(), e);
             }
             finally {
                 if (commit)
