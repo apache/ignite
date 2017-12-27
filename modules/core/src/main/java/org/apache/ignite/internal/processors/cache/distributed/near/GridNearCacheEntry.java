@@ -371,7 +371,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
             synchronized (this) {
                 checkObsolete();
 
-                if (cctx.cache().configuration().isStatisticsEnabled())
+                if (cctx.statisticsEnabled())
                     cctx.cache().metrics0().onRead(false);
 
                 boolean ret = false;

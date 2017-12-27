@@ -79,7 +79,6 @@ namespace Apache.Ignite.Core.Tests.Cache
                 // Check some metrics.
                 var metrics = ignite.GetPersistentStoreMetrics();
                 Assert.Greater(metrics.WalLoggingRate, 0);
-                Assert.Greater(metrics.WalWritingRate, 0);
                 Assert.Greater(metrics.WalFsyncTimeAverage, 0);
             }
 

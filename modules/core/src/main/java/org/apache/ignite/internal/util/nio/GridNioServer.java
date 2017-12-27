@@ -56,6 +56,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -75,7 +76,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
-import sun.nio.ch.DirectBuffer;
 
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_WRITER;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.NIO_OPERATION;
@@ -2293,7 +2293,11 @@ public class GridNioServer<T> {
                     else if (log.isDebugEnabled())
                         log.debug("Failed to process selector key [ses=" + ses + ", err=" + e + ']');
 
-                    close(ses, new GridNioException(e));
+                    // Can be null if async connect failed.
+                    if (ses != null)
+                        close(ses, new GridNioException(e));
+                    else
+                        closeKey(key);
                 }
             }
         }
@@ -2517,6 +2521,34 @@ public class GridNioServer<T> {
         }
 
         /**
+         * @param key Key.
+         */
+        private void closeKey(SelectionKey key) {
+            // Shutdown input and output so that remote client will see correct socket close.
+            Socket sock = ((SocketChannel)key.channel()).socket();
+
+            try {
+                try {
+                    sock.shutdownInput();
+                }
+                catch (IOException ignored) {
+                    // No-op.
+                }
+
+                try {
+                    sock.shutdownOutput();
+                }
+                catch (IOException ignored) {
+                    // No-op.
+                }
+            }
+            finally {
+                U.close(key, log);
+                U.close(sock, log);
+            }
+        }
+
+        /**
          * Closes the session and all associated resources, then notifies the listener.
          *
          * @param ses Session to be closed.
@@ -2536,41 +2568,18 @@ public class GridNioServer<T> {
             sessions.remove(ses);
             workerSessions.remove(ses);
 
-            SelectionKey key = ses.key();
-
             if (ses.setClosed()) {
                 ses.onClosed();
 
                 if (directBuf) {
                     if (ses.writeBuffer() != null)
-                        ((DirectBuffer)ses.writeBuffer()).cleaner().clean();
+                        GridUnsafe.cleanDirectBuffer(ses.writeBuffer());
 
                     if (ses.readBuffer() != null)
-                        ((DirectBuffer)ses.readBuffer()).cleaner().clean();
+                        GridUnsafe.cleanDirectBuffer(ses.readBuffer());
                 }
 
-                // Shutdown input and output so that remote client will see correct socket close.
-                Socket sock = ((SocketChannel)key.channel()).socket();
-
-                try {
-                    try {
-                        sock.shutdownInput();
-                    }
-                    catch (IOException ignored) {
-                        // No-op.
-                    }
-
-                    try {
-                        sock.shutdownOutput();
-                    }
-                    catch (IOException ignored) {
-                        // No-op.
-                    }
-                }
-                finally {
-                    U.close(key, log);
-                    U.close(sock, log);
-                }
+                closeKey(ses.key());
 
                 if (e != null)
                     filterChain.onExceptionCaught(ses, e);
