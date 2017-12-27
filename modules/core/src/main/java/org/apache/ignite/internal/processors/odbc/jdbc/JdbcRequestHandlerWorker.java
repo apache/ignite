@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.concurrent.LinkedBlockingQueue;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
@@ -44,6 +46,9 @@ class JdbcRequestHandlerWorker extends GridWorker {
     /** Handler.*/
     private final JdbcRequestHandler hnd;
 
+    /** Context.*/
+    private final GridKernalContext ctx;
+
     /** Response */
     private final static ClientListenerResponse ERR_RESPONSE = new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
         "Connection closed.");
@@ -53,13 +58,17 @@ class JdbcRequestHandlerWorker extends GridWorker {
      * @param igniteInstanceName Instance name.
      * @param log Logger.
      * @param hnd Handler.
+     * @param ctx Kernal context.
      */
-    JdbcRequestHandlerWorker(@Nullable String igniteInstanceName, IgniteLogger log, JdbcRequestHandler hnd) {
+    JdbcRequestHandlerWorker(@Nullable String igniteInstanceName, IgniteLogger log, JdbcRequestHandler hnd,
+        GridKernalContext ctx) {
         super(igniteInstanceName, "jdbc-request-handler-worker", log);
 
         A.notNull(hnd, "hnd");
 
         this.hnd = hnd;
+
+        this.ctx = ctx;
     }
 
     /**
@@ -88,6 +97,14 @@ class JdbcRequestHandlerWorker extends GridWorker {
             }
         }
         finally {
+            // Notify indexing that this worker is being stopped.
+            try {
+                ctx.query().getIndexing().onClientDisconnect();
+            }
+            catch (Exception e) {
+                // No-op.
+            }
+
             // Drain the queue on stop.
             T2<JdbcRequest, GridFutureAdapter<ClientListenerResponse>> req = queue.poll();
 
