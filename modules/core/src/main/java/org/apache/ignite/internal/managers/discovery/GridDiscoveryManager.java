@@ -2016,9 +2016,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * Gets server nodes topology by specified version from snapshots history storage.
      *
      * @param topVer Topology version.
-     * @return Server topology nodes or {@code null} if there are no nodes for passed in version.
+     * @return Server topology nodes.
      */
-    @Nullable public Collection<ClusterNode> serverTopologyNodes(long topVer) {
+    public Collection<ClusterNode> serverTopologyNodes(long topVer) {
         return F.view(topology(topVer), F.not(FILTER_CLI), FILTER_NOT_DAEMON);
     }
 
