@@ -499,9 +499,9 @@ public class DmlStatementsProcessor {
      * Performs the planned update.
      * @param plan Update plan.
      * @param rows Rows to update.
-     * @param pageSize
-     * @return
-     * @throws IgniteCheckedException
+     * @param pageSize Page size.
+     * @return {@link List} of update results.
+     * @throws IgniteCheckedException If failed.
      */
     private List<UpdateResult> processDmlSelectResultBatched(UpdatePlan plan, List<List<List<?>>> rows, int pageSize)
         throws IgniteCheckedException {
