@@ -35,36 +35,47 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /** Config property opcodes. */
         private enum Op : short
         {
-            AtomicityMode = 0, 
-            Backups = 1, 
-            CacheMode = 2, 
-            CopyOnRead = 3, 
-            DataRegionName = 4, 
+            // Name is required.
+            Name = 12,
+
+            // Most common properties.
+            CacheMode = 2,
+            AtomicityMode = 0,
+            Backups = 1,
+            WriteSynchronizationMode = 28,
+            CopyOnRead = 3,
+            ReadFromBackup = 17,
+
+            // Memory settings.
+            DataRegionName = 4,
+            OnheapCacheEnabled = 13,
+
+            // SQL.
+            QueryEntities = 30,
+            QueryParallelism = 16,
+            QueryDetailMetricsSize = 15,
+            SqlSchema = 27,
+            SqlIndexMaxInlineSize = 26,
+            SqlEscapeAll = 25,
+            MaxQueryIteratorsCount = 11,
+
+            // Rebalance.
+            RebalanceMode = 21,
+            RebalanceDelay = 20,
+            RebalanceTimeout = 24,
+            RebalanceBatchSize = 18,
+            RebalanceBatchesPrefetchCount = 19,
+            RebalanceOrder = 22,
+            RebalanceThrottle = 23,
+
+            // Advanced.
+            GroupName = 7,
+            KeyConfiguration = 29,
+            DefaultLockTimeout = 9,
+            MaxConcurrentAsyncOperations = 10,
+            PartitionLossPolicy = 14,
             EagerTtl = 5, 
-            StatisticsEnabled = 6, 
-            GroupName = 7, 
-            DefaultLockTimeout = 9, 
-            MaxConcurrentAsyncOperations = 10, 
-            MaxQueryIteratorsCount = 11, 
-            Name = 12, 
-            OnheapCacheEnabled = 13, 
-            PartitionLossPolicy = 14, 
-            QueryDetailMetricsSize = 15, 
-            QueryParallelism = 16, 
-            ReadFromBackup = 17, 
-            RebalanceBatchSize = 18, 
-            RebalanceBatchesPrefetchCount = 19, 
-            RebalanceDelay = 20, 
-            RebalanceMode = 21, 
-            RebalanceOrder = 22, 
-            RebalanceThrottle = 23, 
-            RebalanceTimeout = 24, 
-            SqlEscapeAll = 25, 
-            SqlIndexMaxInlineSize = 26, 
-            SqlSchema = 27, 
-            WriteSynchronizationMode = 28, 
-            KeyConfiguration = 29, 
-            QueryEntities = 30
+            StatisticsEnabled = 6
         }
 
         /** Property count. */
