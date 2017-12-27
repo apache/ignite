@@ -34,6 +34,7 @@ import org.apache.log4j.Logger
 class IgniteContext(
     @transient val sparkContext: SparkContext,
     cfgF: () ⇒ IgniteConfiguration,
+    @deprecated("Embedded mode is deprecated and will be discontinued. Consider using standalone mode instead.")
     standalone: Boolean = true
     ) extends Serializable {
     private val cfgClo = new Once(cfgF)
@@ -41,6 +42,8 @@ class IgniteContext(
     private val igniteHome = IgniteUtils.getIgniteHome
 
     if (!standalone) {
+        Logging.log.warn("Embedded mode is deprecated and will be discontinued. Consider using standalone mode instead.")
+
         // Get required number of executors with default equals to number of available executors.
         val workers = sparkContext.getConf.getInt("spark.executor.instances",
             sparkContext.getExecutorStorageStatus.length)
@@ -62,7 +65,9 @@ class IgniteContext(
      *
      * @param sc Spark context.
      * @param springUrl Spring configuration path.
+     * @param standalone Standalone or embedded mode.
      */
+    @deprecated("Embedded mode is deprecated and will be discontinued. Consider using standalone mode instead.")
     def this(
         sc: SparkContext,
         springUrl: String,
