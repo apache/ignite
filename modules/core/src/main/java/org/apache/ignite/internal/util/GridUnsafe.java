@@ -1220,24 +1220,6 @@ public abstract class GridUnsafe {
     }
 
     /**
-     * Acquires monitor lock.
-     *
-     * @param obj Object.
-     */
-    public static void monitorEnter(Object obj) {
-        UNSAFE.monitorEnter(obj);
-    }
-
-    /**
-     * Releases monitor lock.
-     *
-     * @param obj Object.
-     */
-    public static void monitorExit(Object obj) {
-        UNSAFE.monitorExit(obj);
-    }
-
-    /**
      * Integer CAS.
      *
      * @param obj Object.
