@@ -1,43 +1,78 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.ml.structures;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import org.apache.ignite.ml.math.Vector;
 
+/**
+ * Class for set of vectors. This is a base class in hierarchy of datasets.
+ */
 public class Dataset implements Serializable {
     /** Data to keep. */
-    protected DatasetRow
-
-        [] data;
+    protected DatasetRow[] data;
 
     /** Metadata to identify feature. */
     protected FeatureMetadata[] meta;
 
     /** Amount of instances. */
-    private int rowSize;
+    protected int rowSize;
 
     /** Amount of attributes in each vector. */
-    private int colSize;
+    protected int colSize;
 
+    /**
+     * Creates new Dataset by given data.
+     *
+     * @param data Given data. Should be initialized with one vector at least.
+     * @param meta Feature's metadata.
+     */
     public Dataset(DatasetRow[] data, FeatureMetadata[] meta) {
         this.data = data;
         this.meta = meta;
     }
 
     /**
-     * Creates new Labeled Dataset by given data.
+     * Creates new Dataset by given data.
      *
      * @param data Given data. Should be initialized with one vector at least.
      * @param featureNames Column names.
      * @param colSize Amount of observed attributes in each vector.
      */
-    public Dataset(LabeledVector[] data, String[] featureNames, int colSize) {
+    public Dataset(DatasetRow[] data, String[] featureNames, int colSize) {
         this(data.length, colSize, featureNames);
         assert data != null;
         this.data = data;
     }
 
     /**
-     * Creates new Labeled Dataset and initialized with empty data structure.
+     * Creates new Dataset by given data.
+     *
+     * @param data Should be initialized with one vector at least.
+     * @param colSize Amount of observed attributes in each vector.
+     */
+    public Dataset(DatasetRow[] data, int colSize) {
+        this(data, null, colSize);
+    }
+
+    /**
+     * Creates new Dataset and initialized with empty data structure.
      *
      * @param rowSize Amount of instances. Should be > 0.
      * @param colSize Amount of attributes. Should be > 0
@@ -57,16 +92,20 @@ public class Dataset implements Serializable {
         this.colSize = colSize;
     }
 
+    /** */
+    public Dataset() {
 
+    }
 
-    private void convertStringNamesToFeatureMetadata(String[] featureNames) {
+    /** */
+    protected void convertStringNamesToFeatureMetadata(String[] featureNames) {
         this.meta = new FeatureMetadata[featureNames.length];
         for (int i = 0; i < featureNames.length; i++)
             this.meta[i] = new FeatureMetadata(featureNames[i]);
     }
 
     /** */
-    private void generateFeatureNames() {
+    protected void generateFeatureNames() {
         String[] featureNames = new String[colSize];
 
         for (int i = 0; i < colSize; i++)
@@ -85,18 +124,22 @@ public class Dataset implements Serializable {
         return meta[i].name();
     }
 
+    /** */
     public DatasetRow[] data() {
         return data;
     }
 
+    /** */
     public void setData(DatasetRow[] data) {
         this.data = data;
     }
 
+    /** */
     public FeatureMetadata[] meta() {
         return meta;
     }
 
+    /** */
     public void setMeta(FeatureMetadata[] meta) {
         this.meta = meta;
     }
@@ -141,6 +184,27 @@ public class Dataset implements Serializable {
         assert data[idx] != null;
 
         return data[idx].features();
+    }
+
+    /** */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        LabeledDataset that = (LabeledDataset)o;
+
+        return rowSize == that.rowSize && colSize == that.colSize && Arrays.equals(data, that.data) && Arrays.equals(meta, that.meta);
+    }
+
+    /** */
+    @Override public int hashCode() {
+        int res = Arrays.hashCode(data);
+        res = 31 * res + Arrays.hashCode(meta);
+        res = 31 * res + rowSize;
+        res = 31 * res + colSize;
+        return res;
     }
 
 }

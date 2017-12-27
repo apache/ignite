@@ -22,7 +22,6 @@ import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 import org.apache.ignite.ml.knn.models.Normalization;
@@ -41,16 +40,6 @@ import org.jetbrains.annotations.NotNull;
  * Class for set of labeled vectors.
  */
 public class LabeledDataset<L> extends Dataset implements Serializable {
-    /**
-     * Creates new Labeled Dataset by given data.
-     *
-     * @param data Should be initialized with one vector at least.
-     * @param colSize Amount of observed attributes in each vector.
-     */
-    public LabeledDataset(LabeledVector[] data, int colSize) {
-        this(data, null, colSize);
-    }
-
     /**
      * Creates new Labeled Dataset and initialized with empty data structure.
      *
@@ -90,6 +79,16 @@ public class LabeledDataset<L> extends Dataset implements Serializable {
 
     }
 
+    /**
+     * Creates new Labeled Dataset by given data.
+     *
+     * @param data Should be initialized with one vector at least.
+     * @param colSize Amount of observed attributes in each vector.
+     */
+    public LabeledDataset(LabeledVector[] data, int colSize) {
+        super(data, colSize);
+    }
+
 
     /**
      * Creates new local Labeled Dataset by matrix and vector of labels.
@@ -110,6 +109,7 @@ public class LabeledDataset<L> extends Dataset implements Serializable {
      * @param isDistributed Use distributed data structures to keep data.
      */
     public LabeledDataset(double[][] mtx, double[] lbs, String[] featureNames, boolean isDistributed) {
+        super();
         assert mtx != null;
         assert lbs != null;
 
@@ -123,7 +123,10 @@ public class LabeledDataset<L> extends Dataset implements Serializable {
         this.colSize = mtx[0].length;
 
         if(featureNames == null) generateFeatureNames();
-        else this.featureNames = featureNames;
+        else {
+            assert colSize == featureNames.length;
+            convertStringNamesToFeatureMetadata(featureNames);
+        }
 
 
         data = new LabeledVector[rowSize];
@@ -140,10 +143,6 @@ public class LabeledDataset<L> extends Dataset implements Serializable {
         }
     }
 
-    public LabeledDataset(DatasetRow<Vector>[] data, FeatureMetadata[] meta) {
-        super(data, meta);
-    }
-    
     /**
      * Returns label if label is attached or null if label is missed.
      *
@@ -151,7 +150,7 @@ public class LabeledDataset<L> extends Dataset implements Serializable {
      * @return Label.
      */
     public double label(int idx) {
-        LabeledVector labeledVector = data[idx];
+        LabeledVector labeledVector = (LabeledVector)data[idx];
 
         if(labeledVector!=null)
             return (double)labeledVector.label();
@@ -172,7 +171,7 @@ public class LabeledDataset<L> extends Dataset implements Serializable {
         double[] labels = new double[data.length];
 
         for (int i = 0; i < data.length; i++)
-            labels[i] = (double)data[i].label();
+            labels[i] = (double)((LabeledVector)data[i]).label();
 
         return labels;
     }
@@ -184,7 +183,7 @@ public class LabeledDataset<L> extends Dataset implements Serializable {
      * @param lb The given label.
      */
     public void setLabel(int idx, double lb) {
-        LabeledVector labeledVector = data[idx];
+        LabeledVector labeledVector = (LabeledVector)data[idx];
 
         if(labeledVector != null)
             labeledVector.setLabel(lb);
@@ -342,24 +341,5 @@ public class LabeledDataset<L> extends Dataset implements Serializable {
         }
     }
 
-    /** */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
 
-        LabeledDataset that = (LabeledDataset)o;
-
-        return rowSize == that.rowSize && colSize == that.colSize && Arrays.equals(data, that.data) && Arrays.equals(featureNames, that.featureNames);
-    }
-
-    /** */
-    @Override public int hashCode() {
-        int res = Arrays.hashCode(data);
-        res = 31 * res + Arrays.hashCode(featureNames);
-        res = 31 * res + rowSize;
-        res = 31 * res + colSize;
-        return res;
-    }
 }
