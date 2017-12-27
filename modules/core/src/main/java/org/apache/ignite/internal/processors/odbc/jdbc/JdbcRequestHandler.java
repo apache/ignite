@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.sql.BatchUpdateException;
 import java.sql.ParameterMetaData;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +52,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -475,37 +478,37 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         if (F.isEmpty(schemaName))
             schemaName = QueryUtils.DFLT_SCHEMA;
 
+        int qryCnt = req.queries().size();
+
         int successQueries = 0;
-        int updCnts[] = new int[req.queries().size()];
+        int updCnts[] = new int[qryCnt];
 
         try {
-            String sql = null;
+            SqlFieldsQueryEx qry = null;
 
             for (JdbcQuery q : req.queries()) {
-                if (q.sql() != null)
-                    sql = q.sql();
+                if (q.sql() != null) { // If we have a new query string in the batch,
+                    if (qry != null) // then execute the previous sub-batch and create new SqlFieldsQueryEx.
+                        successQueries = executeQuery(successQueries, updCnts, qry);
 
-                SqlFieldsQuery qry = new SqlFieldsQueryEx(sql, false);
+                    qry = new SqlFieldsQueryEx(q.sql(), false, qryCnt);
 
-                qry.setArgs(q.args());
+                    qry.setDistributedJoins(distributedJoins);
+                    qry.setEnforceJoinOrder(enforceJoinOrder);
+                    qry.setCollocated(collocated);
+                    qry.setReplicatedOnly(replicatedOnly);
+                    qry.setLazy(lazy);
 
-                qry.setDistributedJoins(distributedJoins);
-                qry.setEnforceJoinOrder(enforceJoinOrder);
-                qry.setCollocated(collocated);
-                qry.setReplicatedOnly(replicatedOnly);
-                qry.setLazy(lazy);
+                    qry.setSchema(schemaName);
+                }
 
-                qry.setSchema(schemaName);
+                assert qry != null;
 
-                QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query()
-                    .querySqlFieldsNoCache(qry, true, true).get(0);
-
-                assert !qryCur.isQuery();
-
-                List<List<?>> items = qryCur.getAll();
-
-                updCnts[successQueries++] = ((Long)items.get(0).get(0)).intValue();
+                qry.addBatchedArgs(q.args());
             }
+
+            if (qry != null)
+                successQueries = executeQuery(successQueries, updCnts, qry);
 
             return new JdbcResponse(new JdbcBatchExecuteResult(updCnts, ClientListenerResponse.STATUS_SUCCESS, null));
         }
@@ -519,7 +522,26 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             if (e instanceof IgniteSQLException) {
                 code = ((IgniteSQLException) e).statusCode();
 
-                msg = e.getMessage();
+                Throwable cause = X.cause(e, BatchUpdateException.class);
+
+                if (cause != null) {
+                    int[] updCntsOnErr = ((BatchUpdateException)cause).getUpdateCounts();
+
+                    int successQueries0 = successQueries;
+
+                    successQueries += updCntsOnErr.length;
+
+                    int[] updCnts0 = new int[successQueries];
+
+                    System.arraycopy(updCnts, 0, updCnts0, 0, successQueries0);
+                    System.arraycopy(updCntsOnErr, 0, updCnts0, successQueries0, updCntsOnErr.length);
+
+                    updCnts = updCnts0;
+
+                    msg = cause.getMessage();
+                }
+                else
+                    msg = e.getMessage();
             }
             else {
                 code = IgniteQueryErrorCode.UNKNOWN;
@@ -529,6 +551,29 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             return new JdbcResponse(new JdbcBatchExecuteResult(Arrays.copyOf(updCnts, successQueries), code, msg));
         }
+    }
+
+    /**
+     * Executes query and updates result counters.
+     *
+     * @param successQueries Successfully executed query counter.
+     * @param updCnts Per query rows updates counter.
+     * @param qry Query.
+     * @return Updated value of successfully executed queries.
+     */
+    private int executeQuery(int successQueries, int[] updCnts, SqlFieldsQueryEx qry) {
+        List<FieldsQueryCursor<List<?>>> qryRes = ctx.query().querySqlFieldsNoCache(qry, true, true);
+
+        for (FieldsQueryCursor<List<?>> cur : qryRes) {
+            assert !((QueryCursorImpl)cur).isQuery();
+
+            Iterator<List<?>> it = cur.iterator();
+
+            if (it.hasNext())
+                updCnts[successQueries++] = ((Long)it.next().get(0)).intValue();
+        }
+
+        return successQueries;
     }
 
     /**

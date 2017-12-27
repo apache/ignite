@@ -22,7 +22,9 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Date;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
@@ -114,6 +116,22 @@ public class DmlUtils {
             throw new IgniteSQLException("Value conversion failed [from=" + currCls.getName() + ", to=" +
                 expCls.getName() +']', IgniteQueryErrorCode.CONVERSION_FAILED, e);
         }
+    }
+
+    /**
+     * Check whether query is batched.
+     *
+     * @param qry Query.
+     * @return {@code True} if batched.
+     */
+    public static boolean isBatched(SqlFieldsQuery qry) {
+        if (qry instanceof SqlFieldsQueryEx) {
+            SqlFieldsQueryEx qry0 = (SqlFieldsQueryEx)qry;
+
+            return qry0.isBatched();
+        }
+
+        return false;
     }
 
     /**

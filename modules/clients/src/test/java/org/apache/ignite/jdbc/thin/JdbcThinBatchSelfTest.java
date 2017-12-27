@@ -184,6 +184,42 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
     /**
      * @throws SQLException If failed.
      */
+    public void testBatchParseException() throws SQLException {
+        final int BATCH_SIZE = 7;
+
+        for (int idx = 0, i = 0; i < BATCH_SIZE; ++i, idx += i) {
+            stmt.addBatch("insert into Person (_key, id, firstName, lastName, age) values "
+                + generateValues(idx, i + 1));
+        }
+
+        stmt.addBatch("insert into Person (_key, id, firstName, lastName, age) values (4444, 'fail', 1, 1, 1)");
+
+        stmt.addBatch("insert into Person (_key, id, firstName, lastName, age) values "
+            + generateValues(100, 1));
+
+        try {
+            stmt.executeBatch();
+
+            fail("BatchUpdateException must be thrown");
+        } catch(BatchUpdateException e) {
+            int [] updCnts = e.getUpdateCounts();
+
+            assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
+
+            for (int i = 0; i < BATCH_SIZE; ++i)
+                assertEquals("Invalid update count",i + 1, updCnts[i]);
+
+            if (!e.getMessage().contains("Value conversion failed")) {
+                log.error("Invalid exception: ", e);
+
+                fail();
+            }
+        }
+    }
+
+    /**
+     * @throws SQLException If failed.
+     */
     public void testBatchClear() throws SQLException {
         final int BATCH_SIZE = 7;
 

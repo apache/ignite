@@ -17,17 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.dml;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.util.typedef.F;
-
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.EntryProcessorResult;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,6 +26,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.EntryProcessorResult;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
 
@@ -51,7 +51,8 @@ public class DmlBatchSender {
     private final int size;
 
     /** Batches. */
-    private final Map<UUID, Map<Object, EntryProcessor<Object, Object, Boolean>>> batches = new HashMap<>();
+    private final Map<UUID, Map<Object, IgniteBiTuple<Integer, EntryProcessor<Object, Object, Boolean>>>> batches =
+        new HashMap<>();
 
     /** Result count. */
     private long updateCnt;
@@ -61,6 +62,9 @@ public class DmlBatchSender {
 
     /** Exception. */
     private SQLException err;
+
+    /** Per row updates counter */
+    private Map<Integer, Integer> cntPerRow = new HashMap<>();
 
     /**
      * Constructor.
@@ -78,16 +82,24 @@ public class DmlBatchSender {
      *
      * @param key Key.
      * @param proc Processor.
+     * @param rowNum Row number.
+     * @throws IgniteCheckedException If failed.
      */
-    public void add(Object key, EntryProcessor<Object, Object, Boolean> proc) throws IgniteCheckedException {
+    public void add(Object key, EntryProcessor<Object, Object, Boolean> proc, int rowNum)
+        throws IgniteCheckedException {
         ClusterNode node = cctx.affinity().primaryByKey(key, AffinityTopologyVersion.NONE);
 
         if (node == null)
             throw new IgniteCheckedException("Failed to map key to node.");
 
+        Integer cnt = cntPerRow.get(rowNum);
+
+        if (cnt == null)
+            cntPerRow.put(rowNum, 0);
+
         UUID nodeId = node.id();
 
-        Map<Object, EntryProcessor<Object, Object, Boolean>> batch = batches.get(nodeId);
+        Map<Object, IgniteBiTuple<Integer, EntryProcessor<Object, Object, Boolean>>> batch = batches.get(nodeId);
 
         if (batch == null) {
             batch = new HashMap<>();
@@ -95,7 +107,10 @@ public class DmlBatchSender {
             batches.put(nodeId, batch);
         }
 
-        batch.put(key, proc);
+        if (batch.containsKey(key)) // Force cache update if duplicates found.
+            flush();
+
+        batch.put(key, new IgniteBiTuple<>(rowNum, proc));
 
         if (batch.size() >= size) {
             sendBatch(batch);
@@ -110,9 +125,12 @@ public class DmlBatchSender {
      * @throws IgniteCheckedException If failed.
      */
     public void flush() throws IgniteCheckedException {
-        for (Map<Object, EntryProcessor<Object, Object, Boolean>> batch : batches.values()) {
-            if (!batch.isEmpty())
+        for (Map<Object, IgniteBiTuple<Integer, EntryProcessor<Object, Object, Boolean>>> batch : batches.values()) {
+            if (!batch.isEmpty()) {
                 sendBatch(batch);
+
+                batch.clear();
+            }
         }
     }
 
@@ -138,12 +156,40 @@ public class DmlBatchSender {
     }
 
     /**
+     * Returns per row updates counter.
+     *
+     * @return {@link Map} from row number to updated entries.
+     */
+    public Map<Integer, Integer> perRowUpdateCounter() {
+        return cntPerRow;
+    }
+
+    /**
+     * Returns per row updates counter as array.
+     *
+     * @return Per row updates counter as array.
+     */
+    public int[] perRowCounterAsArray() {
+        int[] res = new int[cntPerRow.size()];
+
+        for (int i = 0; i < cntPerRow.size(); i++ ) {
+            Integer cnt = cntPerRow.get(i);
+
+            assert cnt != null;
+
+            res[i] = cnt;
+        }
+
+        return res;
+    }
+
+    /**
      * Send the batch.
      *
      * @param batch Batch.
      * @throws IgniteCheckedException If failed.
      */
-    private void sendBatch(Map<Object, EntryProcessor<Object, Object, Boolean>> batch)
+    private void sendBatch(Map<Object, IgniteBiTuple<Integer, EntryProcessor<Object, Object, Boolean>>> batch)
         throws IgniteCheckedException {
         DmlPageProcessingResult pageRes = processPage(cctx, batch);
 
@@ -156,9 +202,9 @@ public class DmlBatchSender {
 
         if (pageRes.error() != null) {
             if (err == null)
-                err = error();
+                err = pageRes.error();
             else
-                err.setNextException(error());
+                err.setNextException(pageRes.error());
         }
     }
 
@@ -171,14 +217,23 @@ public class DmlBatchSender {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    private static DmlPageProcessingResult processPage(GridCacheContext cctx,
-        Map<Object, EntryProcessor<Object, Object, Boolean>> rows) throws IgniteCheckedException {
-        Map<Object, EntryProcessorResult<Boolean>> res = cctx.cache().invokeAll(rows);
+    private DmlPageProcessingResult processPage(GridCacheContext cctx,
+        Map<Object, IgniteBiTuple<Integer, EntryProcessor<Object, Object, Boolean>>> rows)
+        throws IgniteCheckedException {
+        Map<Object, EntryProcessor<Object, Object, Boolean>> keysAndProcs = new HashMap<>();
 
-        if (F.isEmpty(res))
+        for (Map.Entry<Object, IgniteBiTuple<Integer, EntryProcessor<Object, Object, Boolean>>> entry : rows.entrySet())
+            keysAndProcs.put(entry.getKey(), entry.getValue().get2());
+
+        Map<Object, EntryProcessorResult<Boolean>> res = cctx.cache().invokeAll(keysAndProcs);
+
+        if (F.isEmpty(res)) {
+            countAllRows(rows);
+
             return new DmlPageProcessingResult(rows.size(), null, null);
+        }
 
-        DmlPageProcessingErrorResult splitRes = splitErrors(res);
+        DmlPageProcessingErrorResult splitRes = splitErrors(res, rows);
 
         int keysCnt = splitRes.errorKeys().length;
 
@@ -194,8 +249,11 @@ public class DmlBatchSender {
      * @return pair [array of duplicated/concurrently modified keys, SQL exception for erroneous keys] (exception is
      * null if all keys are duplicates/concurrently modified ones).
      */
-    private static DmlPageProcessingErrorResult splitErrors(Map<Object, EntryProcessorResult<Boolean>> res) {
+    private DmlPageProcessingErrorResult splitErrors(Map<Object, EntryProcessorResult<Boolean>> res,
+        Map<Object, IgniteBiTuple<Integer, EntryProcessor<Object, Object, Boolean>>> rows) {
         Set<Object> errKeys = new LinkedHashSet<>(res.keySet());
+
+        countAllRows(rows);
 
         SQLException currSqlEx = null;
 
@@ -225,8 +283,36 @@ public class DmlBatchSender {
 
                 errors++;
             }
+            finally {
+                Object key = e.getKey();
+
+                Integer rowNum = rows.get(key).get1();
+
+                assert rowNum != null;
+
+                Integer cnt = cntPerRow.get(rowNum);
+
+                cntPerRow.put(rowNum, cnt - 1);
+            }
         }
 
         return new DmlPageProcessingErrorResult(errKeys.toArray(), firstSqlEx, errors);
+    }
+
+    /**
+     * Updates counters as if all rows were successfully processed.
+     *
+     * @param rows Rows.
+     */
+    private void countAllRows(Map<Object, IgniteBiTuple<Integer, EntryProcessor<Object, Object, Boolean>>> rows) {
+        for (IgniteBiTuple<Integer, EntryProcessor<Object, Object, Boolean>> val : rows.values()) {
+            Integer rowNum = val.get1();
+
+            assert rowNum != null;
+
+            Integer cnt = cntPerRow.get(rowNum);
+
+            cntPerRow.put(rowNum, cnt + 1);
+        }
     }
 }

@@ -369,6 +369,7 @@ public final class UpdatePlan {
 
     /**
      * Extract rows from plan without performing any query.
+     *
      * @param args Original query arguments.
      * @return Rows from plan.
      * @throws IgniteCheckedException if failed.
@@ -399,6 +400,63 @@ public final class UpdatePlan {
         }
 
         return res;
+    }
+
+    /**
+     * Extract rows from plan without performing any query.
+     *
+     * @param argss Batch of arguments.
+     * @return Rows from plan.
+     * @throws IgniteCheckedException If failed.
+     */
+    public List<List<List<?>>> createRows(List<Object[]> argss) throws IgniteCheckedException {
+        assert rowsNum > 0 && !F.isEmpty(colNames);
+        assert argss != null;
+
+        List<List<List<?>>> resPerQry = new ArrayList<>(argss.size());
+
+        GridH2RowDescriptor desc = tbl.rowDescriptor();
+
+        for (Object[] args : argss) {
+            List<List<?>> res = new ArrayList<>();
+
+            resPerQry.add(res);
+
+            extractArgsValues(args, res, desc);
+        }
+
+        return resPerQry;
+    }
+
+    /**
+     * Extracts values from arguments.
+     *
+     * @param args Arguments.
+     * @param res Result list where to put values to.
+     * @param desc Row descriptor.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void extractArgsValues(Object[] args, List<List<?>> res, GridH2RowDescriptor desc)
+        throws IgniteCheckedException {
+        assert res != null;
+
+        for (List<DmlArgument> row : rows) {
+            List<Object> resRow = new ArrayList<>();
+
+            for (int j = 0; j < colNames.length; j++) {
+                Object colVal = row.get(j).get(args);
+
+                if (j == keyColIdx || j == valColIdx) {
+                    Class<?> colCls = j == keyColIdx ? desc.type().keyClass() : desc.type().valueClass();
+
+                    colVal = DmlUtils.convert(colVal, desc, colCls, colTypes[j]);
+                }
+
+                resRow.add(colVal);
+            }
+
+            res.add(resRow);
+        }
     }
 
     /**
