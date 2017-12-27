@@ -92,9 +92,7 @@ public class BinarySchema implements Externalizable {
      */
     public BinarySchema(int schemaId, List<Integer> fieldIds) {
         assert fieldIds != null;
-
-        if (F.isEmpty(fieldIds))
-            schemaId = 0; // Set effective schema ID.
+        assert !F.isEmpty(fieldIds) || schemaId == 0 : "Schema must be 0 if there are no fields: " + schemaId;
 
         this.schemaId = schemaId;
 
@@ -476,7 +474,9 @@ public class BinarySchema implements Externalizable {
          * @return Schema.
          */
         public BinarySchema build() {
-            return new BinarySchema(schemaId, fields);
+            int schemaId0 = F.isEmpty(fields) ? 0 : schemaId;
+
+            return new BinarySchema(schemaId0, fields);
         }
     }
 
