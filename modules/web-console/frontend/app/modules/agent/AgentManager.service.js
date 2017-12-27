@@ -45,10 +45,6 @@ class ConnectionState {
     }
 
     update(demo, count, clusters) {
-        _.forEach(clusters, (cluster) => {
-            cluster.name = cluster.id;
-        });
-
         this.clusters = clusters;
 
         if (_.isNil(this.cluster))

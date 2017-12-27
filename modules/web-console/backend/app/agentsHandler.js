@@ -87,7 +87,9 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
         constructor(top) {
             const clusterName = top.clusterName;
 
-            this.id = _.isEmpty(clusterName) ? `Cluster ${uuid().substring(0, 8).toUpperCase()}` : clusterName;
+            this.id = _.isEmpty(top.clusterId) ? uuid() : top.clusterId;
+            this.name = _.isEmpty(clusterName) ? `Cluster ${this.id.substring(0, 8).toUpperCase()}` : clusterName;
+
             this.nids = top.nids;
             this.addresses = top.addresses;
             this.clients = top.clients;
