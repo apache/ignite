@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.util.nio.compress;
 
 import java.io.IOException;
@@ -12,18 +29,24 @@ import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.lang.IgniteInClosure;
 
-import static org.apache.ignite.internal.util.nio.compress.CompressEngineResult.BUFFER_OVERFLOW;
-import static org.apache.ignite.internal.util.nio.compress.CompressEngineResult.OK;
+import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResult.BUFFER_OVERFLOW;
+import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResult.OK;
 
-class GridNioCompressHandler extends ReentrantLock {
+/**
+ * Class that encapsulate the per-session compression state, compress and decompress logic.
+ */
+class GridNioCompressionHandler extends ReentrantLock {
+    /** Size of a net buffers. */
+    private static final int netBufSize = 32768;
+
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Grid logger. */
     private IgniteLogger log;
 
-    /** compress engine. */
-    private CompressEngine compressEngine;
+    /** Compress engine. */
+    private CompressionEngine compressEngine;
 
     /** Order. */
     private ByteOrder order;
@@ -44,7 +67,7 @@ class GridNioCompressHandler extends ReentrantLock {
     private ByteBuffer appBuf;
 
     /** Parent filter. */
-    private GridNioCompressFilter parent;
+    private GridNioCompressionFilter parent;
 
     /**
      * Creates handler.
@@ -57,9 +80,9 @@ class GridNioCompressHandler extends ReentrantLock {
      * @param order Byte order.
      * @param encBuf encoded buffer to be used.
      */
-    GridNioCompressHandler(GridNioCompressFilter parent,
+    GridNioCompressionHandler(GridNioCompressionFilter parent,
         GridNioSession ses,
-        CompressEngine engine,
+        CompressionEngine engine,
         boolean directBuf,
         ByteOrder order,
         IgniteLogger log,
@@ -77,8 +100,6 @@ class GridNioCompressHandler extends ReentrantLock {
 
         compressEngine = engine;
 
-        int netBufSize = 32768;
-
         outNetBuf = directBuf ? ByteBuffer.allocateDirect(netBufSize) : ByteBuffer.allocate(netBufSize);
 
         outNetBuf.order(order);
@@ -90,7 +111,7 @@ class GridNioCompressHandler extends ReentrantLock {
         if (encBuf != null) {
             encBuf.flip();
 
-            inNetBuf.put(encBuf); // Buffer contains bytes read but not handled by compressEngine at BlockingCompressHandler.
+            inNetBuf.put(encBuf); // Buffer contains bytes read but not handled by compressEngine at BlockingCompressionHandler.
         }
 
         // Initially buffer is empty.
@@ -141,11 +162,8 @@ class GridNioCompressHandler extends ReentrantLock {
         if (buf.limit() > inNetBuf.remaining()) {
             inNetBuf = expandBuffer(inNetBuf, inNetBuf.capacity() + buf.limit() * 2);
 
-            appBuf = expandBuffer(appBuf, inNetBuf.capacity() * 2);
-
             if (log.isDebugEnabled())
-                log.debug("Expanded buffers [inNetBufCapacity=" + inNetBuf.capacity() + ", appBufCapacity=" +
-                    appBuf.capacity() + ", ses=" + ses + ", ");
+                log.debug("Expanded buffer [inNetBufCapacity=" + inNetBuf.capacity() + "], ses=" + ses + ", ");
         }
 
         // append buf to inNetBuffer
@@ -170,7 +188,7 @@ class GridNioCompressHandler extends ReentrantLock {
 
         // Loop until there is no more data in src
         while (src.hasRemaining()) {
-            CompressEngineResult res = compressEngine.wrap(src, outNetBuf);
+            CompressionEngineResult res = compressEngine.wrap(src, outNetBuf);
 
             if (res == BUFFER_OVERFLOW) {
                 outNetBuf = expandBuffer(outNetBuf, Math.max(
@@ -215,7 +233,7 @@ class GridNioCompressHandler extends ReentrantLock {
         // Flip buffer so we can read it.
         inNetBuf.flip();
 
-        CompressEngineResult res;
+        CompressionEngineResult res;
 
         do {
             res = compressEngine.unwrap(inNetBuf, appBuf);

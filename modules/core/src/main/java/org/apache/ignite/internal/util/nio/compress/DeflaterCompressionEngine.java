@@ -18,18 +18,16 @@
 package org.apache.ignite.internal.util.nio.compress;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
-import static org.apache.ignite.internal.util.nio.compress.CompressEngineResult.BUFFER_OVERFLOW;
-import static org.apache.ignite.internal.util.nio.compress.CompressEngineResult.BUFFER_UNDERFLOW;
-import static org.apache.ignite.internal.util.nio.compress.CompressEngineResult.OK;
+import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResult.BUFFER_OVERFLOW;
+import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResult.BUFFER_UNDERFLOW;
+import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResult.OK;
 
-public class DeflaterCompressEngine implements CompressEngine {
+public class DeflaterCompressionEngine implements CompressionEngine {
     /* For debug stats. */
     private long bytesBefore = 0;
     private long bytesAfter = 0;
@@ -45,12 +43,12 @@ public class DeflaterCompressEngine implements CompressEngine {
     private final ExtendedByteArrayOutputStream inflateBaos = new ExtendedByteArrayOutputStream(1024);
 
 
-    public DeflaterCompressEngine(){
+    public DeflaterCompressionEngine(){
         deflater.setLevel(Deflater.BEST_SPEED);
     }
 
     /** */
-    public CompressEngineResult wrap(ByteBuffer src, ByteBuffer buf) throws IOException {
+    public CompressionEngineResult wrap(ByteBuffer src, ByteBuffer buf) throws IOException {
         int len = src.remaining();
 
         bytesBefore += len;
@@ -95,7 +93,7 @@ public class DeflaterCompressEngine implements CompressEngine {
     private int inputUnwapLen = 0;
 
     /** */
-    public CompressEngineResult unwrap(ByteBuffer src, ByteBuffer buf) throws IOException {
+    public CompressionEngineResult unwrap(ByteBuffer src, ByteBuffer buf) throws IOException {
         if (inflateBaos.size() > 0){
             if (buf.remaining() < inflateBaos.size())
                 return BUFFER_OVERFLOW;

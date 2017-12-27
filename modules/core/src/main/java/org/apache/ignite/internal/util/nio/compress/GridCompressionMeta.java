@@ -20,9 +20,9 @@ package org.apache.ignite.internal.util.nio.compress;
 import java.nio.ByteBuffer;
 
 /** */
-public class GridCompressMeta {
-    /** GridNioCompressHandler. */
-    private GridNioCompressHandler hnd;
+public class GridCompressionMeta {
+    /** GridNioCompressionHandler. */
+    private GridNioCompressionHandler hnd;
 
     /** Data already decoded by blocking Compress handler. */
     private ByteBuffer decodedBuf;
@@ -31,29 +31,29 @@ public class GridCompressMeta {
     private ByteBuffer encodedBuf;
 
     /** Compress engine. */
-    private CompressEngine compressEngine;
+    private CompressionEngine compressEngine;
 
     /** */
-    public CompressEngine compressEngine() {
+    public CompressionEngine compressEngine() {
         return compressEngine;
     }
 
     /**
      * @param compressEngine Compress engine.
      */
-    public void compressEngine(CompressEngine compressEngine) {
+    public void compressEngine(CompressionEngine compressEngine) {
         this.compressEngine = compressEngine;
     }
 
     /** */
-    public GridNioCompressHandler handler() {
+    public GridNioCompressionHandler handler() {
         return hnd;
     }
 
     /**
      * @param hnd Handler.
      */
-    public void handler(GridNioCompressHandler hnd) {
+    public void handler(GridNioCompressionHandler hnd) {
         this.hnd = hnd;
     }
 

@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.util.nio.compress;
 
 /**
- *
+ * Enum that represents a result of compression.
  */
-enum CompressEngineResult {
+enum CompressionEngineResult {
     /**
      * Can't to process the operation because there are not enough bytes available in the destination buffer
      * to hold the result.

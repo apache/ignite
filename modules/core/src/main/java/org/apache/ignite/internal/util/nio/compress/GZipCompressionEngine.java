@@ -1,17 +1,35 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.util.nio.compress;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import net.jpountz.lz4.LZ4BlockInputStream;
-import net.jpountz.lz4.LZ4BlockOutputStream;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
-import static org.apache.ignite.internal.util.nio.compress.CompressEngineResult.BUFFER_OVERFLOW;
-import static org.apache.ignite.internal.util.nio.compress.CompressEngineResult.BUFFER_UNDERFLOW;
-import static org.apache.ignite.internal.util.nio.compress.CompressEngineResult.OK;
+import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResult.BUFFER_OVERFLOW;
+import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResult.BUFFER_UNDERFLOW;
+import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResult.OK;
 
-public class LZ4CompressEngine implements CompressEngine {
+/** */
+public class GZipCompressionEngine implements CompressionEngine {
     /* For debug stats. */
     private long bytesBefore = 0;
     private long bytesAfter = 0;
@@ -31,7 +49,7 @@ public class LZ4CompressEngine implements CompressEngine {
     private final byte[] lenBytes = new byte[4];
 
     /** */
-    public CompressEngineResult wrap(ByteBuffer src, ByteBuffer buf) throws IOException {
+    public CompressionEngineResult wrap(ByteBuffer src, ByteBuffer buf) throws IOException {
         int len = src.remaining();
 
         bytesBefore += len;
@@ -52,7 +70,7 @@ public class LZ4CompressEngine implements CompressEngine {
 
         deflateBaos.reset();
 
-        try (LZ4BlockOutputStream out = new LZ4BlockOutputStream(deflateBaos) ) {
+        try (GZIPOutputStream out = new GZIPOutputStream(deflateBaos) ) {
             out.write(inputWrapArray, 0, len);
         }
 
@@ -79,7 +97,7 @@ public class LZ4CompressEngine implements CompressEngine {
     }
 
     /** */
-    public CompressEngineResult unwrap(ByteBuffer src, ByteBuffer buf) throws IOException {
+    public CompressionEngineResult unwrap(ByteBuffer src, ByteBuffer buf) throws IOException {
         int initPos = src.position();
 
         if (compressSmall && src.remaining() == 0) {
@@ -126,7 +144,7 @@ public class LZ4CompressEngine implements CompressEngine {
 
         inflateBaos.reset();
 
-        try (InputStream in = new LZ4BlockInputStream(new ByteArrayInputStream(inputUnwapArray, 0, len))
+        try (InputStream in = new GZIPInputStream(new ByteArrayInputStream(inputUnwapArray, 0, len))
         ) {
             int length;
 
@@ -160,10 +178,10 @@ public class LZ4CompressEngine implements CompressEngine {
     private byte[] toArray(int val){
         return  new byte[] {
             (byte)(val >>> 24),
-            (byte)(val >>> 16),
-            (byte)(val >>> 8),
-            (byte)val
-        };
+                (byte)(val >>> 16),
+                (byte)(val >>> 8),
+                (byte)val
+            };
     }
-
 }
+

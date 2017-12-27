@@ -20,13 +20,26 @@ package org.apache.ignite.internal.util.nio.compress;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public interface CompressEngine {
-    /** */
-    CompressEngineResult wrap(ByteBuffer src, ByteBuffer buf) throws IOException;
+/**
+ * Interface that contains methods to compress and decompress data.
+ */
+public interface CompressionEngine {
+    /**
+     * Compress source byte buffer.
+     * @param src ByteBuffer containing data to compress.
+     * @param buf ByteBuffer to hold outbound network data.
+     * @return Result of compression.
+     */
+    CompressionEngineResult wrap(ByteBuffer src, ByteBuffer buf) throws IOException;
 
-    /** */
-    CompressEngineResult unwrap(ByteBuffer src, ByteBuffer buf) throws IOException;
+    /**
+     * Decompress source byte buffer that can contains part of message, one or more messages.
+     * @param src ByteBuffer containing compressed data.
+     * @param buf ByteBuffer to hold inbound network data.
+     * @return Result of decompression.
+     */
+    CompressionEngineResult unwrap(ByteBuffer src, ByteBuffer buf) throws IOException;
 
-    /** */
+    /** for debug tests.*/
     void closeInbound() throws IOException;
 }

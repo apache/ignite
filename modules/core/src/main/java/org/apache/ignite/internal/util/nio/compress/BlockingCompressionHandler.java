@@ -7,11 +7,16 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.nio.GridNioException;
 
-import static org.apache.ignite.internal.util.nio.compress.CompressEngineResult.BUFFER_OVERFLOW;
-import static org.apache.ignite.internal.util.nio.compress.CompressEngineResult.OK;
+import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResult.BUFFER_OVERFLOW;
+import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResult.OK;
 
-/** */
-public class BlockingCompressHandler {
+/**
+ *
+ */
+public class BlockingCompressionHandler {
+    /** Size of a net buffers. */
+    private static final int netBufSize = 32768;
+
     /** Logger. */
     private IgniteLogger log;
 
@@ -19,33 +24,31 @@ public class BlockingCompressHandler {
     private final ByteOrder order;
 
     /** Compress engine. */
-    private final CompressEngine compressEngine;
+    private final CompressionEngine compressionEngine;
 
     /** Output buffer into which compressed data will be written. */
     private ByteBuffer outNetBuf;
 
-    /** Input buffer from which compress engine will decrypt data. */
+    /** Input buffer from which compression engine will decompress data. */
     private ByteBuffer inNetBuf;
 
     /** Application buffer. */
     private ByteBuffer appBuf;
 
     /**
-     * @param compressEngine compressEngine.
+     * @param compressionEngine compressionEngine.
      * @param directBuf Direct buffer flag.
      * @param order Byte order.
      * @param log Logger.
      */
-    public BlockingCompressHandler(CompressEngine compressEngine,
+    public BlockingCompressionHandler(CompressionEngine compressionEngine,
         boolean directBuf,
         ByteOrder order,
         IgniteLogger log)
         throws IOException {
         this.log = log;
-        this.compressEngine = compressEngine;
+        this.compressionEngine = compressionEngine;
         this.order = order;
-
-        int netBufSize = 32768;
 
         outNetBuf = directBuf ? ByteBuffer.allocateDirect(netBufSize) : ByteBuffer.allocate(netBufSize);
         outNetBuf.order(order);
@@ -60,7 +63,7 @@ public class BlockingCompressHandler {
         appBuf = allocateAppBuff();
 
         if (log.isDebugEnabled())
-            log.debug("Started compress session [netBufSize=" + netBufSize + ", appBufSize=" + appBuf.capacity() + ']');
+            log.debug("Started compression session [netBufSize=" + netBufSize + ", appBufSize=" + appBuf.capacity() + ']');
     }
 
     /** */
@@ -69,7 +72,7 @@ public class BlockingCompressHandler {
     }
 
     /**
-     * @return Application buffer with decoded data.
+     * @return Application buffer with decompressed data.
      */
     public ByteBuffer applicationBuffer() {
         appBuf.flip();
@@ -91,7 +94,7 @@ public class BlockingCompressHandler {
 
         // Loop until there is no more data in src
         while (src.hasRemaining()) {
-            CompressEngineResult res = compressEngine.wrap(src, outNetBuf);
+            CompressionEngineResult res = compressionEngine.wrap(src, outNetBuf);
 
             if (res == BUFFER_OVERFLOW) {
                 outNetBuf = expandBuffer(outNetBuf, Math.max(
@@ -108,26 +111,22 @@ public class BlockingCompressHandler {
     }
 
     /**
-     * Called by compress filter when new message was received.
+     * Called by compression filter when new message was received.
      *
      * @param buf Received message.
      * @throws GridNioException If exception occurred while forwarding events to underlying filter.
      * @throws IOException If failed to process compress data.
      */
-    public ByteBuffer decode(ByteBuffer buf) throws IgniteCheckedException, IOException {
+    public ByteBuffer decompress(ByteBuffer buf) throws IgniteCheckedException, IOException {
         appBuf.clear();
 
         if (buf.limit() > inNetBuf.remaining()) {
             inNetBuf = expandBuffer(inNetBuf, inNetBuf.capacity() + buf.limit() * 2);
 
-            appBuf = expandBuffer(appBuf, inNetBuf.capacity() * 2);
-
             if (log.isDebugEnabled())
-                log.debug("Expanded buffers [inNetBufCapacity=" + inNetBuf.capacity() + ", appBufCapacity=" +
-                    appBuf.capacity() + ']');
+                log.debug("Expanded buffer [inNetBufCapacity=" + inNetBuf.capacity() + ']');
         }
 
-        // append buf to inNetBuffer
         inNetBuf.put(buf);
 
         unwrapData();
@@ -150,10 +149,10 @@ public class BlockingCompressHandler {
         // Flip buffer so we can read it.
         inNetBuf.flip();
 
-        CompressEngineResult res;
+        CompressionEngineResult res;
 
         do {
-            res = compressEngine.unwrap(inNetBuf, appBuf);
+            res = compressionEngine.unwrap(inNetBuf, appBuf);
 
             if (res == BUFFER_OVERFLOW)
                 appBuf = expandBuffer(appBuf, appBuf.capacity() * 2);
@@ -168,8 +167,6 @@ public class BlockingCompressHandler {
      * Allocate application buffer.
      */
     private ByteBuffer allocateAppBuff() {
-        int netBufSize = 32768;
-
         int appBufSize = netBufSize * 2;
 
         ByteBuffer buf = ByteBuffer.allocate(appBufSize);

@@ -57,7 +57,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
-import org.apache.ignite.internal.util.nio.compress.GridNioCompressFilter;
+import org.apache.ignite.internal.util.nio.compress.GridNioCompressionFilter;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -220,7 +220,7 @@ public class GridNioServer<T> {
     private GridNioSslFilter sslFilter;
 
     /** */
-    private GridNioCompressFilter netCompressFilter;
+    private GridNioCompressionFilter netCompressFilter;
 
     /** */
     @GridToStringExclude
@@ -330,8 +330,8 @@ public class GridNioServer<T> {
                     assert sslFilter.directMode();
                 }
 
-                if (filter instanceof GridNioCompressFilter) {
-                    netCompressFilter = (GridNioCompressFilter)filter;
+                if (filter instanceof GridNioCompressionFilter) {
+                    netCompressFilter = (GridNioCompressionFilter)filter;
 
                     assert netCompressFilter.directMode();
                 }

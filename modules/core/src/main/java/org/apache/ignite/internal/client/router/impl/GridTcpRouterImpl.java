@@ -44,7 +44,7 @@ import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioServerListener;
-import org.apache.ignite.internal.util.nio.compress.GridNioCompressFilter;
+import org.apache.ignite.internal.util.nio.compress.GridNioCompressionFilter;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
@@ -263,7 +263,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
             filterArrayList.add(new GridNioCodecFilter(parser, log, false));
 
             if (true /* Compress enabled flag. Need add to GridClientConfiguration. */) {
-                GridNioCompressFilter compressFilter = new GridNioCompressFilter(false, ByteOrder.nativeOrder(), log);
+                GridNioCompressionFilter compressFilter = new GridNioCompressionFilter(false, ByteOrder.nativeOrder(), log);
 
                 filterArrayList.add(compressFilter);
             }
