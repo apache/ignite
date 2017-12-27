@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.datagrid;
+package org.apache.ignite.examples.sql;
 
 import java.util.List;
 import org.apache.ignite.Ignite;
@@ -33,7 +33,7 @@ import org.apache.ignite.examples.ExampleNodeStartup;
  * <p>
  * Alternatively you can run {@link ExampleNodeStartup} in either same or another JVM.
  */
-public class CacheQueryDdlExample {
+public class SqlDdlExample {
     /** Dummy cache name. */
     private static final String DUMMY_CACHE_NAME = "dummy_cache";
 

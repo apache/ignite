@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.datagrid;
+package org.apache.ignite.examples.sql;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -29,7 +29,7 @@ import org.apache.ignite.examples.ExampleNodeStartup;
  * <p>
  * Ignite nodes must be started in separate process using {@link ExampleNodeStartup} before running this example.
  */
-public class JdbcExample {
+public class SqlJdbcExample {
     /**
      * Executes example.
      *
