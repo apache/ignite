@@ -266,11 +266,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             useCompactFooter = false;
         }
 
-        int finalSchemaId;
+        int effectiveSchemaId = schemaId();
         int offset;
 
         if (fieldCnt != 0) {
-            finalSchemaId = schemaId;
             offset = out.position() - start;
 
             // Write the schema.
@@ -292,16 +291,13 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         }
         else {
             if (rawOffPos != 0) {
-                finalSchemaId = 0;
                 offset = rawOffPos - start;
 
                 // If there is no schema, we are free to write raw offset to schema offset.
                 flags |= BinaryUtils.FLAG_HAS_RAW;
             }
-            else {
-                finalSchemaId = 0;
+            else
                 offset = 0;
-            }
         }
 
         // Actual write.
@@ -315,7 +311,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         out.unsafeWriteInt(registered ? typeId : GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
         out.unsafePosition(start + GridBinaryMarshaller.TOTAL_LEN_POS);
         out.unsafeWriteInt(retPos - start);
-        out.unsafeWriteInt(finalSchemaId);
+        out.unsafeWriteInt(effectiveSchemaId);
         out.unsafeWriteInt(offset);
 
         out.unsafePosition(retPos);
@@ -1832,10 +1828,10 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
-     * @return Schema ID.
+     * @return Effective schema ID.
      */
     public int schemaId() {
-        return schemaId;
+        return fieldCnt > 0 ? schemaId : 0;
     }
 
     /**

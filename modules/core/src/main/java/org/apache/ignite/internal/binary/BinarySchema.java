@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.io.DataInput;
@@ -91,6 +92,9 @@ public class BinarySchema implements Externalizable {
      */
     public BinarySchema(int schemaId, List<Integer> fieldIds) {
         assert fieldIds != null;
+
+        if (F.isEmpty(fieldIds))
+            schemaId = 0; // Set effective schema ID.
 
         this.schemaId = schemaId;
 
