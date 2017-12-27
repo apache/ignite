@@ -51,6 +51,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
 import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
+import org.apache.ignite.spi.discovery.DiscoverySpiMutableCustomMessageSupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperClusterNode;
@@ -66,6 +67,7 @@ import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 @IgniteSpiMultipleInstancesSupport(true)
 @DiscoverySpiOrderSupport(true)
 @DiscoverySpiHistorySupport(true)
+@DiscoverySpiMutableCustomMessageSupport(false)
 public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, IgniteDiscoverySpi {
     /** */
     public static final String DFLT_ROOT_PATH = "/apacheIgnite";
@@ -243,11 +245,6 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     /** {@inheritDoc} */
     @Override public boolean supportsCommunicationErrorResolve() {
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean supportsMutableCustomEvents() {
-        return false;
     }
 
     /** {@inheritDoc} */

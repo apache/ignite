@@ -20,7 +20,6 @@ package org.apache.ignite.internal.managers.discovery;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 
 /**
  *
@@ -65,9 +64,4 @@ public interface IgniteDiscoverySpi extends DiscoverySpi {
      * @param err Connection error.
      */
     public void resolveCommunicationError(ClusterNode node, Exception err);
-
-    /**
-     * @return {@code True} if mutable {@link DiscoverySpiCustomMessage}s are supported.
-     */
-    public boolean supportsMutableCustomEvents();
 }

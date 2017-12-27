@@ -121,6 +121,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
 import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
+import org.apache.ignite.spi.discovery.DiscoverySpiMutableCustomMessageSupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -2394,14 +2395,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * @return {@code True} if configured {@link DiscoverySpi} does not support mutable custom messages.
+     * @return {@code True} if configured {@link DiscoverySpi} supports mutable custom messages.
      */
-    public boolean unmutableCustomMessages() {
-        DiscoverySpi spi = getSpi();
+    public boolean mutableCustomMessages() {
+        DiscoverySpiMutableCustomMessageSupport ann = U.getAnnotation(ctx.config().getDiscoverySpi().getClass(),
+            DiscoverySpiMutableCustomMessageSupport.class);
 
-        return (spi instanceof IgniteDiscoverySpi) &&
-            !((IgniteDiscoverySpi)spi).supportsMutableCustomEvents();
-
+        return ann != null && ann.value();
     }
 
     /**
