@@ -1442,6 +1442,11 @@
                                 <xs:documentation>SQL connector thread pool size.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
+                        <xs:attribute name="idleTimeout" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Idle timeout for client connections on the server side. If no packets come within idle timeout, the connection is closed by the server. Zero or negative for no timeout.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="persistentStoreConfiguration" minOccurs="0">
