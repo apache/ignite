@@ -63,7 +63,10 @@ public class RowStore {
 
         persistenceEnabled = grp.dataRegion().config().isPersistenceEnabled();
 
-        rowCacheCleaner = ctx.kernalContext().query().getIndexing().rowCacheCleaner(grp.groupId());
+        if (ctx.kernalContext().query().moduleEnabled())
+            rowCacheCleaner = ctx.kernalContext().query().getIndexing().rowCacheCleaner(grp.groupId());
+        else
+            rowCacheCleaner = null;
     }
 
     /**
