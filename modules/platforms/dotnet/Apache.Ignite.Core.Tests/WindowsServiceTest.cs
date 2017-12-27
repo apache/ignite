@@ -66,9 +66,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 "/install",
                 "ForceTestClasspath=true",
-                "-springConfigUrl=" + springPath,
-                "-J-Xms513m",
-                "-J-Xmx555m"
+                "-springConfigUrl=" + springPath
             }).WaitForExit();
 
             var service = GetIgniteService();
