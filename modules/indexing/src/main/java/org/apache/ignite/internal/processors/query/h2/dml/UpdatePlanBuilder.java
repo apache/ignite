@@ -326,6 +326,9 @@ public final class UpdatePlanBuilder {
      * @return {@code True} if no query optimisation may be used.
      */
     private static boolean noQuery(List<GridSqlElement[]> rows) {
+        if (F.isEmpty(rows))
+            return false;
+
         boolean noQry = true;
 
         for (int i = 0; i < rows.size(); i++) {
