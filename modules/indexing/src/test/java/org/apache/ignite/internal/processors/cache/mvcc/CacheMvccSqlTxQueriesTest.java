@@ -41,6 +41,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
@@ -681,6 +682,8 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryInsertSubquery() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7300");
+
         ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class, Integer.class, MvccTestSqlIndexValue.class);
 
@@ -723,6 +726,8 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryInsertSubqueryImplicit() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7300");
+
         ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class, Integer.class, MvccTestSqlIndexValue.class);
 
@@ -760,6 +765,8 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryUpdateSubquery() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7300");
+
         ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class, Integer.class, MvccTestSqlIndexValue.class);
 
@@ -802,6 +809,8 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryUpdateSubqueryImplicit() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7300");
+
         ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class, Integer.class, MvccTestSqlIndexValue.class);
 
@@ -1023,7 +1032,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
         final Phaser phaser = new Phaser(2);
         final AtomicReference<Exception> ex = new AtomicReference<>();
 
-        GridCompoundFuture fut = new GridCompoundFuture();
+        final GridCompoundFuture fut = new GridCompoundFuture();
 
         fut.add(multithreadedAsync(new Runnable() {
             @Override public void run() {
@@ -1096,12 +1105,10 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
             onException(ex, e);
         }
 
-        Exception ex0 = ex.get();
+        IgniteSQLException ex0 = X.cause(ex.get(), IgniteSQLException.class);
 
         assertNotNull(ex0);
-
-        if(!"Failed to run update. Mvcc version mismatch.".equals(ex0.getMessage()))
-            throw ex0;
+        assertEquals("Failed to run update. Mvcc version mismatch.", ex0.getMessage());
     }
 
     /**
