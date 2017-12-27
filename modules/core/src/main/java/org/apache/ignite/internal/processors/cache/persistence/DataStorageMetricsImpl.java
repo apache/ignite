@@ -34,7 +34,10 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     private volatile HitRateMetrics walFsyncTimeDuration;
 
     /** */
-    private volatile HitRateMetrics walFsyncTimeNumber;
+    private volatile HitRateMetrics walFsyncTimeNum;
+
+    /** */
+    private volatile HitRateMetrics walBuffPollSpinsNum;
 
     /** */
     private volatile long lastCpLockWaitDuration;
@@ -118,13 +121,22 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        long numRate = walFsyncTimeNumber.getRate();
+        long numRate = walFsyncTimeNum.getRate();
 
         if (numRate == 0)
             return 0;
 
         return (float)walFsyncTimeDuration.getRate() / numRate;
     }
+
+    /** {@inheritDoc} */
+    @Override public long getWalBuffPollSpinsRate() {
+        if (!metricsEnabled)
+            return 0;
+
+        return walBuffPollSpinsNum.getRate();
+    }
+
 
     /** {@inheritDoc} */
     @Override public long getLastCheckpointDuration() {
@@ -281,7 +293,14 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         long microseconds = nanoTime / 1_000;
 
         walFsyncTimeDuration.onHits(microseconds);
-        walFsyncTimeNumber.onHit();
+        walFsyncTimeNum.onHit();
+    }
+
+    /**
+     * @param num Number.
+     */
+    public void onBuffPollSpin(int num) {
+        walBuffPollSpinsNum.onHits(num);
     }
 
     /**
@@ -290,8 +309,9 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     private void resetRates() {
         walLoggingRate = new HitRateMetrics((int)rateTimeInterval, subInts);
         walWritingRate = new HitRateMetrics((int)rateTimeInterval, subInts);
+        walBuffPollSpinsNum = new HitRateMetrics((int)rateTimeInterval, subInts);
 
         walFsyncTimeDuration = new HitRateMetrics((int)rateTimeInterval, subInts);
-        walFsyncTimeNumber = new HitRateMetrics((int)rateTimeInterval, subInts);
+        walFsyncTimeNum = new HitRateMetrics((int)rateTimeInterval, subInts);
     }
 }
