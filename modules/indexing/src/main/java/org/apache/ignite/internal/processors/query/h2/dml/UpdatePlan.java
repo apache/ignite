@@ -699,6 +699,9 @@ public final class UpdatePlan {
                     key = DmlUtils.convert(key, rowDesc, desc.keyClass(), plan.colTypes[plan.keyColIdx]);
                 }
 
+                if (cctx.binaryMarshaller() && key instanceof BinaryObjectBuilder)
+                    key = ((BinaryObjectBuilder) key).build();
+
                 if (key == null) {
                     if (F.isEmpty(desc.keyFieldName()))
                         throw new IgniteSQLException("Key for INSERT or MERGE must not be null", IgniteQueryErrorCode.NULL_KEY);
@@ -761,13 +764,8 @@ public final class UpdatePlan {
                         desc.setValue(colName, key, val, colVal);
                     }
 
-                    if (cctx.binaryMarshaller()) {
-                        if (key instanceof BinaryObjectBuilder)
-                            key = ((BinaryObjectBuilder) key).build();
-
-                        if (val instanceof BinaryObjectBuilder)
-                            val = ((BinaryObjectBuilder) val).build();
-                    }
+                    if (cctx.binaryMarshaller() && val instanceof BinaryObjectBuilder)
+                        val = ((BinaryObjectBuilder) val).build();
 
                     desc.validateKeyAndValue(key, val);
 

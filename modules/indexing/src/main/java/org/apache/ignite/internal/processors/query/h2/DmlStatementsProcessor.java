@@ -419,6 +419,8 @@ public class DmlStatementsProcessor {
                 return res;
             }
             catch (IgniteCheckedException e) {
+                checkSqlException(e);
+
                 U.error(log, "Error during update [localNodeId=" + cctx.localNodeId() + "]", e);
 
                 throw new IgniteSQLException("Failed to run update. " + e.getMessage(), e);
@@ -480,6 +482,16 @@ public class DmlStatementsProcessor {
         int pageSize = loc ? 0 : fieldsQry.getPageSize();
 
         return processDmlSelectResult(plan, cur, pageSize);
+    }
+
+    /**
+     * @param e Exception.
+     */
+    private void checkSqlException(IgniteCheckedException e) {
+        IgniteSQLException sqlEx = X.cause(e, IgniteSQLException.class);
+
+        if(sqlEx != null)
+            throw sqlEx;
     }
 
     /**
