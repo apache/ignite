@@ -47,7 +47,7 @@ namespace ignite
 
             SecureSocketClient::~SecureSocketClient()
             {
-                Close();
+                CloseInteral();
 
                 if (context)
                     SSL_CTX_free(reinterpret_cast<SSL_CTX*>(context));
@@ -165,12 +165,7 @@ namespace ignite
 
             void SecureSocketClient::Close()
             {
-                if (sslBio)
-                {
-                    BIO_free_all(reinterpret_cast<BIO*>(sslBio));
-                    
-                    sslBio = 0;
-                }
+                CloseInteral();
             }
 
             int SecureSocketClient::Send(const int8_t* data, size_t size, int32_t timeout)
@@ -319,6 +314,16 @@ namespace ignite
                 }
 
                 return ctx;
+            }
+
+            void SecureSocketClient::CloseInteral()
+            {
+                if (sslBio)
+                {
+                    BIO_free_all(reinterpret_cast<BIO*>(sslBio));
+
+                    sslBio = 0;
+                }
             }
         }
     }
