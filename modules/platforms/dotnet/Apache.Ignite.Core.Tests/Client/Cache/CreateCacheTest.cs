@@ -22,8 +22,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Configuration;
-    using Apache.Ignite.Core.Impl.Client.Cache;
 #if !NETCOREAPP2_0
+    using Apache.Ignite.Core.Impl.Client.Cache;
     using Apache.Ignite.Core.Impl.Client;
 #endif
     using Apache.Ignite.Core.Tests.Cache;
@@ -149,7 +149,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             cfg = GetFullCacheConfiguration("b");
 
             cache = Client.CreateCache<int, int>(cfg);
-            ClientCacheConfigurationTest.AssertClientConfigsAreEqual(cfg, cache.GetConfiguration());
+            AssertClientConfigsAreEqual(cfg, cache.GetConfiguration());
         }
 
 #if !NETCOREAPP2_0
@@ -206,7 +206,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             cfg = GetFullCacheConfiguration("b");
 
             cache = Client.GetOrCreateCache<int, int>(cfg);
-            ClientCacheConfigurationTest.AssertClientConfigsAreEqual(cfg, cache.GetConfiguration());
+            AssertClientConfigsAreEqual(cfg, cache.GetConfiguration());
         }
 
         /// <summary>

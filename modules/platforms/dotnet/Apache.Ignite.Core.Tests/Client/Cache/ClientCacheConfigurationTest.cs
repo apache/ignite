@@ -22,8 +22,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using System.Linq;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client.Cache;
-    using Apache.Ignite.Core.Impl.Binary.IO;
-    using Apache.Ignite.Core.Impl.Client.Cache;
     using Apache.Ignite.Core.Tests.Cache;
     using NUnit.Framework;
 
@@ -112,11 +110,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var clientCfg = new CacheClientConfiguration(
                 CacheConfigurationTest.GetCustomCacheConfiguration("z"), true);
 
-            AssertClientConfigsAreEqual(clientCfg, new CacheClientConfiguration(clientCfg));
+            ClientTestBase.AssertClientConfigsAreEqual(clientCfg, new CacheClientConfiguration(clientCfg));
 
             // Convert to server cfg.
             var serverCfg = clientCfg.ToCacheConfiguration();
-            AssertClientConfigsAreEqual(clientCfg, new CacheClientConfiguration(serverCfg, false));
+            ClientTestBase.AssertClientConfigsAreEqual(clientCfg, new CacheClientConfiguration(serverCfg, false));
         }
 
         /// <summary>
@@ -129,14 +127,14 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var clientCfg = new CacheClientConfiguration();
             var defCfg = new CacheClientConfiguration(new CacheConfiguration(), false);
 
-            AssertClientConfigsAreEqual(defCfg, clientCfg);
+            ClientTestBase.AssertClientConfigsAreEqual(defCfg, clientCfg);
 
             // Name.
             clientCfg = new CacheClientConfiguration("foo");
             Assert.AreEqual("foo", clientCfg.Name);
 
             clientCfg.Name = null;
-            AssertClientConfigsAreEqual(defCfg, clientCfg);
+            ClientTestBase.AssertClientConfigsAreEqual(defCfg, clientCfg);
 
             // Query entities.
             clientCfg = new CacheClientConfiguration("bar", typeof(QueryPerson));
@@ -168,24 +166,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             var clientCfg = new CacheClientConfiguration(cfg, false);
 
-            AssertClientConfigsAreEqual(clientCfg, SerializeDeserialize(clientCfg));
-        }
-
-        /// <summary>
-        /// Asserts the client configs are equal.
-        /// </summary>
-        public static void AssertClientConfigsAreEqual(CacheClientConfiguration cfg, CacheClientConfiguration cfg2)
-        {
-            if (cfg2.QueryEntities != null)
-            {
-                // Remove identical aliases which are added during config roundtrip.
-                foreach (var e in cfg2.QueryEntities)
-                {
-                    e.Aliases = e.Aliases.Where(x => x.Alias != x.FullName).ToArray();
-                }
-            }
-
-            AssertExtensions.ReflectionEqual(cfg, cfg2);
+            ClientTestBase.AssertClientConfigsAreEqual(clientCfg, SerializeDeserialize(clientCfg));
         }
 
         /// <summary>
