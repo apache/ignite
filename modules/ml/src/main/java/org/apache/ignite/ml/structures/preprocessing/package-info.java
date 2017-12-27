@@ -15,18 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.knn.models;
-
-/** This enum contains names of different normalization approaches. */
-public enum Normalization {
-    /** Minimax.
-     *
-     * x'=(x-MIN[X])/(MAX[X]-MIN[X])
-     */
-    MINIMAX,
-    /** Z normalization.
-     *
-     * x'=(x-M[X])/\sigma [X]
-     */
-    Z_NORMALIZATION
-}
+/**
+ * <!-- Package description. -->
+ * Contains main APIs for dataset preprocessing.
+ */
+package org.apache.ignite.ml.structures.preprocessing;

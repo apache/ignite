@@ -30,6 +30,7 @@ import org.apache.ignite.ml.knn.models.KNNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledDatasetTestTrainPair;
+import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
@@ -71,7 +72,7 @@ public class KNNClassificationExample {
                     Path path = Paths.get(KNNClassificationExample.class.getClassLoader().getResource(KNN_IRIS_TXT).toURI());
 
                     // Read dataset from file
-                    LabeledDataset dataset = LabeledDataset.loadTxt(path, SEPARATOR, true, false);
+                    LabeledDataset dataset = LabeledDatasetLoader.loadFromTxtFile(path, SEPARATOR, true, false);
 
                     // Random splitting of iris data as 70% train and 30% test datasets
                     LabeledDatasetTestTrainPair split = new LabeledDatasetTestTrainPair(dataset, 0.3);

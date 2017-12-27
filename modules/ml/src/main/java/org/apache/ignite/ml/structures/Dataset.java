@@ -24,9 +24,9 @@ import org.apache.ignite.ml.math.Vector;
 /**
  * Class for set of vectors. This is a base class in hierarchy of datasets.
  */
-public class Dataset implements Serializable {
+public class Dataset<Row extends DatasetRow> implements Serializable {
     /** Data to keep. */
-    protected DatasetRow[] data;
+    protected Row[] data;
 
     /** Metadata to identify feature. */
     protected FeatureMetadata[] meta;
@@ -43,7 +43,7 @@ public class Dataset implements Serializable {
      * @param data Given data. Should be initialized with one vector at least.
      * @param meta Feature's metadata.
      */
-    public Dataset(DatasetRow[] data, FeatureMetadata[] meta) {
+    public Dataset(Row[] data, FeatureMetadata[] meta) {
         this.data = data;
         this.meta = meta;
     }
@@ -55,7 +55,7 @@ public class Dataset implements Serializable {
      * @param featureNames Column names.
      * @param colSize Amount of observed attributes in each vector.
      */
-    public Dataset(DatasetRow[] data, String[] featureNames, int colSize) {
+    public Dataset(Row[] data, String[] featureNames, int colSize) {
         this(data.length, colSize, featureNames);
         assert data != null;
         this.data = data;
@@ -67,7 +67,7 @@ public class Dataset implements Serializable {
      * @param data Should be initialized with one vector at least.
      * @param colSize Amount of observed attributes in each vector.
      */
-    public Dataset(DatasetRow[] data, int colSize) {
+    public Dataset(Row[] data, int colSize) {
         this(data, null, colSize);
     }
 
@@ -130,7 +130,7 @@ public class Dataset implements Serializable {
     }
 
     /** */
-    public void setData(DatasetRow[] data) {
+    public void setData(Row[] data) {
         this.data = data;
     }
 
@@ -168,7 +168,7 @@ public class Dataset implements Serializable {
      * @param idx Index of observation.
      * @return Labeled features.
      */
-    public DatasetRow getRow(int idx){
+    public Row getRow(int idx){
         return data[idx];
     }
 
@@ -206,5 +206,4 @@ public class Dataset implements Serializable {
         res = 31 * res + colSize;
         return res;
     }
-
 }

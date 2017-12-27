@@ -26,11 +26,12 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.ExampleNodeStartup;
 import org.apache.ignite.examples.ml.knn.classification.KNNClassificationExample;
 import org.apache.ignite.ml.knn.models.KNNStrategy;
-import org.apache.ignite.ml.knn.models.Normalization;
 import org.apache.ignite.ml.knn.regression.KNNMultipleLinearRegression;
 import org.apache.ignite.ml.math.distances.ManhattanDistance;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledDatasetTestTrainPair;
+import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
+import org.apache.ignite.ml.structures.preprocessing.Normalizer;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
@@ -72,10 +73,10 @@ public class KNNRegressionExample {
                     Path path = Paths.get(KNNClassificationExample.class.getClassLoader().getResource(KNN_CLEARED_MACHINES_TXT).toURI());
 
                     // Read dataset from file
-                    LabeledDataset dataset = LabeledDataset.loadTxt(path, SEPARATOR, false, false);
+                    LabeledDataset dataset = LabeledDatasetLoader.loadFromTxtFile(path, SEPARATOR, false, false);
 
                     // Normalize dataset
-                    dataset.normalizeWith(Normalization.MINIMAX);
+                    Normalizer.normalizeWithMiniMax(dataset);
 
                     // Random splitting of iris data as 80% train and 20% test datasets
                     LabeledDatasetTestTrainPair split = new LabeledDatasetTestTrainPair(dataset, 0.2);

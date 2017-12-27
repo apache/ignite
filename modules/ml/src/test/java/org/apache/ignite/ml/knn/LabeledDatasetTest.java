@@ -30,6 +30,7 @@ import org.apache.ignite.ml.math.exceptions.knn.FileParsingException;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledDatasetTestTrainPair;
 import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
 
 /** Tests behaviour of KNNClassificationTest. */
 public class LabeledDatasetTest extends BaseKNNTest {
@@ -88,7 +89,7 @@ public class LabeledDatasetTest extends BaseKNNTest {
         assertEquals(dataset.colSize(), 2);
         assertEquals(dataset.rowSize(), 6);
 
-        final LabeledVector<Vector, Double> row = dataset.getRow(0);
+        final LabeledVector<Vector, Double> row = (LabeledVector<Vector, Double>)dataset.getRow(0);
 
         assertEquals(row.features().get(0), 1.0);
         assertEquals(row.label(), 1.0);
@@ -202,7 +203,7 @@ public class LabeledDatasetTest extends BaseKNNTest {
 
         Path path = Paths.get(this.getClass().getClassLoader().getResource(IRIS_MISSED_DATA).toURI());
 
-        LabeledDataset training = LabeledDataset.loadTxt(path, ",", false, false);
+        LabeledDataset training = LabeledDatasetLoader.loadFromTxtFile(path, ",", false, false);
 
         assertEquals(training.features(2).get(1), 0.0);
     }

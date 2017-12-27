@@ -63,11 +63,11 @@ public class LabeledDatasetTestTrainPair implements Serializable {
         int testCntr = 0;
 
         for (Integer idx: sortedTestIndices){ // guarantee order as iterator
-            testVectors[testCntr] = dataset.getRow(idx);
+            testVectors[testCntr] = (LabeledVector)dataset.getRow(idx);
             testCntr++;
 
             for (int i = datasetCntr; i < idx; i++) {
-                trainVectors[trainCntr] = dataset.getRow(i);
+                trainVectors[trainCntr] = (LabeledVector)dataset.getRow(i);
                 trainCntr++;
             }
 
@@ -75,7 +75,7 @@ public class LabeledDatasetTestTrainPair implements Serializable {
         }
         if(datasetCntr < datasetSize){
             for (int i = datasetCntr; i < datasetSize; i++) {
-                trainVectors[trainCntr] = dataset.getRow(i);
+                trainVectors[trainCntr] = (LabeledVector)dataset.getRow(i);
                 trainCntr++;
             }
         }
