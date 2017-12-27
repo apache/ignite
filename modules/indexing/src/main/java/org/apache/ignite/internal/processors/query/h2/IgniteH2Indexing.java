@@ -86,6 +86,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.query.CacheQueryObjectValueContext;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -162,6 +163,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
+import org.apache.ignite.transactions.TransactionState;
 import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.Prepared;
@@ -996,10 +998,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             };
         }
         finally {
-            GridNearTxLocal tx = userTx();
+            GridNearTxLocal tx = tx();
 
-            if (tx != null && tx.isRollbackOnly())
-                U.close(tx, log);
+            if (tx != null && tx.user() && tx.isRollbackOnly())
+                U.close((AutoCloseable)tx, log);
         }
     }
 
@@ -1374,7 +1376,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @NotNull private MvccQueryTracker mvccTracker(GridCacheContext cctx, boolean startTx) {
         assert cctx != null && cctx.mvccEnabled();
 
-        GridNearTxLocal tx = userTx();
+        GridNearTxLocal tx = activeTx();
 
         if (tx == null && startTx)
             tx = txStart(cctx, 0);
@@ -1616,7 +1618,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridNearTxLocal tx = null;
 
         if (mvccEnabled())
-            tx = userTx();
+            tx = activeTx();
 
         if (cmd instanceof SqlBeginTransactionCommand) {
             if (!mvccEnabled())
@@ -1737,14 +1739,31 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * @return Currently started transaction, or {@code null} if none started.
+     * @return Currently started user transaction, or {@code null} if none started.
      */
-    @Nullable public GridNearTxLocal userTx() {
-        GridNearTxLocal tx = ctx.cache().context().tm().userTx();
+    @Nullable public GridNearTxLocal tx() {
+        IgniteInternalTx tx0 = ctx.cache().context().tm().tx();
+
+        GridNearTxLocal tx = tx0 != null && tx0.user() ? (GridNearTxLocal)tx0 : null;
 
         assert tx == null || (tx.pessimistic() && tx.repeatableRead());
 
         return tx;
+    }
+
+    /**
+     * @return Currently started active user transaction, or {@code null} if none started.
+     */
+    @Nullable public GridNearTxLocal activeTx() {
+        GridNearTxLocal tx = tx();
+
+        if (tx != null) {
+            assert tx.state() == TransactionState.ACTIVE;
+
+            return tx;
+        }
+
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -1980,7 +1999,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return res;
         }
         finally {
-            GridNearTxLocal tx = userTx();
+            GridNearTxLocal tx = tx();
 
             if (tx != null && tx.isRollbackOnly())
                 U.close(tx, log);
@@ -1992,7 +2011,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return {@code True} if need to start transaction.
      */
     private boolean autoStartTx(SqlFieldsQuery qry) {
-        return qry instanceof SqlFieldsQueryEx && !((SqlFieldsQueryEx)qry).isAutoCommit() && userTx() == null;
+        return qry instanceof SqlFieldsQueryEx && !((SqlFieldsQueryEx)qry).isAutoCommit() && activeTx() == null;
     }
 
     /** {@inheritDoc} */
@@ -2842,7 +2861,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (!mvccEnabled())
             return;
 
-        GridNearTxLocal tx = userTx();
+        GridNearTxLocal tx = activeTx();
 
         if (tx != null)
             doRollback(tx);
