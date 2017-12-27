@@ -64,9 +64,6 @@ public class ClientCacheConfigurationSerializer {
     private static final short GROUP_NAME = 7;
 
     /** */
-    private static final short INVALIDATE = 8;
-
-    /** */
     private static final short DEFAULT_LOCK_TIMEOUT = 9;
 
     /** */
@@ -152,7 +149,6 @@ public class ClientCacheConfigurationSerializer {
         writer.writeBoolean(cfg.isEagerTtl());
         writer.writeBoolean(cfg.isStatisticsEnabled());
         writer.writeString(cfg.getGroupName());
-        writer.writeBoolean(cfg.isInvalidate());
         writer.writeLong(cfg.getDefaultLockTimeout());
         writer.writeInt(cfg.getMaxConcurrentAsyncOperations());
         writer.writeInt(cfg.getMaxQueryIteratorsCount());
@@ -249,10 +245,6 @@ public class ClientCacheConfigurationSerializer {
 
                 case GROUP_NAME:
                     cfg.setGroupName(reader.readString());
-                    break;
-
-                case INVALIDATE:
-                    cfg.setInvalidate(reader.readBoolean());
                     break;
 
                 case DEFAULT_LOCK_TIMEOUT:

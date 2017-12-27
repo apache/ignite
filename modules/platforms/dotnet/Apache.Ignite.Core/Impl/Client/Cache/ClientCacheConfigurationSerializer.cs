@@ -43,7 +43,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             EagerTtl = 5, 
             StatisticsEnabled = 6, 
             GroupName = 7, 
-            Invalidate = 8, 
             DefaultLockTimeout = 9, 
             MaxConcurrentAsyncOperations = 10, 
             MaxQueryIteratorsCount = 11, 
@@ -87,7 +86,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             to.EagerTtl = from.EagerTtl;
             to.EnableStatistics = from.EnableStatistics;
             to.GroupName = from.GroupName;
-            to.Invalidate = from.Invalidate;
             to.LockTimeout = from.LockTimeout;
             to.MaxConcurrentAsyncOperations = from.MaxConcurrentAsyncOperations;
             to.MaxQueryIteratorsCount = from.MaxQueryIteratorsCount;
@@ -158,7 +156,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             to.EagerTtl = from.EagerTtl;
             to.EnableStatistics = from.EnableStatistics;
             to.GroupName = from.GroupName;
-            to.Invalidate = from.Invalidate;
             to.LockTimeout = from.LockTimeout;
             to.MaxConcurrentAsyncOperations = from.MaxConcurrentAsyncOperations;
             to.MaxQueryIteratorsCount = from.MaxQueryIteratorsCount;
@@ -230,9 +227,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             code(Op.GroupName);
             writer.WriteString(cfg.GroupName);
             
-            code(Op.Invalidate);
-            writer.WriteBoolean(cfg.Invalidate);
-
             code(Op.DefaultLockTimeout);
             writer.WriteTimeSpanAsLong(cfg.LockTimeout);
 
@@ -325,7 +319,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             cfg.EagerTtl = reader.ReadBoolean();
             cfg.EnableStatistics = reader.ReadBoolean();
             cfg.GroupName = reader.ReadString();
-            cfg.Invalidate = reader.ReadBoolean();
             cfg.LockTimeout = reader.ReadLongAsTimespan();
             cfg.MaxConcurrentAsyncOperations = reader.ReadInt();
             cfg.MaxQueryIteratorsCount = reader.ReadInt();
