@@ -45,9 +45,11 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLo
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -509,8 +511,8 @@ public final class GridDhtTxQueryEnlistFuture extends GridCacheFutureAdapter<Gri
         IgniteTxEntry txEntry = tx.entry(entry.txKey());
 
         if (txEntry != null) {
-            throw new UnsupportedOperationException("One row cannot be changed twice in the same transaction. " +
-                "Operation is unsupported at the moment.");
+            throw new IgniteSQLException("One row cannot be changed twice in the same transaction. " +
+                "Operation is unsupported at the moment.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 
         Object[] row0 = row.getClass().isArray() ? (Object[])row : null;

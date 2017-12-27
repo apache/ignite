@@ -1107,7 +1107,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
 
         IgniteSQLException ex0 = X.cause(ex.get(), IgniteSQLException.class);
 
-        assertNotNull(ex0);
+        assertNotNull("Exception has not been thrown.", ex0);
         assertEquals("Failed to run update. Mvcc version mismatch.", ex0.getMessage());
     }
 
