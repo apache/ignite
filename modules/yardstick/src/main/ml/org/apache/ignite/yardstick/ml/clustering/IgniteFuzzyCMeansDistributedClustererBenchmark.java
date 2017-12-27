@@ -100,7 +100,7 @@ public class IgniteFuzzyCMeansDistributedClustererBenchmark extends IgniteAbstra
                 FuzzyCMeansModel mdl = clusterer.cluster(pntMatrix, numCenters);
 
                 // Get centers of clusters that is computed by Fuzzy C-Means algorithm.
-               mdl.centers();
+                mdl.centers();
 
                 pntMatrix.destroy();
             }

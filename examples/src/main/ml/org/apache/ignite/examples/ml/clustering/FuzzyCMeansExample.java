@@ -123,6 +123,8 @@ public final class FuzzyCMeansExample {
                         + ">>> 4th center: " + centers[3].get(0) + " " + centers[3].get(1) + "\n";
 
                     System.out.println(res);
+
+                    pntMatrix.destroy();
                 });
 
             igniteThread.start();
