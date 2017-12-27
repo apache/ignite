@@ -69,7 +69,7 @@ abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends Seriali
      * @param cache Cache on which training is performed.
      * @param ignite Ignite instance.
      */
-    public GroupTrainer(
+    GroupTrainer(
         IgniteCache<GroupTrainerCacheKey<K>, V> cache,
         Ignite ignite) {
         this.cache = cache;
