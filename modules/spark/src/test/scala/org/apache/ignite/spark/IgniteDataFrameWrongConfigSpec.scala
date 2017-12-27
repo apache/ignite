@@ -20,7 +20,7 @@ package org.apache.ignite.spark
 import java.lang.{Integer ⇒ JInteger, String ⇒ JString}
 
 import org.apache.ignite.spark.AbstractDataFrameSpec.TEST_CONFIG_FILE
-import org.apache.ignite.spark.IgniteDataFrameOptions._
+import org.apache.ignite.spark.IgniteDataFrameSettings._
 import org.apache.ignite.{IgniteException, IgniteIllegalStateException}
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
@@ -34,9 +34,9 @@ class IgniteDataFrameWrongConfigSpec extends AbstractDataFrameSpec {
         it("Should throw exception when try load unknown table") {
             intercept[IgniteException] {
                 spark.read
-                    .format(IGNITE)
-                    .option(CONFIG_FILE, TEST_CONFIG_FILE)
-                    .option(TABLE, "unknown_table")
+                    .format(FORMAT_IGNITE)
+                    .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
+                    .option(OPTION_TABLE, "unknown_table")
                     .load()
             }
         }
@@ -44,8 +44,8 @@ class IgniteDataFrameWrongConfigSpec extends AbstractDataFrameSpec {
         it("Should throw exception when no cache and no table") {
             intercept[IgniteException] {
                 spark.read
-                    .format(IGNITE)
-                    .option(CONFIG_FILE, TEST_CONFIG_FILE)
+                    .format(FORMAT_IGNITE)
+                    .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
                     .load()
             }
         }

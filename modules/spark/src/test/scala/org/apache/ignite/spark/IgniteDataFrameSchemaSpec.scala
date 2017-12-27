@@ -25,7 +25,7 @@ import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types._
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-import org.apache.ignite.spark.IgniteDataFrameOptions._
+import org.apache.ignite.spark.IgniteDataFrameSettings._
 
 /**
   * Tests to check loading schema for Ignite data sources.
@@ -70,17 +70,17 @@ class IgniteDataFrameSchemaSpec extends AbstractDataFrameSpec {
         createEmployeeCache(client, EMPLOYEE_CACHE_NAME)
 
         personDataFrame = spark.read
-            .format(IGNITE)
-            .option(CONFIG_FILE, TEST_CONFIG_FILE)
-            .option(TABLE, "person")
+            .format(FORMAT_IGNITE)
+            .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
+            .option(OPTION_TABLE, "person")
             .load()
 
         personDataFrame.createOrReplaceTempView("person")
 
         employeeDataFrame = spark.read
-            .format(IGNITE)
-            .option(CONFIG_FILE, TEST_CONFIG_FILE)
-            .option(TABLE, "employee")
+            .format(FORMAT_IGNITE)
+            .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
+            .option(OPTION_TABLE, "employee")
             .load()
 
         employeeDataFrame.createOrReplaceTempView("employee")

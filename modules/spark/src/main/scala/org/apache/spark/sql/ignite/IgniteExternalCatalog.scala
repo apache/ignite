@@ -18,9 +18,9 @@
 package org.apache.spark.sql.ignite
 
 import org.apache.ignite.configuration.CacheConfiguration
-import org.apache.ignite.spark.IgniteDataFrameOptions.{GRID, TABLE}
+import org.apache.ignite.spark.IgniteDataFrameSettings.{OPTION_GRID, OPTION_TABLE}
 import org.apache.ignite.spark.IgniteContext
-import org.apache.ignite.spark.IgniteDataFrameOptions._
+import org.apache.ignite.spark.IgniteDataFrameSettings._
 import org.apache.ignite.spark.impl.IgniteSQLRelation.schema
 import org.apache.ignite.{Ignite, Ignition}
 import org.apache.spark.sql.AnalysisException
@@ -104,16 +104,16 @@ class IgniteExternalCatalog(defaultIgniteContext: IgniteContext) extends Externa
                     tableType = CatalogTableType.EXTERNAL,
                     storage = CatalogStorageFormat(
                         locationUri = None,
-                        inputFormat = Some(IGNITE),
-                        outputFormat = Some(IGNITE),
+                        inputFormat = Some(FORMAT_IGNITE),
+                        outputFormat = Some(FORMAT_IGNITE),
                         serde = None,
                         compressed = false,
                         properties = Map(
-                            GRID → gridName,
-                            TABLE → tableName)
+                            OPTION_GRID → gridName,
+                            OPTION_TABLE → tableName)
                     ),
                     schema = schema(table),
-                    provider = Some(IGNITE),
+                    provider = Some(FORMAT_IGNITE),
                     partitionColumnNames =
                         if (table.getKeyFields != null)
                             table.getKeyFields.toSeq

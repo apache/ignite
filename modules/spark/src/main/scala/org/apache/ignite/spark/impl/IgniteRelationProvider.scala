@@ -20,11 +20,10 @@ package org.apache.ignite.spark.impl
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.internal.util.IgniteUtils
-import org.apache.ignite.spark.IgniteDataFrameOptions.TABLE
+import org.apache.ignite.spark.IgniteDataFrameSettings.OPTION_TABLE
 import org.apache.ignite.spark.IgniteContext
-import org.apache.ignite.spark.IgniteDataFrameOptions._
-import org.apache.ignite.{IgniteException, Ignition}
-import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
+import org.apache.ignite.spark.IgniteDataFrameSettings._
+import org.apache.ignite.IgniteException
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.sources._
 
@@ -35,7 +34,7 @@ class IgniteRelationProvider extends RelationProvider with DataSourceRegister {
     /**
       * @return "ignite" - name of relation provider.
       */
-    override def shortName(): String = IGNITE
+    override def shortName(): String = FORMAT_IGNITE
 
     /**
       * To create IgniteRelation we need a link to a ignite cluster and a table name.
@@ -56,21 +55,21 @@ class IgniteRelationProvider extends RelationProvider with DataSourceRegister {
         val igniteHome = IgniteUtils.getIgniteHome
 
         def configProvider: () ⇒ IgniteConfiguration = {
-            if (params.contains(CONFIG_FILE))
+            if (params.contains(OPTION_CONFIG_FILE))
                 () ⇒ {
                     IgniteContext.setIgniteHome(igniteHome)
 
-                    val cfg = IgnitionEx.loadConfiguration(params(CONFIG_FILE)).get1()
+                    val cfg = IgnitionEx.loadConfiguration(params(OPTION_CONFIG_FILE)).get1()
 
                     cfg.setClientMode(true)
 
                     cfg
                 }
-            else if (params.contains(GRID))
+            else if (params.contains(OPTION_GRID))
                 () ⇒ {
                     IgniteContext.setIgniteHome(igniteHome)
 
-                    val cfg = ignite(params(GRID)).configuration()
+                    val cfg = ignite(params(OPTION_GRID)).configuration()
 
                     cfg.setClientMode(true)
 
@@ -80,18 +79,10 @@ class IgniteRelationProvider extends RelationProvider with DataSourceRegister {
                 throw new IgniteException("'config' or 'grid' must be specified to connect to ignite cluster.")
         }
 
-        val cfg = configProvider()
-
-        sqlCtx.sparkContext.addSparkListener(new SparkListener {
-            override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
-                Ignition.stop(cfg.getIgniteInstanceName, true)
-            }
-        })
-
         val ic = IgniteContext(sqlCtx.sparkContext, configProvider)
 
-        if (params.contains(TABLE))
-            IgniteSQLRelation(ic, params(TABLE).toUpperCase, sqlCtx)
+        if (params.contains(OPTION_TABLE))
+            IgniteSQLRelation(ic, params(OPTION_TABLE).toUpperCase, sqlCtx)
         else
             throw new IgniteException("'table' must be specified for loading ignite data.")
     }

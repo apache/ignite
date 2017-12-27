@@ -25,7 +25,7 @@ import org.apache.ignite.{Ignite, Ignition}
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
-import org.apache.ignite.spark.IgniteDataFrameOptions._
+import org.apache.ignite.spark.IgniteDataFrameSettings._
 
 /**
   * Example application showing use-cases for Ignite implementation of Spark DataFrame API.
@@ -71,9 +71,9 @@ object IgniteDataFrameExample extends App {
       */
     def sparkDSLExample(implicit spark: SparkSession): Unit = {
         val igniteDF = spark.read
-            .format(IGNITE) //Data source type.
-            .option(TABLE, "person") //Table to read.
-            .option(CONFIG_FILE, CONFIG) //Ignite config.
+            .format(FORMAT_IGNITE) //Data source type.
+            .option(OPTION_TABLE, "person") //Table to read.
+            .option(OPTION_CONFIG_FILE, CONFIG) //Ignite config.
             .load()
             .filter(col("id") >= 2) //Filter clause.
             .filter(col("name") like "%M%") //Another filter clause.
@@ -91,9 +91,9 @@ object IgniteDataFrameExample extends App {
       */
     def nativeSparkSqlExample(implicit spark: SparkSession): Unit = {
         val df = spark.read
-            .format(IGNITE) //Data source type.
-            .option(TABLE, "person") //Table to read.
-            .option(CONFIG_FILE, CONFIG) //Ignite config.
+            .format(FORMAT_IGNITE) //Data source type.
+            .option(OPTION_TABLE, "person") //Table to read.
+            .option(OPTION_CONFIG_FILE, CONFIG) //Ignite config.
             .load()
 
         //Registering DataFrame as Spark view.

@@ -17,14 +17,11 @@
 
 package org.apache.ignite.spark
 
-import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.spark.AbstractDataFrameSpec.TEST_CONFIG_FILE
-import org.apache.ignite.spark.IgniteDataFrameOptions._
+import org.apache.ignite.spark.IgniteDataFrameSettings._
 import org.apache.spark.sql.DataFrame
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-
-import scala.reflect.ClassTag
 
 /**
   * Tests to check all kinds of SQL queries from Spark SQL engine to Ignite SQL table.
@@ -281,9 +278,9 @@ class IgniteSQLDataFrameSpec extends AbstractDataFrameSpec {
         createPersonTable(client, "cache1")
 
         personDataFrame = spark.read
-            .format(IGNITE)
-            .option(CONFIG_FILE, TEST_CONFIG_FILE)
-            .option(TABLE, "person")
+            .format(FORMAT_IGNITE)
+            .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
+            .option(OPTION_TABLE, "person")
             .load()
 
         personDataFrame.createOrReplaceTempView("person")

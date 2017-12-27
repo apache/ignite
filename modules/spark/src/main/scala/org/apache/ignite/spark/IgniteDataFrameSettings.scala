@@ -19,25 +19,25 @@ package org.apache.ignite.spark
 
 /**
   */
-object IgniteDataFrameOptions {
+object IgniteDataFrameSettings {
     /**
       * Name of DataSource format for loading data from Apache Ignite.
       */
-    val IGNITE = "ignite"
+    val FORMAT_IGNITE = "ignite"
 
     /**
       * Config option to specify named grid instance to connect when loading data.
       *
       * @example {{{
       * val igniteDF = spark.read.format(IGNITE)
-      *     .option(GRID, "my-grid")
+      *     .option(OPTION_GRID, "my-grid")
       *     //.... other options ...
       *     .load()
       * }}}
       *
       * @see [[org.apache.ignite.Ignite#name()]]
       */
-    val GRID = "grid"
+    val OPTION_GRID = "grid"
 
     /**
       * Config option to specify path to ignite config file.
@@ -47,12 +47,12 @@ object IgniteDataFrameOptions {
       *
       * @example {{{
       * val igniteDF = spark.read.format(IGNITE)
-      *     .option(CONFIG_FILE, CONFIG_FILE)
+      *     .option(OPTION_CONFIG_FILE, CONFIG_FILE)
       *     // other options ...
       *     .load()
       * }}}
       */
-    val CONFIG_FILE = "config"
+    val OPTION_CONFIG_FILE = "config"
 
     /**
       * Config option to specify Ignite SQL table name to load data from.
@@ -60,11 +60,11 @@ object IgniteDataFrameOptions {
       * @example {{{
       * val igniteDF = spark.read.format(IGNITE)
       *     // other options ...
-      *     .option(TABLE, "mytable")
+      *     .option(OPTION_TABLE, "mytable")
       *     .load()
       * }}}
       *
       * @see [[org.apache.ignite.cache.QueryEntity#tableName]]
       */
-    val TABLE = "table"
+    val OPTION_TABLE = "table"
 }

@@ -25,6 +25,7 @@ import org.apache.ignite.spark.IgniteContext.setIgniteHome
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.SparkContext
 import org.apache.log4j.Logger
+import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 
 /**
  * Ignite context.
@@ -60,6 +61,14 @@ class IgniteContext(
 
     // Make sure to start Ignite on context creation.
     ignite()
+
+    //Stop local ignite instance on application end.
+    //Instances on workers will be stopped with executor stop(jvm exit).
+    sparkContext.addSparkListener(new SparkListener {
+        override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
+            close()
+        }
+    })
 
     /**
      * Creates an instance of IgniteContext with the given spring configuration.
@@ -152,7 +161,7 @@ class IgniteContext(
      * Stops supporting ignite instance. If ignite instance has been already stopped, this operation will be
      * a no-op.
      */
-    def close(shutdownIgniteOnWorkers: Boolean = false) = {
+    def close(shutdownIgniteOnWorkers: Boolean = false): Unit = {
         // additional check if called from driver
         if (sparkContext != null && shutdownIgniteOnWorkers) {
             // Get required number of executors with default equals to number of available executors.
