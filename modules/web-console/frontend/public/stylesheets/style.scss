@@ -471,19 +471,6 @@ button.form-control {
     }
 }
 
-gridgain-tasks .ui-grid-header-viewport,
-gridgain-caches-grid .ui-grid-header-viewport,
-gridgain-nodes-grid .ui-grid-header-viewport,
-gridgain-memory-metrics .ui-grid-header-viewport {
-    height: 58px;
-}
-
-gridgain-tasks, gridgain-caches-grid, gridgain-nodes-grid, gridgain-memory-metrics {
-    .ui-grid-header--subcategories .ui-grid-header-cell [role="columnheader"] > div {
-        height: 100% !important;
-    }
-}
-
 .theme-line .paragraphs {
     .panel-group .panel-paragraph + .panel-paragraph {
         margin-top: 30px;
