@@ -20,6 +20,7 @@ package org.apache.ignite.ml.trainers.group.chain;
 import java.io.Serializable;
 import java.util.UUID;
 import java.util.stream.Stream;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -52,6 +53,7 @@ import org.apache.ignite.ml.trainers.group.ResultAndUpdates;
  * @param <V> Type of cache values.
  * @param <I> Type of input of this chain.
  * @param <O> Type of output of this chain.
+ * // TODO: check if it is posssible to integrate with {@link EntryProcessor}.
  */
 @FunctionalInterface
 public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> {
