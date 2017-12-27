@@ -39,6 +39,8 @@ import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
  * 3. While 'shouldContinue' condition is true, training loop step is executed.
  * 4. After loop is finished, data from each key from final key set is collected.
  * 5. Data collected on previous step is transformed into a model which is returned as final result.
+ * Note that all methods returning functions, suppliers etc should return values with minimal dependencies because they are serialized
+ * with all dependent objects.
  *
  * @param <LC> Type of local context of the training.
  * @param <K> Type of cache keys on which the training is done.
@@ -81,9 +83,10 @@ abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends Seriali
 
         GroupTrainingContext<K, V, LC> ctx = new GroupTrainingContext<>(locCtx, cache, ignite);
         ComputationsChain<LC, K, V, T, T> chain = (i, c) -> i;
+        IgniteFunction<GroupTrainerCacheKey<K>, ResultAndUpdates<IN>> distributedInitializer = distributedInitializer(data);
 
         M res = chain.
-            thenDistributedForKeys(this::initDistributed, (t, lc) -> data.initialKeys(trainingUUID), reduceDistributedInitData()).
+            thenDistributedForKeys(distributedInitializer, (t, lc) -> data.initialKeys(trainingUUID), reduceDistributedInitData()).
             thenLocally(this::locallyProcessInitData).
             thenWhile(this::shouldContinue, trainingLoopStep()).
             thenDistributedForEntries(this::extractContextForFinalResultCreation, finalResultsExtractor(), this::finalResultKeys, finalResultsReducer(), defaultFinalResult()).
@@ -105,13 +108,12 @@ abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends Seriali
     protected abstract LC initialLocalContext(T data, UUID trainingUUID);
 
     /**
-     * Do initialization for each of keys specified in initial key set.
+     * Get function for initialization for each of keys specified in initial key set.
      *
      * @param data Data given to this trainer as input.
-     * @param key Type of keys of cache on which training is performed.
-     * @return ResultAndUpdates object. Results are then accumulated and reduced, updates are performed on corresponding caches.
+     * @return Function for initialization for each of keys specified in initial key set.
      */
-    protected abstract ResultAndUpdates<IN> initDistributed(T data, GroupTrainerCacheKey<K> key);
+    protected abstract IgniteFunction<GroupTrainerCacheKey<K>, ResultAndUpdates<IN>> distributedInitializer(T data);
 
     /**
      * Get reducer to reduce data collected from initialization of each key specified in initial key set.

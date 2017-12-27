@@ -23,33 +23,84 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.chain.ComputationsChain;
 import org.apache.ignite.ml.trainers.group.chain.Chains;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 
-public abstract class MetaoptimizerGroupTrainer<LC extends HasTrainingUUID, K, V, D extends Serializable,
+/**
+ * Group trainer using {@link Metaoptimizer}.
+ * Main purpose of this trainer is to extract various transformations (normalizations for example) of data which is processed
+ * in the training loop step into distinct entity called metaoptimizer and only fix the main part of logic in
+ * trainers extending this class. This way we'll be able to quickly switch between this transformations by using different metaoptimizers
+ * without touching main logic.
+ *
+ * @param <LC> Type of local context.
+ * @param <K> Type of keys of cache used in group training.
+ * @param <V> Type of values of cache used in group training.
+ * @param <IN> Data type which is returned by distributed initializer.
+ * @param <R> Type of final result returned by nodes on which training is done.
+ * @param <I> Type of data which is fed into each training loop step and returned from it.
+ * @param <M> Type of model returned after training.
+ * @param <T> Type of input of this trainer.
+ * @param <G> Type of distributed context which is needed for forming final result which is send from each node to trainer for final model creation.
+ * @param <O> Type of output of postprocessor.
+ * @param <X> Type of data which is processed by dataProcessor.
+ * @param <Y> Type of data which is returned by postprocessor.
+ */
+public abstract class MetaoptimizerGroupTrainer<LC extends HasTrainingUUID, K, V, IN extends Serializable,
 R extends Serializable, I extends Serializable,
 M extends Model, T extends GroupTrainerInput<K>,
-G, O extends Serializable, IR, X, Y> extends
-    GroupTrainer<LC, K, V, D, R, I, M, T, G> {
-    private Metaoptimizer<IR, LC, X, Y, I, D, O> metaoptimizer;
+G, O extends Serializable, X, Y> extends
+    GroupTrainer<LC, K, V, IN, R, I, M, T, G> {
+    private Metaoptimizer<LC, X, Y, I, IN, O> metaoptimizer;
 
-    public MetaoptimizerGroupTrainer(Metaoptimizer<IR, LC, X, Y, I, D, O> metaoptimizer,
+    /**
+     * Construct instance of this class.
+     *
+     * @param metaoptimizer Metaoptimizer.
+     * @param cache Cache on which group trainer is done.
+     * @param ignite Ignite instance.
+     */
+    public MetaoptimizerGroupTrainer(Metaoptimizer<LC, X, Y, I, IN, O> metaoptimizer,
         IgniteCache<GroupTrainerCacheKey<K>, V> cache,
         Ignite ignite) {
         super(cache, ignite);
         this.metaoptimizer = metaoptimizer;
     }
 
-    abstract X extractDataToProcessInTrainingLoop(EntryAndContext<K, V, G> entryAndCtx);
+    /**
+     * Get function used to map EntryAndContext to type which is processed by dataProcessor.
+     *
+     * @return Function used to map EntryAndContext to type which is processed by dataProcessor.
+     */
+    abstract IgniteFunction<EntryAndContext<K, V, G>, X> trainingLoopStepDataExtractor();
 
+    /**
+     * Get supplier of keys which should be processed by training loop.
+     *
+     * @param locCtx Local text.
+     * @return Supplier of keys which should be processed by training loop.
+     */
     protected abstract IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keysToProcessInTrainingLoop(LC locCtx);
 
-    protected abstract IgniteSupplier<G> extractRemoteContext(I input, LC ctx);
+    /**
+     * Get supplier of context used in training loop step.
+     *
+     * @param input Input.
+     * @param ctx Local context.
+     * @return Supplier of context used in training loop step.
+     */
+    protected abstract IgniteSupplier<G> remoteContextExtractor(I input, LC ctx);
 
-    protected abstract ResultAndUpdates<Y> processData(X data);
+    /**
+     * Get function used to process data in training loop step.
+     *
+     * @return Function used to process data in training loop step.
+     */
+    protected abstract IgniteFunction<X, ResultAndUpdates<Y>> dataProcessor();
 
     /** {@inheritDoc} */
     @Override protected ComputationsChain<LC, K, V, I, I> trainingLoopStep() {
@@ -58,7 +109,7 @@ G, O extends Serializable, IR, X, Y> extends
     }
 
     /** {@inheritDoc} */
-    @Override protected I locallyProcessInitData(D data, LC locCtx) {
+    @Override protected I locallyProcessInitData(IN data, LC locCtx) {
         return metaoptimizer.locallyProcessInitData(data, locCtx);
     }
 
@@ -68,7 +119,7 @@ G, O extends Serializable, IR, X, Y> extends
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteBinaryOperator<D> reduceDistributedInitData() {
+    @Override protected IgniteBinaryOperator<IN> reduceDistributedInitData() {
         return metaoptimizer.initialReducer();
     }
 }

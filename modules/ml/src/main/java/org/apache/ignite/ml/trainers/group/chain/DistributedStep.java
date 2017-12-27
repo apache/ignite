@@ -19,6 +19,8 @@ package org.apache.ignite.ml.trainers.group.chain;
 
 import java.io.Serializable;
 import java.util.stream.Stream;
+import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
 import org.apache.ignite.ml.trainers.group.ResultAndUpdates;
@@ -44,15 +46,14 @@ public interface DistributedStep<L, K, V, C, I, O extends Serializable> {
     IgniteSupplier<C> remoteContextSupplier(I input, L locCtx);
 
     /**
-     * Function applied to each cache entry specified by keys.
+     * Get function applied to each cache entry specified by keys.
      *
-     * @param entryAndCtx Cache entry and context.
-     * @return ResultAndUpdates object.
+     * @return Function applied to each cache entry specified by keys..
      */
-    ResultAndUpdates<O> worker(EntryAndContext<K, V, C> entryAndCtx);
+    IgniteFunction<EntryAndContext<K, V, C>, ResultAndUpdates<O>> worker();
 
     /**
-     * Get of keys supplier for worker.
+     * Get supplier of keys for worker.
      *
      * @param input Input to this step.
      * @param locCtx Local context.
@@ -61,13 +62,11 @@ public interface DistributedStep<L, K, V, C, I, O extends Serializable> {
     IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keys(I input, L locCtx);
 
     /**
-     * Function used to reduce results returned by worker.
+     * Get function used to reduce results returned by worker.
      *
-     * @param arg1 First argument to reducer.
-     * @param arg2 Second argument to reducer.
-     * @return Result of reducing.
+     * @return Function used to reduce results returned by worker..
      */
-    O reduce(O arg1, O arg2);
+    IgniteBinaryOperator<O> reducer();
 
     /**
      * Identity for reduce.

@@ -17,35 +17,32 @@
 
 package org.apache.ignite.ml.trainers.group;
 
-import java.util.function.Function;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
  * Class encapsulating logic of group training in {@link MetaoptimizerGroupTrainer}, which is adapter of
  * {@link GroupTrainer}.
  *
- * @param <IR>
- * @param <LC>
+ * @param <LC>z
  * @param <X>
  * @param <Y>
  * @param <I>
  * @param <D>
  * @param <O>
  */
-public interface Metaoptimizer<IR, LC, X, Y, I, D, O> {
-    D initialDistributedPostProcess(IR res);
-
+public interface Metaoptimizer<LC, X, Y, I, D, O> {
     IgniteBinaryOperator<D> initialReducer();
 
     I locallyProcessInitData(D data, LC locCtx);
 
-    default X distributedPreprocess(X dataToProc) {
-        return dataToProc;
+    default IgniteFunction<X, X> distributedPreprocessor() {
+        return x -> x;
     }
 
-    O distributedPostprocess(Y procOut);
+    IgniteFunction<Y, O> distributedPostprocessor();
 
-    O postProcessReducer(O arg1, O arg2);
+    IgniteBinaryOperator<O> postProcessReducer();
 
     O postProcessIdentity();
 
@@ -68,12 +65,12 @@ public interface Metaoptimizer<IR, LC, X, Y, I, D, O> {
 //                return new IgniteBiTuple<>(me.locallyProcessInitData(data.get1(), locCtx), other.locallyProcessInitData(data.get2(), locCtx));
 //            }
 //
-//            @Override public X distributedPreprocess(X dataToProc) {
-//                return other.distributedPreprocess(me.distributedPreprocess(dataToProc));
+//            @Override public X distributedPreprocessor(X dataToProc) {
+//                return other.distributedPreprocessor(me.distributedPreprocessor(dataToProc));
 //            }
 //
-//            @Override public IgniteBiTuple<O, O1> distributedPostprocess(Y procOut) {
-//                return new IgniteBiTuple<>(me.distributedPostprocess(procOut), other.distributedPostprocess(procOut));
+//            @Override public IgniteBiTuple<O, O1> distributedPostprocessor(Y procOut) {
+//                return new IgniteBiTuple<>(me.distributedPostprocessor(procOut), other.distributedPostprocessor(procOut));
 //            }
 //
 //            @Override

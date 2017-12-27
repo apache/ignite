@@ -176,7 +176,7 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> {
      * @return Combination of this chain and distributed step specified by input.
      */
     default <O1 extends Serializable, G> ComputationsChain<L, K, V, I, O1> thenDistributedForEntries(DistributedStep<L, K, V, G, O, O1> step) {
-        return thenDistributedForEntries(step::remoteContextSupplier, step::worker, step::keys, step::reduce, step.identity());
+        return thenDistributedForEntries(step::remoteContextSupplier, step.worker(), step::keys, step.reducer(), step.identity());
     }
 
     default <O1 extends Serializable> ComputationsChain<L, K, V, I, O1> thenDistributedForKeys(
@@ -189,11 +189,11 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> {
     }
 
     default <O1 extends Serializable> ComputationsChain<L, K, V, I, O1> thenDistributedForKeys(
-        IgniteBiFunction<O, GroupTrainerCacheKey<K>, ResultAndUpdates<O1>> distributedWorker,
+        IgniteFunction<GroupTrainerCacheKey<K>, ResultAndUpdates<O1>> distributedWorker,
         IgniteBiFunction<O, L, IgniteSupplier<Stream<GroupTrainerCacheKey<K>>>> kf,
         IgniteBinaryOperator<O1> reducer) {
 
-        return thenDistributedForKeys((o, lc) -> () -> o, (context) -> distributedWorker.apply(context.context(), context.key()), kf, null, reducer);
+        return thenDistributedForKeys((o, lc) -> () -> o, (context) -> distributedWorker.apply(context.key()), kf, null, reducer);
     }
 
     default ComputationsChain<L, K, V, I, O> thenWhile(IgniteBiPredicate<O, L> cond, ComputationsChain<L, K, V, O, O> chain) {

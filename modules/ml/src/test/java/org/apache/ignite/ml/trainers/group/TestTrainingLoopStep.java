@@ -20,6 +20,8 @@ package org.apache.ignite.ml.trainers.group;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 import org.apache.ignite.ml.trainers.group.chain.DistributedStep;
@@ -30,12 +32,14 @@ public class TestTrainingLoopStep implements DistributedStep<TestGroupTrainerLoc
         return () -> null;
     }
 
-    @Override public ResultAndUpdates<Double> worker(EntryAndContext<Double, Integer, Void> entryAndContext) {
-        Integer oldVal = entryAndContext.entry().getValue();
-        double v = oldVal * oldVal;
-        ResultAndUpdates<Double> res = ResultAndUpdates.of(v);
-        res.update(TestGroupTrainingCache.getOrCreate(Ignition.localIgnite()), entryAndContext.entry().getKey(), (int)v);
-        return res;
+    @Override public IgniteFunction<EntryAndContext<Double, Integer, Void>, ResultAndUpdates<Double>> worker() {
+        return entryAndContext -> {
+            Integer oldVal = entryAndContext.entry().getValue();
+            double v = oldVal * oldVal;
+            ResultAndUpdates<Double> res = ResultAndUpdates.of(v);
+            res.update(TestGroupTrainingCache.getOrCreate(Ignition.localIgnite()), entryAndContext.entry().getKey(), (int)v);
+            return res;
+        };
     }
 
     @Override public IgniteSupplier<Stream<GroupTrainerCacheKey<Double>>> keys(Double input,
@@ -52,7 +56,7 @@ public class TestTrainingLoopStep implements DistributedStep<TestGroupTrainerLoc
         return 0.0;
     }
 
-    @Override public Double reduce(Double arg1, Double arg2) {
-        return arg1 + arg2;
+    @Override public IgniteBinaryOperator<Double> reducer() {
+        return (a, b) -> a + b;
     }
 }
