@@ -26,7 +26,7 @@ public interface DataStorageMetrics {
      * Gets the average number of WAL records per second written during the last time interval.
      * <p>
      * The length of time interval is configured via {@link DataStorageConfiguration#setMetricsRateTimeInterval(long)}
-     * configurartion property.
+     * configuration property.
      * The number of subintervals is configured via {@link DataStorageConfiguration#setMetricsSubIntervalCount(int)}
      * configuration property.
      */
@@ -35,7 +35,7 @@ public interface DataStorageMetrics {
     /**
      * Gets the average number of bytes per second written during the last time interval.
      * The length of time interval is configured via {@link DataStorageConfiguration#setMetricsRateTimeInterval(long)}
-     * configurartion property.
+     * configuration property.
      * The number of subintervals is configured via {@link DataStorageConfiguration#setMetricsSubIntervalCount(int)}
      * configuration property.
      */
@@ -50,11 +50,21 @@ public interface DataStorageMetrics {
      * Gets the average WAL fsync duration in microseconds over the last time interval.
      * <p>
      * The length of time interval is configured via {@link DataStorageConfiguration#setMetricsRateTimeInterval(long)}
-     * configurartion property.
+     * configuration property.
      * The number of subintervals is configured via {@link DataStorageConfiguration#setMetricsSubIntervalCount(int)}
      * configuration property.
      */
     public float getWalFsyncTimeAverage();
+
+    /**
+     * Returns WAL buffer poll spins number over the last time interval.
+     * <p>
+     * The length of time interval is configured via {@link DataStorageConfiguration#setMetricsRateTimeInterval(long)}
+     * configuration property.
+     * The number of subintervals is configured via {@link DataStorageConfiguration#setMetricsSubIntervalCount(int)}
+     * configuration property.
+     */
+    public long getWalBuffPollSpinsRate();
 
     /**
      * Gets the duration of the last checkpoint in milliseconds.

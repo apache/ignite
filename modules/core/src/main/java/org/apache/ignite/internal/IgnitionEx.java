@@ -191,8 +191,9 @@ public class IgnitionEx {
      */
     static {
         // Check 1.8 just in case for forward compatibility.
-        if (!U.jdkVersion().contains("1.7") &&
-            !U.jdkVersion().contains("1.8")) {
+        int majorJavaVer = U.majorJavaVersion(U.jdkVersion());
+
+        if (majorJavaVer < 7) {
             throw new IllegalStateException("Ignite requires Java 1.7.0_71 or above. Current Java version " +
                 "is not supported: " + U.jdkVersion());
         }
