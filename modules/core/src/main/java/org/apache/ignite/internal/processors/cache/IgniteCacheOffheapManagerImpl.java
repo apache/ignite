@@ -717,13 +717,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public GridIterator<CacheDataRow> cachePartitionIterator(int cacheId, int part) throws IgniteCheckedException {
+    @Override public GridIterator<CacheDataRow> cachePartitionIterator(int cacheId, int part,
+        @Nullable MvccVersion mvccVer) throws IgniteCheckedException {
         CacheDataStore data = partitionData(part);
 
         if (data == null)
             return new GridEmptyCloseableIterator<>();
 
-        return iterator(cacheId, singletonIterator(data), null);
+        return iterator(cacheId, singletonIterator(data), mvccVer);
     }
 
     /** {@inheritDoc} */
