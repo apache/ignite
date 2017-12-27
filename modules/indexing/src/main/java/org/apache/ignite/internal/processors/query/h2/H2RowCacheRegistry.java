@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
@@ -67,9 +68,14 @@ public class H2RowCacheRegistry {
 
             HashMap<Integer, H2RowCache> caches0 = copy();
 
-            caches0.put(grpId, new H2RowCache(cctx.group()));
+            H2RowCache rowCache = new H2RowCache(cctx.group());
+
+            caches0.put(grpId, rowCache);
 
             caches = caches0;
+
+            for (IgniteCacheOffheapManager.CacheDataStore ds : cctx.offheap().cacheDataStores())
+                ds.setRowCacheCleaner(rowCache);
         }
     }
 

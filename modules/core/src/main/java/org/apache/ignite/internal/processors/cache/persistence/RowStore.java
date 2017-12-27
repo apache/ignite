@@ -45,7 +45,7 @@ public class RowStore {
     private final boolean persistenceEnabled;
 
     /** Row cache cleaner. */
-    private final GridQueryRowCacheCleaner rowCacheCleaner;
+    private GridQueryRowCacheCleaner rowCacheCleaner;
 
     /**
      * @param grp Cache group.
@@ -62,11 +62,6 @@ public class RowStore {
         pageMem = grp.dataRegion().pageMemory();
 
         persistenceEnabled = grp.dataRegion().config().isPersistenceEnabled();
-
-        if (ctx.kernalContext().query().moduleEnabled())
-            rowCacheCleaner = ctx.kernalContext().query().getIndexing().rowCacheCleaner(grp.groupId());
-        else
-            rowCacheCleaner = null;
     }
 
     /**
@@ -76,7 +71,8 @@ public class RowStore {
     public void removeRow(long link) throws IgniteCheckedException {
         assert link != 0;
 
-        rowCacheCleaner.remove(link);
+        if (rowCacheCleaner != null)
+            rowCacheCleaner.remove(link);
 
         if (!persistenceEnabled)
             freeList.removeDataRowByLink(link);
@@ -120,7 +116,8 @@ public class RowStore {
     public boolean updateRow(long link, CacheDataRow row) throws IgniteCheckedException {
         assert !persistenceEnabled || ctx.database().checkpointLockIsHeldByThread();
 
-        rowCacheCleaner.remove(link);
+        if (rowCacheCleaner != null)
+            rowCacheCleaner.remove(link);
 
         return freeList.updateDataRow(link, row);
     }
@@ -130,5 +127,14 @@ public class RowStore {
      */
     public FreeList freeList() {
         return freeList;
+    }
+
+    /**
+     * Inject rows cache cleaner.
+     *
+     * @param rowCacheCleaner Rows cache cleaner.
+     */
+    public void setRowCacheCleaner(GridQueryRowCacheCleaner rowCacheCleaner) {
+        this.rowCacheCleaner = rowCacheCleaner;
     }
 }

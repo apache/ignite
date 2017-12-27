@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -521,5 +522,12 @@ public interface IgniteCacheOffheapManager {
          * @param cntr Counter.
          */
         void updateInitialCounter(long cntr);
+
+        /**
+         * Inject rows cache cleaner.
+         *
+         * @param rowCacheCleaner Rows cache cleaner.
+         */
+        public void setRowCacheCleaner(GridQueryRowCacheCleaner rowCacheCleaner);
     }
 }

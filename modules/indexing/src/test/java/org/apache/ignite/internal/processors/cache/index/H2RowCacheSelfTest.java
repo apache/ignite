@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -51,33 +50,47 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
     private static final Random RND = new Random(System.currentTimeMillis());
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(2);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
+    @Override protected void beforeTest() throws Exception {
+        startGrid();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).destroyCaches(new ArrayList<>(grid(0).cacheNames()));
+        stopAllGrids();
 
         super.afterTest();
     }
 
     /**
      * @param name Cache name.
+     * @param enableOnheapCache Enable on-heal SQL rows cache.
      * @return Cache configuration.
      */
-    private CacheConfiguration cacheConfiguration(String name) {
+    private CacheConfiguration cacheConfiguration(String name, boolean enableOnheapCache) {
         return new CacheConfiguration()
             .setName(name)
-            .setSqlOnheapCacheEnabled(true)
+            .setSqlOnheapCacheEnabled(enableOnheapCache)
             .setGroupName("group")
             .setQueryEntities(Collections.singleton(
                 new QueryEntity(Integer.class, Value.class)));
+    }
+    /**
+     */
+    public void testDestroyCacheCreation() {
+        final String cacheName0 = "cache0";
+        final String cacheName1 = "cache1";
+
+        grid().getOrCreateCache(cacheConfiguration(cacheName0, false));
+
+        int grpId = grid().cachex(cacheName0).context().groupId();
+
+        assertNull(rowCache(grid(), grpId));
+
+        grid().getOrCreateCache(cacheConfiguration(cacheName1, true));
+
+        assertEquals(grpId, grid().cachex(cacheName1).context().groupId());
+
+        assertNotNull(rowCache(grid(), grpId));
     }
 
     /**
@@ -86,141 +99,150 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
         final String cacheName0 = "cache0";
         final String cacheName1 = "cache1";
 
-        grid(0).getOrCreateCache(cacheConfiguration(cacheName0));
-        grid(0).getOrCreateCache(cacheConfiguration(cacheName1));
+        grid().getOrCreateCache(cacheConfiguration("cacheWithoutOnheapCache", false));
+        grid().getOrCreateCache(cacheConfiguration(cacheName0, true));
+        grid().getOrCreateCache(cacheConfiguration(cacheName1, true));
 
-        int grpId = grid(0).cachex(cacheName0).context().groupId();
+        int grpId = grid().cachex(cacheName0).context().groupId();
 
-        assertEquals(grpId, grid(0).cachex(cacheName1).context().groupId());
+        assertEquals(grpId, grid().cachex(cacheName1).context().groupId());
 
         fillCache(cacheName0);
         fillCache(cacheName1);
 
-        H2RowCacheRegistry rowCache0 = rowCache(grid(0));
-        H2RowCacheRegistry rowCache1 = rowCache(grid(1));
+        H2RowCache rowCache = rowCache(grid(), grpId);
 
         fillRowCache(cacheName0, ROWS_COUNT);
 
-        assertNotNull(rowCache0.forGroup(grpId));
-        assertNotNull(rowCache1.forGroup(grpId));
+        assertNotNull(rowCache);
 
         // On both nodes
-        int rowCacheSize = rowCache0.forGroup(grpId).size() + rowCache1.forGroup(grpId).size();
+        int rowCacheSize = rowCache.size();
 
         assertTrue("Cache size: " + rowCacheSize,
             ROWS_COUNT < rowCacheSize);
 
         fillRowCache(cacheName1, ROWS_COUNT);
 
-        rowCacheSize = rowCache0.forGroup(grpId).size() + rowCache1.forGroup(grpId).size();
+        rowCacheSize = rowCache.size();
 
         assertTrue("Cache size: " + rowCacheSize,
              2 * ROWS_COUNT < rowCacheSize);
 
-        grid(0).destroyCache(cacheName0);
+        grid().destroyCache(cacheName0);
 
-        assertNotNull(rowCache0.forGroup(grpId));
-        assertNotNull(rowCache1.forGroup(grpId));
+        assertNotNull(rowCache(grid(), grpId));
 
-        // On both nodes
-        rowCacheSize = rowCache0.forGroup(grpId).size() + rowCache1.forGroup(grpId).size();
+        rowCacheSize = rowCache.size();
 
         assertTrue("Cache size: " + rowCacheSize,
             ROWS_COUNT < rowCacheSize);
 
-        grid(0).destroyCache(cacheName1);
+        grid().destroyCache(cacheName1);
 
-        assertNull(rowCache0.forGroup(grpId));
-        assertNull(rowCache1.forGroup(grpId));
+        assertNull(rowCache(grid(), grpId));
     }
 
     /**
+     * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    public void testDeleteEntry() {
+    public void testDeleteEntry() throws Exception {
         final String cacheName = "cache";
 
-        grid(0).getOrCreateCache(cacheConfiguration(cacheName));
+        grid().getOrCreateCache(cacheConfiguration("cacheWithoutOnheapCache", false));
+        grid().getOrCreateCache(cacheConfiguration(cacheName, true));
 
-        int grpId = grid(0).cachex(cacheName).context().groupId();
+        int grpId = grid().cachex(cacheName).context().groupId();
 
-        assertEquals(grpId, grid(0).cachex(cacheName).context().groupId());
+        assertEquals(grpId, grid().cachex(cacheName).context().groupId());
 
         fillCache(cacheName);
 
-        H2RowCacheRegistry rowCache0 = rowCache(grid(0));
-        H2RowCacheRegistry rowCache1 = rowCache(grid(1));
+        H2RowCache rowCache = rowCache(grid(), grpId);
 
         fillRowCache(cacheName, ROWS_COUNT);
 
-        assertNotNull(rowCache0.forGroup(grpId));
-        assertNotNull(rowCache1.forGroup(grpId));
+        assertNotNull(rowCache);
 
         int key = RND.nextInt(ENTRIES);
 
-        grid(0).cache(cacheName)
+        grid().cache(cacheName)
             .query(new SqlQuery(Value.class, "_key = " + key)).getAll();
 
-        // On both nodes
-        int rowCacheSize = rowCache0.forGroup(grpId).size() + rowCache1.forGroup(grpId).size();
+        int rowCacheSize = rowCache.size();
 
-        grid(0).cache(cacheName).remove(key);
+        long rowLink = getLinkForKey(cacheName, rowCache, key);
 
-        int rowCacheSizeAfterUpdate = rowCache0.forGroup(grpId).size() + rowCache1.forGroup(grpId).size();
+        assertNotNull(rowCache.get(rowLink));
+
+        // Remove
+        grid().cache(cacheName).remove(key);
+
+        assertNull(rowCache.get(rowLink));
+
+        int rowCacheSizeAfterUpdate = rowCache.size();
 
         assertEquals(rowCacheSize - 1, rowCacheSizeAfterUpdate);
     }
 
     /**
+     * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    public void testUpdateEntry() {
+    public void testUpdateEntry() throws Exception {
         final String cacheName = "cache";
 
-        grid(0).getOrCreateCache(cacheConfiguration(cacheName));
+        grid().getOrCreateCache(cacheConfiguration("cacheWithoutOnheapCache", false));
+        grid().getOrCreateCache(cacheConfiguration(cacheName, true));
 
-        int grpId = grid(0).cachex(cacheName).context().groupId();
+        int grpId = grid().cachex(cacheName).context().groupId();
 
-        assertEquals(grpId, grid(0).cachex(cacheName).context().groupId());
+        assertEquals(grpId, grid().cachex(cacheName).context().groupId());
 
         fillCache(cacheName);
 
-        H2RowCacheRegistry rowCache0 = rowCache(grid(0));
-        H2RowCacheRegistry rowCache1 = rowCache(grid(1));
+        H2RowCache rowCache = rowCache(grid(), grpId);
 
         fillRowCache(cacheName, ROWS_COUNT);
 
-        assertNotNull(rowCache0.forGroup(grpId));
-        assertNotNull(rowCache1.forGroup(grpId));
+        assertNotNull(rowCache);
 
         int key = RND.nextInt(ENTRIES);
 
-        grid(0).cache(cacheName)
-            .query(new SqlQuery(Value.class, "_key = " + key)).getAll();
+        long rowLink = getLinkForKey(cacheName, rowCache, key);
 
-        // On both nodes
-        int rowCacheSize = rowCache0.forGroup(grpId).size() + rowCache1.forGroup(grpId).size();
+        int rowCacheSize = rowCache.size();
 
-        grid(0).cache(cacheName).put(key, new Value(key + 1));
+        assertNotNull(rowCache.get(rowLink));
 
-        int rowCacheSizeAfterUpdate = rowCache0.forGroup(grpId).size() + rowCache1.forGroup(grpId).size();
+        // Update row
+        grid().cache(cacheName).put(key, new Value(key + 1));
+
+        assertNull(rowCache.get(rowLink));
+
+        int rowCacheSizeAfterUpdate = rowCache.size();
 
         assertEquals(rowCacheSize - 1, rowCacheSizeAfterUpdate);
 
-        List<Cache.Entry<Integer, Value>> res = grid(0).<Integer, Value>cache(cacheName)
+        // Check updated value.
+        List<Cache.Entry<Integer, Value>> res = grid().<Integer, Value>cache(cacheName)
             .query(new SqlQuery(Value.class, "_key = " + key)).getAll();
 
         assertEquals(1, res.size());
         assertEquals(key + 1, (int)res.get(0).getValue().lVal);
-
     }
 
     /**
+     * @param cacheName Cache name.
      * @param rowCache Row cache.
      * @param key Key to find.
      * @return Row's link.
      */
-    private long getLinkForKey(H2RowCache rowCache, int key) {
+    private long getLinkForKey(String cacheName, H2RowCache rowCache, int key) {
+        grid().cache(cacheName)
+            .query(new SqlQuery(Value.class, "_key = " + key)).getAll().size();
+
         ConcurrentHashMap<Long, GridH2KeyValueRowOnheap> rowsMap = GridTestUtils.getFieldValue(rowCache, "rows");
 
         for (Map.Entry<Long, GridH2KeyValueRowOnheap> e : rowsMap.entrySet()) {
@@ -237,19 +259,18 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param ig Ignite node.
-     * @return H2RowCacheRegistry for checks.
+     * @param grpId Cache group ID.
+     * @return H2RowCache for checks.
      */
-    private H2RowCacheRegistry rowCache(IgniteEx ig) {
-        IgniteH2Indexing indexing = (IgniteH2Indexing)ig.context().query().getIndexing();
-
-        return GridTestUtils.getFieldValue(indexing, "rowCache");
+    private H2RowCache rowCache(IgniteEx ig, int grpId) {
+        return (H2RowCache)ig.context().query().getIndexing().rowCacheCleaner(grpId);
     }
 
     /**
      * @param name Cache name.
      */
     private void fillCache(String name) {
-        try(IgniteDataStreamer<Integer, Value> streamer = grid(0).dataStreamer(name)) {
+        try(IgniteDataStreamer<Integer, Value> streamer = grid().dataStreamer(name)) {
 
             for (int i = 0; i < ENTRIES; ++i)
                 streamer.addData(i, new Value(i));
@@ -265,7 +286,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
         int begIdx = RND.nextInt(ENTRIES - cnt);
 
         for (int i = begIdx; i < begIdx + cnt; ++i) {
-            int resSize = grid(0).cache(name)
+            int resSize = grid().cache(name)
                 .query(new SqlQuery(Value.class, "_key = " + i)).getAll().size();
 
             assertEquals(1, resSize);
