@@ -55,6 +55,9 @@ R extends Serializable, I extends Serializable,
 M extends Model, T extends GroupTrainerInput<K>,
 G, O extends Serializable, X, Y> extends
     GroupTrainer<LC, K, V, IN, R, I, M, T, G> {
+    /**
+     * Metaoptimizer.
+     */
     private Metaoptimizer<LC, X, Y, I, IN, O> metaoptimizer;
 
     /**
