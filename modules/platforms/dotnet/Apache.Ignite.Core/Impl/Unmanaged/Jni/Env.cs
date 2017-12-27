@@ -19,9 +19,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 {
     using System;
     using System.Diagnostics;
+    using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Security;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// JNIEnv.
@@ -236,8 +238,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
             if (res == IntPtr.Zero)
             {
-                throw new IgniteException("Java class is not found (did you set IGNITE_HOME environment " +
-                                          "variable?): " + name);
+                var msg = "Java class is not found (did you set IGNITE_HOME environment variable?): " + name;
+
+#if (DEBUG)
+                msg += ", IgniteHome: " + IgniteHome.Resolve(null) + ", IGNITE_NATIVE_TEST_CLASSPATH: " + 
+                    Environment.GetEnvironmentVariable(Classpath.EnvIgniteNativeTestClasspath) + 
+                    "Assembly path: " + Assembly.GetExecutingAssembly().Location;
+#endif
+
+                throw new IgniteException(msg);
             }
 
             return NewGlobalRef(res);
