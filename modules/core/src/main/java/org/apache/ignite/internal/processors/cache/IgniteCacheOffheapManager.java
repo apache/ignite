@@ -311,10 +311,12 @@ public interface IgniteCacheOffheapManager {
     /**
      * @param cacheId Cache ID.
      * @param part Partition.
+     * @param mvccVer MVCC version.
      * @return Partition data iterator.
      * @throws IgniteCheckedException If failed.
      */
-    public GridIterator<CacheDataRow> cachePartitionIterator(int cacheId, final int part) throws IgniteCheckedException;
+    public GridIterator<CacheDataRow> cachePartitionIterator(int cacheId, final int part, @Nullable MvccVersion mvccVer)
+        throws IgniteCheckedException;
 
     /**
      * @param part Partition number.
