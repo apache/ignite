@@ -66,9 +66,6 @@ public class IgniteFuzzyCMeansDistributedClustererBenchmark extends IgniteAbstra
                 // The maximum number of FCM iterations.
                 int maxIterations = 50;
 
-                // Value that is used to initialize random numbers generator. You can choose it randomly.
-                Long seed = null;
-
                 // Number of steps of primary centers selection (more steps more candidates).
                 int initializationSteps = 2;
 
@@ -78,7 +75,7 @@ public class IgniteFuzzyCMeansDistributedClustererBenchmark extends IgniteAbstra
                 // Create new distributed clusterer with parameters described above.
                 FuzzyCMeansDistributedClusterer clusterer = new FuzzyCMeansDistributedClusterer(
                     distanceMeasure, exponentialWeight, stopCond, maxDelta, maxIterations,
-                    seed, initializationSteps, kMeansMaxIterations);
+                    null, initializationSteps, kMeansMaxIterations);
 
                 // Create sample data.
                 double[][] points = shuffle((int)(DataChanger.next()));
