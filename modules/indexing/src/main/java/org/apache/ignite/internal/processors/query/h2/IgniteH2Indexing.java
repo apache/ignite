@@ -1354,7 +1354,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (o instanceof GridSqlAlias)
                 o = GridSqlAlias.unwrap((GridSqlAst)o);
 
-            if (o instanceof GridSqlTable) {
+            if (o instanceof GridSqlTable && ((GridSqlTable)o).dataTable() != null) {
                 if (cctx == null)
                     mvccEnabled = (cctx = (((GridSqlTable)o).dataTable()).cache()).mvccEnabled();
                 else if (((GridSqlTable)o).dataTable().cache().mvccEnabled() != mvccEnabled)
