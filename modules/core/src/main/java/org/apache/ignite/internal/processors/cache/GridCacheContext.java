@@ -1640,7 +1640,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public void onDeferredDelete(GridCacheEntryEx entry, GridCacheVersion ver) {
         assert entry != null;
-        assert !Thread.holdsLock(entry) : entry;
+        assert !entry.lockedByCurrentThread() : entry;
         assert ver != null;
         assert deferredDelete() : cache;
 
