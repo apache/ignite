@@ -34,6 +34,7 @@ import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
+/** */
 public class DistributedWorkersChainTest extends GridCommonAbstractTest {
     /** Count of nodes. */
     private static final int NODE_COUNT = 4;
