@@ -278,8 +278,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testBatchDmlStatementsIntermediateFailure() throws SQLException {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7321");
-
         insertPerson(6, "John", "Doe", 2, 2);
 
         IgniteException e = (IgniteException)GridTestUtils.assertThrows(null, new Callable<Object>() {
@@ -475,8 +473,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      *
      */
     public void testRepeatableReadAndDeleteWithConcurrentDelete() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7321");
-
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
                 execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
@@ -488,8 +484,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      *
      */
     public void testRepeatableReadAndDeleteWithConcurrentFastDelete() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7321");
-
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
                 execute(conn, "DELETE FROM \"Person\".Person where id = 1");
@@ -501,8 +495,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      *
      */
     public void testRepeatableReadAndDeleteWithConcurrentCacheRemove() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7321");
-
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
                 personCache().remove(1);
@@ -514,8 +506,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      *
      */
     public void testRepeatableReadAndFastDeleteWithConcurrentDelete() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7321");
-
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
                 execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
@@ -527,8 +517,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      *
      */
     public void testRepeatableReadAndFastDeleteWithConcurrentFastDelete() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7321");
-
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
                 execute(conn, "DELETE FROM \"Person\".Person where id = 1");
@@ -540,8 +528,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      *
      */
     public void testRepeatableReadAndFastDeleteWithConcurrentCacheRemove() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7321");
-
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
                 personCache().remove(1);
@@ -553,8 +539,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      *
      */
     public void testRepeatableReadAndDeleteWithConcurrentDeleteAndRollback() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7321");
-
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
                 execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
@@ -566,8 +550,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      *
      */
     public void testRepeatableReadAndDeleteWithConcurrentFastDeleteAndRollback() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7321");
-
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
                 execute(conn, "DELETE FROM \"Person\".Person where id = 1");
@@ -579,8 +561,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      *
      */
     public void testRepeatableReadAndDeleteWithConcurrentCacheRemoveAndRollback() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7321");
-
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
                 personCache().remove(1);
@@ -592,8 +572,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      *
      */
     public void testRepeatableReadAndFastDeleteWithConcurrentDeleteAndRollback() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7321");
-
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
                 execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
@@ -605,8 +583,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      *
      */
     public void testRepeatableReadAndFastDeleteWithConcurrentFastDeleteAndRollback() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7321");
-
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
                 execute(conn, "DELETE FROM \"Person\".Person where id = 1");
@@ -618,8 +594,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      *
      */
     public void testRepeatableReadAndFastDeleteWithConcurrentCacheRemoveAndRollback() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7321");
-
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
                 personCache().remove(1);
@@ -659,8 +633,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      *
      */
     public void testRepeatableReadAndUpdateWithConcurrentUpdate() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7321");
-
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
                 execute(conn, "UPDATE \"Person\".Person SET lastname = 'Fix' where firstname = 'John'");
@@ -672,8 +644,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      *
      */
     public void testRepeatableReadAndUpdateWithConcurrentCacheReplace() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7321");
-
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
                 Person p = new Person();
@@ -691,8 +661,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      *
      */
     public void testRepeatableReadAndUpdateWithConcurrentUpdateAndRollback() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7321");
-
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
                 execute(conn, "UPDATE \"Person\".Person SET lastname = 'Fix' where firstname = 'John'");
@@ -704,8 +672,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      *
      */
     public void testRepeatableReadAndUpdateWithConcurrentCacheReplaceAndRollback() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7321");
-
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
                 Person p = new Person();

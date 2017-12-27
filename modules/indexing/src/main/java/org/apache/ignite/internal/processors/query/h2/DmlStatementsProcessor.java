@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import javax.cache.CacheException;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
@@ -366,7 +365,7 @@ public class DmlStatementsProcessor {
             if (plan.mode() == UpdateMode.INSERT && !plan.isLocalSubquery())
                 throw new UnsupportedOperationException("Insert from select is unsupported at the moment.");
 
-            GridNearTxLocal tx = idx.userTx();
+            GridNearTxLocal tx = idx.activeTx();
 
             boolean implicit = (tx == null);
 
