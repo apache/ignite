@@ -699,9 +699,6 @@ public final class UpdatePlan {
                     key = DmlUtils.convert(key, rowDesc, desc.keyClass(), plan.colTypes[plan.keyColIdx]);
                 }
 
-                if (cctx.binaryMarshaller() && key instanceof BinaryObjectBuilder)
-                    key = ((BinaryObjectBuilder) key).build();
-
                 if (key == null) {
                     if (F.isEmpty(desc.keyFieldName()))
                         throw new IgniteSQLException("Key for INSERT or MERGE must not be null", IgniteQueryErrorCode.NULL_KEY);
@@ -709,6 +706,43 @@ public final class UpdatePlan {
                         throw new IgniteSQLException("Null value is not allowed for column '" + desc.keyFieldName() + "'",
                             IgniteQueryErrorCode.NULL_KEY);
                 }
+
+                Map<String, Object> newColVals = new HashMap<>();
+
+                for (int i = 0; i < plan.colNames.length; i++) {
+                    if (i == plan.keyColIdx || i == plan.valColIdx)
+                        continue;
+
+                    String colName = plan.colNames[i];
+
+                    GridQueryProperty prop = desc.property(colName);
+
+                    assert prop != null;
+
+                    Class<?> expCls = prop.type();
+
+                    newColVals.put(colName, DmlUtils.convert(row.get(i), rowDesc, expCls, plan.colTypes[i]));
+                }
+
+                // We update columns in the order specified by the table for a reason - table's
+                // column order preserves their precedence for correct update of nested properties.
+                Column[] cols = plan.tbl.getColumns();
+
+                // Init key
+                for (int i = DEFAULT_COLUMNS_COUNT; i < cols.length; i++) {
+                    if (plan.tbl.rowDescriptor().isKeyValueOrVersionColumn(i))
+                        continue;
+
+                    String colName = cols[i].getName();
+
+                    GridQueryProperty prop;
+
+                    if (newColVals.containsKey(colName) && (prop = desc.property(colName)).key())
+                        prop.setValue(key, null, newColVals.remove(colName));
+                }
+
+                if (cctx.binaryMarshaller()&& key instanceof BinaryObjectBuilder)
+                    key = ((BinaryObjectBuilder)key).build();
 
                 if (affinity.primaryByKey(cctx.localNode(), key, topVer)) {
                     Object val = plan.valSupplier.apply(row);
@@ -728,44 +762,20 @@ public final class UpdatePlan {
                                 IgniteQueryErrorCode.NULL_VALUE);
                     }
 
-                    Map<String, Object> newColVals = new HashMap<>();
-
-                    for (int i = 0; i < plan.colNames.length; i++) {
-                        if (i == plan.keyColIdx || i == plan.valColIdx)
-                            continue;
-
-                        String colName = plan.colNames[i];
-
-                        GridQueryProperty prop = desc.property(colName);
-
-                        assert prop != null;
-
-                        Class<?> expCls = prop.type();
-
-                        newColVals.put(colName, DmlUtils.convert(row.get(i), rowDesc, expCls, plan.colTypes[i]));
-                    }
-
-                    // We update columns in the order specified by the table for a reason - table's
-                    // column order preserves their precedence for correct update of nested properties.
-                    Column[] cols = plan.tbl.getColumns();
-
-                    // First 3 columns are _key, _val and _ver. Skip 'em.
+                    // Init value
                     for (int i = DEFAULT_COLUMNS_COUNT; i < cols.length; i++) {
                         if (plan.tbl.rowDescriptor().isKeyValueOrVersionColumn(i))
                             continue;
 
                         String colName = cols[i].getName();
-
-                        if (!newColVals.containsKey(colName))
-                            continue;
-
                         Object colVal = newColVals.get(colName);
 
-                        desc.setValue(colName, key, val, colVal);
+                        if (colVal != null)
+                            desc.setValue(colName, null, val, colVal);
                     }
 
-                    if (cctx.binaryMarshaller() && val instanceof BinaryObjectBuilder)
-                        val = ((BinaryObjectBuilder) val).build();
+                    if (cctx.binaryMarshaller()&& val instanceof BinaryObjectBuilder)
+                        val = ((BinaryObjectBuilder)val).build();
 
                     desc.validateKeyAndValue(key, val);
 
