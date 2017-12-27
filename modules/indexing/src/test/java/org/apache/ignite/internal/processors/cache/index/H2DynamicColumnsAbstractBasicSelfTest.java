@@ -278,8 +278,6 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
             assertEquals(2500000, (int)city.field("population"));
         }
 
-        run(cache, "ALTER TABLE \"City\".City DROP COLUMN JOB");
-
         cache.destroy();
     }
 
@@ -619,9 +617,6 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
         @QuerySqlField
         private String state;
 
-        @QuerySqlField(name = "job", index = true)
-        private String j1;
-
         /**
          * @return City id.
          */
@@ -663,14 +658,5 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
         public void state(String state) {
             this.state = state;
         }
-
-        public String j1() {
-            return j1;
-        }
-
-        public void j1(String j1) {
-            this.j1 = j1;
-        }
-
     }
 }
