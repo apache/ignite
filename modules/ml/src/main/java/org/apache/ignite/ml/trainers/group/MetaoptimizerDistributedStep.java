@@ -22,7 +22,7 @@ import java.util.stream.Stream;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
-import org.apache.ignite.ml.trainers.group.chain.DistributedStep;
+import org.apache.ignite.ml.trainers.group.chain.DistributedEntryProcessingStep;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 
@@ -39,29 +39,41 @@ import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
  * @param <Y>
  * @param <D>
  */
-class MetaoptimizerDistributedStep<L extends HasTrainingUUID, K, V, G, I extends Serializable, O extends Serializable, X, Y, D extends Serializable> implements DistributedStep<L,K,V,G,I,O> {
+class MetaoptimizerDistributedStep<L extends HasTrainingUUID, K, V, G, I extends Serializable, O extends Serializable, X, Y, D extends Serializable> implements DistributedEntryProcessingStep<L,K,V,G,I,O> {
+    /**
+     * {@link Metaoptimizer}.
+     */
     private final Metaoptimizer<L, X, Y, I, D, O> metaoptimizer;
-    private final MetaoptimizerGroupTrainer<L, K, V, D, ?, I, ?, ?, G, O, X, Y> trainer;
-    private final IgniteFunction<EntryAndContext<K, V, G>, X> ctxExtractor;
-    private final IgniteFunction<X, ResultAndUpdates<Y>> dataProcessor;
-    private final IgniteFunction<X, X> preprocessor;
-    private final IgniteFunction<Y, O> postprocessor;
 
+    /**
+     * {@link MetaoptimizerGroupTrainer} for which this distributed step is used.
+     */
+    private final MetaoptimizerGroupTrainer<L, K, V, D, ?, I, ?, ?, G, O, X, Y> trainer;
+
+    /**
+     * Construct instance of this class with given parameters.
+     *
+     * @param metaoptimizer Metaoptimizer.
+     * @param trainer {@link MetaoptimizerGroupTrainer} for which this distributed step is used.
+     */
     public MetaoptimizerDistributedStep(Metaoptimizer<L, X, Y, I, D, O> metaoptimizer,
         MetaoptimizerGroupTrainer<L, K, V, D, ?, I, ?, ?, G, O, X, Y> trainer) {
         this.metaoptimizer = metaoptimizer;
         this.trainer = trainer;
-        ctxExtractor = trainer.trainingLoopStepDataExtractor();
-        dataProcessor = trainer.dataProcessor();
-        preprocessor = metaoptimizer.distributedPreprocessor();
-        postprocessor = metaoptimizer.distributedPostprocessor();
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteSupplier<G> remoteContextSupplier(I input, L locCtx) {
         return trainer.remoteContextExtractor(input, locCtx);
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteFunction<EntryAndContext<K, V, G>, ResultAndUpdates<O>> worker() {
+        IgniteFunction<X, ResultAndUpdates<Y>> dataProcessor = trainer.dataProcessor();
+        IgniteFunction<X, X> preprocessor = metaoptimizer.distributedPreprocessor();
+        IgniteFunction<Y, O> postprocessor = metaoptimizer.distributedPostprocessor();
+        IgniteFunction<EntryAndContext<K, V, G>, X> ctxExtractor = trainer.trainingLoopStepDataExtractor();
+
         return entryAndCtx -> {
             X apply = ctxExtractor.apply(entryAndCtx);
             preprocessor.apply(apply);
@@ -72,14 +84,17 @@ class MetaoptimizerDistributedStep<L extends HasTrainingUUID, K, V, G, I extends
         };
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keys(I input, L locCtx) {
         return trainer.keysToProcessInTrainingLoop(locCtx);
     }
 
+    /** {@inheritDoc} */
     @Override public O identity() {
         return metaoptimizer.postProcessIdentity();
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteBinaryOperator<O> reducer() {
         return metaoptimizer.postProcessReducer();
     }

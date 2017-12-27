@@ -64,10 +64,6 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> {
      */
     O process(I input, GroupTrainingContext<K, V, L> ctx);
 
-    default ComputationsChain<L, K, V, I, I> create() {
-        return (input, context) -> input;
-    }
-
     /**
      * Add a local step to this chain.
      *
@@ -148,8 +144,7 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> {
         IgniteBiFunction<O, L, IgniteSupplier<G>> workerCtxExtractor,
         IgniteFunction<KeyAndContext<K, G>, ResultAndUpdates<O1>> worker,
         IgniteBiFunction<O, L, IgniteSupplier<Stream<GroupTrainerCacheKey<K>>>> keysSupplier,
-        O1 identity,
-        IgniteBinaryOperator<O1> reducer) {
+        IgniteBinaryOperator<O1> reducer, O1 identity) {
         ComputationsChain<L, K, V, O, O1> nextStep = (input, context) -> {
             L locCtx = context.localContext();
             IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> ks = keysSupplier.apply(input, locCtx);
@@ -168,41 +163,63 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> {
     }
 
     /**
-     * Add a distributed step specified by {@link DistributedStep}.
+     * Add a distributed step specified by {@link DistributedEntryProcessingStep}.
      *
      * @param step Distributed step.
      * @param <O1> Type of output of distributed step.
      * @param <G> Type of context of distributed step.
      * @return Combination of this chain and distributed step specified by input.
      */
-    default <O1 extends Serializable, G> ComputationsChain<L, K, V, I, O1> thenDistributedForEntries(DistributedStep<L, K, V, G, O, O1> step) {
+    default <O1 extends Serializable, G> ComputationsChain<L, K, V, I, O1> thenDistributedForEntries(DistributedEntryProcessingStep<L, K, V, G, O, O1> step) {
         return thenDistributedForEntries(step::remoteContextSupplier, step.worker(), step::keys, step.reducer(), step.identity());
     }
 
+    /**
+     * Add a distributed step specified by {@link DistributedKeyProcessingStep}.
+     *
+     * @param step Distributed step.
+     * @param <O1> Type of output of distributed step.
+     * @param <G> Type of context of distributed step.
+     * @return Combination of this chain and distributed step specified by input.
+     */
+    default <O1 extends Serializable, G> ComputationsChain<L, K, V, I, O1> thenDistributedForKeys(DistributedKeyProcessingStep<L, K, G, O, O1> step) {
+        return thenDistributedForKeys(step::remoteContextSupplier, step.worker(), step::keys, step.reducer(), step.identity());
+    }
+
+    /**
+     * Version of 'thenDistributedForKeys' where worker does not depend on context.
+     *
+     * @param worker Worker.
+     * @param kf Function providing supplier
+     * @param reducer Function from chain input and local context to supplier of keys for worker.
+     * @param <O1> Type of worker output.
+     * @return Combination of this chain and distributed step specified by given parameters.
+     */
     default <O1 extends Serializable> ComputationsChain<L, K, V, I, O1> thenDistributedForKeys(
         IgniteFunction<GroupTrainerCacheKey<K>, ResultAndUpdates<O1>> worker,
         IgniteBiFunction<O, L, IgniteSupplier<Stream<GroupTrainerCacheKey<K>>>> kf,
-        O1 identity,
         IgniteBinaryOperator<O1> reducer) {
 
-        return thenDistributedForKeys((o, lc) -> null, (context) -> worker.apply(context.key()), kf, identity, reducer);
+        return thenDistributedForKeys((o, lc) -> () -> o, (context) -> worker.apply(context.key()), kf, reducer, null);
     }
 
-    default <O1 extends Serializable> ComputationsChain<L, K, V, I, O1> thenDistributedForKeys(
-        IgniteFunction<GroupTrainerCacheKey<K>, ResultAndUpdates<O1>> distributedWorker,
-        IgniteBiFunction<O, L, IgniteSupplier<Stream<GroupTrainerCacheKey<K>>>> kf,
-        IgniteBinaryOperator<O1> reducer) {
-
-        return thenDistributedForKeys((o, lc) -> () -> o, (context) -> distributedWorker.apply(context.key()), kf, null, reducer);
-    }
-
-    default ComputationsChain<L, K, V, I, O> thenWhile(IgniteBiPredicate<O, L> cond, ComputationsChain<L, K, V, O, O> chain) {
+    /**
+     * Combine this computation chain with other computation chain in the following way:
+     * 1. perform this calculations chain and get result r.
+     * 2. while 'cond(r)' is true, r = otherChain(r, context)
+     * 3. return r.
+     *
+     * @param cond Condition checking if 'while' loop should continue.
+     * @param otherChain Chain to be combined with this chain.
+     * @return Combination of this chain and otherChain.
+     */
+    default ComputationsChain<L, K, V, I, O> thenWhile(IgniteBiPredicate<O, L> cond, ComputationsChain<L, K, V, O, O> otherChain) {
         ComputationsChain<L, K, V, I, O> me = this;
         return (input, context) -> {
             O res = me.process(input, context);
 
             while (cond.apply(res, context.localContext()))
-                res = chain.process(res, context);
+                res = otherChain.process(res, context);
 
             return res;
         };

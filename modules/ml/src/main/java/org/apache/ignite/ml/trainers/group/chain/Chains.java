@@ -38,19 +38,19 @@ public class Chains {
     }
 
     /**
-     * Create {@link ComputationsChain} from {@link DistributedStep}.
+     * Create {@link ComputationsChain} from {@link DistributedEntryProcessingStep}.
      *
      * @param step Distributed chain step.
      * @param <L> Type of local context of created chain.
      * @param <K> Type of keys of cache used in computation chain.
      * @param <V> Type of values of cache used in computation chain.
-     * @param <C> Type of context used by worker in {@link DistributedStep}.
+     * @param <C> Type of context used by worker in {@link DistributedEntryProcessingStep}.
      * @param <I> Type of input to computation chain.
      * @param <O> Type of output of computation chain.
-     * @return Computation created from {@link DistributedStep}.
+     * @return Computation created from {@link DistributedEntryProcessingStep}.
      */
     public static
-    <L extends HasTrainingUUID, K, V, C, I, O extends Serializable> ComputationsChain<L, K, V, I, O> create(DistributedStep<L, K, V, C, I, O> step) {
+    <L extends HasTrainingUUID, K, V, C, I, O extends Serializable> ComputationsChain<L, K, V, I, O> create(DistributedEntryProcessingStep<L, K, V, C, I, O> step) {
         ComputationsChain<L, K, V, I, I> chain = create();
         return chain.thenDistributedForEntries(step);
     }

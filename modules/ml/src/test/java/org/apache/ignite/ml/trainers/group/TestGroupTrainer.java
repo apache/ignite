@@ -30,16 +30,25 @@ import org.apache.ignite.ml.trainers.group.chain.Chains;
 import org.apache.ignite.ml.trainers.group.chain.ComputationsChain;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 
+/**
+ * Test group trainer.
+ */
 public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext, Double, Integer, Integer, Integer, Double, ConstModel<Integer>, SimpleGroupTrainerInput, Void> {
+    /**
+     * Construct instance of this class with given parameters.
+     *
+     * @param ignite Ignite instance.
+     */
     public TestGroupTrainer(Ignite ignite) {
         super(TestGroupTrainingCache.getOrCreate(ignite), ignite);
     }
 
-    @Override
-    protected TestGroupTrainerLocalContext initialLocalContext(SimpleGroupTrainerInput data, UUID trainingUUID) {
+    /** {@inheritDoc} */
+    @Override protected TestGroupTrainerLocalContext initialLocalContext(SimpleGroupTrainerInput data, UUID trainingUUID) {
         return new TestGroupTrainerLocalContext(data.iterCnt(), data.eachNumberCount(), data.limit(), trainingUUID);
     }
 
+    /** {@inheritDoc} */
     @Override protected IgniteFunction<GroupTrainerCacheKey<Double>, ResultAndUpdates<Integer>> distributedInitializer(
         SimpleGroupTrainerInput data) {
         return key -> {
@@ -58,16 +67,18 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
         };
     }
 
+    /** {@inheritDoc} */
     @Override protected IgniteBinaryOperator<Integer> reduceDistributedInitData() {
         return (a, b) -> a + b;
     }
 
+    /** {@inheritDoc} */
     @Override protected Double locallyProcessInitData(Integer data, TestGroupTrainerLocalContext locCtx) {
         return data.doubleValue();
     }
 
-    @Override
-    protected ComputationsChain<TestGroupTrainerLocalContext,
+    /** {@inheritDoc} */
+    @Override protected ComputationsChain<TestGroupTrainerLocalContext,
         Double, Integer, Double, Double> trainingLoopStep() {
         // TODO: here we should explicitly create variable because we cannot infer context type, think about it.
         ComputationsChain<TestGroupTrainerLocalContext, Double, Integer, Double, Double> chain = Chains.
@@ -79,18 +90,20 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
             });
     }
 
+    /** {@inheritDoc} */
     @Override protected boolean shouldContinue(Double data, TestGroupTrainerLocalContext locCtx) {
         return locCtx.cnt() < locCtx.maxCnt();
     }
 
+    /** {@inheritDoc} */
     @Override protected IgniteSupplier<Void> extractContextForFinalResultCreation(Double data,
         TestGroupTrainerLocalContext locCtx) {
         // No context is needed.
         return () -> null;
     }
 
-    @Override
-    protected IgniteSupplier<Stream<GroupTrainerCacheKey<Double>>> finalResultKeys(Double data,
+    /** {@inheritDoc} */
+    @Override protected IgniteSupplier<Stream<GroupTrainerCacheKey<Double>>> finalResultKeys(Double data,
         TestGroupTrainerLocalContext locCtx) {
         int limit = locCtx.limit();
         int cnt = locCtx.eachNumberCnt();
@@ -99,26 +112,30 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
         return () -> TestGroupTrainingCache.allKeys(limit, cnt, uuid);
     }
 
-    @Override
-    protected IgniteFunction<EntryAndContext<Double, Integer, Void>, ResultAndUpdates<Integer>> finalResultsExtractor() {
+    /** {@inheritDoc} */
+    @Override protected IgniteFunction<EntryAndContext<Double, Integer, Void>, ResultAndUpdates<Integer>> finalResultsExtractor() {
         return entryAndCtx -> {
             Integer val = entryAndCtx.entry().getValue();
             return ResultAndUpdates.of(val % 2 == 0 ? val : 0);
         };
     }
 
+    /** {@inheritDoc} */
     @Override protected Integer defaultFinalResult() {
         return 0;
     }
 
+    /** {@inheritDoc} */
     @Override protected IgniteBinaryOperator<Integer> finalResultsReducer() {
         return (a, b) -> a + b;
     }
 
+    /** {@inheritDoc} */
     @Override protected ConstModel<Integer> mapFinalResult(Integer res, TestGroupTrainerLocalContext locCtx) {
         return new ConstModel<>(res);
     }
 
+    /** {@inheritDoc} */
     @Override protected void cleanup(TestGroupTrainerLocalContext locCtx) {
         Stream<GroupTrainerCacheKey<Double>> toRemote = TestGroupTrainingCache.allKeys(locCtx.limit(), locCtx.eachNumberCnt(), locCtx.trainingUUID());
         TestGroupTrainingCache.getOrCreate(ignite).removeAll(toRemote.collect(Collectors.toSet()));

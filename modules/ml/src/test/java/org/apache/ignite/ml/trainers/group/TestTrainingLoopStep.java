@@ -24,9 +24,9 @@ import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
-import org.apache.ignite.ml.trainers.group.chain.DistributedStep;
+import org.apache.ignite.ml.trainers.group.chain.DistributedEntryProcessingStep;
 
-public class TestTrainingLoopStep implements DistributedStep<TestGroupTrainerLocalContext, Double, Integer, Void, Double, Double> {
+public class TestTrainingLoopStep implements DistributedEntryProcessingStep<TestGroupTrainerLocalContext, Double, Integer, Void, Double, Double> {
     @Override public IgniteSupplier<Void> remoteContextSupplier(Double input, TestGroupTrainerLocalContext locCtx) {
         // No context is needed.
         return () -> null;

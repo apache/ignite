@@ -28,14 +28,14 @@ import org.apache.ignite.ml.trainers.group.ResultAndUpdates;
 /**
  * Class encapsulating logic of distributed step in {@link ComputationsChain}.
  *
+ * @param <T> Type of elements to be processed by worker.
  * @param <L> Local context.
  * @param <K> Type of keys of cache used for group training.
- * @param <V> Type of values of cache used for group training.
  * @param <C> Context used by worker.
  * @param <I> Type of input to this step.
  * @param <O> Type of output of this step.
  */
-public interface DistributedStep<L, K, V, C, I, O extends Serializable> {
+public interface DistributedStep<T, L, K, C, I, O extends Serializable> {
     /**
      * Create supplier of context used by worker.
      *
@@ -46,11 +46,11 @@ public interface DistributedStep<L, K, V, C, I, O extends Serializable> {
     IgniteSupplier<C> remoteContextSupplier(I input, L locCtx);
 
     /**
-     * Get function applied to each cache entry specified by keys.
+     * Get function applied to each cache elment specified by keys.
      *
      * @return Function applied to each cache entry specified by keys..
      */
-    IgniteFunction<EntryAndContext<K, V, C>, ResultAndUpdates<O>> worker();
+    IgniteFunction<T, ResultAndUpdates<O>> worker();
 
     /**
      * Get supplier of keys for worker.

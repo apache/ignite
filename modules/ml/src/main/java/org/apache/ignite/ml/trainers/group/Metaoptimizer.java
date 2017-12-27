@@ -21,33 +21,81 @@ import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
- * Class encapsulating logic of group training in {@link MetaoptimizerGroupTrainer}, which is adapter of
- * {@link GroupTrainer}.
+ * Class encapsulating data transformations in group training in {@link MetaoptimizerGroupTrainer}, which is adapter of
+ * {@link GroupTrainer}
  *
- * @param <LC>z
- * @param <X>
- * @param <Y>
- * @param <I>
- * @param <D>
- * @param <O>
+ * @param <LC> Local context of {@link GroupTrainer}.
+ * @param <X> Type of data which is processed in training loop step.
+ * @param <Y> Type of data returned by training loop step data processor.
+ * @param <I> Type of data to which data returned by distributed initialization is mapped.
+ * @param <D> Type of data returned by initialization.
+ * @param <O> Type of data to which data returned by data processor is mapped.
  */
 public interface Metaoptimizer<LC, X, Y, I, D, O> {
+    /**
+     * Get function used to reduce distributed initialization results.
+     *
+     * @return Function used to reduce distributed initialization results.
+     */
     IgniteBinaryOperator<D> initialReducer();
 
+    /**
+     * Maps data returned by distributed initialization to data consumed by training loop step.
+     *
+     * @param data Data returned by distributed initialization.
+     * @param locCtx Local context.
+     * @return Mapping of data returned by distributed initialization to data consumed by training loop step.
+     */
     I locallyProcessInitData(D data, LC locCtx);
 
+    /**
+     * Preprocess data for {@link MetaoptimizerGroupTrainer#dataProcessor()}.
+     *
+     * @return Preprocessed data for {@link MetaoptimizerGroupTrainer#dataProcessor()}.
+     */
     default IgniteFunction<X, X> distributedPreprocessor() {
         return x -> x;
     }
 
+    /**
+     * Get function used to map values returned by {@link MetaoptimizerGroupTrainer#dataProcessor()}.
+     *
+     * @return Function used to map values returned by {@link MetaoptimizerGroupTrainer#dataProcessor()}.
+     */
     IgniteFunction<Y, O> distributedPostprocessor();
 
+    /**
+     * Get binary operator used for reducing results returned by distributedPostprocessor.
+     *
+     * @return Binary operator used for reducing results returned by distributedPostprocessor.
+     */
     IgniteBinaryOperator<O> postProcessReducer();
 
+    /**
+     * Get identity of postProcessReducer.
+     *
+     * @return Identity of postProcessReducer.
+     */
     O postProcessIdentity();
 
+    /**
+     * Transform data returned by distributed part of training loop step into input fed into distributed part of training
+     * loop step.
+     *
+     * @param input Type of output of distributed part of training loop step.
+     * @param locCtx Local context.
+     * @return Result of transform data returned by distributed part of training loop step into input fed into distributed part of training
+     * loop step.
+     */
     I localProcessor(O input, LC locCtx);
 
+    /**
+     * Returns value of predicate 'should training loop continue given previous step output and local context'.
+     *
+     * @param input Input of previous step.
+     * @param locCtx Local context.
+     * @return Value of predicate 'should training loop continue given previous step output and local context'.
+     */
     boolean shouldContinue(I input, LC locCtx);
 
 //    default <I1, D1, O1> Metaoptimizer<IR, LC, X, Y, IgniteBiTuple<I, I1>, IgniteBiTuple<D, D1>, IgniteBiTuple<O, O1>> combineWith(Metaoptimizer<IR, LC, X, Y, I1, D1, O1> other) {

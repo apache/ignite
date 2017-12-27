@@ -34,7 +34,7 @@ public class KeyAndContext<K, C> {
     /**
      * Remote context.
      */
-    private C context;
+    private C ctx;
 
     /**
      * Construct instance of this class.
@@ -44,7 +44,7 @@ public class KeyAndContext<K, C> {
      */
     public KeyAndContext(GroupTrainerCacheKey<K> key, C ctx) {
         this.key = key;
-        this.context = ctx;
+        this.ctx = ctx;
     }
 
     /**
@@ -62,6 +62,6 @@ public class KeyAndContext<K, C> {
      * @return Remote context.
      */
     public C context() {
-        return context;
+        return ctx;
     }
 }
