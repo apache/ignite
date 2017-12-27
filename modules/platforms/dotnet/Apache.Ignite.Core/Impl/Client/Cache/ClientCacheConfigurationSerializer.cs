@@ -36,46 +36,46 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         private enum Op : short
         {
             // Name is required.
-            Name = 12,
+            Name = 0,
 
             // Most common properties.
-            CacheMode = 2,
-            AtomicityMode = 0,
-            Backups = 1,
-            WriteSynchronizationMode = 28,
-            CopyOnRead = 3,
-            ReadFromBackup = 17,
+            CacheMode = 1,
+            AtomicityMode = 2,
+            Backups = 3,
+            WriteSynchronizationMode = 4,
+            CopyOnRead = 5,
+            ReadFromBackup = 6,
 
             // Memory settings.
-            DataRegionName = 4,
-            OnheapCacheEnabled = 13,
+            DataRegionName = 100,
+            OnheapCacheEnabled = 101,
 
             // SQL.
-            QueryEntities = 30,
-            QueryParallelism = 16,
-            QueryDetailMetricsSize = 15,
-            SqlSchema = 27,
-            SqlIndexMaxInlineSize = 26,
-            SqlEscapeAll = 25,
-            MaxQueryIteratorsCount = 11,
+            QueryEntities = 200,
+            QueryParallelism = 201,
+            QueryDetailMetricsSize = 202,
+            SqlSchema = 203,
+            SqlIndexMaxInlineSize = 204,
+            SqlEscapeAll = 205,
+            MaxQueryIteratorsCount = 206,
 
             // Rebalance.
-            RebalanceMode = 21,
-            RebalanceDelay = 20,
-            RebalanceTimeout = 24,
-            RebalanceBatchSize = 18,
-            RebalanceBatchesPrefetchCount = 19,
-            RebalanceOrder = 22,
-            RebalanceThrottle = 23,
+            RebalanceMode = 300,
+            RebalanceDelay = 301,
+            RebalanceTimeout = 302,
+            RebalanceBatchSize = 303,
+            RebalanceBatchesPrefetchCount = 304,
+            RebalanceOrder = 305,
+            RebalanceThrottle = 306,
 
             // Advanced.
-            GroupName = 7,
-            KeyConfiguration = 29,
-            DefaultLockTimeout = 9,
-            MaxConcurrentAsyncOperations = 10,
-            PartitionLossPolicy = 14,
-            EagerTtl = 5, 
-            StatisticsEnabled = 6
+            GroupName = 400,
+            KeyConfiguration = 401,
+            DefaultLockTimeout = 402,
+            MaxConcurrentAsyncOperations = 403,
+            PartitionLossPolicy = 404,
+            EagerTtl = 405, 
+            StatisticsEnabled = 406
         }
 
         /** Property count. */

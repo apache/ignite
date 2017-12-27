@@ -39,95 +39,96 @@ import static org.apache.ignite.internal.processors.platform.utils.PlatformConfi
  * Cache configuration serializer.
  */
 public class ClientCacheConfigurationSerializer {
-    /** */
-    private static final short ATOMICITY_MODE = 0;
+    /** Name. */
+    private static final short NAME = 0;
+
+    /** Common properties. */
+    private static final short CACHE_MODE = 1;
 
     /** */
-    private static final short BACKUPS = 1;
+    private static final short ATOMICITY_MODE = 2;
 
     /** */
-    private static final short CACHE_MODE = 2;
+    private static final short BACKUPS = 3;
 
     /** */
-    private static final short COPY_ON_READ = 3;
+    private static final short WRITE_SYNCHRONIZATION_MODE = 4;
 
     /** */
-    private static final short DATA_REGION_NAME = 4;
+    private static final short COPY_ON_READ = 5;
 
     /** */
-    private static final short EAGER_TTL = 5;
+    private static final short READ_FROM_BACKUP = 6;
+
+    /** Memory settings. */
+    private static final short DATA_REGION_NAME = 100;
 
     /** */
-    private static final short STATISTICS_ENABLED = 6;
+    private static final short ONHEAP_CACHE_ENABLED = 101;
+
+    /** SQL. */
+    private static final short QUERY_ENTITIES = 200;
 
     /** */
-    private static final short GROUP_NAME = 7;
+    private static final short QUERY_PARALLELISM = 201;
 
     /** */
-    private static final short DEFAULT_LOCK_TIMEOUT = 9;
+    private static final short QUERY_DETAIL_METRICS_SIZE = 202;
 
     /** */
-    private static final short MAX_CONCURRENT_ASYNC_OPERATIONS = 10;
+    private static final short SQL_SCHEMA = 203;
 
     /** */
-    private static final short MAX_QUERY_ITERATORS_COUNT = 11;
+    private static final short SQL_INDEX_MAX_INLINE_SIZE = 204;
 
     /** */
-    private static final short NAME = 12;
+    private static final short SQL_ESCAPE_ALL = 205;
 
     /** */
-    private static final short ONHEAP_CACHE_ENABLED = 13;
+    private static final short MAX_QUERY_ITERATORS_COUNT = 206;
+
+    /** Rebalance. */
+    private static final short REBALANCE_MODE = 300;
 
     /** */
-    private static final short PARTITION_LOSS_POLICY = 14;
+    private static final short REBALANCE_DELAY = 301;
 
     /** */
-    private static final short QUERY_DETAIL_METRICS_SIZE = 15;
+    private static final short REBALANCE_TIMEOUT = 302;
 
     /** */
-    private static final short QUERY_PARALLELISM = 16;
+    private static final short REBALANCE_BATCH_SIZE = 303;
 
     /** */
-    private static final short READ_FROM_BACKUP = 17;
+    private static final short REBALANCE_BATCHES_PREFETCH_COUNT = 304;
 
     /** */
-    private static final short REBALANCE_BATCH_SIZE = 18;
+    private static final short REBALANCE_ORDER = 305;
 
     /** */
-    private static final short REBALANCE_BATCHES_PREFETCH_COUNT = 19;
+    private static final short REBALANCE_THROTTLE = 306;
+
+    /** Advanced. */
+    private static final short GROUP_NAME = 400;
 
     /** */
-    private static final short REBALANCE_DELAY = 20;
+    private static final short KEY_CONFIGURATION = 401;
 
     /** */
-    private static final short REBALANCE_MODE = 21;
+    private static final short DEFAULT_LOCK_TIMEOUT = 402;
 
     /** */
-    private static final short REBALANCE_ORDER = 22;
+    private static final short MAX_CONCURRENT_ASYNC_OPERATIONS = 403;
 
     /** */
-    private static final short REBALANCE_THROTTLE = 23;
+    private static final short PARTITION_LOSS_POLICY = 404;
 
     /** */
-    private static final short REBALANCE_TIMEOUT = 24;
+    private static final short EAGER_TTL = 405;
 
     /** */
-    private static final short SQL_ESCAPE_ALL = 25;
+    private static final short STATISTICS_ENABLED = 406;
 
-    /** */
-    private static final short SQL_INDEX_MAX_INLINE_SIZE = 26;
-
-    /** */
-    private static final short SQL_SCHEMA = 27;
-
-    /** */
-    private static final short WRITE_SYNCHRONIZATION_MODE = 28;
-
-    /** */
-    private static final short KEY_CONFIGURATION = 29;
-
-    /** */
-    private static final short QUERY_ENTITIES = 30;
 
     /**
      * Writes the cache configuration.
