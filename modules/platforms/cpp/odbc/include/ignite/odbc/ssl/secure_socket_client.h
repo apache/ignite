@@ -105,6 +105,12 @@ namespace ignite
                 static void* MakeContext(const std::string& certPath, const std::string& keyPath,
                     const std::string& caPath, diagnostic::Diagnosable& diag);
 
+                /**
+                 * Close the connection.
+                 * Internal call.
+                 */
+                void CloseInteral();
+
                 /** Certificate file path. */
                 std::string certPath;
 
