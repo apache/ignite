@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.cache.index;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.QueryEntity;
@@ -28,8 +30,10 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.H2RowCacheRegistry;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -209,6 +213,26 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
         assertEquals(1, res.size());
         assertEquals(key + 1, (int)res.get(0).getValue().lVal);
 
+    }
+
+    /**
+     * @param rowCache Row cache.
+     * @param key Key to find.
+     * @return Row's link.
+     */
+    private long getLinkForKey(H2RowCache rowCache, int key) {
+        ConcurrentHashMap<Long, GridH2KeyValueRowOnheap> rowsMap = GridTestUtils.getFieldValue(rowCache, "rows");
+
+        for (Map.Entry<Long, GridH2KeyValueRowOnheap> e : rowsMap.entrySet()) {
+            GridH2KeyValueRowOnheap val = e.getValue();
+
+            if ((Integer)val.key().value(null, false) == key)
+                return e.getKey();
+        }
+
+        fail("Row cache doesn't contain key [key=" + key + ']');
+
+        return -1;
     }
 
     /**
