@@ -20,11 +20,15 @@ namespace Apache.Ignite
     using System;
     using System.Collections.Generic;
     using System.Configuration;
+    using System.Diagnostics;
+    using System.Globalization;
+    using System.IO;
     using System.Linq;
     using System.ServiceProcess;
     using System.Threading;
     using Apache.Ignite.Config;
     using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Log;
     using Apache.Ignite.Service;
 
     /// <summary>
@@ -119,7 +123,47 @@ namespace Apache.Ignite
             // Use only arguments, not app.config.
             var cfg = Configurator.GetConfiguration(ArgsConfigurator.GetArgs(args).ToArray());
 
+            cfg.Logger = new TestLogger();
+
             ServiceBase.Run(new IgniteService(cfg));
+        }
+
+        private class TestLogger : ILogger
+        {
+            /** */
+            private readonly StreamWriter _file;
+
+            /// <summary>
+            /// Prevents a default instance of the <see cref="TestLogger"/> class from being created.
+            /// </summary>
+            public TestLogger()
+            {
+                var binDir = Path.GetDirectoryName(GetType().Assembly.Location);
+                var file = Path.Combine(binDir, "dotnet-service.log");
+
+                _file = File.AppendText(file);
+            }
+
+            /** <inheritdoc /> */
+            public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, string category,
+                string nativeErrorInfo, Exception ex)
+            {
+                lock (_file)
+                {
+                    var text = args != null
+                        ? string.Format(formatProvider ?? CultureInfo.InvariantCulture, message, args)
+                        : message;
+
+                    _file.WriteLine(text);
+                    _file.Flush();
+                }
+            }
+
+            /** <inheritdoc /> */
+            public bool IsEnabled(LogLevel level)
+            {
+                return level >= LogLevel.Debug;
+            }
         }
 
         /// <summary>

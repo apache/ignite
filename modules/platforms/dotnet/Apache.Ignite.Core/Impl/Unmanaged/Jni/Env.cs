@@ -241,7 +241,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 var msg = "Java class is not found (did you set IGNITE_HOME environment variable?): " + name;
 
 #if (DEBUG)
-                msg += ", Classpath: " + Classpath.CreateClasspath();
+                msg += ", JAVA_HOME: " + Environment.GetEnvironmentVariable("JAVA_HOME");
 #endif
 
                 throw new IgniteException(msg);
