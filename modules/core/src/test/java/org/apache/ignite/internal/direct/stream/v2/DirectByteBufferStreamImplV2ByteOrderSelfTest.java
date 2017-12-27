@@ -206,91 +206,121 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
     /**
      *
      */
-    public void testCharArrayOverflow() {
+    public void testCharArrayInternal() {
         char[] arr = new char[ARR_LEN];
 
         for (int i = 0; i < ARR_LEN; i++)
             arr[i] = (char)RND.nextInt();
 
-        testWriteArrayOverflow(arr, false, false, 1);
-        testWriteArrayOverflow(arr, false, true, 1);
-        testWriteArrayOverflow(arr, true, false, 1);
-        testWriteArrayOverflow(arr, true, true, 1);
+        testWriteArrayInternal(arr, false, false, 1);
+        testWriteArrayInternal(arr, false, true, 1);
+        testWriteArrayInternal(arr, true, false, 1);
+        testWriteArrayInternal(arr, true, true, 1);
+
+        testWriteArrayInternalOverflow(arr, false, false, 1);
+        testWriteArrayInternalOverflow(arr, false, true, 1);
+        testWriteArrayInternalOverflow(arr, true, false, 1);
+        testWriteArrayInternalOverflow(arr, true, true, 1);
     }
 
     /**
      *
      */
-    public void testShortArrayOverflow() {
+    public void testShortArrayInternal() {
         short[] arr = new short[ARR_LEN];
 
         for (int i = 0; i < ARR_LEN; i++)
             arr[i] = (short) RND.nextInt();
 
-        testWriteArrayOverflow(arr, false, false, 1);
-        testWriteArrayOverflow(arr, false, true, 1);
-        testWriteArrayOverflow(arr, true, false, 1);
-        testWriteArrayOverflow(arr, true, true, 1);
+        testWriteArrayInternal(arr, false, false, 1);
+        testWriteArrayInternal(arr, false, true, 1);
+        testWriteArrayInternal(arr, true, false, 1);
+        testWriteArrayInternal(arr, true, true, 1);
+
+        testWriteArrayInternalOverflow(arr, false, false, 1);
+        testWriteArrayInternalOverflow(arr, false, true, 1);
+        testWriteArrayInternalOverflow(arr, true, false, 1);
+        testWriteArrayInternalOverflow(arr, true, true, 1);
     }
 
     /**
      *
      */
-    public void testIntArrayOverflow() {
+    public void testIntArrayInternal() {
         int[] arr = new int[ARR_LEN];
 
         for (int i = 0; i < ARR_LEN; i++)
             arr[i] = RND.nextInt();
 
-        testWriteArrayOverflow(arr, false, false,2);
-        testWriteArrayOverflow(arr, false, true,2);
-        testWriteArrayOverflow(arr, true, false,2);
-        testWriteArrayOverflow(arr, true, true,2);
+        testWriteArrayInternal(arr, false, false,2);
+        testWriteArrayInternal(arr, false, true,2);
+        testWriteArrayInternal(arr, true, false,2);
+        testWriteArrayInternal(arr, true, true,2);
+
+        testWriteArrayInternalOverflow(arr, false, false,2);
+        testWriteArrayInternalOverflow(arr, false, true,2);
+        testWriteArrayInternalOverflow(arr, true, false,2);
+        testWriteArrayInternalOverflow(arr, true, true,2);
     }
 
     /**
      *
      */
-    public void testLongArrayOverflow() {
+    public void testLongArrayInternal() {
         long[] arr = new long[ARR_LEN];
 
         for (int i = 0; i < ARR_LEN; i++)
             arr[i] = RND.nextLong();
 
-        testWriteArrayOverflow(arr, false, false, 3);
-        testWriteArrayOverflow(arr, false, true, 3);
-        testWriteArrayOverflow(arr, true, false, 3);
-        testWriteArrayOverflow(arr, true, true, 3);
+        testWriteArrayInternal(arr, false, false, 3);
+        testWriteArrayInternal(arr, false, true, 3);
+        testWriteArrayInternal(arr, true, false, 3);
+        testWriteArrayInternal(arr, true, true, 3);
+
+        testWriteArrayInternalOverflow(arr, false, false, 3);
+        testWriteArrayInternalOverflow(arr, false, true, 3);
+        testWriteArrayInternalOverflow(arr, true, false, 3);
+        testWriteArrayInternalOverflow(arr, true, true, 3);
     }
 
     /**
      *
      */
-    public void testFloatArrayOverflow() {
+    public void testFloatArrayInternal() {
         float[] arr = new float[ARR_LEN];
 
         for (int i = 0; i < ARR_LEN; i++)
             arr[i] = RND.nextFloat();
 
-        testWriteArrayOverflow(arr, false, false, 2);
-        testWriteArrayOverflow(arr, false, true, 2);
-        testWriteArrayOverflow(arr, true, false, 2);
-        testWriteArrayOverflow(arr, true, true, 2);
+        testWriteArrayInternal(arr, false, false, 2);
+        testWriteArrayInternal(arr, false, true, 2);
+        testWriteArrayInternal(arr, true, false, 2);
+        testWriteArrayInternal(arr, true, true, 2);
+
+        testWriteArrayInternalOverflow(arr, false, false, 2);
+        testWriteArrayInternalOverflow(arr, false, true, 2);
+        testWriteArrayInternalOverflow(arr, true, false, 2);
+        testWriteArrayInternalOverflow(arr, true, true, 2);
     }
 
     /**
      *
      */
-    public void testDoubleArrayOverflow() {
+    public void testDoubleArrayInternal() {
         double[] arr = new double[ARR_LEN];
 
         for (int i = 0; i < ARR_LEN; i++)
             arr[i] = RND.nextDouble();
 
-        testWriteArrayOverflow(arr, false, false, 3);
-        testWriteArrayOverflow(arr, false, true, 3);
-        testWriteArrayOverflow(arr, true, false, 3);
-        testWriteArrayOverflow(arr, true, true, 3);
+        testWriteArrayInternal(arr, false, false, 3);
+        testWriteArrayInternal(arr, false, true, 3);
+        testWriteArrayInternal(arr, true, false, 3);
+        testWriteArrayInternal(arr, true, true, 3);
+
+        testWriteArrayInternalOverflow(arr, false, false, 3);
+        testWriteArrayInternalOverflow(arr, false, true, 3);
+        testWriteArrayInternalOverflow(arr, true, false, 3);
+        testWriteArrayInternalOverflow(arr, true, true, 3);
     }
 
     /**
@@ -300,7 +330,53 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
      * @param lenShift Length shift.
      * @param <T> Array type.
      */
-    private <T> void testWriteArrayOverflow(T srcArr, boolean writeBigEndian, boolean readBigEndian, int lenShift) {
+    private <T> void testWriteArrayInternal(T srcArr, boolean writeBigEndian, boolean readBigEndian, int lenShift) {
+        DirectByteBufferStreamImplV2 writeStream = createStream(buff);
+        DirectByteBufferStreamImplV2 readStream = createStream(buff);
+
+        int outBytes = (ARR_LEN << lenShift) + LEN_BYTES;
+        int typeSize = 1 << lenShift;
+        long baseOff = baseOffset(srcArr);
+
+        buff.limit(outBytes);
+        buff.rewind();
+
+        boolean writeRes;
+
+        if (writeBigEndian)
+            writeRes = writeStream.writeArrayLE(srcArr, baseOff, ARR_LEN, typeSize, lenShift);
+        else
+            writeRes = writeStream.writeArray(srcArr, baseOff, ARR_LEN, ARR_LEN << lenShift);
+
+        assertTrue(writeRes);
+
+        buff.rewind();
+
+        DirectByteBufferStreamImplV2.ArrayCreator<T> arrCreator = arrayCreator(srcArr);
+
+        T resArr;
+
+        if (readBigEndian)
+            resArr = readStream.readArrayLE(arrCreator, typeSize, lenShift, baseOff);
+        else
+            resArr = readStream.readArray(arrCreator, lenShift, baseOff);
+
+        assertNotNull(resArr);
+
+        if (readBigEndian != writeBigEndian)
+            revertByteOrder(resArr, baseOff, typeSize);
+
+        assertEquals(toList(srcArr), toList(resArr));
+    }
+
+    /**
+     * @param srcArr Source array.
+     * @param writeBigEndian If {@code true}, then write in big-endian mode.
+     * @param readBigEndian If {@code true}, then read in big-endian mode.
+     * @param lenShift Length shift.
+     * @param <T> Array type.
+     */
+    private <T> void testWriteArrayInternalOverflow(T srcArr, boolean writeBigEndian, boolean readBigEndian, int lenShift) {
         DirectByteBufferStreamImplV2 writeStream = createStream(buff);
         DirectByteBufferStreamImplV2 readStream = createStream(buff);
 
@@ -317,7 +393,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
         if (writeBigEndian)
             writeRes = writeStream.writeArrayLE(srcArr, baseOff, ARR_LEN, typeSize, lenShift);
         else
-            writeRes = writeStream.writeArray(srcArr, baseOff, ARR_LEN, outBytes);
+            writeRes = writeStream.writeArray(srcArr, baseOff, ARR_LEN, ARR_LEN << lenShift);
 
         assertFalse(writeRes);
 
@@ -342,7 +418,7 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest extends TestCase {
         if (writeBigEndian)
             writeRes = writeStream.writeArrayLE(srcArr, baseOff, ARR_LEN, typeSize, lenShift);
         else
-            writeRes = writeStream.writeArray(srcArr, baseOff, ARR_LEN, outBytes);
+            writeRes = writeStream.writeArray(srcArr, baseOff, ARR_LEN, ARR_LEN << lenShift);
 
         assertTrue(writeRes);
 
