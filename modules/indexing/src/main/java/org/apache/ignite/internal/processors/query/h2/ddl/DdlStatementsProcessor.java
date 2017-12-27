@@ -393,7 +393,7 @@ public class DdlStatementsProcessor {
      * @throws IgniteCheckedException If failed.
      */
     private void finishActiveTxIfNecessary() throws IgniteCheckedException {
-        try (GridNearTxLocal tx = idx.userTx()) {
+        try (GridNearTxLocal tx = idx.tx()) {
             if (tx == null)
                 return;
 
