@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Client
 {
+    using System;
     using System.ComponentModel;
     using System.Xml;
     using Apache.Ignite.Core.Binary;
@@ -48,6 +49,11 @@ namespace Apache.Ignite.Core.Client
         public const bool DefaultTcpNoDelay = true;
 
         /// <summary>
+        /// Default socket timeout.
+        /// </summary>
+        public static readonly TimeSpan DefaultSocketTimeout = TimeSpan.FromMilliseconds(5000);
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="IgniteClientConfiguration"/> class.
         /// </summary>
         public IgniteClientConfiguration()
@@ -56,6 +62,7 @@ namespace Apache.Ignite.Core.Client
             SocketSendBufferSize = DefaultSocketBufferSize;
             SocketReceiveBufferSize = DefaultSocketBufferSize;
             TcpNoDelay = DefaultTcpNoDelay;
+            SocketTimeout = DefaultSocketTimeout;
         }
 
         /// <summary>
@@ -74,6 +81,7 @@ namespace Apache.Ignite.Core.Client
             SocketSendBufferSize = cfg.SocketSendBufferSize;
             SocketReceiveBufferSize = cfg.SocketReceiveBufferSize;
             TcpNoDelay = cfg.TcpNoDelay;
+            SocketTimeout = cfg.SocketTimeout;
 
             if (cfg.BinaryConfiguration != null)
             {
@@ -105,6 +113,12 @@ namespace Apache.Ignite.Core.Client
         /// </summary>
         [DefaultValue(DefaultSocketBufferSize)]
         public int SocketReceiveBufferSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the socket operation timeout. Zero or negative means infinite timeout.
+        /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:05")]
+        public TimeSpan SocketTimeout { get; set; }
 
         /// <summary>
         /// Gets or sets the value for <c>TCP_NODELAY</c> socket option. Each
