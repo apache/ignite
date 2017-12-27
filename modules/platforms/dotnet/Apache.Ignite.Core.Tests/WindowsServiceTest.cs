@@ -23,6 +23,8 @@ namespace Apache.Ignite.Core.Tests
     using System.Linq;
     using System.ServiceProcess;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Impl.Unmanaged.Jni;
+    using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
@@ -62,11 +64,17 @@ namespace Apache.Ignite.Core.Tests
             var exePath = typeof(IgniteRunner).Assembly.Location;
             var springPath = Path.GetFullPath(@"config\compute\compute-grid1.xml");
 
+            JvmDll.Load(null, new NoopLogger());
+            var jvmDll = System.Diagnostics.Process.GetCurrentProcess().Modules
+                .OfType<ProcessModule>()
+                .Single(x => JvmDll.FileJvmDll.Equals(x.ModuleName, StringComparison.OrdinalIgnoreCase));
+
             IgniteProcess.Start(exePath, string.Empty, args: new[]
             {
                 "/install",
                 "ForceTestClasspath=true",
-                "-springConfigUrl=" + springPath
+                "-springConfigUrl=" + springPath,
+                "-jvmDll=" + jvmDll.FileName
             }).WaitForExit();
 
             var service = GetIgniteService();
@@ -145,6 +153,20 @@ namespace Apache.Ignite.Core.Tests
         private static ServiceController GetIgniteService()
         {
             return ServiceController.GetServices().FirstOrDefault(x => x.ServiceName.StartsWith("Apache Ignite.NET"));
+        }
+
+        private class NoopLogger : ILogger
+        {
+            public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, string category,
+                string nativeErrorInfo, Exception ex)
+            {
+                // No-op.
+            }
+
+            public bool IsEnabled(LogLevel level)
+            {
+                return false;
+            }
         }
     }
 }

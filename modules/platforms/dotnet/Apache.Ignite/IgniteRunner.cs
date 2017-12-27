@@ -20,15 +20,11 @@ namespace Apache.Ignite
     using System;
     using System.Collections.Generic;
     using System.Configuration;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.IO;
     using System.Linq;
     using System.ServiceProcess;
     using System.Threading;
     using Apache.Ignite.Config;
     using Apache.Ignite.Core;
-    using Apache.Ignite.Core.Log;
     using Apache.Ignite.Service;
 
     /// <summary>
@@ -123,47 +119,7 @@ namespace Apache.Ignite
             // Use only arguments, not app.config.
             var cfg = Configurator.GetConfiguration(ArgsConfigurator.GetArgs(args).ToArray());
 
-            cfg.Logger = new TestLogger();
-
             ServiceBase.Run(new IgniteService(cfg));
-        }
-
-        private class TestLogger : ILogger
-        {
-            /** */
-            private readonly StreamWriter _file;
-
-            /// <summary>
-            /// Prevents a default instance of the <see cref="TestLogger"/> class from being created.
-            /// </summary>
-            public TestLogger()
-            {
-                var binDir = Path.GetDirectoryName(GetType().Assembly.Location);
-                var file = Path.Combine(binDir, "dotnet-service.log");
-
-                _file = File.AppendText(file);
-            }
-
-            /** <inheritdoc /> */
-            public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, string category,
-                string nativeErrorInfo, Exception ex)
-            {
-                lock (_file)
-                {
-                    var text = args != null
-                        ? string.Format(formatProvider ?? CultureInfo.InvariantCulture, message, args)
-                        : message;
-
-                    _file.WriteLine(text);
-                    _file.Flush();
-                }
-            }
-
-            /** <inheritdoc /> */
-            public bool IsEnabled(LogLevel level)
-            {
-                return level >= LogLevel.Debug;
-            }
         }
 
         /// <summary>
@@ -181,7 +137,7 @@ namespace Apache.Ignite
             Console.WriteLine("\t-ConfigSectionName     name of the IgniteConfigurationSection in app.config to use.");
             Console.WriteLine("\t-ConfigFileName        path to the app.config file (if not provided Apache.Ignite.exe.config is used).");
             Console.WriteLine("\t-springConfigUrl       path to Spring configuration file.");
-            Console.WriteLine("\t-jvmDllPath            path to JVM library jvm.dll (if not provided JAVA_HOME environment variable is used).");
+            Console.WriteLine("\t-jvmDll                path to JVM library jvm.dll (if not provided JAVA_HOME environment variable is used).");
             Console.WriteLine("\t-jvmClasspath          classpath passed to JVM (enlist additional jar files here).");
             Console.WriteLine("\t-suppressWarnings      whether to print warnings.");
             Console.WriteLine("\t-J<javaOption>         JVM options passed to created JVM.");
