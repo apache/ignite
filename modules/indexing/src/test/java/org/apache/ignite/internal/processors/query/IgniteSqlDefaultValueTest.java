@@ -109,6 +109,37 @@ public class IgniteSqlDefaultValueTest extends GridCommonAbstractTest {
 
     /**
      */
+    public void testDefaultValueColumnAfterUpdate() {
+        sql("CREATE TABLE TEST (id int, val0 varchar DEFAULT 'default-val', val1 varchar, primary key (id))");
+        sql("INSERT INTO TEST (id, val1) VALUES (?, ?)", 1, "val-10");
+        sql("INSERT INTO TEST (id, val1) VALUES (?, ?)", 2, "val-20");
+        sql("INSERT INTO TEST (id, val1) VALUES (?, ?)", 3, "val-30");
+
+        List<List<Object>> exp = Arrays.asList(
+            Arrays.<Object>asList(1, "default-val", "val-10"),
+            Arrays.<Object>asList(2, "default-val", "val-20"),
+            Arrays.<Object>asList(3, "default-val", "val-30")
+        );
+
+        List<List<?>> res = sql("select id, val0, val1 from TEST");
+
+        checkResults(exp, res);
+
+        sql("UPDATE TEST SET val1=? where id=?", "val-21", 2);
+
+        List<List<Object>> expAfterUpdate = Arrays.asList(
+            Arrays.<Object>asList(1, "default-val", "val-10"),
+            Arrays.<Object>asList(2, "default-val", "val-21"),
+            Arrays.<Object>asList(3, "default-val", "val-30")
+        );
+
+        List<List<?>> resAfterUpdate = sql("select id, val0, val1 from TEST");
+
+        checkResults(expAfterUpdate, resAfterUpdate);
+    }
+
+    /**
+     */
     public void testEmptyValueNullDefaults() {
         sql("CREATE TABLE TEST (id int, val0 varchar, primary key (id))");
         sql("INSERT INTO TEST (id) VALUES (?)", 1);

@@ -432,29 +432,6 @@ public class QueryEntity implements Serializable {
     }
 
     /**
-     * Utility method for building query entities programmatically.
-     *
-     * @param fullName Full name of the field.
-     * @param type Type of the field.
-     * @param alias Field alias.
-     * @param dfltVal Default value of the field.
-     * @return {@code this} for chaining.
-     */
-    public QueryEntity addQueryField(String fullName, String type, String alias, Object dfltVal) {
-        A.notNull(fullName, "fullName");
-        A.notNull(type, "type");
-        A.notNull(dfltVal, "defaultValue");
-
-        fields.put(fullName, type);
-        fieldsDefaultValues.put(fullName, dfltVal);
-
-        if (alias != null)
-            aliases.put(fullName, alias);
-
-        return this;
-    }
-
-    /**
      * @param desc Type descriptor.
      * @return Type metadata.
      */
