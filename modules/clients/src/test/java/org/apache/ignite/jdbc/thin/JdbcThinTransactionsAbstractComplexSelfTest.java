@@ -69,7 +69,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      */
     private final IgniteInClosure<Connection> afterReadFastDel = new IgniteInClosure<Connection>() {
         @Override public void apply(Connection conn) {
-            execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
+            execute(conn, "DELETE FROM \"Person\".Person where id = 1");
         }
     };
 
@@ -79,6 +79,39 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     private final IgniteInClosure<Connection> afterReadUpdate = new IgniteInClosure<Connection>() {
         @Override public void apply(Connection conn) {
             execute(conn, "UPDATE \"Person\".Person set firstname = 'Joe' where firstname = 'John'");
+        }
+    };
+
+    /**
+     * Closure to perform ordinary delete and rollback after repeatable read.
+     */
+    private final IgniteInClosure<Connection> afterReadDelAndRollback = new IgniteInClosure<Connection>() {
+        @Override public void apply(Connection conn) {
+            execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
+
+            rollback(conn);
+        }
+    };
+
+    /**
+     * Closure to perform fast delete after repeatable read.
+     */
+    private final IgniteInClosure<Connection> afterReadFastDelAndRollback = new IgniteInClosure<Connection>() {
+        @Override public void apply(Connection conn) {
+            execute(conn, "DELETE FROM \"Person\".Person where id = 1");
+
+            rollback(conn);
+        }
+    };
+
+    /**
+     * Closure to perform ordinary update and rollback after repeatable read.
+     */
+    private final IgniteInClosure<Connection> afterReadUpdateAndRollback = new IgniteInClosure<Connection>() {
+        @Override public void apply(Connection conn) {
+            execute(conn, "UPDATE \"Person\".Person set firstname = 'Joe' where firstname = 'John'");
+
+            rollback(conn);
         }
     };
 
@@ -214,19 +247,18 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
             @Override public void apply(Connection conn) {
                 insertPerson(conn, 6, "John", "Doe", 2, 2);
 
-                execute(conn, "INSERT INTO \"Person\".person (id, firstName, lastName, cityId, companyId) values " +
-                    "(?, ?, ?, ?, ?)", 7, "Mary", "Lee", 1, 3);
-
-                execute(conn, "UPDATE \"Person\".person SET lastname = 'Dock' where lastname = 'Doe'");
+                // https://issues.apache.org/jira/browse/IGNITE-6938 - we can only see results of
+                // UPDATE of what we have not inserted ourselves.
+                execute(conn, "UPDATE \"Person\".person SET lastname = 'Jameson' where lastname = 'Jules'");
 
                 execute(conn, "DELETE FROM \"Person\".person where id = 5");
             }
         });
 
         assertEquals(l(
-            l(6, "John", "Dock", 2, 2),
-            l(7, "Mary", "Lee", 1, 3)
-        ), execute("SELECT * FROM \"Person\".Person where id >= 5 order by id"));
+            l(3, "Sam", "Jameson", 2, 2),
+            l(6, "John", "Doe", 2, 2)
+        ), execute("SELECT * FROM \"Person\".Person where id = 3 or id >= 5 order by id"));
     }
 
     /**
@@ -244,6 +276,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     /**
      *
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testBatchDmlStatementsIntermediateFailure() throws SQLException {
         insertPerson(6, "John", "Doe", 2, 2);
 
@@ -259,7 +292,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
 
         assertTrue(e.getCause().getMessage().contains("Duplicate key during INSERT [key=6]"));
 
-        // First we insert id 7, then 6. Still, 7 is not in the cache as long as the while batch has failed inside tx.
+        // First we insert id 7, then 6. Still, 7 is not in the cache as long as the whole batch has failed inside tx.
         assertEquals(Collections.emptyList(), execute("SELECT * FROM \"Person\".Person where id > 6 order by id"));
     }
 
@@ -502,7 +535,71 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
         }, afterReadFastDel);
     }
 
-    /** */
+    /**
+     *
+     */
+    public void testRepeatableReadAndDeleteWithConcurrentDeleteAndRollback() throws Exception {
+        doTestRepeatableRead(new IgniteInClosure<Connection>() {
+            @Override public void apply(Connection conn) {
+                execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
+            }
+        }, afterReadDelAndRollback);
+    }
+
+    /**
+     *
+     */
+    public void testRepeatableReadAndDeleteWithConcurrentFastDeleteAndRollback() throws Exception {
+        doTestRepeatableRead(new IgniteInClosure<Connection>() {
+            @Override public void apply(Connection conn) {
+                execute(conn, "DELETE FROM \"Person\".Person where id = 1");
+            }
+        }, afterReadDelAndRollback);
+    }
+
+    /**
+     *
+     */
+    public void testRepeatableReadAndDeleteWithConcurrentCacheRemoveAndRollback() throws Exception {
+        doTestRepeatableRead(new IgniteInClosure<Connection>() {
+            @Override public void apply(Connection conn) {
+                personCache().remove(1);
+            }
+        }, afterReadDelAndRollback);
+    }
+
+    /**
+     *
+     */
+    public void testRepeatableReadAndFastDeleteWithConcurrentDeleteAndRollback() throws Exception {
+        doTestRepeatableRead(new IgniteInClosure<Connection>() {
+            @Override public void apply(Connection conn) {
+                execute(conn, "DELETE FROM \"Person\".Person where firstname = 'John'");
+            }
+        }, afterReadFastDelAndRollback);
+    }
+
+    /**
+     *
+     */
+    public void testRepeatableReadAndFastDeleteWithConcurrentFastDeleteAndRollback() throws Exception {
+        doTestRepeatableRead(new IgniteInClosure<Connection>() {
+            @Override public void apply(Connection conn) {
+                execute(conn, "DELETE FROM \"Person\".Person where id = 1");
+            }
+        }, afterReadFastDelAndRollback);
+    }
+
+    /**
+     *
+     */
+    public void testRepeatableReadAndFastDeleteWithConcurrentCacheRemoveAndRollback() throws Exception {
+        doTestRepeatableRead(new IgniteInClosure<Connection>() {
+            @Override public void apply(Connection conn) {
+                personCache().remove(1);
+            }
+        }, afterReadFastDelAndRollback);
+    }
 
     /**
      *
@@ -510,7 +607,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     public void testRepeatableReadWithConcurrentUpdate() throws Exception {
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
-                execute(conn, "UPDATE \"Person\".Person SET secondname = 'Fix' where firstname = 'John'");
+                execute(conn, "UPDATE \"Person\".Person SET lastname = 'Fix' where firstname = 'John'");
             }
         }, null);
     }
@@ -538,7 +635,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
     public void testRepeatableReadAndUpdateWithConcurrentUpdate() throws Exception {
         doTestRepeatableRead(new IgniteInClosure<Connection>() {
             @Override public void apply(Connection conn) {
-                execute(conn, "UPDATE \"Person\".Person SET secondname = 'Fix' where firstname = 'John'");
+                execute(conn, "UPDATE \"Person\".Person SET lastname = 'Fix' where firstname = 'John'");
             }
         }, afterReadUpdate);
     }
@@ -558,6 +655,34 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
                 personCache().replace(1, p);
             }
         }, afterReadUpdate);
+    }
+
+    /**
+     *
+     */
+    public void testRepeatableReadAndUpdateWithConcurrentUpdateAndRollback() throws Exception {
+        doTestRepeatableRead(new IgniteInClosure<Connection>() {
+            @Override public void apply(Connection conn) {
+                execute(conn, "UPDATE \"Person\".Person SET lastname = 'Fix' where firstname = 'John'");
+            }
+        }, afterReadUpdateAndRollback);
+    }
+
+    /**
+     *
+     */
+    public void testRepeatableReadAndUpdateWithConcurrentCacheReplaceAndRollback() throws Exception {
+        doTestRepeatableRead(new IgniteInClosure<Connection>() {
+            @Override public void apply(Connection conn) {
+                Person p = new Person();
+
+                p.id = 1;
+                p.firstName = "Luke";
+                p.lastName = "Maxwell";
+
+                personCache().replace(1, p);
+            }
+        }, afterReadUpdateAndRollback);
     }
 
     /**
@@ -690,6 +815,21 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
             execute(c, "COMMIT");
         else
             c.commit();
+    }
+
+    /**
+     * @param c Connection to rollback a transaction on.
+     */
+    private void rollback(Connection c) {
+        try {
+            if (autoCommit())
+                execute(c, "ROLLBACK");
+            else
+                c.rollback();
+        }
+        catch (SQLException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
