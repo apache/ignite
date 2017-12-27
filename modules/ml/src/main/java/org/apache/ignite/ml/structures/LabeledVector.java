@@ -26,7 +26,7 @@ import org.apache.ignite.ml.math.Vector;
  * @param <V> Some class extending {@link Vector}.
  * @param <L> Type of label.
  */
-public class LabeledVector<V extends Vector, L> extends DatasetRow<V> implements Serializable {
+public class LabeledVector<V extends Vector, L> extends DatasetRow<V> {
     /** Label. */
     private L lb;
 

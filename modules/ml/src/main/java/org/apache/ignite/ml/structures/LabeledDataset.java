@@ -29,7 +29,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Class for set of labeled vectors.
  */
-public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> implements Serializable {
+public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> {
     /**
      * Creates new Labeled Dataset and initialized with empty data structure.
      *

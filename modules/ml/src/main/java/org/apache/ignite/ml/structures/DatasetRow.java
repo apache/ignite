@@ -17,10 +17,11 @@
 
 package org.apache.ignite.ml.structures;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.math.Vector;
 
 /** Class to keep one observation in dataset. This is a base class for labeled and unlabeled rows. */
-public class DatasetRow<V extends Vector> {
+public class DatasetRow<V extends Vector> implements Serializable {
     /** Vector. */
     protected final V vector;
 
@@ -36,5 +37,23 @@ public class DatasetRow<V extends Vector> {
      */
     public V features() {
         return vector;
+    }
+
+    /** */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        DatasetRow vector1 = (DatasetRow)o;
+
+        return vector != null ? !vector.equals(vector1.vector) : vector1.vector != null;
+    }
+
+    /** */
+    @Override public int hashCode() {
+        int res = vector != null ? vector.hashCode() : 0;
+        return res;
     }
 }

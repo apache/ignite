@@ -17,8 +17,10 @@
 
 package org.apache.ignite.ml.structures;
 
+import java.io.Serializable;
+
 /** Class for feature metadata. */
-public class FeatureMetadata {
+public class FeatureMetadata implements Serializable {
     /** Feature name */
     private String name;
 
@@ -41,4 +43,18 @@ public class FeatureMetadata {
         this.name = name;
     }
 
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        FeatureMetadata metadata = (FeatureMetadata)o;
+
+        return name != null ? name.equals(metadata.name) : metadata.name == null;
+    }
+
+    @Override public int hashCode() {
+        return name != null ? name.hashCode() : 0;
+    }
 }

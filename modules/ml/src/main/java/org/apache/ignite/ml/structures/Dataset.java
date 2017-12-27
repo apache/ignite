@@ -193,7 +193,7 @@ public class Dataset<Row extends DatasetRow> implements Serializable {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        LabeledDataset that = (LabeledDataset)o;
+        Dataset that = (Dataset)o;
 
         return rowSize == that.rowSize && colSize == that.colSize && Arrays.equals(data, that.data) && Arrays.equals(meta, that.meta);
     }
