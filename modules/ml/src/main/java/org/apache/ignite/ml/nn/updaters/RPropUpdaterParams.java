@@ -26,7 +26,7 @@ import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
  * <p>
  * See <a href="https://paginas.fe.up.pt/~ee02162/dissertacao/RPROP%20paper.pdf">RProp</a>.</p>
  */
-public class RPropUpdaterParams implements ModelUpdater<SmoothParametrized> {
+public class RPropUpdaterParams implements UpdaterParams<SmoothParametrized> {
     /**
      * Previous iteration weights updates. In original paper they are labeled with "delta w".
      */

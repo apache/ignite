@@ -28,7 +28,6 @@ import org.apache.ignite.ml.math.Vector;
  * Simple linear regression model which predicts result Y as a linear combination of input variables: Y = b * X.
  */
 public class LinearRegressionModel implements Model<Vector, Double>, Exportable<LinearRegressionModel>, Serializable {
-
     /** */
     private static final long serialVersionUID = -105984600091550226L;
 

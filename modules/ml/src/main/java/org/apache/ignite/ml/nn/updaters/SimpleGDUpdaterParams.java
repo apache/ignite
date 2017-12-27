@@ -23,7 +23,7 @@ import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 /**
  * Parameters for {@link SimpleGDUpdater}.
  */
-public class SimpleGDParams implements ModelUpdater<SmoothParametrized> {
+public class SimpleGDUpdaterParams implements UpdaterParams<SmoothParametrized> {
     /**
      * Gradient.
      */
@@ -40,7 +40,7 @@ public class SimpleGDParams implements ModelUpdater<SmoothParametrized> {
      * @param paramsCnt Count of parameters.
      * @param learningRate Learning rate.
      */
-    public SimpleGDParams(int paramsCnt, double learningRate) {
+    public SimpleGDUpdaterParams(int paramsCnt, double learningRate) {
         gradient = new DenseLocalOnHeapVector(paramsCnt);
         this.learningRate = learningRate;
     }
@@ -51,7 +51,7 @@ public class SimpleGDParams implements ModelUpdater<SmoothParametrized> {
      * @param gradient Gradient.
      * @param learningRate Learning rate.
      */
-    public SimpleGDParams(Vector gradient, double learningRate) {
+    public SimpleGDUpdaterParams(Vector gradient, double learningRate) {
         this.gradient = gradient;
         this.learningRate = learningRate;
     }

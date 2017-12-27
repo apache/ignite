@@ -27,14 +27,18 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 public abstract class GridAwareAbstractLinearRegressionTrainerTest extends GridCommonAbstractTest {
-
     /** Number of nodes in grid */
-    private static final int NODE_COUNT = 3;
+    private static final int NODE_COUNT = 2;
 
+    /**
+     * Delegate actually performs tests.
+     */
     private final GenericLinearRegressionTrainerTest delegate;
 
+    /** */
     private Ignite ignite;
 
+    /** */
     public GridAwareAbstractLinearRegressionTrainerTest(
         Trainer<LinearRegressionModel, Matrix> trainer,
         IgniteFunction<double[][], Matrix> matrixCreator,
@@ -80,24 +84,6 @@ public abstract class GridAwareAbstractLinearRegressionTrainerTest extends GridC
     public void testTrainWithIntercept() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         delegate.testTrainWithIntercept();
-    }
-
-    /**
-     * Test trainer on diabetes dataset.
-     */
-    @Test
-    public void testTrainOnDiabetesDataset() {
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-        delegate.testTrainOnDiabetesDataset();
-    }
-
-    /**
-     * Test trainer on boston dataset.
-     */
-    @Test
-    public void testTrainOnBostonDataset() {
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-        delegate.testTrainOnBostonDataset();
     }
 
     /**

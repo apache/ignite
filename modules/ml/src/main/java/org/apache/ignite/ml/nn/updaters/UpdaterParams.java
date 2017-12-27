@@ -15,14 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.regressions;
+package org.apache.ignite.ml.nn.updaters;
 
 /**
- * This class contains various messages used in regressions,
+ * A common interface for model updaters.
+ *
+ * @param <T> Type of object to be updated with this params.
  */
-public class RegressionsErrorMessages {
-    /** Constant for string indicating that sample has insufficient observed points. */
-    static final String INSUFFICIENT_OBSERVED_POINTS_IN_SAMPLE = "Insufficient observed points in sample.";
-    /** */
-    static final String NOT_ENOUGH_DATA_FOR_NUMBER_OF_PREDICTORS = "Not enough data (%d rows) for this many predictors (%d predictors)";
+public interface UpdaterParams<T> {
+    /**
+     * Update given obj with this parameters.
+     *
+     * @param mdl Model to be updated.
+     */
+    <M extends T> M updateModel(M mdl);
 }

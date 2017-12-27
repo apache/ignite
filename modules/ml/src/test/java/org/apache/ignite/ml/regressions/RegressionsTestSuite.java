@@ -17,12 +17,12 @@
 
 package org.apache.ignite.ml.regressions;
 
-import org.apache.ignite.ml.regressions.linear.BlockDistributedLinearRegressionWithQRTrainerTest;
-import org.apache.ignite.ml.regressions.linear.BlockDistributedLinearRegressionWithSGDTrainerTest;
-import org.apache.ignite.ml.regressions.linear.DistributedLinearRegressionWithQRTrainerTest;
-import org.apache.ignite.ml.regressions.linear.DistributedLinearRegressionWithSGDTrainerTest;
+import org.apache.ignite.ml.regressions.linear.BlockDistributedLinearRegressionQRTrainerTest;
+import org.apache.ignite.ml.regressions.linear.BlockDistributedLinearRegressionSGDTrainerTest;
+import org.apache.ignite.ml.regressions.linear.DistributedLinearRegressionQRTrainerTest;
+import org.apache.ignite.ml.regressions.linear.DistributedLinearRegressionSGDTrainerTest;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModelTest;
-import org.apache.ignite.ml.regressions.linear.LocalLinearRegressionWithQRTrainerTest;
+import org.apache.ignite.ml.regressions.linear.LocalLinearRegressionQRTrainerTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -32,12 +32,12 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     LinearRegressionModelTest.class,
-    LocalLinearRegressionWithQRTrainerTest.class,
-    LocalLinearRegressionWithQRTrainerTest.class,
-    DistributedLinearRegressionWithQRTrainerTest.class,
-    DistributedLinearRegressionWithSGDTrainerTest.class,
-    BlockDistributedLinearRegressionWithQRTrainerTest.class,
-    BlockDistributedLinearRegressionWithSGDTrainerTest.class
+    LocalLinearRegressionQRTrainerTest.class,
+    LocalLinearRegressionQRTrainerTest.class,
+    DistributedLinearRegressionQRTrainerTest.class,
+    DistributedLinearRegressionSGDTrainerTest.class,
+    BlockDistributedLinearRegressionQRTrainerTest.class,
+    BlockDistributedLinearRegressionSGDTrainerTest.class
 })
 public class RegressionsTestSuite {
     // No-op.

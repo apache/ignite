@@ -17,16 +17,19 @@
 
 package org.apache.ignite.ml.regressions.linear;
 
-import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
-import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
+import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
+import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
 
-public class DistributedLinearRegressionWithQRTrainerTest extends GridAwareAbstractLinearRegressionTrainerTest {
-
-    public DistributedLinearRegressionWithQRTrainerTest() {
+/**
+ * Tests for {@link LinearRegressionQRTrainer} on {@link SparseBlockDistributedMatrix}.
+ */
+public class BlockDistributedLinearRegressionQRTrainerTest extends GridAwareAbstractLinearRegressionTrainerTest {
+    /** */
+    public BlockDistributedLinearRegressionQRTrainerTest() {
         super(
-            new LinearRegressionWithQRTrainer(),
-            SparseDistributedMatrix::new,
-            SparseDistributedVector::new,
+            new LinearRegressionQRTrainer(),
+            SparseBlockDistributedMatrix::new,
+            SparseBlockDistributedVector::new,
             1e-6
         );
     }

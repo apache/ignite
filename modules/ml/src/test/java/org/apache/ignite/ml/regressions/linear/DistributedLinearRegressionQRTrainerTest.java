@@ -17,19 +17,19 @@
 
 package org.apache.ignite.ml.regressions.linear;
 
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
+import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 
 /**
- * Tests for {@link LinearRegressionWithQRTrainer}.
+ * Tests for {@link LinearRegressionQRTrainer} on {@link SparseDistributedMatrix}.
  */
-public class LocalLinearRegressionWithQRTrainerTest extends GenericLinearRegressionTrainerTest {
-
-    public LocalLinearRegressionWithQRTrainerTest() {
+public class DistributedLinearRegressionQRTrainerTest extends GridAwareAbstractLinearRegressionTrainerTest {
+    /** */
+    public DistributedLinearRegressionQRTrainerTest() {
         super(
-            new LinearRegressionWithQRTrainer(),
-            DenseLocalOnHeapMatrix::new,
-            DenseLocalOnHeapVector::new,
+            new LinearRegressionQRTrainer(),
+            SparseDistributedMatrix::new,
+            SparseDistributedVector::new,
             1e-6
         );
     }

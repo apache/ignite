@@ -20,11 +20,14 @@ package org.apache.ignite.ml.regressions.linear;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 
-public class DistributedLinearRegressionWithSGDTrainerTest extends GridAwareAbstractLinearRegressionTrainerTest {
-
-    public DistributedLinearRegressionWithSGDTrainerTest() {
+/**
+ * Tests for {@link LinearRegressionSGDTrainer} on {@link SparseDistributedMatrix}.
+ */
+public class DistributedLinearRegressionSGDTrainerTest extends GridAwareAbstractLinearRegressionTrainerTest {
+    /** */
+    public DistributedLinearRegressionSGDTrainerTest() {
         super(
-            new LinearRegressionWithSGDTrainer(100_000, 1.0, 1e-12, 0.001),
+            new LinearRegressionSGDTrainer(100_000, 1.0, 1e-12, 0.001),
             SparseDistributedMatrix::new,
             SparseDistributedVector::new,
             1e-2);

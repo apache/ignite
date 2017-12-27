@@ -23,13 +23,12 @@ import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFun
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
- * Interface for classes encapsulating parameters updateModel logic.
+ * Interface for builders of model updaters.
  *
  * @param <M> Type of model to be updated.
  * @param <P> Type of model updater accepted and produced by this builder.
  */
-public interface ModelUpdaterBuilder<M, P extends ModelUpdater> {
-
+public interface ParameterUpdater<M, P extends UpdaterParams> {
     /**
      * Initializes the builder.
      *
@@ -39,7 +38,7 @@ public interface ModelUpdaterBuilder<M, P extends ModelUpdater> {
     P init(M mdl, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss);
 
     /**
-     * Update updater parameters.
+     * Build model updater.
      *
      * @param mdl Model to be updated.
      * @param updaterParameters Updater parameters to updateModel.

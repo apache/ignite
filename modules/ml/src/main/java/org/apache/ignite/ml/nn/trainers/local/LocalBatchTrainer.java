@@ -28,19 +28,19 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.apache.ignite.ml.nn.LocalBatchTrainerInput;
-import org.apache.ignite.ml.nn.updaters.ModelUpdaterBuilder;
-import org.apache.ignite.ml.nn.updaters.ModelUpdater;
+import org.apache.ignite.ml.nn.updaters.ParameterUpdater;
+import org.apache.ignite.ml.nn.updaters.UpdaterParams;
 
 /**
  * Batch trainer. This trainer is not distributed on the cluster, but input can theoretically read data from
  * Ignite cache.
  */
-public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P extends ModelUpdater<? super M>>
+public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P extends UpdaterParams<? super M>>
     implements Trainer<M, LocalBatchTrainerInput<M>> {
     /**
      * Supplier for updater function.
      */
-    private final IgniteSupplier<ModelUpdaterBuilder<? super M, P>> updaterSupplier;
+    private final IgniteSupplier<ParameterUpdater<? super M, P>> updaterBuilderSupplier;
 
     /**
      * Error threshold.
@@ -71,9 +71,9 @@ public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P extends ModelU
      * @param maxIterations Maximal iterations count.
      */
     public LocalBatchTrainer(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
-        IgniteSupplier<ModelUpdaterBuilder<? super M, P>> updaterSupplier, double errorThreshold, int maxIterations) {
+        IgniteSupplier<ParameterUpdater<? super M, P>> updaterSupplier, double errorThreshold, int maxIterations) {
         this.loss = loss;
-        this.updaterSupplier = updaterSupplier;
+        this.updaterBuilderSupplier = updaterSupplier;
         this.errorThreshold = errorThreshold;
         this.maxIterations = maxIterations;
     }
@@ -84,19 +84,19 @@ public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P extends ModelU
         M mdl = data.mdl();
         double err;
 
-        ModelUpdaterBuilder<? super M, P> updater = updaterSupplier.get();
+        ParameterUpdater<? super M, P> updaterBuilder = updaterBuilderSupplier.get();
 
-        P updaterParams = updater.init(mdl, loss);
+        P updater = updaterBuilder.init(mdl, loss);
 
         while (i < maxIterations) {
             IgniteBiTuple<Matrix, Matrix> batch = data.getBatch();
             Matrix input = batch.get1();
             Matrix truth = batch.get2();
 
-            updaterParams = updater.buildModelUpdater(mdl, updaterParams, i, input, truth);
+            updater = updaterBuilder.buildModelUpdater(mdl, updater, i, input, truth);
 
             // Update mdl with updater parameters.
-            mdl = updaterParams.updateModel(mdl);
+            mdl = updater.updateModel(mdl);
 
             Matrix predicted = mdl.apply(input);
 
@@ -123,7 +123,7 @@ public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P extends ModelU
      * @return new trainer with the same parameters as this trainer, but with new loss.
      */
     public LocalBatchTrainer withLoss(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
-        return new LocalBatchTrainer<>(loss, updaterSupplier, errorThreshold, maxIterations);
+        return new LocalBatchTrainer<>(loss, updaterBuilderSupplier, errorThreshold, maxIterations);
     }
 
     /**
@@ -132,7 +132,7 @@ public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P extends ModelU
      * @param updaterSupplier New updater supplier.
      * @return new trainer with the same parameters as this trainer, but with new updater supplier.
      */
-    public LocalBatchTrainer withUpdater(IgniteSupplier<ModelUpdaterBuilder<? super M, P>> updaterSupplier) {
+    public LocalBatchTrainer withUpdater(IgniteSupplier<ParameterUpdater<? super M, P>> updaterSupplier) {
         return new LocalBatchTrainer<>(loss, updaterSupplier, errorThreshold, maxIterations);
     }
 
@@ -143,7 +143,7 @@ public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P extends ModelU
      * @return new trainer with the same parameters as this trainer, but with new error threshold.
      */
     public LocalBatchTrainer withErrorThreshold(double errorThreshold) {
-        return new LocalBatchTrainer<>(loss, updaterSupplier, errorThreshold, maxIterations);
+        return new LocalBatchTrainer<>(loss, updaterBuilderSupplier, errorThreshold, maxIterations);
     }
 
     /**
@@ -153,7 +153,7 @@ public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P extends ModelU
      * @return new trainer with the same parameters as this trainer, but with new maximal iterations count.
      */
     public LocalBatchTrainer withMaxIterations(int maxIterations) {
-        return new LocalBatchTrainer<>(loss, updaterSupplier, errorThreshold, maxIterations);
+        return new LocalBatchTrainer<>(loss, updaterBuilderSupplier, errorThreshold, maxIterations);
     }
 
     /**

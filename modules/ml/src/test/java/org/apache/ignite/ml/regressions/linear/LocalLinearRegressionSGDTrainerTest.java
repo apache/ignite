@@ -15,18 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.nn.updaters;
+package org.apache.ignite.ml.regressions.linear;
+
+import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
- * A common interface for model updaters.
- *
- * @param <T> Type of object to be updated with this params.
+ * Tests for {@link LinearRegressionSGDTrainer} on {@link DenseLocalOnHeapMatrix}.
  */
-public interface ModelUpdater<T> {
-    /**
-     * Update given obj with this parameters.
-     *
-     * @param obj Object to be updated.
-     */
-    <M extends T> M updateModel(M obj);
+public class LocalLinearRegressionSGDTrainerTest extends GenericLinearRegressionTrainerTest {
+    /** */
+    public LocalLinearRegressionSGDTrainerTest() {
+        super(
+            new LinearRegressionSGDTrainer(100_000, 1.0, 1e-12, 0.001),
+            DenseLocalOnHeapMatrix::new,
+            DenseLocalOnHeapVector::new,
+            1e-2);
+    }
 }

@@ -27,7 +27,6 @@ import org.junit.Test;
  * Tests for {@link LinearRegressionModel}.
  */
 public class LinearRegressionModelTest {
-
     /** */
     private static final double PRECISION = 1e-6;
 

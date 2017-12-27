@@ -25,7 +25,6 @@ import org.apache.ignite.ml.math.Vector;
  */
 @FunctionalInterface
 public interface Updater extends Serializable {
-
     /** */
     Vector compute(Vector oldWeights, Vector oldGradient, Vector weights, Vector gradient, int iteration);
 }

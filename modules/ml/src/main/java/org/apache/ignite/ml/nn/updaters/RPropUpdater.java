@@ -29,7 +29,7 @@ import org.apache.ignite.ml.math.util.MatrixUtil;
  * <p>
  * See <a href="https://paginas.fe.up.pt/~ee02162/dissertacao/RPROP%20paper.pdf">RProp</a>.</p>
  */
-public class RPropUpdater implements ModelUpdaterBuilder<SmoothParametrized, RPropUpdaterParams> {
+public class RPropUpdater implements ParameterUpdater<SmoothParametrized, RPropUpdaterParams> {
     /**
      * Default initial updateModel.
      */

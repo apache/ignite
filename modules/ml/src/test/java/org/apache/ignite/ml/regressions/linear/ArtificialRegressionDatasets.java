@@ -22,7 +22,6 @@ package org.apache.ignite.ml.regressions.linear;
  * tools, {@code sklearn.datasets.make_regression} procedure.
  */
 public class ArtificialRegressionDatasets {
-
     /**
      * Artificial dataset with 10 observations described by 1 feature.
      */

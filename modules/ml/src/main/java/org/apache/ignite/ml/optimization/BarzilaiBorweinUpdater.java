@@ -23,7 +23,6 @@ import org.apache.ignite.ml.math.Vector;
  * Updater based in Barzilai-Borwein method which guarantees convergence.
  */
 public class BarzilaiBorweinUpdater implements Updater {
-
     /** */
     private static final long serialVersionUID = 5046575099408708472L;
 
@@ -37,8 +36,8 @@ public class BarzilaiBorweinUpdater implements Updater {
      */
     @Override
     public Vector compute(Vector oldWeights, Vector oldGradient, Vector weights, Vector gradient, int iteration) {
-        double learningRate = computeLearningRate(oldWeights, oldGradient, weights, gradient);
-        return weights.minus(gradient.times(learningRate));
+        double learningRate = computeLearningRate(oldWeights != null ? oldWeights.copy() : null, oldGradient != null ? oldGradient.copy() : null, weights.copy(), gradient.copy());
+        return weights.copy().minus(gradient.copy().times(learningRate));
     }
 
     /** */

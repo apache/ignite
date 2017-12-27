@@ -23,7 +23,7 @@ import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 /**
  * Data needed for Nesterov parameters updater.
  */
-public class NesterovUpdaterParams implements ModelUpdater<SmoothParametrized> {
+public class NesterovUpdaterParams implements UpdaterParams<SmoothParametrized> {
     /**
      * Previous step weights updates.
      */

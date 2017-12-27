@@ -23,17 +23,17 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.nn.LossFunctions;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
-import org.apache.ignite.ml.nn.updaters.ModelUpdaterBuilder;
+import org.apache.ignite.ml.nn.updaters.ParameterUpdater;
 import org.apache.ignite.ml.nn.updaters.RPropUpdater;
 import org.apache.ignite.ml.nn.updaters.RPropUpdaterParams;
-import org.apache.ignite.ml.nn.updaters.ModelUpdater;
+import org.apache.ignite.ml.nn.updaters.UpdaterParams;
 
 /**
  * Local batch trainer for MLP.
  *
  * @param <P> Parameter updater parameters.
  */
-public class MLPLocalBatchTrainer<P extends ModelUpdater<? super MultilayerPerceptron>>
+public class MLPLocalBatchTrainer<P extends UpdaterParams<? super MultilayerPerceptron>>
     extends LocalBatchTrainer<MultilayerPerceptron, P> {
     /**
      * Default loss function.
@@ -62,7 +62,7 @@ public class MLPLocalBatchTrainer<P extends ModelUpdater<? super MultilayerPerce
      */
     public MLPLocalBatchTrainer(
         IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
-        IgniteSupplier<ModelUpdaterBuilder<? super MultilayerPerceptron, P>> updaterSupplier,
+        IgniteSupplier<ParameterUpdater<? super MultilayerPerceptron, P>> updaterSupplier,
         double errorThreshold, int maxIterations) {
         super(loss, updaterSupplier, errorThreshold, maxIterations);
     }

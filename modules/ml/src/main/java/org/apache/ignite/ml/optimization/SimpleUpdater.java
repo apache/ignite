@@ -23,7 +23,6 @@ import org.apache.ignite.ml.math.Vector;
  * Simple updater with fixed learning rate which doesn't guarantee convergence.
  */
 public class SimpleUpdater implements Updater {
-
     /** */
     private static final long serialVersionUID = 6417716224818162225L;
 

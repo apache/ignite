@@ -29,7 +29,6 @@ import org.junit.Test;
  * Base class for all linear regression trainers.
  */
 public class GenericLinearRegressionTrainerTest {
-
     /** */
     private final Trainer<LinearRegressionModel, Matrix> trainer;
 

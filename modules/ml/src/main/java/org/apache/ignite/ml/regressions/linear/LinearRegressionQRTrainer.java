@@ -27,17 +27,20 @@ import org.apache.ignite.ml.math.impls.vector.FunctionVector;
 /**
  * Linear regression trainer based on least squares loss function and QR decomposition.
  */
-public class LinearRegressionWithQRTrainer implements Trainer<LinearRegressionModel, Matrix> {
-
+public class LinearRegressionQRTrainer implements Trainer<LinearRegressionModel, Matrix> {
     /**
      * {@inheritDoc}
      */
     @Override public LinearRegressionModel train(Matrix data) {
+        long ts1 = System.currentTimeMillis();
         Vector groundTruth = extractGroundTruth(data);
         Matrix inputs = extractInputs(data);
+        long ts2 = System.currentTimeMillis();
         QRDecomposition decomposition = new QRDecomposition(inputs);
+        long ts3 = System.currentTimeMillis();
         QRDSolver solver = new QRDSolver(decomposition.getQ(), decomposition.getR());
         Vector variables = solver.solve(groundTruth);
+        long ts4 = System.currentTimeMillis();
         Vector weights = variables.viewPart(1, variables.size() - 1);
         double intercept = variables.get(0);
         return new LinearRegressionModel(weights, intercept);

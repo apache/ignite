@@ -24,7 +24,6 @@ import org.apache.ignite.ml.math.Vector;
  * Function which computes gradient of least square loss function.
  */
 public class LeastSquaresGradientFunction implements GradientFunction {
-
     /**
      * {@inheritDoc}
      */
