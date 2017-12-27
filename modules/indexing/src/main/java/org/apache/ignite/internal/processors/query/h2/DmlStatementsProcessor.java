@@ -266,6 +266,10 @@ public class DmlStatementsProcessor {
             throw new IgniteSQLException("Cross cache streaming is not supported, please specify cache explicitly" +
                 " in connection options", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
+        if (plan.cacheContext().mvccEnabled())
+            throw new IgniteSQLException("Streaming to cache with enabled MVCC is unsupported at the moment.",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
         if (plan.mode() == UpdateMode.INSERT && plan.rowCount() > 0) {
             assert plan.isLocalSubquery();
 
@@ -355,15 +359,18 @@ public class DmlStatementsProcessor {
             assert cctx.transactional();
 
             if(cctx.isReplicated())
-                throw new UnsupportedOperationException("Only partitioned caches are supported at the moment");
+                throw new IgniteSQLException("Only partitioned caches are supported at the moment",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
             DmlDistributedPlanInfo distributedPlan = plan.distributedPlan();
 
             if (distributedPlan == null)
-                throw new UnsupportedOperationException("Only distributed updates are supported at the moment");
+                throw new IgniteSQLException("Only distributed updates are supported at the moment",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
             if (plan.mode() == UpdateMode.INSERT && !plan.isLocalSubquery())
-                throw new UnsupportedOperationException("Insert from select is unsupported at the moment.");
+                throw new IgniteSQLException("Insert from select is unsupported at the moment.",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
             GridNearTxLocal tx = idx.activeTx();
 
