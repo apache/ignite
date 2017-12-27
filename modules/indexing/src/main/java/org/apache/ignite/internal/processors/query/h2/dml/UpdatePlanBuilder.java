@@ -45,10 +45,12 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDelete;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlInsert;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlMerge;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlParameter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
@@ -145,9 +147,9 @@ public final class UpdatePlanBuilder {
         }
 
         if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
-            return planForInsert(stmt, loc, idx, conn, fieldsQuery);
+            return planForInsert(stmt, loc, idx, conn, fieldsQuery, mvccEnabled);
         else
-            return planForUpdate(stmt, loc, idx, conn, fieldsQuery, errKeysPos);
+            return planForUpdate(stmt, loc, idx, conn, fieldsQuery, errKeysPos, mvccEnabled);
     }
 
     /**
@@ -158,13 +160,14 @@ public final class UpdatePlanBuilder {
      * @param idx Indexing.
      * @param conn Connection.
      * @param fieldsQuery Original query.
+     * @param mvccEnabled Mvcc enabled flag.
      * @return Update plan.
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("ConstantConditions")
     private static UpdatePlan planForInsert(GridSqlStatement stmt, boolean loc, IgniteH2Indexing idx,
-        @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQuery) throws IgniteCheckedException {
-        GridSqlQuery sel;
+        @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQuery, boolean mvccEnabled) throws IgniteCheckedException {
+        GridSqlQuery sel = null;
 
         GridSqlElement target;
 
@@ -188,13 +191,14 @@ public final class UpdatePlanBuilder {
             desc = tbl.dataTable().rowDescriptor();
 
             cols = ins.columns();
-            sel = DmlAstUtils.selectForInsertOrMerge(cols, ins.rows(), ins.query());
 
-            if (sel == null)
+            if (!mvccEnabled && noQuery(ins.rows()))
                 elRows = ins.rows();
+            else
+                sel = DmlAstUtils.selectForInsertOrMerge(cols, ins.rows(), ins.query());
 
             isTwoStepSubqry = (ins.query() != null);
-            rowsNum = isTwoStepSubqry ? 0 : ins.rows().size();
+            rowsNum = isTwoStepSubqry || mvccEnabled ? 0 : ins.rows().size();
         }
         else if (stmt instanceof GridSqlMerge) {
             GridSqlMerge merge = (GridSqlMerge) stmt;
@@ -205,13 +209,14 @@ public final class UpdatePlanBuilder {
             desc = tbl.dataTable().rowDescriptor();
 
             cols = merge.columns();
-            sel = DmlAstUtils.selectForInsertOrMerge(cols, merge.rows(), merge.query());
 
-            if (sel == null)
+            if (!mvccEnabled && noQuery(merge.rows()))
                 elRows = merge.rows();
+            else
+                sel = DmlAstUtils.selectForInsertOrMerge(cols, merge.rows(), merge.query());
 
             isTwoStepSubqry = (merge.query() != null);
-            rowsNum = isTwoStepSubqry ? 0 : merge.rows().size();
+            rowsNum = isTwoStepSubqry || mvccEnabled ? 0 : merge.rows().size();
         }
         else {
             throw new IgniteSQLException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
@@ -317,6 +322,28 @@ public final class UpdatePlanBuilder {
     }
 
     /**
+     * @param rows Insert rows.
+     * @return {@code True} if no query optimisation may be used.
+     */
+    private static boolean noQuery(List<GridSqlElement[]> rows) {
+        boolean noQry = true;
+
+        for (int i = 0; i < rows.size(); i++) {
+            GridSqlElement[] row = rows.get(i);
+
+            for (int i1 = 0; i1 < row.length; i1++) {
+                GridSqlElement el = row[i1];
+
+                if(!(noQry &=  (el instanceof GridSqlConst || el instanceof GridSqlParameter)))
+                    return noQry;
+
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Prepare update plan for UPDATE or DELETE.
      *
      * @param stmt UPDATE or DELETE statement.
@@ -325,11 +352,13 @@ public final class UpdatePlanBuilder {
      * @param conn Connection.
      * @param fieldsQuery Original query.
      * @param errKeysPos index to inject param for re-run keys at. Null if it's not a re-run plan.
+     * @param mvccEnabled Mvcc enabled flag.
      * @return Update plan.
      * @throws IgniteCheckedException if failed.
      */
     private static UpdatePlan planForUpdate(GridSqlStatement stmt, boolean loc, IgniteH2Indexing idx,
-        @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQuery, @Nullable Integer errKeysPos)
+        @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQuery, @Nullable Integer errKeysPos,
+        boolean mvccEnabled)
         throws IgniteCheckedException {
         GridSqlElement target;
 
@@ -343,13 +372,13 @@ public final class UpdatePlanBuilder {
 
             GridSqlUpdate update = (GridSqlUpdate)stmt;
             target = update.target();
-            fastUpdate = DmlAstUtils.getFastUpdateArgs(update);
+            fastUpdate = !mvccEnabled ? DmlAstUtils.getFastUpdateArgs(update) : null;
             mode = UpdateMode.UPDATE;
         }
         else if (stmt instanceof GridSqlDelete) {
             GridSqlDelete del = (GridSqlDelete) stmt;
             target = del.from();
-            fastUpdate = DmlAstUtils.getFastDeleteArgs(del);
+            fastUpdate = !mvccEnabled ? DmlAstUtils.getFastDeleteArgs(del) : null;
             mode = UpdateMode.DELETE;
         }
         else

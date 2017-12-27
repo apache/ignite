@@ -360,7 +360,7 @@ public class DmlStatementsProcessor {
 
             DmlDistributedPlanInfo distributedPlan = plan.distributedPlan();
 
-            if (!plan.hasRows() && !plan.fastResult() && distributedPlan == null)
+            if (distributedPlan == null)
                 throw new UnsupportedOperationException("Only distributed updates are supported at the moment");
 
             if (plan.mode() == UpdateMode.INSERT && !plan.isLocalSubquery())
@@ -378,48 +378,40 @@ public class DmlStatementsProcessor {
             idx.requestMvccVersion(cctx, tx);
 
             try (GridNearTxLocal toCommit = commit ? tx : null) {
-                UpdateResult res;
+                int[] ids = U.toIntArray(distributedPlan.getCacheIds());
 
-                if (plan.fastResult())
-                    res = plan.processFast(fieldsQry.getArgs());
-                else if (plan.hasRows())
-                    res = processDmlSelectResult(plan, plan.createRows(fieldsQry.getArgs()), fieldsQry.getPageSize());
+                int flags = 0;
+
+                if (fieldsQry.isEnforceJoinOrder())
+                    flags |= GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER;
+
+                if (distributedPlan.isReplicatedOnly())
+                    flags |= GridH2QueryRequest.FLAG_REPLICATED;
+
+                long timeout;
+
+                if (implicit)
+                    timeout = tx.remainingTime();
                 else {
-                    int[] ids = U.toIntArray(distributedPlan.getCacheIds());
+                    long tm1 = tx.remainingTime(), tm2 = fieldsQry.getTimeout();
 
-                    int flags = 0;
-
-                    if (fieldsQry.isEnforceJoinOrder())
-                        flags |= GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER;
-
-                    if (distributedPlan.isReplicatedOnly())
-                        flags |= GridH2QueryRequest.FLAG_REPLICATED;
-
-                    long timeout;
-
-                    if (implicit)
-                        timeout = tx.remainingTime();
-                    else {
-                        long tm1 = tx.remainingTime(), tm2 = fieldsQry.getTimeout();
-
-                        timeout = tm1 > 0 && tm2 > 0 ? Math.min(tm1, tm2) : Math.max(tm1, tm2);
-                    }
-
-                    int[] parts = fieldsQry.getPartitions();
-
-                    IgniteInternalFuture<Long> fut = tx.updateAsync(
-                        cctx,
-                        ids,
-                        parts,
-                        schemaName,
-                        fieldsQry.getSql(),
-                        fieldsQry.getArgs(),
-                        flags,
-                        fieldsQry.getPageSize(),
-                        timeout);
-
-                    res = new UpdateResult(fut.get(), X.EMPTY_OBJECT_ARRAY);
+                    timeout = tm1 > 0 && tm2 > 0 ? Math.min(tm1, tm2) : Math.max(tm1, tm2);
                 }
+
+                int[] parts = fieldsQry.getPartitions();
+
+                IgniteInternalFuture<Long> fut = tx.updateAsync(
+                    cctx,
+                    ids,
+                    parts,
+                    schemaName,
+                    fieldsQry.getSql(),
+                    fieldsQry.getArgs(),
+                    flags,
+                    fieldsQry.getPageSize(),
+                    timeout);
+
+                UpdateResult res = new UpdateResult(fut.get(), X.EMPTY_OBJECT_ARRAY);
 
                 if (commit)
                     toCommit.commit();
