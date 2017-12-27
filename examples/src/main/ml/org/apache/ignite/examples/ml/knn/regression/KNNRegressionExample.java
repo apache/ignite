@@ -31,6 +31,7 @@ import org.apache.ignite.ml.math.distances.ManhattanDistance;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledDatasetTestTrainPair;
 import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
+import org.apache.ignite.ml.structures.preprocessing.LabellingMachine;
 import org.apache.ignite.ml.structures.preprocessing.Normalizer;
 import org.apache.ignite.thread.IgniteThread;
 
@@ -94,10 +95,7 @@ public class KNNRegressionExample {
                     final double[] labels = test.labels();
 
                     // Save predicted classes to test dataset
-                    for (int i = 0; i < test.rowSize(); i++) {
-                        double predictedCls = knnMdl.apply(test.getRow(i).features());
-                        test.setLabel(i, predictedCls);
-                    }
+                    LabellingMachine.assignLabels(test, knnMdl);
 
                     // Calculate mean squared error (MSE)
                     double mse = 0.0;

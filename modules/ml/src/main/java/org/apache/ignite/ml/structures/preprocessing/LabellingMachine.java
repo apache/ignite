@@ -15,8 +15,27 @@
  * limitations under the License.
  */
 
-/**
- * <!-- Package description. -->
- * Contains main APIs for dataset pre-processing.
- */
 package org.apache.ignite.ml.structures.preprocessing;
+
+import org.apache.ignite.ml.knn.models.KNNModel;
+import org.apache.ignite.ml.structures.LabeledDataset;
+
+/** Data pre-processing step which assigns labels to all observations according model. */
+public class LabellingMachine {
+    /**
+     * Set labels to each observation according passed Model.
+     * <p>
+     * NOTE: In-place operation.
+     * </p>
+     * @param ds The given labeled dataset.
+     * @param knnMdl The given kNN Model.
+     * @return Dataset with predicted labels.
+     */
+    public static LabeledDataset assignLabels(LabeledDataset ds, KNNModel knnMdl) {
+        for (int i = 0; i < ds.rowSize(); i++) {
+            double predictedCls = knnMdl.apply(ds.getRow(i).features());
+            ds.setLabel(i, predictedCls);
+        }
+        return ds;
+    }
+}

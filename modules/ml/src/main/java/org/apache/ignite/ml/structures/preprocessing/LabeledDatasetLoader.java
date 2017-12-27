@@ -32,7 +32,7 @@ import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.jetbrains.annotations.NotNull;
 
-/** Data preprcessing step which loads data from different file types. */
+/** Data pre-processing step which loads data from different file types. */
 public class LabeledDatasetLoader {
     /**
      * Datafile should keep class labels in the first column.
@@ -43,7 +43,8 @@ public class LabeledDatasetLoader {
      * @param isFallOnBadData Fall on incorrect data if true.
      * @return Labeled Dataset parsed from file.
      */
-    public static LabeledDataset loadFromTxtFile(Path pathToFile, String separator, boolean isDistributed, boolean isFallOnBadData) throws IOException {
+    public static LabeledDataset loadFromTxtFile(Path pathToFile, String separator, boolean isDistributed,
+        boolean isFallOnBadData) throws IOException {
         Stream<String> stream = Files.lines(pathToFile);
         List<String> list = new ArrayList<>();
         stream.forEach(list::add);
@@ -71,7 +72,7 @@ public class LabeledDatasetLoader {
                         vectors.add(vec);
                     }
                     catch (NumberFormatException e) {
-                        if(isFallOnBadData)
+                        if (isFallOnBadData)
                             throw new FileParsingException(rowData[0], i, pathToFile);
                     }
                 }
@@ -104,18 +105,20 @@ public class LabeledDatasetLoader {
                     vec.set(j, val);
                 }
                 catch (NumberFormatException e) {
-                    if(isFallOnBadData)
+                    if (isFallOnBadData)
                         throw new FileParsingException(rowData[j + 1], rowIdx, pathToFile);
                     else
-                        vec.set(j,val);
+                        vec.set(j, val);
                 }
             }
-            else throw new CardinalityException(colSize + 1, rowData.length);
+            else
+                throw new CardinalityException(colSize + 1, rowData.length);
         }
         return vec;
     }
 
     // TODO: IGNITE-7025 add filling with mean, mode, ignoring and so on
+
     /** */
     private static double fillMissedData() {
         return 0.0;

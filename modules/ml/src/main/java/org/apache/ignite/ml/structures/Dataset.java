@@ -78,11 +78,12 @@ public class Dataset<Row extends DatasetRow> implements Serializable {
      * @param colSize Amount of attributes. Should be > 0
      * @param featureNames Column names.
      */
-    public Dataset(int rowSize, int colSize, String[] featureNames){
+    public Dataset(int rowSize, int colSize, String[] featureNames) {
         assert rowSize > 0;
         assert colSize > 0;
 
-        if(featureNames == null) generateFeatureNames();
+        if (featureNames == null)
+            generateFeatureNames();
         else {
             assert colSize == featureNames.length;
             convertStringNamesToFeatureMetadata(featureNames);
@@ -120,7 +121,7 @@ public class Dataset<Row extends DatasetRow> implements Serializable {
      * @param i The given index.
      * @return Feature name.
      */
-    public String getFeatureName(int i){
+    public String getFeatureName(int i) {
         return meta[i].name();
     }
 
@@ -149,7 +150,7 @@ public class Dataset<Row extends DatasetRow> implements Serializable {
      *
      * @return Amount of attributes in each Labeled Vector.
      */
-    public int colSize(){
+    public int colSize() {
         return colSize;
     }
 
@@ -158,7 +159,7 @@ public class Dataset<Row extends DatasetRow> implements Serializable {
      *
      * @return Amount of rows in dataset.
      */
-    public int rowSize(){
+    public int rowSize() {
         return rowSize;
     }
 
@@ -168,7 +169,7 @@ public class Dataset<Row extends DatasetRow> implements Serializable {
      * @param idx Index of observation.
      * @return Labeled features.
      */
-    public Row getRow(int idx){
+    public Row getRow(int idx) {
         return data[idx];
     }
 
@@ -178,7 +179,7 @@ public class Dataset<Row extends DatasetRow> implements Serializable {
      * @param idx Index of observation.
      * @return Vector with features.
      */
-    public Vector features(int idx){
+    public Vector features(int idx) {
         assert idx < rowSize;
         assert data != null;
         assert data[idx] != null;

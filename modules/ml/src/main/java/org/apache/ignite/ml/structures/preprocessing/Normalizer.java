@@ -21,7 +21,7 @@ import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.structures.Dataset;
 import org.apache.ignite.ml.structures.DatasetRow;
 
-/** Data preprcessing step which scales features according normalization algorithms. */
+/** Data pre-processing step which scales features according normalization algorithms. */
 public class Normalizer {
     /**
      * Scales features in dataset with MiniMax algorithm x'=(x-MIN[X])/(MAX[X]-MIN[X]). This is an in-place operation.
