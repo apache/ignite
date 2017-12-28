@@ -112,6 +112,10 @@ Install and Run Apache Ignite from RPM
 
    NOTE: <config name> - relative to /etc/apache-ignite configuration file name
 
+   Example:
+
+        systemctl start apache-ignite@default-config.xml
+
 3) See logs in /var/log/apache-ignite or journalctl -xe
 
 
