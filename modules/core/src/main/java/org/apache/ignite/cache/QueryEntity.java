@@ -87,7 +87,7 @@ public class QueryEntity implements Serializable {
     private Set<String> _notNullFields;
 
     /** Fields default values. */
-    private HashMap<String, Object> fieldsDefaultValues = new HashMap<>();
+    private Map<String, Object> fieldsDefaultValues = new HashMap<>();
 
     /**
      * Creates an empty query entity.
@@ -395,7 +395,7 @@ public class QueryEntity implements Serializable {
      *
      * @return Field's name to default value map.
      */
-    public HashMap<String, Object> getFieldsDefaultValues() {
+    public Map<String, Object> getFieldsDefaultValues() {
         return fieldsDefaultValues;
     }
 
@@ -405,7 +405,7 @@ public class QueryEntity implements Serializable {
      * @param fieldsDefaultValues Field's name to default value map.
      * @return {@code this} for chaining.
      */
-    public QueryEntity setFieldsDefaultValues(HashMap<String, Object> fieldsDefaultValues) {
+    public QueryEntity setFieldsDefaultValues(Map<String, Object> fieldsDefaultValues) {
         this.fieldsDefaultValues = fieldsDefaultValues;
 
         return this;
