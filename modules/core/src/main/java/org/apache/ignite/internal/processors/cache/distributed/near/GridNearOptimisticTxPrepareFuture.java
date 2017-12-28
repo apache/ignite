@@ -798,18 +798,32 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                         GridCacheVersion dhtVer = miniFut.m.dhtVersion();
                         GridCacheVersion nearVer = tx.nearXidVersion();
 
-                        ctx.remoteTxInfo(
-                            nodeId,
-                            dhtVer,
-                            nearVer,
-                            "GridNearOptimisticTxPrepareFuture waiting for remote node response [" +
-                                "nodeId=" + nodeId +
-                                ", topVer=" + tx.topologyVersion() +
-                                ", dhtVer=" + dhtVer +
-                                ", nearVer=" + nearVer +
-                                ", futId=" + futId +
-                                ", miniId=" + miniFut.futId +
-                                ", tx=" + tx + ']');
+                        if (dhtVer != null) {
+                            ctx.remoteTxInfo(
+                                nodeId,
+                                dhtVer,
+                                nearVer,
+                                "GridNearOptimisticTxPrepareFuture waiting for remote node response [" +
+                                    "nodeId=" + nodeId +
+                                    ", topVer=" + tx.topologyVersion() +
+                                    ", dhtVer=" + dhtVer +
+                                    ", nearVer=" + nearVer +
+                                    ", futId=" + futId +
+                                    ", miniId=" + miniFut.futId +
+                                    ", tx=" + tx + ']');
+                        }
+                        else {
+                            ctx.basicInfo(
+                                cctx.localNodeId(),
+                                "GridNearOptimisticTxPrepareFuture waiting for remote node response [" +
+                                    "nodeId=" + nodeId +
+                                    ", topVer=" + tx.topologyVersion() +
+                                    ", dhtVer=" + dhtVer +
+                                    ", nearVer=" + nearVer +
+                                    ", futId=" + futId +
+                                    ", miniId=" + miniFut.futId +
+                                    ", tx=" + tx + ']');
+                        }
                     }
                     else if (fut instanceof KeyLockFuture) {
                         KeyLockFuture keyFut = (KeyLockFuture)fut;
