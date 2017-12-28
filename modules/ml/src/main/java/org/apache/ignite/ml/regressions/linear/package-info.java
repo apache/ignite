@@ -15,14 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.regressions;
-
 /**
- * This class contains various messages used in regressions,
+ * <!-- Package description. -->
+ * Contains various linear regressions.
  */
-public class RegressionsErrorMessages {
-    /** Constant for string indicating that sample has insufficient observed points. */
-    static final String INSUFFICIENT_OBSERVED_POINTS_IN_SAMPLE = "Insufficient observed points in sample.";
-    /** */
-    static final String NOT_ENOUGH_DATA_FOR_NUMBER_OF_PREDICTORS = "Not enough data (%d rows) for this many predictors (%d predictors)";
-}
+package org.apache.ignite.ml.regressions.linear;
