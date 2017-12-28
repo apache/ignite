@@ -17,55 +17,37 @@
 
 package org.apache.ignite.ml.structures;
 
+import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.Serializable;
 import org.apache.ignite.ml.math.Vector;
 
-/**
- * Class for vector with label.
- *
- * @param <V> Some class extending {@link Vector}.
- * @param <L> Type of label.
- */
-public class LabeledVector<V extends Vector, L> extends DatasetRow<V> {
-    /** Label. */
-    private L lb;
+/** Class to keep one observation in dataset. This is a base class for labeled and unlabeled rows. */
+public class DatasetRow<V extends Vector> implements Serializable, Externalizable {
+    /** Vector. */
+    protected V vector;
+
 
     /**
-     * Default constructor.
+     * Default constructor (required by Externalizable).
      */
-    public LabeledVector() {
-        super();
+    public DatasetRow() {
+    }
+
+    /** */
+    public DatasetRow(V vector) {
+        this.vector = vector;
     }
 
     /**
-     * Construct labeled vector.
+     * Get the vector.
      *
-     * @param vector Vector.
-     * @param lb Label.
+     * @return Vector.
      */
-    public LabeledVector(V vector, L lb) {
-        super(vector);
-        this.lb = lb;
-    }
-
-    /**
-     * Get the label.
-     *
-     * @return Label.
-     */
-    public L label() {
-        return lb;
-    }
-
-    /**
-     * Set the label
-     *
-     * @param lb Label.
-     */
-    public void setLabel(L lb) {
-        this.lb = lb;
+    public V features() {
+        return vector;
     }
 
     /** {@inheritDoc} */
@@ -75,29 +57,23 @@ public class LabeledVector<V extends Vector, L> extends DatasetRow<V> {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        LabeledVector vector1 = (LabeledVector)o;
+        DatasetRow vector1 = (DatasetRow)o;
 
-        if (vector != null ? !vector.equals(vector1.vector) : vector1.vector != null)
-            return false;
-        return lb != null ? lb.equals(vector1.lb) : vector1.lb == null;
+        return vector != null ? !vector.equals(vector1.vector) : vector1.vector != null;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int res = vector != null ? vector.hashCode() : 0;
-        res = 31 * res + (lb != null ? lb.hashCode() : 0);
-        return res;
+        return vector != null ? vector.hashCode() : 0;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(vector);
-        out.writeObject(lb);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         vector = (V)in.readObject();
-        lb = (L)in.readObject();
     }
 }
