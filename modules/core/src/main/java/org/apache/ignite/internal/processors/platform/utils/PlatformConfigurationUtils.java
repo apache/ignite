@@ -476,7 +476,7 @@ public class PlatformConfigurationUtils {
      * @param in Stream.
      * @return QueryEntity.
      */
-    public static QueryEntity readQueryEntity(BinaryRawReaderEx in) {
+    public static QueryEntity readQueryEntity(BinaryRawReader in) {
         QueryEntity res = new QueryEntity();
 
         res.setKeyType(in.readString());
@@ -506,7 +506,7 @@ public class PlatformConfigurationUtils {
                 if (in.readBoolean())
                     notNullFields.add(fieldName);
 
-                Object defVal = in.readObjectDetached();
+                Object defVal = in.readObject();
                 if (defVal != null)
                     defVals.put(fieldName, defVal);
             }
