@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.math.BigDecimal;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -167,6 +171,40 @@ public class IgniteSqlDefaultValueTest extends GridCommonAbstractTest {
                     return null;
                 }
             }, IgniteSQLException.class, "ALTER TABLE ADD COLUMN with DEFAULT value is not supported");
+    }
+
+    /**
+     */
+    public void testDefaultTypes() {
+        assertEquals("Check tinyint", (byte)28, getDefaultObject("TINYINT", "28"));
+        assertEquals("Check smallint", (short)28, getDefaultObject("SMALLINT", "28"));
+        assertEquals("Check int", 28, getDefaultObject("INT", "28"));
+        assertEquals("Check double", 28.25, getDefaultObject("DOUBLE", "28.25"));
+        assertEquals("Check float", 28.25, getDefaultObject("FLOAT", "28.25"));
+        assertEquals("Check decimal", BigDecimal.valueOf(28.25), getDefaultObject("DECIMAL", "28.25"));
+        assertEquals("Check varchar", "test value", getDefaultObject("VARCHAR", "'test value'"));
+        assertEquals("Check time", Time.valueOf("14:01:01"), getDefaultObject("TIME", "'14:01:01'"));
+        assertEquals("Check date", Date.valueOf("2017-12-29"), getDefaultObject("DATE", "'2017-12-29'"));
+        assertEquals("Check timestamp", Timestamp.valueOf("2017-12-29 14:01:01"),
+            getDefaultObject("TIMESTAMP", "'2017-12-29 14:01:01'"));
+    }
+
+    /**
+     * @param sqlType SQL type.
+     * @param dfltVal Value string representation.
+     * @return Object is returned by SELECT query.
+     */
+    private Object getDefaultObject(String sqlType, String dfltVal) {
+        sql(String.format("CREATE TABLE TEST (id int, val %s default %s, primary key (id))",
+            sqlType, dfltVal));
+
+        sql("INSERT INTO TEST (id) VALUES (1)");
+
+        List<List<?>> res = sql("SELECT val FROM TEST WHERE id=1");
+
+        sql("DROP TABLE TEST");
+
+        return res.get(0).get(0);
     }
 
     /**

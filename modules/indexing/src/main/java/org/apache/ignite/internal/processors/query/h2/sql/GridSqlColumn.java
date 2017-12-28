@@ -125,7 +125,7 @@ public class GridSqlColumn extends GridSqlElement {
     public Object defaultValue() {
         Expression dfltExpr = col.getDefaultExpression();
 
-        return dfltExpr != null ? dfltExpr.getValue(null).getObject() : null;
+        return dfltExpr != null ? col.convert(dfltExpr.getValue(null)).getObject() : null;
     }
 
     /**
