@@ -20,7 +20,7 @@ package org.apache.ignite.yardstick.ml.regression;
 import java.util.Map;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
-import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
+import org.apache.ignite.ml.regressions.linear.LinearRegressionQRTrainer;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 
 /**
@@ -63,7 +63,7 @@ public class IgniteOLSMultipleLinearRegressionBenchmark extends IgniteAbstractBe
         final int nobs = 16;
         final int nvars = 6;
 
-        LinearRegressionSGDTrainer trainer = new LinearRegressionSGDTrainer(100_000, 1e-12);
+        LinearRegressionQRTrainer trainer = new LinearRegressionQRTrainer();
         LinearRegressionModel model = trainer.train(new DenseLocalOnHeapMatrix(data));
     }
 }

@@ -25,16 +25,17 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Vector;
 
 /**
- * Simple linear regression model which predicts result Y as a linear combination of input variables: Y = b * X.
+ * Simple linear regression model which predicts result value Y as a linear combination of input variables:
+ * Y = weights * X + intercept.
  */
 public class LinearRegressionModel implements Model<Vector, Double>, Exportable<LinearRegressionModel>, Serializable {
     /** */
     private static final long serialVersionUID = -105984600091550226L;
 
-    /** */
+    /** Multiplier of the objects's vector required to make prediction.  */
     private final Vector weights;
 
-    /** */
+    /** Intercept of the linear regression model */
     private final double intercept;
 
     /** */
@@ -80,5 +81,24 @@ public class LinearRegressionModel implements Model<Vector, Double>, Exportable<
     @Override public int hashCode() {
 
         return Objects.hash(weights, intercept);
+    }
+
+    @Override public String toString() {
+        if (weights.size() < 10) {
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < weights.size(); i++) {
+                double nextItem = i == weights.size() - 1 ? intercept : weights.get(i + 1);
+                builder.append(String.format("%.4f", Math.abs(weights.get(i))))
+                    .append("*x")
+                    .append(i)
+                    .append(nextItem > 0 ? " + " : " - ");
+            }
+            builder.append(String.format("%.4f", Math.abs(intercept)));
+            return builder.toString();
+        }
+        return "LinearRegressionModel{" +
+            "weights=" + weights +
+            ", intercept=" + intercept +
+            '}';
     }
 }

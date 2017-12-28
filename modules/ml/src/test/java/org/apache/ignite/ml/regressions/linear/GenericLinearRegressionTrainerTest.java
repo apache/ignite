@@ -123,7 +123,7 @@ public class GenericLinearRegressionTrainerTest {
      */
     @Test
     public void testTrainOnArtificialDataset10x1() {
-        ArtificialRegressionDatasets.Dataset dataset = ArtificialRegressionDatasets.regression10x1;
+        ArtificialRegressionDatasets.TestDataset dataset = ArtificialRegressionDatasets.regression10x1;
         LinearRegressionModel model = trainer.train(matrixCreator.apply(dataset.getData()));
 
         TestUtils.assertEquals("Wrong weights", dataset.getExpectedWeights(), model.getWeights(), precision);
@@ -135,7 +135,7 @@ public class GenericLinearRegressionTrainerTest {
      */
     @Test
     public void testTrainOnArtificialDataset10x5() {
-        ArtificialRegressionDatasets.Dataset dataset = ArtificialRegressionDatasets.regression10x5;
+        ArtificialRegressionDatasets.TestDataset dataset = ArtificialRegressionDatasets.regression10x5;
         LinearRegressionModel model = trainer.train(matrixCreator.apply(dataset.getData()));
 
         TestUtils.assertEquals("Wrong weights", dataset.getExpectedWeights(), model.getWeights(), precision);
@@ -147,7 +147,7 @@ public class GenericLinearRegressionTrainerTest {
      */
     @Test
     public void testTrainOnArtificialDataset100x5() {
-        ArtificialRegressionDatasets.Dataset dataset = ArtificialRegressionDatasets.regression100x5;
+        ArtificialRegressionDatasets.TestDataset dataset = ArtificialRegressionDatasets.regression100x5;
         LinearRegressionModel model = trainer.train(matrixCreator.apply(dataset.getData()));
 
         TestUtils.assertEquals("Wrong weights", dataset.getExpectedWeights(), model.getWeights(), precision);
@@ -159,7 +159,7 @@ public class GenericLinearRegressionTrainerTest {
      */
     @Test
     public void testTrainOnArtificialDataset100x10() {
-        ArtificialRegressionDatasets.Dataset dataset = ArtificialRegressionDatasets.regression100x10;
+        ArtificialRegressionDatasets.TestDataset dataset = ArtificialRegressionDatasets.regression100x10;
         LinearRegressionModel model = trainer.train(matrixCreator.apply(dataset.getData()));
 
         TestUtils.assertEquals("Wrong weights", dataset.getExpectedWeights(), model.getWeights(), precision);

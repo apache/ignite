@@ -25,7 +25,7 @@ public class ArtificialRegressionDatasets {
     /**
      * Artificial dataset with 10 observations described by 1 feature.
      */
-    public static final Dataset regression10x1 = new Dataset(new double[][] {
+    public static final TestDataset regression10x1 = new TestDataset(new double[][] {
         {1.97657990214, 0.197725444973},
         {-5.0835948878, -0.279921224228},
         {-5.09032600779, -0.352291245969},
@@ -41,7 +41,7 @@ public class ArtificialRegressionDatasets {
     /**
      * Artificial dataset with 10 observations described by 5 features.
      */
-    public static final Dataset regression10x5 = new Dataset(new double[][] {
+    public static final TestDataset regression10x5 = new TestDataset(new double[][] {
         {118.635647237, 0.687593385888, -1.18956185502, -0.305420702986, 1.98794097418, -0.776629036361},
         {-18.2808432286, -0.165921853684, -0.156162539573, 1.56284391134, -0.198876782109, -0.0921618505605},
         {22.6110523992, 0.0268106268606, 0.702141470035, -0.41503615392, -1.09726502337, 1.30830482813},
@@ -57,7 +57,7 @@ public class ArtificialRegressionDatasets {
     /**
      * Artificial dataset with 100 observations described by 5 features.
      */
-    public static final Dataset regression100x5 = new Dataset(new double[][] {
+    public static final TestDataset regression100x5 = new TestDataset(new double[][] {
         {-44.2310642946, -0.0331360137605, -0.5290800706, -0.634340342338, -0.428433927151, 0.830582347183},
         {76.2539139721, -0.216200869652, 0.513212019048, -0.693404511747, 0.132995973133, 1.28470259833},
         {293.369799914, 2.90735870802, 0.457740818846, -0.490470696097, -0.442343455187, 0.584038258781},
@@ -163,7 +163,7 @@ public class ArtificialRegressionDatasets {
     /**
      * Artificial dataset with 100 observations described by 10 features.
      */
-    public static final Dataset regression100x10 = new Dataset(new double[][] {
+    public static final TestDataset regression100x10 = new TestDataset(new double[][] {
         {69.5794204114, -0.684238565877, 0.175665643732, 0.882115894035, 0.612844187624,
             -0.685301720572, -0.8266500007, -0.0383407025118, 1.7105205222, 0.457436379836, -0.291563926494},
         {80.1390102826, -1.80708821811, 0.811271788195, 0.30248512861, 0.910658009566,
@@ -368,7 +368,7 @@ public class ArtificialRegressionDatasets {
         83.6427296424, 27.4571268153, 73.5881193584, 27.1465364511, 79.4095449062}, -5.14077007134);
 
     /** */
-    public static class Dataset {
+    public static class TestDataset {
 
         /** */
         private final double[][] data;
@@ -380,7 +380,7 @@ public class ArtificialRegressionDatasets {
         private final double expectedIntercept;
 
         /** */
-        Dataset(double[][] data, double[] expectedWeights, double expectedIntercept) {
+        TestDataset(double[][] data, double[] expectedWeights, double expectedIntercept) {
             this.data = data;
             this.expectedWeights = expectedWeights;
             this.expectedIntercept = expectedIntercept;

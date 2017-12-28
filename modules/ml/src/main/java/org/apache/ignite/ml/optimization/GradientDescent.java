@@ -18,7 +18,9 @@
 package org.apache.ignite.ml.optimization;
 
 import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.math.impls.vector.FunctionVector;
@@ -66,8 +68,7 @@ public class GradientDescent {
      * @return This gradient descent instance
      */
     public GradientDescent withMaxIterations(int maxIterations) {
-        if (maxIterations < 0)
-            throw new IllegalArgumentException("Number of iterations must be non-negative but got " + maxIterations);
+        assert maxIterations >= 0;
         this.maxIterations = maxIterations;
         return this;
     }
@@ -79,8 +80,7 @@ public class GradientDescent {
      * @return This gradient descent instance
      */
     public GradientDescent withConvergenceTol(double convergenceTol) {
-        if (convergenceTol < 0)
-            throw new IllegalArgumentException("Convergence tolerance must be non-negative but got " + convergenceTol);
+        assert convergenceTol >= 0;
         this.convergenceTol = convergenceTol;
         return this;
     }
@@ -94,32 +94,16 @@ public class GradientDescent {
      */
     public Vector optimize(Matrix data, Vector initialWeights) {
         Vector weights = initialWeights, oldWeights = null, oldGradient = null;
-        if (data instanceof SparseDistributedMatrix) {
-            for (int iteration = 0; iteration < maxIterations; iteration++) {
-                Vector gradient = calculateDistributedGradient((SparseDistributedMatrix)data, weights);
-                Vector newWeights = updater.compute(oldWeights, oldGradient, weights, gradient, iteration);
-                if (isConverged(weights, newWeights))
-                    return newWeights;
-                else {
-                    oldGradient = gradient;
-                    oldWeights = weights;
-                    weights = newWeights;
-                }
-            }
-        }
-        else {
-            Matrix inputs = extractInputs(data);
-            Vector groundTruth = extractGroundTruth(data);
-            for (int iteration = 0; iteration < maxIterations; iteration++) {
-                Vector gradient = lossGradient.compute(inputs, groundTruth, weights);
-                Vector newWeights = updater.compute(oldWeights, oldGradient, weights, gradient, iteration);
-                if (isConverged(weights, newWeights))
-                    return newWeights;
-                else {
-                    oldGradient = gradient;
-                    oldWeights = weights;
-                    weights = newWeights;
-                }
+        IgniteFunction<Vector, Vector> gradientFunction = getLossGradientFunction(data);
+        for (int iteration = 0; iteration < maxIterations; iteration++) {
+            Vector gradient = gradientFunction.apply(weights);
+            Vector newWeights = updater.compute(oldWeights, oldGradient, weights, gradient, iteration);
+            if (isConverged(weights, newWeights))
+                return newWeights;
+            else {
+                oldGradient = gradient;
+                oldWeights = weights;
+                weights = newWeights;
             }
         }
         return weights;
@@ -190,5 +174,17 @@ public class GradientDescent {
         data = data.copy();
         data.assignColumn(0, new FunctionVector(data.rowSize(), row -> 1.0));
         return data;
+    }
+
+    /** Makes carrying of the gradient function and fixes data matrix. */
+    private IgniteFunction<Vector, Vector> getLossGradientFunction(Matrix data) {
+        if (data instanceof SparseDistributedMatrix) {
+            SparseDistributedMatrix distributedMatrix = (SparseDistributedMatrix) data;
+            if (distributedMatrix.getStorage().storageMode() == StorageConstants.ROW_STORAGE_MODE)
+                return weights -> calculateDistributedGradient(distributedMatrix, weights);
+        }
+        Matrix inputs = extractInputs(data);
+        Vector groundTruth = extractGroundTruth(data);
+        return weights -> lossGradient.compute(inputs, groundTruth, weights);
     }
 }

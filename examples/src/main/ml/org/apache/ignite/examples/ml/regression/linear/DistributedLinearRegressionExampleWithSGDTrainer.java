@@ -28,6 +28,7 @@ import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionQRTrainer;
+import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
@@ -35,7 +36,7 @@ import org.apache.ignite.thread.IgniteThread;
  *
  * @see LinearRegressionQRTrainer
  */
-public class DistributedLinearRegressionExample {
+public class DistributedLinearRegressionExampleWithSGDTrainer {
     /** */
     private static final double[][] data = {
         {8, 78, 284, 9.100000381, 109},
@@ -110,11 +111,11 @@ public class DistributedLinearRegressionExample {
                 SparseDistributedMatrix distributedMatrix = new SparseDistributedMatrix(data);
 
                 System.out.println(">>> Create new linear regression trainer object.");
-                Trainer<LinearRegressionModel, Matrix> trainer = new LinearRegressionQRTrainer();
+                Trainer<LinearRegressionModel, Matrix> trainer = new LinearRegressionSGDTrainer(100_000, 1e-12);
 
                 System.out.println(">>> Perform the training to get the model.");
                 LinearRegressionModel model = trainer.train(distributedMatrix);
-                System.out.println(">>> Linear regression model: " + formatLinearRegressionModelPrettyPrint(model));
+                System.out.println(">>> Linear regression model: " + model);
 
                 System.out.println(">>> ---------------------------------");
                 System.out.println(">>> | Prediction\t| Ground Truth\t|");
@@ -132,25 +133,5 @@ public class DistributedLinearRegressionExample {
 
             igniteThread.join();
         }
-    }
-
-    /**
-     * Formats given linear regression model like "1.0000*x1 + 2.0000*x2 + 3.0000*x3 + 4.0000".
-     *
-     * @param model linear regression model
-     * @return formatted string representation
-     */
-    private static String formatLinearRegressionModelPrettyPrint(LinearRegressionModel model) {
-        StringBuilder builder = new StringBuilder();
-        Vector weights = model.getWeights();
-        for (int i = 0; i < weights.size(); i++) {
-            double nextItem = i == weights.size() - 1 ? model.getIntercept() : weights.get(i + 1);
-            builder.append(String.format("%.4f", Math.abs(weights.get(i))))
-                .append("*x")
-                .append(i)
-                .append(nextItem > 0 ? " + " : " - ");
-        }
-        builder.append(String.format("%.4f", Math.abs(model.getIntercept())));
-        return builder.toString();
     }
 }

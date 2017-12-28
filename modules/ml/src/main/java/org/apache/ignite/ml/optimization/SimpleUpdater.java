@@ -31,8 +31,7 @@ public class SimpleUpdater implements Updater {
 
     /** */
     public SimpleUpdater(double learningRate) {
-        if (learningRate <= 0)
-            throw new IllegalArgumentException("Learning rate must be positive but got " + learningRate);
+        assert learningRate > 0;
         this.learningRate = learningRate;
     }
 
