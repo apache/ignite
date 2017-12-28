@@ -664,6 +664,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 long idx = currWrHandle.idx;
 
+                currWrHandle.buf.close();
+
                 currWrHandle = rollOver(currWrHandle);
 
                 if (log != null && log.isDebugEnabled())
