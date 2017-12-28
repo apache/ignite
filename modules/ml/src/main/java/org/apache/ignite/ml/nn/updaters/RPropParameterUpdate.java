@@ -26,7 +26,7 @@ import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
  * <p>
  * See <a href="https://paginas.fe.up.pt/~ee02162/dissertacao/RPROP%20paper.pdf">RProp</a>.</p>
  */
-public class RPropUpdaterParams implements UpdaterParams<SmoothParametrized> {
+public class RPropParameterUpdate {
     /**
      * Previous iteration weights updates. In original paper they are labeled with "delta w".
      */
@@ -47,12 +47,12 @@ public class RPropUpdaterParams implements UpdaterParams<SmoothParametrized> {
     protected Vector updatesMask;
 
     /**
-     * Construct RPropUpdaterParams.
+     * Construct RPropParameterUpdate.
      *
      * @param paramsCnt Parameters count.
      * @param initUpdate Initial update (in original work labeled as "delta_0").
      */
-    RPropUpdaterParams(int paramsCnt, double initUpdate) {
+    RPropParameterUpdate(int paramsCnt, double initUpdate) {
         prevIterationUpdates = new DenseLocalOnHeapVector(paramsCnt);
         prevIterationGradient = new DenseLocalOnHeapVector(paramsCnt);
         deltas = new DenseLocalOnHeapVector(paramsCnt).assign(initUpdate);
@@ -101,7 +101,7 @@ public class RPropUpdaterParams implements UpdaterParams<SmoothParametrized> {
      *
      * @return This object.
      */
-    RPropUpdaterParams setPrevIterationWeightsDerivatives(Vector gradient) {
+    RPropParameterUpdate setPrevIterationWeightsDerivatives(Vector gradient) {
         prevIterationGradient = gradient;
         return this;
     }
@@ -120,16 +120,9 @@ public class RPropUpdaterParams implements UpdaterParams<SmoothParametrized> {
      *
      * @param updatesMask New updatesMask.
      */
-    public RPropUpdaterParams setUpdatesMask(Vector updatesMask) {
+    public RPropParameterUpdate setUpdatesMask(Vector updatesMask) {
         this.updatesMask = updatesMask;
 
         return this;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public <M extends SmoothParametrized> M update(M obj) {
-        Vector updatesToAdd = VectorUtils.elementWiseTimes(updatesMask.copy(), prevIterationUpdates);
-        return (M)obj.setParameters(obj.parameters().plus(updatesToAdd));
     }
 }

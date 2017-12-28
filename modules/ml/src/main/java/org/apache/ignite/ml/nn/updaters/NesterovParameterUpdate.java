@@ -23,18 +23,18 @@ import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 /**
  * Data needed for Nesterov parameters updater.
  */
-public class NesterovUpdaterParams implements UpdaterParams<SmoothParametrized> {
+public class NesterovParameterUpdate {
     /**
      * Previous step weights updates.
      */
     protected Vector prevIterationUpdates;
 
     /**
-     * Construct NesterovUpdaterParams.
+     * Construct NesterovParameterUpdate.
      *
      * @param paramsCnt Count of parameters on which update happens.
      */
-    public NesterovUpdaterParams(int paramsCnt) {
+    public NesterovParameterUpdate(int paramsCnt) {
         prevIterationUpdates = new DenseLocalOnHeapVector(paramsCnt).assign(0);
     }
 
@@ -44,7 +44,7 @@ public class NesterovUpdaterParams implements UpdaterParams<SmoothParametrized> 
      * @param updates Parameters updates.
      * @return This object with updated parameters updates.
      */
-    public NesterovUpdaterParams setPreviousUpdates(Vector updates) {
+    public NesterovParameterUpdate setPreviousUpdates(Vector updates) {
         prevIterationUpdates = updates;
         return this;
     }
@@ -56,12 +56,5 @@ public class NesterovUpdaterParams implements UpdaterParams<SmoothParametrized> 
      */
     public Vector prevIterationUpdates() {
         return prevIterationUpdates;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public <M extends SmoothParametrized> M update(M obj) {
-        Vector parameters = obj.parameters();
-        return (M)obj.setParameters(parameters.minus(prevIterationUpdates));
     }
 }

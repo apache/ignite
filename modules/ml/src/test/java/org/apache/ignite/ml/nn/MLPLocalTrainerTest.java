@@ -27,11 +27,10 @@ import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainer;
-import org.apache.ignite.ml.nn.updaters.NesterovUpdater;
-import org.apache.ignite.ml.nn.updaters.ParameterUpdater;
-import org.apache.ignite.ml.nn.updaters.RPropUpdater;
-import org.apache.ignite.ml.nn.updaters.SimpleGDUpdater;
-import org.apache.ignite.ml.nn.updaters.UpdaterParams;
+import org.apache.ignite.ml.nn.updaters.NesterovUpdateBuilder;
+import org.apache.ignite.ml.nn.updaters.ParameterUpdateBuilder;
+import org.apache.ignite.ml.nn.updaters.RPropUpdateBuilder;
+import org.apache.ignite.ml.nn.updaters.SimpleGDUpdateBuilder;
 import org.junit.Test;
 
 /**
@@ -39,27 +38,27 @@ import org.junit.Test;
  */
 public class MLPLocalTrainerTest {
     /**
-     * Test 'XOR' operation training with {@link SimpleGDUpdater} updater.
+     * Test 'XOR' operation training with {@link SimpleGDUpdateBuilder} updater.
      */
     @Test
     public void testXORSimpleGD() {
-        xorTest(() -> new SimpleGDUpdater(0.3));
+        xorTest(() -> new SimpleGDUpdateBuilder<>(0.3));
     }
 
     /**
-     * Test 'XOR' operation training with {@link RPropUpdater}.
+     * Test 'XOR' operation training with {@link RPropUpdateBuilder}.
      */
     @Test
     public void testXORRProp() {
-        xorTest(RPropUpdater::new);
+        xorTest(() -> new RPropUpdateBuilder<>());
     }
 
     /**
-     * Test 'XOR' operation training with {@link NesterovUpdater}.
+     * Test 'XOR' operation training with {@link NesterovUpdateBuilder}.
      */
     @Test
     public void testXORNesterov() {
-        xorTest(() -> new NesterovUpdater(0.1, 0.7));
+        xorTest(() -> new NesterovUpdateBuilder<>(0.1, 0.7));
     }
 
     /**
@@ -67,7 +66,7 @@ public class MLPLocalTrainerTest {
      * @param updaterSupplier Updater supplier.
      * @param <P> Updater parameters type.
      */
-    private <P extends UpdaterParams<? super MultilayerPerceptron>> void xorTest(IgniteSupplier<ParameterUpdater<? super MultilayerPerceptron, P>> updaterSupplier) {
+    private <P> void xorTest(IgniteSupplier<ParameterUpdateBuilder<MultilayerPerceptron, P>> updaterSupplier) {
         Matrix xorInputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}},
             StorageConstants.ROW_STORAGE_MODE).transpose();
 

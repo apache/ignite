@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.nn.updaters;
 
+import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
@@ -25,7 +26,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 /**
  * Interface for models which are smooth functions of their parameters.
  */
-interface BaseSmoothParametrized<M extends BaseSmoothParametrized<M>> {
+interface BaseSmoothParametrized<M extends BaseSmoothParametrized<M> & Model<Matrix, Matrix>> {
     /**
      * Compose function in the following way: feed output of this model as input to second argument to loss function.
      * After that we have a function g of three arguments: input, ground truth, parameters.

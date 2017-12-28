@@ -25,7 +25,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 /**
  * Class encapsulating Nesterov algorithm for MLP parameters update.
  */
-public class NesterovUpdater implements ParameterUpdater<SmoothParametrized, NesterovUpdaterParams> {
+public class NesterovUpdateBuilder<M extends SmoothParametrized> implements ParameterUpdateBuilder<M, NesterovParameterUpdate> {
     /**
      * Learning rate.
      */
@@ -42,25 +42,17 @@ public class NesterovUpdater implements ParameterUpdater<SmoothParametrized, Nes
     protected double momentum;
 
     /**
-     * Construct NesterovUpdater.
+     * Construct NesterovUpdateBuilder.
      *
      * @param momentum Momentum constant.
      */
-    public NesterovUpdater(double learningRate, double momentum) {
+    public NesterovUpdateBuilder(double learningRate, double momentum) {
         this.learningRate = learningRate;
         this.momentum = momentum;
     }
 
     /** {@inheritDoc} */
-    @Override public NesterovUpdaterParams init(SmoothParametrized mdl,
-        IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
-        this.loss = loss;
-
-        return new NesterovUpdaterParams(mdl.parametersCount());
-    }
-
-    /** {@inheritDoc} */
-    @Override public NesterovUpdaterParams updateParams(SmoothParametrized mdl, NesterovUpdaterParams updaterParameters,
+    @Override public NesterovParameterUpdate calculateNewUpdate(SmoothParametrized mdl, NesterovParameterUpdate updaterParameters,
         int iteration, Matrix inputs, Matrix groundTruth) {
 
         if (iteration > 0) {
@@ -72,5 +64,19 @@ public class NesterovUpdater implements ParameterUpdater<SmoothParametrized, Nes
         updaterParameters.setPreviousUpdates(updaterParameters.prevIterationUpdates().plus(gradient.times(learningRate)));
 
         return updaterParameters;
+    }
+
+    /** {@inheritDoc} */
+    @Override public NesterovParameterUpdate init(M mdl,
+        IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
+            this.loss = loss;
+
+            return new NesterovParameterUpdate(mdl.parametersCount());
+    }
+
+    /** {@inheritDoc} */
+    @Override public <M1 extends M> M1 update(M1 obj, NesterovParameterUpdate update) {
+        Vector parameters = obj.parameters();
+        return (M1)obj.setParameters(parameters.minus(update.prevIterationUpdates()));
     }
 }

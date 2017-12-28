@@ -38,7 +38,7 @@ import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.SimpleMLPLocalBatchTrainerInput;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainer;
-import org.apache.ignite.ml.nn.updaters.RPropUpdater;
+import org.apache.ignite.ml.nn.updaters.RPropUpdateBuilder;
 import org.apache.ignite.ml.trees.performance.ColumnDecisionTreeTrainerBenchmark;
 import org.apache.ignite.ml.util.MnistUtils;
 import org.junit.Test;
@@ -95,7 +95,7 @@ public class Mnist {
             2000);
 
         MultilayerPerceptron mdl = new MLPLocalBatchTrainer<>(LossFunctions.MSE,
-            () -> new RPropUpdater(0.1, 1.2, 0.5),
+            () -> new RPropUpdateBuilder<>(0.1, 1.2, 0.5),
             1E-7,
             200).
             train(input);

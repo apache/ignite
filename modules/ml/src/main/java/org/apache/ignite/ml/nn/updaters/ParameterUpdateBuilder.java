@@ -23,38 +23,36 @@ import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFun
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
- * Simple gradient descent parameters updater.
+ * Interface for classes encapsulating parameters update logic.
+ *
+ * @param <M> Type of model to be updated.
+ * @param <P> Type of parameters needed for this updater.
  */
-public class SimpleGDUpdater implements ParameterUpdater<SmoothParametrized, SimpleGDParams> {
+public interface ParameterUpdateBuilder<M, P> {
     /**
-     * Learning rate.
-     */
-    private double learningRate;
-
-    /**
-     * Loss function.
-     */
-    protected IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
-
-    /**
-     * Construct SimpleGDUpdater.
+     * Initializes the updater.
      *
-     * @param learningRate Learning rate.
+     * @param mdl Model to be trained.
+     * @param loss Loss function.
      */
-    public SimpleGDUpdater(double learningRate) {
-        this.learningRate = learningRate;
-    }
+    P init(M mdl, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss);
 
-    /** {@inheritDoc} */
-    @Override public SimpleGDParams init(SmoothParametrized mlp,
-        IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
-        this.loss = loss;
-        return new SimpleGDParams(mlp.parametersCount(), learningRate);
-    }
+    /**
+     * Calculate new update.
+     *
+     * @param mdl Model to be updated.
+     * @param updaterParameters Updater parameters to update.
+     * @param iteration Current trainer iteration.
+     * @param inputs Inputs.
+     * @param groundTruth True values.
+     * @return Updated parameters.
+     */
+    P calculateNewUpdate(M mdl, P updaterParameters, int iteration, Matrix inputs, Matrix groundTruth);
 
-    /** {@inheritDoc} */
-    @Override public SimpleGDParams updateParams(SmoothParametrized mlp, SimpleGDParams updaterParameters,
-        int iteration, Matrix inputs, Matrix groundTruth) {
-        return new SimpleGDParams(mlp.differentiateByParameters(loss, inputs, groundTruth), learningRate);
-    }
+    /**
+     * Update given obj with this parameters.
+     *
+     * @param obj Object to be updated.
+     */
+    <M1 extends M> M1 update(M1 obj, P update);
 }

@@ -23,17 +23,16 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.nn.LossFunctions;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
-import org.apache.ignite.ml.nn.updaters.ParameterUpdater;
-import org.apache.ignite.ml.nn.updaters.RPropUpdater;
-import org.apache.ignite.ml.nn.updaters.RPropUpdaterParams;
-import org.apache.ignite.ml.nn.updaters.UpdaterParams;
+import org.apache.ignite.ml.nn.updaters.ParameterUpdateBuilder;
+import org.apache.ignite.ml.nn.updaters.RPropParameterUpdate;
+import org.apache.ignite.ml.nn.updaters.RPropUpdateBuilder;
 
 /**
  * Local batch trainer for MLP.
  *
  * @param <P> Parameter updater parameters.
  */
-public class MLPLocalBatchTrainer<P extends UpdaterParams<? super MultilayerPerceptron>>
+public class MLPLocalBatchTrainer<P>
     extends LocalBatchTrainer<MultilayerPerceptron, P> {
     /**
      * Default loss function.
@@ -62,7 +61,7 @@ public class MLPLocalBatchTrainer<P extends UpdaterParams<? super MultilayerPerc
      */
     public MLPLocalBatchTrainer(
         IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
-        IgniteSupplier<ParameterUpdater<? super MultilayerPerceptron, P>> updaterSupplier,
+        IgniteSupplier<ParameterUpdateBuilder<MultilayerPerceptron, P>> updaterSupplier,
         double errorThreshold, int maxIterations) {
         super(loss, updaterSupplier, errorThreshold, maxIterations);
     }
@@ -72,7 +71,7 @@ public class MLPLocalBatchTrainer<P extends UpdaterParams<? super MultilayerPerc
      *
      * @return MLPLocalBatchTrainer with default parameters.
      */
-    public static MLPLocalBatchTrainer<RPropUpdaterParams> getDefault() {
-        return new MLPLocalBatchTrainer<>(DEFAULT_LOSS, RPropUpdater::new, DEFAULT_ERROR_THRESHOLD, DEFAULT_MAX_ITERATIONS);
+    public static MLPLocalBatchTrainer<RPropParameterUpdate> getDefault() {
+        return new MLPLocalBatchTrainer<>(DEFAULT_LOSS, () -> new RPropUpdateBuilder(), DEFAULT_ERROR_THRESHOLD, DEFAULT_MAX_ITERATIONS);
     }
 }
