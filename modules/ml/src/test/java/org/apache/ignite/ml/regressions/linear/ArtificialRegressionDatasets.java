@@ -374,16 +374,16 @@ public class ArtificialRegressionDatasets {
         private final double[][] data;
 
         /** */
-        private final double[] expectedWeights;
+        private final double[] expWeights;
 
         /** */
-        private final double expectedIntercept;
+        private final double expIntercept;
 
         /** */
-        TestDataset(double[][] data, double[] expectedWeights, double expectedIntercept) {
+        TestDataset(double[][] data, double[] expWeights, double expIntercept) {
             this.data = data;
-            this.expectedWeights = expectedWeights;
-            this.expectedIntercept = expectedIntercept;
+            this.expWeights = expWeights;
+            this.expIntercept = expIntercept;
         }
 
         /** */
@@ -392,13 +392,13 @@ public class ArtificialRegressionDatasets {
         }
 
         /** */
-        public double[] getExpectedWeights() {
-            return expectedWeights;
+        public double[] getExpWeights() {
+            return expWeights;
         }
 
         /** */
-        public double getExpectedIntercept() {
-            return expectedIntercept;
+        public double getExpIntercept() {
+            return expIntercept;
         }
     }
 }

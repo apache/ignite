@@ -69,7 +69,9 @@ public class GradientDescent {
      */
     public GradientDescent withMaxIterations(int maxIterations) {
         assert maxIterations >= 0;
+
         this.maxIterations = maxIterations;
+
         return this;
     }
 
@@ -81,7 +83,9 @@ public class GradientDescent {
      */
     public GradientDescent withConvergenceTol(double convergenceTol) {
         assert convergenceTol >= 0;
+
         this.convergenceTol = convergenceTol;
+
         return this;
     }
 
@@ -89,15 +93,17 @@ public class GradientDescent {
      * Computes point where loss function takes minimal value.
      *
      * @param data Inputs parameters of loss function
-     * @param initialWeights Initial weights
+     * @param initWeights Initial weights
      * @return Point where loss function takes minimal value
      */
-    public Vector optimize(Matrix data, Vector initialWeights) {
-        Vector weights = initialWeights, oldWeights = null, oldGradient = null;
+    public Vector optimize(Matrix data, Vector initWeights) {
+        Vector weights = initWeights, oldWeights = null, oldGradient = null;
         IgniteFunction<Vector, Vector> gradientFunction = getLossGradientFunction(data);
+
         for (int iteration = 0; iteration < maxIterations; iteration++) {
             Vector gradient = gradientFunction.apply(weights);
             Vector newWeights = updater.compute(oldWeights, oldGradient, weights, gradient, iteration);
+
             if (isConverged(weights, newWeights))
                 return newWeights;
             else {
@@ -122,18 +128,20 @@ public class GradientDescent {
             (matrix, args) -> {
                 Matrix inputs = extractInputs(matrix);
                 Vector groundTruth = extractGroundTruth(matrix);
+
                 return lossGradient.compute(inputs, groundTruth, args);
             },
             gradients -> {
-                Vector resultGradient = new DenseLocalOnHeapVector(data.columnSize());
-                int count = 0;
+                int cnt = 0;
+                Vector resGradient = new DenseLocalOnHeapVector(data.columnSize());
+
                 for (Vector gradient : gradients) {
                     if (gradient != null) {
-                        resultGradient = resultGradient.plus(gradient);
-                        count++;
+                        resGradient = resGradient.plus(gradient);
+                        cnt++;
                     }
                 }
-                return resultGradient.divide(count);
+                return resGradient.divide(cnt);
             },
             weights);
     }
@@ -180,11 +188,14 @@ public class GradientDescent {
     private IgniteFunction<Vector, Vector> getLossGradientFunction(Matrix data) {
         if (data instanceof SparseDistributedMatrix) {
             SparseDistributedMatrix distributedMatrix = (SparseDistributedMatrix) data;
+
             if (distributedMatrix.getStorage().storageMode() == StorageConstants.ROW_STORAGE_MODE)
                 return weights -> calculateDistributedGradient(distributedMatrix, weights);
         }
+
         Matrix inputs = extractInputs(data);
         Vector groundTruth = extractGroundTruth(data);
+
         return weights -> lossGradient.compute(inputs, groundTruth, weights);
     }
 }

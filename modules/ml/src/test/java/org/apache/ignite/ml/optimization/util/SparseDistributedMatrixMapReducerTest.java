@@ -21,8 +21,10 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
 
+/**
+ * Tests for {@link SparseDistributedMatrixMapReducer}.
+ */
 public class SparseDistributedMatrixMapReducerTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
     private static final int NODE_COUNT = 2;
@@ -51,8 +53,10 @@ public class SparseDistributedMatrixMapReducerTest extends GridCommonAbstractTes
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
     }
 
-    /** */
-    @Test
+    /**
+     * Tests that matrix 100x100 filled by "1.0" and distributed across nodes successfully processed (calculate sum of
+     * all elements) via {@link SparseDistributedMatrixMapReducer}.
+     */
     public void testMapReduce() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         SparseDistributedMatrix distributedMatrix = new SparseDistributedMatrix(100, 100);
@@ -78,8 +82,10 @@ public class SparseDistributedMatrixMapReducerTest extends GridCommonAbstractTes
         assertEquals(100.0 * 100.0, total, 1e-18);
     }
 
-    /** */
-    @Test
+    /**
+     * Tests that matrix 100x100 filled by "1.0" and distributed across nodes successfully processed via
+     * {@link SparseDistributedMatrixMapReducer} even when mapping function returns {@code null}.
+     */
     public void testMapReduceWithNullValues() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         SparseDistributedMatrix distributedMatrix = new SparseDistributedMatrix(100, 100);
@@ -99,8 +105,10 @@ public class SparseDistributedMatrixMapReducerTest extends GridCommonAbstractTes
         assertEquals(0, total, 1e-18);
     }
 
-    /** */
-    @Test
+    /**
+     * Tests that matrix 1x100 filled by "1.0" and distributed across nodes successfully processed (calculate sum of
+     * all elements) via {@link SparseDistributedMatrixMapReducer} even when not all nodes contains data.
+     */
     public void testMapReduceWithOneEmptyNode() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         SparseDistributedMatrix distributedMatrix = new SparseDistributedMatrix(1, 100);

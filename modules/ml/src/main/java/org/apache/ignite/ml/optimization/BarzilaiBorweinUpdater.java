@@ -34,8 +34,7 @@ public class BarzilaiBorweinUpdater implements Updater {
     /**
      * {@inheritDoc}
      */
-    @Override
-    public Vector compute(Vector oldWeights, Vector oldGradient, Vector weights, Vector gradient, int iteration) {
+    @Override public Vector compute(Vector oldWeights, Vector oldGradient, Vector weights, Vector gradient, int iteration) {
         double learningRate = computeLearningRate(oldWeights != null ? oldWeights.copy() : null, oldGradient != null ? oldGradient.copy() : null, weights.copy(), gradient.copy());
         return weights.copy().minus(gradient.copy().times(learningRate));
     }

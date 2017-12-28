@@ -62,10 +62,12 @@ public class GenericLinearRegressionTrainerTest {
             {2.0, 1.0},
             {4.0, 2.0}
         });
-        LinearRegressionModel model = trainer.train(data);
-        TestUtils.assertEquals(4, model.apply(vectorCreator.apply(new double[] {2})), precision);
-        TestUtils.assertEquals(6, model.apply(vectorCreator.apply(new double[] {3})), precision);
-        TestUtils.assertEquals(8, model.apply(vectorCreator.apply(new double[] {4})), precision);
+
+        LinearRegressionModel mdl = trainer.train(data);
+
+        TestUtils.assertEquals(4, mdl.apply(vectorCreator.apply(new double[] {2})), precision);
+        TestUtils.assertEquals(6, mdl.apply(vectorCreator.apply(new double[] {3})), precision);
+        TestUtils.assertEquals(8, mdl.apply(vectorCreator.apply(new double[] {4})), precision);
     }
 
     /**
@@ -77,10 +79,12 @@ public class GenericLinearRegressionTrainerTest {
             {1.0, 0.0},
             {0.0, 1.0}
         });
-        LinearRegressionModel model = trainer.train(data);
-        TestUtils.assertEquals(0.5, model.apply(vectorCreator.apply(new double[] {0.5})), precision);
-        TestUtils.assertEquals(2, model.apply(vectorCreator.apply(new double[] {-1})), precision);
-        TestUtils.assertEquals(-1, model.apply(vectorCreator.apply(new double[] {2})), precision);
+
+        LinearRegressionModel mdl = trainer.train(data);
+
+        TestUtils.assertEquals(0.5, mdl.apply(vectorCreator.apply(new double[] {0.5})), precision);
+        TestUtils.assertEquals(2, mdl.apply(vectorCreator.apply(new double[] {-1})), precision);
+        TestUtils.assertEquals(-1, mdl.apply(vectorCreator.apply(new double[] {2})), precision);
     }
 
     /**
@@ -89,15 +93,18 @@ public class GenericLinearRegressionTrainerTest {
     @Test
     public void testTrainOnDiabetesDataset() {
         Matrix data = loadDataset("datasets/regression/diabetes.csv", 442, 10);
-        LinearRegressionModel model = trainer.train(data);
-        Vector expectedWeights = vectorCreator.apply(new double[] {
+
+        LinearRegressionModel mdl = trainer.train(data);
+
+        Vector expWeights = vectorCreator.apply(new double[] {
             -10.01219782, -239.81908937, 519.83978679, 324.39042769, -792.18416163,
             476.74583782, 101.04457032, 177.06417623, 751.27932109, 67.62538639
         });
-        double expectedIntercept = 152.13348416;
 
-        TestUtils.assertEquals("Wrong weights", expectedWeights, model.getWeights(), precision);
-        TestUtils.assertEquals("Wrong intercept", expectedIntercept, model.getIntercept(), precision);
+        double expIntercept = 152.13348416;
+
+        TestUtils.assertEquals("Wrong weights", expWeights, mdl.getWeights(), precision);
+        TestUtils.assertEquals("Wrong intercept", expIntercept, mdl.getIntercept(), precision);
     }
 
     /**
@@ -106,16 +113,19 @@ public class GenericLinearRegressionTrainerTest {
     @Test
     public void testTrainOnBostonDataset() {
         Matrix data = loadDataset("datasets/regression/boston.csv", 506, 13);
-        LinearRegressionModel model = trainer.train(data);
-        Vector expectedWeights = vectorCreator.apply(new double[] {
+
+        LinearRegressionModel mdl = trainer.train(data);
+
+        Vector expWeights = vectorCreator.apply(new double[] {
             -1.07170557e-01, 4.63952195e-02, 2.08602395e-02, 2.68856140e+00, -1.77957587e+01, 3.80475246e+00,
             7.51061703e-04, -1.47575880e+00, 3.05655038e-01, -1.23293463e-02, -9.53463555e-01, 9.39251272e-03,
             -5.25466633e-01
         });
-        double expectedIntercept = 36.4911032804;
 
-        TestUtils.assertEquals("Wrong weights", expectedWeights, model.getWeights(), precision);
-        TestUtils.assertEquals("Wrong intercept", expectedIntercept, model.getIntercept(), precision);
+        double expIntercept = 36.4911032804;
+
+        TestUtils.assertEquals("Wrong weights", expWeights, mdl.getWeights(), precision);
+        TestUtils.assertEquals("Wrong intercept", expIntercept, mdl.getIntercept(), precision);
     }
 
     /**
@@ -124,10 +134,11 @@ public class GenericLinearRegressionTrainerTest {
     @Test
     public void testTrainOnArtificialDataset10x1() {
         ArtificialRegressionDatasets.TestDataset dataset = ArtificialRegressionDatasets.regression10x1;
-        LinearRegressionModel model = trainer.train(matrixCreator.apply(dataset.getData()));
 
-        TestUtils.assertEquals("Wrong weights", dataset.getExpectedWeights(), model.getWeights(), precision);
-        TestUtils.assertEquals("Wrong intercept", dataset.getExpectedIntercept(), model.getIntercept(), precision);
+        LinearRegressionModel mdl = trainer.train(matrixCreator.apply(dataset.getData()));
+
+        TestUtils.assertEquals("Wrong weights", dataset.getExpWeights(), mdl.getWeights(), precision);
+        TestUtils.assertEquals("Wrong intercept", dataset.getExpIntercept(), mdl.getIntercept(), precision);
     }
 
     /**
@@ -136,10 +147,11 @@ public class GenericLinearRegressionTrainerTest {
     @Test
     public void testTrainOnArtificialDataset10x5() {
         ArtificialRegressionDatasets.TestDataset dataset = ArtificialRegressionDatasets.regression10x5;
-        LinearRegressionModel model = trainer.train(matrixCreator.apply(dataset.getData()));
 
-        TestUtils.assertEquals("Wrong weights", dataset.getExpectedWeights(), model.getWeights(), precision);
-        TestUtils.assertEquals("Wrong intercept", dataset.getExpectedIntercept(), model.getIntercept(), precision);
+        LinearRegressionModel mdl = trainer.train(matrixCreator.apply(dataset.getData()));
+
+        TestUtils.assertEquals("Wrong weights", dataset.getExpWeights(), mdl.getWeights(), precision);
+        TestUtils.assertEquals("Wrong intercept", dataset.getExpIntercept(), mdl.getIntercept(), precision);
     }
 
     /**
@@ -148,10 +160,11 @@ public class GenericLinearRegressionTrainerTest {
     @Test
     public void testTrainOnArtificialDataset100x5() {
         ArtificialRegressionDatasets.TestDataset dataset = ArtificialRegressionDatasets.regression100x5;
-        LinearRegressionModel model = trainer.train(matrixCreator.apply(dataset.getData()));
 
-        TestUtils.assertEquals("Wrong weights", dataset.getExpectedWeights(), model.getWeights(), precision);
-        TestUtils.assertEquals("Wrong intercept", dataset.getExpectedIntercept(), model.getIntercept(), precision);
+        LinearRegressionModel mdl = trainer.train(matrixCreator.apply(dataset.getData()));
+
+        TestUtils.assertEquals("Wrong weights", dataset.getExpWeights(), mdl.getWeights(), precision);
+        TestUtils.assertEquals("Wrong intercept", dataset.getExpIntercept(), mdl.getIntercept(), precision);
     }
 
     /**
@@ -160,10 +173,11 @@ public class GenericLinearRegressionTrainerTest {
     @Test
     public void testTrainOnArtificialDataset100x10() {
         ArtificialRegressionDatasets.TestDataset dataset = ArtificialRegressionDatasets.regression100x10;
-        LinearRegressionModel model = trainer.train(matrixCreator.apply(dataset.getData()));
 
-        TestUtils.assertEquals("Wrong weights", dataset.getExpectedWeights(), model.getWeights(), precision);
-        TestUtils.assertEquals("Wrong intercept", dataset.getExpectedIntercept(), model.getIntercept(), precision);
+        LinearRegressionModel mdl = trainer.train(matrixCreator.apply(dataset.getData()));
+
+        TestUtils.assertEquals("Wrong weights", dataset.getExpWeights(), mdl.getWeights(), precision);
+        TestUtils.assertEquals("Wrong intercept", dataset.getExpIntercept(), mdl.getIntercept(), precision);
     }
 
     /**

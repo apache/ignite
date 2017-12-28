@@ -34,30 +34,33 @@ public class LinearRegressionModelTest {
     @Test
     public void testPredict() {
         Vector weights = new DenseLocalOnHeapVector(new double[]{2.0, 3.0});
-        LinearRegressionModel model = new LinearRegressionModel(weights, 1.0);
+        LinearRegressionModel mdl = new LinearRegressionModel(weights, 1.0);
 
         Vector observation = new DenseLocalOnHeapVector(new double[]{1.0, 1.0});
-        TestUtils.assertEquals(1.0 + 2.0 * 1.0 + 3.0 * 1.0, model.apply(observation), PRECISION);
+        TestUtils.assertEquals(1.0 + 2.0 * 1.0 + 3.0 * 1.0, mdl.apply(observation), PRECISION);
 
         observation = new DenseLocalOnHeapVector(new double[]{2.0, 1.0});
-        TestUtils.assertEquals(1.0 + 2.0 * 2.0 + 3.0 * 1.0, model.apply(observation), PRECISION);
+        TestUtils.assertEquals(1.0 + 2.0 * 2.0 + 3.0 * 1.0, mdl.apply(observation), PRECISION);
 
         observation = new DenseLocalOnHeapVector(new double[]{1.0, 2.0});
-        TestUtils.assertEquals(1.0 + 2.0 * 1.0 + 3.0 * 2.0, model.apply(observation), PRECISION);
+        TestUtils.assertEquals(1.0 + 2.0 * 1.0 + 3.0 * 2.0, mdl.apply(observation), PRECISION);
 
         observation = new DenseLocalOnHeapVector(new double[]{-2.0, 1.0});
-        TestUtils.assertEquals(1.0 - 2.0 * 2.0 + 3.0 * 1.0, model.apply(observation), PRECISION);
+        TestUtils.assertEquals(1.0 - 2.0 * 2.0 + 3.0 * 1.0, mdl.apply(observation), PRECISION);
 
         observation = new DenseLocalOnHeapVector(new double[]{1.0, -2.0});
-        TestUtils.assertEquals(1.0 + 2.0 * 1.0 - 3.0 * 2.0, model.apply(observation), PRECISION);
+        TestUtils.assertEquals(1.0 + 2.0 * 1.0 - 3.0 * 2.0, mdl.apply(observation), PRECISION);
     }
 
     /** */
     @Test(expected = CardinalityException.class)
     public void testPredictOnAnObservationWithWrongCardinality() {
         Vector weights = new DenseLocalOnHeapVector(new double[]{2.0, 3.0});
-        LinearRegressionModel model = new LinearRegressionModel(weights, 1.0);
+
+        LinearRegressionModel mdl = new LinearRegressionModel(weights, 1.0);
+
         Vector observation = new DenseLocalOnHeapVector(new double[]{1.0});
-        model.apply(observation);
+
+        mdl.apply(observation);
     }
 }

@@ -49,26 +49,33 @@ public class SparseDistributedMatrixMapReducer {
     public <R, T> R mapReduce(IgniteBiFunction<Matrix, T, R> mapper, IgniteFunction<Collection<R>, R> reducer, T args) {
         Ignite ignite = Ignition.localIgnite();
         SparseDistributedMatrixStorage storage = (SparseDistributedMatrixStorage)distributedMatrix.getStorage();
-        int columnSize = distributedMatrix.columnSize();
+
+        int colSize = distributedMatrix.columnSize();
+
         Collection<R> results = ignite
             .compute(ignite.cluster().forDataNodes(storage.cacheName()))
             .broadcast(arguments -> {
-                Ignite ig = Ignition.localIgnite();
-                Affinity<RowColMatrixKey> affinity = ig.affinity(storage.cacheName());
-                ClusterNode localNode = ig.cluster().localNode();
+                Ignite locIgnite = Ignition.localIgnite();
+
+                Affinity<RowColMatrixKey> affinity = locIgnite.affinity(storage.cacheName());
+                ClusterNode locNode = locIgnite.cluster().localNode();
+
                 Map<ClusterNode, Collection<RowColMatrixKey>> keys = affinity.mapKeysToNodes(storage.getAllKeys());
-                Collection<RowColMatrixKey> locKeys = keys.get(localNode);
+                Collection<RowColMatrixKey> locKeys = keys.get(locNode);
+
                 if (locKeys != null) {
-                    Matrix localMatrix = new DenseLocalOnHeapMatrix(locKeys.size(), columnSize);
-                    int index = 0;
+                    int idx = 0;
+                    Matrix locMatrix = new DenseLocalOnHeapMatrix(locKeys.size(), colSize);
+
                     for (RowColMatrixKey key : locKeys) {
                         Map<Integer, Double> row = storage.cache().get(key);
-                        for (Map.Entry<Integer,Double> cell : row.entrySet()) {
-                            localMatrix.set(index, cell.getKey(), cell.getValue());
-                        }
-                        index++;
+
+                        for (Map.Entry<Integer,Double> cell : row.entrySet())
+                            locMatrix.set(idx, cell.getKey(), cell.getValue());
+
+                        idx++;
                     }
-                    return mapper.apply(localMatrix, arguments);
+                    return mapper.apply(locMatrix, arguments);
                 }
                 return null;
             }, args);

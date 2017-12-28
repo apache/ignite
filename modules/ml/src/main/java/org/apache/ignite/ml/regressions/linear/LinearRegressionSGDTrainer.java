@@ -59,7 +59,9 @@ public class LinearRegressionSGDTrainer implements Trainer<LinearRegressionModel
     @Override public LinearRegressionModel train(Matrix data) {
         Vector variables = gradientDescent.optimize(data, data.likeVector(data.columnSize()));
         Vector weights = variables.viewPart(1, variables.size() - 1);
+
         double intercept = variables.get(0);
+
         return new LinearRegressionModel(weights, intercept);
     }
 }

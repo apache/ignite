@@ -34,11 +34,15 @@ public class LinearRegressionQRTrainer implements Trainer<LinearRegressionModel,
     @Override public LinearRegressionModel train(Matrix data) {
         Vector groundTruth = extractGroundTruth(data);
         Matrix inputs = extractInputs(data);
+
         QRDecomposition decomposition = new QRDecomposition(inputs);
         QRDSolver solver = new QRDSolver(decomposition.getQ(), decomposition.getR());
+
         Vector variables = solver.solve(groundTruth);
         Vector weights = variables.viewPart(1, variables.size() - 1);
+
         double intercept = variables.get(0);
+
         return new LinearRegressionModel(weights, intercept);
     }
 
@@ -60,7 +64,9 @@ public class LinearRegressionQRTrainer implements Trainer<LinearRegressionModel,
      */
     private Matrix extractInputs(Matrix data) {
         data = data.copy();
+
         data.assignColumn(0, new FunctionVector(data.rowSize(), row -> 1.0));
+
         return data;
     }
 }

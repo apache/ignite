@@ -27,7 +27,7 @@ public class LeastSquaresGradientFunction implements GradientFunction {
     /**
      * {@inheritDoc}
      */
-    @Override public Vector compute(Matrix inputs, Vector groundTruth, Vector point) {
-        return inputs.transpose().times(inputs.times(point).minus(groundTruth));
+    @Override public Vector compute(Matrix inputs, Vector groundTruth, Vector pnt) {
+        return inputs.transpose().times(inputs.times(pnt).minus(groundTruth));
     }
 }

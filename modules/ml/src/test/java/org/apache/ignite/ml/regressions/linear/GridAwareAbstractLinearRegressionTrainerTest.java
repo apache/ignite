@@ -28,7 +28,7 @@ import org.junit.Test;
 
 public abstract class GridAwareAbstractLinearRegressionTrainerTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
-    private static final int NODE_COUNT = 2;
+    private static final int NODE_COUNT = 3;
 
     /**
      * Delegate actually performs tests.

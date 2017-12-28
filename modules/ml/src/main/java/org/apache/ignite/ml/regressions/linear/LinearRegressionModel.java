@@ -44,13 +44,6 @@ public class LinearRegressionModel implements Model<Vector, Double>, Exportable<
         this.intercept = intercept;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override public Double apply(Vector input) {
-        return input.dot(weights) + intercept;
-    }
-
     /** */
     public Vector getWeights() {
         return weights;
@@ -61,41 +54,51 @@ public class LinearRegressionModel implements Model<Vector, Double>, Exportable<
         return intercept;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
+    @Override public Double apply(Vector input) {
+        return input.dot(weights) + intercept;
+    }
+
+    /** {@inheritDoc} */
     @Override public <P> void saveModel(Exporter<LinearRegressionModel, P> exporter, P path) {
         exporter.save(this, path);
     }
 
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-        LinearRegressionModel model = (LinearRegressionModel)o;
-        return Double.compare(model.intercept, intercept) == 0 &&
-            Objects.equals(weights, model.weights);
+        LinearRegressionModel mdl = (LinearRegressionModel)o;
+        return Double.compare(mdl.intercept, intercept) == 0 &&
+            Objects.equals(weights, mdl.weights);
     }
 
+    /** {@inheritDoc} */
     @Override public int hashCode() {
 
         return Objects.hash(weights, intercept);
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
         if (weights.size() < 10) {
             StringBuilder builder = new StringBuilder();
+
             for (int i = 0; i < weights.size(); i++) {
                 double nextItem = i == weights.size() - 1 ? intercept : weights.get(i + 1);
+
                 builder.append(String.format("%.4f", Math.abs(weights.get(i))))
                     .append("*x")
                     .append(i)
                     .append(nextItem > 0 ? " + " : " - ");
             }
+
             builder.append(String.format("%.4f", Math.abs(intercept)));
             return builder.toString();
         }
+
         return "LinearRegressionModel{" +
             "weights=" + weights +
             ", intercept=" + intercept +
