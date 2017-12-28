@@ -37,7 +37,7 @@ public class TestTrainingLoopStep implements DistributedEntryProcessingStep<Test
             Integer oldVal = entryAndContext.entry().getValue();
             double v = oldVal * oldVal;
             ResultAndUpdates<Double> res = ResultAndUpdates.of(v);
-            res.update(TestGroupTrainingCache.getOrCreate(Ignition.localIgnite()), entryAndContext.entry().getKey(), (int)v);
+            res.updateCache(TestGroupTrainingCache.getOrCreate(Ignition.localIgnite()), entryAndContext.entry().getKey(), (int)v);
             return res;
         };
     }

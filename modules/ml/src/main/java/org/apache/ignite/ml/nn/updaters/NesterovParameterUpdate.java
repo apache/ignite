@@ -32,7 +32,7 @@ public class NesterovParameterUpdate {
     /**
      * Construct NesterovParameterUpdate.
      *
-     * @param paramsCnt Count of parameters on which update happens.
+     * @param paramsCnt Count of parameters on which updateCache happens.
      */
     public NesterovParameterUpdate(int paramsCnt) {
         prevIterationUpdates = new DenseLocalOnHeapVector(paramsCnt).assign(0);

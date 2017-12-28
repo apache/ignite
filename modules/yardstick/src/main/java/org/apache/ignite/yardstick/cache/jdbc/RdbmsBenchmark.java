@@ -129,11 +129,11 @@ public class RdbmsBenchmark extends JdbcAbstractBenchmark {
 
             case "MySQL":
                 return conn.prepareStatement("insert into " + tblName + " (id, val) values(?, ?) on duplicate key " +
-                    "update val = ?");
+                    "updateCache val = ?");
 
             case "PostgreSQL":
                 return conn.prepareStatement("insert into " + tblName + " (id, val) values(?, ?) on conflict(id) do " +
-                    "update set val = ?");
+                    "updateCache set val = ?");
 
             default:
                 throw new IgniteException("Unexpected database type [databaseProductName=" +

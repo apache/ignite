@@ -76,7 +76,7 @@ public class StreamVisitorExample {
             ) {
                 try (IgniteDataStreamer<String, Double> mktStmr = ignite.dataStreamer(mktCache.getName())) {
                     // Note that we receive market data, but do not populate 'mktCache' (it remains empty).
-                    // Instead we update the instruments in the 'instCache'.
+                    // Instead we updateCache the instruments in the 'instCache'.
                     // Since both, 'instCache' and 'mktCache' use the same key, updates are collocated.
                     mktStmr.receiver(StreamVisitor.from((cache, e) -> {
                         String symbol = e.getKey();

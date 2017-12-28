@@ -42,7 +42,7 @@ public class RPropParameterUpdate {
     protected Vector deltas;
 
     /**
-     * Updates mask (values by which update is multiplied).
+     * Updates mask (values by which updateCache is multiplied).
      */
     protected Vector updatesMask;
 
@@ -50,7 +50,7 @@ public class RPropParameterUpdate {
      * Construct RPropParameterUpdate.
      *
      * @param paramsCnt Parameters count.
-     * @param initUpdate Initial update (in original work labeled as "delta_0").
+     * @param initUpdate Initial updateCache (in original work labeled as "delta_0").
      */
     RPropParameterUpdate(int paramsCnt, double initUpdate) {
         prevIterationUpdates = new DenseLocalOnHeapVector(paramsCnt);
@@ -107,16 +107,16 @@ public class RPropParameterUpdate {
     }
 
     /**
-     * Get updates mask (values by which update is multiplied).
+     * Get updates mask (values by which updateCache is multiplied).
      *
-     * @return Updates mask (values by which update is multiplied).
+     * @return Updates mask (values by which updateCache is multiplied).
      */
     public Vector updatesMask() {
         return updatesMask;
     }
 
     /**
-     * Set updates mask (values by which update is multiplied).
+     * Set updates mask (values by which updateCache is multiplied).
      *
      * @param updatesMask New updatesMask.
      */

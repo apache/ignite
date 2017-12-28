@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.nn.architecture;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableDoubleToDoubleFunction;
@@ -24,7 +25,7 @@ import org.apache.ignite.ml.math.functions.IgniteDifferentiableDoubleToDoubleFun
 /**
  * Class containing information about architecture of MLP.
  */
-public class MLPArchitecture {
+public class MLPArchitecture implements Serializable {
     /**
      * List of layers architectures.
      */

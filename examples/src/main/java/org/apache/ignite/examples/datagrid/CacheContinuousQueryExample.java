@@ -72,7 +72,7 @@ public class CacheContinuousQueryExample {
                     }
                 }));
 
-                // Callback that is called locally when update notifications are received.
+                // Callback that is called locally when updateCache notifications are received.
                 qry.setLocalListener(new CacheEntryUpdatedListener<Integer, String>() {
                     @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> evts) {
                         for (CacheEntryEvent<? extends Integer, ? extends String> e : evts)

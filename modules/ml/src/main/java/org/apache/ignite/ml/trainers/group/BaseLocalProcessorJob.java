@@ -37,7 +37,7 @@ import org.apache.ignite.ml.math.functions.IgniteSupplier;
  * It's purpose is to apply worker to each element (cache key or cache entry) of given cache specified
  * by keySupplier. Worker produces {@link ResultAndUpdates} object which contains 'side effects' which are updates
  * needed to apply to caches and computation result.
- * After we get all {@link ResultAndUpdates} we merge all 'update' parts of them for each node
+ * After we get all {@link ResultAndUpdates} we merge all 'updateCache' parts of them for each node
  * and apply them on corresponding node, also we reduce all 'result' by some given reducer.
  *
  * @param <K> Type of keys of cache used for group trainer.

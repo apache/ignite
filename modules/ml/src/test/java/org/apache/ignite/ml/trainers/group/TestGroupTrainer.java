@@ -61,7 +61,7 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
             ResultAndUpdates<Integer> res = ResultAndUpdates.of((int)sum);
 
             for (int j = 0; j < data.eachNumberCount(); j++)
-                res.update(cache, new GroupTrainerCacheKey<>(i, (double)j, trainingUUID), (int)i);
+                res.updateCache(cache, new GroupTrainerCacheKey<>(i, (double)j, trainingUUID), (int)i);
 
             return res;
         };

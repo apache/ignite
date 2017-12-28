@@ -166,7 +166,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         Integer val = ec.entry().getValue();
 
         ResultAndUpdates<Integer> res = ResultAndUpdates.of(val);
-        res.update(TestGroupTrainingCache.getOrCreate(Ignition.localIgnite()), ec.entry().getKey(), val + 1);
+        res.updateCache(TestGroupTrainingCache.getOrCreate(Ignition.localIgnite()), ec.entry().getKey(), val + 1);
 
         return res;
     }

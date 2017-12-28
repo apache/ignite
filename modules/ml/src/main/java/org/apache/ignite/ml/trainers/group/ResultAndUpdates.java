@@ -86,20 +86,24 @@ public class ResultAndUpdates<R> {
     }
 
     /**
-     * Add a cache update to this object.
+     * Add a cache updateCache to this object.
      *
      * @param cache Cache to be updated.
      * @param key Key of cache to be updated.
      * @param val New value.
      * @param <K> Type of key of cache to be updated.
      * @param <V> New value.
+     *
+     * @return This object.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> void update(IgniteCache<K, V> cache, K key, V val) {
+    public <K, V> ResultAndUpdates<R> updateCache(IgniteCache<K, V> cache, K key, V val) {
         String name = cache.getName();
 
         updates.computeIfAbsent(name, s -> new ConcurrentHashMap());
         updates.get(name).put(key, val);
+
+        return this;
     }
 
     /**

@@ -23,7 +23,7 @@ import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFun
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
- * Interface for classes encapsulating parameters update logic.
+ * Interface for classes encapsulating parameters updateCache logic.
  *
  * @param <M> Type of model to be updated.
  * @param <P> Type of parameters needed for this updater.
@@ -38,10 +38,10 @@ public interface ParameterUpdateCalculator<M, P> {
     P init(M mdl, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss);
 
     /**
-     * Calculate new update.
+     * Calculate new updateCache.
      *
      * @param mdl Model to be updated.
-     * @param updaterParameters Updater parameters to update.
+     * @param updaterParameters Updater parameters to updateCache.
      * @param iteration Current trainer iteration.
      * @param inputs Inputs.
      * @param groundTruth True values.

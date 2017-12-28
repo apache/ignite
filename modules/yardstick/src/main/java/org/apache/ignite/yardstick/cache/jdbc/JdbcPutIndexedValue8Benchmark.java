@@ -49,7 +49,7 @@ public class JdbcPutIndexedValue8Benchmark extends JdbcAbstractBenchmark {
     /**
      * Get upsert statement depending on the type of database
      * @param newKey the value that the new row is based upon
-     * @return update portion of upsert statement
+     * @return updateCache portion of upsert statement
      * @throws SQLException if failed
      */
     private PreparedStatement createUpsertStatement(int newKey, int newVal) throws SQLException {
@@ -66,7 +66,7 @@ public class JdbcPutIndexedValue8Benchmark extends JdbcAbstractBenchmark {
 
             case "MySQL":
                 stmt = conn.get().prepareStatement("insert into VALUE8(val1, val2, val3, val4, val5, " +
-                    "val6, val7, val8) values(?, ?, ?, ?, ?, ?, ?, ?) on duplicate key update val2 = ?, val3 = ?, " +
+                    "val6, val7, val8) values(?, ?, ?, ?, ?, ?, ?, ?) on duplicate key updateCache val2 = ?, val3 = ?, " +
                     "val4 = ?, val5 = ?, val6 = ?, val7 = ?, val8 = ?");
 
                 explicitUpdate = true;
@@ -75,7 +75,7 @@ public class JdbcPutIndexedValue8Benchmark extends JdbcAbstractBenchmark {
 
             case "PostgreSQL":
                 stmt = conn.get().prepareStatement("insert into VALUE8(val1, val2, val3, val4, val5, " +
-                    "val6, val7, val8) values(?, ?, ?, ?, ?, ?, ?, ?) on conflict(val1) do update set " +
+                    "val6, val7, val8) values(?, ?, ?, ?, ?, ?, ?, ?) on conflict(val1) do updateCache set " +
                     "val2 = ?, val3 = ?, val4 = ?, val5 = ?, val6 = ?, val7 = ?, val8 = ?");
 
                 explicitUpdate = true;

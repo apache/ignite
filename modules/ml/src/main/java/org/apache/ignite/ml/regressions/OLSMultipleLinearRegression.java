@@ -139,7 +139,7 @@ public class OLSMultipleLinearRegression extends AbstractMultipleLinearRegressio
         if (isNoIntercept())
             return getY().foldMap(Functions.PLUS, Functions.SQUARE, 0.0);
         else {
-            // TODO: IGNITE-5826, think about incremental update formula.
+            // TODO: IGNITE-5826, think about incremental updateCache formula.
             final double mean = getY().sum() / getY().size();
             return getY().foldMap(Functions.PLUS, x -> (mean - x) * (mean - x), 0.0);
         }

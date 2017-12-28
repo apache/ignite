@@ -23,7 +23,7 @@ import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFun
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
- * Class encapsulating Nesterov algorithm for MLP parameters update.
+ * Class encapsulating Nesterov algorithm for MLP parameters updateCache.
  */
 public class NesterovUpdateCalculator<M extends SmoothParametrized> implements ParameterUpdateCalculator<M, NesterovParameterUpdate> {
     /**
@@ -54,6 +54,7 @@ public class NesterovUpdateCalculator<M extends SmoothParametrized> implements P
     /** {@inheritDoc} */
     @Override public NesterovParameterUpdate calculateNewUpdate(SmoothParametrized mdl, NesterovParameterUpdate updaterParameters,
         int iteration, Matrix inputs, Matrix groundTruth) {
+        // TODO: create new updateCache object here instead of in-place change.
 
         if (iteration > 0) {
             Vector curParams = mdl.parameters();

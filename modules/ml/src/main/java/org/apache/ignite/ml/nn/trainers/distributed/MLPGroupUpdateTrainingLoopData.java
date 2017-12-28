@@ -18,6 +18,77 @@
 package org.apache.ignite.ml.nn.trainers.distributed;
 
 import java.io.Serializable;
+import java.util.List;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
+import org.apache.ignite.ml.nn.MultilayerPerceptron;
+import org.apache.ignite.ml.nn.updaters.ParameterUpdateCalculator;
+import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
 
-public class MLPGroupUpdateTrainingLoopData implements Serializable {
+public class MLPGroupUpdateTrainingLoopData<P> implements Serializable {
+    private final ParameterUpdateCalculator<MultilayerPerceptron, P> updateCalculator;
+    private final int stepsCnt;
+    private final IgniteFunction<List<P>, P> updateReducer;
+    private final P previousUpdate;
+    private final IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier;
+    private final IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
+    private final double tolerance;
+
+    private final GroupTrainerCacheKey<Void> key;
+    private final MultilayerPerceptron mlp;
+
+    public MLPGroupUpdateTrainingLoopData(MultilayerPerceptron mlp,
+        ParameterUpdateCalculator<MultilayerPerceptron, P> updateCalculator, int stepsCnt, IgniteFunction<List<P>, P> updateReducer, P previousUpdate,
+        GroupTrainerCacheKey<Void> key, IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
+        double tolerance) {
+        this.mlp = mlp;
+        this.updateCalculator = updateCalculator;
+        this.stepsCnt = stepsCnt;
+        this.updateReducer = updateReducer;
+        this.previousUpdate = previousUpdate;
+        this.key = key;
+        this.batchSupplier = batchSupplier;
+        this.loss = loss;
+        this.tolerance = tolerance;
+    }
+
+    public MultilayerPerceptron mlp() {
+        return mlp;
+    }
+
+    public ParameterUpdateCalculator<MultilayerPerceptron, P> updateCalculator() {
+        return updateCalculator;
+    }
+
+    public int stepsCnt() {
+        return stepsCnt;
+    }
+
+    public IgniteFunction<List<P>, P> getUpdateReducer() {
+        return updateReducer;
+    }
+
+    public P previousUpdate() {
+        return previousUpdate;
+    }
+
+    public GroupTrainerCacheKey<Void> key() {
+        return key;
+    }
+
+    public IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier() {
+        return batchSupplier;
+    }
+
+    public IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss() {
+        return loss;
+    }
+
+    public double tolerance() {
+        return tolerance;
+    }
 }

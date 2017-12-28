@@ -17,5 +17,64 @@
 
 package org.apache.ignite.ml.nn.trainers.distributed;
 
-public class MLPGroupUpdateTrainerContext {
+import java.util.List;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
+import org.apache.ignite.ml.nn.MultilayerPerceptron;
+import org.apache.ignite.ml.nn.updaters.ParameterUpdateCalculator;
+
+public class MLPGroupUpdateTrainerContext<P> {
+    private final ParameterUpdateCalculator<MultilayerPerceptron, P> updateCalculator;
+    private final int stepsCnt;
+    private final IgniteFunction<List<P>, P> updateReducer;
+    private final P previousUpdate;
+    private final IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier;
+    private final IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
+    private final double tolerance;
+
+    public MLPGroupUpdateTrainerContext(
+        ParameterUpdateCalculator<MultilayerPerceptron, P> updateCalculator, int stepsCnt,
+        IgniteFunction<List<P>, P> updateReducer, P previousUpdate,
+        IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier,
+        IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss, double tolerance) {
+        this.updateCalculator = updateCalculator;
+        this.stepsCnt = stepsCnt;
+        this.updateReducer = updateReducer;
+        this.previousUpdate = previousUpdate;
+        this.batchSupplier = batchSupplier;
+        this.loss = loss;
+        this.tolerance = tolerance;
+    }
+
+    public ParameterUpdateCalculator<MultilayerPerceptron, P> updateCalculator() {
+        return updateCalculator;
+    }
+
+    public int stepsCnt() {
+        return stepsCnt;
+    }
+
+    public IgniteFunction<List<P>, P> updateReducer() {
+        return updateReducer;
+    }
+
+    public P previousUpdate() {
+        return previousUpdate;
+    }
+
+    public IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier() {
+        return batchSupplier;
+    }
+
+    public IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss() {
+        return loss;
+    }
+
+    public double tolerance() {
+        return tolerance;
+    }
 }
