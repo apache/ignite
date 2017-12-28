@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.structures;
 
-import java.io.Serializable;
 import org.apache.ignite.ml.math.Vector;
 
 /**
@@ -59,7 +58,7 @@ public class LabeledVector<V extends Vector, L> extends DatasetRow<V> {
         this.lb = lb;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -73,7 +72,7 @@ public class LabeledVector<V extends Vector, L> extends DatasetRow<V> {
         return lb != null ? lb.equals(vector1.lb) : vector1.lb == null;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         int res = vector != null ? vector.hashCode() : 0;
         res = 31 * res + (lb != null ? lb.hashCode() : 0);

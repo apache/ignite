@@ -39,7 +39,7 @@ public class DatasetRow<V extends Vector> implements Serializable {
         return vector;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -51,9 +51,8 @@ public class DatasetRow<V extends Vector> implements Serializable {
         return vector != null ? !vector.equals(vector1.vector) : vector1.vector != null;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public int hashCode() {
-        int res = vector != null ? vector.hashCode() : 0;
-        return res;
+        return vector != null ? vector.hashCode() : 0;
     }
 }

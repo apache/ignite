@@ -57,7 +57,9 @@ public class Dataset<Row extends DatasetRow> implements Serializable {
      */
     public Dataset(Row[] data, String[] featureNames, int colSize) {
         this(data.length, colSize, featureNames);
+
         assert data != null;
+
         this.data = data;
     }
 
@@ -187,7 +189,7 @@ public class Dataset<Row extends DatasetRow> implements Serializable {
         return data[idx].features();
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -199,7 +201,7 @@ public class Dataset<Row extends DatasetRow> implements Serializable {
         return rowSize == that.rowSize && colSize == that.colSize && Arrays.equals(data, that.data) && Arrays.equals(meta, that.meta);
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         int res = Arrays.hashCode(data);
         res = 31 * res + Arrays.hashCode(meta);

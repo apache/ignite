@@ -43,6 +43,7 @@ public class FeatureMetadata implements Serializable {
         this.name = name;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -54,6 +55,7 @@ public class FeatureMetadata implements Serializable {
         return name != null ? name.equals(metadata.name) : metadata.name == null;
     }
 
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         return name != null ? name.hashCode() : 0;
     }

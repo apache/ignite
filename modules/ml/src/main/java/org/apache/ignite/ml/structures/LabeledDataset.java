@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.structures;
 
-import java.io.Serializable;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.NoDataException;
@@ -60,11 +59,9 @@ public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> {
      * @param isDistributed Use distributed data structures to keep data.
      */
     public LabeledDataset(int rowSize, int colSize, String[] featureNames, boolean isDistributed){
-
         super(rowSize, colSize, featureNames);
 
         initializeDataWithLabeledVectors(rowSize, colSize, isDistributed);
-
     }
 
     /** */
@@ -117,12 +114,12 @@ public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> {
         this.rowSize = lbs.length;
         this.colSize = mtx[0].length;
 
-        if(featureNames == null) generateFeatureNames();
+        if(featureNames == null)
+            generateFeatureNames();
         else {
             assert colSize == featureNames.length;
             convertStringNamesToFeatureMetadata(featureNames);
         }
-
 
         data = (Row[])new LabeledVector[rowSize];
         for (int i = 0; i < rowSize; i++){
