@@ -71,8 +71,6 @@ public class MLPGroupUpdateTrainer<P extends Serializable> extends
 
     /** {@inheritDoc} */
     @Override protected void initDistributedContext(MLPGroupUpdateTrainerInput<P> data, UUID trainingUUID) {
-        P initUpdate = data.updateCalculator().init(data.mdl(), loss);
-
         MLPGroupUpdateTrainerContextCache.getOrCreate(ignite).put(trainingUUID, new MLPGroupUpdateTrainingData<>(
                 data.updateCalculator(),
                 data.syncRate(),

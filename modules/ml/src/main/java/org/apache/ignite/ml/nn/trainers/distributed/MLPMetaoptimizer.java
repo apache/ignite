@@ -22,28 +22,40 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.trainers.group.Metaoptimizer;
 
 public class MLPMetaoptimizer<P> implements Metaoptimizer<MLPGroupUpdateTrainerLocalContext, MLPGroupUpdateTrainingLoopData<P>, P, P, P, P> {
-    @Override public IgniteFunction<List<P>, P> initialReducer() {
-        return null;
+    private final IgniteFunction<List<P>, P> allUpdatesReducer;
+
+    public MLPMetaoptimizer(IgniteFunction<List<P>, P> allUpdatesReducer) {
+        this.allUpdatesReducer = allUpdatesReducer;
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteFunction<List<P>, P> initialReducer() {
+        return allUpdatesReducer;
+    }
+
+    /** {@inheritDoc} */
     @Override public P locallyProcessInitData(P data, MLPGroupUpdateTrainerLocalContext locCtx) {
         return data;
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteFunction<P, P> distributedPostprocessor() {
-        return null;
+        return x -> x;
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteFunction<List<P>, P> postProcessReducer() {
-        return null;
+        return allUpdatesReducer;
     }
 
+    /** {@inheritDoc} */
     @Override public P localProcessor(P input, MLPGroupUpdateTrainerLocalContext locCtx) {
         locCtx.incrementCurrentStep();
 
         return input;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean shouldContinue(P input, MLPGroupUpdateTrainerLocalContext locCtx) {
         return input != null && locCtx.currentStep() < locCtx.globalStepsMaxCount();
     }

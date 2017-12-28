@@ -78,6 +78,13 @@ public class MLPCache {
         return ignite.getOrCreateCache(cfg);
     }
 
+    /**
+     * Get all keys of this cache for given parameters.
+     *
+     * @param trainingsCnt Parallel trainings count.
+     * @param uuid Training UUID.
+     * @return All keys of this cache for given parameters.
+     */
     public static Stream<GroupTrainerCacheKey<Void>> allKeys(int trainingsCnt, UUID uuid) {
         return IntStream.range(0, trainingsCnt).mapToObj(i -> new GroupTrainerCacheKey<Void>(i, null, uuid));
     }
