@@ -151,7 +151,7 @@ mkdir -p %{buildroot}%{_bindir}
 # Copy nessessary files and remove *.bat files
 cp -rf benchmarks bin platforms %{buildroot}%{_datadir}/%{name}
 cp -rf docs/* examples %{buildroot}%{_datadir}/doc/%{name}-%{version}
-mv -f %{buildroot}%{_datadir}/%{name}/bin/{ignitevisorcmd.sh,sqlline.sh} %{buildroot}%{_datadir}/doc/%{name}-%{version}/bin/
+mv -f %{buildroot}%{_datadir}/%{name}/bin/ignitevisorcmd.sh %{buildroot}%{_datadir}/doc/%{name}-%{version}/bin/
 find %{buildroot}%{_datadir}/%{name}/ -name *.bat -exec rm -rf {} \;
 
 # Copy libs to /usr/lib and map them to IGNITE_HOME
