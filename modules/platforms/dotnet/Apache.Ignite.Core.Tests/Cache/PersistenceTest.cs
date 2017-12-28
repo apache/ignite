@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -134,14 +134,12 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /// <summary>
-        /// Checks the data storage metrics.
+        /// Checks that data storage metrics reflect some write operations.
         /// </summary>
         private static void CheckDataStorageMetrics(IIgnite ignite)
         {
-            // Check metrics.
             var metrics = ignite.GetDataStorageMetrics();
             Assert.Greater(metrics.WalLoggingRate, 0);
-            Assert.Greater(metrics.WalWritingRate, 0);
             Assert.Greater(metrics.WalFsyncTimeAverage, 0);
         }
 

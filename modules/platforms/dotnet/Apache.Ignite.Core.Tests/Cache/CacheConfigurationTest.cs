@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
@@ -92,7 +93,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 },
 #pragma warning restore 618
                 DataStorageConfiguration = null,
-                SpringConfigUrl = "Config\\cache-default.xml"
+                SpringConfigUrl = Path.Combine("Config", "cache-default.xml")
             };
 
             _ignite = Ignition.Start(cfg);

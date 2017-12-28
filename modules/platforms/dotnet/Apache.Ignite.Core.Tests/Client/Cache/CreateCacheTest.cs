@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,6 +22,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Configuration;
+#if !NETCOREAPP2_0
+    using Apache.Ignite.Core.Impl.Client.Cache;
+    using Apache.Ignite.Core.Impl.Client;
+#endif
     using Apache.Ignite.Core.Tests.Cache;
     using NUnit.Framework;
 
@@ -145,8 +149,42 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             cfg = GetFullCacheConfiguration("b");
 
             cache = Client.CreateCache<int, int>(cfg);
-            ClientCacheConfigurationTest.AssertClientConfigsAreEqual(cfg, cache.GetConfiguration());
+            AssertClientConfigsAreEqual(cfg, cache.GetConfiguration());
         }
+
+#if !NETCOREAPP2_0
+        /// <summary>
+        /// Tests cache creation from partial configuration.
+        /// </summary>
+        [Test]
+        public void TestCreateFromPartialConfiguration()
+        {
+            // Default config.
+            var cfg = new CacheClientConfiguration("a") {Backups = 7};
+            var client = (IgniteClient) Client;
+
+            // Create cache directly through a socket with only some config properties provided.
+            client.Socket.DoOutInOp<object>(ClientOp.CacheCreateWithConfiguration, s =>
+            {
+                var w = client.Marshaller.StartMarshal(s);
+
+                w.WriteInt(2 + 2 + 6 + 2 + 4);  // config length in bytes.
+
+                w.WriteShort(2);  // 2 properties.
+                
+                w.WriteShort(3);  // backups opcode.
+                w.WriteInt(cfg.Backups);
+
+                w.WriteShort(0);  // name opcode.
+                w.WriteString(cfg.Name);
+
+            }, null);
+            
+            var cache = new CacheClient<int, int>(client, cfg.Name);
+
+            AssertExtensions.ReflectionEqual(cfg, cache.GetConfiguration());
+        }
+#endif
 
         /// <summary>
         /// Tests cache creation from configuration.
@@ -168,7 +206,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             cfg = GetFullCacheConfiguration("b");
 
             cache = Client.GetOrCreateCache<int, int>(cfg);
-            ClientCacheConfigurationTest.AssertClientConfigsAreEqual(cfg, cache.GetConfiguration());
+            AssertClientConfigsAreEqual(cfg, cache.GetConfiguration());
         }
 
         /// <summary>

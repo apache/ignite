@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -65,7 +65,6 @@ namespace Apache.Ignite.Core.Client.Cache
             CopyOnRead = CacheConfiguration.DefaultCopyOnRead;
             WriteSynchronizationMode = CacheConfiguration.DefaultWriteSynchronizationMode;
             EagerTtl = CacheConfiguration.DefaultEagerTtl;
-            Invalidate = CacheConfiguration.DefaultInvalidate;
             LockTimeout = CacheConfiguration.DefaultLockTimeout;
             MaxConcurrentAsyncOperations = CacheConfiguration.DefaultMaxConcurrentAsyncOperations;
             ReadFromBackup = CacheConfiguration.DefaultReadFromBackup;
@@ -116,7 +115,7 @@ namespace Apache.Ignite.Core.Client.Cache
             {
                 using (var stream = IgniteManager.Memory.Allocate().GetStream())
                 {
-                    ClientCacheConfigurationSerializer.Write(stream, other);
+                    ClientCacheConfigurationSerializer.Write(stream, other, true);
 
                     stream.SynchronizeOutput();
                     stream.Seek(0, SeekOrigin.Begin);
@@ -238,12 +237,6 @@ namespace Apache.Ignite.Core.Client.Cache
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "00:00:00")]
         public TimeSpan LockTimeout { get; set; }
-
-        /// <summary>
-        /// Invalidation flag. If true, values will be invalidated (nullified) upon commit in near cache.
-        /// </summary>
-        [DefaultValue(CacheConfiguration.DefaultInvalidate)]
-        public bool Invalidate { get; set; }
 
         /// <summary>
         /// Gets or sets cache rebalance mode.

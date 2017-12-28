@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -79,7 +79,6 @@ namespace Apache.Ignite.Core.Tests.Cache
                 // Check some metrics.
                 var metrics = ignite.GetPersistentStoreMetrics();
                 Assert.Greater(metrics.WalLoggingRate, 0);
-                Assert.Greater(metrics.WalWritingRate, 0);
                 Assert.Greater(metrics.WalFsyncTimeAverage, 0);
             }
 

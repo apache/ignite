@@ -429,26 +429,18 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                 tablePattern = req.tablePattern();
             }
 
-            GridQueryIndexing indexing = ctx.query().getIndexing();
-
-            for (String cacheName : ctx.cache().cacheNames()) {
-                String cacheSchema = indexing.schema(cacheName);
-
-                if (!matches(cacheSchema, schemaPattern))
-                    continue;
-
-                Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(cacheName);
-
-                for (GridQueryTypeDescriptor table : tablesMeta) {
-                    if (!matches(table.name(), tablePattern))
+            for (String cacheName : ctx.cache().publicCacheNames()) {
+                for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
+                    if (!matches(table.schemaName(), schemaPattern) ||
+                        !matches(table.tableName(), tablePattern))
                         continue;
 
                     for (Map.Entry<String, Class<?>> field : table.fields().entrySet()) {
                         if (!matches(field.getKey(), req.columnPattern()))
                             continue;
 
-                    OdbcColumnMeta columnMeta = new OdbcColumnMeta(cacheSchema, table.name(),
-                        field.getKey(), field.getValue());
+                        OdbcColumnMeta columnMeta = new OdbcColumnMeta(table.schemaName(), table.tableName(),
+                            field.getKey(), field.getValue());
 
                         if (!meta.contains(columnMeta))
                             meta.add(columnMeta);
@@ -479,25 +471,14 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             String schemaPattern = OdbcUtils.removeQuotationMarksIfNeeded(req.schema());
 
-            GridQueryIndexing indexing = ctx.query().getIndexing();
-
-            for (String cacheName : ctx.cache().cacheNames())
-            {
-                String cacheSchema = indexing.schema(cacheName);
-
-                if (!matches(cacheSchema, schemaPattern))
-                    continue;
-
-                Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(cacheName);
-
-                for (GridQueryTypeDescriptor table : tablesMeta) {
-                    if (!matches(table.name(), req.table()))
+            for (String cacheName : ctx.cache().publicCacheNames()) {
+                for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
+                    if (!matches(table.schemaName(), schemaPattern) ||
+                        !matches(table.tableName(), req.table()) ||
+                        !matches("TABLE", req.tableType()))
                         continue;
 
-                    if (!matches("TABLE", req.tableType()))
-                        continue;
-
-                    OdbcTableMeta tableMeta = new OdbcTableMeta(null, cacheName, table.name(), "TABLE");
+                    OdbcTableMeta tableMeta = new OdbcTableMeta(null, table.schemaName(), table.tableName(), "TABLE");
 
                     if (!meta.contains(tableMeta))
                         meta.add(tableMeta);
