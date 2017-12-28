@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Default idle timeout.
         /// </summary>
-        public static TimeSpan DefaultIdleTimeout = TimeSpan.Zero;
+        public static readonly TimeSpan DefaultIdleTimeout = TimeSpan.Zero;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientConnectorConfiguration"/> class.
