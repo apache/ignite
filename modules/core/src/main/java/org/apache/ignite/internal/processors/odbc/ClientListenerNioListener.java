@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -62,6 +63,9 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
     /** Logger. */
     private final IgniteLogger log;
 
+    /** Client connection config. */
+    ClientConnectorConfiguration cliConnCfg;
+
     /**
      * Constructor.
      *
@@ -69,11 +73,14 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
      * @param busyLock Shutdown busy lock.
      * @param maxCursors Maximum allowed cursors.
      */
-    public ClientListenerNioListener(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors) {
+    public ClientListenerNioListener(GridKernalContext ctx, GridSpinBusyLock busyLock,
+        ClientConnectorConfiguration cliConnCfg) {
+        assert cliConnCfg != null;
+
         this.ctx = ctx;
         this.busyLock = busyLock;
-        this.maxCursors = maxCursors;
-
+        this.maxCursors = cliConnCfg.getMaxOpenCursorsPerConnection();
+        this.cliConnCfg = cliConnCfg;
         log = ctx.log(getClass());
     }
 
@@ -190,9 +197,29 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
 
         ClientListenerProtocolVersion ver = ClientListenerProtocolVersion.create(verMajor, verMinor, verMaintenance);
 
-        byte clientType = reader.readByte();
+        ClientListenerConnectionContext connCtx;
 
-        ClientListenerConnectionContext connCtx = prepareContext(clientType);
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(8), null, null);
+
+        try {
+            byte clientType = reader.readByte();
+
+            connCtx = prepareContext(clientType);
+        }
+        catch (IgniteException e) {
+            writer.writeBoolean(false);
+            writer.writeShort((short)-1);
+            writer.writeShort((short)-1);
+            writer.writeShort((short)-1);
+
+            writer.doWriteString(e.getMessage());
+
+            ses.send(writer.array());
+
+            return;
+        }
+
+        assert connCtx != null;
 
         String errMsg = null;
 
@@ -206,9 +233,6 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
 
             errMsg = "Unsupported version.";
         }
-
-        // Send response.
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(8), null, null);
 
         if (errMsg == null)
             connCtx.handler().writeHandshake(writer);
@@ -234,14 +258,26 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
      */
     private ClientListenerConnectionContext prepareContext(byte clientType) {
         switch (clientType) {
-            case ODBC_CLIENT:
+            case ODBC_CLIENT: {
+                if (!cliConnCfg.isOdbcEnabled())
+                    throw new IgniteException("ODBC connection is not allowed.");
+
                 return new OdbcConnectionContext(ctx, busyLock, maxCursors);
+            }
 
-            case JDBC_CLIENT:
+            case JDBC_CLIENT: {
+                if (!cliConnCfg.isJdbcEnabled())
+                    throw new IgniteException("JDBC connection is not allowed.");
+
                 return new JdbcConnectionContext(ctx, busyLock, maxCursors);
+            }
 
-            case THIN_CLIENT:
+            case THIN_CLIENT: {
+                if (!cliConnCfg.isThinClientEnabled())
+                    throw new IgniteException("Thin client connection is not allowed.");
+
                 return new ClientConnectionContext(ctx, maxCursors);
+            }
 
             default:
                 throw new IgniteException("Unknown client type: " + clientType);

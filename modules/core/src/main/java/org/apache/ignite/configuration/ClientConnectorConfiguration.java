@@ -72,6 +72,15 @@ public class ClientConnectorConfiguration {
     /** Idle timeout. */
     private long idleTimeout = DFLT_IDLE_TIMEOUT;
 
+    /** JDBC connections enabled flag. */
+    private boolean jdbcEnabled = true;
+
+    /** ODBC connections enabled flag. */
+    private boolean odbcEnabled = true;
+
+    /** JDBC connections enabled flag. */
+    private boolean thinClientEnabled = true;
+
     /**
      * Creates SQL connector configuration with all default values.
      */
@@ -297,6 +306,42 @@ public class ClientConnectorConfiguration {
      */
     public ClientConnectorConfiguration setIdleTimeout(long idleTimeout) {
         this.idleTimeout = idleTimeout;
+
+        return this;
+    }
+
+    /** JDBC enabled flag getter. */
+    public boolean isJdbcEnabled() {
+        return jdbcEnabled;
+    }
+
+    /** JDBC enabled flag setter. */
+    public ClientConnectorConfiguration setJdbcEnabled(boolean jdbcEnabled) {
+        this.jdbcEnabled = jdbcEnabled;
+
+        return this;
+    }
+
+    /** ODBC enabled flag getter. */
+    public boolean isOdbcEnabled() {
+        return odbcEnabled;
+    }
+
+    /** ODBC enabled flag setter. */
+    public ClientConnectorConfiguration setOdbcEnabled(boolean odbcEnabled) {
+        this.odbcEnabled = odbcEnabled;
+
+        return this;
+    }
+
+    /** Thin client enabled flag getter. */
+    public boolean isThinClientEnabled() {
+        return thinClientEnabled;
+    }
+
+    /** Thin client enabled flag setter. */
+    public ClientConnectorConfiguration setThinClientEnabled(boolean thinClientEnabled) {
+        this.thinClientEnabled = thinClientEnabled;
 
         return this;
     }
