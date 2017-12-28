@@ -66,7 +66,9 @@ public class Dataset<Row extends DatasetRow> implements Serializable, Externaliz
      */
     public Dataset(Row[] data, String[] featureNames, int colSize) {
         this(data.length, colSize, featureNames);
+
         assert data != null;
+
         this.data = data;
     }
 

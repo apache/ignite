@@ -64,8 +64,7 @@ public class DatasetRow<V extends Vector> implements Serializable, Externalizabl
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int res = vector != null ? vector.hashCode() : 0;
-        return res;
+        return vector != null ? vector.hashCode() : 0;
     }
 
     /** {@inheritDoc} */

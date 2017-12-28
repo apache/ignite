@@ -53,10 +53,8 @@ public class LabeledDatasetTestTrainPair implements Serializable {
 
         final TreeSet<Integer> sortedTestIndices = getSortedIndices(datasetSize, testSize);
 
-
         LabeledVector[] testVectors = new LabeledVector[testSize];
         LabeledVector[] trainVectors = new LabeledVector[trainSize];
-
 
         int datasetCntr = 0;
         int trainCntr = 0;
