@@ -45,8 +45,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
-import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
@@ -775,7 +775,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      */
     private void map(Iterable<GridDhtCacheEntry> entries) {
         synchronized (this) {
-            if (mapped)
+            // Leave fast if timed out.
+            if (mapped || timedOut)
                 return;
 
             mapped = true;
@@ -820,6 +821,23 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                     }
                 }
                 catch (GridDhtInvalidPartitionException e) {
+                    synchronized (this) {
+                        if (!timedOut) {
+                            String msg = "Got entry removed exception after the MVCC candidate was added to the " +
+                                "entry (fill fail the lock future) [entry=" + entry + ", fut=" + this + ']';
+
+                            U.error(log, msg, msg, e);
+
+                            onDone(new IgniteCheckedException(msg, e));
+                        }
+                        else {
+                            U.warn(log, "Got entry removed exception after MVCC candidate was added to the entry " +
+                                "(most likely, a deadlock was detected) [entry=" + entry +
+                                ", tx=" + CU.txString(tx) + ']');
+
+                            return;
+                        }
+                    }
                     assert false : "DHT lock should never get invalid partition [err=" + e + ", fut=" + this + ']';
                 }
             }
