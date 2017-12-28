@@ -125,6 +125,9 @@ public class DataStorageConfiguration implements Serializable {
     /** Default thread local buffer size. */
     public static final int DFLT_TLB_SIZE = 128 * 1024;
 
+    /** Default thread local buffer size. */
+    public static final int DFLT_WAL_BUFF_SIZE = DFLT_WAL_SEGMENT_SIZE / 4;
+
     /** Default Wal flush frequency. */
     public static final int DFLT_WAL_FLUSH_FREQ = 2000;
 
@@ -206,6 +209,9 @@ public class DataStorageConfiguration implements Serializable {
     /** WAl thread local buffer size. */
     private int walTlbSize = DFLT_TLB_SIZE;
 
+    /** WAl buffer size. */
+    private int walBuffSize/* = DFLT_WAL_BUFF_SIZE*/;
+
     /** Wal flush frequency in milliseconds. */
     private long walFlushFreq = DFLT_WAL_FLUSH_FREQ;
 
@@ -231,7 +237,7 @@ public class DataStorageConfiguration implements Serializable {
      * rate-based metrics when next sub-interval has to be recycled but introduces bigger
      * calculation overhead.
      */
-    private int metricsSubIntervalCount = DFLT_SUB_INTERVALS;
+    private int metricsSubIntervalCnt = DFLT_SUB_INTERVALS;
 
     /** Time interval (in milliseconds) for rate-based metrics. */
     private long metricsRateTimeInterval = DFLT_RATE_TIME_INTERVAL_MILLIS;
@@ -649,7 +655,7 @@ public class DataStorageConfiguration implements Serializable {
      * @return The number of sub-intervals for history tracking.
      */
     public int getMetricsSubIntervalCount() {
-        return metricsSubIntervalCount;
+        return metricsSubIntervalCnt;
     }
 
     /**
@@ -658,7 +664,7 @@ public class DataStorageConfiguration implements Serializable {
      * @param metricsSubIntervalCnt The number of sub-intervals for history tracking.
      */
     public DataStorageConfiguration setMetricsSubIntervalCount(int metricsSubIntervalCnt) {
-        this.metricsSubIntervalCount = metricsSubIntervalCnt;
+        this.metricsSubIntervalCnt = metricsSubIntervalCnt;
 
         return this;
     }
@@ -703,6 +709,25 @@ public class DataStorageConfiguration implements Serializable {
      */
     public DataStorageConfiguration setWalThreadLocalBufferSize(int walTlbSize) {
         this.walTlbSize = walTlbSize;
+
+        return this;
+    }
+
+    /**
+     * Property defines size of WAL buffer.
+     * Each WAL record will be serialized to this buffer before write in WAL file.
+     *
+     * @return WAL buffer size.
+     */
+    public int getWalBufferSize() {
+        return walBuffSize <= 0 ? getWalSegmentSize() / 4 : walBuffSize;
+    }
+
+    /**
+     * @param walBuffSize WAL buffer size.
+     */
+    public DataStorageConfiguration setWalBufferSize(int walBuffSize) {
+        this.walBuffSize = walBuffSize;
 
         return this;
     }

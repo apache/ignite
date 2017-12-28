@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import java.nio.MappedByteBuffer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -30,6 +31,8 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -139,6 +142,13 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
         final Ignite grid = startGridsMultiThreaded(gridCount());
 
+        IgniteWriteAheadLogManager wal = ((IgniteKernal)grid).context().cache().context().wal();
+
+        boolean mmap = GridTestUtils.getFieldValue(wal, "mmap");
+
+        if (mmap)
+            return;
+
         grid.active(true);
 
         IgniteCache<Object, Object> cache = grid.cache(TEST_CACHE);
@@ -179,8 +189,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
         // We should await successful stop of node.
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override
-            public boolean apply() {
+            @Override public boolean apply() {
                 return grid.cluster().nodes().size() == gridCount();
             }
         }, getTestTimeout());
@@ -232,17 +241,21 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-            FileIO delegate = delegateFactory.create(file, modes);
+            final FileIO delegate = delegateFactory.create(file, modes);
 
             return new FileIODecorator(delegate) {
                 int writeAttempts = 2;
 
-                @Override public int write(ByteBuffer sourceBuffer) throws IOException {
-
+                @Override public int write(ByteBuffer srcBuf) throws IOException {
                     if (--writeAttempts <= 0 && fail!= null && fail.get())
                         throw new IOException("No space left on device");
 
-                    return super.write(sourceBuffer);
+                    return super.write(srcBuf);
+                }
+
+                /** {@inheritDoc} */
+                @Override public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
+                    return delegate.map(maxWalSegmentSize);
                 }
             };
         }
