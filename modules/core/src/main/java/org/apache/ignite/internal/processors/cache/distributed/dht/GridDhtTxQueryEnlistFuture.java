@@ -368,10 +368,8 @@ public final class GridDhtTxQueryEnlistFuture extends GridCacheFutureAdapter<Gri
         try {
             top.readLock();
 
-            List<GridDhtLocalPartition> parts = top.localPartitions();
-
             for (int i = 0; i < parts0.length; i++) {
-                GridDhtLocalPartition p = parts.get(i);
+                GridDhtLocalPartition p = top.localPartition(parts0[i]);
 
                 if (p == null || p.state() != GridDhtPartitionState.OWNING)
                     throw new ClusterTopologyCheckedException("Cannot run update query. " +
