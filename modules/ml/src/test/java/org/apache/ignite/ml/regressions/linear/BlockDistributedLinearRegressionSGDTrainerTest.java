@@ -27,7 +27,7 @@ public class BlockDistributedLinearRegressionSGDTrainerTest extends GridAwareAbs
     /** */
     public BlockDistributedLinearRegressionSGDTrainerTest() {
         super(
-            new LinearRegressionSGDTrainer(100_000, 1.0, 1e-12, 0.001),
+            new LinearRegressionSGDTrainer(100_000, 1e-12, 0.001),
             SparseBlockDistributedMatrix::new,
             SparseBlockDistributedVector::new,
             1e-2);

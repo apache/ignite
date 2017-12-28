@@ -17,21 +17,12 @@
 
 package org.apache.ignite.ml.optimization;
 
-import java.util.Collection;
-import java.util.Map;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.distributed.keys.RowColMatrixKey;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
-import org.apache.ignite.ml.math.impls.storage.matrix.SparseDistributedMatrixStorage;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.math.impls.vector.FunctionVector;
-import org.apache.ignite.ml.util.Utils;
+import org.apache.ignite.ml.optimization.util.SparseDistributedMatrixMapReducer;
 
 /**
  * Gradient descent optimizer.
@@ -51,11 +42,6 @@ public class GradientDescent {
      * Max number of gradient descent iterations.
      */
     private int maxIterations = 1000;
-
-    /**
-     * Fraction of data to be used for each SGD iteration.
-     */
-    private double miniBatchFraction = 1.0;
 
     /**
      * Convergence tolerance is condition which decides iteration termination.
@@ -87,20 +73,6 @@ public class GradientDescent {
     }
 
     /**
-     * Set fraction of data to be used for each SGD iteration.
-     *
-     * @param miniBatchFraction Fraction of data to be used for each SGD iteration
-     * @return This gradient descent instance
-     */
-    public GradientDescent withMiniBatchFraction(double miniBatchFraction) {
-        if (miniBatchFraction <= 0 || miniBatchFraction > 1.0)
-            throw new IllegalArgumentException("Fraction for mini-batch SGD must be in range (0, 1] but got "
-                + miniBatchFraction);
-        this.miniBatchFraction = miniBatchFraction;
-        return this;
-    }
-
-    /**
      * Sets convergence tolerance.
      *
      * @param convergenceTol Condition which decides iteration termination
@@ -124,7 +96,7 @@ public class GradientDescent {
         Vector weights = initialWeights, oldWeights = null, oldGradient = null;
         if (data instanceof SparseDistributedMatrix) {
             for (int iteration = 0; iteration < maxIterations; iteration++) {
-                Vector gradient = calculateDistributedGradient((SparseDistributedMatrix) data, weights);
+                Vector gradient = calculateDistributedGradient((SparseDistributedMatrix)data, weights);
                 Vector newWeights = updater.compute(oldWeights, oldGradient, weights, gradient, iteration);
                 if (isConverged(weights, newWeights))
                     return newWeights;
@@ -153,48 +125,33 @@ public class GradientDescent {
         return weights;
     }
 
+    /**
+     * Calculates gradient based in distributed matrix using {@link SparseDistributedMatrixMapReducer}.
+     *
+     * @param data Distributed matrix
+     * @param weights Point to calculate gradient
+     * @return Gradient
+     */
     private Vector calculateDistributedGradient(SparseDistributedMatrix data, Vector weights) {
-        Ignite ignite = Ignition.localIgnite();
-        SparseDistributedMatrixStorage storage = (SparseDistributedMatrixStorage)data.getStorage();
-        String cacheName = storage.cacheName();
-        int columnSize = data.columnSize();
-        Collection<Vector> results = ignite
-            .compute(ignite.cluster().forDataNodes(cacheName))
-            .broadcast(point -> {
-                Ignite ig = Ignition.localIgnite();
-                Affinity<RowColMatrixKey> affinity = ig.affinity(cacheName);
-                ClusterNode locNode = ig.cluster().localNode();
-                Map<ClusterNode, Collection<RowColMatrixKey>> keysCToNodes = affinity.mapKeysToNodes(storage.getAllKeys());
-                Collection<RowColMatrixKey> locKeys = keysCToNodes.get(locNode);
-                if (locKeys != null) {
-                    Matrix inputs = new DenseLocalOnHeapMatrix(locKeys.size(), columnSize);
-                    Vector groundTruth = new DenseLocalOnHeapVector(locKeys.size());
-                    int index = 0;
-                    for (RowColMatrixKey key : locKeys) {
-                        Map<Integer, Double> row = storage.cache().get(key);
-                        inputs.set(index, 0, 1.0);
-                        for (Map.Entry<Integer,Double> cell : row.entrySet()) {
-                            if (cell.getKey().equals(0))
-                                groundTruth.set(index, cell.getValue());
-                            else
-                                inputs.set(index, cell.getKey(), cell.getValue());
-                        }
-                        index++;
+        SparseDistributedMatrixMapReducer mapReducer = new SparseDistributedMatrixMapReducer(data);
+        return mapReducer.mapReduce(
+            (matrix, args) -> {
+                Matrix inputs = extractInputs(matrix);
+                Vector groundTruth = extractGroundTruth(matrix);
+                return lossGradient.compute(inputs, groundTruth, args);
+            },
+            gradients -> {
+                Vector resultGradient = new DenseLocalOnHeapVector(data.columnSize());
+                int count = 0;
+                for (Vector gradient : gradients) {
+                    if (gradient != null) {
+                        resultGradient = resultGradient.plus(gradient);
+                        count++;
                     }
-                    LeastSquaresGradientFunction gradientFunction = new LeastSquaresGradientFunction();
-                    return gradientFunction.compute(inputs, groundTruth, point);
                 }
-                return null;
-            }, weights);
-        Vector result = new DenseLocalOnHeapVector(data.columnSize());
-        int count = 0;
-        for (Vector v : results) {
-            if (v != null) {
-                result = result.plus(v);
-                count++;
-            }
-        }
-        return result.divide(count);
+                return resultGradient.divide(count);
+            },
+            weights);
     }
 
     /**
@@ -211,31 +168,6 @@ public class GradientDescent {
             double solutionVectorDiff = weights.minus(newWeights).kNorm(2.0);
             return solutionVectorDiff < convergenceTol * Math.max(newWeights.kNorm(2.0), 1.0);
         }
-    }
-
-    /**
-     * Extracts subset of inputs and ground truth parameters in accordance with {@code stochastic} flag.
-     *
-     * @param inputs Inputs parameters of loss function
-     * @param groundTruth Ground truth parameters of loss function
-     * @return Batch with inputs and ground truth parameters
-     */
-    private Batch computeBatch(Matrix inputs, Vector groundTruth) {
-        Matrix batchInputs = inputs;
-        Vector batchGroundTruth = groundTruth;
-        if (inputs.rowSize() > 0 && miniBatchFraction < 1.0) {
-            int miniBatchSize = (int)(inputs.rowSize() * miniBatchFraction);
-            if (miniBatchSize == 0)
-                miniBatchSize = 1;
-            int[] indexes = Utils.selectKDistinct(inputs.rowSize(), miniBatchSize);
-            batchInputs = batchInputs.like(miniBatchSize, batchInputs.columnSize());
-            batchGroundTruth = batchGroundTruth.like(miniBatchSize);
-            for (int i = 0; i < miniBatchSize; i++) {
-                batchInputs.assignRow(i, inputs.getRow(indexes[i]));
-                batchGroundTruth.set(i, groundTruth.get(indexes[i]));
-            }
-        }
-        return new Batch(batchInputs, batchGroundTruth);
     }
 
     /**
@@ -258,33 +190,5 @@ public class GradientDescent {
         data = data.copy();
         data.assignColumn(0, new FunctionVector(data.rowSize(), row -> 1.0));
         return data;
-    }
-
-    /**
-     * Batch which encapsulates subset in input data (inputs and ground truth).
-     */
-    private static class Batch {
-
-        /** */
-        private final Matrix inputs;
-
-        /** */
-        private final Vector groundTruth;
-
-        /** */
-        public Batch(Matrix inputs, Vector groundTruth) {
-            this.inputs = inputs;
-            this.groundTruth = groundTruth;
-        }
-
-        /** */
-        public Matrix getInputs() {
-            return inputs;
-        }
-
-        /** */
-        public Vector getGroundTruth() {
-            return groundTruth;
-        }
     }
 }

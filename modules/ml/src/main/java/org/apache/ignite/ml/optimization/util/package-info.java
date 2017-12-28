@@ -15,21 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.regressions.linear;
-
-import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
-import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
-
 /**
- * Tests for {@link LinearRegressionSGDTrainer} on {@link SparseDistributedMatrix}.
+ * <!-- Package description. -->
+ * Contains util classes used in optimization package.
  */
-public class DistributedLinearRegressionSGDTrainerTest extends GridAwareAbstractLinearRegressionTrainerTest {
-    /** */
-    public DistributedLinearRegressionSGDTrainerTest() {
-        super(
-            new LinearRegressionSGDTrainer(100_000, 1e-12, 0.001),
-            SparseDistributedMatrix::new,
-            SparseDistributedVector::new,
-            1e-2);
-    }
-}
+package org.apache.ignite.ml.optimization.util;
