@@ -1589,7 +1589,8 @@ public class PlatformConfigurationUtils {
                 .setSocketReceiveBufferSize(in.readInt())
                 .setTcpNoDelay(in.readBoolean())
                 .setMaxOpenCursorsPerConnection(in.readInt())
-                .setThreadPoolSize(in.readInt());
+                .setThreadPoolSize(in.readInt())
+                .setIdleTimeout(in.readLong());
     }
 
     /**
@@ -1611,6 +1612,7 @@ public class PlatformConfigurationUtils {
             w.writeBoolean(cfg.isTcpNoDelay());
             w.writeInt(cfg.getMaxOpenCursorsPerConnection());
             w.writeInt(cfg.getThreadPoolSize());
+            w.writeLong(cfg.getIdleTimeout());
         } else {
             w.writeBoolean(false);
         }

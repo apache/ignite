@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.util;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -29,7 +31,9 @@ import org.apache.ignite.IgniteSystemProperties;
 import sun.misc.JavaNioAccess;
 import sun.misc.SharedSecrets;
 import sun.misc.Unsafe;
-import sun.nio.ch.DirectBuffer;
+
+import static org.apache.ignite.internal.util.IgniteUtils.jdkVersion;
+import static org.apache.ignite.internal.util.IgniteUtils.majorJavaVersion;
 
 /**
  * <p>Wrapper for {@link sun.misc.Unsafe} class.</p>
@@ -102,6 +106,18 @@ public abstract class GridUnsafe {
     /** {@link java.nio.Buffer#address} field offset. */
     private static final long DIRECT_BUF_ADDR_OFF = bufferAddressOffset();
 
+    /** Cleaner code for direct {@code java.nio.ByteBuffer}. */
+    private static final DirectBufferCleaner DIRECT_BUF_CLEANER =
+        majorJavaVersion(jdkVersion()) < 9
+            ? new ReflectiveDirectBufferCleaner()
+            : new UnsafeDirectBufferCleaner();
+
+    /** */
+    private static final Base64Encoder BASE64_ENC =
+        majorJavaVersion(jdkVersion()) < 8
+            ? new LegacyBase64Encoder()
+            : new Base64EncoderImpl();
+
     /**
      * Ensure singleton.
      */
@@ -117,7 +133,7 @@ public abstract class GridUnsafe {
     public static ByteBuffer wrapPointer(long ptr, int len) {
         ByteBuffer buf = nioAccess.newDirectByteBuffer(ptr, len, null);
 
-        assert buf instanceof DirectBuffer;
+        assert buf.isDirect();
 
         buf.order(NATIVE_BYTE_ORDER);
 
@@ -1344,6 +1360,32 @@ public abstract class GridUnsafe {
     }
 
     /**
+     * Invokes some method on {@code sun.misc.Unsafe} instance.
+     *
+     * @param mtd Method.
+     * @param args Arguments.
+     */
+    public static Object invoke(Method mtd, Object... args) {
+        try {
+            return mtd.invoke(UNSAFE, args);
+        }
+        catch (IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException("Unsafe invocation failed [cls=" + UNSAFE.getClass() + ", mtd=" + mtd + ']', e);
+        }
+    }
+
+    /**
+     * Cleans direct {@code java.nio.ByteBuffer}
+     *
+     * @param buf Direct buffer.
+     */
+    public static void cleanDirectBuffer(ByteBuffer buf) {
+        assert buf.isDirect();
+
+        DIRECT_BUF_CLEANER.clean(buf);
+    }
+
+    /**
      * Returns unaligned flag.
      */
     private static boolean unaligned() {
@@ -1710,5 +1752,15 @@ public abstract class GridUnsafe {
             UNSAFE.putByte(addr + 1, (byte)(val >> 8));
             UNSAFE.putByte(addr, (byte)(val));
         }
+    }
+
+    /**
+     * Encodes bytes into Base64 string.
+     *
+     * @param msg Message to encode.
+     * @return Encoded message.
+     */
+    public static String encodeBase64(byte[] msg) {
+        return BASE64_ENC.encode(msg);
     }
 }
