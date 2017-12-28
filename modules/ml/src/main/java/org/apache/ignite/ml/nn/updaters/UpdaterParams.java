@@ -28,5 +28,5 @@ public interface UpdaterParams<T> {
      *
      * @param obj Object to be updated.
      */
-    <M extends T> M update(M mdl);
+    <M extends T> M update(M obj);
 }

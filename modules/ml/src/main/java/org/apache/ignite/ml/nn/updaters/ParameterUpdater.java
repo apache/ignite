@@ -41,7 +41,7 @@ public interface ParameterUpdater<M, P extends UpdaterParams> {
      * Update updater parameters.
      *
      * @param mdl Model to be updated.
-     * @param updaterParameters Updater parameters to updateModel.
+     * @param updaterParameters Updater parameters to update.
      * @param iteration Current trainer iteration.
      * @param inputs Inputs.
      * @param groundTruth True values.

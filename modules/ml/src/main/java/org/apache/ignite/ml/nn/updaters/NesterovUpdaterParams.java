@@ -32,7 +32,7 @@ public class NesterovUpdaterParams implements UpdaterParams<SmoothParametrized> 
     /**
      * Construct NesterovUpdaterParams.
      *
-     * @param paramsCnt Count of parameters on which updateModel happens.
+     * @param paramsCnt Count of parameters on which update happens.
      */
     public NesterovUpdaterParams(int paramsCnt) {
         prevIterationUpdates = new DenseLocalOnHeapVector(paramsCnt).assign(0);
