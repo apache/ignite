@@ -23,6 +23,7 @@ import org.apache.ignite.ml.regressions.linear.DistributedLinearRegressionQRTrai
 import org.apache.ignite.ml.regressions.linear.DistributedLinearRegressionSGDTrainerTest;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModelTest;
 import org.apache.ignite.ml.regressions.linear.LocalLinearRegressionQRTrainerTest;
+import org.apache.ignite.ml.regressions.linear.LocalLinearRegressionSGDTrainerTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -33,7 +34,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     LinearRegressionModelTest.class,
     LocalLinearRegressionQRTrainerTest.class,
-    LocalLinearRegressionQRTrainerTest.class,
+    LocalLinearRegressionSGDTrainerTest.class,
     DistributedLinearRegressionQRTrainerTest.class,
     DistributedLinearRegressionSGDTrainerTest.class,
     BlockDistributedLinearRegressionQRTrainerTest.class,
