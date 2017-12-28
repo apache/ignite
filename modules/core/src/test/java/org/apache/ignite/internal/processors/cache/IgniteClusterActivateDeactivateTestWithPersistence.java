@@ -210,9 +210,8 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
             }
         }, "client-starter-thread");
 
-        //Uncomment these lines to make test hang
-//        clientStartLatch.countDown();
-//        srv.active(true);
+        clientStartLatch.countDown();
+        srv.active(true);
 
         clStartFut.get();
     }
