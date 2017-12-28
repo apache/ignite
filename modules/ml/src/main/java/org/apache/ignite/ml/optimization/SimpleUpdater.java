@@ -15,32 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.regressions;
+package org.apache.ignite.ml.optimization;
 
-import java.io.Serializable;
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.decompositions.QRDSolver;
+import org.apache.ignite.ml.math.Vector;
 
 /**
- * Linear regression model representation.
- *
- * @see OLSMultipleLinearRegressionModel
+ * Simple updater with fixed learning rate which doesn't guarantee convergence.
  */
-public class OLSMultipleLinearRegressionModelFormat implements Serializable {
-    /** X sample data. */
-    private final Matrix xMatrix;
-
-    /** Whether or not the regression model includes an intercept.  True means no intercept. */
-    private final QRDSolver solver;
+public class SimpleUpdater implements Updater {
+    /** */
+    private static final long serialVersionUID = 6417716224818162225L;
 
     /** */
-    public OLSMultipleLinearRegressionModelFormat(Matrix xMatrix, QRDSolver solver) {
-        this.xMatrix = xMatrix;
-        this.solver = solver;
+    private final double learningRate;
+
+    /** */
+    public SimpleUpdater(double learningRate) {
+        assert learningRate > 0;
+
+        this.learningRate = learningRate;
     }
 
-    /** */
-    public OLSMultipleLinearRegressionModel getOLSMultipleLinearRegressionModel() {
-        return new OLSMultipleLinearRegressionModel(xMatrix, solver);
+    /**
+     * {@inheritDoc}
+     */
+    @Override public Vector compute(Vector oldWeights, Vector oldGradient, Vector weights, Vector gradient, int iteration) {
+        return weights.minus(gradient.times(learningRate));
     }
 }

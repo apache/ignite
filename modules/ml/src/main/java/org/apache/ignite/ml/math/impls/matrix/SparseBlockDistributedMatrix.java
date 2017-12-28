@@ -38,7 +38,6 @@ import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.impls.storage.matrix.BlockMatrixStorage;
 import org.apache.ignite.ml.math.impls.storage.matrix.BlockVectorStorage;
 import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
-import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 import org.apache.ignite.ml.math.impls.vector.VectorBlockEntry;
 
 /**
@@ -229,7 +228,7 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
     @Override public Vector getCol(int col) {
         checkColumnIndex(col);
 
-        Vector res = new SparseDistributedVector(rowSize());
+        Vector res = new SparseBlockDistributedVector(rowSize());
 
         for (int i = 0; i < rowSize(); i++)
             res.setX(i, getX(i, col));
@@ -240,7 +239,7 @@ public class SparseBlockDistributedMatrix extends AbstractMatrix implements Stor
     @Override public Vector getRow(int row) {
         checkRowIndex(row);
 
-        Vector res = new SparseDistributedVector(columnSize());
+        Vector res = new SparseBlockDistributedVector(columnSize());
 
         for (int i = 0; i < columnSize(); i++)
             res.setX(i, getX(row, i));
