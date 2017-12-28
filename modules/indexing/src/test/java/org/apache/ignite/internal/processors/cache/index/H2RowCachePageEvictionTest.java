@@ -158,7 +158,7 @@ public class H2RowCachePageEvictionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception On error.
      */
-    public void testEvcitPagesWithoutDiskStorage() throws Exception {
+    public void testEvictPagesWithoutDiskStorage() throws Exception {
         persistenceEnabled = false;
 
         startGrid();
