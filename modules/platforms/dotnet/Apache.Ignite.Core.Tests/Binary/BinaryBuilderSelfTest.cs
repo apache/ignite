@@ -556,10 +556,11 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestEmptyDefined()
         {
-            IBinaryObject binObj = _grid.GetBinary().GetBuilder(typeof(Empty)).Build();
+            var binObj = (BinaryObject) _grid.GetBinary().GetBuilder(typeof(Empty)).Build();
 
             Assert.IsNotNull(binObj);
             Assert.AreEqual(1, binObj.GetHashCode());
+            Assert.AreEqual(0, binObj.Header.SchemaId);
 
             IBinaryType meta = binObj.GetBinaryType();
 

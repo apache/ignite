@@ -113,6 +113,9 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
     /** Type: binary enum. */
     private static final int TYPE_BINARY_ENUM = 23;
 
+    /** Type: empty binary object. */
+    private static final int TYPE_BINARY_EMPTY = 24;
+
     /** Default cache name. */
     public static final String DEFAULT_CACHE_NAME = "default";
 
@@ -241,6 +244,10 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
                     ignite.binary().registerEnum("JavaDynEnum", values);
 
                     return ignite.binary().buildEnum("JavaDynEnum", "JavaFoo");
+                }
+
+                case TYPE_BINARY_EMPTY: {
+                    return ignite.binary().builder("JavaEmptyTypeTest").build();
                 }
 
                 default:

@@ -117,6 +117,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** Echo type: binary enum (created with builder). */
         private const int EchoTypeBinaryEnum = 23;
 
+        /** Echo type: empty object (created with builder). */
+        private const int EchoTypeBinaryEmpty = 24;
+
         /// <summary>
         /// Test echo with decimals.
         /// </summary>
@@ -506,6 +509,19 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
+        /// Tests the echo task returning enum.
+        /// </summary>
+        [Test]
+        public void TestEchoTaskBinaryEmpty()
+        {
+            var res = _grid1.GetCompute().WithKeepBinary()
+                .ExecuteJavaTask<BinaryObject>(EchoTask, EchoTypeBinaryEmpty);
+
+            Assert.AreEqual("JavaEmptyTypeTest", res.GetBinaryType().TypeName);
+            Assert.AreEqual(0, res.Header.SchemaId);
+        }
+
+        /// <summary>
         /// Test for binary argument in Java.
         /// </summary>
         [Test]
@@ -578,5 +594,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(1)).GetNodes().Count);
         }
+
+
     }
 }
