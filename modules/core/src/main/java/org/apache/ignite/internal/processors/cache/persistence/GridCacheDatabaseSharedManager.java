@@ -817,50 +817,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         return res;
     }
 
-    /**
-     * @throws IgniteCheckedException
-     */
-    private void getMetastoreData() throws IgniteCheckedException {
-        try {
-            DataStorageConfiguration memCfg = cctx.kernalContext().config().getDataStorageConfiguration();
-
-            DataRegionConfiguration plcCfg = createDataRegionConfiguration(memCfg);
-
-            File allocPath = buildAllocPath(plcCfg);
-
-            DirectMemoryProvider memProvider = allocPath == null ?
-                new UnsafeMemoryProvider(log) :
-                new MappedFileMemoryProvider(
-                    log,
-                    allocPath);
-
-            DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(plcCfg);
-
-            PageMemoryEx storePageMem = (PageMemoryEx)createPageMemory(memProvider, memCfg, plcCfg, memMetrics, false);
-
-            DataRegion regCfg = new DataRegion(storePageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg, storePageMem));
-
-            CheckpointStatus status = readCheckpointStatus();
-
-            cctx.pageStore().initializeForMetastorage();
-
-            restoreMemory(status, true, storePageMem);
-
-            metaStorage = new MetaStorage(cctx.wal(), regCfg, memMetrics, true);
-
-            metaStorage.init(this);
-
-            // here get some data
-
-            metaStorage = null;
-
-            storePageMem.stop();
-        }
-        catch (StorageException e) {
-            throw new IgniteCheckedException(e);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public void lock() throws IgniteCheckedException {
         if (fileLockHolder != null) {
