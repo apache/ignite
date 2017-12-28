@@ -15,24 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.internal.util;
 
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgnitePdsWalTlbTest;
+import java.nio.ByteBuffer;
 
 /**
- *
+ * Cleaner interface for {@code java.nio.ByteBuffer}.
  */
-public class IgnitePdsOutOfMemoryTestSuite extends TestSuite {
+public interface DirectBufferCleaner {
     /**
-     * @return Suite.
-     * @throws Exception If failed.
+     * Cleans direct buffer.
+     *
+     * @param buf direct buffer.
      */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Persistent Store OOM Test Suite");
-
-        suite.addTestSuite(IgnitePdsWalTlbTest.class);
-
-        return suite;
-    }
+    public void clean(ByteBuffer buf);
 }

@@ -113,6 +113,37 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
     }
 
     /**
+     * Checks presence of specific table column and returns it.
+     *
+     * @param node Node to check.
+     * @param schemaName Schema name to look for the table in.
+     * @param tblName Table name to check.
+     * @param colName Column name whose presence must be checked.
+     * @return field or {@code null} if not found.
+     * @throws SQLException if failed.
+     */
+    static QueryField getColumnMeta(IgniteEx node, String schemaName, String tblName, String colName)
+        throws SQLException {
+        try (Connection c = connect(node)) {
+            try (ResultSet rs = c.getMetaData().getColumns(null, schemaName, tblName, colName)) {
+                while (rs.next()) {
+                    String name = rs.getString("COLUMN_NAME");
+
+                    short type = rs.getShort("DATA_TYPE");
+
+                    String typeClsName = DataType.getTypeClassName(DataType.convertSQLTypeToValueType(type));
+
+                    short nullable = rs.getShort("NULLABLE");
+
+                    return new QueryField(name, typeClsName, nullable == 1);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * @param name New column name.
      * @param typeName Class name for this new column's data type.
      * @return New column with given name and type.

@@ -583,6 +583,8 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         Ignite cli = ignitionStart(clientConfiguration(4));
 
+        waitForDiscovery(srv1, grid(2), grid(3), cli);
+
         // Start cache and populate it with data.
         createSqlCache(cli);
 
