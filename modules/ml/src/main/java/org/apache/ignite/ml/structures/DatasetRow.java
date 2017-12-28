@@ -29,7 +29,6 @@ public class DatasetRow<V extends Vector> implements Serializable, Externalizabl
     /** Vector. */
     protected V vector;
 
-
     /**
      * Default constructor (required by Externalizable).
      */
