@@ -1864,6 +1864,9 @@ public class PageMemoryImpl implements PageMemoryEx {
         private void clearRowCache(FullPageId fullPageId, long absPtr) throws IgniteCheckedException {
             assert writeLock().isHeldByCurrentThread();
 
+            if (!ctx.kernalContext().query().moduleEnabled())
+                return;
+
             long pageAddr = readLockPage(absPtr, fullPageId, true, false);
 
             try {
