@@ -399,8 +399,6 @@
             <properties>
                 <domain-lib-dir>${project.build.directory}/domainlib</domain-lib-dir>
                 <domain-jar>domain.jar</domain-jar>
-
-                <javax.cache.tck.version>1.0.1</javax.cache.tck.version>
             </properties>
 
             <dependencies>
@@ -421,7 +419,7 @@
                 <dependency>
                     <groupId>org.hamcrest</groupId>
                     <artifactId>hamcrest-library</artifactId>
-                    <version>1.2</version>
+                    <version>${hamcrest.version}</version>
                     <scope>test</scope>
                 </dependency>
             </dependencies>
