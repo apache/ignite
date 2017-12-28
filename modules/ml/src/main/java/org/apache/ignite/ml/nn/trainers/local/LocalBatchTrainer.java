@@ -28,7 +28,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.apache.ignite.ml.nn.LocalBatchTrainerInput;
-import org.apache.ignite.ml.nn.updaters.ParameterUpdateBuilder;
+import org.apache.ignite.ml.nn.updaters.ParameterUpdateCalculator;
 
 /**
  * Batch trainer. This trainer is not distributed on the cluster, but input can theoretically read data from
@@ -39,7 +39,7 @@ public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P>
     /**
      * Supplier for updater function.
      */
-    private final IgniteSupplier<ParameterUpdateBuilder<M, P>> updaterSupplier;
+    private final IgniteSupplier<ParameterUpdateCalculator<M, P>> updaterSupplier;
 
     /**
      * Error threshold.
@@ -70,7 +70,7 @@ public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P>
      * @param maxIterations Maximal iterations count.
      */
     public LocalBatchTrainer(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
-        IgniteSupplier<ParameterUpdateBuilder<M, P>> updaterSupplier, double errorThreshold, int maxIterations) {
+        IgniteSupplier<ParameterUpdateCalculator<M, P>> updaterSupplier, double errorThreshold, int maxIterations) {
         this.loss = loss;
         this.updaterSupplier = updaterSupplier;
         this.errorThreshold = errorThreshold;
@@ -83,7 +83,7 @@ public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P>
         M mdl = data.mdl();
         double err;
 
-        ParameterUpdateBuilder<? super M, P> updater = updaterSupplier.get();
+        ParameterUpdateCalculator<? super M, P> updater = updaterSupplier.get();
 
         P updaterParams = updater.init(mdl, loss);
 
@@ -131,7 +131,7 @@ public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P>
      * @param updaterSupplier New updater supplier.
      * @return new trainer with the same parameters as this trainer, but with new updater supplier.
      */
-    public LocalBatchTrainer withUpdater(IgniteSupplier<ParameterUpdateBuilder<M, P>> updaterSupplier) {
+    public LocalBatchTrainer withUpdater(IgniteSupplier<ParameterUpdateCalculator<M, P>> updaterSupplier) {
         return new LocalBatchTrainer<>(loss, updaterSupplier, errorThreshold, maxIterations);
     }
 

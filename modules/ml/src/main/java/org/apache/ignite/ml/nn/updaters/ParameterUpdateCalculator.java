@@ -28,7 +28,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
  * @param <M> Type of model to be updated.
  * @param <P> Type of parameters needed for this updater.
  */
-public interface ParameterUpdateBuilder<M, P> {
+public interface ParameterUpdateCalculator<M, P> {
     /**
      * Initializes the updater.
      *

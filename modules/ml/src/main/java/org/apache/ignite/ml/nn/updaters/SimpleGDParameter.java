@@ -21,7 +21,7 @@ import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
- * Parameters for {@link SimpleGDUpdateBuilder}.
+ * Parameters for {@link SimpleGDUpdateCalculator}.
  */
 public class SimpleGDParameter {
     /**

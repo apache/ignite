@@ -29,7 +29,7 @@ import org.apache.ignite.ml.math.util.MatrixUtil;
  * <p>
  * See <a href="https://paginas.fe.up.pt/~ee02162/dissertacao/RPROP%20paper.pdf">RProp</a>.</p>
  */
-public class RPropUpdateBuilder<M extends SmoothParametrized> implements ParameterUpdateBuilder<M, RPropParameterUpdate> {
+public class RPropUpdateCalculator<M extends SmoothParametrized> implements ParameterUpdateCalculator<M, RPropParameterUpdate> {
     /**
      * Default initial update.
      */
@@ -76,22 +76,22 @@ public class RPropUpdateBuilder<M extends SmoothParametrized> implements Paramet
     protected IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
 
     /**
-     * Construct RPropUpdateBuilder.
+     * Construct RPropUpdateCalculator.
      *
      * @param initUpdate Initial update.
      * @param accelerationRate Acceleration rate.
      * @param deaccelerationRate Deacceleration rate.
      */
-    public RPropUpdateBuilder(double initUpdate, double accelerationRate, double deaccelerationRate) {
+    public RPropUpdateCalculator(double initUpdate, double accelerationRate, double deaccelerationRate) {
         this.initUpdate = initUpdate;
         this.accelerationRate = accelerationRate;
         this.deaccelerationRate = deaccelerationRate;
     }
 
     /**
-     * Construct RPropUpdateBuilder with default parameters.
+     * Construct RPropUpdateCalculator with default parameters.
      */
-    public RPropUpdateBuilder() {
+    public RPropUpdateCalculator() {
         this(DFLT_INIT_UPDATE, DFLT_ACCELERATION_RATE, DFLT_DEACCELERATION_RATE);
     }
 

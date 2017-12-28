@@ -25,7 +25,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 /**
  * Simple gradient descent parameters updater.
  */
-public class SimpleGDUpdateBuilder<M extends SmoothParametrized> implements ParameterUpdateBuilder<M, SimpleGDParameter> {
+public class SimpleGDUpdateCalculator<M extends SmoothParametrized> implements ParameterUpdateCalculator<M, SimpleGDParameter> {
     /**
      * Learning rate.
      */
@@ -37,11 +37,11 @@ public class SimpleGDUpdateBuilder<M extends SmoothParametrized> implements Para
     protected IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
 
     /**
-     * Construct SimpleGDUpdateBuilder.
+     * Construct SimpleGDUpdateCalculator.
      *
      * @param learningRate Learning rate.
      */
-    public SimpleGDUpdateBuilder(double learningRate) {
+    public SimpleGDUpdateCalculator(double learningRate) {
         this.learningRate = learningRate;
     }
 

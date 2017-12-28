@@ -25,7 +25,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 /**
  * Class encapsulating Nesterov algorithm for MLP parameters update.
  */
-public class NesterovUpdateBuilder<M extends SmoothParametrized> implements ParameterUpdateBuilder<M, NesterovParameterUpdate> {
+public class NesterovUpdateCalculator<M extends SmoothParametrized> implements ParameterUpdateCalculator<M, NesterovParameterUpdate> {
     /**
      * Learning rate.
      */
@@ -42,11 +42,11 @@ public class NesterovUpdateBuilder<M extends SmoothParametrized> implements Para
     protected double momentum;
 
     /**
-     * Construct NesterovUpdateBuilder.
+     * Construct NesterovUpdateCalculator.
      *
      * @param momentum Momentum constant.
      */
-    public NesterovUpdateBuilder(double learningRate, double momentum) {
+    public NesterovUpdateCalculator(double learningRate, double momentum) {
         this.learningRate = learningRate;
         this.momentum = momentum;
     }
