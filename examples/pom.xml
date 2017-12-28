@@ -221,6 +221,7 @@
 
             <properties>
                 <ml.folder>src/main/ml</ml.folder>
+                <ml.test.folder>src/test/ml</ml.test.folder>
                 <java.ver>1.8</java.ver>
             </properties>
 
@@ -313,6 +314,7 @@
                                 <source>${lgpl.test.folder}</source>
                                 <source>${spark.test.folder}</source>
                                 <source>${java8.test.folder}</source>
+                                <source>${ml.test.folder}</source>
                             </sources>
                         </configuration>
                     </execution>
