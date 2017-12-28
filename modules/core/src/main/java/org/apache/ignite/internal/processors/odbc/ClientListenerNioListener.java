@@ -64,14 +64,14 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
     private final IgniteLogger log;
 
     /** Client connection config. */
-    ClientConnectorConfiguration cliConnCfg;
+    private ClientConnectorConfiguration cliConnCfg;
 
     /**
      * Constructor.
      *
      * @param ctx Context.
      * @param busyLock Shutdown busy lock.
-     * @param maxCursors Maximum allowed cursors.
+     * @param cliConnCfg Client connector configuration.
      */
     public ClientListenerNioListener(GridKernalContext ctx, GridSpinBusyLock busyLock,
         ClientConnectorConfiguration cliConnCfg) {
