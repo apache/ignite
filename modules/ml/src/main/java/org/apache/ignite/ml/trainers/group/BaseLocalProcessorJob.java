@@ -108,7 +108,7 @@ public abstract class BaseLocalProcessorJob<K, V, T, R extends Serializable> imp
     /** {@inheritDoc} */
     @Override public R execute() throws IgniteException {
         List<ResultAndUpdates<R>> resultsAndUpdates = toProcess().
-            map(worker::apply).
+            map(worker).
             collect(Collectors.toList());
 
         ResultAndUpdates<R> totalRes = ResultAndUpdates.sum(reducer, identity, resultsAndUpdates);

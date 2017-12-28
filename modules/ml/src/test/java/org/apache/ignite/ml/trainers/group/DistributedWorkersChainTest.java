@@ -40,7 +40,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
     private static final int NODE_COUNT = 4;
 
     /** Grid instance. */
-    protected Ignite ignite;
+    private Ignite ignite;
 
     /**
      * Default constructor.
@@ -69,6 +69,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
+    /** */
     public void testId() {
         ComputationsChain<TestLocalContext, Double, Integer, Integer, Integer> chain = Chains.create();
 
@@ -78,6 +79,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         Assert.assertEquals(1L, (long)res);
     }
 
+    /** */
     public void testSimpleLocal() {
         ComputationsChain<TestLocalContext, Double, Integer, Integer, Integer> chain = Chains.create();
 
@@ -95,6 +97,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         Assert.assertEquals(initLocCtxData, locCtx.data());
     }
 
+    /** */
     public void testChainLocal() {
         ComputationsChain<TestLocalContext, Double, Integer, Integer, Integer> chain = Chains.create();
 
@@ -113,6 +116,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         Assert.assertEquals(initLocCtxData, locCtx.data());
     }
 
+    /** */
     public void testChangeLocalContext() {
         ComputationsChain<TestLocalContext, Double, Integer, Integer, Integer> chain = Chains.create();
         IgniteCache<GroupTrainerCacheKey<Double>, Integer> cache = TestGroupTrainingCache.getOrCreate(ignite);
@@ -129,6 +133,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         Assert.assertEquals(init, res.intValue());
     }
 
+    /** */
     public void testDistributed() {
         ComputationsChain<TestLocalContext, Double, Integer, Integer, Integer> chain = Chains.create();
         IgniteCache<GroupTrainerCacheKey<Double>, Integer> cache = TestGroupTrainingCache.getOrCreate(ignite);
@@ -153,9 +158,9 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
             thenDistributedForEntries((integer, context) -> () -> null, this::readAndIncrement, function, max, Integer.MIN_VALUE).
             process(init, new GroupTrainingContext<>(locCtx, cache, ignite));
 
-        int localMax = m.values().stream().max(Comparator.comparingInt(i -> i)).orElse(Integer.MIN_VALUE);
+        int locMax = m.values().stream().max(Comparator.comparingInt(i -> i)).orElse(Integer.MIN_VALUE);
 
-        assertEquals((long)localMax, (long)res);
+        assertEquals((long)locMax, (long)res);
 
         for (GroupTrainerCacheKey<Double> key : m.keySet())
             m.compute(key, (k, v) -> v + 1);
@@ -163,6 +168,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         assertMapEqualsCache(m, cache);
     }
 
+    /** */
     private ResultAndUpdates<Integer> readAndIncrement(EntryAndContext<Double, Integer, Void> ec) {
         Integer val = ec.entry().getValue();
 
@@ -172,6 +178,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         return res;
     }
 
+    /** */
     private <K, V> void assertMapEqualsCache(Map<K, V> m, IgniteCache<K, V> cache) {
         assertEquals(m.size(), cache.size());
 

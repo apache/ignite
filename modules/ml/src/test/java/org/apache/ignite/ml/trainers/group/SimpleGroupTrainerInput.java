@@ -25,11 +25,11 @@ import org.apache.ignite.ml.math.functions.IgniteSupplier;
 /** */
 class SimpleGroupTrainerInput implements GroupTrainerInput<Double> {
     /** */
-    private int limit;
+    private final int limit;
     /** */
-    private int eachNumCnt;
+    private final int eachNumCnt;
     /** */
-    private int iterCnt;
+    private final int iterCnt;
 
     /** */
     SimpleGroupTrainerInput(int limit, int eachNumCnt, int iterCnt) {
@@ -40,8 +40,7 @@ class SimpleGroupTrainerInput implements GroupTrainerInput<Double> {
 
     /** {@inheritDoc} */
     @Override public IgniteSupplier<Stream<GroupTrainerCacheKey<Double>>> initialKeys(UUID trainingUUID) {
-        int lim = limit;
-        return () -> IntStream.range(0, lim).mapToObj(i -> new GroupTrainerCacheKey<>(i, 0.0, trainingUUID));
+        return () -> IntStream.range(0, limit).mapToObj(i -> new GroupTrainerCacheKey<>(i, 0.0, trainingUUID));
     }
 
     /** */

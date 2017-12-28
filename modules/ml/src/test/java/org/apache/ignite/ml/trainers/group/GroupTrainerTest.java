@@ -30,7 +30,7 @@ public class GroupTrainerTest extends GridCommonAbstractTest {
     private static final int NODE_COUNT = 4;
 
     /** Grid instance. */
-    protected Ignite ignite;
+    private Ignite ignite;
 
     /**
      * Default constructor.
