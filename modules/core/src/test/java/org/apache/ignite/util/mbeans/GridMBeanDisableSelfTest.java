@@ -22,8 +22,6 @@ import javax.management.MBeanRegistrationException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -55,56 +53,40 @@ public class GridMBeanDisableSelfTest extends GridCommonAbstractTest {
     public void testCorrectMBeanInfo() throws Exception {
         // Node should start and stopped with no errors.
         try (final Ignite ignite = startGrid(0)) {
+            final MBeanServer server = ignite.configuration().getMBeanServer();
 
-            // Cache should be created and closed with no errors.
-            try (IgniteCache cache = ignite.getOrCreateCache(new CacheConfiguration("MyCache"))) {
+            GridTestUtils.assertThrowsWithCause(
+                new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        U.registerMBean(server, ignite.name(), "dummy", "DummyMbean1", new DummyMBeanImpl(), DummyMBean.class);
 
-                final MBeanServer server = ignite.configuration().getMBeanServer();
+                        return null;
 
-                GridTestUtils.assertThrowsWithCause(
-                    new Callable<Void>() {
-                        @Override public Void call() throws Exception {
-                            U.registerMBean(server, ignite.name(), "dummy", "DummyMbean1", new DummyMBeanImpl(), DummyMBean.class);
+                    }
+                }, MBeanRegistrationException.class);
 
-                            return null;
+            GridTestUtils.assertThrowsWithCause(
+                new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        ObjectName objName = U.makeMBeanName(
+                            ignite.name(),
+                            "dummy",
+                            "DummyMbean2"
+                        );
 
-                        }
-                    }, MBeanRegistrationException.class);
+                        U.registerMBean(server, objName, new DummyMBeanImpl(), DummyMBean.class);
 
-                GridTestUtils.assertThrowsWithCause(
-                    new Callable<Void>() {
-                        @Override public Void call() throws Exception {
-                            ObjectName objName = U.makeMBeanName(
-                                ignite.name(),
-                                "dummy",
-                                "DummyMbean2"
-                            );
+                        return null;
 
-                            U.registerMBean(server, objName, new DummyMBeanImpl(), DummyMBean.class);
-
-                            return null;
-
-                        }
-                    }, MBeanRegistrationException.class);
-
-                GridTestUtils.assertThrowsWithCause(
-                    new Callable<Void>() {
-                        @Override public Void call() throws Exception {
-                            U.registerCacheMBean(server, ignite.name(), "MyCache", "DummyMbean3",
-                                new DummyMBeanImpl(), DummyMBean.class);
-
-                            return null;
-
-                        }
-                    }, MBeanRegistrationException.class);
-            }
+                    }
+                }, MBeanRegistrationException.class);
         }
     }
 
     /**
      * MBean dummy interface.
      */
-    interface DummyMBean {
+    public interface DummyMBean {
         /** */
         void noop();
     }
