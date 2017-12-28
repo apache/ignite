@@ -805,7 +805,7 @@ class ClusterCachesInfo {
      *
      * @return Caches to be started when this node starts.
      */
-    @NotNull public LocalJoinCachesContext localJoinCachesContext() {
+    @Nullable public LocalJoinCachesContext localJoinCachesContext() {
         if (ctx.isDaemon())
             return null;
 
