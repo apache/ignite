@@ -25,6 +25,7 @@ import org.apache.ignite.internal.ClusterGroupSelfTest;
 import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
 import org.apache.ignite.internal.GridLifecycleAwareSelfTest;
 import org.apache.ignite.internal.GridLifecycleBeanSelfTest;
+import org.apache.ignite.internal.GridMBeansTest;
 import org.apache.ignite.internal.GridNodeMetricsLogSelfTest;
 import org.apache.ignite.internal.GridProjectionForCachesSelfTest;
 import org.apache.ignite.internal.GridReduceSelfTest;
@@ -148,6 +149,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(IgniteMarshallerCacheConcurrentReadWriteTest.class);
         suite.addTestSuite(GridNodeMetricsLogSelfTest.class);
         suite.addTestSuite(GridLocalIgniteSerializationTest.class);
+        suite.addTestSuite(GridMBeansTest.class);
 
         suite.addTestSuite(IgniteExceptionInNioWorkerSelfTest.class);
         suite.addTestSuite(IgniteLocalNodeMapBeforeStartTest.class);
