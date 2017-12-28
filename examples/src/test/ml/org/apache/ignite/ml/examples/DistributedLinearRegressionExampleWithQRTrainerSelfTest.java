@@ -17,15 +17,15 @@
 
 package org.apache.ignite.ml.examples;
 
-import org.apache.ignite.examples.ml.regression.DistributedRegressionModelExample;
+import org.apache.ignite.examples.ml.regression.linear.DistributedLinearRegressionExampleWithQRTrainer;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
 /**
- * Test for {@link DistributedRegressionModelExample}.
+ * Test for {@link DistributedLinearRegressionExampleWithQRTrainer}.
  */
-public class DistributedRegressionModelExampleSelfTest extends GridAbstractExamplesTest {
+public class DistributedLinearRegressionExampleWithQRTrainerSelfTest extends GridAbstractExamplesTest {
     /** */
-    public void testDistributedRegressionModelExample() throws InterruptedException {
-        DistributedRegressionModelExample.main(EMPTY_ARGS);
+    public void testDistributedRegressionExample() throws InterruptedException {
+        DistributedLinearRegressionExampleWithQRTrainer.main(EMPTY_ARGS);
     }
 }
