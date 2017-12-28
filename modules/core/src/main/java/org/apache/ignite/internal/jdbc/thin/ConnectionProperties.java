@@ -245,14 +245,4 @@ public interface ConnectionProperties {
      * @param sslFactory Custom class name that implements Factory&lt;SSLSocketFactory&gt;.
      */
     public void setSslFactory(String sslFactory);
-
-    /**
-     * @return Use default SSL context flag.
-     */
-    public boolean isSslUseDefault();
-
-    /**
-     * @param useDefault Use default SSL context flag.
-     */
-    public void setSslUseDefault(boolean useDefault);
 }

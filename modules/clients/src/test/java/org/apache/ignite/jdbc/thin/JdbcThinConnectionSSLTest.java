@@ -88,10 +88,10 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
 
         try {
             try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?useSSL=true" +
-                "&clientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
-                "&clientCertificateKeyStorePassword=123456" +
-                "&trustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
-                "&trustCertificateKeyStorePassword=123456")) {
+                "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
+                "&sslClientCertificateKeyStorePassword=123456" +
+                "&sslTrustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
+                "&sslTrustCertificateKeyStorePassword=123456")) {
                 checkConnection(conn);
             }
         }
@@ -186,10 +186,10 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?useSSL=true" +
-                        "&clientCertificateKeyStoreUrl=invalid_client_keystore_path" +
-                        "&clientCertificateKeyStorePassword=123456" +
-                        "&trustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
-                        "&trustCertificateKeyStorePassword=123456");
+                        "&sslClientCertificateKeyStoreUrl=invalid_client_keystore_path" +
+                        "&sslClientCertificateKeyStorePassword=123456" +
+                        "&sslTrustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
+                        "&sslTrustCertificateKeyStorePassword=123456");
 
                     return null;
                 }
@@ -198,10 +198,10 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?useSSL=true" +
-                        "&clientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
-                        "&clientCertificateKeyStorePassword=invalid_cli_passwd" +
-                        "&trustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
-                        "&trustCertificateKeyStorePassword=123456");
+                        "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
+                        "&sslClientCertificateKeyStorePassword=invalid_cli_passwd" +
+                        "&sslTrustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
+                        "&sslTrustCertificateKeyStorePassword=123456");
 
                     return null;
                 }
@@ -210,10 +210,10 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?useSSL=true" +
-                        "&clientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
-                        "&clientCertificateKeyStorePassword=123456" +
-                        "&trustCertificateKeyStoreUrl=invalid_trust_keystore_path" +
-                        "&trustCertificateKeyStorePassword=123456");
+                        "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
+                        "&sslClientCertificateKeyStorePassword=123456" +
+                        "&sslTrustCertificateKeyStoreUrl=invalid_trust_keystore_path" +
+                        "&sslTrustCertificateKeyStorePassword=123456");
 
                     return null;
                 }
@@ -222,10 +222,10 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?useSSL=true" +
-                        "&clientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
-                        "&clientCertificateKeyStorePassword=123456" +
-                        "&trustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
-                        "&trustCertificateKeyStorePassword=invalid_trust_passwd");
+                        "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
+                        "&sslClientCertificateKeyStorePassword=123456" +
+                        "&sslTrustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
+                        "&sslTrustCertificateKeyStorePassword=invalid_trust_passwd");
 
                     return null;
                 }
@@ -234,11 +234,11 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?useSSL=true" +
-                        "&clientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
-                        "&clientCertificateKeyStorePassword=123456" +
-                        "&clientCertificateKeyStoreType=INVALID" +
-                        "&trustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
-                        "&trustCertificateKeyStorePassword=123456");
+                        "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
+                        "&sslClientCertificateKeyStorePassword=123456" +
+                        "&sslClientCertificateKeyStoreType=INVALID" +
+                        "&sslTrustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
+                        "&sslTrustCertificateKeyStorePassword=123456");
 
                     return null;
                 }
@@ -247,11 +247,11 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?useSSL=true" +
-                        "&clientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
-                        "&clientCertificateKeyStorePassword=123456" +
-                        "&trustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
-                        "&trustCertificateKeyStoreType=INVALID" +
-                        "&trustCertificateKeyStorePassword=123456");
+                        "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
+                        "&sslClientCertificateKeyStorePassword=123456" +
+                        "&sslTrustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
+                        "&sslTrustCertificateKeyStoreType=INVALID" +
+                        "&sslTrustCertificateKeyStorePassword=123456");
 
                     return null;
                 }

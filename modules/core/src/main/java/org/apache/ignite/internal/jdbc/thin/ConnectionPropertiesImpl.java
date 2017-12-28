@@ -96,41 +96,41 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
     /** Client certificate key store url. */
     private StringProperty sslProtocol = new StringProperty("sslProtocol",
-        "SSL protocol name", "TLS",  null, false, null);
+        "SSL protocol name", null,  null, false, null);
 
     /** Client certificate key store url. */
     private StringProperty sslClientCertificateKeyStoreUrl =
         new StringProperty("sslClientCertificateKeyStoreUrl",
         "Client certificate key store URL",
-        System.getProperty("javax.net.ssl.keyStore"), null, false, null);
+        null, null, false, null);
 
     /** Client certificate key store password. */
     private StringProperty sslClientCertificateKeyStorePassword =
         new StringProperty("sslClientCertificateKeyStorePassword",
         "Client certificate key store password",
-        System.getProperty("javax.net.ssl.keyStorePassword"), null, false, null);
+            null, null, false, null);
 
     /** Client certificate key store type. */
     private StringProperty sslClientCertificateKeyStoreType =
         new StringProperty("sslClientCertificateKeyStoreType",
         "Client certificate key store type",
-        System.getProperty("javax.net.ssl.keyStoreType", "JKS"), null, false, null);
+            null, null, false, null);
 
     /** Trusted certificate key store url. */
     private StringProperty sslTrustCertificateKeyStoreUrl =
         new StringProperty("sslTrustCertificateKeyStoreUrl",
-        "Trusted certificate key store URL", System.getProperty("javax.net.ssl.trustStore"), null, false, null);
+        "Trusted certificate key store URL", null, null, false, null);
 
     /** Trusted certificate key store password. */
     private StringProperty sslTrustCertificateKeyStorePassword =
         new StringProperty("trustCertificateKeyStorePassword",
-        "Trusted certificate key store password", System.getProperty("javax.net.ssl.trustStorePassword"), null, false, null);
+        "Trusted certificate key store password", null, null, false, null);
 
     /** Trusted certificate key store type. */
     private StringProperty sslTrustCertificateKeyStoreType =
         new StringProperty("trustCertificateKeyStoreType",
         "Trusted certificate key store type",
-        System.getProperty("javax.net.ssl.trustStoreType", "JKS"), null, false, null);
+            null, null, false, null);
 
     /** Trust all certificates. */
     private BooleanProperty sslTrustAll = new BooleanProperty("sslTrustAll",
@@ -140,10 +140,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private StringProperty sslFactory = new StringProperty("sslFactory",
         "Custom class name that implements Factory<SSLSocketFactory>", null, null, false, null);
 
-    /** Trust all certificates. */
-    private BooleanProperty sslUseDefault = new BooleanProperty("sslUseDefault",
-        "Use default SSL context",false, false);
-
     /** Properties array. */
     private final ConnectionProperty [] propsArray = {
         host, port,
@@ -152,7 +148,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         useSSL, sslProtocol,
         sslClientCertificateKeyStoreUrl, sslClientCertificateKeyStorePassword, sslClientCertificateKeyStoreType,
         sslTrustCertificateKeyStoreUrl, sslTrustCertificateKeyStorePassword, sslTrustCertificateKeyStoreType,
-        sslTrustAll, sslFactory, sslUseDefault
+        sslTrustAll, sslFactory
     };
 
     /** {@inheritDoc} */
@@ -373,16 +369,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public void setSslFactory(String sslFactory) {
         this.sslFactory.setValue(sslFactory);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isSslUseDefault() {
-        return sslUseDefault.value();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setSslUseDefault(boolean useDefault) {
-        this.sslUseDefault.setValue(useDefault);
     }
 
     /**

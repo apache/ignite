@@ -461,6 +461,7 @@ public class JdbcThinTcpIo {
         String trustCertKeyStoreUrl = connProps.getSslTrustCertificateKeyStoreUrl();
         String trustCertKeyStorePwd = connProps.getSslTrustCertificateKeyStorePassword();
         String trustCertKeyStoreType = connProps.getSslTrustCertificateKeyStoreType();
+        String sslProtocol = connProps.sslProtocol();
 
         if (!F.isEmpty(sslFactory)) {
             try {
@@ -477,7 +478,9 @@ public class JdbcThinTcpIo {
             }
         }
 
-        if (connProps.isSslUseDefault()) {
+        if (cliCertKeyStoreUrl == null && cliCertKeyStorePwd == null && cliCertKeyStoreType == null
+            && trustCertKeyStoreUrl == null && trustCertKeyStorePwd == null && trustCertKeyStoreType == null
+            && connProps.sslProtocol() == null) {
             try {
                 return SSLContext.getDefault().getSocketFactory();
             }
@@ -486,6 +489,27 @@ public class JdbcThinTcpIo {
                     SqlStateCode.CLIENT_CONNECTION_FAILED, e);
             }
         }
+
+        if (cliCertKeyStoreUrl == null)
+            cliCertKeyStoreUrl = System.getProperty("javax.net.ssl.keyStore");
+
+        if (cliCertKeyStorePwd == null)
+            cliCertKeyStorePwd = System.getProperty("javax.net.ssl.keyStorePassword");
+
+        if (cliCertKeyStoreType == null)
+            cliCertKeyStoreType = System.getProperty("javax.net.ssl.keyStoreType", "JKS");
+
+        if (trustCertKeyStoreUrl == null)
+            trustCertKeyStoreUrl = System.getProperty("javax.net.ssl.trustStore");
+
+        if (trustCertKeyStorePwd == null)
+            cliCertKeyStorePwd = System.getProperty("javax.net.ssl.trustStorePassword");
+
+        if (trustCertKeyStoreType == null)
+            trustCertKeyStoreType = System.getProperty("javax.net.ssl.trustStoreType", "JKS");
+
+        if (sslProtocol == null)
+            sslProtocol = "TLS";
 
         if (!F.isEmpty(cliCertKeyStoreUrl))
             cliCertKeyStoreUrl = checkAndConvertUrl(cliCertKeyStoreUrl);
@@ -626,7 +650,7 @@ public class JdbcThinTcpIo {
         assert tms.size() != 0;
 
         try {
-            SSLContext sslContext = SSLContext.getInstance(connProps.sslProtocol());
+            SSLContext sslContext = SSLContext.getInstance(sslProtocol);
 
             sslContext.init(kms, tms.toArray(new TrustManager[tms.size()]), null);
 

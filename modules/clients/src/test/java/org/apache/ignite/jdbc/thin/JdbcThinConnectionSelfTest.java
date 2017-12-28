@@ -1771,10 +1771,10 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?useSSL=true" +
-                    "&clientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
-                    "&clientCertificateKeyStorePassword=123456" +
-                    "&trustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
-                    "&trustCertificateKeyStorePassword=123456");
+                    "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
+                    "&sslClientCertificateKeyStorePassword=123456" +
+                    "&sslTrustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
+                    "&sslTrustCertificateKeyStorePassword=123456");
 
                 return null;
             }
