@@ -15,24 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
-
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgnitePdsWalTlbTest;
-
 /**
- *
+ * <!-- Package description. -->
+ * Contains parameters updaters.
  */
-public class IgnitePdsOutOfMemoryTestSuite extends TestSuite {
-    /**
-     * @return Suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Persistent Store OOM Test Suite");
-
-        suite.addTestSuite(IgnitePdsWalTlbTest.class);
-
-        return suite;
-    }
-}
+package org.apache.ignite.ml.nn.updaters;

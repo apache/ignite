@@ -20,6 +20,7 @@ package org.apache.ignite.ml;
 import org.apache.ignite.ml.clustering.ClusteringTestSuite;
 import org.apache.ignite.ml.knn.KNNTestSuite;
 import org.apache.ignite.ml.math.MathImplMainTestSuite;
+import org.apache.ignite.ml.nn.MLPTestSuite;
 import org.apache.ignite.ml.regressions.RegressionsTestSuite;
 import org.apache.ignite.ml.trees.DecisionTreesTestSuite;
 import org.junit.runner.RunWith;
@@ -35,7 +36,8 @@ import org.junit.runners.Suite;
     ClusteringTestSuite.class,
     DecisionTreesTestSuite.class,
     KNNTestSuite.class,
-    LocalModelsTest.class
+    LocalModelsTest.class,
+    MLPTestSuite.class
 })
 public class IgniteMLTestSuite {
     // No-op.
