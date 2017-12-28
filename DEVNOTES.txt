@@ -4,81 +4,132 @@ Ignite Fabric Maven Build Instructions
 
 2) Compile and install:
 
-  mvn clean install -Pall-java,all-scala,licenses -DskipTests
+        mvn clean install -Pall-java,all-scala,licenses -DskipTests
 
-  or if you have built Apache Ignite.NET on the first step use following command:
-  (Note that 'doxygen' should be installed before running this command.)
+   or if you have built Apache Ignite.NET on the first step use following command:
+   (Note that 'doxygen' should be installed before running this command.)
 
-  mvn clean install -Pall-java,all-scala,licenses -DskipTests -DclientDocs
+        mvn clean install -Pall-java,all-scala,licenses -DskipTests -DclientDocs
 
 3) Javadoc generation (optional):
 
-  mvn initialize -Pjavadoc
+        mvn initialize -Pjavadoc
 
 4) Assembly Apache Ignite fabric:
 
-  mvn initialize -Prelease
+        mvn initialize -Prelease
 
 Look for apache-ignite-fabric-<version>-bin.zip in ./target/bin directory.
 
+
 Ignite Fabric with LGPL Maven Build Instructions
-======================================
+================================================
 1) Optional: build Apache Ignite.NET as described at modules/platforms/dotnet/DEVNOTES.txt.
 
 2) Compile and install:
 
-  mvn clean install -Pall-java,all-scala,licenses -DskipTests
+        mvn clean install -Pall-java,all-scala,licenses -DskipTests
 
-  or if you have built Apache Ignite.NET on the first step use following command:
-  (Note that 'doxygen' should be installed before running this command.)
+   or if you have built Apache Ignite.NET on the first step use following command:
+   (Note that 'doxygen' should be installed before running this command.)
 
-  mvn clean install -Pall-java,all-scala,licenses -DskipTests -DclientDocs
+        mvn clean install -Pall-java,all-scala,licenses -DskipTests -DclientDocs
 
 3) Javadoc generation with LGPL (optional):
 
-  mvn initialize -Pjavadoc,lgpl
+        mvn initialize -Pjavadoc,lgpl
 
 4) Assembly Apache Ignite fabric with LGPL dependencies:
 
-  mvn initialize -Prelease,lgpl -Dignite.edition=fabric-lgpl
+        mvn initialize -Prelease,lgpl -Dignite.edition=fabric-lgpl
 
-Look for apache-ignite-fabric-lgpl-<version>-bin.zip in ./target/bin directory.
+   Look for apache-ignite-fabric-lgpl-<version>-bin.zip in ./target/bin directory.
+
 
 Ignite Hadoop Accelerator Maven Build Instructions
-============================================
+==================================================
 1) Compile and install:
 
-    mvn clean install -Pall-java,all-scala,licenses -DskipTests
+        mvn clean install -Pall-java,all-scala,licenses -DskipTests
 
-Use 'hadoop.version' parameter to build Ignite against a specific Hadoop version.
-Use 'spark.version' parameter to build ignite-spark module for a specific Spark version. Version should be >= 2.0.0.
-For example:
+   Use 'hadoop.version' parameter to build Ignite against a specific Hadoop version.
+   Use 'spark.version' parameter to build ignite-spark module for a specific Spark version. Version should be >= 2.0.0.
+   For example:
 
-    mvn clean install -Pall-java,all-scala,licenses -DskipTests -Dhadoop.version=2.4.2 -Dspark.version=2.1.1
+        mvn clean install -Pall-java,all-scala,licenses -DskipTests -Dhadoop.version=2.4.2 -Dspark.version=2.1.1
 
 2) Assembly Hadoop Accelerator:
-  mvn initialize -Prelease -Dignite.edition=hadoop
 
-Look for apache-ignite-hadoop-<version>-bin.zip in ./target/bin directory. Resulting binary
-assembly will also include integration module for Apache Spark.
+        mvn initialize -Prelease -Dignite.edition=hadoop
 
-NOTE: JDK version should be 1.7.0-* or >= 1.8.0-u40.
+   Look for apache-ignite-hadoop-<version>-bin.zip in ./target/bin directory. Resulting binary
+   assembly will also include integration module for Apache Spark.
+
+   NOTE: JDK version should be 1.7.0-* or >= 1.8.0-u40.
+
 
 Ignite C++ Build Instructions
+=============================
+Instructions can be found at modules/platforms/cpp/DEVNOTES.txt.
+
+
+Apache Ignite RPM Package Build Instructions
+============================================
+1) Install dependencies
+
+        yum install -y rpmdevtools rpm-build
+
+2) Create directory layout
+
+        rpmdev-setuptree
+
+3) Copy build specification and additional sources required for build
+
+        cp -rfv packaging/rpm/* ~/rpmbuild
+
+4) Copy built binary from target/bin to sources directory
+
+        cp -rfv target/bin/apache-ignite-<version>-bin.zip ~/rpmbuild/SOURCES/apache-ignite.zip
+
+5) Run build process
+
+        rpmbuild -bb ~/rpmbuild/SPECS/apache-ignite.spec
+
+   NOTE: to build also SRPM package, run with -ba flag instead
+
+   Package will be available in ~/rpmbuild/RPMS/noarch
+
+
+Install and Run Apache Ignite from RPM
 ======================================
-  Instructions can be found at modules/platforms/cpp/DEVNOTES.txt.
+1) Install package
+
+        yum localinstall -y apache-ignite-<version>.rpm
+
+2) Start Apache Ignite service
+
+        systemctl start apache-ignite@<config name>
+
+   NOTE: <config name> - relative to /etc/apache-ignite configuration file name
+
+   Example:
+
+        systemctl start apache-ignite@default-config.xml
+
+3) See logs in /var/log/apache-ignite or journalctl -xe
+
 
 Ignite Release Instructions
 ===========================
-Use your people.apache.org/keys/committer/<username>.asc key to generate KEYS file.
-Download https://dist.apache.org/repos/dist/release/ignite/KEYS and append you key using commands:
+1) Use your people.apache.org/keys/committer/<username>.asc key to generate KEYS file.
+   Download https://dist.apache.org/repos/dist/release/ignite/KEYS and append you key using commands:
 
-gpg --list-sigs <keyname> >> KEYS
-gpg --armor --export <keyname> >> KEYS
+        gpg --list-sigs <keyname> >> KEYS
+        gpg --armor --export <keyname> >> KEYS
 
-Upload modified KEYS file.
+   Upload modified KEYS file.
 
-Specify gpg profile at settings.xml. It will be used to sign sources and artifacts.
+2) Specify gpg profile at settings.xml. It will be used to sign sources and artifacts.
 
 <profile>
    <id>gpg</id>
@@ -88,88 +139,99 @@ Specify gpg profile at settings.xml. It will be used to sign sources and artifac
    </properties>
 </profile>
 
-Ensure you have RELEASE (not SNAPSHOT) version at Ignite poms.
-Maven release plugin release:prepare goal can be used to make release tag.
+   Ensure you have RELEASE (not SNAPSHOT) version at Ignite poms.
+   Maven release plugin release:prepare goal can be used to make release tag.
 
-Deploy Ignite release candidate to maven repository and dev-svn, make tag:
+3) Deploy Ignite release candidate to maven repository and dev-svn, make tag:
 
-   1) Deploy Ignite to maven repository, prepares sources and fabric edition binaries.
-      mvn deploy -Papache-release,gpg,all-java,all-scala,licenses,deploy-ignite-site -Dignite.edition=fabric -DskipTests
+   3.1) Deploy Ignite to maven repository, prepares sources and fabric edition binaries.
 
-   2) Javadoc generation:
-      mvn initialize -Pjavadoc
+                mvn deploy -Papache-release,gpg,all-java,all-scala,licenses,deploy-ignite-site -Dignite.edition=fabric -DskipTests
 
-   3) Assembly Apache Ignite Fabric:
-      mvn initialize -Prelease
+   3.2) Javadoc generation:
 
-   4) Assembly Hadoop Accelerator:
-      mvn initialize -Prelease -Dignite.edition=hadoop
+                mvn initialize -Pjavadoc
 
-   Binary artifact name can be changed by setting additional property -Dignite.zip.pattern. Binary artifact will be
+   3.3) Assembly Apache Ignite Fabric:
+
+                mvn initialize -Prelease
+
+   3.4) Assembly Hadoop Accelerator:
+
+                mvn initialize -Prelease -Dignite.edition=hadoop
+
+   NOTE: Binary artifact name can be changed by setting additional property -Dignite.zip.pattern. Binary artifact will be
    created inside /target/bin folder when release profile is used.
 
-   Sources artifact name is fixed. Sources artifact will be created inside /target dir when apache-release profile is used.
+   NOTE: Sources artifact name is fixed. Sources artifact will be created inside /target dir when apache-release profile is used.
 
-   Nexus staging (repository.apache.org) should be closed with appropriate comment contains release version and
+   NOTE: Nexus staging (repository.apache.org) should be closed with appropriate comment contains release version and
    release candidate number, for example "Apache Ignite 1.0.0-rc7", when mvn deploy finished.
 
-   Checkout https://dist.apache.org/repos/dist/dev/ignite svn. Create release candidate folder with name
-   equals to release version with "-rc*" ending, for example "1.0.0-rc7", at svn root.
-   Copy /target/site folder content to svn/ignite/<rc-version> folder and commit with appropriate comment.
+   3.5) Checkout https://dist.apache.org/repos/dist/dev/ignite svn. Create release candidate folder with name
+        equals to release version with "-rc*" ending, for example "1.0.0-rc7", at svn root.
+        Copy /target/site folder content to svn/ignite/<rc-version> folder and commit with appropriate comment.
 
-   Make appropriate git tag for release candidate, for example "ignite-X.Y.Z-rc1".
+   3.6) Make appropriate git tag for release candidate, for example "ignite-X.Y.Z-rc1".
 
-Start vote based on https://dist.apache.org/repos/dist/dev/ignite/<rc-version>.
+4) Start vote based on https://dist.apache.org/repos/dist/dev/ignite/<rc-version>.
 
-Release nexus staging, move binaries and sources from https://dist.apache.org/repos/dist/dev/ignite/<rc-version>
-to https://dist.apache.org/repos/dist/release/ignite/<version> when version accepted.
-Use svn mv ^/dev/ignite/<rc-version> ^/release/ignite/<version> command for proper moving.
+5) Release nexus staging, move binaries and sources from https://dist.apache.org/repos/dist/dev/ignite/<rc-version>
+   to https://dist.apache.org/repos/dist/release/ignite/<version> when version accepted.
+   Use svn mv ^/dev/ignite/<rc-version> ^/release/ignite/<version> command for proper moving.
 
-Make appropriate git tag for released version, for example "ignite-X.Y.Z".
+6) Make appropriate git tag for released version, for example "ignite-X.Y.Z".
 
-Send an email to dev@ignite.apache.org contains release svn url.
+7) Send an email to dev@ignite.apache.org contains release svn url.
 
 
 JCache TCK compliance
 ======================
 To test compliance with JCache TCK use:
 
-mvn test -P-release,jcache-tck -pl :ignite-core -am
+        mvn test -P-release,jcache-tck -pl :ignite-core -am
+
 
 Ignite Mesos Maven Build Instructions
-============================================
-cd to ./modules/mesos
+=====================================
 
-mvn clean package
+        cd ./modules/mesos
+        mvn clean package
 
 Look for ignite-mesos-<version>.jar in ./target directory.
 
-Ignite Yarn Maven Build Instructions
-============================================
-cd to ./modules/yarn
 
-mvn clean package
+Ignite Yarn Maven Build Instructions
+====================================
+
+        cd ./modules/yarn
+        mvn clean package
 
 Look for ignite-yarn-<version>.jar in ./target directory.
 
+
 Run tests
-==========
+=========
 To run tests locally use:
 
-mvn clean test -U -Plgpl,examples,-clean-libs,-release -Dmaven.test.failure.ignore=true -DfailIfNoTests=false -Dtest=%TEST_PATTERN%
+        mvn clean test -U -Plgpl,examples,-clean-libs,-release -Dmaven.test.failure.ignore=true -DfailIfNoTests=false -Dtest=%TEST_PATTERN%
 
 For example, %TEST_PATTERN% can be 'org.apache.ignite.testsuites.IgniteBasicTestSuite' or 'GridCacheLocalAtomicFullApiSelfTest#testGet'
+
 
 Apache RAT Instructions
 =======================
 To check license headers use:
 
-mvn clean validate -Pcheck-licenses
+        mvn clean validate -Pcheck-licenses
 
 For more information (e.g. exclude list) see "check-licenses" profile in "parent/pom.xml".
 
 
 Useful Release Commands
-========================
-ZIP: zip -r9 apache-ignite-X.X.X-src.zip apache-ignite-X.X.X-src
-GPG: gpg --armor --output apache-ignite-X.X.X-src.zip.asc --detach-sig apache-ignite-X.X.X-src.zip
+=======================
+ZIP:
+        zip -r9 apache-ignite-X.X.X-src.zip apache-ignite-X.X.X-src
+GPG:
+        gpg --armor --output apache-ignite-X.X.X-src.zip.asc --detach-sig apache-ignite-X.X.X-src.zip
+
