@@ -53,6 +53,7 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\BinarizableTestException.cs" Link="Cache\BinarizableTestException.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheAbstractTest.cs" Link="Cache\CacheAbstractTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheAbstractTransactionalTest.cs" Link="Cache\CacheAbstractTransactionalTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheConfigurationTest.cs" Link="Cache\CacheConfigurationTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CachePartitionedTest.cs" Link="Cache\CachePartitionedTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheTestAsyncWrapper.cs" Link="Cache\CacheTestAsyncWrapper.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheTestKey.cs" Link="Cache\CacheTestKey.cs" />
@@ -86,6 +87,7 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\CacheTestAsync.cs" Link="ThinClient\Cache\CacheTestAsync.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\CacheClientAsyncWrapper.cs" Link="ThinClient\Cache\CacheClientAsyncWrapper.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\CacheTestKeepBinary.cs" Link="ThinClient\Cache\CacheTestKeepBinary.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\CreateCacheTest.cs" Link="ThinClient\Cache\CreateCacheTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\EmptyObject.cs" Link="ThinClient\Cache\EmptyObject.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\Person.cs" Link="ThinClient\Cache\Person.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\ScanQueryTest.cs" Link="ThinClient\Cache\ScanQueryTest.cs" />
@@ -116,6 +118,9 @@
 
   <ItemGroup>
     <Content Include="..\Apache.Ignite.Core.Tests\Config\cache-binarizables.xml" Link="Config\cache-binarizables.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\cache-default.xml" Link="Config\cache-default.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="..\Apache.Ignite.Core.Tests\Config\cache-query.xml" Link="Config\cache-query.xml">
