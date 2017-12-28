@@ -23,6 +23,7 @@ import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.math.distributed.CacheUtils;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
@@ -56,12 +57,12 @@ abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends Seriali
     /**
      * Cache on which training is performed. For example it can be cache of neural networks.
      */
-    IgniteCache<GroupTrainerCacheKey<K>, V> cache;
+    protected IgniteCache<GroupTrainerCacheKey<K>, V> cache;
 
     /**
      * Ignite instance.
      */
-    Ignite ignite;
+    protected Ignite ignite;
 
     /**
      * Construct an instance of this class.
@@ -77,13 +78,15 @@ abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends Seriali
     }
 
     /** {@inheritDoc} */
-    @Override public M train(T data) {
+    @Override public final M train(T data) {
         UUID trainingUUID = UUID.randomUUID();
         LC locCtx = initialLocalContext(data, trainingUUID);
 
         GroupTrainingContext<K, V, LC> ctx = new GroupTrainingContext<>(locCtx, cache, ignite);
         ComputationsChain<LC, K, V, T, T> chain = (i, c) -> i;
         IgniteFunction<GroupTrainerCacheKey<K>, ResultAndUpdates<IN>> distributedInitializer = distributedInitializer(data);
+
+        initDistributedContext(data, trainingUUID);
 
         M res = chain.
             thenDistributedForKeys(distributedInitializer, (t, lc) -> data.initialKeys(trainingUUID), reduceDistributedInitData()).
@@ -106,6 +109,10 @@ abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends Seriali
      * @return Initial local context.
      */
     protected abstract LC initialLocalContext(T data, UUID trainingUUID);
+
+    protected void initDistributedContext(T data, UUID trainingUUID) {
+
+    }
 
     /**
      * Get function for initialization for each of keys specified in initial key set.

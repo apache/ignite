@@ -30,21 +30,18 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
 
-/**
- * Cache name.
- */
-public class MLPCache {
+public class MLPGroupUpdateTrainerContextCache {
     /**
      * Cache name.
      */
-    public static String CACHE_NAME = "MLP_CACHE";
+    public static String CACHE_NAME = "MLP_CTX_CACHE";
 
     /**
      * Affinity service for region projections cache.
      *
      * @return Affinity service for region projections cache.
      */
-    public static Affinity<GroupTrainerCacheKey<Void>> affinity() {
+    public static Affinity<UUID> affinity() {
         return Ignition.localIgnite().affinity(CACHE_NAME);
     }
 
@@ -54,8 +51,8 @@ public class MLPCache {
      * @param ignite Ignite instance.
      * @return Region projections cache.
      */
-    public static IgniteCache<GroupTrainerCacheKey<Void>, MLPGroupTrainingCacheValue> getOrCreate(Ignite ignite) {
-        CacheConfiguration<GroupTrainerCacheKey<Void>, MLPGroupTrainingCacheValue> cfg = new CacheConfiguration<>();
+    public static IgniteCache<UUID, MLPGroupUpdateTrainerContext> getOrCreate(Ignite ignite) {
+        CacheConfiguration<UUID, MLPGroupUpdateTrainerContext> cfg = new CacheConfiguration<>();
 
         // Write to primary.
         cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
@@ -67,7 +64,7 @@ public class MLPCache {
         cfg.setCopyOnRead(false);
 
         // Cache is partitioned.
-        cfg.setCacheMode(CacheMode.PARTITIONED);
+        cfg.setCacheMode(CacheMode.REPLICATED);
 
         cfg.setBackups(0);
 
@@ -76,9 +73,5 @@ public class MLPCache {
         cfg.setName(CACHE_NAME);
 
         return ignite.getOrCreateCache(cfg);
-    }
-
-    public static Stream<GroupTrainerCacheKey<Void>> allKeys(int trainingsCnt, UUID uuid) {
-        return IntStream.range(0, trainingsCnt).mapToObj(i -> new GroupTrainerCacheKey<Void>(i, null, uuid));
     }
 }
