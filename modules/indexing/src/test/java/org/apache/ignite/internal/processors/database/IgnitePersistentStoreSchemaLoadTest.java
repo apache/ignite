@@ -285,8 +285,12 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
                 .getAll();
 
         node.context().query().querySqlFieldsNoCache(
-            new SqlFieldsQuery("alter table \"Person\" add column \"age\" int").setSchema(schema), false)
-                .getAll();
+            new SqlFieldsQuery("alter table \"Person\" add column (\"age\" int, \"city\" char)")
+            .setSchema(schema), false).getAll();
+
+        node.context().query().querySqlFieldsNoCache(
+            new SqlFieldsQuery("alter table \"Person\" drop column \"city\"").setSchema(schema), false)
+            .getAll();
     }
 
     /**
