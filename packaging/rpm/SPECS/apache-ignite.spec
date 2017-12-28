@@ -60,9 +60,13 @@ case $1 in
         # Change ownership for work and log directories
         chown -vR %{user}:%{user} %{_sharedstatedir}/%{name} %{_var}/log/%{name}
         # Install alternatives
-        update-alternatives --install %{_bindir}/ignitevisorcmd ignitevisorcmd %{_datadir}/%{name}/bin/ignitevisorcmd.sh 0
-        update-alternatives --auto ignitevisorcmd
-        update-alternatives --display ignitevisorcmd
+        # Commented out until ignitevisorcmd / ignitesqlline is ready to work from any user
+        #update-alternatives --install %{_bindir}/ignitevisorcmd ignitevisorcmd %{_datadir}/%{name}/bin/ignitevisorcmd.sh 0
+        #update-alternatives --auto ignitevisorcmd
+        #update-alternatives --display ignitevisorcmd
+        #update-alternatives --install %{_bindir}/ignitesqlline ignitesqlline %{_datadir}/%{name}/bin/sqlline.sh 0
+        #update-alternatives --auto ignitesqlline
+        #update-alternatives --display ignitesqlline
         ;;
     2)
         :
@@ -81,8 +85,12 @@ esac
 %preun
 case $1 in
     0)
-        update-alternatives --remove ignitevisorcmd /usr/share/%{name}/bin/ignitevisorcmd.sh
-        update-alternatives --display ignitevisorcmd || true
+        # Remove alternatives
+        # Commented out until ignitevisorcmd / ignitesqlline is ready to work from any user
+        #update-alternatives --remove ignitevisorcmd /usr/share/%{name}/bin/ignitevisorcmd.sh
+        #update-alternatives --display ignitevisorcmd || true
+        #update-alternatives --remove ignitesqlline /usr/share/%{name}/bin/sqlline.sh
+        #update-alternatives --display ignitesqlline || true
         ;;
     1)
         :
@@ -186,7 +194,6 @@ ln -sf %{_var}/log/%{name} %{buildroot}%{_sharedstatedir}/%{name}/log
 %{_datadir}/%{name}/libs
 %{_datadir}/%{name}/platforms
 %{_datadir}/%{name}/work
-%{_datadir}/doc/%{name}-%{version}/bin
 %{_libdir}/%{name}
 %{_sysconfdir}/systemd/system/%{name}@.service
 %{_sharedstatedir}/%{name}/log

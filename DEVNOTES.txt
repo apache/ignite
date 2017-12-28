@@ -110,7 +110,9 @@ Install and Run Apache Ignite from RPM
 
         systemctl start apache-ignite@<config name>
 
-3) See logs in /var/log/apache-ignite or execute journalctl -xe
+   NOTE: <config name> - relative to /etc/apache-ignite configuration file name
+
+3) See logs in /var/log/apache-ignite or journalctl -xe
 
 
 Ignite Release Instructions
