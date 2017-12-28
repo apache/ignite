@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.trainers.group;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -68,8 +69,8 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteBinaryOperator<Integer> reduceDistributedInitData() {
-        return (a, b) -> a + b;
+    @Override protected IgniteFunction<List<Integer>, Integer> reduceDistributedInitData() {
+        return id -> id.stream().mapToInt(x -> x).sum();
     }
 
     /** {@inheritDoc} */
@@ -121,13 +122,8 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
     }
 
     /** {@inheritDoc} */
-    @Override protected Integer defaultFinalResult() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteBinaryOperator<Integer> finalResultsReducer() {
-        return (a, b) -> a + b;
+    @Override protected IgniteFunction<List<Integer>, Integer> finalResultsReducer() {
+        return id -> id.stream().mapToInt(x -> x).sum();
     }
 
     /** {@inheritDoc} */

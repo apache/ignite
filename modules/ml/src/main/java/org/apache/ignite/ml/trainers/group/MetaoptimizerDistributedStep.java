@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.trainers.group;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.stream.Stream;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -90,12 +91,7 @@ class MetaoptimizerDistributedStep<L extends HasTrainingUUID, K, V, G, I extends
     }
 
     /** {@inheritDoc} */
-    @Override public O identity() {
-        return metaoptimizer.postProcessIdentity();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteBinaryOperator<O> reducer() {
+    @Override public IgniteFunction<List<O>, O> reducer() {
         return metaoptimizer.postProcessReducer();
     }
 }

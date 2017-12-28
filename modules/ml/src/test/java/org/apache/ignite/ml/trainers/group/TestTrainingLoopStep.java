@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.trainers.group;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignition;
@@ -52,11 +53,7 @@ public class TestTrainingLoopStep implements DistributedEntryProcessingStep<Test
         return () -> TestGroupTrainingCache.allKeys(limit, cnt, uuid);
     }
 
-    @Override public Double identity() {
-        return 0.0;
-    }
-
-    @Override public IgniteBinaryOperator<Double> reducer() {
-        return (a, b) -> a + b;
+    @Override public IgniteFunction<List<Double>, Double> reducer() {
+        return doubles -> doubles.stream().mapToDouble(x -> x).sum();
     }
 }

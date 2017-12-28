@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.trainers.group.chain;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.stream.Stream;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -66,11 +67,5 @@ public interface DistributedStep<T, L, K, C, I, O extends Serializable> {
      *
      * @return Function used to reduce results returned by worker..
      */
-    IgniteBinaryOperator<O> reducer();
-
-    /**
-     * Identity for reduce.
-     * @return Identity for reduce.
-     */
-    O identity();
+    IgniteFunction<List<O>, O> reducer();
 }

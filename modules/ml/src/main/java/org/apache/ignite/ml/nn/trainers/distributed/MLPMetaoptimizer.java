@@ -17,12 +17,12 @@
 
 package org.apache.ignite.ml.nn.trainers.distributed;
 
-import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
+import java.util.List;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.trainers.group.Metaoptimizer;
 
 public class MLPMetaoptimizer<P> implements Metaoptimizer<MLPGroupUpdateTrainerLocalContext, MLPGroupUpdateTrainingLoopData<P>, P, P, P, P> {
-    @Override public IgniteBinaryOperator<P> initialReducer() {
+    @Override public IgniteFunction<List<P>, P> initialReducer() {
         return null;
     }
 
@@ -34,11 +34,7 @@ public class MLPMetaoptimizer<P> implements Metaoptimizer<MLPGroupUpdateTrainerL
         return null;
     }
 
-    @Override public IgniteBinaryOperator<P> postProcessReducer() {
-        return null;
-    }
-
-    @Override public P postProcessIdentity() {
+    @Override public IgniteFunction<List<P>, P> postProcessReducer() {
         return null;
     }
 

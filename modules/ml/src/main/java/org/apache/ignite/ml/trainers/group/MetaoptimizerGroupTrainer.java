@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.trainers.group;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -122,7 +123,7 @@ G, O extends Serializable, X, Y> extends
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteBinaryOperator<IN> reduceDistributedInitData() {
+    @Override protected IgniteFunction<List<IN>, IN> reduceDistributedInitData() {
         return metaoptimizer.initialReducer();
     }
 }

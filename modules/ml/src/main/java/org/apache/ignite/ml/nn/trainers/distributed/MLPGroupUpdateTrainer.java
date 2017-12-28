@@ -29,7 +29,6 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
@@ -207,14 +206,9 @@ public class MLPGroupUpdateTrainer<P extends Serializable> extends
     }
 
     /** {@inheritDoc} */
-    @Override protected MultilayerPerceptron defaultFinalResult() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteBinaryOperator<MultilayerPerceptron> finalResultsReducer() {
+    @Override protected IgniteFunction<List<MultilayerPerceptron>, MultilayerPerceptron> finalResultsReducer() {
         // Just take any of MLPs since they will be in the same state.
-        return (mlp1, mlp2) -> mlp1;
+        return mlps -> !mlps.isEmpty() ? mlps.get(0) : null;
     }
 
     /** {@inheritDoc} */

@@ -19,6 +19,7 @@ package org.apache.ignite.ml.trainers.group;
 
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -27,6 +28,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.chain.ComputationsChain;
 import org.apache.ignite.ml.trainers.group.chain.Chains;
@@ -146,10 +148,10 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         cache.putAll(m);
 
         IgniteBiFunction<Integer, TestLocalContext, IgniteSupplier<Stream<GroupTrainerCacheKey<Double>>>> function = (o, l) -> () -> keys;
-        IgniteBinaryOperator<Integer> max = Integer::max;
+        IgniteFunction<List<Integer>, Integer> max = ints -> ints.stream().mapToInt(x -> x).max().orElse(Integer.MIN_VALUE);
 
         Integer res = chain.
-            thenDistributedForEntries((integer, context) -> () -> null, this::readAndIncrement, function, max, Integer.MIN_VALUE).
+            thenDistributedForEntries((integer, context) -> () -> null, this::readAndIncrement, function, max).
             process(init, new GroupTrainingContext<>(locCtx, cache, ignite));
 
         int localMax = m.values().stream().max(Comparator.comparingInt(i -> i)).orElse(Integer.MIN_VALUE);

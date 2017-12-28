@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.trainers.group;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
@@ -43,7 +44,6 @@ public class GroupTrainerEntriesProcessorTask<K, V, C, R extends Serializable> e
      * @param worker Function calculated on each of specified keys.
      * @param keysSupplier Supplier of keys on which training is done.
      * @param reducer Reducer used for reducing results of computation performed on each of specified keys.
-     * @param identity Identity for reducer.
      * @param cacheName Name of cache on which training is done.
      * @param ignite Ignite instance.
      */
@@ -51,14 +51,14 @@ public class GroupTrainerEntriesProcessorTask<K, V, C, R extends Serializable> e
         IgniteSupplier<C> ctxSupplier,
         IgniteFunction<EntryAndContext<K, V, C>, ResultAndUpdates<R>> worker,
         IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keysSupplier,
-        IgniteBinaryOperator<R> reducer, R identity,
+        IgniteFunction<List<R>, R> reducer,
         String cacheName,
         Ignite ignite) {
-        super(trainingUUID, ctxSupplier, worker, keysSupplier, reducer, identity, cacheName, ignite);
+        super(trainingUUID, ctxSupplier, worker, keysSupplier, reducer, cacheName, ignite);
     }
 
     /** {@inheritDoc} */
     @Override protected BaseLocalProcessorJob<K, V, EntryAndContext<K, V, C>, R> createJob() {
-        return new LocalEntriesProcessorJob<>(ctxSupplier, worker, keysSupplier, reducer, identity, trainingUUID, cacheName);
+        return new LocalEntriesProcessorJob<>(ctxSupplier, worker, keysSupplier, reducer, trainingUUID, cacheName);
     }
 }
