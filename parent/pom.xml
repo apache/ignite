@@ -102,6 +102,7 @@
         <slf4j.version>1.7.7</slf4j.version>
         <slf4j16.version>1.6.4</slf4j16.version>
         <spring41.osgi.feature.version>4.1.7.RELEASE_1</spring41.osgi.feature.version>
+        <storm.version>1.1.1</storm.version>
         <tomcat.version>8.0.23</tomcat.version>
         <twitter.hbc.version>2.2.0</twitter.hbc.version>
         <yammer.metrics.annotation.version>2.2.0</yammer.metrics.annotation.version>
@@ -454,7 +455,11 @@
                             </group>
                             <group>
                                 <title>RocketMQ integration</title>
-                                <packages>org.apache.ignite.rocketmq*</packages>
+                                <packages>org.apache.ignite.stream.rocketmq*</packages>
+                            </group>
+                            <group>
+                                <title>Storm integration</title>
+                                <packages>org.apache.ignite.stream.storm*</packages>
                             </group>
                             <group>
                                 <title>Ignite Development Utils</title>
