@@ -394,8 +394,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             // Attribute-based config.
             var cfg = new CacheConfiguration("def_value_attr", new QueryEntity(typeof(int), typeof(Foo)));
+            Assert.AreEqual(-1, cfg.QueryEntities.Single().Fields.Single(x => x.Name == "Id").DefaultValue);
+            
             var cache = Ignition.GetIgnite().CreateCache<int, Foo>(cfg);
-
             Assert.AreEqual(-1,
                 cache.GetConfiguration().QueryEntities.Single().Fields.Single(x => x.Name == "Id").DefaultValue);
 
