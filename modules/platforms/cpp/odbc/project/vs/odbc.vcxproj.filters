@@ -157,6 +157,9 @@
     <ClCompile Include="..\..\src\ssl\ssl_mode.cpp">
       <Filter>Code\ssl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ssl\ssl_gateway.cpp">
+      <Filter>Code\ssl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def">
@@ -300,6 +303,12 @@
       <Filter>Code\system</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_mode.h">
+      <Filter>Code\ssl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_gateway.h">
+      <Filter>Code\ssl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_bindings.h">
       <Filter>Code\ssl</Filter>
     </ClInclude>
   </ItemGroup>

@@ -18,12 +18,10 @@
 #include <sstream>
 #include <cstdio>
 
-#include <openssl/ssl.h>
-#include <openssl/conf.h>
-
-#include "ignite/common/concurrent.h"
 #include "ignite/odbc/log.h"
+#include "ignite/common/concurrent.h"
 #include "ignite/odbc/ssl/secure_socket_client.h"
+#include "ignite/odbc/ssl/ssl_bindings.h"
 
 // Declaring constant used by OpenSSL for readability.
 enum { SSL_OPERATION_SUCCESS = 1 };
@@ -50,7 +48,7 @@ namespace ignite
                 CloseInteral();
 
                 if (context)
-                    SSL_CTX_free(reinterpret_cast<SSL_CTX*>(context));
+                    ssl::SSL_CTX_free(reinterpret_cast<SSL_CTX*>(context));
             }
 
             bool SecureSocketClient::Connect(const char* hostname, uint16_t port, diagnostic::Diagnosable& diag)
@@ -68,7 +66,7 @@ namespace ignite
                     }
                 }
 
-                BIO* bio = BIO_new_ssl_connect(reinterpret_cast<SSL_CTX*>(context));
+                BIO* bio = ssl::BIO_new_ssl_connect(reinterpret_cast<SSL_CTX*>(context));
                 if (!bio)
                 {
                     diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not create SSL connection.");
@@ -81,79 +79,80 @@ namespace ignite
 
                 std::string address = stream.str();
 
-                long res = BIO_set_conn_hostname(bio, address.c_str());
+                long res = ssl::BIO_ctrl(bio, BIO_C_SET_CONNECT, 0, const_cast<char*>(address.c_str()));
                 if (res != SSL_OPERATION_SUCCESS)
                 {
                     diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not set SSL connection hostname.");
 
-                    BIO_free_all(bio);
+                    ssl::BIO_free_all(bio);
 
                     return false;
                 }
 
                 SSL* ssl = 0;
-                BIO_get_ssl(bio, &ssl);
+                ssl::BIO_ctrl(bio, BIO_C_GET_SSL, 0, reinterpret_cast<char*>(&ssl));
                 if (!ssl)
                 {
                     diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not get SSL instance from BIO.");
 
-                    BIO_free_all(bio);
+                    ssl::BIO_free_all(bio);
 
                     return false;
                 }
 
-                res = SSL_set_tlsext_host_name(ssl, hostname);
+                res = ssl::SSL_ctrl(ssl, SSL_CTRL_SET_TLSEXT_HOSTNAME,
+                    TLSEXT_NAMETYPE_host_name, const_cast<char*>(hostname));
                 if (res != SSL_OPERATION_SUCCESS)
                 {
                     diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not set host name for secure connection");
 
-                    BIO_free_all(bio);
+                    ssl::BIO_free_all(bio);
 
                     return false;
                 }
 
-                res = BIO_do_connect(bio);
+                res = ssl::BIO_ctrl(bio, BIO_C_DO_STATE_MACHINE, 0, NULL);
                 if (res != SSL_OPERATION_SUCCESS)
                 {
                     diag.AddStatusRecord(SqlState::S08001_CANNOT_CONNECT,
                         "Failed to establish secure connection with the host.");
 
-                    BIO_free_all(bio);
+                    ssl::BIO_free_all(bio);
 
                     return false;
                 }
 
-                res = BIO_do_handshake(bio);
+                res = ssl::BIO_ctrl(bio, BIO_C_DO_STATE_MACHINE, 0, NULL);
                 if (res != SSL_OPERATION_SUCCESS)
                 {
                     diag.AddStatusRecord(SqlState::S08001_CANNOT_CONNECT, "SSL handshake failed.");
 
-                    BIO_free_all(bio);
+                    ssl::BIO_free_all(bio);
 
                     return false;
                 }
 
                 // Verify a server certificate was presented during the negotiation
-                X509* cert = SSL_get_peer_certificate(ssl);
+                X509* cert = ssl::SSL_get_peer_certificate(ssl);
                 if (cert)
-                    X509_free(cert);
+                    ssl::X509_free(cert);
                 else
                 {
                     diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Remote host did not provide certificate.");
 
-                    BIO_free_all(bio);
+                    ssl::BIO_free_all(bio);
 
                     return false;
                 }
 
                 // Verify the result of chain verification
                 // Verification performed according to RFC 4158
-                res = SSL_get_verify_result(ssl);
+                res = ssl::SSL_get_verify_result(ssl);
                 if (X509_V_OK != res)
                 {
                     diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Certificate chain verification failed.");
 
-                    BIO_free_all(bio);
+                    ssl::BIO_free_all(bio);
 
                     return false;
                 }
@@ -184,9 +183,9 @@ namespace ignite
 
                 do
                 {
-                    res = BIO_write(sslBio0, data, static_cast<int>(size));
+                    res = ssl::BIO_write(sslBio0, data, static_cast<int>(size));
                 }
-                while (BIO_should_retry(sslBio0));
+                while (ssl::BIO_test_flags(sslBio0, BIO_FLAGS_SHOULD_RETRY));
 
                 return res;
             }
@@ -207,9 +206,9 @@ namespace ignite
 
                 do
                 {
-                    res = BIO_read(sslBio0, buffer, static_cast<int>(size));
+                    res = ssl::BIO_read(sslBio0, buffer, static_cast<int>(size));
                 }
-                while (BIO_should_retry(sslBio0));
+                while (ssl::BIO_test_flags(sslBio0, BIO_FLAGS_SHOULD_RETRY));
 
                 return res;
             }
@@ -251,7 +250,7 @@ namespace ignite
                     return 0;
                 }
 
-                SSL_CTX* ctx = SSL_CTX_new(method);
+                SSL_CTX* ctx = ssl::SSL_CTX_new(method);
                 if (!ctx)
                 {
                     diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not create new SSL context.");
@@ -259,56 +258,56 @@ namespace ignite
                     return 0;
                 }
 
-                SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, 0);
+                ssl::SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, 0);
 
-                SSL_CTX_set_verify_depth(ctx, 8);
+                ssl::SSL_CTX_set_verify_depth(ctx, 8);
 
                 const long flags = SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_COMPRESSION;
-                SSL_CTX_set_options(ctx, flags);
+                ssl::SSL_CTX_ctrl(ctx, SSL_CTRL_OPTIONS, flags, NULL);
 
                 const char* cCaPath = caPath.empty() ? 0 : caPath.c_str();
 
-                long res = SSL_CTX_load_verify_locations(ctx, cCaPath, 0);
+                long res = ssl::SSL_CTX_load_verify_locations(ctx, cCaPath, 0);
                 if (res != SSL_OPERATION_SUCCESS)
                 {
                     diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
                         "Can not set Certificate Authority path for secure connection.");
 
-                    SSL_CTX_free(ctx);
+                    ssl::SSL_CTX_free(ctx);
 
                     return 0;
                 }
 
-                res = SSL_CTX_use_certificate_chain_file(ctx, certPath.c_str());
+                res = ssl::SSL_CTX_use_certificate_chain_file(ctx, certPath.c_str());
                 if (res != SSL_OPERATION_SUCCESS)
                 {
                     diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
                         "Can not set client certificate file for secure connection.");
 
-                    SSL_CTX_free(ctx);
+                    ssl::SSL_CTX_free(ctx);
 
                     return 0;
                 }
 
-                res = SSL_CTX_use_RSAPrivateKey_file(ctx, keyPath.c_str(), SSL_FILETYPE_PEM);
+                res = ssl::SSL_CTX_use_RSAPrivateKey_file(ctx, keyPath.c_str(), SSL_FILETYPE_PEM);
                 if (res != SSL_OPERATION_SUCCESS)
                 {
                     diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
                         "Can not set private key file for secure connection.");
 
-                    SSL_CTX_free(ctx);
+                    ssl::SSL_CTX_free(ctx);
 
                     return 0;
                 }
 
                 const char* const PREFERRED_CIPHERS = "HIGH:!aNULL:!kRSA:!PSK:!SRP:!MD5:!RC4";
-                res = SSL_CTX_set_cipher_list(ctx, PREFERRED_CIPHERS);
+                res = ssl::SSL_CTX_set_cipher_list(ctx, PREFERRED_CIPHERS);
                 if (res != SSL_OPERATION_SUCCESS)
                 {
                     diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
                         "Can not set ciphers list for secure connection.");
 
-                    SSL_CTX_free(ctx);
+                    ssl::SSL_CTX_free(ctx);
 
                     return false;
                 }
@@ -320,7 +319,7 @@ namespace ignite
             {
                 if (sslBio)
                 {
-                    BIO_free_all(reinterpret_cast<BIO*>(sslBio));
+                    ssl::BIO_free_all(reinterpret_cast<BIO*>(sslBio));
 
                     sslBio = 0;
                 }
