@@ -1,6 +1,14 @@
 Apache Ignite Release Notes
 ===========================
 
+Apache Ignite In-Memory Data Fabric 2.4
+---------------------------------------
+Ignite:
+* Introduced Baseline Affinity Topology
+* Added ability to convert WAL to human-readable form
+* Added support for uninterruptible writes for WAL and storage
+* Local scan performance was improved up to 2 times in certain use-cases
+
 Apache Ignite In-Memory Data Fabric 2.3
 ---------------------------------------
 Ignite:
