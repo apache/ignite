@@ -22,10 +22,10 @@ Importing Ignite Dependencies In Maven Project
 
 If you are using Maven to manage dependencies of your project, there are two options:
 
-1. Import fabric edition:
-  - ignite-fabric (all inclusive)
+1. Import Apache Ignite bundle:
+  - ignite (all inclusive)
 
-Here is how 'ignite-fabric' can be added to your POM file (replace '${ignite.version}'
+Here is how 'ignite' can be added to your POM file (replace '${ignite.version}'
 with actual Ignite version you are interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -37,7 +37,7 @@ with actual Ignite version you are interested in):
         ...
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-fabric</artifactId>
+            <artifactId>ignite</artifactId>
             <version>${ignite.version}</version>
         </dependency>
         ...
