@@ -87,7 +87,7 @@ public class QueryEntity implements Serializable {
     private Set<String> _notNullFields;
 
     /** Fields default values. */
-    private Map<String, Object> fieldsDefaultValues = new HashMap<>();
+    private Map<String, Object> defaultFieldValues = new HashMap<>();
 
     /**
      * Creates an empty query entity.
@@ -118,7 +118,7 @@ public class QueryEntity implements Serializable {
 
         _notNullFields = other._notNullFields != null ? new HashSet<>(other._notNullFields) : null;
 
-        fieldsDefaultValues = other.fieldsDefaultValues != null ? new HashMap<>(other.fieldsDefaultValues)
+        defaultFieldValues = other.defaultFieldValues != null ? new HashMap<>(other.defaultFieldValues)
             : new HashMap<String, Object>();
     }
 
@@ -395,18 +395,18 @@ public class QueryEntity implements Serializable {
      *
      * @return Field's name to default value map.
      */
-    public Map<String, Object> getFieldsDefaultValues() {
-        return fieldsDefaultValues;
+    public Map<String, Object> getDefaultFieldValues() {
+        return defaultFieldValues;
     }
 
     /**
      * Sets fields default values.
      *
-     * @param fieldsDefaultValues Field's name to default value map.
+     * @param defaultFieldValues Field's name to default value map.
      * @return {@code this} for chaining.
      */
-    public QueryEntity setFieldsDefaultValues(Map<String, Object> fieldsDefaultValues) {
-        this.fieldsDefaultValues = fieldsDefaultValues;
+    public QueryEntity setDefaultFieldValues(Map<String, Object> defaultFieldValues) {
+        this.defaultFieldValues = defaultFieldValues;
 
         return this;
     }
@@ -670,13 +670,13 @@ public class QueryEntity implements Serializable {
             F.eqNotOrdered(idxs, entity.idxs) &&
             F.eq(tableName, entity.tableName) &&
             F.eq(_notNullFields, entity._notNullFields) &&
-            F.eq(fieldsDefaultValues, entity.fieldsDefaultValues);
+            F.eq(defaultFieldValues, entity.defaultFieldValues);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(keyType, valType, keyFieldName, valueFieldName, fields, keyFields, aliases, idxs,
-            tableName, _notNullFields, fieldsDefaultValues);
+            tableName, _notNullFields, defaultFieldValues);
     }
 
     /** {@inheritDoc} */

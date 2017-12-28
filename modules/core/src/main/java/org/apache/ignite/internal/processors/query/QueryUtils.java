@@ -241,7 +241,7 @@ public class QueryUtils {
         normalEntity.setKeyFieldName(entity.getKeyFieldName());
         normalEntity.setValueFieldName(entity.getValueFieldName());
         normalEntity.setNotNullFields(entity.getNotNullFields());
-        normalEntity.setFieldsDefaultValues(entity.getFieldsDefaultValues());
+        normalEntity.setDefaultFieldValues(entity.getDefaultFieldValues());
 
         // Normalize table name.
         String normalTblName = entity.getTableName();
@@ -516,7 +516,7 @@ public class QueryUtils {
         throws IgniteCheckedException {
         Set<String> keyFields = qryEntity.getKeyFields();
         Set<String> notNulls = qryEntity.getNotNullFields();
-        Map<String, Object> dlftVals = qryEntity.getFieldsDefaultValues();
+        Map<String, Object> dlftVals = qryEntity.getDefaultFieldValues();
 
         // We have to distinguish between empty and null keyFields when the key is not of SQL type -
         // when a key is not of SQL type, absence of a field in nonnull keyFields tell us that this field

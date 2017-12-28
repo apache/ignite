@@ -473,7 +473,7 @@ public class DdlStatementsProcessor {
         }
 
         if (!F.isEmpty(dfltValues))
-            res.setFieldsDefaultValues(dfltValues);
+            res.setDefaultFieldValues(dfltValues);
 
         String valTypeName = QueryUtils.createTableValueTypeName(createTbl.schemaName(), createTbl.tableName());
         String keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);

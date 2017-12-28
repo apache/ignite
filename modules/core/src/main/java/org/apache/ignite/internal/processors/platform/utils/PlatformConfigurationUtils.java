@@ -520,7 +520,7 @@ public class PlatformConfigurationUtils {
                 res.setNotNullFields(notNullFields);
 
             if (!defVals.isEmpty())
-                res.setFieldsDefaultValues(defVals);
+                res.setDefaultFieldValues(defVals);
         }
 
         // Aliases
@@ -1004,7 +1004,7 @@ public class PlatformConfigurationUtils {
         if (fields != null) {
             Set<String> keyFields = qryEntity.getKeyFields();
             Set<String> notNullFields = qryEntity.getNotNullFields();
-            Map<String, Object> defVals = qryEntity.getFieldsDefaultValues();
+            Map<String, Object> defVals = qryEntity.getDefaultFieldValues();
 
             writer.writeInt(fields.size());
 
