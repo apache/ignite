@@ -52,7 +52,7 @@ public class MLPGroupUpdateTrainer<P extends Serializable> extends
         MultilayerPerceptron,
         MLPGroupUpdateTrainerInput<P>,
         MLPGroupUpdateTrainingContext<P>,
-        MLPGroupUpdateTrainingLoopData,
+        P,
         MLPGroupUpdateTrainingLoopData<P>,
         P> {
 

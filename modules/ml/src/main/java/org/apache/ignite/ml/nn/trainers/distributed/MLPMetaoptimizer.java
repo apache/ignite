@@ -21,7 +21,7 @@ import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.trainers.group.Metaoptimizer;
 
-public class MLPMetaoptimizer<P> implements Metaoptimizer<MLPGroupUpdateTrainerLocalContext, MLPGroupUpdateTrainingLoopData<P>, P, P, P, MLPGroupUpdateTrainingLoopData> {
+public class MLPMetaoptimizer<P> implements Metaoptimizer<MLPGroupUpdateTrainerLocalContext, MLPGroupUpdateTrainingLoopData<P>, P, P, P, P> {
     @Override public IgniteBinaryOperator<P> initialReducer() {
         return null;
     }
@@ -30,22 +30,22 @@ public class MLPMetaoptimizer<P> implements Metaoptimizer<MLPGroupUpdateTrainerL
         return data;
     }
 
-    @Override public IgniteFunction<P, MLPGroupUpdateTrainingLoopData> distributedPostprocessor() {
+    @Override public IgniteFunction<P, P> distributedPostprocessor() {
         return null;
     }
 
-    @Override public IgniteBinaryOperator<MLPGroupUpdateTrainingLoopData> postProcessReducer() {
+    @Override public IgniteBinaryOperator<P> postProcessReducer() {
         return null;
     }
 
-    @Override public MLPGroupUpdateTrainingLoopData postProcessIdentity() {
+    @Override public P postProcessIdentity() {
         return null;
     }
 
-    @Override public P localProcessor(MLPGroupUpdateTrainingLoopData input, MLPGroupUpdateTrainerLocalContext locCtx) {
+    @Override public P localProcessor(P input, MLPGroupUpdateTrainerLocalContext locCtx) {
         locCtx.incrementCurrentStep();
 
-        return input.previousUpdate();
+        return input;
     }
 
     @Override public boolean shouldContinue(P input, MLPGroupUpdateTrainerLocalContext locCtx) {
