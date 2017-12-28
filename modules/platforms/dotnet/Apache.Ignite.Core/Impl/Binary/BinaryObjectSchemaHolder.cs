@@ -90,12 +90,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         public bool WriteSchema(IBinaryStream stream, int schemaOffset, out int schemaId, 
             ref BinaryObjectHeader.Flag flags)
         {
-            schemaId = Fnv1Hash.Basis;
-
             var count = _idx - schemaOffset;
 
-            if (count == 0) 
+            if (count == 0)
+            {
+                // Empty schema id must be 0.
+                schemaId = 0;
                 return false;
+            }
+
+            schemaId = Fnv1Hash.Basis;
 
             flags |= BinaryObjectSchemaSerializer.WriteSchema(_fields, stream, schemaOffset, count, 
                 (flags & BinaryObjectHeader.Flag.CompactFooter) == BinaryObjectHeader.Flag.CompactFooter);
