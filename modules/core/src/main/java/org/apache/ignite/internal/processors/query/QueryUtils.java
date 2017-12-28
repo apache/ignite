@@ -241,6 +241,7 @@ public class QueryUtils {
         normalEntity.setKeyFieldName(entity.getKeyFieldName());
         normalEntity.setValueFieldName(entity.getValueFieldName());
         normalEntity.setNotNullFields(entity.getNotNullFields());
+        normalEntity.setFieldsDefaultValues(entity.getFieldsDefaultValues());
 
         // Normalize table name.
         String normalTblName = entity.getTableName();
