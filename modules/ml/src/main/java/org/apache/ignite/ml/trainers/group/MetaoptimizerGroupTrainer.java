@@ -52,9 +52,9 @@ import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
  * @param <Y> Type of data which is returned by postprocessor.
  */
 public abstract class MetaoptimizerGroupTrainer<LC extends HasTrainingUUID, K, V, IN extends Serializable,
-R extends Serializable, I extends Serializable,
-M extends Model, T extends GroupTrainerInput<K>,
-G, O extends Serializable, X, Y> extends
+    R extends Serializable, I extends Serializable,
+    M extends Model, T extends GroupTrainerInput<K>,
+    G, O extends Serializable, X, Y> extends
     GroupTrainer<LC, K, V, IN, R, I, M, T, G> {
     /**
      * Metaoptimizer.

@@ -70,6 +70,7 @@ public interface DistributedStep<T, L, K, C, I, O extends Serializable> {
 
     /**
      * Identity for reduce.
+     *
      * @return Identity for reduce.
      */
     O identity();

@@ -45,7 +45,8 @@ class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext, Double
     }
 
     /** {@inheritDoc} */
-    @Override protected TestGroupTrainerLocalContext initialLocalContext(SimpleGroupTrainerInput data, UUID trainingUUID) {
+    @Override protected TestGroupTrainerLocalContext initialLocalContext(SimpleGroupTrainerInput data,
+        UUID trainingUUID) {
         return new TestGroupTrainerLocalContext(data.iterCnt(), data.eachNumberCount(), data.limit(), trainingUUID);
     }
 
