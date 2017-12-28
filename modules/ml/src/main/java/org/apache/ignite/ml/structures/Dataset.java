@@ -17,6 +17,10 @@
 
 package org.apache.ignite.ml.structures;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.util.Arrays;
 import org.apache.ignite.ml.math.Vector;
@@ -24,7 +28,7 @@ import org.apache.ignite.ml.math.Vector;
 /**
  * Class for set of vectors. This is a base class in hierarchy of datasets.
  */
-public class Dataset<Row extends DatasetRow> implements Serializable {
+public class Dataset<Row extends DatasetRow> implements Serializable, Externalizable {
     /** Data to keep. */
     protected Row[] data;
 
@@ -36,6 +40,11 @@ public class Dataset<Row extends DatasetRow> implements Serializable {
 
     /** Amount of attributes in each vector. */
     protected int colSize;
+
+    /**
+     * Default constructor (required by Externalizable).
+     */
+    public Dataset(){}
 
     /**
      * Creates new Dataset by given data.
@@ -91,11 +100,6 @@ public class Dataset<Row extends DatasetRow> implements Serializable {
 
         this.rowSize = rowSize;
         this.colSize = colSize;
-    }
-
-    /** */
-    public Dataset() {
-
     }
 
     /** */
@@ -187,7 +191,7 @@ public class Dataset<Row extends DatasetRow> implements Serializable {
         return data[idx].features();
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -199,12 +203,28 @@ public class Dataset<Row extends DatasetRow> implements Serializable {
         return rowSize == that.rowSize && colSize == that.colSize && Arrays.equals(data, that.data) && Arrays.equals(meta, that.meta);
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         int res = Arrays.hashCode(data);
         res = 31 * res + Arrays.hashCode(meta);
         res = 31 * res + rowSize;
         res = 31 * res + colSize;
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(data);
+        out.writeObject(meta);
+        out.writeInt(rowSize);
+        out.writeInt(colSize);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        data = (Row[]) in.readObject();
+        meta = (FeatureMetadata[]) in.readObject();
+        rowSize = in.readInt();
+        colSize = in.readInt();
     }
 }

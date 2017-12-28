@@ -17,12 +17,22 @@
 
 package org.apache.ignite.ml.structures;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.io.Serializable;
 
 /** Class for feature metadata. */
-public class FeatureMetadata implements Serializable {
+public class FeatureMetadata implements Serializable, Externalizable {
     /** Feature name */
     private String name;
+
+    /**
+     * Default constructor (required by Externalizable).
+     */
+    public FeatureMetadata() {
+    }
 
     /**
      * Creates an instance of Feature Metadata class.
@@ -43,6 +53,7 @@ public class FeatureMetadata implements Serializable {
         this.name = name;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -54,7 +65,18 @@ public class FeatureMetadata implements Serializable {
         return name != null ? name.equals(metadata.name) : metadata.name == null;
     }
 
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         return name != null ? name.hashCode() : 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        name = (String)in.readObject();
     }
 }

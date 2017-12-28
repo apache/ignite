@@ -17,13 +17,24 @@
 
 package org.apache.ignite.ml.structures;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.io.Serializable;
 import org.apache.ignite.ml.math.Vector;
 
 /** Class to keep one observation in dataset. This is a base class for labeled and unlabeled rows. */
-public class DatasetRow<V extends Vector> implements Serializable {
+public class DatasetRow<V extends Vector> implements Serializable, Externalizable {
     /** Vector. */
-    protected final V vector;
+    protected V vector;
+
+
+    /**
+     * Default constructor (required by Externalizable).
+     */
+    public DatasetRow() {
+    }
 
     /** */
     public DatasetRow(V vector) {
@@ -39,7 +50,7 @@ public class DatasetRow<V extends Vector> implements Serializable {
         return vector;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -51,9 +62,19 @@ public class DatasetRow<V extends Vector> implements Serializable {
         return vector != null ? !vector.equals(vector1.vector) : vector1.vector != null;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         int res = vector != null ? vector.hashCode() : 0;
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(vector);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        vector = (V)in.readObject();
     }
 }

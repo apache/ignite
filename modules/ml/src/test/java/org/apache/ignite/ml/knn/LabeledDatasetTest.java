@@ -22,6 +22,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.ml.math.ExternalizableTest;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.NoDataException;
@@ -33,7 +34,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
 
 /** Tests behaviour of KNNClassificationTest. */
-public class LabeledDatasetTest extends BaseKNNTest {
+public class LabeledDatasetTest extends BaseKNNTest implements ExternalizableTest<LabeledDataset> {
     /** */
     private static final String KNN_IRIS_TXT = "datasets/knn/iris.txt";
 
@@ -263,5 +264,22 @@ public class LabeledDatasetTest extends BaseKNNTest {
         final double[] labels = dataset.labels();
         for (int i = 0; i < lbs.length; i++)
             assertEquals(lbs[i], labels[i]);
+    }
+
+    @Override public void testExternalization() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+        double[][] mtx =
+            new double[][] {
+                {1.0, 1.0},
+                {1.0, 2.0},
+                {2.0, 1.0},
+                {-1.0, -1.0},
+                {-1.0, -2.0},
+                {-2.0, -1.0}};
+        double[] lbs = new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0};
+
+        LabeledDataset dataset = new LabeledDataset(mtx, lbs);
+        this.externalizeTest(dataset);
     }
 }
