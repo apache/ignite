@@ -19,6 +19,7 @@ package org.apache.ignite.ml.trainers.group;
 
 import java.io.Serializable;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -78,7 +79,7 @@ public class LocalEntriesProcessorJob<K, V, C, R extends Serializable> extends B
      */
     private Stream<Map.Entry<GroupTrainerCacheKey<K>, V>> selectLocalEntries() {
         Set<GroupTrainerCacheKey<K>> keys = keySupplier.get().
-            filter(k -> affinity().mapKeyToNode(k).isLocal()).
+            filter(k -> Objects.requireNonNull(affinity().mapKeyToNode(k)).isLocal()).
             filter(k -> k.trainingUUID().equals(trainingUUID)).
             collect(Collectors.toSet());
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.trainers.group;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
@@ -71,7 +72,7 @@ public class LocalKeysProcessorJob<K, V, C, R extends Serializable> extends Base
      */
     private Stream<GroupTrainerCacheKey<K>> selectLocalKeys() {
         return keySupplier.get().
-            filter(k -> affinity().mapKeyToNode(k).isLocal()).
+            filter(k -> Objects.requireNonNull(affinity().mapKeyToNode(k)).isLocal()).
             filter(k -> k.trainingUUID().equals(trainingUUID));
     }
 }

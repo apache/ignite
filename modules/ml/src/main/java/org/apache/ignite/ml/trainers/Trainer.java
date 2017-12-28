@@ -19,6 +19,18 @@ package org.apache.ignite.ml.trainers;
 
 import org.apache.ignite.ml.Model;
 
+/**
+ * Interface to train {@link Model}.
+ *
+ * @param <M> Model type.
+ * @param <T> Type of data to use in training.
+ */
 public interface Trainer<M extends Model, T> {
+    /**
+     * Trains Model on provided data.
+     *
+     * @param data Data for training.
+     * @return Trained Model.
+     */
     public M train(T data);
 }
