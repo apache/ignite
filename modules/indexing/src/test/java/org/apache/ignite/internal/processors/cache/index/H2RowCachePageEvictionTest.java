@@ -41,7 +41,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Tests H2RowCacheRegistry
+ * Tests for H2RowCacheRegistry with page eviction.
  */
 public class H2RowCachePageEvictionTest extends GridCommonAbstractTest {
     /** Entries count. */
@@ -87,12 +87,13 @@ public class H2RowCachePageEvictionTest extends GridCommonAbstractTest {
 
     /**
      * @param name Cache name.
+     * @param sqlOnheapCacheEnabled sqlOnheapCacheEnabled flag.
      * @return Cache configuration.
      */
-    private CacheConfiguration cacheConfiguration(String name) {
+    private CacheConfiguration cacheConfiguration(String name, boolean sqlOnheapCacheEnabled) {
         return new CacheConfiguration()
             .setName(name)
-            .setSqlOnheapCacheEnabled(true)
+            .setSqlOnheapCacheEnabled(sqlOnheapCacheEnabled)
             .setDataRegionName(DATA_REGION_NAME)
             .setAffinity(new RendezvousAffinityFunction(false, 2))
             .setQueryEntities(Collections.singleton(
@@ -117,7 +118,7 @@ public class H2RowCachePageEvictionTest extends GridCommonAbstractTest {
     /**
      */
     private void checkRowCacheOnPageEviction() {
-        grid().getOrCreateCache(cacheConfiguration(CACHE_NAME));
+        grid().getOrCreateCache(cacheConfiguration(CACHE_NAME, true));
 
         int grpId = grid().cachex(CACHE_NAME).context().groupId();
 
@@ -145,7 +146,7 @@ public class H2RowCachePageEvictionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception On error.
      */
-    public void testEvictPagesWithDiskStorage() throws Exception {
+    public void testEvictPagesWithDiskStorageSingleCacheInGroup() throws Exception {
         persistenceEnabled = true;
 
         startGrid();
@@ -158,10 +159,38 @@ public class H2RowCachePageEvictionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception On error.
      */
-    public void testEvictPagesWithoutDiskStorage() throws Exception {
+    public void testEvictPagesWithDiskStorageWithOtherCacheInGroup() throws Exception {
+        persistenceEnabled = true;
+
+        startGrid();
+
+        grid().active(true);
+
+        grid().getOrCreateCache(cacheConfiguration("cacheWithoutOnHeapCache", false));
+
+        checkRowCacheOnPageEviction();
+    }
+
+    /**
+     * @throws Exception On error.
+     */
+    public void testEvictPagesWithoutDiskStorageSingleCacheInGroup() throws Exception {
         persistenceEnabled = false;
 
         startGrid();
+
+        checkRowCacheOnPageEviction();
+    }
+
+    /**
+     * @throws Exception On error.
+     */
+    public void testEvictPagesWithoutDiskStorageWithOtherCacheInGroup() throws Exception {
+        persistenceEnabled = false;
+
+        startGrid();
+
+        grid().getOrCreateCache(cacheConfiguration("cacheWithoutOnHeapCache", false));
 
         checkRowCacheOnPageEviction();
     }

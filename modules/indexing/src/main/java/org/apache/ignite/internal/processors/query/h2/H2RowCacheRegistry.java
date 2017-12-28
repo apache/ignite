@@ -74,6 +74,9 @@ public class H2RowCacheRegistry {
 
             caches = caches0;
 
+            // Inject row cache cleaner into store on cache creation.
+            // Used in case the cache with enabled SqlOnheapCache is created in exists cache group
+            // and SqlOnheapCache is disbaled for the caches have been created before.
             for (IgniteCacheOffheapManager.CacheDataStore ds : cctx.offheap().cacheDataStores())
                 ds.setRowCacheCleaner(rowCache);
         }
