@@ -15,28 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.nn;
+package org.apache.ignite.ml.nn.trainers.distributed;
 
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.functions.IgniteSupplier;
+import java.io.Serializable;
 
-/**
- * Interface for classes containing input parameters for LocalBatchTrainer.
- */
-public interface LocalBatchTrainerInput<M extends Model<Matrix, Matrix>> {
-    /**
-     * Get supplier of next batch in form of matrix of inputs and matrix of outputs.
-     *
-     * @return Supplier of next batch.
-     */
-    IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier();
-
-    /**
-     * Model to train.
-     *
-     * @return Model to train.
-     */
-    M mdl();
+public class MLPGroupUpdateTrainingLoopData implements Serializable {
 }

@@ -38,7 +38,7 @@ import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
  * without touching main logic.
  *
  * @param <LC> Type of local context.
- * @param <K> Type of keys of cache used in group training.
+ * @param <K> Type of data in {@link GroupTrainerCacheKey} keys on which the training is done.
  * @param <V> Type of values of cache used in group training.
  * @param <IN> Data type which is returned by distributed initializer.
  * @param <R> Type of final result returned by nodes on which training is done.
@@ -79,7 +79,7 @@ G, O extends Serializable, X, Y> extends
      *
      * @return Function used to map EntryAndContext to type which is processed by dataProcessor.
      */
-    abstract IgniteFunction<EntryAndContext<K, V, G>, X> trainingLoopStepDataExtractor();
+    protected abstract IgniteFunction<EntryAndContext<K, V, G>, X> trainingLoopStepDataExtractor();
 
     /**
      * Get supplier of keys which should be processed by training loop.

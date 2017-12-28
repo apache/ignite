@@ -88,7 +88,7 @@ public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P>
         P updaterParams = updater.init(mdl, loss);
 
         while (i < maxIterations) {
-            IgniteBiTuple<Matrix, Matrix> batch = data.getBatch();
+            IgniteBiTuple<Matrix, Matrix> batch = data.batchSupplier().get();
             Matrix input = batch.get1();
             Matrix truth = batch.get2();
 

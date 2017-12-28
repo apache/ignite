@@ -43,7 +43,7 @@ import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
  * with all dependent objects.
  *
  * @param <LC> Type of local context of the training.
- * @param <K> Type of cache keys on which the training is done.
+ * @param <K> Type of data in {@link GroupTrainerCacheKey} keys on which the training is done.
  * @param <V> Type of cache values on which the training is done.
  * @param <IN> Type of data returned after initializing of distributed context.
  * @param <R> Type of result returned after training from each node.
