@@ -142,6 +142,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                             filters = new GridNioFilter[] {openSesFilter, codecFilter};
 
                         int maxOpenCursors = cliConnCfg.getMaxOpenCursorsPerConnection();
+                        long idleTimeout = cliConnCfg.getIdleTimeout();
 
                         GridNioServer<byte[]> srv0 = GridNioServer.<byte[]>builder()
                             .address(hostAddr)
@@ -158,7 +159,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                             .socketReceiveBufferSize(cliConnCfg.getSocketReceiveBufferSize())
                             .filters(filters)
                             .directMode(false)
-                            .idleTimeout(Long.MAX_VALUE)
+                            .idleTimeout(idleTimeout > 0 ? idleTimeout : Long.MAX_VALUE)
                             .build();
 
                         srv0.start();
