@@ -18,8 +18,6 @@
 package org.apache.ignite.ml.nn.trainers.distributed;
 
 import java.util.UUID;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -28,7 +26,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
 
 public class MLPGroupUpdateTrainerContextCache {
     /**
@@ -51,8 +48,8 @@ public class MLPGroupUpdateTrainerContextCache {
      * @param ignite Ignite instance.
      * @return Region projections cache.
      */
-    public static IgniteCache<UUID, MLPGroupUpdateTrainerContext> getOrCreate(Ignite ignite) {
-        CacheConfiguration<UUID, MLPGroupUpdateTrainerContext> cfg = new CacheConfiguration<>();
+    public static IgniteCache<UUID, MLPGroupUpdateTrainingData> getOrCreate(Ignite ignite) {
+        CacheConfiguration<UUID, MLPGroupUpdateTrainingData> cfg = new CacheConfiguration<>();
 
         // Write to primary.
         cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);

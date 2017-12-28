@@ -17,19 +17,17 @@
 
 package org.apache.ignite.ml.nn.trainers.distributed;
 
-import java.io.Serializable;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.trainers.group.Metaoptimizer;
 
-public class MLPMetaoptimizer<P> implements Metaoptimizer<MLPGroupUpdateTrainerLocalContext, MLPGroupUpdateTrainingLoopData<P>, P, MLPGroupUpdateTrainingLoopData, Serializable, MLPGroupUpdateTrainingLoopData> {
-    @Override public IgniteBinaryOperator<Serializable> initialReducer() {
+public class MLPMetaoptimizer<P> implements Metaoptimizer<MLPGroupUpdateTrainerLocalContext, MLPGroupUpdateTrainingLoopData<P>, P, P, P, MLPGroupUpdateTrainingLoopData> {
+    @Override public IgniteBinaryOperator<P> initialReducer() {
         return null;
     }
 
-    @Override public MLPGroupUpdateTrainingLoopData locallyProcessInitData(Serializable data,
-        MLPGroupUpdateTrainerLocalContext locCtx) {
-        return null;
+    @Override public P locallyProcessInitData(P data, MLPGroupUpdateTrainerLocalContext locCtx) {
+        return data;
     }
 
     @Override public IgniteFunction<P, MLPGroupUpdateTrainingLoopData> distributedPostprocessor() {
@@ -44,13 +42,13 @@ public class MLPMetaoptimizer<P> implements Metaoptimizer<MLPGroupUpdateTrainerL
         return null;
     }
 
-    @Override public MLPGroupUpdateTrainingLoopData localProcessor(MLPGroupUpdateTrainingLoopData input,
-        MLPGroupUpdateTrainerLocalContext locCtx) {
-        return null;
+    @Override public P localProcessor(MLPGroupUpdateTrainingLoopData input, MLPGroupUpdateTrainerLocalContext locCtx) {
+        locCtx.incrementCurrentStep();
+
+        return input.previousUpdate();
     }
 
-    @Override
-    public boolean shouldContinue(MLPGroupUpdateTrainingLoopData input, MLPGroupUpdateTrainerLocalContext locCtx) {
-        return false;
+    @Override public boolean shouldContinue(P input, MLPGroupUpdateTrainerLocalContext locCtx) {
+        return input != null && locCtx.currentStep() < locCtx.globalStepsMaxCount();
     }
 }

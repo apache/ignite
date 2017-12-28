@@ -27,24 +27,22 @@ import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.updaters.ParameterUpdateCalculator;
 
-public class MLPGroupUpdateTrainerContext<P> {
+public class MLPGroupUpdateTrainingData<P> {
     private final ParameterUpdateCalculator<MultilayerPerceptron, P> updateCalculator;
     private final int stepsCnt;
     private final IgniteFunction<List<P>, P> updateReducer;
-    private final P previousUpdate;
     private final IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier;
     private final IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
     private final double tolerance;
 
-    public MLPGroupUpdateTrainerContext(
+    public MLPGroupUpdateTrainingData(
         ParameterUpdateCalculator<MultilayerPerceptron, P> updateCalculator, int stepsCnt,
-        IgniteFunction<List<P>, P> updateReducer, P previousUpdate,
+        IgniteFunction<List<P>, P> updateReducer,
         IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier,
         IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss, double tolerance) {
         this.updateCalculator = updateCalculator;
         this.stepsCnt = stepsCnt;
         this.updateReducer = updateReducer;
-        this.previousUpdate = previousUpdate;
         this.batchSupplier = batchSupplier;
         this.loss = loss;
         this.tolerance = tolerance;
@@ -60,10 +58,6 @@ public class MLPGroupUpdateTrainerContext<P> {
 
     public IgniteFunction<List<P>, P> updateReducer() {
         return updateReducer;
-    }
-
-    public P previousUpdate() {
-        return previousUpdate;
     }
 
     public IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier() {

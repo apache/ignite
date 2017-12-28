@@ -42,6 +42,8 @@ public class MLPGroupUpdateTrainerLocalContext<U> implements HasTrainingUUID {
 
     private final int parallelTrainingsCnt;
 
+    private int curStep;
+
 //    private final IgniteFunction<List<U>, U> modelUpdatesReducer;
 
     public MLPGroupUpdateTrainerLocalContext(UUID trainingUUID, int globalStepsMaxCount, IgniteFunction<List<U>, U> allUpdatesReducer, int parallelTrainingsCnt) {
@@ -49,6 +51,7 @@ public class MLPGroupUpdateTrainerLocalContext<U> implements HasTrainingUUID {
         this.globalStepsMaxCount = globalStepsMaxCount;
         this.allUpdatesReducer = allUpdatesReducer;
         this.parallelTrainingsCnt = parallelTrainingsCnt;
+        curStep = 0;
     }
 
     /** {@inheritDoc} */
@@ -66,5 +69,15 @@ public class MLPGroupUpdateTrainerLocalContext<U> implements HasTrainingUUID {
 
     public int parallelTrainingsCnt() {
         return parallelTrainingsCnt;
+    }
+
+    public int currentStep() {
+        return 0;
+    }
+
+    public MLPGroupUpdateTrainerLocalContext<U> incrementCurrentStep() {
+        curStep++;
+
+        return this;
     }
 }
