@@ -17,17 +17,54 @@
 
 package org.apache.ignite.ml.nn.trainers.distributed;
 
+import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 
-public class MLPGroupUpdateTrainerLocalContext implements HasTrainingUUID {
+public class MLPGroupUpdateTrainerLocalContext<U> implements HasTrainingUUID {
+    /**
+     * UUID of training.
+     */
     private final UUID trainingUUID;
 
-    public MLPGroupUpdateTrainerLocalContext(UUID trainingUUID) {
+    /**
+     * Maximal number of global steps.
+     */
+    private final int globalStepsMaxCount;
+
+//    /**
+//     * Synchronize between nodes every syncRate steps.
+//     */
+//    private final int syncRate;
+
+    private final IgniteFunction<List<U>, U> allUpdatesReducer;
+
+    private final int parallelTrainingsCnt;
+
+//    private final IgniteFunction<List<U>, U> modelUpdatesReducer;
+
+    public MLPGroupUpdateTrainerLocalContext(UUID trainingUUID, int globalStepsMaxCount, IgniteFunction<List<U>, U> allUpdatesReducer, int parallelTrainingsCnt) {
         this.trainingUUID = trainingUUID;
+        this.globalStepsMaxCount = globalStepsMaxCount;
+        this.allUpdatesReducer = allUpdatesReducer;
+        this.parallelTrainingsCnt = parallelTrainingsCnt;
     }
 
+    /** {@inheritDoc} */
     @Override public UUID trainingUUID() {
         return trainingUUID;
+    }
+
+    public int globalStepsMaxCount() {
+        return globalStepsMaxCount;
+    }
+
+    public IgniteFunction<List<U>, U> allUpdatesReducer() {
+        return allUpdatesReducer;
+    }
+
+    public int parallelTrainingsCnt() {
+        return parallelTrainingsCnt;
     }
 }

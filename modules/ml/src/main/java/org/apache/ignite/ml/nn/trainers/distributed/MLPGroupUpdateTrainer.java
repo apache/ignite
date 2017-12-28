@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -37,7 +38,6 @@ import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.updaters.ParameterUpdateCalculator;
 import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
-import org.apache.ignite.ml.trainers.group.Metaoptimizer;
 import org.apache.ignite.ml.trainers.group.MetaoptimizerGroupTrainer;
 import org.apache.ignite.ml.trainers.group.ResultAndUpdates;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
@@ -58,14 +58,14 @@ public class MLPGroupUpdateTrainer<P> extends
         P> {
 
     public MLPGroupUpdateTrainer(
-        Metaoptimizer<MLPGroupUpdateTrainerLocalContext, MLPGroupUpdateTrainingLoopData<P>, P, MLPGroupUpdateTrainingLoopData, Serializable, MLPGroupUpdateTrainingLoopData> metaoptimizer,
+        MLPMetaoptimizer<P> metaoptimizer,
         IgniteCache<GroupTrainerCacheKey<Void>, MLPGroupTrainingCacheValue> cache,
         Ignite ignite, double tolerance) {
         super(metaoptimizer, cache, ignite);
     }
 
-    @Override
-    protected IgniteFunction<GroupTrainerCacheKey<Void>, ResultAndUpdates<Serializable>> distributedInitializer(
+    /** {@inheritDoc} */
+    @Override protected IgniteFunction<GroupTrainerCacheKey<Void>, ResultAndUpdates<Serializable>> distributedInitializer(
         MLPGroupUpdateTrainerInput data) {
         MultilayerPerceptron initPerceptron = data.mdl();
 
@@ -78,8 +78,8 @@ public class MLPGroupUpdateTrainer<P> extends
         };
     }
 
-    @Override
-    protected IgniteFunction<EntryAndContext<Void, MLPGroupTrainingCacheValue, MLPGroupUpdateTrainerContext<P>>, MLPGroupUpdateTrainingLoopData<P>> trainingLoopStepDataExtractor() {
+    /** {@inheritDoc} */
+    @Override protected IgniteFunction<EntryAndContext<Void, MLPGroupTrainingCacheValue, MLPGroupUpdateTrainerContext<P>>, MLPGroupUpdateTrainingLoopData<P>> trainingLoopStepDataExtractor() {
         return entryAndContext -> {
             MLPGroupUpdateTrainerContext<P> ctx = entryAndContext.context();
             Map.Entry<GroupTrainerCacheKey<Void>, MLPGroupTrainingCacheValue> entry = entryAndContext.entry();
@@ -92,7 +92,10 @@ public class MLPGroupUpdateTrainer<P> extends
     /** {@inheritDoc} */
     @Override protected IgniteSupplier<Stream<GroupTrainerCacheKey<Void>>> keysToProcessInTrainingLoop(
         MLPGroupUpdateTrainerLocalContext locCtx) {
-        return null;
+        int trainingsCnt = locCtx.parallelTrainingsCnt();
+        UUID uuid = locCtx.trainingUUID();
+
+        return () -> IntStream.range(0, trainingsCnt).mapToObj(i -> new GroupTrainerCacheKey<Void>(i, null, uuid));
     }
 
     /** {@inheritDoc} */
@@ -176,12 +179,13 @@ public class MLPGroupUpdateTrainer<P> extends
 
     /** {@inheritDoc} */
     @Override protected IgniteBinaryOperator<MultilayerPerceptron> finalResultsReducer() {
-        return null;
+        // Just take any of MLPs since they will be in the same state.
+        return (mlp1, mlp2) -> mlp1;
     }
 
     /** {@inheritDoc} */
     @Override protected MultilayerPerceptron mapFinalResult(MultilayerPerceptron res, MLPGroupUpdateTrainerLocalContext locCtx) {
-        return null;
+        return res;
     }
 
     /** {@inheritDoc} */
