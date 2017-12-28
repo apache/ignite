@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.ml.structures.LabeledDataset;
+import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -76,7 +77,7 @@ public class BaseKNNTest extends GridCommonAbstractTest {
         try {
             Path path = Paths.get(this.getClass().getClassLoader().getResource(rsrcPath).toURI());
             try {
-                return LabeledDataset.loadTxt(path, SEPARATOR, false, isFallOnBadData);
+                return LabeledDatasetLoader.loadFromTxtFile(path, SEPARATOR, false, isFallOnBadData);
             }
             catch (IOException e) {
                 e.printStackTrace();

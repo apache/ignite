@@ -23,12 +23,6 @@ export default {
     controller: class {
         static $inject = ['$rootScope', '$scope', '$state', 'IgniteBranding', 'UserNotifications'];
 
-        static webAgentDownloadVisibleStates = [
-            'base.configuration',
-            'base.sql',
-            'base.settings'
-        ];
-
         static connectedClustersUnvisibleStates = [
             '403', '404'
         ];
@@ -37,21 +31,14 @@ export default {
             Object.assign(this, {$rootScope, $scope, $state, branding, UserNotifications});
         }
 
-        setWebAgentDownloadVisible() {
-            this.isWebAgentDownloadVisible =
-                this.constructor.webAgentDownloadVisibleStates.some((state) => this.$state.includes(state));
-        }
-
         setConnectedClustersVisible() {
             this.isConnectedClustersVisible =
                 !this.constructor.connectedClustersUnvisibleStates.some((state) => this.$state.includes(state));
         }
 
         $onInit() {
-            this.setWebAgentDownloadVisible();
             this.setConnectedClustersVisible();
 
-            this.$scope.$on('$stateChangeSuccess', () => this.setWebAgentDownloadVisible());
             this.$scope.$on('$stateChangeSuccess', () => this.setConnectedClustersVisible());
         }
     },

@@ -32,6 +32,7 @@ import sun.misc.JavaNioAccess;
 import sun.misc.SharedSecrets;
 import sun.misc.Unsafe;
 
+import static org.apache.ignite.internal.util.IgniteUtils.jdkVersion;
 import static org.apache.ignite.internal.util.IgniteUtils.majorJavaVersion;
 
 /**
@@ -107,9 +108,15 @@ public abstract class GridUnsafe {
 
     /** Cleaner code for direct {@code java.nio.ByteBuffer}. */
     private static final DirectBufferCleaner DIRECT_BUF_CLEANER =
-        majorJavaVersion(System.getProperty("java.specification.version")) < 9
+        majorJavaVersion(jdkVersion()) < 9
             ? new ReflectiveDirectBufferCleaner()
             : new UnsafeDirectBufferCleaner();
+
+    /** */
+    private static final Base64Encoder BASE64_ENC =
+        majorJavaVersion(jdkVersion()) < 8
+            ? new LegacyBase64Encoder()
+            : new Base64EncoderImpl();
 
     /**
      * Ensure singleton.
@@ -1745,5 +1752,15 @@ public abstract class GridUnsafe {
             UNSAFE.putByte(addr + 1, (byte)(val >> 8));
             UNSAFE.putByte(addr, (byte)(val));
         }
+    }
+
+    /**
+     * Encodes bytes into Base64 string.
+     *
+     * @param msg Message to encode.
+     * @return Encoded message.
+     */
+    public static String encodeBase64(byte[] msg) {
+        return BASE64_ENC.encode(msg);
     }
 }
