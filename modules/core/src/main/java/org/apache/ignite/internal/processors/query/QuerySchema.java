@@ -30,6 +30,7 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableAddColumnOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableDropColumnOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexDropOperation;
 import org.apache.ignite.internal.util.typedef.F;
@@ -148,9 +149,7 @@ public class QuerySchema implements Serializable {
                     }
                 }
             }
-            else {
-                assert op instanceof SchemaAlterTableAddColumnOperation;
-
+            else if (op instanceof SchemaAlterTableAddColumnOperation) {
                 SchemaAlterTableAddColumnOperation op0 = (SchemaAlterTableAddColumnOperation)op;
 
                 int targetIdx = -1;
@@ -198,6 +197,31 @@ public class QuerySchema implements Serializable {
 
                 if (replaceTarget)
                     ((List<QueryEntity>)entities).set(targetIdx, target);
+            }
+            else {
+                assert op instanceof SchemaAlterTableDropColumnOperation;
+
+                SchemaAlterTableDropColumnOperation op0 = (SchemaAlterTableDropColumnOperation)op;
+
+                int targetIdx = -1;
+
+                for (int i = 0; i < entities.size(); i++) {
+                    QueryEntity entity = ((List<QueryEntity>)entities).get(i);
+
+                    if (F.eq(entity.getTableName(), op0.tableName())) {
+                        targetIdx = i;
+
+                        break;
+                    }
+                }
+
+                if (targetIdx == -1)
+                    return;
+
+                QueryEntity entity = ((List<QueryEntity>)entities).get(targetIdx);
+
+                for (String field : op0.columns())
+                    entity.getFields().remove(field);
             }
         }
     }
