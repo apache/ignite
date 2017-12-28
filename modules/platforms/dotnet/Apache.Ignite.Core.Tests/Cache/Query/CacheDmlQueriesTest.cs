@@ -387,6 +387,25 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Tests the QueryField.DefaultValue functionality.
+        /// </summary>
+        [Test]
+        public void TestDefaultValue()
+        {
+            // Attribute-based config.
+            var cfg = new CacheConfiguration("def_value_attr", new QueryEntity(typeof(int), typeof(Foo)));
+            var cache = Ignition.GetIgnite().CreateCache<int, Foo>(cfg);
+
+            cache.Query(new SqlFieldsQuery("insert into foo(_key, id, name) values (?, ?, ?)", 1, 2, "John")).GetAll();
+            cache.Query(new SqlFieldsQuery("insert into foo(_key, name) values (?, ?)", 3, "Mary")).GetAll();
+
+            Assert.AreEqual(2, cache[1].Id);
+            Assert.AreEqual(-1, cache[3].Id);
+
+            // QueryEntity-based config.
+        }
+
+        /// <summary>
         /// Key.
         /// </summary>
         private struct Key
@@ -423,7 +442,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// </summary>
         private class Foo
         {
-            [QuerySqlField] public int Id { get; set; }
+            [QuerySqlField(DefaultValue = -1)] public int Id { get; set; }
             [QuerySqlField(NotNull = true)] public string Name { get; set; }
         }
 
