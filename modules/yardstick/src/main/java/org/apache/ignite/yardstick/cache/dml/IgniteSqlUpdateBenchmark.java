@@ -68,7 +68,7 @@ public class IgniteSqlUpdateBenchmark extends IgniteCacheAbstractBenchmark<Integ
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-        cache().query(new SqlFieldsQuery("updateModel Person1 set _val = ? where _key = ?")
+        cache().query(new SqlFieldsQuery("update Person1 set _val = ? where _key = ?")
             .setArgs(new Person1(rnd.nextInt(args.range())), rnd.nextInt(args.range())));
 
         return true;

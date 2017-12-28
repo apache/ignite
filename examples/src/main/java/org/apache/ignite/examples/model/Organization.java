@@ -42,7 +42,7 @@ public class Organization {
     /** Type. */
     private OrganizationType type;
 
-    /** Last updateModel time. */
+    /** Last update time. */
     private Timestamp lastUpdated;
 
     /**
@@ -74,7 +74,7 @@ public class Organization {
      * @param name Name.
      * @param addr Address.
      * @param type Type.
-     * @param lastUpdated Last updateModel time.
+     * @param lastUpdated Last update time.
      */
     public Organization(String name, Address addr, OrganizationType type, Timestamp lastUpdated) {
         id = ID_GEN.incrementAndGet();
@@ -115,7 +115,7 @@ public class Organization {
     }
 
     /**
-     * @return Last updateModel time.
+     * @return Last update time.
      */
     public Timestamp lastUpdated() {
         return lastUpdated;

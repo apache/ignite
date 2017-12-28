@@ -27,7 +27,7 @@ public class LocalLinearRegressionSGDTrainerTest extends GenericLinearRegression
     /** */
     public LocalLinearRegressionSGDTrainerTest() {
         super(
-            new LinearRegressionSGDTrainer(100_000, 1e-12, 0.001),
+            new LinearRegressionSGDTrainer(100_000, 1e-12),
             DenseLocalOnHeapMatrix::new,
             DenseLocalOnHeapVector::new,
             1e-2);

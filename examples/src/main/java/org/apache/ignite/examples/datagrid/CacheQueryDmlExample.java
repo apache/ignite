@@ -108,7 +108,7 @@ public class CacheQueryDmlExample {
      */
     private static void update(IgniteCache<Long, Person> personCache) {
         String sql =
-            "updateModel Person set salary = salary * 1.1 " +
+            "update Person set salary = salary * 1.1 " +
             "where resume = ?";
 
         personCache.query(new SqlFieldsQuery(sql).setArgs("Master"));

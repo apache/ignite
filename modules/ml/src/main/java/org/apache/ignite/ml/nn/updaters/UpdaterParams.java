@@ -18,7 +18,7 @@
 package org.apache.ignite.ml.nn.updaters;
 
 /**
- * A common interface for model updaters.
+ * A common interface for parameter updaters.
  *
  * @param <T> Type of object to be updated with this params.
  */
@@ -26,7 +26,7 @@ public interface UpdaterParams<T> {
     /**
      * Update given obj with this parameters.
      *
-     * @param mdl Model to be updated.
+     * @param obj Object to be updated.
      */
-    <M extends T> M updateModel(M mdl);
+    <M extends T> M update(M mdl);
 }

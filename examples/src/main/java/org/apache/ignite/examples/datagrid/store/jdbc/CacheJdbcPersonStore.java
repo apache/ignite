@@ -70,10 +70,10 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
 
             int updated;
 
-            // Try updateModel first. If it does not work, then try insert.
+            // Try update first. If it does not work, then try insert.
             // Some databases would allow these to be done in one 'upsert' operation.
             try (PreparedStatement st = conn.prepareStatement(
-                "updateModel PERSON set first_name = ?, last_name = ? where id = ?")) {
+                "update PERSON set first_name = ?, last_name = ? where id = ?")) {
                 st.setString(1, val.firstName);
                 st.setString(2, val.lastName);
                 st.setLong(3, val.id);
@@ -81,7 +81,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
                 updated = st.executeUpdate();
             }
 
-            // If updateModel failed, try to insert.
+            // If update failed, try to insert.
             if (updated == 0) {
                 try (PreparedStatement st = conn.prepareStatement(
                     "insert into PERSON (id, first_name, last_name) values (?, ?, ?)")) {

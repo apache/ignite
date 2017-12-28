@@ -23,6 +23,7 @@ import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.optimization.BarzilaiBorweinUpdater;
 import org.apache.ignite.ml.optimization.GradientDescent;
 import org.apache.ignite.ml.optimization.LeastSquaresGradientFunction;
+import org.apache.ignite.ml.optimization.SimpleUpdater;
 
 /**
  * Linear regression trainer based on least squares loss function and gradient descent optimization algorithm.
@@ -39,8 +40,15 @@ public class LinearRegressionSGDTrainer implements Trainer<LinearRegressionModel
     }
 
     /** */
-    public LinearRegressionSGDTrainer(int maxIterations, double convergenceTol, double learningRate) {
+    public LinearRegressionSGDTrainer(int maxIterations, double convergenceTol) {
         this.gradientDescent = new GradientDescent(new LeastSquaresGradientFunction(), new BarzilaiBorweinUpdater())
+            .withMaxIterations(maxIterations)
+            .withConvergenceTol(convergenceTol);
+    }
+
+    /** */
+    public LinearRegressionSGDTrainer(int maxIterations, double convergenceTol, double learningRate) {
+        this.gradientDescent = new GradientDescent(new LeastSquaresGradientFunction(), new SimpleUpdater(learningRate))
             .withMaxIterations(maxIterations)
             .withConvergenceTol(convergenceTol);
     }
