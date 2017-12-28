@@ -26,20 +26,6 @@ object IgniteDataFrameSettings {
     val FORMAT_IGNITE = "ignite"
 
     /**
-      * Config option to specify named grid instance to connect when loading data.
-      *
-      * @example {{{
-      * val igniteDF = spark.read.format(IGNITE)
-      *     .option(OPTION_GRID, "my-grid")
-      *     //.... other options ...
-      *     .load()
-      * }}}
-      *
-      * @see [[org.apache.ignite.Ignite#name()]]
-      */
-    val OPTION_GRID = "grid"
-
-    /**
       * Config option to specify path to ignite config file.
       * Config from this file will be used to connect to existing Ignite cluster.
       *

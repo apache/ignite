@@ -25,6 +25,7 @@ import org.apache.ignite.spark.IgniteContext
 import org.apache.ignite.spark.IgniteDataFrameSettings._
 import org.apache.ignite.IgniteException
 import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.ignite.IgniteExternalCatalog.OPTION_GRID
 import org.apache.spark.sql.sources._
 
 /**
@@ -76,7 +77,7 @@ class IgniteRelationProvider extends RelationProvider with DataSourceRegister {
                     cfg
                 }
             else
-                throw new IgniteException("'config' or 'grid' must be specified to connect to ignite cluster.")
+                throw new IgniteException("'config' must be specified to connect to ignite cluster.")
         }
 
         val ic = IgniteContext(sqlCtx.sparkContext, configProvider)

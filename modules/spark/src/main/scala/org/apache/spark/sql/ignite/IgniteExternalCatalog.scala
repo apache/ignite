@@ -18,7 +18,7 @@
 package org.apache.spark.sql.ignite
 
 import org.apache.ignite.configuration.CacheConfiguration
-import org.apache.ignite.spark.IgniteDataFrameSettings.{OPTION_GRID, OPTION_TABLE}
+import org.apache.ignite.spark.IgniteDataFrameSettings.OPTION_TABLE
 import org.apache.ignite.spark.IgniteContext
 import org.apache.ignite.spark.IgniteDataFrameSettings._
 import org.apache.ignite.spark.impl.IgniteSQLRelation.schema
@@ -31,6 +31,7 @@ import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.util.StringUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.ignite.spark.impl._
+import org.apache.spark.sql.ignite.IgniteExternalCatalog.OPTION_GRID
 
 import scala.collection.JavaConversions._
 
@@ -291,4 +292,14 @@ class IgniteExternalCatalog(defaultIgniteContext: IgniteContext) extends Externa
     override def alterPartitions(db: String, table: String,
         parts: Seq[CatalogTablePartition]): Unit =
         throw new UnsupportedOperationException("unsupported")
+}
+
+object IgniteExternalCatalog {
+    /**
+      * Config option to specify named grid instance to connect when loading data.
+      * For internal use only.
+      *
+      * @see [[org.apache.ignite.Ignite#name()]]
+      */
+    private[apache] val OPTION_GRID = "grid"
 }
