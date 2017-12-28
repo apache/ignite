@@ -29,6 +29,7 @@
 #include "ignite/odbc/message.h"
 #include "ignite/odbc/config/configuration.h"
 #include "ignite/odbc/ssl/ssl_mode.h"
+#include "ignite/odbc/ssl/ssl_gateway.h"
 #include "ignite/odbc/ssl/secure_socket_client.h"
 #include "ignite/odbc/system/tcp_socket_client.h"
 
@@ -138,7 +139,19 @@ namespace ignite
             SslMode::T sslMode = SslMode::FromString(cfg.GetSslMode(), SslMode::DISABLE);
 
             if (sslMode != SslMode::DISABLE)
+            {
+                bool loaded = ssl::SslGateway::GetInstance().LoadAll();
+
+                if (!loaded)
+                {
+                    AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
+                        "Can not load OpenSSL library (have you set OPENSSL_HOME?).");
+
+                    return SqlResult::AI_ERROR;
+                }
+
                 socket.reset(new ssl::SecureSocketClient(cfg.GetSslCertFile(), cfg.GetSslKeyFile(), cfg.GetSslCaFile()));
+            }
             else
                 socket.reset(new system::TcpSocketClient());
 

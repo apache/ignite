@@ -99,8 +99,10 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
-      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;Shlwapi.lib;ssleay32MDd.lib;libeay32MDd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OPENSSL_HOME)\lib\VC</AdditionalLibraryDirectories>
+      <DelayLoadDLLs>
+      </DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -114,8 +116,10 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
-      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;Shlwapi.lib;ssleay32MDd.lib;libeay32MDd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OPENSSL_HOME)\lib\VC</AdditionalLibraryDirectories>
+      <DelayLoadDLLs>
+      </DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -133,7 +137,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
-      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;Shlwapi.lib;ssleay32MD.lib;libeay32MD.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OPENSSL_HOME)\lib\VC</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -152,7 +156,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
-      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;Shlwapi.lib;ssleay32MD.lib;libeay32MD.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OPENSSL_HOME)\lib\VC</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -193,6 +197,7 @@
     <ClCompile Include="..\..\src\result_page.cpp" />
     <ClCompile Include="..\..\src\row.cpp" />
     <ClCompile Include="..\..\src\ssl\secure_socket_client.cpp" />
+    <ClCompile Include="..\..\src\ssl\ssl_gateway.cpp" />
     <ClCompile Include="..\..\src\ssl\ssl_mode.cpp" />
     <ClCompile Include="..\..\src\statement.cpp" />
     <ClCompile Include="..\..\src\type_traits.cpp" />
@@ -239,6 +244,8 @@
     <ClInclude Include="..\..\include\ignite\odbc\row.h" />
     <ClInclude Include="..\..\include\ignite\odbc\socket_client.h" />
     <ClInclude Include="..\..\include\ignite\odbc\ssl\secure_socket_client.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_bindings.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_gateway.h" />
     <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_mode.h" />
     <ClInclude Include="..\..\include\ignite\odbc\statement.h" />
     <ClInclude Include="..\..\include\ignite\odbc\system\odbc_constants.h" />

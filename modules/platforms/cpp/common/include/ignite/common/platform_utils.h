@@ -23,6 +23,8 @@ namespace ignite
 {
     namespace common
     {
+        typedef std::basic_ostream<char, std::char_traits<char> > StdCharOutStream;
+
         /**
          * Convert struct tm to time_t (UTC).
          *
@@ -87,6 +89,20 @@ namespace ignite
          * @return @c true if the provided path is the valid directory.
          */
         IGNITE_IMPORT_EXPORT bool IsValidDirectory(const std::string& path);
+
+        /**
+         * Write file separator to a stream.
+         * @param ostr Stream.
+         * @return The same stream for chaining.
+         */
+        IGNITE_IMPORT_EXPORT StdCharOutStream& Fs(StdCharOutStream& ostr);
+
+        /**
+         * Write dynamic library expansion to a stream.
+         * @param ostr Stream.
+         * @return The same stream for chaining.
+         */
+        IGNITE_IMPORT_EXPORT StdCharOutStream& Dle(StdCharOutStream& ostr);
     }
 }
 
