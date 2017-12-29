@@ -1485,6 +1485,12 @@ public class ZookeeperDiscoveryImpl {
             handleProcessedEvents("crd");
         }
         else {
+            String locAlivePath = rtState.locNodeZkPath.substring(rtState.locNodeZkPath.lastIndexOf('/') + 1);
+
+            deleteJoiningNodeData(locNode.id(),
+                ZkIgnitePaths.aliveNodePrefixId(locAlivePath),
+                rtState.joinDataPartCnt);
+
             DiscoverySpiNodeAuthenticator nodeAuth = spi.getAuthenticator();
 
             if (nodeAuth != null) {
@@ -2109,12 +2115,6 @@ public class ZookeeperDiscoveryImpl {
         rtState.evtsData.onNodeJoin(locNode);
 
         rtState.top.addNode(locNode);
-
-        String locAlivePath = rtState.locNodeZkPath.substring(rtState.locNodeZkPath.lastIndexOf('/') + 1);
-
-        deleteJoiningNodeData(locNode.id(),
-            ZkIgnitePaths.aliveNodePrefixId(locAlivePath),
-            rtState.joinDataPartCnt);
 
         final List<ClusterNode> topSnapshot = Collections.singletonList((ClusterNode)locNode);
 

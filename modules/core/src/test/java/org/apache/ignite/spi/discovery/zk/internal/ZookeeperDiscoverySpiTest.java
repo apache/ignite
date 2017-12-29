@@ -105,6 +105,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
 import org.apache.zookeeper.ZooKeeper;
@@ -1901,7 +1902,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         final String aliveDir = basePath + ZkIgnitePaths.ALIVE_NODES_DIR + "/";
 
         try {
-            List<String> znodes = ZKUtil.listSubTreeBFS(zkClient.zk(), IGNITE_ZK_ROOT);
+            List<String> znodes = listSubTree(zkClient.zk(), IGNITE_ZK_ROOT);
 
             boolean foundAlive = false;
 
@@ -1915,10 +1916,10 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
             assertTrue(foundAlive); // Sanity check to make sure we check correct directory.
 
-            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            assertTrue("Failed to wait for unused znodes cleanup", GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
                     try {
-                        List<String> znodes = ZKUtil.listSubTreeBFS(zkClient.zk(), IGNITE_ZK_ROOT);
+                        List<String> znodes = listSubTree(zkClient.zk(), IGNITE_ZK_ROOT);
 
                         for (String znode : znodes) {
                             if (znode.startsWith(aliveDir) || znode.length() < basePath.length())
@@ -3795,6 +3796,25 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         for (Ignite client : clients)
             client.events().stopLocalListen(p);
+    }
+
+    /**
+     * @param zk ZooKeeper client.
+     * @param root Root path.
+     * @return All children znodes for given path.
+     * @throws Exception If failed/
+     */
+    private List<String> listSubTree(ZooKeeper zk, String root) throws Exception {
+        for (int i = 0; i < 30; i++) {
+            try {
+                return ZKUtil.listSubTreeBFS(zk, root);
+            }
+            catch (KeeperException.NoNodeException e) {
+                info("NoNodeException when get znodes, will retry: " + e);
+            }
+        }
+
+        throw new Exception("Failed to get znodes: " + root);
     }
 
     /**
