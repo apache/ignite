@@ -42,6 +42,7 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
@@ -112,6 +113,12 @@ public class JdbcThinTcpIo {
 
     /** Ignite server version. */
     private IgniteProductVersion igniteVer;
+
+    /** Ignite server version. */
+    private Thread ownThread;
+
+    /** Mutex. */
+    private final Object mux = new Object();
 
     /**
      * Constructor.
@@ -278,21 +285,38 @@ public class JdbcThinTcpIo {
      */
     @SuppressWarnings("unchecked")
     JdbcResponse sendRequest(JdbcRequest req) throws IOException {
-        int cap = guessCapacity(req);
+        synchronized (mux) {
+            if (ownThread != null) {
+                throw new IgniteException("Multi-threaded access to Ignite JDBC connection."
+                    + " [ownThread=" + ownThread.getName()
+                    + ", curThread=" + Thread.currentThread().getName());
+            }
 
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap), null, null);
+            ownThread = Thread.currentThread();
+        }
 
-        req.writeBinary(writer);
+        try {
+            int cap = guessCapacity(req);
 
-        send(writer.array());
+            BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap), null, null);
 
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()), null, null, false);
+            req.writeBinary(writer);
 
-        JdbcResponse res = new JdbcResponse();
+            send(writer.array());
 
-        res.readBinary(reader);
+            BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()), null, null, false);
 
-        return res;
+            JdbcResponse res = new JdbcResponse();
+
+            res.readBinary(reader);
+
+            return res;
+        }
+        finally {
+            synchronized (mux) {
+                ownThread = null;
+            }
+        }
     }
 
     /**

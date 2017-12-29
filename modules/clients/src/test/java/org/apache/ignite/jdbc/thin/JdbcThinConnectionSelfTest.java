@@ -33,12 +33,14 @@ import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -67,6 +69,19 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
     /** */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1";
+
+    /**
+     * Get client socket for connection.
+     *
+     * @param conn Connection.
+     * @return Socket.
+     * @throws Exception If failed.
+     */
+    private static JdbcThinTcpIo io(Connection conn) throws Exception {
+        JdbcThinConnection conn0 = conn.unwrap(JdbcThinConnection.class);
+
+        return GridTestUtils.getFieldValue(conn0, JdbcThinConnection.class, "cliIo");
+    }
 
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
@@ -338,7 +353,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testSchema() throws Exception {
         assertInvalid("jdbc:ignite:thin://127.0.0.1/qwe/qwe",
-            "Invalid URL format (only schema name is allowed in URL path parameter 'host:port[/schemaName]')" );
+            "Invalid URL format (only schema name is allowed in URL path parameter 'host:port[/schemaName]')");
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/public")) {
             assertEquals("Invalid schema", "PUBLIC", conn.getSchema());
@@ -351,19 +366,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/_not_exist_schema_")) {
             assertEquals("Invalid schema", "_NOT_EXIST_SCHEMA_", conn.getSchema());
         }
-    }
-
-    /**
-     * Get client socket for connection.
-     *
-     * @param conn Connection.
-     * @return Socket.
-     * @throws Exception If failed.
-     */
-    private static JdbcThinTcpIo io(Connection conn) throws Exception {
-        JdbcThinConnection conn0 = conn.unwrap(JdbcThinConnection.class);
-
-        return GridTestUtils.getFieldValue(conn0, JdbcThinConnection.class, "cliIo");
     }
 
     /**
@@ -399,7 +401,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
         assert conn.isClosed();
 
-        assert !conn.isValid(2): "Connection must be closed";
+        assert !conn.isValid(2) : "Connection must be closed";
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -437,10 +439,10 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testCreateStatement2() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            int [] rsTypes = new int[]
+            int[] rsTypes = new int[]
                 {TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
 
-            int [] rsConcurs = new int[]
+            int[] rsConcurs = new int[]
                 {CONCUR_READ_ONLY, ResultSet.CONCUR_UPDATABLE};
 
             DatabaseMetaData meta = conn.getMetaData();
@@ -490,13 +492,13 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testCreateStatement3() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            int [] rsTypes = new int[]
+            int[] rsTypes = new int[]
                 {TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
 
-            int [] rsConcurs = new int[]
+            int[] rsConcurs = new int[]
                 {CONCUR_READ_ONLY, ResultSet.CONCUR_UPDATABLE};
 
-            int [] rsHoldabilities = new int[]
+            int[] rsHoldabilities = new int[]
                 {HOLD_CURSORS_OVER_COMMIT, CLOSE_CURSORS_AT_COMMIT};
 
             DatabaseMetaData meta = conn.getMetaData();
@@ -584,10 +586,10 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(URL)) {
             final String sqlText = "select * from test where param = ?";
 
-            int [] rsTypes = new int[]
+            int[] rsTypes = new int[]
                 {TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
 
-            int [] rsConcurs = new int[]
+            int[] rsConcurs = new int[]
                 {CONCUR_READ_ONLY, ResultSet.CONCUR_UPDATABLE};
 
             DatabaseMetaData meta = conn.getMetaData();
@@ -644,13 +646,13 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(URL)) {
             final String sqlText = "select * from test where param = ?";
 
-            int [] rsTypes = new int[]
+            int[] rsTypes = new int[]
                 {TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
 
-            int [] rsConcurs = new int[]
+            int[] rsConcurs = new int[]
                 {CONCUR_READ_ONLY, ResultSet.CONCUR_UPDATABLE};
 
-            int [] rsHoldabilities = new int[]
+            int[] rsHoldabilities = new int[]
                 {HOLD_CURSORS_OVER_COMMIT, CLOSE_CURSORS_AT_COMMIT};
 
             DatabaseMetaData meta = conn.getMetaData();
@@ -1066,7 +1068,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                     conn.getWarnings();
                 }
             });
-
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
@@ -1753,6 +1754,46 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                     conn.setNetworkTimeout(executor, timeout);
                 }
             });
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMultithreadingException() throws Exception {
+        int threadCnt = 5;
+
+        final boolean end[] = new boolean[] {false};
+
+        final SQLException exs [] = new SQLException[threadCnt];
+
+        final AtomicInteger exCnt = new AtomicInteger(0);
+
+        try (final Connection conn = DriverManager.getConnection(URL)) {
+            final IgniteInternalFuture f = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+                @Override public void run() {
+                    try {
+                        while (!end[0])
+                            conn.createStatement().execute("SELECT 1");
+                    }
+                    catch (SQLException e) {
+                        end[0] = true;
+                        exs[exCnt.getAndIncrement()] = e;
+                    }
+                }
+            }, threadCnt, "run-query");
+
+            f.get();
+
+            boolean exceptionFound = false;
+
+            for (SQLException e : exs) {
+                if (e != null && e.getCause() != null && e.getCause() instanceof IgniteException
+                    && e.getCause().getMessage().contains("Multi-threaded access to Ignite JDBC connection"))
+                    exceptionFound = true;
+            }
+
+            assertTrue("Multithreaded exception is not thrown", exceptionFound);
         }
     }
 
