@@ -162,6 +162,12 @@ public class RPropParameterUpdate implements Serializable {
         return this;
     }
 
+    /**
+     * Sums updates during one training.
+     *
+     * @param updates Updates.
+     * @return Sum of updates during one training.
+     */
     public static RPropParameterUpdate sumLocal(List<RPropParameterUpdate> updates) {
         List<RPropParameterUpdate> nonNullUpdates = updates.stream().filter(Objects::nonNull).collect(Collectors.toList());
 
@@ -175,6 +181,12 @@ public class RPropParameterUpdate implements Serializable {
         return new RPropParameterUpdate(totalUpdate, totalGradient, newDeltas, new DenseLocalOnHeapVector(newDeltas.size()).assign(1.0));
     }
 
+    /**
+     * Sums updates returned by different trainings.
+     *
+     * @param updates Updates.
+     * @return Sum of updates during returned by different trainings.
+     */
     public static RPropParameterUpdate sum(List<RPropParameterUpdate> updates) {
         Vector totalUpdate = updates.stream().filter(Objects::nonNull).map(pu -> VectorUtils.elementWiseTimes(pu.updatesMask().copy(), pu.prevIterationUpdates())).reduce(Vector::plus).orElse(null);
         Vector totalDelta = updates.stream().filter(Objects::nonNull).map(RPropParameterUpdate::deltas).reduce(Vector::plus).orElse(null);
@@ -186,6 +198,12 @@ public class RPropParameterUpdate implements Serializable {
         return null;
     }
 
+    /**
+     * Averages updates returned by different trainings.
+     *
+     * @param updates Updates.
+     * @return Averages of updates during returned by different trainings.
+     */
     public static RPropParameterUpdate avg(List<RPropParameterUpdate> updates) {
         List<RPropParameterUpdate> nonNullUpdates = updates.stream().filter(Objects::nonNull).collect(Collectors.toList());
         int size = nonNullUpdates.size();
