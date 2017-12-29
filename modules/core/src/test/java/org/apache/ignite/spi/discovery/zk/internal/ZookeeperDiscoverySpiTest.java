@@ -128,7 +128,7 @@ import static org.apache.zookeeper.ZooKeeper.ZOOKEEPER_CLIENT_CNXN_SOCKET;
  * TODO ZK: test with max client connections limit error.
  */
 @SuppressWarnings("deprecation")
-public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
+public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     /** */
     private static final String IGNITE_ZK_ROOT = ZookeeperDiscoverySpi.DFLT_ROOT_PATH;
 
@@ -349,6 +349,8 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
+        System.setProperty(ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_TIMEOUT, "1000");
+
         IgnitionEx.TEST_ZK = false;
     }
 
@@ -400,6 +402,8 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopZkCluster();
+
+        System.clearProperty(ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_TIMEOUT);
 
         super.afterTestsStopped();
     }
@@ -459,6 +463,8 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             checkEventsConsistency();
 
             checkInternalStructuresCleanup();
+
+            checkZkNodesCleanup();
         }
         finally {
             reset();
@@ -997,153 +1003,6 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
                 }
             }
         );
-    }
-
-    /**
-     *
-     */
-    static class TestFastStopProcessCustomMessage implements DiscoveryCustomMessage {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final IgniteUuid id = IgniteUuid.randomUuid();;
-
-        /** */
-        private final boolean createAck;
-
-        /** */
-        private final int payload;
-
-        /**
-         * @param createAck Create ack message flag.
-         * @param payload Payload.
-         */
-        TestFastStopProcessCustomMessage(boolean createAck, int payload) {
-            this.createAck = createAck;
-            this.payload = payload;
-
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteUuid id() {
-            return id;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-            return createAck ? new TestFastStopProcessCustomMessageAck(payload) : null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isMutable() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean stopProcess() {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
-            AffinityTopologyVersion topVer,
-            DiscoCache discoCache) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            TestFastStopProcessCustomMessage that = (TestFastStopProcessCustomMessage)o;
-
-            return createAck == that.createAck && payload == that.payload;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return Objects.hash(createAck, payload);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(TestFastStopProcessCustomMessage.class, this);
-        }
-    }
-
-    /**
-     *
-     */
-    static class TestFastStopProcessCustomMessageAck implements DiscoveryCustomMessage {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final IgniteUuid id = IgniteUuid.randomUuid();;
-
-        /** */
-        private final int payload;
-
-        /**
-         * @param payload Payload.
-         */
-        TestFastStopProcessCustomMessageAck(int payload) {
-            this.payload = payload;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteUuid id() {
-            return id;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isMutable() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean stopProcess() {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
-            AffinityTopologyVersion topVer,
-            DiscoCache discoCache) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            TestFastStopProcessCustomMessageAck that = (TestFastStopProcessCustomMessageAck)o;
-            return payload == that.payload;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return Objects.hash(payload);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(TestFastStopProcessCustomMessageAck.class, this);
-        }
     }
 
     /**
@@ -2031,17 +1890,65 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    private void printZkNodes() throws Exception {
-        ZookeeperClient zkClient = new ZookeeperClient(new JavaLogger(), zkCluster.getConnectString(), 10_000, null);
+    private void checkZkNodesCleanup() throws Exception {
+        final ZookeeperClient zkClient = new ZookeeperClient(getTestResources().getLogger(),
+            zkCluster.getConnectString(),
+            30_000,
+            null);
 
-        List<String> children = ZKUtil.listSubTreeBFS(zkClient.zk(), IGNITE_ZK_ROOT);
+        final String basePath = IGNITE_ZK_ROOT + "/";
 
-        info("Zookeeper nodes:");
+        final String aliveDir = basePath + ZkIgnitePaths.ALIVE_NODES_DIR + "/";
 
-        for (String s : children)
-            info(s);
+        try {
+            List<String> znodes = ZKUtil.listSubTreeBFS(zkClient.zk(), IGNITE_ZK_ROOT);
 
-        zkClient.close();
+            boolean foundAlive = false;
+
+            for (String znode : znodes) {
+                if (znode.startsWith(aliveDir)) {
+                    foundAlive = true;
+
+                    break;
+                }
+            }
+
+            assertTrue(foundAlive); // Sanity check to make sure we check correct directory.
+
+            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    try {
+                        List<String> znodes = ZKUtil.listSubTreeBFS(zkClient.zk(), IGNITE_ZK_ROOT);
+
+                        for (String znode : znodes) {
+                            if (znode.startsWith(aliveDir) || znode.length() < basePath.length())
+                                continue;
+
+                            znode = znode.substring(basePath.length());
+
+                            if (!znode.contains("/")) // Ignore roots.
+                                continue;
+
+                            log.info("Found unexpected znode: " + znode);
+
+                            return false;
+                        }
+
+                        return true;
+                    }
+                    catch (Exception e) {
+                        error("Unexpected error: " + e, e);
+
+                        fail("Unexpected error: " + e);
+                    }
+
+                    return false;
+                }
+            }, 10_000));
+        }
+        finally {
+            zkClient.close();
+        }
     }
 
     /**
@@ -2113,15 +2020,13 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         startGrid(0);
 
-        printZkNodes();
+        checkZkNodesCleanup();
 
         userAttrs = null;
 
         startGrid(1);
 
         waitForEventsAcks(ignite(0));
-
-        printZkNodes();
 
         waitForTopology(2);
     }
@@ -2138,7 +2043,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         waitForEventsAcks(ignite(0));
 
-        printZkNodes();
+        checkZkNodesCleanup();
     }
 
     /**
@@ -2211,8 +2116,6 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < 100; i++)
             cache.put(i, i);
-
-        printZkNodes();
 
         waitForTopology(4);
     }
@@ -2320,13 +2223,18 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
 
             info("Start node with duplicated ID [iter=" + i + ", nodeId=" + nodeId + ']');
 
-            GridTestUtils.assertThrows(log, new Callable<Void>() {
+            Throwable err = GridTestUtils.assertThrows(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
                     startGrid(idx);
 
                     return null;
                 }
             }, IgniteCheckedException.class, null);
+
+            IgniteSpiException spiErr = X.cause(err, IgniteSpiException.class);
+
+            assertNotNull(spiErr);
+            assertTrue(spiErr.getMessage().contains("Node with the same ID already exists"));
 
             nodeId = null;
 
@@ -3917,6 +3825,13 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
         return ccfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void waitForTopology(int expSize) throws Exception {
+        super.waitForTopology(expSize);
+
+        checkZkNodesCleanup();
+    }
+
     /**
      *
      */
@@ -4091,6 +4006,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             }
         };
 
+        /** */
         @LoggerResource
         private IgniteLogger log;
 
@@ -4117,6 +4033,7 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             }
         };
 
+        /** */
         @LoggerResource
         private IgniteLogger log;
 
@@ -4242,6 +4159,153 @@ public class ZookeeperDiscoverySpiBasicTest extends GridCommonAbstractTest {
             }
 
             return super.checkConnection(nodes);
+        }
+    }
+
+    /**
+     *
+     */
+    static class TestFastStopProcessCustomMessage implements DiscoveryCustomMessage {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final IgniteUuid id = IgniteUuid.randomUuid();
+
+        /** */
+        private final boolean createAck;
+
+        /** */
+        private final int payload;
+
+        /**
+         * @param createAck Create ack message flag.
+         * @param payload Payload.
+         */
+        TestFastStopProcessCustomMessage(boolean createAck, int payload) {
+            this.createAck = createAck;
+            this.payload = payload;
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteUuid id() {
+            return id;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+            return createAck ? new TestFastStopProcessCustomMessageAck(payload) : null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isMutable() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean stopProcess() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
+            AffinityTopologyVersion topVer,
+            DiscoCache discoCache) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TestFastStopProcessCustomMessage that = (TestFastStopProcessCustomMessage)o;
+
+            return createAck == that.createAck && payload == that.payload;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(createAck, payload);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(TestFastStopProcessCustomMessage.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    static class TestFastStopProcessCustomMessageAck implements DiscoveryCustomMessage {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final IgniteUuid id = IgniteUuid.randomUuid();
+
+        /** */
+        private final int payload;
+
+        /**
+         * @param payload Payload.
+         */
+        TestFastStopProcessCustomMessageAck(int payload) {
+            this.payload = payload;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteUuid id() {
+            return id;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isMutable() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean stopProcess() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
+            AffinityTopologyVersion topVer,
+            DiscoCache discoCache) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TestFastStopProcessCustomMessageAck that = (TestFastStopProcessCustomMessageAck)o;
+            return payload == that.payload;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(payload);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(TestFastStopProcessCustomMessageAck.class, this);
         }
     }
 }

@@ -27,7 +27,7 @@ class ZkIgnitePaths {
     static final String PATH_SEPARATOR = "/";
 
     /** */
-    static final byte CLIENT_NODE_FLAG_MASK = 0x01;
+    private static final byte CLIENT_NODE_FLAG_MASK = 0x01;
 
     /** */
     private static final int UUID_LEN = 36;

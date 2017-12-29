@@ -30,6 +30,9 @@ public class ZkAliveNodeData implements Serializable {
     /** */
     long lastProcEvt = -1;
 
+    /** */
+    transient boolean needUpdate;
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ZkAliveNodeData.class, this);

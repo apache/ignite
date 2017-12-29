@@ -49,12 +49,6 @@ class ZkRuntimeState {
     int joinDataPartCnt;
 
     /** */
-    ZkTimeoutObject joinErrTimeoutObj;
-
-    /** */
-    ZkTimeoutObject joinTimeoutObj;
-
-    /** */
     long gridStartTime;
 
     /** */
@@ -70,7 +64,7 @@ class ZkRuntimeState {
     String locNodeZkPath;
 
     /** */
-    ZkAliveNodeData locNodeInfo = new ZkAliveNodeData();
+    final ZkAliveNodeData locNodeInfo = new ZkAliveNodeData();
 
     /** */
     int procEvtCnt;
@@ -80,6 +74,17 @@ class ZkRuntimeState {
 
     /** */
     List<ClusterNode> commErrProcNodes;
+
+    /** Timeout callback registering watcher for join error
+     * (set this watcher after timeout as a minor optimization).
+     */
+    ZkTimeoutObject joinErrTo;
+
+    /** Timeout callback set to wait for join timeout. */
+    ZkTimeoutObject joinTo;
+
+    /** Timeout callback to update processed events counter. */
+    ZkTimeoutObject procEvtsUpdateTo;
 
     /**
      * @param prevJoined {@code True} if joined topology before reconnect attempt.

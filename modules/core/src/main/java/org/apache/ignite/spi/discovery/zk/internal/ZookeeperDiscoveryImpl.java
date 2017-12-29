@@ -106,6 +106,9 @@ public class ZookeeperDiscoveryImpl {
     static final String IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD = "IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD";
 
     /** */
+    static final String IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_TIMEOUT = "IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_TIMEOUT";
+
+    /** */
     static final String IGNITE_ZOOKEEPER_DISCOVERY_SPI_MAX_EVTS = "IGNITE_ZOOKEEPER_DISCOVERY_SPI_MAX_EVTS";
 
     /** */
@@ -991,10 +994,10 @@ public class ZookeeperDiscoveryImpl {
              */
             CheckJoinErrorWatcher joinErrorWatcher = new CheckJoinErrorWatcher(5000, joinDataPath, rtState);
 
-            rtState.joinErrTimeoutObj = joinErrorWatcher.timeoutObj;
+            rtState.joinErrTo = joinErrorWatcher.timeoutObj;
 
             if (locNode.isClient() && spi.getJoinTimeout() > 0) {
-                ZkTimeoutObject joinTimeoutObj = prevState != null ? prevState.joinTimeoutObj : null;
+                ZkTimeoutObject joinTimeoutObj = prevState != null ? prevState.joinTo : null;
 
                 if (joinTimeoutObj == null) {
                     joinTimeoutObj = new JoinTimeoutObject(spi.getJoinTimeout());
@@ -1002,7 +1005,7 @@ public class ZookeeperDiscoveryImpl {
                     spi.getSpiContext().addTimeoutObject(joinTimeoutObj);
                 }
 
-                rtState.joinTimeoutObj = joinTimeoutObj;
+                rtState.joinTo = joinTimeoutObj;
             }
 
             if (!locNode.isClient())
@@ -1010,7 +1013,7 @@ public class ZookeeperDiscoveryImpl {
 
             zkClient.getDataAsync(zkPaths.evtsPath, rtState.watcher, rtState.watcher);
 
-            spi.getSpiContext().addTimeoutObject(rtState.joinErrTimeoutObj);
+            spi.getSpiContext().addTimeoutObject(rtState.joinErrTo);
         }
         catch (IgniteCheckedException | ZookeeperClientFailedException e) {
             throw new IgniteSpiException("Failed to initialize Zookeeper nodes", e);
@@ -1031,7 +1034,7 @@ public class ZookeeperDiscoveryImpl {
         try {
             SecurityContext subj = nodeAuth.authenticateNode(locNode, locCred);
 
-            // Note: exception message test is checked in tests.
+            // Note: exception message is checked in tests.
             if (subj == null)
                 throw new IgniteSpiException("Authentication failed for local node.");
 
@@ -1109,6 +1112,33 @@ public class ZookeeperDiscoveryImpl {
     /**
      *
      */
+    private class UpdateProcessedEventsTimeoutObject extends ZkTimeoutObject {
+        /** */
+        private final ZkRuntimeState rtState;
+
+        /**
+         * @param rtState Runtime state.
+         * @param timeout Timeout.
+         */
+        UpdateProcessedEventsTimeoutObject(ZkRuntimeState rtState, long timeout) {
+            super(timeout);
+
+            this.rtState = rtState;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onTimeout() {
+            runInWorkerThread(new ZkRunnable(rtState, ZookeeperDiscoveryImpl.this) {
+                @Override protected void run0() throws Exception {
+                    updateProcessedEventsOnTimeout(rtState, UpdateProcessedEventsTimeoutObject.this);
+                }
+            });
+        }
+    }
+
+    /**
+     *
+     */
     private class JoinTimeoutObject extends ZkTimeoutObject {
         /**
          * @param timeout Timeout.
@@ -1138,7 +1168,7 @@ public class ZookeeperDiscoveryImpl {
                         "are no alive server nodes (consider increasing 'joinTimeout' configuration  property) [" +
                         "joinTimeout=" + spi.getJoinTimeout() + ']');
 
-                    // Note: exception message test is checked in tests.
+                    // Note: exception message is checked in tests.
                     onSegmented(new IgniteSpiException("Failed to connect to cluster within configured timeout"));
                 }
             });
@@ -1801,6 +1831,7 @@ public class ZookeeperDiscoveryImpl {
             U.error(log, "Failed to include node in cluster, node with the same ID already exists [joiningNode=" + node +
                 ", existingNode=" + node0 + ']');
 
+            // Note: exception message is checked in tests.
             return new ZkNodeValidateResult("Node with the same ID already exists: " + node0);
         }
 
@@ -2055,7 +2086,7 @@ public class ZookeeperDiscoveryImpl {
 
         assert prevEvts == null || prevEvts.maxInternalOrder < locInternalId;
 
-        spi.getSpiContext().removeTimeoutObject(rtState.joinErrTimeoutObj);
+        spi.getSpiContext().removeTimeoutObject(rtState.joinErrTo);
 
         cleanupPreviousClusterData();
 
@@ -2423,6 +2454,7 @@ public class ZookeeperDiscoveryImpl {
 
         ZookeeperClient zkClient = rtState.zkClient;
 
+        boolean evtProcessed = false;
         boolean updateNodeInfo = false;
 
         for (ZkDiscoveryEventData evtData : evts.tailMap(rtState.locNodeInfo.lastProcEvt, false).values()) {
@@ -2441,6 +2473,8 @@ public class ZookeeperDiscoveryImpl {
                     assert locNode.id().equals(joinedId);
 
                     processLocalJoin(evtsData, evtData0);
+
+                    evtProcessed = true;
                 }
             }
             else {
@@ -2533,6 +2567,8 @@ public class ZookeeperDiscoveryImpl {
                     default:
                         assert false : "Invalid event: " + evtData;
                 }
+
+                evtProcessed = true;
             }
 
             if (rtState.joined) {
@@ -2547,26 +2583,90 @@ public class ZookeeperDiscoveryImpl {
 
         if (rtState.crd)
             handleProcessedEvents("procEvt");
-        else if (updateNodeInfo) {
-            assert rtState.locNodeZkPath != null;
-
-            if (log.isDebugEnabled())
-                log.debug("Update processed events: " + rtState.locNodeInfo.lastProcEvt);
-
-            try {
-                zkClient.setData(rtState.locNodeZkPath, marshalZip(rtState.locNodeInfo), -1);
-            }
-            catch (KeeperException.NoNodeException e) {
-                // Possible if node is forcible failed.
-                if (log.isDebugEnabled())
-                    log.debug("Failed to update processed events, no node: " + rtState.locNodeInfo.lastProcEvt);
-            }
-        }
+        else
+            onEventProcessed(rtState, updateNodeInfo, evtProcessed);
 
         ZkCommunicationErrorProcessFuture commErrFut = commErrProcFut.get();
 
         if (commErrFut != null)
             commErrFut.onTopologyChange(rtState.top); // This can add new event, notify out of event process loop.
+    }
+
+    /**
+     * @param rtState Runtime state.
+     * @param updateNodeInfo {@code True} if need update processed events without delay.
+     * @param evtProcessed {@code True} if new event was processed.
+     * @throws Exception If failed.
+     */
+    private void onEventProcessed(ZkRuntimeState rtState,
+        boolean updateNodeInfo,
+        boolean evtProcessed) throws Exception
+    {
+        synchronized (stateMux) {
+            if (updateNodeInfo) {
+                assert rtState.locNodeZkPath != null;
+
+                if (log.isDebugEnabled())
+                    log.debug("Update processed events: " + rtState.locNodeInfo.lastProcEvt);
+
+                updateProcessedEvents(rtState);
+
+                if (rtState.procEvtsUpdateTo != null) {
+                    spi.getSpiContext().removeTimeoutObject(rtState.procEvtsUpdateTo);
+
+                    rtState.procEvtsUpdateTo = null;
+                }
+            }
+            else if (evtProcessed) {
+                rtState.locNodeInfo.needUpdate = true;
+
+                if (rtState.procEvtsUpdateTo == null) {
+                    long updateTimeout = IgniteSystemProperties.getLong(IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_TIMEOUT,
+                        60_000);
+
+                    if (updateTimeout > 0) {
+                        rtState.procEvtsUpdateTo = new UpdateProcessedEventsTimeoutObject(rtState, updateTimeout);
+
+                        spi.getSpiContext().addTimeoutObject(rtState.procEvtsUpdateTo);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * @param rtState Runtime state.
+     * @param procEvtsUpdateTo Timeout object.
+     * @throws Exception If failed.
+     */
+    private void updateProcessedEventsOnTimeout(ZkRuntimeState rtState, ZkTimeoutObject procEvtsUpdateTo)
+        throws Exception
+    {
+        synchronized (stateMux) {
+            if (rtState.procEvtsUpdateTo == procEvtsUpdateTo && rtState.locNodeInfo.needUpdate) {
+                if (log.isDebugEnabled())
+                    log.debug("Update processed events on timeout: " + rtState.locNodeInfo.lastProcEvt);
+
+                updateProcessedEvents(rtState);
+            }
+        }
+    }
+
+    /**
+     * @param rtState Runtime state.
+     * @throws Exception If failed.
+     */
+    private void updateProcessedEvents(ZkRuntimeState rtState) throws Exception {
+        try {
+            rtState.zkClient.setData(rtState.locNodeZkPath, marshalZip(rtState.locNodeInfo), -1);
+
+            rtState.locNodeInfo.needUpdate = false;
+        }
+        catch (KeeperException.NoNodeException e) {
+            // Possible if node is forcible failed.
+            if (log.isDebugEnabled())
+                log.debug("Failed to update processed events, no node: " + rtState.locNodeInfo.lastProcEvt);
+        }
     }
 
     /**
@@ -2597,14 +2697,14 @@ public class ZookeeperDiscoveryImpl {
             if (connState == ConnectionState.STOPPED)
                 return;
 
-            if (rtState.joinTimeoutObj != null) {
-                spi.getSpiContext().removeTimeoutObject(rtState.joinTimeoutObj);
+            if (rtState.joinTo != null) {
+                spi.getSpiContext().removeTimeoutObject(rtState.joinTo);
 
-                rtState.joinTimeoutObj.cancelled = true;
-                rtState.joinTimeoutObj = null;
+                rtState.joinTo.cancelled = true;
+                rtState.joinTo = null;
             }
 
-            spi.getSpiContext().removeTimeoutObject(rtState.joinErrTimeoutObj);
+            spi.getSpiContext().removeTimeoutObject(rtState.joinErrTo);
 
             if (log.isInfoEnabled())
                 log.info("Local join event data: " + evtData + ']');
@@ -3607,7 +3707,11 @@ public class ZookeeperDiscoveryImpl {
         return zip(marsh.marshal(obj));
     }
 
-    static byte[] zip(byte[] bytes) {
+    /**
+     * @param bytes Bytes to compress.
+     * @return Zip-compressed bytes.
+     */
+    private static byte[] zip(byte[] bytes) {
         Deflater deflater = new Deflater();
 
         deflater.setInput(bytes);

@@ -99,7 +99,7 @@ import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiBasicTest;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiTest;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
@@ -2170,7 +2170,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param expSize Expected nodes number.
      * @throws Exception If failed.
      */
-    protected final void waitForTopology(final int expSize) throws Exception {
+    protected void waitForTopology(final int expSize) throws Exception {
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 List<Ignite> nodes = G.allGrids();
@@ -2273,7 +2273,7 @@ public abstract class GridAbstractTest extends TestCase {
         assertFalse("There are no nodes", nodes.isEmpty());
 
         if (nodes.get(0).configuration().getDiscoverySpi().getClass().getName().equals(ZK_DISCOVERY))
-            ZookeeperDiscoverySpiBasicTest.reconnectClientNodes(log, clients, disconnectedC, false);
+            ZookeeperDiscoverySpiTest.reconnectClientNodes(log, clients, disconnectedC, false);
         else
             fail("Reconnect is not supported");
     }
