@@ -52,11 +52,11 @@ object IgniteDataFrameExample extends App {
             .config("spark.executor.instances", "2")
             .getOrCreate()
 
-        //Adjust the logger to exclude the logs of no interest.
+        // Adjust the logger to exclude the logs of no interest.
         Logger.getRootLogger.setLevel(Level.ERROR)
         Logger.getLogger("org.apache.ignite").setLevel(Level.INFO)
 
-        //Executing examples.
+        // Executing examples.
 
         sparkDSLExample
 
@@ -70,6 +70,9 @@ object IgniteDataFrameExample extends App {
       * @param spark SparkSession.
       */
     def sparkDSLExample(implicit spark: SparkSession): Unit = {
+        println("Querying using Spark DSL.")
+        println
+
         val igniteDF = spark.read
             .format(FORMAT_IGNITE) //Data source type.
             .option(OPTION_TABLE, "person") //Table to read.
@@ -78,7 +81,12 @@ object IgniteDataFrameExample extends App {
             .filter(col("id") >= 2) //Filter clause.
             .filter(col("name") like "%M%") //Another filter clause.
 
+        println("Data frame schema:")
+
         igniteDF.printSchema() //Printing query schema to console.
+
+        println("Data frame content:")
+
         igniteDF.show() //Printing query results to console.
     }
 
@@ -90,6 +98,9 @@ object IgniteDataFrameExample extends App {
       * @param spark SparkSession.
       */
     def nativeSparkSqlExample(implicit spark: SparkSession): Unit = {
+        println("Querying using Spark SQL.")
+        println
+
         val df = spark.read
             .format(FORMAT_IGNITE) //Data source type.
             .option(OPTION_TABLE, "person") //Table to read.
@@ -102,7 +113,12 @@ object IgniteDataFrameExample extends App {
         //Selecting data from Ignite throw Spark SQL Engine.
         val igniteDF = spark.sql("SELECT * FROM person WHERE id >= 2 AND name = 'Mary Major'")
 
+        println("Result schema:")
+
         igniteDF.printSchema() //Printing query schema to console.
+
+        println("Result content:")
+
         igniteDF.show() //Printing query results to console.
     }
 
@@ -138,8 +154,6 @@ object IgniteDataFrameExample extends App {
         cache.query(qry.setArgs(2L.asInstanceOf[JLong], "Jane Roe", 2L.asInstanceOf[JLong])).getAll
         cache.query(qry.setArgs(3L.asInstanceOf[JLong], "Mary Major", 1L.asInstanceOf[JLong])).getAll
         cache.query(qry.setArgs(4L.asInstanceOf[JLong], "Richard Miles", 2L.asInstanceOf[JLong])).getAll
-
-        println("Populated data.")
 
         ignite
     }
