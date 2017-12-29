@@ -40,7 +40,7 @@ import scala.collection.JavaConversions._
   *
   * @param defaultIgniteContext Ignite context to provide access to Ignite instance. If <code>None</code> passed then no-name instance of Ignite used.
   */
-class IgniteExternalCatalog(defaultIgniteContext: IgniteContext) extends ExternalCatalog {
+private[ignite] class IgniteExternalCatalog(defaultIgniteContext: IgniteContext) extends ExternalCatalog {
     /**
       * Default Ignite instance.
       */
