@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.sql.BatchUpdateException;
 import java.sql.ParameterMetaData;
+import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -37,9 +37,9 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
@@ -55,6 +55,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_3_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC;
@@ -480,100 +481,114 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
         int qryCnt = req.queries().size();
 
-        int successQueries = 0;
-        int updCnts[] = new int[qryCnt];
+        List<Integer> updCntsAcc = new ArrayList<>(qryCnt);
 
-        try {
-            SqlFieldsQueryEx qry = null;
+        // Send back only the first error. Others will be written to the log.
+        IgniteBiTuple<Integer, String> firstErr = new IgniteBiTuple<>();
 
-            for (JdbcQuery q : req.queries()) {
-                if (q.sql() != null) { // If we have a new query string in the batch,
-                    if (qry != null) // then execute the previous sub-batch and create new SqlFieldsQueryEx.
-                        successQueries = executeQuery(successQueries, updCnts, qry);
+        SqlFieldsQueryEx qry = null;
 
-                    qry = new SqlFieldsQueryEx(q.sql(), false, qryCnt);
+        for (JdbcQuery q : req.queries()) {
+            if (q.sql() != null) { // If we have a new query string in the batch,
+                if (qry != null) // then execute the previous sub-batch and create a new SqlFieldsQueryEx.
+                    executeBatchedQuery(qry, updCntsAcc, firstErr);
 
-                    qry.setDistributedJoins(distributedJoins);
-                    qry.setEnforceJoinOrder(enforceJoinOrder);
-                    qry.setCollocated(collocated);
-                    qry.setReplicatedOnly(replicatedOnly);
-                    qry.setLazy(lazy);
+                qry = new SqlFieldsQueryEx(q.sql(), false, qryCnt);
 
-                    qry.setSchema(schemaName);
-                }
+                qry.setDistributedJoins(distributedJoins);
+                qry.setEnforceJoinOrder(enforceJoinOrder);
+                qry.setCollocated(collocated);
+                qry.setReplicatedOnly(replicatedOnly);
+                qry.setLazy(lazy);
 
-                assert qry != null;
-
-                qry.addBatchedArgs(q.args());
+                qry.setSchema(schemaName);
             }
 
-            if (qry != null)
-                successQueries = executeQuery(successQueries, updCnts, qry);
+            assert qry != null;
 
+            qry.addBatchedArgs(q.args());
+        }
+
+        if (qry != null)
+            executeBatchedQuery(qry, updCntsAcc, firstErr);
+
+        int updCnts[] = U.toIntArray(updCntsAcc);
+
+        if (firstErr.isEmpty())
             return new JdbcResponse(new JdbcBatchExecuteResult(updCnts, ClientListenerResponse.STATUS_SUCCESS, null));
-        }
-        catch (Exception e) {
-            U.error(log, "Failed to execute batch query [reqId=" + req.requestId() + ", req=" + req + ']', e);
-
-            int code;
-
-            String msg;
-
-            if (e instanceof IgniteSQLException) {
-                code = ((IgniteSQLException) e).statusCode();
-
-                Throwable cause = X.cause(e, BatchUpdateException.class);
-
-                if (cause != null) {
-                    int[] updCntsOnErr = ((BatchUpdateException)cause).getUpdateCounts();
-
-                    int successQueries0 = successQueries;
-
-                    successQueries += updCntsOnErr.length;
-
-                    int[] updCnts0 = new int[successQueries];
-
-                    System.arraycopy(updCnts, 0, updCnts0, 0, successQueries0);
-                    System.arraycopy(updCntsOnErr, 0, updCnts0, successQueries0, updCntsOnErr.length);
-
-                    updCnts = updCnts0;
-
-                    msg = cause.getMessage();
-                }
-                else
-                    msg = e.getMessage();
-            }
-            else {
-                code = IgniteQueryErrorCode.UNKNOWN;
-
-                msg = e.getMessage();
-            }
-
-            return new JdbcResponse(new JdbcBatchExecuteResult(Arrays.copyOf(updCnts, successQueries), code, msg));
-        }
+        else
+            return new JdbcResponse(new JdbcBatchExecuteResult(updCnts, firstErr.getKey(), firstErr.getValue()));
     }
 
     /**
      * Executes query and updates result counters.
      *
-     * @param successQueries Successfully executed query counter.
-     * @param updCnts Per query rows updates counter.
      * @param qry Query.
-     * @return Updated value of successfully executed queries.
+     * @param updCntsAcc Per query rows updates counter.
+     * @param firstErr First error data - code and message.
      */
-    private int executeQuery(int successQueries, int[] updCnts, SqlFieldsQueryEx qry) {
-        List<FieldsQueryCursor<List<?>>> qryRes = ctx.query().querySqlFieldsNoCache(qry, true, true);
+    private void executeBatchedQuery(SqlFieldsQueryEx qry, List<Integer> updCntsAcc,
+        IgniteBiTuple<Integer, String> firstErr) {
+        List<FieldsQueryCursor<List<?>>> qryRes;
+
+        try {
+            qryRes = ctx.query().querySqlFieldsNoCache(qry, true, true);
+        }
+        catch (Exception e) {
+            int code;
+
+            String msg;
+
+            if (e instanceof IgniteSQLException) {
+                BatchUpdateException batchCause = X.cause(e, BatchUpdateException.class);
+
+                if (batchCause != null) {
+                    int[] updCntsOnErr = batchCause.getUpdateCounts();
+
+                    for (int i = 0; i < updCntsOnErr.length; i++)
+                        updCntsAcc.add(updCntsOnErr[i]);
+
+                    msg = batchCause.getMessage();
+
+                    code = batchCause.getErrorCode();
+                }
+                else {
+                    for (int i = 0; i < qry.batchedArguments().size(); i++)
+                        updCntsAcc.add(Statement.EXECUTE_FAILED);
+
+                    msg = e.getMessage();
+
+                    code = ((IgniteSQLException)e).statusCode();
+                }
+            }
+            else {
+                for (int i = 0; i < qry.batchedArguments().size(); i++)
+                    updCntsAcc.add(Statement.EXECUTE_FAILED);
+
+                msg = e.getMessage();
+
+                code = IgniteQueryErrorCode.UNKNOWN;
+            }
+
+            if (firstErr.isEmpty())
+                firstErr.set(code, msg);
+            else
+                U.error(log, "Failed to execute batch query [qry=" + qry +']', e);
+
+            return;
+        }
 
         for (FieldsQueryCursor<List<?>> cur : qryRes) {
             assert !((QueryCursorImpl)cur).isQuery();
 
             Iterator<List<?>> it = cur.iterator();
 
-            if (it.hasNext())
-                updCnts[successQueries++] = ((Long)it.next().get(0)).intValue();
-        }
+            if (it.hasNext()) {
+                int val = ((Long)it.next().get(0)).intValue();
 
-        return successQueries;
+                updCntsAcc.add(val);
+            }
+        }
     }
 
     /**

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.dml;
 
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -64,17 +65,19 @@ public class DmlBatchSender {
     private SQLException err;
 
     /** Per row updates counter */
-    private Map<Integer, Integer> cntPerRow = new HashMap<>();
+    private int[] cntPerRow;
 
     /**
      * Constructor.
      *
      * @param cctx Cache context.
      * @param size Batch.
+     * @param qryNum Number of queries.
      */
-    public DmlBatchSender(GridCacheContext cctx, int size) {
+    public DmlBatchSender(GridCacheContext cctx, int size, int qryNum) {
         this.cctx = cctx;
         this.size = size;
+        cntPerRow = new int[qryNum];
     }
 
     /**
@@ -92,10 +95,7 @@ public class DmlBatchSender {
         if (node == null)
             throw new IgniteCheckedException("Failed to map key to node.");
 
-        Integer cnt = cntPerRow.get(rowNum);
-
-        if (cnt == null)
-            cntPerRow.put(rowNum, 0);
+        assert rowNum < cntPerRow.length;
 
         UUID nodeId = node.id();
 
@@ -107,8 +107,11 @@ public class DmlBatchSender {
             batches.put(nodeId, batch);
         }
 
-        if (batch.containsKey(key)) // Force cache update if duplicates found.
-            flush();
+        if (batch.containsKey(key)) { // Force cache update if duplicates found.
+            sendBatch(batch);
+
+            batch.clear();
+        }
 
         batch.put(key, new IgniteBiTuple<>(rowNum, proc));
 
@@ -156,31 +159,21 @@ public class DmlBatchSender {
     }
 
     /**
-     * Returns per row updates counter.
-     *
-     * @return {@link Map} from row number to updated entries.
-     */
-    public Map<Integer, Integer> perRowUpdateCounter() {
-        return cntPerRow;
-    }
-
-    /**
      * Returns per row updates counter as array.
      *
      * @return Per row updates counter as array.
      */
     public int[] perRowCounterAsArray() {
-        int[] res = new int[cntPerRow.size()];
+        return cntPerRow;
+    }
 
-        for (int i = 0; i < cntPerRow.size(); i++ ) {
-            Integer cnt = cntPerRow.get(i);
-
-            assert cnt != null;
-
-            res[i] = cnt;
-        }
-
-        return res;
+    /**
+     * Sets row as failed.
+     *
+     * @param rowNum Row number.
+     */
+    public void setFailed(int rowNum) {
+        cntPerRow[rowNum] = Statement.EXECUTE_FAILED;
     }
 
     /**
@@ -290,9 +283,7 @@ public class DmlBatchSender {
 
                 assert rowNum != null;
 
-                Integer cnt = cntPerRow.get(rowNum);
-
-                cntPerRow.put(rowNum, cnt - 1);
+                cntPerRow[rowNum] = Statement.EXECUTE_FAILED;
             }
         }
 
@@ -310,9 +301,7 @@ public class DmlBatchSender {
 
             assert rowNum != null;
 
-            Integer cnt = cntPerRow.get(rowNum);
-
-            cntPerRow.put(rowNum, cnt + 1);
+            cntPerRow[rowNum]++;
         }
     }
 }

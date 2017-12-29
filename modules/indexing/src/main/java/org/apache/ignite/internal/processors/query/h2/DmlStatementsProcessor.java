@@ -74,6 +74,7 @@ import org.h2.command.dml.Merge;
 import org.h2.command.dml.Update;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
 
@@ -198,7 +199,8 @@ public class DmlStatementsProcessor {
 
         UpdatePlan plan = getPlanForStatement(schemaName, conn, prepared, fieldsQry, loc, null);
 
-        if (plan.hasRows()) {
+        // TODO remove update mode restriction when other commands are implemented.
+        if (plan.hasRows() && plan.mode() == UpdateMode.INSERT) {
             GridCacheContext<?, ?> cctx = plan.cacheContext();
 
             CacheOperationContext opCtx = setKeepBinaryContext(cctx);
@@ -609,7 +611,7 @@ public class DmlStatementsProcessor {
     @SuppressWarnings({"unchecked", "ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
     private UpdateResult doDelete(GridCacheContext cctx, Iterable<List<?>> cursor, int pageSize)
         throws IgniteCheckedException {
-        DmlBatchSender sender = new DmlBatchSender(cctx, pageSize);
+        DmlBatchSender sender = new DmlBatchSender(cctx, pageSize, 1);
 
         for (List<?> row : cursor) {
             if (row.size() != 2) {
@@ -657,7 +659,7 @@ public class DmlStatementsProcessor {
         throws IgniteCheckedException {
         GridCacheContext cctx = plan.cacheContext();
 
-        DmlBatchSender sender = new DmlBatchSender(cctx, pageSize);
+        DmlBatchSender sender = new DmlBatchSender(cctx, pageSize, 1);
 
         for (List<?> row : cursor) {
             T3<Object, Object, Object> row0 = plan.processRowForUpdate(row);
@@ -757,11 +759,11 @@ public class DmlStatementsProcessor {
                 return 1;
             else
                 throw new IgniteSQLException("Duplicate key during INSERT [key=" + t.getKey() + ']',
-                    IgniteQueryErrorCode.DUPLICATE_KEY);
+                    DUPLICATE_KEY);
         }
         else {
             // Keys that failed to INSERT due to duplication.
-            DmlBatchSender sender = new DmlBatchSender(cctx, pageSize);
+            DmlBatchSender sender = new DmlBatchSender(cctx, pageSize, 1);
 
             for (List<?> row : cursor) {
                 final IgniteBiTuple keyValPair = plan.processRow(row);
@@ -801,65 +803,64 @@ public class DmlStatementsProcessor {
      * @return Number of items affected.
      * @throws IgniteCheckedException if failed, particularly in case of duplicate keys.
      */
-    private List<UpdateResult>  doInsertBatched(UpdatePlan plan, List<List<List<?>>> cursor, int pageSize)
+    private List<UpdateResult> doInsertBatched(UpdatePlan plan, List<List<List<?>>> cursor, int pageSize)
         throws IgniteCheckedException {
         GridCacheContext cctx = plan.cacheContext();
 
-        DmlBatchSender snd = new DmlBatchSender(cctx, pageSize);
+        DmlBatchSender snd = new DmlBatchSender(cctx, pageSize, cursor.size());
 
         int rowNum = 0;
 
-        SQLException addExc = null;
+        SQLException resEx = null;
 
-        try {
-            for (List<List<?>> qryRow : cursor) {
-                for (List<?> row : qryRow) {
+        for (List<List<?>> qryRow : cursor) {
+            for (List<?> row : qryRow) {
+                try {
                     final IgniteBiTuple keyValPair = plan.processRow(row);
 
                     snd.add(keyValPair.getKey(), new InsertEntryProcessor(keyValPair.getValue()), rowNum);
                 }
+                catch (Exception e) {
+                    String sqlState;
 
-                rowNum++;
-            }
-        }
-        catch (Exception e) {
-            addExc = new SQLException(e);
-        }
-        finally {
-            snd.flush();
-        }
+                    int code;
 
-        SQLException resEx = null;
+                    if (e instanceof IgniteSQLException) {
+                        sqlState = ((IgniteSQLException)e).sqlState();
 
-        if (snd.error() != null)
-            resEx = snd.error();
+                        code = ((IgniteSQLException)e).statusCode();
+                    } else {
+                        sqlState = SqlStateCode.INTERNAL_ERROR;
 
-        if (!F.isEmpty(snd.failedKeys()) || addExc != null) {
-            BatchUpdateException batchEx;
+                        code = IgniteQueryErrorCode.UNKNOWN;
+                    }
 
-            if (addExc == null) {
-                String msg = "Failed to INSERT some keys because they are already in cache [keys=" +
-                    snd.failedKeys() + ']';
+                    resEx = chainException(resEx, new SQLException(e.getMessage(), sqlState, code, e));
 
-                batchEx = new BatchUpdateException(msg, SqlStateCode.CONSTRAINT_VIOLATION, snd.perRowCounterAsArray());
-
-                if (resEx != null)
-                    batchEx.setNextException(resEx);
-            }
-            else {
-                batchEx = new BatchUpdateException(addExc.getMessage(), SqlStateCode.CONSTRAINT_VIOLATION, snd.perRowCounterAsArray());
-
-                if (resEx != null)
-                    addExc.setNextException(resEx);
-
-                batchEx.setNextException(addExc);
+                    snd.setFailed(rowNum);
+                }
             }
 
-            throw new IgniteCheckedException(batchEx);
+            rowNum++;
         }
 
-        if (resEx != null)
-            throw new IgniteCheckedException(resEx);
+        snd.flush();
+
+        resEx = chainException(resEx, snd.error());
+
+        if (!F.isEmpty(snd.failedKeys())) {
+            SQLException e = new SQLException("Failed to INSERT some keys because they are already in cache [keys=" +
+                snd.failedKeys() + ']', SqlStateCode.CONSTRAINT_VIOLATION, DUPLICATE_KEY);
+
+            resEx = chainException(resEx, e);
+        }
+
+        if (resEx != null) {
+            BatchUpdateException e = new BatchUpdateException(resEx.getMessage(), resEx.getSQLState(),
+                resEx.getErrorCode(), snd.perRowCounterAsArray(), resEx);
+
+            throw new IgniteCheckedException(e);
+        }
 
         int[] cntPerRow = snd.perRowCounterAsArray();
 
@@ -872,6 +873,30 @@ public class DmlStatementsProcessor {
         }
 
         return res;
+    }
+
+    /**
+     * Adds exception to the chain.
+     *
+     * @param main Exception to add another exception to.
+     * @param add Exception which should be added to chain.
+     * @return Chained exception.
+     */
+    private SQLException chainException(SQLException main, SQLException add) {
+        if (main == null) {
+            if (add != null) {
+                main = add;
+
+                return main;
+            }
+            else
+                return null;
+        }
+        else {
+            main.setNextException(add);
+
+            return main;
+        }
     }
 
     /**
