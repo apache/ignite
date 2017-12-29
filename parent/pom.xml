@@ -955,40 +955,48 @@
         </profile>
 
         <profile>
-            <id>tools.jar-default</id>
+            <id>java-9</id>
+            <activation>
+                <jdk>[1.9,)</jdk>
+            </activation>
+            <properties>
+                <maven.compiler.source>9</maven.compiler.source>
+                <maven.compiler.target>9</maven.compiler.target>
+            </properties>
+            <dependencies/>
+        </profile>
 
+        <profile>
+            <id>lin-win-java-8</id>
             <activation>
                 <file>
                     <exists>${java.home}/../lib/tools.jar</exists>
                 </file>
             </activation>
-
             <dependencies>
                 <dependency>
                     <groupId>com.sun</groupId>
                     <artifactId>tools</artifactId>
-                    <version>1.4.2</version>
                     <scope>system</scope>
+                    <version>${java.version}</version>
                     <systemPath>${java.home}/../lib/tools.jar</systemPath>
                 </dependency>
             </dependencies>
         </profile>
 
         <profile>
-            <id>tools.jar-mac</id>
-
+            <id>osx-</id>
             <activation>
                 <file>
                     <exists>${java.home}/../Classes/classes.jar</exists>
                 </file>
             </activation>
-
             <dependencies>
                 <dependency>
                     <groupId>com.sun</groupId>
                     <artifactId>tools</artifactId>
-                    <version>1.4.2</version>
                     <scope>system</scope>
+                    <version>${java.version}</version>
                     <systemPath>${java.home}/../Classes/classes.jar</systemPath>
                 </dependency>
             </dependencies>
