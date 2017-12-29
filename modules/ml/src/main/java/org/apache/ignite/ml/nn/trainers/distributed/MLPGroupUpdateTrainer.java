@@ -96,9 +96,9 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
      */
     private final ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator;
 
-    private static final int DEFAULT_MAX_GLOBAL_STEPS = 100;
+    private static final int DEFAULT_MAX_GLOBAL_STEPS = 20;
 
-    private static final int DEFAULT_SYNC_RATE = 5;
+    private static final int DEFAULT_SYNC_RATE = 2;
 
 //    private static final IgniteFunction<List<SimpleGDParameter>,SimpleGDParameter> DEFAULT_ALL_UPDATES_REDUCER = parameters -> {
 //        Double lr = parameters.stream().filter(Objects::nonNull).map(SimpleGDParameter::learningRate).reduce((x, y) -> x + y).orElse(1.0);
@@ -244,15 +244,15 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
                 double err = MatrixUtil.zipFoldByColumns(predicted, truth, (predCol, truthCol) ->
                     loss.apply(truthCol).apply(predCol)).sum() / batchSize;
 
-                System.out.println(err);
+                System.out.println(err + " loc iter: " + i);
 
                 if (err < data.tolerance())
                     break;
 
+                mlpCp = updateCalculator.update(mlpCp, curUpdate);
                 updates.add(curUpdate);
 
-                U update = updateCalculator.calculateNewUpdate(mlpCp, curUpdate, i, input, truth);
-                mlpCp = updateCalculator.update(mlpCp, update);
+                curUpdate = updateCalculator.calculateNewUpdate(mlpCp, curUpdate, i, input, truth);
             }
 
             U update = data.getUpdateReducer().apply(updates);

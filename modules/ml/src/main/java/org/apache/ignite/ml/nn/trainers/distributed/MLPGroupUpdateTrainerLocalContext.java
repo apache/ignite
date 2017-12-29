@@ -72,7 +72,7 @@ public class MLPGroupUpdateTrainerLocalContext<U> implements HasTrainingUUID {
     }
 
     public int currentStep() {
-        return 0;
+        return curStep;
     }
 
     public MLPGroupUpdateTrainerLocalContext<U> incrementCurrentStep() {

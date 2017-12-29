@@ -143,7 +143,7 @@ public class MnistDistributed extends GridCommonAbstractTest {
 //     */
     public static LabeledVector<Vector, Vector> asLabeledVector(Vector v, int featsCnt) {
         Vector features = VectorUtils.copyPart(v, 0, featsCnt);
-        Vector lb = VectorUtils.num2Vec((int)v.get(featsCnt - 1), 10);
+        Vector lb = VectorUtils.num2Vec((int)v.get(featsCnt), 10);
 
         return new LabeledVector<>(features, lb);
     }
