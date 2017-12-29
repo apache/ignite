@@ -45,10 +45,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class H2RowCachePageEvictionTest extends GridCommonAbstractTest {
     /** Entries count. */
-    private static final int ENTRIES = 30_000;
+    private static final int ENTRIES = 10_000;
 
     /** Offheap size for memory policy. */
-    private static final int SIZE = 32 * 1024 * 1024;
+    private static final int SIZE = 12 * 1024 * 1024;
 
     /** Test time. */
     private static final int TEST_TIME = 3 * 60_000;
@@ -82,7 +82,7 @@ public class H2RowCachePageEvictionTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return TEST_TIME + 3 * 60_000;
+        return TEST_TIME + 10 * 60_000;
     }
 
     /**
@@ -124,8 +124,10 @@ public class H2RowCachePageEvictionTest extends GridCommonAbstractTest {
 
         assertEquals(grpId, grid().cachex(CACHE_NAME).context().groupId());
 
-        for (int i = 0; i < ENTRIES; ++i)
-            grid().cache(CACHE_NAME).put(i, new Value(i));
+        try (IgniteDataStreamer<Integer, Value> stream = grid().dataStreamer(CACHE_NAME)) {
+            for (int i = 0; i < ENTRIES; ++i)
+                stream.addData(i, new Value(i));
+        }
 
         H2RowCache rowCache = rowCache(grid()).forGroup(grpId);
 
@@ -135,8 +137,10 @@ public class H2RowCachePageEvictionTest extends GridCommonAbstractTest {
 
         int rowCacheSizeBeforeEvict = rowCache.size();
 
-        for (int i = ENTRIES; i < 2 * ENTRIES; ++i)
-            grid().cache(CACHE_NAME).put(i, new Value(i));
+        try (IgniteDataStreamer<Integer, Value> stream = grid().dataStreamer(CACHE_NAME)) {
+            for (int i = ENTRIES; i < 2 * ENTRIES; ++i)
+                stream.addData(i, new Value(i));
+        }
 
         assertTrue("rowCache size before evictions: " + rowCacheSizeBeforeEvict +
                 ", after evictions: " + rowCache.size(),
