@@ -54,6 +54,10 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
     /** SQL to create test table. */
     final static String CREATE_SQL = "CREATE TABLE IF NOT EXISTS Person (id int primary key, name varchar)";
 
+    /** SQL to create test table with additional columns to drop. */
+    final static String CREATE_SQL_4_COLS = "CREATE TABLE IF NOT EXISTS Person (id int primary key, " +
+        "name varchar, age int, city varchar)";
+
     /** SQL to drop test table. */
     final static String DROP_SQL = "DROP TABLE Person";
 
@@ -66,8 +70,9 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
      * @param schemaName Schema name to look for the table in.
      * @param tblName Table name to check.
      * @param cols Columns whose presence must be checked.
+     * @return Number of other columns.
      */
-    static void checkTableState(IgniteEx node, String schemaName, String tblName, QueryField... cols)
+    static int checkTableState(IgniteEx node, String schemaName, String tblName, QueryField... cols)
         throws SQLException {
         List<QueryField> flds = new ArrayList<>();
 
@@ -103,6 +108,39 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
 
             assertEquals(exp.isNullable(), act.isNullable());
         }
+
+        return flds.size() - cols.length;
+    }
+
+    /**
+     * Checks presence of specific table column and returns it.
+     *
+     * @param node Node to check.
+     * @param schemaName Schema name to look for the table in.
+     * @param tblName Table name to check.
+     * @param colName Column name whose presence must be checked.
+     * @return field or {@code null} if not found.
+     * @throws SQLException if failed.
+     */
+    static QueryField getColumnMeta(IgniteEx node, String schemaName, String tblName, String colName)
+        throws SQLException {
+        try (Connection c = connect(node)) {
+            try (ResultSet rs = c.getMetaData().getColumns(null, schemaName, tblName, colName)) {
+                while (rs.next()) {
+                    String name = rs.getString("COLUMN_NAME");
+
+                    short type = rs.getShort("DATA_TYPE");
+
+                    String typeClsName = DataType.getTypeClassName(DataType.convertSQLTypeToValueType(type));
+
+                    short nullable = rs.getShort("NULLABLE");
+
+                    return new QueryField(name, typeClsName, nullable == 1);
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -202,5 +240,24 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
                 return null;
             }
         }, IgniteSQLException.class, msg);
+    }
+
+    /**
+     * Run specified statement expected to throw an exception with specified class and message.
+     *
+     * @param sql Statement.
+     * @param cls Expected exception class.
+     * @param msg Expected message.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    protected void assertThrowsAnyCause(final Ignite node, final String sql, Class<? extends Throwable> cls,
+        String msg) {
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                run(node, sql);
+
+                return null;
+            }
+        }, cls, msg);
     }
 }

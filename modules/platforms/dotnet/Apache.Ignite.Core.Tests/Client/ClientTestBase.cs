@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Client
 {
     using System;
+    using System.Linq;
     using System.Net;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
@@ -87,7 +88,12 @@ namespace Apache.Ignite.Core.Tests.Client
         [SetUp]
         public virtual void TestSetUp()
         {
-            GetCache<int>().RemoveAll();
+            var cache = GetCache<int>();
+            cache.RemoveAll();
+            cache.Clear();
+            
+            Assert.AreEqual(0, cache.GetSize(CachePeekMode.All));
+            Assert.AreEqual(0, GetClientCache<int>().GetSize(CachePeekMode.All));
         }
 
         /// <summary>
@@ -108,7 +114,15 @@ namespace Apache.Ignite.Core.Tests.Client
         /// </summary>
         protected ICacheClient<int, T> GetClientCache<T>()
         {
-            return Client.GetCache<int, T>(CacheName);
+            return GetClientCache<int, T>();
+        }
+
+        /// <summary>
+        /// Gets the client cache.
+        /// </summary>
+        protected virtual ICacheClient<TK, TV> GetClientCache<TK, TV>(string cacheName = CacheName)
+        {
+            return Client.GetCache<TK, TV>(cacheName ?? CacheName);
         }
 
         /// <summary>
@@ -176,6 +190,23 @@ namespace Apache.Ignite.Core.Tests.Client
         protected IBinaryObject GetBinaryPerson(int id)
         {
             return ToBinary(new Person(id) { DateTime = DateTime.MinValue.ToUniversalTime() });
+        }
+
+        /// <summary>
+        /// Asserts the client configs are equal.
+        /// </summary>
+        public static void AssertClientConfigsAreEqual(CacheClientConfiguration cfg, CacheClientConfiguration cfg2)
+        {
+            if (cfg2.QueryEntities != null)
+            {
+                // Remove identical aliases which are added during config roundtrip.
+                foreach (var e in cfg2.QueryEntities)
+                {
+                    e.Aliases = e.Aliases.Where(x => x.Alias != x.FullName).ToArray();
+                }
+            }
+
+            AssertExtensions.ReflectionEqual(cfg, cfg2);
         }
     }
 }

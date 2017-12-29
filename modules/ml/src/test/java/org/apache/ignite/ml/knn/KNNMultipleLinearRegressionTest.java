@@ -19,13 +19,13 @@ package org.apache.ignite.ml.knn;
 
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.knn.models.KNNStrategy;
-import org.apache.ignite.ml.knn.models.Normalization;
 import org.apache.ignite.ml.knn.regression.KNNMultipleLinearRegression;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
 import org.apache.ignite.ml.structures.LabeledDataset;
+import org.apache.ignite.ml.structures.preprocessing.Normalizer;
 import org.junit.Assert;
 
 /**
@@ -56,8 +56,8 @@ public class KNNMultipleLinearRegressionTest extends BaseKNNTest {
 
         KNNMultipleLinearRegression knnMdl = new KNNMultipleLinearRegression(1, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
         Vector vector = new SparseBlockDistributedVector(new double[] {0, 0, 0, 5.0, 0.0});
-        System.out.println(knnMdl.predict(vector));
-        Assert.assertEquals(15, knnMdl.predict(vector), 1E-12);
+        System.out.println(knnMdl.apply(vector));
+        Assert.assertEquals(15, knnMdl.apply(vector), 1E-12);
     }
 
     /** */
@@ -87,8 +87,8 @@ public class KNNMultipleLinearRegressionTest extends BaseKNNTest {
 
         KNNMultipleLinearRegression knnMdl = new KNNMultipleLinearRegression(3, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
         Vector vector = new DenseLocalOnHeapVector(new double[] {104.6, 419180, 2822, 2857, 118734, 1956});
-        System.out.println(knnMdl.predict(vector));
-        Assert.assertEquals(67857, knnMdl.predict(vector), 2000);
+        System.out.println(knnMdl.apply(vector));
+        Assert.assertEquals(67857, knnMdl.apply(vector), 2000);
     }
 
     /** */
@@ -115,12 +115,12 @@ public class KNNMultipleLinearRegressionTest extends BaseKNNTest {
 
         LabeledDataset training = new LabeledDataset(x, y);
 
-        final LabeledDataset normalizedTrainingDataset = training.normalizeWith(Normalization.MINIMAX);
+        final LabeledDataset normalizedTrainingDataset = (LabeledDataset)Normalizer.normalizeWithMiniMax(training);
 
         KNNMultipleLinearRegression knnMdl = new KNNMultipleLinearRegression(5, new EuclideanDistance(), KNNStrategy.SIMPLE, normalizedTrainingDataset);
         Vector vector = new DenseLocalOnHeapVector(new double[] {104.6, 419180, 2822, 2857, 118734, 1956});
-        System.out.println(knnMdl.predict(vector));
-        Assert.assertEquals(67857, knnMdl.predict(vector), 2000);
+        System.out.println(knnMdl.apply(vector));
+        Assert.assertEquals(67857, knnMdl.apply(vector), 2000);
     }
 
     /** */
@@ -147,11 +147,11 @@ public class KNNMultipleLinearRegressionTest extends BaseKNNTest {
 
         LabeledDataset training = new LabeledDataset(x, y);
 
-        final LabeledDataset normalizedTrainingDataset = training.normalizeWith(Normalization.MINIMAX);
+        final LabeledDataset normalizedTrainingDataset = (LabeledDataset)Normalizer.normalizeWithMiniMax(training);
 
         KNNMultipleLinearRegression knnMdl = new KNNMultipleLinearRegression(5, new EuclideanDistance(), KNNStrategy.WEIGHTED, normalizedTrainingDataset);
         Vector vector = new DenseLocalOnHeapVector(new double[] {104.6, 419180, 2822, 2857, 118734, 1956});
-        System.out.println(knnMdl.predict(vector));
-        Assert.assertEquals(67857, knnMdl.predict(vector), 2000);
+        System.out.println(knnMdl.apply(vector));
+        Assert.assertEquals(67857, knnMdl.apply(vector), 2000);
     }
 }
