@@ -21,11 +21,11 @@ import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.ml.knn.models.KNNModel;
 import org.apache.ignite.ml.knn.models.KNNStrategy;
-import org.apache.ignite.ml.knn.models.Normalization;
 import org.apache.ignite.ml.knn.regression.KNNMultipleLinearRegression;
 import org.apache.ignite.ml.math.distances.ManhattanDistance;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledDatasetTestTrainPair;
+import org.apache.ignite.ml.structures.preprocessing.Normalizer;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
@@ -53,7 +53,7 @@ public class IgniteKNNRegressionBenchmark extends IgniteAbstractBenchmark {
                 LabeledDataset dataset = new Datasets().shuffleClearedMachines((int)(DataChanger.next()));
 
                 // Normalize dataset
-                dataset.normalizeWith(Normalization.MINIMAX);
+                Normalizer.normalizeWithMiniMax(dataset);
 
                 // Random splitting of iris data as 80% train and 20% test datasets.
                 LabeledDatasetTestTrainPair split = new LabeledDatasetTestTrainPair(dataset, 0.2);
