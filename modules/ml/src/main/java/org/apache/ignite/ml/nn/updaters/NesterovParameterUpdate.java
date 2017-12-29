@@ -17,17 +17,31 @@
 
 package org.apache.ignite.ml.nn.updaters;
 
+import java.io.Serializable;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
  * Data needed for Nesterov parameters updater.
  */
-public class NesterovParameterUpdate {
+public class NesterovParameterUpdate implements Serializable {
     /**
      * Previous step weights updates.
      */
     protected Vector prevIterationUpdates;
+
+//    /**
+//     * Learning rate.
+//     */
+//    protected double learningRate;
+//
+//    /**
+//     * Momentum
+//     */
+//    protected double momentum;
 
     /**
      * Construct NesterovParameterUpdate.
@@ -36,6 +50,12 @@ public class NesterovParameterUpdate {
      */
     public NesterovParameterUpdate(int paramsCnt) {
         prevIterationUpdates = new DenseLocalOnHeapVector(paramsCnt).assign(0);
+//        this.learningRate = learningRate;
+//        this.momentum = momentum;
+    }
+
+    public NesterovParameterUpdate(Vector prevIterationUpdates) {
+        this.prevIterationUpdates = prevIterationUpdates;
     }
 
     /**
@@ -56,5 +76,22 @@ public class NesterovParameterUpdate {
      */
     public Vector prevIterationUpdates() {
         return prevIterationUpdates;
+    }
+
+//    public double learningRate() {
+//        return learningRate;
+//    }
+//
+//    public double momentum() {
+//        return momentum;
+//    }
+
+    public static NesterovParameterUpdate sum(List<NesterovParameterUpdate> parameters) {
+        return parameters.stream().filter(Objects::nonNull).map(NesterovParameterUpdate::prevIterationUpdates).reduce(Vector::plus).map(NesterovParameterUpdate::new).orElse(null);
+    }
+
+    public static NesterovParameterUpdate avg(List<NesterovParameterUpdate> parameters) {
+        NesterovParameterUpdate sum = sum(parameters);
+        return sum != null ? sum.setPreviousUpdates(sum.prevIterationUpdates().divide(parameters.size())) : null;
     }
 }
