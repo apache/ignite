@@ -15,10 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spark.impl
+package org.apache.ignite.spark.examples;
 
-import org.apache.spark.Partition
+import org.apache.ignite.examples.spark.IgniteCatalogExample;
+import org.apache.ignite.examples.spark.IgniteDataFrameExample;
+import org.junit.Test;
 
-case class IgnitePartition(idx: Int) extends Partition {
-    override def index: Int = idx
+/**
+ */
+public class IgniteDataFrameSelfTest {
+    static final String[] EMPTY_ARGS = new String[0];
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCatalogExample() throws Exception {
+        IgniteCatalogExample.main(EMPTY_ARGS);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDataFrameExample() throws Exception {
+        IgniteDataFrameExample.main(EMPTY_ARGS);
+    }
 }
