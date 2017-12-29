@@ -33,18 +33,20 @@ import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 /**
  * Test group trainer.
  */
-public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext, Double, Integer, Integer, Integer, Double, ConstModel<Integer>, SimpleGroupTrainerInput, Void> {
+class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext, Double, Integer, Integer, Integer, Double,
+    ConstModel<Integer>, SimpleGroupTrainerInput, Void> {
     /**
      * Construct instance of this class with given parameters.
      *
      * @param ignite Ignite instance.
      */
-    public TestGroupTrainer(Ignite ignite) {
+    TestGroupTrainer(Ignite ignite) {
         super(TestGroupTrainingCache.getOrCreate(ignite), ignite);
     }
 
     /** {@inheritDoc} */
-    @Override protected TestGroupTrainerLocalContext initialLocalContext(SimpleGroupTrainerInput data, UUID trainingUUID) {
+    @Override protected TestGroupTrainerLocalContext initialLocalContext(SimpleGroupTrainerInput data,
+        UUID trainingUUID) {
         return new TestGroupTrainerLocalContext(data.iterCnt(), data.eachNumberCount(), data.limit(), trainingUUID);
     }
 

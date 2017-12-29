@@ -46,7 +46,7 @@ public interface DistributedStep<T, L, K, C, I, O extends Serializable> {
     IgniteSupplier<C> remoteContextSupplier(I input, L locCtx);
 
     /**
-     * Get function applied to each cache elment specified by keys.
+     * Get function applied to each cache element specified by keys.
      *
      * @return Function applied to each cache entry specified by keys..
      */
@@ -70,6 +70,7 @@ public interface DistributedStep<T, L, K, C, I, O extends Serializable> {
 
     /**
      * Identity for reduce.
+     *
      * @return Identity for reduce.
      */
     O identity();

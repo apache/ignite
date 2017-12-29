@@ -121,7 +121,8 @@ public class ResultAndUpdates<R> {
      * @return Sum of collection ResultAndUpdate objects.
      */
     @SuppressWarnings("unchecked")
-    static <R> ResultAndUpdates<R> sum(IgniteBinaryOperator<R> op, R identity, Collection<ResultAndUpdates<R>> resultsAndUpdates) {
+    static <R> ResultAndUpdates<R> sum(IgniteBinaryOperator<R> op, R identity,
+        Collection<ResultAndUpdates<R>> resultsAndUpdates) {
         Map<String, Map> allUpdates = new HashMap<>();
 
         for (ResultAndUpdates<R> ru : resultsAndUpdates) {

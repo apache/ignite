@@ -15,18 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.util;
+package org.apache.ignite.ml.trainers.group;
 
-import java.util.Iterator;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
-public class StreamUtil {
-    public static <T> Stream<T> fromIterator(Iterator<T> sourceIterator) {
-        return StreamSupport.stream(
-            Spliterators.spliteratorUnknownSize(sourceIterator, Spliterator.ORDERED),
-            false);
-    }
+/**
+ * Test suite for group trainer tests.
+ */
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    DistributedWorkersChainTest.class,
+    GroupTrainerTest.class
+})
+public class TrainersGroupTestSuite {
 }

@@ -25,6 +25,7 @@ import java.util.UUID;
 public interface HasTrainingUUID {
     /**
      * Get training UUID.
+     *
      * @return Training UUID.
      */
     UUID trainingUUID();

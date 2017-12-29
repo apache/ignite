@@ -32,10 +32,10 @@ import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 
 /**
  * Group trainer using {@link Metaoptimizer}.
- * Main purpose of this trainer is to extract various transformations (normalizations for example) of data which is processed
- * in the training loop step into distinct entity called metaoptimizer and only fix the main part of logic in
- * trainers extending this class. This way we'll be able to quickly switch between this transformations by using different metaoptimizers
- * without touching main logic.
+ * Main purpose of this trainer is to extract various transformations (normalizations for example) of data which is
+ * processed in the training loop step into distinct entity called metaoptimizer and only fix the main part of logic in
+ * trainers extending this class. This way we'll be able to quickly switch between this transformations by using
+ * different metaoptimizers without touching main logic.
  *
  * @param <LC> Type of local context.
  * @param <K> Type of keys of cache used in group training.
@@ -45,15 +45,16 @@ import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
  * @param <I> Type of data which is fed into each training loop step and returned from it.
  * @param <M> Type of model returned after training.
  * @param <T> Type of input of this trainer.
- * @param <G> Type of distributed context which is needed for forming final result which is send from each node to trainer for final model creation.
+ * @param <G> Type of distributed context which is needed for forming final result which is send from each node
+ * to trainer for final model creation.
  * @param <O> Type of output of postprocessor.
  * @param <X> Type of data which is processed by dataProcessor.
  * @param <Y> Type of data which is returned by postprocessor.
  */
 public abstract class MetaoptimizerGroupTrainer<LC extends HasTrainingUUID, K, V, IN extends Serializable,
-R extends Serializable, I extends Serializable,
-M extends Model, T extends GroupTrainerInput<K>,
-G, O extends Serializable, X, Y> extends
+    R extends Serializable, I extends Serializable,
+    M extends Model, T extends GroupTrainerInput<K>,
+    G, O extends Serializable, X, Y> extends
     GroupTrainer<LC, K, V, IN, R, I, M, T, G> {
     /**
      * Metaoptimizer.

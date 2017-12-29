@@ -30,7 +30,7 @@ public class GroupTrainerTest extends GridCommonAbstractTest {
     private static final int NODE_COUNT = 4;
 
     /** Grid instance. */
-    protected Ignite ignite;
+    private Ignite ignite;
 
     /**
      * Default constructor.
@@ -59,6 +59,7 @@ public class GroupTrainerTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
+    /** */
     public void testGroupTrainer() {
         TestGroupTrainer trainer = new TestGroupTrainer(ignite);
 
@@ -67,11 +68,12 @@ public class GroupTrainerTest extends GridCommonAbstractTest {
         int iterCnt = 2;
 
         ConstModel<Integer> mdl = trainer.train(new SimpleGroupTrainerInput(limit, eachNumCnt, iterCnt));
-        int localRes = computeLocally(limit, eachNumCnt, iterCnt);
-        assertEquals(localRes, (int)mdl.apply(10));
+        int locRes = computeLocally(limit, eachNumCnt, iterCnt);
+        assertEquals(locRes, (int)mdl.apply(10));
     }
 
-    public int computeLocally(int limit, int eachNumCnt, int iterCnt) {
+    /** */
+    private int computeLocally(int limit, int eachNumCnt, int iterCnt) {
         Map<GroupTrainerCacheKey<Double>, Integer> m = new HashMap<>();
 
         for (int i = 0; i < limit; i++) {

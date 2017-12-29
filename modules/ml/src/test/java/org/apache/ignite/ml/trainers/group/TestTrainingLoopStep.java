@@ -26,12 +26,15 @@ import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 import org.apache.ignite.ml.trainers.group.chain.DistributedEntryProcessingStep;
 
-public class TestTrainingLoopStep implements DistributedEntryProcessingStep<TestGroupTrainerLocalContext, Double, Integer, Void, Double, Double> {
+/** */
+class TestTrainingLoopStep implements DistributedEntryProcessingStep<TestGroupTrainerLocalContext, Double, Integer, Void, Double, Double> {
+    /** {@inheritDoc} */
     @Override public IgniteSupplier<Void> remoteContextSupplier(Double input, TestGroupTrainerLocalContext locCtx) {
         // No context is needed.
         return () -> null;
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteFunction<EntryAndContext<Double, Integer, Void>, ResultAndUpdates<Double>> worker() {
         return entryAndContext -> {
             Integer oldVal = entryAndContext.entry().getValue();
@@ -42,6 +45,7 @@ public class TestTrainingLoopStep implements DistributedEntryProcessingStep<Test
         };
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteSupplier<Stream<GroupTrainerCacheKey<Double>>> keys(Double input,
         TestGroupTrainerLocalContext locCtx) {
         // Copying here because otherwise locCtx will be serialized with supplier returned in result.
@@ -52,10 +56,12 @@ public class TestTrainingLoopStep implements DistributedEntryProcessingStep<Test
         return () -> TestGroupTrainingCache.allKeys(limit, cnt, uuid);
     }
 
+    /** {@inheritDoc} */
     @Override public Double identity() {
         return 0.0;
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteBinaryOperator<Double> reducer() {
         return (a, b) -> a + b;
     }

@@ -39,7 +39,8 @@ import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
  * @param <Y>
  * @param <D>
  */
-class MetaoptimizerDistributedStep<L extends HasTrainingUUID, K, V, G, I extends Serializable, O extends Serializable, X, Y, D extends Serializable> implements DistributedEntryProcessingStep<L,K,V,G,I,O> {
+class MetaoptimizerDistributedStep<L extends HasTrainingUUID, K, V, G, I extends Serializable,
+    O extends Serializable, X, Y, D extends Serializable> implements DistributedEntryProcessingStep<L, K, V, G, I, O> {
     /**
      * {@link Metaoptimizer}.
      */
@@ -56,7 +57,7 @@ class MetaoptimizerDistributedStep<L extends HasTrainingUUID, K, V, G, I extends
      * @param metaoptimizer Metaoptimizer.
      * @param trainer {@link MetaoptimizerGroupTrainer} for which this distributed step is used.
      */
-    public MetaoptimizerDistributedStep(Metaoptimizer<L, X, Y, I, D, O> metaoptimizer,
+    MetaoptimizerDistributedStep(Metaoptimizer<L, X, Y, I, D, O> metaoptimizer,
         MetaoptimizerGroupTrainer<L, K, V, D, ?, I, ?, ?, G, O, X, Y> trainer) {
         this.metaoptimizer = metaoptimizer;
         this.trainer = trainer;

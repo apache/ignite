@@ -53,7 +53,7 @@ import org.apache.ignite.ml.trainers.group.ResultAndUpdates;
  * @param <V> Type of cache values.
  * @param <I> Type of input of this chain.
  * @param <O> Type of output of this chain.
- * // TODO: check if it is posssible to integrate with {@link EntryProcessor}.
+ * // TODO: check if it is possible to integrate with {@link EntryProcessor}.
  */
 @FunctionalInterface
 public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> {
@@ -172,7 +172,8 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> {
      * @param <G> Type of context of distributed step.
      * @return Combination of this chain and distributed step specified by input.
      */
-    default <O1 extends Serializable, G> ComputationsChain<L, K, V, I, O1> thenDistributedForEntries(DistributedEntryProcessingStep<L, K, V, G, O, O1> step) {
+    default <O1 extends Serializable, G> ComputationsChain<L, K, V, I, O1> thenDistributedForEntries(
+        DistributedEntryProcessingStep<L, K, V, G, O, O1> step) {
         return thenDistributedForEntries(step::remoteContextSupplier, step.worker(), step::keys, step.reducer(), step.identity());
     }
 
@@ -184,7 +185,8 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> {
      * @param <G> Type of context of distributed step.
      * @return Combination of this chain and distributed step specified by input.
      */
-    default <O1 extends Serializable, G> ComputationsChain<L, K, V, I, O1> thenDistributedForKeys(DistributedKeyProcessingStep<L, K, G, O, O1> step) {
+    default <O1 extends Serializable, G> ComputationsChain<L, K, V, I, O1> thenDistributedForKeys(
+        DistributedKeyProcessingStep<L, K, G, O, O1> step) {
         return thenDistributedForKeys(step::remoteContextSupplier, step.worker(), step::keys, step.reducer(), step.identity());
     }
 
@@ -215,7 +217,8 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> {
      * @param otherChain Chain to be combined with this chain.
      * @return Combination of this chain and otherChain.
      */
-    default ComputationsChain<L, K, V, I, O> thenWhile(IgniteBiPredicate<O, L> cond, ComputationsChain<L, K, V, O, O> otherChain) {
+    default ComputationsChain<L, K, V, I, O> thenWhile(IgniteBiPredicate<O, L> cond,
+        ComputationsChain<L, K, V, O, O> otherChain) {
         ComputationsChain<L, K, V, I, O> me = this;
         return (input, context) -> {
             O res = me.process(input, context);
