@@ -26,11 +26,11 @@ import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.apache.ignite.yardstick.ml.DataChanger;
 
 /**
- * Ignite benchmark that performs ML Grid operations.
+ * Ignite benchmark that performs ML Grid operations of matrix multiplication.
  */
 abstract class IgniteAbstractMatrixMulBenchmark extends IgniteAbstractBenchmark {
     /** */
-    private static final int SIZE = 1 << 8;
+    private static final int SIZE = 1 << 7;
 
     /** */
     private double[][] dataSquare = createAndFill(SIZE, SIZE);
@@ -58,9 +58,9 @@ abstract class IgniteAbstractMatrixMulBenchmark extends IgniteAbstractBenchmark 
             @Override public void run() {
                 Matrix m1, m2, m3, m4, m5, m6;
 
-                Matrix m7 = (m1 = createAndFill(dataSquare, scale)).times((m2 = createAndFill(dataSquare, scale)));
-                Matrix m8 = (m3 = createAndFill(dataRect1, scale)).times((m4 = createAndFill(dataRect2, scale)));
-                Matrix m9 = (m5 = createAndFill(dataRect2, scale)).times((m6 = createAndFill(dataRect1, scale)));
+                Matrix m7 = times(m1 = createAndFill(dataSquare, scale), m2 = createAndFill(dataSquare, scale));
+                Matrix m8 = times(m3 = createAndFill(dataRect1, scale), m4 = createAndFill(dataRect2, scale));
+                Matrix m9 = times(m5 = createAndFill(dataRect2, scale), m6 = createAndFill(dataRect1, scale));
 
                 m1.destroy();
                 m2.destroy();
@@ -81,11 +81,24 @@ abstract class IgniteAbstractMatrixMulBenchmark extends IgniteAbstractBenchmark 
         return true;
     }
 
-    /** Override in subclasses with specific type Matrix. */
+    /**
+     * Override in subclasses with specific type Matrix. Note that size of result matrix may be smaller than requested.
+     *
+     * @param rowSize Requested row size.
+     * @param colSize Requested column size.
+     * @return Matrix of desired type of size that doesn't exceed requested.
+     */
     abstract Matrix newMatrix(int rowSize, int colSize);
 
-    /** */
-    private Matrix createAndFill(double[][] data, double scale) {
+    /** Override in subclasses if needed. */
+    Matrix times(Matrix m1, Matrix m2) {
+        return m1.times(m2);
+    }
+
+    /** Override in subclasses if needed to account for smaller matrix size. */
+    Matrix createAndFill(double[][] data, double scale) {
+        // IMPL NOTE yardstick 0.8.3 fails to discover benchmark if we try to account for smaller size
+        //  matrix by using method with lambda parameter here: assign((row, col) -> data[row][col]).
         Matrix res = newMatrix(data.length, data[0].length).assign(data);
 
         for (int i = 0; i < data.length && i < data[0].length; i++)
