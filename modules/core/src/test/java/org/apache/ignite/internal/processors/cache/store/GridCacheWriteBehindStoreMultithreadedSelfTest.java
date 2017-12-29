@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -28,12 +29,30 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class GridCacheWriteBehindStoreMultithreadedSelfTest extends GridCacheWriteBehindStoreAbstractSelfTest {
     /**
+     * This test performs complex set of operations on store with coalescing from multiple threads.
+     *
+     * @throws Exception If failed.
+     */
+    public void testPutGetRemoveWithCoalescing() throws Exception {
+        testPutGetRemove(true);
+    }
+
+    /**
+     * This test performs complex set of operations on store without coalescing from multiple threads.
+     *
+     * @throws Exception If failed.
+     */
+    public void testPutGetRemoveWithoutCoalescing() throws Exception {
+        testPutGetRemove(false);
+    }
+
+    /**
      * This test performs complex set of operations on store from multiple threads.
      *
      * @throws Exception If failed.
      */
-    public void testPutGetRemove() throws Exception {
-        initStore(2);
+    private void testPutGetRemove(boolean writeCoalescing) throws Exception {
+        initStore(2, writeCoalescing);
 
         Set<Integer> exp;
 
@@ -63,25 +82,53 @@ public class GridCacheWriteBehindStoreMultithreadedSelfTest extends GridCacheWri
     }
 
     /**
+     * Tests that cache with write coalescing would keep values if underlying store fails.
+     *
+     * @throws Exception if failed.
+     */
+    public void testStoreFailureWithCoalescing() throws Exception {
+        testStoreFailure(true);
+    }
+
+    /**
+     * Tests that cache without write coalescing would keep values if underlying store fails.
+     *
+     * @throws Exception if failed.
+     */
+    public void testStoreFailureWithoutCoalescing() throws Exception {
+        testStoreFailure(false);
+    }
+
+    /**
      * Tests that cache would keep values if underlying store fails.
      *
      * @throws Exception If failed.
      */
-    public void testStoreFailure() throws Exception {
+    private void testStoreFailure(boolean writeCoalescing) throws Exception {
         delegate.setShouldFail(true);
 
-        initStore(2);
+        initStore(2, writeCoalescing);
 
         Set<Integer> exp;
 
         try {
+            Thread timer = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        U.sleep(FLUSH_FREQUENCY+50);
+                    } catch (IgniteInterruptedCheckedException e) {
+                        assertTrue("Timer was interrupted", false);
+                    }
+                    delegate.setShouldFail(false);
+                }
+            });
+            timer.start();
             exp = runPutGetRemoveMultithreaded(10, 10);
 
-            U.sleep(FLUSH_FREQUENCY);
+            timer.join();
 
             info(">>> There are " + store.getWriteBehindErrorRetryCount() + " entries in RETRY state");
-
-            delegate.setShouldFail(false);
 
             // Despite that we set shouldFail flag to false, flush thread may just have caught an exception.
             // If we move store to the stopping state right away, this value will be lost. That's why this sleep
@@ -111,16 +158,37 @@ public class GridCacheWriteBehindStoreMultithreadedSelfTest extends GridCacheWri
     }
 
     /**
-     * Tests store consistency in case of high put rate, when flush is performed from the same thread
-     * as put or remove operation.
+     * Tests store (with write coalescing) consistency in case of high put rate,
+     * when flush is performed from the same thread as put or remove operation.
      *
      * @throws Exception If failed.
      */
-    public void testFlushFromTheSameThread() throws Exception {
+    public void testFlushFromTheSameThreadWithCoalescing() throws Exception {
+        testFlushFromTheSameThread(true);
+    }
+
+    /**
+     * Tests store (without write coalescing) consistency in case of high put rate,
+     * when flush is performed from the same thread as put or remove operation.
+     *
+     * @throws Exception If failed.
+     */
+    public void testFlushFromTheSameThreadWithoutCoalescing() throws Exception {
+        testFlushFromTheSameThread(false);
+    }
+
+    /**
+     * Tests store consistency in case of high put rate, when flush is performed from the same thread
+     * as put or remove operation.
+     *
+     * @param writeCoalescing write coalescing flag.
+     * @throws Exception If failed.
+     */
+    private void testFlushFromTheSameThread(boolean writeCoalescing) throws Exception {
         // 50 milliseconds should be enough.
         delegate.setOperationDelay(50);
 
-        initStore(2);
+        initStore(2, writeCoalescing);
 
         Set<Integer> exp;
 

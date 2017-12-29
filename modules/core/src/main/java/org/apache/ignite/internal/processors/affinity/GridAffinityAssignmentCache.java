@@ -39,6 +39,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridNodeOrderComparator;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -252,10 +253,12 @@ public class GridAffinityAssignmentCache {
      *
      * @param topVer Topology version to calculate affinity cache for.
      * @param discoEvt Discovery event that caused this topology version change.
+     * @param discoCache Discovery cache.
      * @return Affinity assignments.
      */
     @SuppressWarnings("IfMayBeConditional")
-    public List<List<ClusterNode>> calculate(AffinityTopologyVersion topVer, DiscoveryEvent discoEvt) {
+    public List<List<ClusterNode>> calculate(AffinityTopologyVersion topVer, DiscoveryEvent discoEvt,
+        DiscoCache discoCache) {
         if (log.isDebugEnabled())
             log.debug("Calculating affinity [topVer=" + topVer + ", locNodeId=" + ctx.localNodeId() +
                 ", discoEvt=" + discoEvt + ']');
@@ -266,7 +269,7 @@ public class GridAffinityAssignmentCache {
         List<ClusterNode> sorted;
 
         if (!locCache) {
-            sorted = new ArrayList<>(ctx.discovery().cacheAffinityNodes(cacheName, topVer));
+            sorted = new ArrayList<>(discoCache.cacheAffinityNodes(cacheId()));
 
             Collections.sort(sorted, GridNodeOrderComparator.INSTANCE);
         }

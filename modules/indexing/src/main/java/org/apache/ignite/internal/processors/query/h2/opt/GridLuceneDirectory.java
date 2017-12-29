@@ -25,7 +25,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -66,10 +68,7 @@ public class GridLuceneDirectory extends Directory {
         // and the code below is resilient to map changes during the array population.
         Set<String> fileNames = fileMap.keySet();
 
-        List<String> names = new ArrayList<>(fileNames.size());
-
-        for (String name : fileNames)
-            names.add(name);
+        List<String> names = new ArrayList<>(fileNames);
 
         return names.toArray(new String[names.size()]);
     }
@@ -115,20 +114,24 @@ public class GridLuceneDirectory extends Directory {
     @Override public void deleteFile(String name) throws IOException {
         ensureOpen();
 
-        doDeleteFile(name);
+        doDeleteFile(name, false);
     }
 
     /**
      * Deletes file.
      *
      * @param name File name.
+     * @param onClose If on close directory;
      * @throws IOException If failed.
      */
-    private void doDeleteFile(String name) throws IOException {
+    private void doDeleteFile(String name, boolean onClose) throws IOException {
         GridLuceneFile file = fileMap.remove(name);
 
         if (file != null) {
             file.delete();
+
+            // All files should be closed when Directory is closing.
+            assert !onClose || !file.hasRefs() : "Possible memory leak, resource is not closed: " + file.toString();
 
             sizeInBytes.addAndGet(-file.getSizeInBytes());
         }
@@ -142,15 +145,16 @@ public class GridLuceneDirectory extends Directory {
 
         GridLuceneFile file = newRAMFile();
 
-        GridLuceneFile existing = fileMap.remove(name);
+        // Lock for using in stream. Will be unlocked on stream closing.
+        file.lockRef();
+
+        GridLuceneFile existing = fileMap.put(name, file);
 
         if (existing != null) {
             sizeInBytes.addAndGet(-existing.getSizeInBytes());
 
             existing.delete();
         }
-
-        fileMap.put(name, file);
 
         return new GridLuceneOutputStream(file);
     }
@@ -174,6 +178,16 @@ public class GridLuceneDirectory extends Directory {
         if (file == null)
             throw new FileNotFoundException(name);
 
+        // Lock for using in stream. Will be unlocked on stream closing.
+        file.lockRef();
+
+        if (!fileMap.containsKey(name)) {
+            // Unblock for deferred delete.
+            file.releaseRef();
+
+            throw new FileNotFoundException(name);
+        }
+
         return new GridLuceneInputStream(name, file);
     }
 
@@ -181,16 +195,24 @@ public class GridLuceneDirectory extends Directory {
     @Override public void close() {
         isOpen = false;
 
+        IgniteException errs = null;
+
         for (String fileName : fileMap.keySet()) {
             try {
-                doDeleteFile(fileName);
+                doDeleteFile(fileName, true);
             }
             catch (IOException e) {
-                throw new IllegalStateException(e);
+                if (errs == null)
+                    errs = new IgniteException("Error closing index directory.");
+
+                errs.addSuppressed(e);
             }
         }
 
         assert fileMap.isEmpty();
+
+        if (errs != null && !F.isEmpty(errs.getSuppressed()))
+            throw errs;
     }
 
     /**

@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
@@ -42,14 +43,18 @@ import org.apache.ignite.internal.GridClosureCallMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.jsr166.ThreadLocalRandom8;
+
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_IO_POLICY;
 
 /**
  * Wrapper for making {@link org.apache.ignite.services.Service} class proxies.
@@ -57,6 +62,9 @@ import org.jsr166.ThreadLocalRandom8;
 public class GridServiceProxy<T> implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private static final IgniteProductVersion SVC_POOL_SINCE_VER = IgniteProductVersion.fromString("1.8.5");
 
     /** Grid logger. */
     @GridToStringExclude
@@ -176,14 +184,17 @@ public class GridServiceProxy<T> implements Serializable {
                         }
                     }
                     else {
+                        if (node.version().compareTo(SVC_POOL_SINCE_VER) >= 0)
+                            ctx.task().setThreadContext(TC_IO_POLICY, GridIoPolicy.SERVICE_POOL);
+
                         // Execute service remotely.
                         return ctx.closure().callAsyncNoFailover(
                             GridClosureCallMode.BROADCAST,
                             new ServiceProxyCallable(mtd.getName(), name, mtd.getParameterTypes(), args),
                             Collections.singleton(node),
                             false,
-                            waitTimeout
-                        ).get();
+                            waitTimeout,
+                            true).get();
                     }
                 }
                 catch (GridServiceNotFoundException | ClusterTopologyCheckedException e) {
@@ -403,7 +414,13 @@ public class GridServiceProxy<T> implements Serializable {
             if (mtd == null)
                 throw new GridServiceMethodNotFoundException(svcName, mtdName, argTypes);
 
-            return mtd.invoke(svcCtx.service(), args);
+            try {
+                return mtd.invoke(svcCtx.service(), args);
+            }
+            catch (InvocationTargetException e) {
+                // Get error message.
+                throw new IgniteCheckedException(e.getCause().getMessage(), e);
+            }
         }
 
         /** {@inheritDoc} */

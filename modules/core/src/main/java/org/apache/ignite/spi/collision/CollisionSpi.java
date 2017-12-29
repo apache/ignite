@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.collision;
 
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.spi.IgniteSpi;
 import org.jetbrains.annotations.Nullable;
 
@@ -48,8 +49,14 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface CollisionSpi extends IgniteSpi {
     /**
-     * This is a callback called when either new grid job arrived or executing job finished its
-     * execution. When new job arrives it is added to the end of the wait list and this
+     * This is a callback called:
+     * <ul>
+     *      <li>new grid job arrived</li>
+     *      <li>executing job finished its execution</li>
+     *      <li>topology changed</li>
+     *     <li>periodically (on {@link EventType#EVT_NODE_METRICS_UPDATED})</li>
+     * </ul>
+     * When new job arrives it is added to the end of the wait list and this
      * method is called. When job finished its execution, it is removed from the active list and
      * this method is called (i.e., when grid job is finished it will not appear in any list
      * in collision resolution).

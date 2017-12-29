@@ -361,7 +361,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
      * @param idxTypes Indexed types.
      * @return Cache configuration.
      */
-    private static CacheConfiguration cacheConfig(String name, boolean partitioned, boolean escapeSql, Class<?>... idxTypes) {
+    static CacheConfiguration cacheConfig(String name, boolean partitioned, boolean escapeSql, Class<?>... idxTypes) {
         return new CacheConfiguration()
             .setName(name)
             .setCacheMode(partitioned ? CacheMode.PARTITIONED : CacheMode.REPLICATED)

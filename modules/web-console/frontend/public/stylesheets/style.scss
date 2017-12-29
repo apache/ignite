@@ -752,8 +752,7 @@ button.form-control {
         .error {
             padding: 10px 10px;
 
-            text-align: center;
-            color: $brand-primary;
+            text-align: left;
         }
 
         .empty {
@@ -809,7 +808,7 @@ button.form-control {
     }
 
     .btn-group {
-        vertical-align:top;
+        vertical-align: top;
         margin-left: 10px;
 
         i { line-height: 18px; }
@@ -1854,6 +1853,12 @@ th[st-sort] {
     display: inline-block;
 }
 
+.panel-top-align {
+    label {
+        vertical-align: top !important;
+    }
+}
+
 button.dropdown-toggle {
     margin-right: 5px;
 }
@@ -2296,6 +2301,8 @@ html,body,.splash-screen {
 
 .admin-page {
     .panel-heading {
+        height: 38px;
+
         border-bottom: 0;
         padding-bottom: 0;
 

@@ -245,7 +245,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.timeout(),
                                     req.txSize(),
                                     req.subjectId(),
-                                    req.taskNameHash());
+                                    req.taskNameHash(),
+                                    !req.skipStore() && req.storeUsed());
 
                                 tx = ctx.tm().onCreated(null, tx);
 
@@ -1709,7 +1710,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         GridCacheEntryEx nearEntry = near().peekEx(key);
 
         if (nearEntry != null)
-            nearEntry.invalidate(null, ver);
+            nearEntry.invalidate(ver);
     }
 
     /**

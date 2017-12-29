@@ -65,19 +65,24 @@ public class GridCacheNearTxForceKeyTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNearTx() throws Exception {
-        Ignite ignite0 = startGrid(0);
+        try {
+            Ignite ignite0 = startGrid(0);
 
-        IgniteCache<Integer, Integer> cache = ignite0.cache(null);
+            IgniteCache<Integer, Integer> cache = ignite0.cache(null);
 
-        Ignite ignite1 = startGrid(1);
+            Ignite ignite1 = startGrid(1);
 
-        // This key should become primary for ignite1.
-        final Integer key = ignite0.configuration().getMarshaller() instanceof OptimizedMarshaller ? 2 : 7;
+            // This key should become primary for ignite1.
+            final Integer key = ignite0.configuration().getMarshaller() instanceof OptimizedMarshaller ? 2 : 7;
 
-        assertNull(cache.getAndPut(key, key));
+            assertNull(cache.getAndPut(key, key));
 
-        awaitPartitionMapExchange();
+            awaitPartitionMapExchange();
 
-        assertTrue(ignite0.affinity(null).isPrimary(ignite1.cluster().localNode(), key));
+            assertTrue(ignite0.affinity(null).isPrimary(ignite1.cluster().localNode(), key));
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 }

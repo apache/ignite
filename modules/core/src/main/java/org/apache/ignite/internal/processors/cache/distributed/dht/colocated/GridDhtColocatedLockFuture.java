@@ -105,6 +105,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     private final long threadId;
 
     /** Keys to lock. */
+    @GridToStringInclude
     private Collection<KeyCacheObject> keys;
 
     /** Future ID. */
@@ -1559,6 +1560,12 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
                         // Set value to detached entry.
                         entry.resetFromPrimary(newVal, dhtVer);
+
+                        CU.BackupPostProcessingClosure clos = CU.createBackupPostProcessingClosure(topVer,
+                            log, cctx, k, null, createTtl, cctx.readThrough(), !retval);
+
+                        if (clos != null)
+                            clos.apply(newVal, res.dhtVersion(i));
 
                         tx.hasRemoteLocks(true);
 

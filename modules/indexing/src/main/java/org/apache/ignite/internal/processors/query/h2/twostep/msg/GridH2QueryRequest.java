@@ -48,17 +48,22 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
      * Map query will not destroy context until explicit query cancel request will be received because distributed join
      * requests can be received.
      */
-    public static int FLAG_DISTRIBUTED_JOINS = 1;
+    public static final int FLAG_DISTRIBUTED_JOINS = 1;
 
     /**
      * Remote map query executor will enforce join order for the received map queries.
      */
-    public static int FLAG_ENFORCE_JOIN_ORDER = 1 << 1;
+    public static final int FLAG_ENFORCE_JOIN_ORDER = 1 << 1;
 
     /**
      * Restrict distributed joins range-requests to local index segments. Range requests to other nodes will not be sent.
      */
-    public static int FLAG_IS_LOCAL = 1 << 2;
+    public static final int FLAG_IS_LOCAL = 1 << 2;
+
+    /**
+     * If it is an EXPLAIN command.
+     */
+    public static final int FLAG_EXPLAIN = 1 << 3;
 
     /** */
     private long reqId;
