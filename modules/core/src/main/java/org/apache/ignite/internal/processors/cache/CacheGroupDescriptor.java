@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -68,6 +69,10 @@ public class CacheGroupDescriptor {
     /** WAL enabled state. */
     // TODO: Proper management.
     private volatile boolean walEnabled;
+
+    /** Pending WAL change requests. */
+    // TODO: Add to disco data.
+    private LinkedList<WalStateProposeMessage> pendingWalChangeReqs = new LinkedList<>();
 
     /**
      * @param cacheCfg Cache configuration.
@@ -148,17 +153,35 @@ public class CacheGroupDescriptor {
      * @return {@code True} whether there are pending WAL change requests.
      */
     public boolean hasPendingWalChangeRequests() {
-        // TODO: WAL requests.
-        return false;
+        return !pendingWalChangeReqs.isEmpty();
+    }
+
+    /**
+     * @return Next pending WAL change request or {@code null} if none available.
+     */
+    @Nullable public WalStateProposeMessage nextPendingWalChangeRequest() {
+        return pendingWalChangeReqs.getFirst();
     }
 
     /**
      * Add pending WAL change request.
      *
      * @param msg Message.
+     * @return {@code True} if this is the very first enlisted message.
      */
-    public void addPendingWalChangeRequest(WalStateProposeMessage msg) {
-        // TODO
+    public boolean addPendingWalChangeRequest(WalStateProposeMessage msg) {
+        boolean first = !hasPendingWalChangeRequests();
+
+        pendingWalChangeReqs.add(msg);
+
+        return first;
+    }
+
+    /**
+     * Remove pending WAL change request.
+     */
+    public void removePendingWalChangeRequest() {
+        pendingWalChangeReqs.removeFirst();
     }
 
     /**

@@ -17,14 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 import java.util.UUID;
@@ -32,15 +27,9 @@ import java.util.UUID;
 /**
  * WAL state propose message.
  */
-public class WalStateProposeMessage implements DiscoveryCustomMessage {
+public class WalStateProposeMessage extends WalStateAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Message ID */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
-
-    /** Unique operation ID. */
-    private final UUID opId;
 
     /** Node ID. */
     private final UUID nodeId;
@@ -49,37 +38,27 @@ public class WalStateProposeMessage implements DiscoveryCustomMessage {
     @GridToStringInclude
     private Map<String, IgniteUuid> caches;
 
-    /** Group ID. */
-    private final int grpId;
-
     /** Whether WAL should be enabled or disabled. */
     private final boolean enable;
-
-    /** Whether message should be ignored. */
-    private transient boolean ignored;
 
     /**
      * Constructor.
      *
      * @param opId Operation IDs.
+     * @param grpId Expected group ID.
+     * @param grpDepId Expected group deployment ID.
      * @param nodeId Node ID.
      * @param caches Expected cache names and their relevant deployment IDs.
-     * @param grpId Expected group ID.
+     *
      * @param enable WAL state flag.
      */
-    public WalStateProposeMessage(UUID opId, UUID nodeId, Map<String, IgniteUuid> caches, int grpId, boolean enable) {
-        this.opId = opId;
+    public WalStateProposeMessage(UUID opId, int grpId, IgniteUuid grpDepId, UUID nodeId,
+        Map<String, IgniteUuid> caches, boolean enable) {
+        super(opId, grpId, grpDepId);
+
         this.nodeId = nodeId;
         this.caches = caches;
-        this.grpId = grpId;
         this.enable = enable;
-    }
-
-    /**
-     * @return Operation ID.
-     */
-    public UUID operationId() {
-        return opId;
     }
 
     /**
@@ -97,56 +76,14 @@ public class WalStateProposeMessage implements DiscoveryCustomMessage {
     }
 
     /**
-     * @return Group ID.
-     */
-    public int groupId() {
-        return grpId;
-    }
-
-    /**
      * @return WAL state flag.
      */
     public boolean enable() {
         return enable;
     }
 
-    /**
-     * @return {@code True} if message should be ignored.
-     */
-    public boolean ignored() {
-        return ignored;
-    }
-
-    /**
-     * Mark message as ignored.
-     */
-    public void markIgnored() {
-        this.ignored = true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
-        DiscoCache discoCache) {
-        throw new UnsupportedOperationException();
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(WalStateProposeMessage.class, this);
+        return S.toString(WalStateProposeMessage.class, this, "super", super.toString());
     }
 }

@@ -51,7 +51,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
-        // TODO: Register IO listener for acks?
+        // TODO: Register IO listener for acks
     }
 
     /** {@inheritDoc} */
@@ -69,6 +69,10 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         // TODO: Handle reconnect.
     }
 
+    public void onNodeLeft(ClusterNode node) {
+        // TODO
+    }
+
     /**
      * Initiate WAL mode change operation.
      *
@@ -77,10 +81,10 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @return Future completed when operation finished.
      */
     public IgniteInternalFuture<Boolean> initiate(Collection<String> cacheNames, boolean enabled) {
-        synchronized (mux) {
-            if (F.isEmpty(cacheNames))
-                return errorFuture("Cache names cannot be empty.");
+        if (F.isEmpty(cacheNames))
+            return errorFuture("Cache names cannot be empty.");
 
+        synchronized (mux) {
             if (cliDisconnected)
                 return errorFuture("Failed to initiate WAL mode change because client node is disconnected.");
 
@@ -132,8 +136,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 }
             });
 
-            WalStateProposeMessage msg = new WalStateProposeMessage(opId, cctx.localNodeId(), caches,
-                grpDesc.groupId(), enabled);
+            WalStateProposeMessage msg = new WalStateProposeMessage(opId, grpDesc.groupId(), grpDesc.deploymentId(),
+                cctx.localNodeId(), caches, enabled);
 
             userFuts.put(opId, fut);
 
@@ -155,23 +159,26 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * Handle propose message in discovery thread.
      *
      * @param msg Message.
+     * @return Message to be processed in exchange thread in response to this discovery message.
      */
-    public void onProposeDiscovery(WalStateProposeMessage msg) {
+    @Nullable public WalStateProposeMessage onProposeDiscovery(WalStateProposeMessage msg) {
         synchronized (mux) {
+            if (cliDisconnected)
+                return null;
+
             // Validate current caches state before deciding whether to process message further.
-            if (!validatePropose(msg)) {
-                msg.markIgnored();
+            if (validatePropose(msg)) {
+                if (hasWal()) {
+                    CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
 
-                return;
+                    assert grpDesc != null;
+
+                    if (grpDesc.addPendingWalChangeRequest(msg))
+                        return msg;
+                }
             }
 
-            if (hasWal()) {
-                CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
-
-                assert grpDesc != null;
-
-                grpDesc.addPendingWalChangeRequest(msg);
-            }
+            return null;
         }
     }
 
@@ -248,16 +255,47 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * Handle finish message in discovery thread.
      *
      * @param msg Message.
+     * @return Message to be processed in exchange thread in response to this discovery message.     *
      */
-    public void onFinishDiscovery(WalStateFinishMessage msg) {
-        // TODO
+    public WalStateProposeMessage onFinishDiscovery(WalStateFinishMessage msg) {
+        synchronized (mux) {
+            if (cliDisconnected)
+                return null;
+
+            // Complete user future, if any.
+            GridFutureAdapter<Boolean> userFut = userFuts.get(msg.operationId());
+
+            if (userFut != null) {
+                if (msg.errorMessage() != null)
+                    completeWithError(userFut, msg.errorMessage());
+                else
+                    complete(userFut, msg.result());
+            }
+
+            // Unwind next messages.
+            CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
+
+            if (grpDesc != null && F.eq(grpDesc.deploymentId(), msg.groupDeploymentId())) {
+                WalStateProposeMessage oldProposeMsg = grpDesc.nextPendingWalChangeRequest();
+
+                assert oldProposeMsg != null;
+                assert F.eq(oldProposeMsg.operationId(), msg.operationId());
+
+                grpDesc.removePendingWalChangeRequest();
+
+                return grpDesc.nextPendingWalChangeRequest();
+            }
+            else
+                return null;
+        }
     }
 
+    /**
+     * Handle ack message.
+     *
+     * @param msg Ack message.
+     */
     public void onAck(WalStateAckMessage msg) {
-        // TODO
-    }
-
-    public void onNodeLeft(ClusterNode node) {
         // TODO
     }
 
