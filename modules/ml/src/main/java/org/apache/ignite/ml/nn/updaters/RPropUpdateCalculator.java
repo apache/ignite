@@ -107,7 +107,7 @@ public class RPropUpdateCalculator<M extends SmoothParametrized> implements Para
         else
             derSigns = gradient.like(gradient.size()).assign(1.0);
 
-        updaterParams.deltas().map(derSigns, (prevDelta, sign) -> {
+        Vector newDeltas = updaterParams.deltas().copy().map(derSigns, (prevDelta, sign) -> {
             if (sign > 0)
                 return Math.min(prevDelta * accelerationRate, UPDATE_MAX);
             else if (sign < 0)
@@ -116,12 +116,12 @@ public class RPropUpdateCalculator<M extends SmoothParametrized> implements Para
                 return prevDelta;
         });
 
-        updaterParams.setPrevIterationUpdates(MatrixUtil.zipWith(gradient, updaterParams.deltas(), (der, delta, i) -> {
+        Vector newPrevIterationUpdates = MatrixUtil.zipWith(gradient, updaterParams.deltas(), (der, delta, i) -> {
             if (derSigns.getX(i) >= 0)
                 return -Math.signum(der) * delta;
 
             return updaterParams.prevIterationUpdates().getX(i);
-        }));
+        });
 
         Vector updatesMask = MatrixUtil.zipWith(derSigns, updaterParams.prevIterationUpdates(), (sign, upd, i) -> {
             if (sign < 0)
@@ -133,10 +133,7 @@ public class RPropUpdateCalculator<M extends SmoothParametrized> implements Para
                 return -1.0;
         });
 
-        updaterParams.setUpdatesMask(updatesMask);
-        updaterParams.setPrevIterationGradient(gradient.copy());
-
-        return updaterParams;
+        return new RPropParameterUpdate(newPrevIterationUpdates, gradient.copy(), newDeltas, updatesMask);
     }
 
     /** {@inheritDoc} */

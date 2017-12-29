@@ -100,8 +100,8 @@ public class MnistDistributed extends GridCommonAbstractTest {
 
         IgniteBiTuple<Matrix, Matrix> testDs = createDataset(trainingAndTest.get2(), 10_000, FEATURES_CNT);
 
-        Vector predicted = mdl.apply(testDs.get1()).foldColumns(VectorUtils::vec2Num);
         Vector truth = testDs.get2().foldColumns(VectorUtils::vec2Num);
+        Vector predicted = mdl.apply(testDs.get1()).foldColumns(VectorUtils::vec2Num);
 
         Tracer.showAscii(truth);
         Tracer.showAscii(predicted);
