@@ -181,4 +181,21 @@ public class CachePartitionPartialCountersMap implements Serializable {
 
         return map0;
     }
+
+    /** {@inheritDoc} */
+    public String toString() {
+        StringBuilder sb = new StringBuilder("CachePartitionPartialCountersMap {");
+
+        for (int i = 0; i < partIds.length; i++) {
+            sb.append(partIds[i]).append("=(").append(initialUpdCntrs[i]).append(",")
+                .append(updCntrs[i]).append(")");
+
+            if (i != partIds.length - 1)
+                sb.append(", ");
+        }
+
+        sb.append("}");
+
+        return sb.toString();
+    }
 }

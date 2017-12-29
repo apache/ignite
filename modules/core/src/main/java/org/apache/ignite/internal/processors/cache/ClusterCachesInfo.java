@@ -1184,9 +1184,12 @@ class ClusterCachesInfo {
      * @return Exchange action.
      * @throws IgniteCheckedException If configuration validation failed.
      */
-    public ExchangeActions onStateChangeRequest(ChangeGlobalStateMessage msg, AffinityTopologyVersion topVer)
+    public ExchangeActions onStateChangeRequest(ChangeGlobalStateMessage msg, AffinityTopologyVersion topVer, DiscoveryDataClusterState curState)
         throws IgniteCheckedException {
         ExchangeActions exchangeActions = new ExchangeActions();
+
+        if (msg.activate() == curState.active())
+            return exchangeActions;
 
         if (msg.activate()) {
             for (DynamicCacheDescriptor desc : orderedCaches(CacheComparators.DIRECT)) {
