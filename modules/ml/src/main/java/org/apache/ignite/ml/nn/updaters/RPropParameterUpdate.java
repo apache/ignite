@@ -175,10 +175,10 @@ public class RPropParameterUpdate implements Serializable {
             return null;
 
         Vector newDeltas = nonNullUpdates.get(nonNullUpdates.size() - 1).deltas();
+        Vector newGradient = nonNullUpdates.get(nonNullUpdates.size() - 1).prevIterationGradient();
         Vector totalUpdate = nonNullUpdates.stream().map(pu -> VectorUtils.elementWiseTimes(pu.updatesMask().copy(), pu.prevIterationUpdates())).reduce(Vector::plus).orElse(null);
-        Vector totalGradient = updates.stream().filter(Objects::nonNull).map(RPropParameterUpdate::prevIterationGradient).reduce(Vector::plus).orElse(null);
 
-        return new RPropParameterUpdate(totalUpdate, totalGradient, newDeltas, new DenseLocalOnHeapVector(newDeltas.size()).assign(1.0));
+        return new RPropParameterUpdate(totalUpdate, newGradient, newDeltas, new DenseLocalOnHeapVector(newDeltas.size()).assign(1.0));
     }
 
     /**
