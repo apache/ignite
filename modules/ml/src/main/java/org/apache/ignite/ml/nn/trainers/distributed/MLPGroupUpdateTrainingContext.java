@@ -17,20 +17,48 @@
 
 package org.apache.ignite.ml.nn.trainers.distributed;
 
-public class MLPGroupUpdateTrainingContext<P> {
-    private final MLPGroupUpdateTrainingData<P> data;
-    private final P previousUpdate;
+/**
+ * Context extracted in distribute phase of training loop step in {@link MLPGroupUpdateTrainer}.
+ *
+ * @param <U> Type of update.
+ */
+public class MLPGroupUpdateTrainingContext<U> {
+    /**
+     * Group training data.
+     */
+    private final MLPGroupUpdateTrainingData<U> data;
 
-    public MLPGroupUpdateTrainingContext(MLPGroupUpdateTrainingData<P> data, P previousUpdate) {
+    /**
+     * Update produced by previous training loop step.
+     */
+    private final U previousUpdate;
+
+    /**
+     * Construct an instance of this class.
+     *
+     * @param data Group training data.
+     * @param previousUpdate Update produced by previous training loop step.
+     */
+    public MLPGroupUpdateTrainingContext(MLPGroupUpdateTrainingData<U> data, U previousUpdate) {
         this.data = data;
         this.previousUpdate = previousUpdate;
     }
 
-    public MLPGroupUpdateTrainingData<P> data() {
+    /**
+     * Get group training data.
+     *
+     * @return Group training data.
+     */
+    public MLPGroupUpdateTrainingData<U> data() {
         return data;
     }
 
-    public P previousUpdate() {
+    /**
+     * Get update produced by previous training loop step.
+     *
+     * @return Update produced by previous training loop step.
+     */
+    public U previousUpdate() {
         return previousUpdate;
     }
 }

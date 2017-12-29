@@ -27,11 +27,14 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
 
-public class MLPGroupUpdateTrainerContextCache {
+/**
+ * Cache used for storing data for {@link MLPGroupUpdateTrainer}.
+ */
+public class MLPGroupUpdateTrainerDataCache {
     /**
      * Cache name.
      */
-    public static String CACHE_NAME = "MLP_CTX_CACHE";
+    public static String CACHE_NAME = "MLP_GRP_TRN_DATA_CACHE";
 
     /**
      * Affinity service for region projections cache.

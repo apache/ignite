@@ -25,10 +25,20 @@ import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
 import org.apache.ignite.ml.trainers.group.GroupTrainerInput;
 
-public abstract class AbstractMLPGroupUpdateTrainerInput<U> implements GroupTrainerInput<Void>, LocalBatchTrainerInput<MultilayerPerceptron> {
-
+/**
+ * Abstract class for {@link MLPGroupUpdateTrainer} inputs.
+ */
+public abstract class AbstractMLPGroupUpdateTrainerInput implements GroupTrainerInput<Void>, LocalBatchTrainerInput<MultilayerPerceptron> {
+    /**
+     * Count of networks to be trained in parallel.
+     */
     private final int networksCount;
 
+    /**
+     * Construct instance of this class with given parameters.
+     *
+     * @param networksCnt Count of networks to be trained in parallel.
+     */
     public AbstractMLPGroupUpdateTrainerInput(int networksCnt) {
         this.networksCount = networksCnt;
     }
@@ -39,6 +49,11 @@ public abstract class AbstractMLPGroupUpdateTrainerInput<U> implements GroupTrai
         return () -> MLPCache.allKeys(nt, trainingUUID);
     }
 
+    /**
+     * Get count of networks to be trained in parallel.
+     *
+     * @return
+     */
     public int trainingsCount() {
         return networksCount;
     }

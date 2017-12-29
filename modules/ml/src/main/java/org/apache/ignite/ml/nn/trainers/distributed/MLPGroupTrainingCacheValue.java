@@ -19,13 +19,29 @@ package org.apache.ignite.ml.nn.trainers.distributed;
 
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
 
+/**
+ * Value of cache used for group training by {@link MLPGroupUpdateTrainer}.
+ */
 public class MLPGroupTrainingCacheValue {
+    /**
+     * Multilayer perceptron.
+     */
     private MultilayerPerceptron mlp;
 
+    /**
+     * Construct instance of this class with given parameters.
+     *
+     * @param mlp Multilayer perceptron.
+     */
     public MLPGroupTrainingCacheValue(MultilayerPerceptron mlp) {
         this.mlp = mlp;
     }
 
+    /**
+     * Get multilayer perceptron.
+     *
+     * @return Multilayer perceptron.
+     */
     public MultilayerPerceptron perceptron() {
         return mlp;
     }

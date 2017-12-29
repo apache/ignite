@@ -22,6 +22,11 @@ import java.util.UUID;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 
+/**
+ * Local context for {@link MLPGroupUpdateTrainer}.
+ *
+ * @param <U> Type of updates on which training is done.
+ */
 public class MLPGroupUpdateTrainerLocalContext<U> implements HasTrainingUUID {
     /**
      * UUID of training.
@@ -33,18 +38,20 @@ public class MLPGroupUpdateTrainerLocalContext<U> implements HasTrainingUUID {
      */
     private final int globalStepsMaxCount;
 
-//    /**
-//     * Synchronize between nodes every syncRate steps.
-//     */
-//    private final int syncRate;
-
+    /**
+     * Reducer used to reduce updates resulted from each parallel training.
+     */
     private final IgniteFunction<List<U>, U> allUpdatesReducer;
 
+    /**
+     * Count of networks to be trained in parallel.
+     */
     private final int parallelTrainingsCnt;
 
+    /**
+     * Current global step of {@link MLPGroupUpdateTrainer}.
+     */
     private int curStep;
-
-//    private final IgniteFunction<List<U>, U> modelUpdatesReducer;
 
     public MLPGroupUpdateTrainerLocalContext(UUID trainingUUID, int globalStepsMaxCount, IgniteFunction<List<U>, U> allUpdatesReducer, int parallelTrainingsCnt) {
         this.trainingUUID = trainingUUID;
@@ -59,22 +66,47 @@ public class MLPGroupUpdateTrainerLocalContext<U> implements HasTrainingUUID {
         return trainingUUID;
     }
 
+    /**
+     * Get global steps max count.
+     *
+     * @return Dlobal steps max count.
+     */
     public int globalStepsMaxCount() {
         return globalStepsMaxCount;
     }
 
+    /**
+     * Get reducer used to reduce updates resulted from each parallel training.
+     *
+     * @return Reducer used to reduce updates resulted from each parallel training.
+     */
     public IgniteFunction<List<U>, U> allUpdatesReducer() {
         return allUpdatesReducer;
     }
 
+    /**
+     * Get count of networks to be trained in parallel.
+     *
+     * @return Count of networks to be trained in parallel.
+     */
     public int parallelTrainingsCnt() {
         return parallelTrainingsCnt;
     }
 
+    /**
+     * Get current global step.
+     *
+     * @return Current global step.
+     */
     public int currentStep() {
         return curStep;
     }
 
+    /**
+     * Increment current global step.
+     *
+     * @return This object.
+     */
     public MLPGroupUpdateTrainerLocalContext<U> incrementCurrentStep() {
         curStep++;
 

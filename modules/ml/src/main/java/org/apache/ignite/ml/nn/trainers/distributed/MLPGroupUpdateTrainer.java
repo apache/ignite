@@ -21,8 +21,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
@@ -36,13 +34,9 @@ import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.apache.ignite.ml.nn.LossFunctions;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
-import org.apache.ignite.ml.nn.updaters.NesterovParameterUpdate;
-import org.apache.ignite.ml.nn.updaters.NesterovUpdateCalculator;
 import org.apache.ignite.ml.nn.updaters.ParameterUpdateCalculator;
 import org.apache.ignite.ml.nn.updaters.RPropParameterUpdate;
 import org.apache.ignite.ml.nn.updaters.RPropUpdateCalculator;
-import org.apache.ignite.ml.nn.updaters.SimpleGDParameter;
-import org.apache.ignite.ml.nn.updaters.SimpleGDUpdateCalculator;
 import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
 import org.apache.ignite.ml.trainers.group.MetaoptimizerGroupTrainer;
 import org.apache.ignite.ml.trainers.group.ResultAndUpdates;
@@ -62,7 +56,7 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
         MultilayerPerceptron,
         U,
         MultilayerPerceptron,
-        AbstractMLPGroupUpdateTrainerInput<U>,
+        AbstractMLPGroupUpdateTrainerInput,
         MLPGroupUpdateTrainingContext<U>,
         U,
         MLPGroupUpdateTrainingLoopData<U>,
@@ -168,10 +162,10 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
     }
 
     /** {@inheritDoc} */
-    @Override protected void init(AbstractMLPGroupUpdateTrainerInput<U> data, UUID trainingUUID) {
+    @Override protected void init(AbstractMLPGroupUpdateTrainerInput data, UUID trainingUUID) {
         super.init(data, trainingUUID);
 
-        MLPGroupUpdateTrainerContextCache.getOrCreate(ignite).put(trainingUUID, new MLPGroupUpdateTrainingData<>(
+        MLPGroupUpdateTrainerDataCache.getOrCreate(ignite).put(trainingUUID, new MLPGroupUpdateTrainingData<>(
                 updateCalculator,
                 syncRate,
             localStepUpdatesReducer,
@@ -183,7 +177,7 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
 
     /** {@inheritDoc} */
     @Override protected IgniteFunction<GroupTrainerCacheKey<Void>, ResultAndUpdates<U>> distributedInitializer(
-        AbstractMLPGroupUpdateTrainerInput<U> data) {
+        AbstractMLPGroupUpdateTrainerInput data) {
         MultilayerPerceptron initPerceptron = data.mdl();
         ParameterUpdateCalculator<MultilayerPerceptron, U> calculator = updateCalculator;
 
@@ -224,7 +218,7 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
         UUID uuid = ctx.trainingUUID();
 
         return () -> {
-            MLPGroupUpdateTrainingData<U> data = MLPGroupUpdateTrainerContextCache.getOrCreate(Ignition.localIgnite()).get(uuid);
+            MLPGroupUpdateTrainingData<U> data = MLPGroupUpdateTrainerDataCache.getOrCreate(Ignition.localIgnite()).get(uuid);
             return new MLPGroupUpdateTrainingContext<>(data, prevUpdate);
         };
     }
@@ -281,11 +275,12 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
     }
 
     /** {@inheritDoc} */
-    @Override protected MLPGroupUpdateTrainerLocalContext<U> initialLocalContext(AbstractMLPGroupUpdateTrainerInput<U> data,
+    @Override protected MLPGroupUpdateTrainerLocalContext<U> initialLocalContext(AbstractMLPGroupUpdateTrainerInput data,
         UUID trainingUUID) {
         return new MLPGroupUpdateTrainerLocalContext<>(trainingUUID, maxGlobalSteps, allUpdatesReducer, data.trainingsCount());
     }
 
+    /** {@inheritDoc} */
     @Override protected IgniteSupplier<Stream<GroupTrainerCacheKey<Void>>> finalResultKeys(U data,
         MLPGroupUpdateTrainerLocalContext locCtx) {
         UUID uuid = locCtx.trainingUUID();

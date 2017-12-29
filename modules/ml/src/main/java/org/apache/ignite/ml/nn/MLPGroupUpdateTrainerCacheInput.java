@@ -33,14 +33,38 @@ import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.initializers.MLPInitializer;
 import org.apache.ignite.ml.nn.trainers.distributed.AbstractMLPGroupUpdateTrainerInput;
+import org.apache.ignite.ml.nn.trainers.distributed.MLPGroupUpdateTrainer;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.Utils;
 
-public class MLPGroupUpdateTrainerCacheInput<U> extends AbstractMLPGroupUpdateTrainerInput<U> {
+/**
+ * Input for {@link MLPGroupUpdateTrainer} where batches are taken from cache of labeled vectors.
+ */
+public class MLPGroupUpdateTrainerCacheInput extends AbstractMLPGroupUpdateTrainerInput {
+    /**
+     * Cache of labeled vectors.
+     */
     private final IgniteCache<Integer, LabeledVector<Vector, Vector>> cache;
+
+    /**
+     * Size of batch to return on each training iteration.
+     */
     private final int batchSize;
+
+    /**
+     * Multilayer perceptron.
+     */
     private final MultilayerPerceptron mlp;
 
+    /**
+     * Construct instance of this class with given parameters.
+     *
+     * @param arch Architecture of multilayer perceptron.
+     * @param init Initializer of multilayer perceptron.
+     * @param networksCnt Count of networks to be trained in parallel by {@link MLPGroupUpdateTrainer}.
+     * @param cache Cache with labeled vectors.
+     * @param batchSize Size of batch to return on each training iteration.
+     */
     public MLPGroupUpdateTrainerCacheInput(MLPArchitecture arch, MLPInitializer init,
         int networksCnt, IgniteCache<Integer, LabeledVector<Vector, Vector>> cache,
         int batchSize) {
@@ -51,6 +75,14 @@ public class MLPGroupUpdateTrainerCacheInput<U> extends AbstractMLPGroupUpdateTr
         this.mlp = new MultilayerPerceptron(arch, init);
     }
 
+    /**
+     * Construct instance of this class with given parameters and default initializer.
+     *
+     * @param arch Architecture of multilayer perceptron.
+     * @param networksCnt Count of networks to be trained in parallel by {@link MLPGroupUpdateTrainer}.
+     * @param cache Cache with labeled vectors.
+     * @param batchSize Size of batch to return on each training iteration.
+     */
     public MLPGroupUpdateTrainerCacheInput(MLPArchitecture arch, int networksCnt, IgniteCache<Integer, LabeledVector<Vector, Vector>> cache,
         int batchSize) {
         this(arch, null, networksCnt, cache, batchSize);
