@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
@@ -303,7 +304,7 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
     /** {@inheritDoc} */
     @Override protected IgniteFunction<List<MultilayerPerceptron>, MultilayerPerceptron> finalResultsReducer() {
         // Just take any of MLPs since they will be in the same state.
-        return mlps -> !mlps.isEmpty() ? mlps.get(0) : null;
+        return mlps -> mlps.stream().filter(Objects::nonNull).findFirst().orElse(null);
     }
 
     /** {@inheritDoc} */
