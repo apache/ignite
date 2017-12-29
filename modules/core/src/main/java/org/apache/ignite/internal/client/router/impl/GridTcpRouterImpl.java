@@ -151,8 +151,8 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
         }
 
         for (int port = cfg.getPort(), last = port + cfg.getPortRange(); port <= last; port++) {
-            if (startTcpServer(hostAddr, port, lsnr, parser, cfg.isNoDelay(), sslCtx, cfg.isSslClientAuth(),
-                cfg.isSslClientAuth())) {
+            if (startTcpServer(hostAddr, port, lsnr, parser, cfg.isNoDelay(), cfg.isNetCompressionEnabled(),
+                sslCtx, cfg.isSslClientAuth(), cfg.isSslClientAuth())) {
                 if (log.isInfoEnabled())
                     log.info("TCP router successfully started for endpoint: " + hostAddr.getHostAddress() + ":" + port);
 
@@ -251,7 +251,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
      *      server was unable to start.
      */
     private boolean startTcpServer(InetAddress hostAddr, int port, GridNioServerListener<GridClientMessage> lsnr,
-        GridNioParser parser, boolean tcpNoDelay, @Nullable SSLContext sslCtx, boolean wantClientAuth,
+        GridNioParser parser, boolean tcpNoDelay, boolean netCompress, @Nullable SSLContext sslCtx, boolean wantClientAuth,
         boolean needClientAuth) {
         try {
             // This name is required to be unique in order to avoid collisions with
@@ -262,7 +262,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
 
             filterArrayList.add(new GridNioCodecFilter(parser, log, false));
 
-            if (true /* Compress enabled flag. Need add to GridClientConfiguration. */) {
+            if (netCompress) {
                 GridNioCompressionFilter compressFilter = new GridNioCompressionFilter(false, ByteOrder.nativeOrder(), log);
 
                 filterArrayList.add(compressFilter);

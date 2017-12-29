@@ -64,6 +64,9 @@ public class GridClientConfiguration {
     /** Default flag setting for TCP_NODELAY option. */
     public static final boolean DFLT_TCP_NODELAY = true;
 
+    /** Default flag setting for NET_COMPRESSION option. */
+    public static final boolean DFLT_NET_COMPRESSION = false;
+
     /** List of servers to connect to. */
     private Collection<String> srvs = Collections.emptySet();
 
@@ -105,6 +108,9 @@ public class GridClientConfiguration {
 
     /** Ping timeout. */
     private long pingTimeout = DFLT_PING_TIMEOUT;
+
+    /** Network compression. */
+    private boolean netCompression = DFLT_NET_COMPRESSION;
 
     /** Default balancer. */
     private GridClientLoadBalancer balancer = new GridClientRandomBalancer();
@@ -154,6 +160,7 @@ public class GridClientConfiguration {
         routers = cfg.getRouters();
         srvs = cfg.getServers();
         sslCtxFactory = cfg.getSslContextFactory();
+        netCompression = cfg.isNetCompressionEnabled();
         tcpNoDelay = cfg.isTcpNoDelay();
         topRefreshFreq = cfg.getTopologyRefreshFrequency();
         daemon = cfg.isDaemon();
@@ -344,6 +351,27 @@ public class GridClientConfiguration {
      */
     public GridClientConfiguration setSslContextFactory(GridSslContextFactory sslCtxFactory) {
         this.sslCtxFactory = sslCtxFactory;
+
+        return this;
+    }
+
+    /**
+     * Returns {@code true} if network compressing is enabled, {@code false} otherwise.
+     *
+     * @return Network compression flag.
+     */
+    public boolean isNetCompressionEnabled() {
+        return netCompression;
+    }
+
+    /**
+     * Enables/disables network compression.
+     *
+     * @param netCompression {@code true} if network compressing is enabled, {@code false} otherwise.
+     * @return {@code this} for chaining.
+     */
+    public GridClientConfiguration setNetComressionEnabled(boolean netCompression) {
+        this.netCompression = netCompression;
 
         return this;
     }
@@ -715,6 +743,8 @@ public class GridClientConfiguration {
         String tcpNoDelay = in.getProperty(prefix + "tcp.noDelay");
         String topRefreshFreq = in.getProperty(prefix + "topology.refresh");
 
+        String netCompression = in.getProperty(prefix + "netCompression");
+
         String sslEnabled = in.getProperty(prefix + "ssl.enabled");
 
         String sslProto = in.getProperty(prefix + "ssl.protocol", "TLS");
@@ -768,6 +798,9 @@ public class GridClientConfiguration {
 
         if (!F.isEmpty(topRefreshFreq))
             setTopologyRefreshFrequency(Long.parseLong(topRefreshFreq));
+
+        if (!F.isEmpty(netCompression))
+            setNetComressionEnabled(Boolean.parseBoolean(netCompression));
 
         //
         // SSL configuration section

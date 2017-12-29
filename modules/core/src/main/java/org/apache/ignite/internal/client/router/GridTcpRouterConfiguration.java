@@ -56,6 +56,9 @@ public class GridTcpRouterConfiguration {
     /** Default nodelay. */
     public static final boolean DFLT_TCP_NODELAY = true;
 
+    /** Default nodelay. */
+    public static final boolean DFLT_NET_COMPRESSION = false;
+
     /** Host. */
     private String host = DFLT_TCP_HOST;
 
@@ -68,6 +71,9 @@ public class GridTcpRouterConfiguration {
 
     /** No delay. */
     private boolean noDelay = DFLT_TCP_NODELAY;
+
+    /** Network compression. */
+    private boolean netCompression = DFLT_NET_COMPRESSION;
 
     /** Idle timeout. */
     private long idleTimeout = ConnectorConfiguration.DFLT_IDLE_TIMEOUT;
@@ -134,6 +140,18 @@ public class GridTcpRouterConfiguration {
      */
     public boolean isNoDelay() {
         return noDelay;
+    }
+
+    /**
+     * Returns {@code true} if network compressing is enabled, {@code false} otherwise.
+     *
+     * If not provided, then default value
+     * {@link #DFLT_NET_COMPRESSION} is used.
+     *
+     * @return Network compression flag.
+     */
+    public boolean isNetCompressionEnabled() {
+        return netCompression;
     }
 
     /**
@@ -253,6 +271,21 @@ public class GridTcpRouterConfiguration {
      */
     public GridTcpRouterConfiguration setNoDelay(boolean noDelay) {
         this.noDelay = noDelay;
+
+        return this;
+    }
+
+    /**
+     * Enables/disables network compression.
+     * <p>
+     * If not provided, then default value
+     * {@link #DFLT_NET_COMPRESSION} is used.
+     *
+     * @param netCompression {@code true} if network compressing is enabled, {@code false} otherwise.
+     * @return {@code this} for chaining.
+     */
+    public GridTcpRouterConfiguration setNetCompressionEnabled(boolean netCompression) {
+        this.netCompression = netCompression;
 
         return this;
     }
