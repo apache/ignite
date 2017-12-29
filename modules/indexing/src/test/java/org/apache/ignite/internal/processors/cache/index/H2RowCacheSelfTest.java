@@ -77,6 +77,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
             .setQueryEntities(Collections.singleton(
                 new QueryEntity(Integer.class, Value.class)));
     }
+
     /**
      */
     public void testDestroyCacheCreation() {
