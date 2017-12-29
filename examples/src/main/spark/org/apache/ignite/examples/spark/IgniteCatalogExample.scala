@@ -56,25 +56,47 @@ object IgniteCatalogExample extends App {
         Logger.getRootLogger.setLevel(Level.ERROR)
         Logger.getLogger("org.apache.ignite").setLevel(Level.INFO)
 
+        println("List of available tables:")
+
         //Showing existing tables.
         igniteSession.catalog.listTables().show()
+
+        println("PERSON table description:")
 
         //Showing `person` schema.
         igniteSession.catalog.listColumns("person").show()
 
+        println("CITY table description:")
+
         //Showing `city` schema.
         igniteSession.catalog.listColumns("city").show()
+
+        println("Querying all persons from city with ID=2.")
+        println
 
         //Selecting data throw Spark SQL engine.
         val df = igniteSession.sql("SELECT * FROM person WHERE CITY_ID = 2")
 
+        println("Result schema:")
+
         df.printSchema()
+
+        println("Result content:")
+
         df.show()
 
+        println("Querying all persons living in Denver.")
+        println
+
         //Selecting data throw Spark SQL engine.
-        val df2 = igniteSession.sql("SELECT * FROM person p JOIN city c ON c.ID = p.CITY_ID WHERE p.CITY_ID = 2")
+        val df2 = igniteSession.sql("SELECT * FROM person p JOIN city c ON c.ID = p.CITY_ID WHERE c.NAME = 'Denver'")
+
+        println("Result schema:")
 
         df2.printSchema()
+
+        println("Result content:")
+
         df2.show()
     }
 
@@ -102,8 +124,6 @@ object IgniteCatalogExample extends App {
 
         cache.query(new SqlFieldsQuery("CREATE INDEX on Person (city_id)")).getAll
 
-        println("Created database objects.")
-
         //Inserting some data into table.
         var qry = new SqlFieldsQuery("INSERT INTO city (id, name) VALUES (?, ?)")
 
@@ -117,8 +137,6 @@ object IgniteCatalogExample extends App {
         cache.query(qry.setArgs(2L.asInstanceOf[JLong], "Jane Roe", 2L.asInstanceOf[JLong])).getAll
         cache.query(qry.setArgs(3L.asInstanceOf[JLong], "Mary Major", 1L.asInstanceOf[JLong])).getAll
         cache.query(qry.setArgs(4L.asInstanceOf[JLong], "Richard Miles", 2L.asInstanceOf[JLong])).getAll
-
-        println("Populated data.")
 
         ignite
     }
