@@ -107,6 +107,9 @@ public class GridCacheSharedContext<K, V> {
     /** Write ahead log manager. */
     private IgniteWriteAheadLogManager walMgr;
 
+    /** Write ahead log state manager. */
+    private WalStateProcessor walStateMgr;
+
     /** Database manager. */
     private IgniteCacheDatabaseSharedManager dbMgr;
 
@@ -169,6 +172,7 @@ public class GridCacheSharedContext<K, V> {
      * @param txMgr Transaction manager.
      * @param verMgr Version manager.
      * @param mvccMgr MVCC manager.
+     * @param walStateMgr WAL state manager.
      * @param depMgr Deployment manager.
      * @param exchMgr Exchange manager.
      * @param affMgr Affinity manager.
@@ -184,6 +188,7 @@ public class GridCacheSharedContext<K, V> {
         GridCacheMvccManager mvccMgr,
         IgnitePageStoreManager pageStoreMgr,
         IgniteWriteAheadLogManager walMgr,
+        WalStateProcessor walStateMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
         IgniteCacheSnapshotManager snpMgr,
         GridCacheDeploymentManager<K, V> depMgr,
@@ -196,7 +201,8 @@ public class GridCacheSharedContext<K, V> {
     ) {
         this.kernalCtx = kernalCtx;
 
-        setManagers(mgrs, txMgr, jtaMgr, verMgr, mvccMgr, pageStoreMgr, walMgr, dbMgr, snpMgr, depMgr, exchMgr, affMgr, ioMgr, ttlMgr);
+        setManagers(mgrs, txMgr, jtaMgr, verMgr, mvccMgr, pageStoreMgr, walMgr, walStateMgr, dbMgr, snpMgr, depMgr,
+            exchMgr, affMgr, ioMgr, ttlMgr);
 
         this.storeSesLsnrs = storeSesLsnrs;
 
@@ -361,6 +367,7 @@ public class GridCacheSharedContext<K, V> {
             mvccMgr,
             pageStoreMgr,
             walMgr,
+            walStateMgr,
             dbMgr,
             snpMgr,
             new GridCacheDeploymentManager<K, V>(),
@@ -400,12 +407,14 @@ public class GridCacheSharedContext<K, V> {
      * @param jtaMgr JTA manager.
      * @param verMgr Version manager.
      * @param mvccMgr MVCC manager.
+     * @param walStateMgr WAL state manager.
      * @param depMgr Deployment manager.
      * @param exchMgr Exchange manager.
      * @param affMgr Affinity manager.
      * @param ioMgr IO manager.
      * @param ttlMgr Ttl cleanup manager.
      */
+    @SuppressWarnings("unchecked")
     private void setManagers(List<GridCacheSharedManager<K, V>> mgrs,
         IgniteTxManager txMgr,
         CacheJtaManagerAdapter jtaMgr,
@@ -413,6 +422,7 @@ public class GridCacheSharedContext<K, V> {
         GridCacheMvccManager mvccMgr,
         IgnitePageStoreManager pageStoreMgr,
         IgniteWriteAheadLogManager walMgr,
+        WalStateProcessor walStateMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
         IgniteCacheSnapshotManager snpMgr,
         GridCacheDeploymentManager<K, V> depMgr,
@@ -425,6 +435,7 @@ public class GridCacheSharedContext<K, V> {
         this.txMgr = add(mgrs, txMgr);
         this.pageStoreMgr = add(mgrs, pageStoreMgr);
         this.walMgr = add(mgrs, walMgr);
+        this.walStateMgr = add(mgrs, walStateMgr);
         this.dbMgr = add(mgrs, dbMgr);
         this.snpMgr = add(mgrs, snpMgr);
         this.jtaMgr = add(mgrs, jtaMgr);
@@ -680,6 +691,13 @@ public class GridCacheSharedContext<K, V> {
      */
     public IgniteWriteAheadLogManager wal() {
         return walMgr;
+    }
+
+    /**
+     * @return WAL state manager.
+     */
+    public WalStateProcessor walState() {
+       return walStateMgr;
     }
 
     /**

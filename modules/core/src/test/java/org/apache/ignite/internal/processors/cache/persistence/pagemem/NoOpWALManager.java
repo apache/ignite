@@ -112,6 +112,11 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
+    @Override public void onReconnected(boolean active) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         // No-op.
     }

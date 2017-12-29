@@ -2563,6 +2563,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else
             dbMgr = new IgniteCacheDatabaseSharedManager();
 
+        WalStateProcessor walStateMgr = new WalStateProcessor();
+
         IgniteCacheSnapshotManager snpMgr = ctx.plugins().createComponent(IgniteCacheSnapshotManager.class);
 
         if (snpMgr == null)
@@ -2581,6 +2583,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             mvccMgr,
             pageStoreMgr,
             walMgr,
+            walStateMgr,
             dbMgr,
             snpMgr,
             depMgr,
@@ -3457,6 +3460,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return onWalModeDynamicChangeMessage((WalModeDynamicChangeMessage)msg) &&
                 ((WalModeDynamicChangeMessage)msg).needExchange();
         }
+
+        if (msg instanceof WalStateProposeMessage)
+            sharedCtx.walState().onProposeDiscovery((WalStateProposeMessage)msg);
+        else if (msg instanceof WalStateFinishMessage)
+            sharedCtx.walState().onFinishDiscovery((WalStateFinishMessage)msg);
 
         if (msg instanceof DynamicCacheChangeBatch)
             return cachesInfo.onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);

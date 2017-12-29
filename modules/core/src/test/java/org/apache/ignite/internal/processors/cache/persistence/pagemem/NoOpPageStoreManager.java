@@ -163,6 +163,11 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     }
 
     /** {@inheritDoc} */
+    @Override public void onReconnected(boolean active) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         // No-op.
     }

@@ -81,6 +81,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             null,
             new NoOpPageStoreManager(),
             new NoOpWALManager(),
+            null,
             new IgniteCacheDatabaseSharedManager(),
             null,
             null,
