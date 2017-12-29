@@ -19,7 +19,6 @@ package org.apache.ignite.compatibility.testframework.junits;
 
 import java.io.File;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
@@ -32,6 +31,7 @@ import org.apache.ignite.compatibility.testframework.util.MavenUtils;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -164,12 +164,13 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
                         filteredJvmArgs.add(arg);
                 }
 
-                URLClassLoader ldr = (URLClassLoader)CLASS_LOADER;
+                ClassLoader ldr = CLASS_LOADER;
 
                 final Collection<Dependency> dependencies = getDependencies(ver);
 
                 StringBuilder pathBuilder = new StringBuilder();
-                for (URL url : ldr.getURLs()) {
+
+                for (URL url : IgniteUtils.classLoaderUrls(ldr)) {
                     String path = url.getPath();
 
                     boolean excluded = false;
