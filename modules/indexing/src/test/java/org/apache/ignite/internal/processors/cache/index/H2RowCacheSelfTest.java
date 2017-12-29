@@ -59,8 +59,6 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        U.sleep(500);
-
         super.afterTest();
     }
 
