@@ -18,37 +18,25 @@
 package org.apache.ignite.ml.nn.performance;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
-import java.util.Properties;
 import java.util.Random;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorUtils;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.Activators;
-import org.apache.ignite.ml.nn.LabeledVectorsCache;
 import org.apache.ignite.ml.nn.LossFunctions;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.SimpleMLPLocalBatchTrainerInput;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainer;
 import org.apache.ignite.ml.nn.updaters.RPropUpdateCalculator;
-import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.trees.performance.ColumnDecisionTreeTrainerBenchmark;
-import org.apache.ignite.ml.util.MnistUtils;
 import org.junit.Test;
 
-import static org.apache.ignite.ml.math.VectorUtils.num2Vec;
+import static org.apache.ignite.ml.nn.performance.MnistMLPTestUtil.createDataset;
 import static org.apache.ignite.ml.nn.performance.MnistMLPTestUtil.loadMnist;
 
 /**
@@ -101,20 +89,5 @@ public class MnistLocal {
 
         Tracer.showAscii(truth);
         Tracer.showAscii(predicted);
-    }
-
-    /** */
-    private IgniteBiTuple<Matrix, Matrix> createDataset(Stream<DenseLocalOnHeapVector> s, int samplesCnt, int featCnt) {
-        Matrix vectors = new DenseLocalOnHeapMatrix(featCnt, samplesCnt);
-        Matrix labels = new DenseLocalOnHeapMatrix(10, samplesCnt);
-        List<DenseLocalOnHeapVector> sc = s.collect(Collectors.toList());
-
-        for (int i = 0; i < samplesCnt; i++) {
-            DenseLocalOnHeapVector v = sc.get(i);
-            vectors.assignColumn(i, v.viewPart(0, featCnt));
-            labels.assignColumn(i, num2Vec((int)v.getX(featCnt), 10));
-        }
-
-        return new IgniteBiTuple<>(vectors, labels);
     }
 }

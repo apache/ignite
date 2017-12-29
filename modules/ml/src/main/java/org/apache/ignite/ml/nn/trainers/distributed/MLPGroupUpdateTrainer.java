@@ -21,8 +21,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
@@ -37,8 +35,8 @@ import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.apache.ignite.ml.nn.LossFunctions;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.updaters.ParameterUpdateCalculator;
-import org.apache.ignite.ml.nn.updaters.SimpleGDParameter;
-import org.apache.ignite.ml.nn.updaters.SimpleGDUpdateCalculator;
+import org.apache.ignite.ml.nn.updaters.RPropParameterUpdate;
+import org.apache.ignite.ml.nn.updaters.RPropUpdateCalculator;
 import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
 import org.apache.ignite.ml.trainers.group.MetaoptimizerGroupTrainer;
 import org.apache.ignite.ml.trainers.group.ResultAndUpdates;
@@ -102,21 +100,25 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
 
     private static final int DEFAULT_SYNC_RATE = 5;
 
-    private static final IgniteFunction<List<SimpleGDParameter>,SimpleGDParameter> DEFAULT_ALL_UPDATES_REDUCER = parameters -> {
-        Double lr = parameters.stream().filter(Objects::nonNull).map(SimpleGDParameter::learningRate).reduce((x, y) -> x + y).orElse(1.0);
-        Optional<Vector> sumGrad = parameters.stream().filter(Objects::nonNull).map(SimpleGDParameter::gradient).reduce(Vector::plus);
+//    private static final IgniteFunction<List<SimpleGDParameter>,SimpleGDParameter> DEFAULT_ALL_UPDATES_REDUCER = parameters -> {
+//        Double lr = parameters.stream().filter(Objects::nonNull).map(SimpleGDParameter::learningRate).reduce((x, y) -> x + y).orElse(1.0);
+//        Optional<Vector> sumGrad = parameters.stream().filter(Objects::nonNull).map(SimpleGDParameter::gradient).reduce(Vector::plus);
+//
+//        return sumGrad.map(gr -> gr.divide(parameters.size())).map(gr -> new SimpleGDParameter(gr, lr)).orElse(null);
+//    };
+//
+//    private static final IgniteFunction<List<SimpleGDParameter>,SimpleGDParameter> DEFAULT_LOCAL_STEP_UPDATES_REDUCER = parameters -> {
+//        Double lr = parameters.stream().filter(Objects::nonNull).map(SimpleGDParameter::learningRate).reduce((x, y) -> x + y).orElse(1.0);
+//        Optional<Vector> sumGrad = parameters.stream().filter(Objects::nonNull).map(SimpleGDParameter::gradient).reduce(Vector::plus);
+//
+//        return sumGrad.map(gr -> new SimpleGDParameter(gr, lr)).orElse(null);
+//    };
 
-        return sumGrad.map(gr -> gr.divide(parameters.size())).map(gr -> new SimpleGDParameter(gr, lr)).orElse(null);
-    };
+    private static final IgniteFunction<List<RPropParameterUpdate>, RPropParameterUpdate> DEFAULT_ALL_UPDATES_REDUCER = RPropParameterUpdate::avg;
 
-    private static final IgniteFunction<List<SimpleGDParameter>,SimpleGDParameter> DEFAULT_LOCAL_STEP_UPDATES_REDUCER = parameters -> {
-        Double lr = parameters.stream().filter(Objects::nonNull).map(SimpleGDParameter::learningRate).reduce((x, y) -> x + y).orElse(1.0);
-        Optional<Vector> sumGrad = parameters.stream().filter(Objects::nonNull).map(SimpleGDParameter::gradient).reduce(Vector::plus);
+    private static final IgniteFunction<List<RPropParameterUpdate>, RPropParameterUpdate> DEFAULT_LOCAL_STEP_UPDATES_REDUCER = RPropParameterUpdate::sum;
 
-        return sumGrad.map(gr -> new SimpleGDParameter(gr, lr)).orElse(null);
-    };
-
-    private static final ParameterUpdateCalculator<MultilayerPerceptron, SimpleGDParameter> DEFAULT_UPDATE_CALCULATOR = new SimpleGDUpdateCalculator<>(0.1);
+    private static final ParameterUpdateCalculator<MultilayerPerceptron, RPropParameterUpdate> DEFAULT_UPDATE_CALCULATOR = new RPropUpdateCalculator<>();
 
     private static final IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> DEFAULT_LOSS = LossFunctions.MSE;
 
@@ -145,8 +147,8 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
         this.tolerance = tolerance;
     }
 
-    public static MLPGroupUpdateTrainer<SimpleGDParameter> getDefault(Ignite ignite) {
-        return new MLPGroupUpdateTrainer<>(DEFAULT_MAX_GLOBAL_STEPS, DEFAULT_SYNC_RATE, DEFAULT_ALL_UPDATES_REDUCER, DEFAULT_LOCAL_STEP_UPDATES_REDUCER, DEFAULT_UPDATE_CALCULATOR, DEFAULT_LOSS, ignite, 0.1);
+    public static MLPGroupUpdateTrainer<RPropParameterUpdate> getDefault(Ignite ignite) {
+        return new MLPGroupUpdateTrainer<>(DEFAULT_MAX_GLOBAL_STEPS, DEFAULT_SYNC_RATE, DEFAULT_ALL_UPDATES_REDUCER, DEFAULT_LOCAL_STEP_UPDATES_REDUCER, DEFAULT_UPDATE_CALCULATOR, DEFAULT_LOSS, ignite, 0.01);
     }
 
     /** {@inheritDoc} */
@@ -279,7 +281,7 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
     /** {@inheritDoc} */
     @Override protected IgniteSupplier<MLPGroupUpdateTrainingContext<U>> extractContextForFinalResultCreation(U data,
         MLPGroupUpdateTrainerLocalContext locCtx) {
-        return null;
+        return () -> null;
     }
 
     /** {@inheritDoc} */

@@ -26,6 +26,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
@@ -35,11 +37,12 @@ import org.apache.ignite.ml.nn.MLPGroupUpdateTrainerCacheInput;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.trainers.distributed.MLPGroupUpdateTrainer;
-import org.apache.ignite.ml.nn.updaters.SimpleGDParameter;
+import org.apache.ignite.ml.nn.updaters.RPropParameterUpdate;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.ml.nn.performance.MnistMLPTestUtil.createDataset;
 import static org.apache.ignite.ml.nn.performance.MnistMLPTestUtil.loadMnist;
 
 /**
@@ -87,13 +90,21 @@ public class MnistDistributed extends GridCommonAbstractTest {
         IgniteCache<Integer, LabeledVector<Vector, Vector>> labeledVectorsCache = LabeledVectorsCache.createNew(ignite);
         loadIntoCache(trainingMnistLst, labeledVectorsCache);
 
-        MLPGroupUpdateTrainer<SimpleGDParameter> trainer = MLPGroupUpdateTrainer.getDefault(ignite);
+        MLPGroupUpdateTrainer<RPropParameterUpdate> trainer = MLPGroupUpdateTrainer.getDefault(ignite);
 
         MLPArchitecture arch = new MLPArchitecture(FEATURES_CNT).
             withAddedLayer(hiddenNeuronsCnt, true, Activators.SIGMOID).
             withAddedLayer(10, false, Activators.SIGMOID);
 
-        MultilayerPerceptron mlp = trainer.train(new MLPGroupUpdateTrainerCacheInput<>(arch, 8, labeledVectorsCache, 2000));
+        MultilayerPerceptron mdl = trainer.train(new MLPGroupUpdateTrainerCacheInput<>(arch, 8, labeledVectorsCache, 2000));
+
+        IgniteBiTuple<Matrix, Matrix> testDs = createDataset(trainingAndTest.get2(), 10_000, FEATURES_CNT);
+
+        Vector predicted = mdl.apply(testDs.get1()).foldColumns(VectorUtils::vec2Num);
+        Vector truth = testDs.get2().foldColumns(VectorUtils::vec2Num);
+
+        Tracer.showAscii(truth);
+        Tracer.showAscii(predicted);
     }
 
     /**

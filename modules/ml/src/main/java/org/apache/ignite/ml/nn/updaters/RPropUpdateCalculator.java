@@ -116,7 +116,7 @@ public class RPropUpdateCalculator<M extends SmoothParametrized> implements Para
                 return prevDelta;
         });
 
-        updaterParams.setPrevIterationBiasesUpdates(MatrixUtil.zipWith(gradient, updaterParams.deltas(), (der, delta, i) -> {
+        updaterParams.setPrevIterationUpdates(MatrixUtil.zipWith(gradient, updaterParams.deltas(), (der, delta, i) -> {
             if (derSigns.getX(i) >= 0)
                 return -Math.signum(der) * delta;
 
@@ -134,7 +134,7 @@ public class RPropUpdateCalculator<M extends SmoothParametrized> implements Para
         });
 
         updaterParams.setUpdatesMask(updatesMask);
-        updaterParams.setPrevIterationWeightsDerivatives(gradient.copy());
+        updaterParams.setPrevIterationGradient(gradient.copy());
 
         return updaterParams;
     }

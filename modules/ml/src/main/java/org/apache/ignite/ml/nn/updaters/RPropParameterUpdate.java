@@ -17,6 +17,11 @@
 
 package org.apache.ignite.ml.nn.updaters;
 
+import java.io.Serializable;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
@@ -26,9 +31,9 @@ import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
  * <p>
  * See <a href="https://paginas.fe.up.pt/~ee02162/dissertacao/RPROP%20paper.pdf">RProp</a>.</p>
  */
-public class RPropParameterUpdate {
+public class RPropParameterUpdate implements Serializable {
     /**
-     * Previous iteration weights updates. In original paper they are labeled with "delta w".
+     * Previous iteration parameters updates. In original paper they are labeled with "delta w".
      */
     protected Vector prevIterationUpdates;
 
@@ -60,6 +65,22 @@ public class RPropParameterUpdate {
     }
 
     /**
+     * Construct instance of this class by given parameters.
+     *
+     * @param prevIterationUpdates Previous iteration parameters updates.
+     * @param prevIterationGradient Previous iteration model partial derivatives by parameters.
+     * @param deltas Previous iteration parameters deltas.
+     * @param updatesMask Updates mask.
+     */
+    public RPropParameterUpdate(Vector prevIterationUpdates, Vector prevIterationGradient,
+        Vector deltas, Vector updatesMask) {
+        this.prevIterationUpdates = prevIterationUpdates;
+        this.prevIterationGradient = prevIterationGradient;
+        this.deltas = deltas;
+        this.updatesMask = updatesMask;
+    }
+
+    /**
      * Get bias deltas.
      *
      * @return Bias deltas.
@@ -83,8 +104,10 @@ public class RPropParameterUpdate {
      * @param updates New parameters updates value.
      * @return This object.
      */
-    Vector setPrevIterationBiasesUpdates(Vector updates) {
-        return prevIterationUpdates = updates;
+    RPropParameterUpdate setPrevIterationUpdates(Vector updates) {
+        prevIterationUpdates = updates;
+
+        return this;
     }
 
     /**
@@ -101,7 +124,7 @@ public class RPropParameterUpdate {
      *
      * @return This object.
      */
-    RPropParameterUpdate setPrevIterationWeightsDerivatives(Vector gradient) {
+    RPropParameterUpdate setPrevIterationGradient(Vector gradient) {
         prevIterationGradient = gradient;
         return this;
     }
@@ -119,10 +142,49 @@ public class RPropParameterUpdate {
      * Set updates mask (values by which updateCache is multiplied).
      *
      * @param updatesMask New updatesMask.
+     * @return This object.
      */
     public RPropParameterUpdate setUpdatesMask(Vector updatesMask) {
         this.updatesMask = updatesMask;
 
         return this;
+    }
+
+    /**
+     * Set previous iteration deltas.
+     *
+     * @param deltas New deltas.
+     * @return This object.
+     */
+    public RPropParameterUpdate setDeltas(Vector deltas) {
+        this.deltas = deltas;
+
+        return this;
+    }
+
+    public static RPropParameterUpdate sum(List<RPropParameterUpdate> updates) {
+        Vector totalUpdate = updates.stream().filter(Objects::nonNull).map(pu -> VectorUtils.elementWiseTimes(pu.updatesMask().copy(), pu.prevIterationUpdates())).reduce(Vector::plus).orElse(null);
+        Vector totalDelta = updates.stream().filter(Objects::nonNull).map(RPropParameterUpdate::deltas).reduce(Vector::plus).orElse(null);
+        Vector totalGradient = updates.stream().filter(Objects::nonNull).map(RPropParameterUpdate::prevIterationGradient).reduce(Vector::plus).orElse(null);
+
+        if (totalUpdate != null)
+            return new RPropParameterUpdate(totalUpdate, totalGradient, totalDelta, new DenseLocalOnHeapVector(totalDelta.size()).assign(1.0));
+
+        return null;
+    }
+
+    public static RPropParameterUpdate avg(List<RPropParameterUpdate> updates) {
+        List<RPropParameterUpdate> nonNullUpdates = updates.stream().filter(Objects::nonNull).collect(Collectors.toList());
+        int size = nonNullUpdates.size();
+
+        RPropParameterUpdate sum = sum(updates);
+        if (sum != null)
+            return sum.
+                setPrevIterationGradient(sum.prevIterationGradient().divide(size)).
+                setPrevIterationUpdates(sum.prevIterationUpdates().divide(size)).
+                setDeltas(sum.deltas().divide(size));
+
+        // TODO: check if distributed training crashes if null is returned.
+        return null;
     }
 }
