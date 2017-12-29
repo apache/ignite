@@ -27,7 +27,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class GroupTrainerTest extends GridCommonAbstractTest {
     /** Count of nodes. */
-    private static final int NODE_COUNT = 4;
+    private static final int NODE_COUNT = 3;
 
     /** Grid instance. */
     private Ignite ignite;

@@ -63,7 +63,7 @@ public final class Functions {
     public static final IgniteBiFunction<Double, Double, Double> LG = (a, b) -> Math.log(a) / Math.log(b);
 
     /** Function that returns {@code a + b}. */
-    public static final  IgniteBiFunction<Double, Double, Double> PLUS = (a, b) -> a + b;
+    public static final IgniteBiFunction<Double, Double, Double> PLUS = (a, b) -> a + b;
 
     /** Function that returns {@code a - b}. */
     public static final IgniteBiFunction<Double, Double, Double> MINUS = (a, b) -> a - b;

@@ -27,17 +27,9 @@ import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 
 /**
- * Distributed step
+ * Distributed step.
  *
- * @param <L>
- * @param <K>
- * @param <V>
- * @param <G>
- * @param <I>
- * @param <O>
- * @param <X>
- * @param <Y>
- * @param <D>
+ * TODO: IGNITE-7322: add full description.
  */
 class MetaoptimizerDistributedStep<L extends HasTrainingUUID, K, V, G, I extends Serializable,
     O extends Serializable, X, Y, D extends Serializable> implements DistributedEntryProcessingStep<L, K, V, G, I, O> {

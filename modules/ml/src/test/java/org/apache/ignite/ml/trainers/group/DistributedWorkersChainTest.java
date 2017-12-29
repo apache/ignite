@@ -28,8 +28,8 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
-import org.apache.ignite.ml.trainers.group.chain.ComputationsChain;
 import org.apache.ignite.ml.trainers.group.chain.Chains;
+import org.apache.ignite.ml.trainers.group.chain.ComputationsChain;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
@@ -37,7 +37,7 @@ import org.junit.Assert;
 /** */
 public class DistributedWorkersChainTest extends GridCommonAbstractTest {
     /** Count of nodes. */
-    private static final int NODE_COUNT = 4;
+    private static final int NODE_COUNT = 3;
 
     /** Grid instance. */
     private Ignite ignite;

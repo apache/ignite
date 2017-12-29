@@ -26,12 +26,10 @@ class TestGroupTrainerLocalContext implements HasTrainingUUID {
     private int cnt;
     /** */
     private final int maxCnt;
-
     /** */
     private final int eachNumCnt;
     /** */
     private final int limit;
-
     /** */
     private final UUID trainingUUID;
 

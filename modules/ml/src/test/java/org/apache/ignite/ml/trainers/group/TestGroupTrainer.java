@@ -82,7 +82,6 @@ class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext, Double
     /** {@inheritDoc} */
     @Override protected ComputationsChain<TestGroupTrainerLocalContext,
         Double, Integer, Double, Double> trainingLoopStep() {
-        // TODO: here we should explicitly create variable because we cannot infer context type, think about it.
         ComputationsChain<TestGroupTrainerLocalContext, Double, Integer, Double, Double> chain = Chains.
             create(new TestTrainingLoopStep());
         return chain.

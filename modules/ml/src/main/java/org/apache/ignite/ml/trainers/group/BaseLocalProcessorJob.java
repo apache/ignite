@@ -102,7 +102,7 @@ public abstract class BaseLocalProcessorJob<K, V, T, R extends Serializable> imp
 
     /** {@inheritDoc} */
     @Override public void cancel() {
-
+        // NO-OP.
     }
 
     /** {@inheritDoc} */

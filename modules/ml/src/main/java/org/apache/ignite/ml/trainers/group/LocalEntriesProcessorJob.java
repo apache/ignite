@@ -67,9 +67,7 @@ public class LocalEntriesProcessorJob<K, V, C, R extends Serializable> extends B
     @Override protected Stream<EntryAndContext<K, V, C>> toProcess() {
         C ctx = ctxSupplier.get();
 
-        return selectLocalEntries().
-            //parallel().
-            map(e -> new EntryAndContext<>(e, ctx));
+        return selectLocalEntries().map(e -> new EntryAndContext<>(e, ctx));
     }
 
     /**
