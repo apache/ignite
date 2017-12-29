@@ -24,6 +24,9 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.math.Matrix;
@@ -33,55 +36,43 @@ import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.Activators;
+import org.apache.ignite.ml.nn.LabeledVectorsCache;
 import org.apache.ignite.ml.nn.LossFunctions;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.SimpleMLPLocalBatchTrainerInput;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainer;
 import org.apache.ignite.ml.nn.updaters.RPropUpdateCalculator;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trees.performance.ColumnDecisionTreeTrainerBenchmark;
 import org.apache.ignite.ml.util.MnistUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.ml.math.VectorUtils.num2Vec;
+import static org.apache.ignite.ml.nn.performance.MnistMLPTestUtil.loadMnist;
 
 /**
  * Various benchmarks for hand runs.
  */
-public class Mnist {
-    /** Name of the property specifying path to training set images. */
-    private static final String PROP_TRAINING_IMAGES = "mnist.training.images";
-
-    /** Name of property specifying path to training set labels. */
-    private static final String PROP_TRAINING_LABELS = "mnist.training.labels";
-
-    /** Name of property specifying path to test set images. */
-    private static final String PROP_TEST_IMAGES = "mnist.test.images";
-
-    /** Name of property specifying path to test set labels. */
-    private static final String PROP_TEST_LABELS = "mnist.test.labels";
-
+public class MnistLocal {
     /**
-     * Run decision tree classifier on MNIST using bi-indexed cache as a storage for dataset.
+     * Run nn classifier on MNIST using bi-indexed cache as a storage for dataset.
      * To run this test rename this method so it starts from 'test'.
      *
      * @throws IOException In case of loading MNIST dataset errors.
      */
     @Test
-    public void tstMNIST() throws IOException {
-        int samplesCntCnt = 60_000;
+    public void tstMNISTLocal() throws IOException {
+        int samplesCnt = 60_000;
         int featCnt = 28 * 28;
         int hiddenNeuronsCnt = 100;
 
-        Properties props = loadMNISTProperties();
+        IgniteBiTuple<Stream<DenseLocalOnHeapVector>, Stream<DenseLocalOnHeapVector>> trainingAndTest = loadMnist(samplesCnt);
 
-        Stream<DenseLocalOnHeapVector> trainingMnistStream = MnistUtils.mnist(props.getProperty(PROP_TRAINING_IMAGES),
-            props.getProperty(PROP_TRAINING_LABELS), new Random(123L), samplesCntCnt);
+        Stream<DenseLocalOnHeapVector> trainingMnistStream = trainingAndTest.get1();
+        Stream<DenseLocalOnHeapVector> testMnistStream = trainingAndTest.get2();
 
-        Stream<DenseLocalOnHeapVector> testMnistStream = MnistUtils.mnist(props.getProperty(PROP_TEST_IMAGES),
-            props.getProperty(PROP_TEST_LABELS), new Random(123L), 10_000);
-
-        IgniteBiTuple<Matrix, Matrix> ds = createDataset(trainingMnistStream, samplesCntCnt, featCnt);
+        IgniteBiTuple<Matrix, Matrix> ds = createDataset(trainingMnistStream, samplesCnt, featCnt);
         IgniteBiTuple<Matrix, Matrix> testDs = createDataset(testMnistStream, 10000, featCnt);
 
         MLPArchitecture conf = new MLPArchitecture(featCnt).
@@ -112,6 +103,20 @@ public class Mnist {
         Tracer.showAscii(predicted);
     }
 
+    /**
+     * Split vector of size sz into two parts: feature vector of size featsCnt and label vector of size sz - featsCnt.
+     *
+     * @param v Vector to convert.
+     * @param featsCnt Number of features.
+     * @return LabeledVector.
+     */
+    private static LabeledVector<Vector, Vector> asLabeledVector(Vector v, int featsCnt) {
+        Vector features = VectorUtils.copyPart(v, 0, featsCnt);
+        Vector lb = VectorUtils.copyPart(v, featsCnt, v.size() - featsCnt);
+
+        return new LabeledVector<>(features, lb);
+    }
+
     /** */
     private IgniteBiTuple<Matrix, Matrix> createDataset(Stream<DenseLocalOnHeapVector> s, int samplesCnt, int featCnt) {
         Matrix vectors = new DenseLocalOnHeapMatrix(featCnt, samplesCnt);
@@ -125,16 +130,5 @@ public class Mnist {
         }
 
         return new IgniteBiTuple<>(vectors, labels);
-    }
-
-    /** Load properties for MNIST tests. */
-    private static Properties loadMNISTProperties() throws IOException {
-        Properties res = new Properties();
-
-        InputStream is = ColumnDecisionTreeTrainerBenchmark.class.getClassLoader().getResourceAsStream("manualrun/trees/columntrees.manualrun.properties");
-
-        res.load(is);
-
-        return res;
     }
 }
