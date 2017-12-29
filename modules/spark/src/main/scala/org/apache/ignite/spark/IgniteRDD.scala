@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.query.QueryCursorEx
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata
 import org.apache.ignite.lang.IgniteUuid
 import org.apache.ignite.spark.impl._
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types._
@@ -91,8 +92,14 @@ class IgniteRDD[K, V] (
     override protected[spark] def getPreferredLocations(split: Partition): Seq[String] = {
         ensureCache()
 
-        ic.ignite().affinity(cacheName).mapPartitionToPrimaryAndBackups(split.index)
+        if (ic.ignite().configuration().getDiscoverySpi().isInstanceOf[TcpDiscoverySpi]) {
+          ic.ignite().affinity(cacheName).mapPartitionToPrimaryAndBackups(split.index)
             .map(_.asInstanceOf[TcpDiscoveryNode].socketAddresses()).flatten.map(_.getHostName).toList
+        }
+        else {
+          ic.ignite().affinity(cacheName).mapPartitionToPrimaryAndBackups(split.index)
+            .flatten(_.hostNames).toSeq
+        }
     }
 
     /**
