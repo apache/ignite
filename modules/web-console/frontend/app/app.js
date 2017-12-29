@@ -300,7 +300,16 @@ angular.module('ignite-console', [
     $root.gettingStarted = gettingStarted;
 }])
 .run(['$rootScope', 'AgentManager', ($root, agentMgr) => {
-    $root.$on('user', () => agentMgr.connect());
+    let lastUser;
+
+    $root.$on('user', (e, user) => {
+        if (lastUser)
+            return;
+
+        lastUser = user;
+
+        agentMgr.connect();
+    });
 }])
 .run(['$transitions', ($transitions) => {
     $transitions.onSuccess({ }, (trans) => {
