@@ -54,7 +54,7 @@ public class KNNRegressionExample {
     private static final String SEPARATOR = ",";
 
     /** */
-    private static final String KNN_CLEARED_MACHINES_TXT = "datasets/knn/cleared_machines.txt";
+    private static final String KNN_CLEARED_MACHINES_TXT = "../datasets/cleared_machines.txt";
 
     /**
      * Executes example.
@@ -72,7 +72,7 @@ public class KNNRegressionExample {
 
                 try {
                     // Prepare path to read
-                    URL url = KNNClassificationExample.class.getClassLoader().getResource(KNN_CLEARED_MACHINES_TXT);
+                    URL url = KNNClassificationExample.class.getResource(KNN_CLEARED_MACHINES_TXT);
                     if (url == null)
                         throw new RuntimeException("Can't get URL for: " + KNN_CLEARED_MACHINES_TXT);
 

@@ -53,7 +53,7 @@ public class KNNClassificationExample {
     private static final String SEPARATOR = "\t";
 
     /** Path to the Iris dataset. */
-    private static final String KNN_IRIS_TXT = "datasets/knn/iris.txt";
+    private static final String KNN_IRIS_TXT = "../datasets/iris.txt";
 
     /**
      * Executes example.
@@ -71,7 +71,7 @@ public class KNNClassificationExample {
 
                 try {
                     // Prepare path to read
-                    URL url = KNNClassificationExample.class.getClassLoader().getResource(KNN_IRIS_TXT);
+                    URL url = KNNClassificationExample.class.getResource(KNN_IRIS_TXT);
                     if (url == null)
                         throw new RuntimeException("Can't get URL for: " + KNN_IRIS_TXT);
 
