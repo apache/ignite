@@ -35,9 +35,9 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Write-ahead log state processor. Manages WAL enable and disable.
+ * Write-ahead log state manager. Manages WAL enable and disable.
  */
-public class WalStateProcessor extends GridCacheSharedManagerAdapter {
+public class WalStateManager extends GridCacheSharedManagerAdapter {
     /** Client futures. */
     private final Map<UUID, GridFutureAdapter<Boolean>> userFuts = new HashMap<>();
 

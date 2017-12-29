@@ -108,7 +108,7 @@ public class GridCacheSharedContext<K, V> {
     private IgniteWriteAheadLogManager walMgr;
 
     /** Write ahead log state manager. */
-    private WalStateProcessor walStateMgr;
+    private WalStateManager walStateMgr;
 
     /** Database manager. */
     private IgniteCacheDatabaseSharedManager dbMgr;
@@ -188,7 +188,7 @@ public class GridCacheSharedContext<K, V> {
         GridCacheMvccManager mvccMgr,
         IgnitePageStoreManager pageStoreMgr,
         IgniteWriteAheadLogManager walMgr,
-        WalStateProcessor walStateMgr,
+        WalStateManager walStateMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
         IgniteCacheSnapshotManager snpMgr,
         GridCacheDeploymentManager<K, V> depMgr,
@@ -422,7 +422,7 @@ public class GridCacheSharedContext<K, V> {
         GridCacheMvccManager mvccMgr,
         IgnitePageStoreManager pageStoreMgr,
         IgniteWriteAheadLogManager walMgr,
-        WalStateProcessor walStateMgr,
+        WalStateManager walStateMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
         IgniteCacheSnapshotManager snpMgr,
         GridCacheDeploymentManager<K, V> depMgr,
@@ -696,7 +696,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return WAL state manager.
      */
-    public WalStateProcessor walState() {
+    public WalStateManager walState() {
        return walStateMgr;
     }
 
