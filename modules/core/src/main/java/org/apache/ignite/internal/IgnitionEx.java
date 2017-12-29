@@ -102,6 +102,7 @@ import org.apache.ignite.spi.checkpoint.noop.NoopCheckpointSpi;
 import org.apache.ignite.spi.collision.noop.NoopCollisionSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
@@ -2293,6 +2294,11 @@ public class IgnitionEx {
                 startZk();
 
                 ZookeeperDiscoverySpi zkSpi = new ZookeeperDiscoverySpi();
+
+                DiscoverySpi spi = myCfg.getDiscoverySpi();
+
+                if (spi instanceof TcpDiscoverySpi)
+                    zkSpi.setClientReconnectDisabled(((TcpDiscoverySpi)spi).isClientReconnectDisabled());
 
                 zkSpi.setSessionTimeout(20_000);
                 zkSpi.setZkConnectionString(zkCluster.getConnectString());

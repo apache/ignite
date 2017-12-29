@@ -3607,6 +3607,18 @@ public class ZookeeperDiscoveryImpl {
         if (!stop.compareAndSet(false, true))
             return;
 
+        ZkRuntimeState rtState = this.rtState;
+
+        if (rtState.zkClient != null && rtState.locNodeZkPath != null && rtState.zkClient.connected()) {
+            try {
+                rtState.zkClient.deleteIfExistsNoRetry(rtState.locNodeZkPath, -1);
+            }
+            catch (Exception err) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to delete local node's znode on stop: " + err);
+            }
+        }
+
         IgniteCheckedException err = new IgniteCheckedException("Node stopped.");
 
         synchronized (stateMux) {

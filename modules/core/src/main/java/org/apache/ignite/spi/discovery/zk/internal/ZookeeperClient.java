@@ -47,6 +47,9 @@ public class ZookeeperClient implements Watcher {
         IgniteSystemProperties.getLong("IGNITE_ZOOKEEPER_DISCOVERY_RETRY_TIMEOUT", 1000);
 
     /** */
+    private static final int MAX_REQ_SIZE = 1048528;
+
+    /** */
     private static final List<ACL> ZK_ACL = ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
     /** */
@@ -142,6 +145,15 @@ public class ZookeeperClient implements Watcher {
         return zk;
     }
 
+    /**
+     * @return {@code True} if connected to ZooKeeper.
+     */
+    boolean connected() {
+        synchronized (stateMux) {
+            return state == ConnectionState.Connected;
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void process(WatchedEvent evt) {
         if (closing)
@@ -179,14 +191,14 @@ public class ZookeeperClient implements Watcher {
                         break;
 
                     default:
-                        U.error(log, "Unexpected state for zookeeper client, close connection: " + zkState);
+                        U.error(log, "Unexpected state for ZooKeeper client, close connection: " + zkState);
 
                         newState = ConnectionState.Lost;
                 }
 
                 if (newState != state) {
                     if (log.isInfoEnabled())
-                        log.info("Zookeeper client state changed [prevState=" + state + ", newState=" + newState + ']');
+                        log.info("ZooKeeper client state changed [prevState=" + state + ", newState=" + newState + ']');
 
                     state = newState;
 
@@ -278,9 +290,6 @@ public class ZookeeperClient implements Watcher {
 
     }
 
-    /** */
-    private static final int MAX_REQ_SIZE = 1048528;
-
     /**
      * @param path Path.
      * @param data Data.
@@ -291,6 +300,12 @@ public class ZookeeperClient implements Watcher {
         return requestOverhead(path) + data.length + overhead > MAX_REQ_SIZE;
     }
 
+    /**
+     * @param path Path.
+     * @param data Data.
+     * @param overhead Extra overhead.
+     * @return Splitted data.
+     */
     List<byte[]> splitNodeData(String path, byte[] data, int overhead) {
         int partSize = MAX_REQ_SIZE - requestOverhead(path) - overhead;
 
@@ -447,6 +462,21 @@ public class ZookeeperClient implements Watcher {
 
     /**
      * @param path Path.
+     * @param ver Expected version.
+     * @throws InterruptedException If interrupted.
+     * @throws KeeperException In case of error.
+     */
+    void deleteIfExistsNoRetry(String path, int ver) throws InterruptedException, KeeperException {
+        try {
+            zk.delete(path, ver);
+        }
+        catch (KeeperException.NoNodeException e) {
+            // No-op if znode does not exist.
+        }
+    }
+
+    /**
+     * @param path Path.
      * @param ver Version.
      * @throws ZookeeperClientFailedException If connection to zk was lost.
      * @throws InterruptedException If interrupted.
@@ -458,7 +488,7 @@ public class ZookeeperClient implements Watcher {
             delete(path, ver);
         }
         catch (KeeperException.NoNodeException e) {
-            // No-op if node does not exist.
+            // No-op if znode does not exist.
         }
     }
 
@@ -492,6 +522,9 @@ public class ZookeeperClient implements Watcher {
                 zk.multi(ops);
 
                 return;
+            }
+            catch (KeeperException.NoNodeException e) {
+                throw e;
             }
             catch (Exception e) {
                 onZookeeperError(connStartTime, e);
@@ -532,9 +565,12 @@ public class ZookeeperClient implements Watcher {
      * @param ver Version.
      * @throws ZookeeperClientFailedException If connection to zk was lost.
      * @throws InterruptedException If interrupted.
+     * @throws KeeperException.NoNodeException If node does not exist.
+     * @throws KeeperException.BadVersionException If version does not match.
      */
     void setData(String path, byte[] data, int ver)
-        throws ZookeeperClientFailedException, InterruptedException, KeeperException.NoNodeException, KeeperException.BadVersionException
+        throws ZookeeperClientFailedException, InterruptedException, KeeperException.NoNodeException,
+        KeeperException.BadVersionException
     {
         if (data == null)
             data = EMPTY_BYTES;
@@ -547,10 +583,7 @@ public class ZookeeperClient implements Watcher {
 
                 return;
             }
-            catch (KeeperException.NoNodeException e) {
-                throw e;
-            }
-            catch (KeeperException.BadVersionException e) {
+            catch (KeeperException.BadVersionException | KeeperException.NoNodeException e) {
                 throw e;
             }
             catch (Exception e) {
@@ -683,9 +716,9 @@ public class ZookeeperClient implements Watcher {
 
         synchronized (stateMux) {
             if (closing)
-                throw new ZookeeperClientFailedException("Zookeeper client is closed.");
+                throw new ZookeeperClientFailedException("ZooKeeper client is closed.");
 
-            U.warn(log, "Failed to execute zookeeper operation [err=" + e + ", state=" + state + ']');
+            U.warn(log, "Failed to execute ZooKeeper operation [err=" + e + ", state=" + state + ']');
 
             if (state == ConnectionState.Lost) {
                 U.error(log, "Operation failed with unexpected error, connection lost: " + e, e);
@@ -715,7 +748,7 @@ public class ZookeeperClient implements Watcher {
                     if (remainingTime <= 0) {
                         state = ConnectionState.Lost;
 
-                        U.warn(log, "Failed to establish zookeeper connection, close client " +
+                        U.warn(log, "Failed to establish ZooKeeper connection, close client " +
                             "[timeout=" + connLossTimeout + ']');
 
                         err = new ZookeeperClientFailedException(e);
@@ -723,7 +756,7 @@ public class ZookeeperClient implements Watcher {
                 }
 
                 if (err == null) {
-                    U.warn(log, "Zookeeper operation failed, will retry [err=" + e +
+                    U.warn(log, "ZooKeeper operation failed, will retry [err=" + e +
                         ", retryTimeout=" + RETRY_TIMEOUT +
                         ", connLossTimeout=" + connLossTimeout +
                         ", path=" + ((KeeperException)e).getPath() +
@@ -732,11 +765,11 @@ public class ZookeeperClient implements Watcher {
                     stateMux.wait(RETRY_TIMEOUT);
 
                     if (closing)
-                        throw new ZookeeperClientFailedException("Zookeeper client is closed.");
+                        throw new ZookeeperClientFailedException("ZooKeeper client is closed.");
                 }
             }
             else {
-                U.error(log, "Operation failed with unexpected error, close client: " + e, e);
+                U.error(log, "Operation failed with unexpected error, close ZooKeeper client: " + e, e);
 
                 state = ConnectionState.Lost;
 
@@ -771,7 +804,7 @@ public class ZookeeperClient implements Watcher {
             zk.close();
         }
         catch (Exception closeErr) {
-            U.warn(log, "Failed to close zookeeper client: " + closeErr, closeErr);
+            U.warn(log, "Failed to close ZooKeeper client: " + closeErr, closeErr);
         }
 
         connTimer.cancel();
@@ -1116,7 +1149,7 @@ public class ZookeeperClient implements Watcher {
 
                     state = ConnectionState.Lost;
 
-                    U.warn(log, "Failed to establish zookeeper connection, close client " +
+                    U.warn(log, "Failed to establish ZooKeeper connection, close client " +
                         "[timeout=" + connLossTimeout + ']');
 
                     connLoss = true;

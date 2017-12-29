@@ -1643,6 +1643,60 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testMultipleClusters() throws Exception {
+        Ignite c0 = startGrid(0);
+
+        zkRootPath = "/cluster2";
+
+        Ignite c1 = startGridsMultiThreaded(1, 5);
+
+        zkRootPath = "/cluster3";
+
+        Ignite c2 = startGridsMultiThreaded(6, 3);
+
+        checkNodesNumber(c0, 1);
+        checkNodesNumber(c1, 5);
+        checkNodesNumber(c2, 3);
+
+        stopGrid(2);
+
+        checkNodesNumber(c0, 1);
+        checkNodesNumber(c1, 4);
+        checkNodesNumber(c2, 3);
+
+        for (int i = 0; i < 3; i++)
+            stopGrid(i + 6);
+
+        checkNodesNumber(c0, 1);
+        checkNodesNumber(c1, 4);
+
+        c2 = startGridsMultiThreaded(6, 2);
+
+        checkNodesNumber(c0, 1);
+        checkNodesNumber(c1, 4);
+        checkNodesNumber(c2, 2);
+
+        evts.clear();
+    }
+
+    /**
+     * @param node Node.
+     * @param expNodes Expected node in cluster.
+     * @throws Exception If failed.
+     */
+    private void checkNodesNumber(final Ignite node, final int expNodes) throws Exception {
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return node.cluster().nodes().size() == expNodes;
+            }
+        }, 5000);
+
+        assertEquals(expNodes, node.cluster().nodes().size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testStartStop1() throws Exception {
         ackEveryEventSystemProperty();
 
