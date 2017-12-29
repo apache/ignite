@@ -27,17 +27,17 @@ import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.updaters.ParameterUpdateCalculator;
 
-public class MLPGroupUpdateTrainingData<P> {
-    private final ParameterUpdateCalculator<MultilayerPerceptron, P> updateCalculator;
+public class MLPGroupUpdateTrainingData<U> {
+    private final ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator;
     private final int stepsCnt;
-    private final IgniteFunction<List<P>, P> updateReducer;
+    private final IgniteFunction<List<U>, U> updateReducer;
     private final IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier;
     private final IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
     private final double tolerance;
 
     public MLPGroupUpdateTrainingData(
-        ParameterUpdateCalculator<MultilayerPerceptron, P> updateCalculator, int stepsCnt,
-        IgniteFunction<List<P>, P> updateReducer,
+        ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator, int stepsCnt,
+        IgniteFunction<List<U>, U> updateReducer,
         IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier,
         IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss, double tolerance) {
         this.updateCalculator = updateCalculator;
@@ -48,7 +48,7 @@ public class MLPGroupUpdateTrainingData<P> {
         this.tolerance = tolerance;
     }
 
-    public ParameterUpdateCalculator<MultilayerPerceptron, P> updateCalculator() {
+    public ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator() {
         return updateCalculator;
     }
 
@@ -56,7 +56,7 @@ public class MLPGroupUpdateTrainingData<P> {
         return stepsCnt;
     }
 
-    public IgniteFunction<List<P>, P> updateReducer() {
+    public IgniteFunction<List<U>, U> updateReducer() {
         return updateReducer;
     }
 

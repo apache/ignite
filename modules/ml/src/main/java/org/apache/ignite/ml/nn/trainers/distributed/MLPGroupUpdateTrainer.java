@@ -157,7 +157,7 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
      * @param ignite Ignite instance.
      * @return Default {@link MLPGroupUpdateTrainer}.
      */
-    public static MLPGroupUpdateTrainer<RPropParameterUpdate>getDefault(Ignite ignite) {
+    public static MLPGroupUpdateTrainer<RPropParameterUpdate> getDefault(Ignite ignite) {
         return new MLPGroupUpdateTrainer<>(DEFAULT_MAX_GLOBAL_STEPS, DEFAULT_SYNC_RATE, DEFAULT_ALL_UPDATES_REDUCER, DEFAULT_LOCAL_STEP_UPDATES_REDUCER, DEFAULT_UPDATE_CALCULATOR, DEFAULT_LOSS, ignite, 0.01);
     }
 

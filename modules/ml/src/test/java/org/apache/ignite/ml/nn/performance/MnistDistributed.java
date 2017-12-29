@@ -37,10 +37,9 @@ import org.apache.ignite.ml.nn.MLPGroupUpdateTrainerCacheInput;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.trainers.distributed.MLPGroupUpdateTrainer;
-import org.apache.ignite.ml.nn.updaters.NesterovParameterUpdate;
 import org.apache.ignite.ml.nn.updaters.RPropParameterUpdate;
-import org.apache.ignite.ml.nn.updaters.SimpleGDParameter;
 import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.util.MnistUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -52,7 +51,7 @@ import static org.apache.ignite.ml.nn.performance.MnistMLPTestUtil.loadMnist;
  */
 public class MnistDistributed extends GridCommonAbstractTest {
     /** Count of nodes. */
-    private static final int NODE_COUNT = 4;
+    private static final int NODE_COUNT = 3;
 
     /** Features count in MNIST. */
     private static final int FEATURES_CNT = 28 * 28;
@@ -98,7 +97,7 @@ public class MnistDistributed extends GridCommonAbstractTest {
             withAddedLayer(hiddenNeuronsCnt, true, Activators.SIGMOID).
             withAddedLayer(10, false, Activators.SIGMOID);
 
-        MultilayerPerceptron mdl = trainer.train(new MLPGroupUpdateTrainerCacheInput<>(arch, 8, labeledVectorsCache, 2000));
+        MultilayerPerceptron mdl = trainer.train(new MLPGroupUpdateTrainerCacheInput(arch, 9, labeledVectorsCache, 2000));
 
         IgniteBiTuple<Matrix, Matrix> testDs = createDataset(trainingAndTest.get2(), 10_000, FEATURES_CNT);
 
@@ -136,13 +135,13 @@ public class MnistDistributed extends GridCommonAbstractTest {
         }
     }
 
-//    /**
-//     * Split vector of size sz into two parts: feature vector of size featsCnt and label vector of size sz - featsCnt.
-//     *
-//     * @param v Vector to convert.
-//     * @param featsCnt Number of features.
-//     * @return LabeledVector.
-//     */
+    /**
+     * Transform vector created by {@link MnistUtils} to {@link LabeledVector}.
+     *
+     * @param v Vector to transform.
+     * @param featsCnt Count of features.
+     * @return Vector created by {@link MnistUtils} transformed to {@link LabeledVector}.
+     */
     public static LabeledVector<Vector, Vector> asLabeledVector(Vector v, int featsCnt) {
         Vector features = VectorUtils.copyPart(v, 0, featsCnt);
         Vector lb = VectorUtils.num2Vec((int)v.get(featsCnt), 10);
