@@ -55,6 +55,9 @@ public class WalStateProposeMessage implements DiscoveryCustomMessage {
     /** Whether WAL should be enabled or disabled. */
     private final boolean enable;
 
+    /** Whether message should be ignored. */
+    private boolean ignored;
+
     /**
      * Constructor.
      *
@@ -105,6 +108,20 @@ public class WalStateProposeMessage implements DiscoveryCustomMessage {
      */
     public boolean enable() {
         return enable;
+    }
+
+    /**
+     * @return {@code True} if message should be ignored.
+     */
+    public boolean ignored() {
+        return ignored;
+    }
+
+    /**
+     * Mark message as ignored.
+     */
+    public void markIgnored() {
+        this.ignored = true;
     }
 
     /** {@inheritDoc} */

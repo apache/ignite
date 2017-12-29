@@ -62,7 +62,12 @@ public class CacheGroupDescriptor {
     private final boolean persistenceEnabled;
 
     /** Wal mode */
+    // TODO: Remove.
     private volatile CacheGroupWalMode walMode;
+
+    /** WAL enabled state. */
+    // TODO: Proper management.
+    private volatile boolean walEnabled;
 
     /**
      * @param cacheCfg Cache configuration.
@@ -130,6 +135,21 @@ public class CacheGroupDescriptor {
             "Unexpected modification [current=" + this.walMode + ", new=" + walMode + "]";
 
         this.walMode = walMode;
+    }
+
+    /**
+     * @return {@code True} if WAL is enabled for cache group.
+     */
+    public boolean walEnabled() {
+        return walEnabled;
+    }
+
+    /**
+     * @return {@code True} whether there are pending WAL change requests.
+     */
+    public boolean hasPendingWalChangeRequests() {
+        // TODO: WAL requests.
+        return false;
     }
 
     /**

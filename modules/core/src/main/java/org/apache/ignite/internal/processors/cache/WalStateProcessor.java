@@ -159,8 +159,11 @@ public class WalStateProcessor extends GridCacheSharedManagerAdapter {
     public void onProposeDiscovery(WalStateProposeMessage msg) {
         synchronized (mux) {
             // Validate current caches state before deciding whether to process message further.
-            if (!validatePropose(msg))
+            if (!validatePropose(msg)) {
+                msg.markIgnored();
+
                 return;
+            }
 
             if (hasWal()) {
                 // TODO
@@ -215,6 +218,13 @@ public class WalStateProcessor extends GridCacheSharedManagerAdapter {
                 return false;
             }
 
+            // If there are no pending WAL change requests and mode matches, then ignore and complete.
+            if (!grpDesc.hasPendingWalChangeRequests() && grpDesc.walEnabled() == msg.enable()) {
+                complete(userFut, false);
+
+                return false;
+            }
+
             // Everything is OK.
             return true;
         }
@@ -257,6 +267,17 @@ public class WalStateProcessor extends GridCacheSharedManagerAdapter {
      */
     private static IgniteInternalFuture<Boolean> errorFuture(String errMsg) {
         return new GridFinishedFuture<Boolean>(new IgniteCheckedException(errMsg));
+    }
+
+    /**
+     * Complete user future with normal result.
+     *
+     * @param userFut User future.
+     * @param res Result.
+     */
+    private static void complete(@Nullable GridFutureAdapter<Boolean> userFut, boolean res) {
+        if (userFut != null)
+            userFut.onDone(res);
     }
 
     /**
