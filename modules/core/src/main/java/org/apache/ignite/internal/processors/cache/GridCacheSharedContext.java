@@ -374,6 +374,8 @@ public class GridCacheSharedContext<K, V> {
         for (GridCacheSharedManager<K, V> mgr : mgrs) {
             if (restartOnDisconnect(mgr))
                 mgr.start(this);
+
+            mgr.onReconnected(active);
         }
 
         kernalCtx.query().onCacheReconnect();

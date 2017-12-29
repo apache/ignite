@@ -23,6 +23,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 
 import java.util.Collection;
@@ -35,23 +36,34 @@ import java.util.UUID;
  */
 public class WalStateProcessor extends GridCacheSharedManagerAdapter {
     /** Client futures. */
-    private final Map<UUID, GridFutureAdapter<Boolean>> cliFuts = new HashMap<>();
+    private final Map<UUID, GridFutureAdapter<Boolean>> userFuts = new HashMap<>();
 
     /** Operation mutex. */
     private final Object mux = new Object();
+
+    /** Disconnected flag. */
+    private boolean cliDisconnected;
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
         // TODO: Register IO listener for acks?
-
-        // TODO: Reconnect?
     }
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
-        // TODO: Disconnect or node stop.
+        // TODO: Node stop.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture reconnectFut) {
+        // TODO: Handle disconnect.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onReconnected(boolean active) {
+        // TODO: Handle reconnect.
     }
 
     /**
@@ -65,6 +77,9 @@ public class WalStateProcessor extends GridCacheSharedManagerAdapter {
         synchronized (mux) {
             if (F.isEmpty(cacheNames))
                 return errorFuture("Cache names cannot be empty.");
+
+            if (cliDisconnected)
+                return errorFuture("Failed to initiate WAL mode change because client node is disconnected.");
 
             // Prepare cache and group infos.
             Map<String, IgniteUuid> caches = new HashMap<>(cacheNames.size());
@@ -81,7 +96,7 @@ public class WalStateProcessor extends GridCacheSharedManagerAdapter {
                 if (grpDesc == null)
                     grpDesc = curGrpDesc;
                 else if (!F.eq(grpDesc.deploymentId(), curGrpDesc.deploymentId())) {
-                    return errorFuture("Cannot disable WAL for caches from different cache groups [" +
+                    return errorFuture("Cannot change WAL mode for caches from different cache groups [" +
                         "cache1=" + cacheNames.iterator().next() + ", grp1=" + grpDesc.groupName() +
                         ", cache2=" + cacheName + ", grp2=" + curGrpDesc.groupName() + ']');
                 }
@@ -96,7 +111,7 @@ public class WalStateProcessor extends GridCacheSharedManagerAdapter {
 
             WalStateProposeMessage msg = new WalStateProposeMessage(opId, caches, grpDesc.groupId(), enabled);
 
-            cliFuts.put(opId, fut);
+            userFuts.put(opId, fut);
 
             try {
                 cctx.discovery().sendCustomEvent(msg);
@@ -107,7 +122,7 @@ public class WalStateProcessor extends GridCacheSharedManagerAdapter {
 
                 fut.onDone(e0);
 
-                cliFuts.remove(opId);
+                userFuts.remove(opId);
             }
 
             return fut;
@@ -120,8 +135,6 @@ public class WalStateProcessor extends GridCacheSharedManagerAdapter {
      * @param msg Message.
      */
     public void onProposeDiscovery(WalStateProposeMessage msg) {
-        msg.
-
         // TODO
     }
 
