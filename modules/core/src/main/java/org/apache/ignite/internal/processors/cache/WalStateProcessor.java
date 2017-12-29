@@ -24,10 +24,13 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
 
@@ -89,6 +92,9 @@ public class WalStateProcessor extends GridCacheSharedManagerAdapter {
             for (String cacheName : cacheNames) {
                 DynamicCacheDescriptor cacheDesc = cacheProcessor().cacheDescriptor(cacheName);
 
+                if (cacheDesc == null)
+                    return errorFuture("Cache doesn't exits: " + cacheName);
+
                 caches.put(cacheName, cacheDesc.deploymentId());
 
                 CacheGroupDescriptor curGrpDesc = cacheDesc.groupDescriptor();
@@ -104,12 +110,30 @@ public class WalStateProcessor extends GridCacheSharedManagerAdapter {
 
             assert grpDesc != null;
 
+            HashSet<String> grpCaches = new HashSet<>(grpDesc.caches().keySet());
+
+            grpCaches.retainAll(cacheNames);
+
+            if (!grpCaches.isEmpty()) {
+                return errorFuture("Cannot change WAL mode because not all cache names belonging to the group are " +
+                    "provided [group=" + grpDesc.groupName() + ", missingCaches=" + grpCaches + ']');
+            }
+
             // Send request.
-            UUID opId = UUID.randomUUID();
+            final UUID opId = UUID.randomUUID();
 
             GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
 
-            WalStateProposeMessage msg = new WalStateProposeMessage(opId, caches, grpDesc.groupId(), enabled);
+            fut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
+                @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                    synchronized (mux) {
+                        userFuts.remove(opId);
+                    }
+                }
+            });
+
+            WalStateProposeMessage msg = new WalStateProposeMessage(opId, cctx.localNodeId(), caches,
+                grpDesc.groupId(), enabled);
 
             userFuts.put(opId, fut);
 
@@ -121,8 +145,6 @@ public class WalStateProcessor extends GridCacheSharedManagerAdapter {
                     new IgniteCheckedException("Failed to initiate WAL mode change due to unexpected exception.", e);
 
                 fut.onDone(e0);
-
-                userFuts.remove(opId);
             }
 
             return fut;
@@ -136,10 +158,69 @@ public class WalStateProcessor extends GridCacheSharedManagerAdapter {
      */
     public void onProposeDiscovery(WalStateProposeMessage msg) {
         synchronized (mux) {
+            // Validate current caches state before deciding whether to process message further.
+            if (!validatePropose(msg))
+                return;
 
+            if (hasWal()) {
+                // TODO
+            }
         }
+    }
 
-        // TODO
+    /**
+     * Validate propose message.
+     *
+     * @param msg Message.
+     * @return {@code True} if message should be processed further, {@code false} if no further processing is needed.
+     */
+    private boolean validatePropose(WalStateProposeMessage msg) {
+        GridFutureAdapter<Boolean> userFut = userFuts.get(msg.operationId());
+
+        if (hasWal() || userFut != null) {
+            // Is group still there?
+            int grpId = msg.groupId();
+
+            CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
+
+            if (grpDesc == null) {
+                completeWithError(userFut, "Failed to change WAL mode because some caches no longer exist: " +
+                    msg.caches().keySet());
+
+                return false;
+            }
+
+            // Are specified caches still there?
+            for (Map.Entry<String, IgniteUuid> cache : msg.caches().entrySet()) {
+                String cacheName = cache.getKey();
+
+                DynamicCacheDescriptor cacheDesc = cacheProcessor().cacheDescriptor(cacheName);
+
+                if (cacheDesc == null || !F.eq(cacheDesc.deploymentId(), cache.getValue())) {
+                    completeWithError(userFut, "Cache doesn't exist: " + cacheName);
+
+                    return false;
+                }
+            }
+
+            // Are there any new caches in the group?
+            HashSet<String> grpCacheNames = new HashSet<>(grpDesc.caches().keySet());
+
+            grpCacheNames.retainAll(msg.caches().keySet());
+
+            if (!grpCacheNames.isEmpty()) {
+                completeWithError(userFut, "Cannot change WAL mode because not all cache names belonging to the " +
+                    "group are provided [group=" + grpDesc.groupName() + ", missingCaches=" + grpCacheNames + ']');
+
+                return false;
+            }
+
+            // Everything is OK.
+            return true;
+        }
+        else
+            // Node without WAL, do not care.
+            return false;
     }
 
     /**
@@ -171,11 +252,21 @@ public class WalStateProcessor extends GridCacheSharedManagerAdapter {
     /**
      * Create future with error.
      *
-     * @param msg Error message.
+     * @param errMsg Error message.
      * @return Future.
      */
-    private static IgniteInternalFuture<Boolean> errorFuture(String msg) {
-        return new GridFinishedFuture<Boolean>(new IgniteCheckedException(msg));
+    private static IgniteInternalFuture<Boolean> errorFuture(String errMsg) {
+        return new GridFinishedFuture<Boolean>(new IgniteCheckedException(errMsg));
+    }
+
+    /**
+     * Complete user future with error.
+     *
+     * @param errMsg Error message.
+     */
+    private static void completeWithError(@Nullable GridFutureAdapter<Boolean> userFut, String errMsg) {
+        if (userFut != null)
+            userFut.onDone(new IgniteCheckedException(errMsg));
     }
 
     /**
@@ -183,5 +274,12 @@ public class WalStateProcessor extends GridCacheSharedManagerAdapter {
      */
     private GridCacheProcessor cacheProcessor() {
         return cctx.cache();
+    }
+
+    /**
+     * @return {@code True} if WAL exists.
+     */
+    private boolean hasWal() {
+        return cctx.wal() != null;
     }
 }

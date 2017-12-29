@@ -42,6 +42,9 @@ public class WalStateProposeMessage implements DiscoveryCustomMessage {
     /** Unique operation ID. */
     private final UUID opId;
 
+    /** Node ID. */
+    private final UUID nodeId;
+
     /** Cache names which are expected to be in the group along with their deployment IDs. */
     @GridToStringInclude
     private Map<String, IgniteUuid> caches;
@@ -56,12 +59,14 @@ public class WalStateProposeMessage implements DiscoveryCustomMessage {
      * Constructor.
      *
      * @param opId Operation IDs.
+     * @param nodeId Node ID.
      * @param caches Expected cache names and their relevant deployment IDs.
      * @param grpId Expected group ID.
      * @param enable WAL state flag.
      */
-    public WalStateProposeMessage(UUID opId, Map<String, IgniteUuid> caches, int grpId, boolean enable) {
+    public WalStateProposeMessage(UUID opId, UUID nodeId, Map<String, IgniteUuid> caches, int grpId, boolean enable) {
         this.opId = opId;
+        this.nodeId = nodeId;
         this.caches = caches;
         this.grpId = grpId;
         this.enable = enable;
@@ -72,6 +77,13 @@ public class WalStateProposeMessage implements DiscoveryCustomMessage {
      */
     public UUID operationId() {
         return opId;
+    }
+
+    /**
+     * @return Node ID.
+     */
+    public UUID nodeId() {
+        return nodeId;
     }
 
     /**
