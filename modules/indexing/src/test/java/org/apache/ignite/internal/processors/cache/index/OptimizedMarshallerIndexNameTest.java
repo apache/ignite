@@ -51,7 +51,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 
 public class OptimizedMarshallerIndexNameTest extends GridCommonAbstractTest {
-
     /** Test name 1 */
     private static final String TEST_NAME1 = "Name1";
     /** Test name 2 */
@@ -102,11 +101,17 @@ public class OptimizedMarshallerIndexNameTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), workSubdir(), true));
 
         startGrid(getTestIgniteInstanceName());
         grid().active(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        super.afterTestsStopped();
     }
 
     /**

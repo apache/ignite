@@ -356,10 +356,6 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheDistributedJoinTest.class);
         suite.addTestSuite(IgniteSqlDistributedJoinSelfTest.class);
 
-        // H2 Rows on-heap cache
-        suite.addTestSuite(H2RowCacheSelfTest.class);
-        suite.addTestSuite(H2RowCachePageEvictionTest.class);
-
         // Other.
         suite.addTestSuite(CacheIteratorScanQueryTest.class);
         suite.addTestSuite(CacheQueryNewClientSelfTest.class);
@@ -381,6 +377,10 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(H2ConnectionLeaksSelfTest.class);
         suite.addTestSuite(IgniteCheckClusterStateBeforeExecuteQueryTest.class);
         suite.addTestSuite(OptimizedMarshallerIndexNameTest.class);
+
+        // H2 Rows on-heap cache
+        suite.addTestSuite(H2RowCacheSelfTest.class);
+        suite.addTestSuite(H2RowCachePageEvictionTest.class);
 
         return suite;
     }
