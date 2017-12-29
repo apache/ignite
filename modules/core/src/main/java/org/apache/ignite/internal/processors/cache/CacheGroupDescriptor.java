@@ -153,6 +153,15 @@ public class CacheGroupDescriptor {
     }
 
     /**
+     * Add pending WAL change request.
+     *
+     * @param msg Message.
+     */
+    public void addPendingWalChangeRequest(WalStateProposeMessage msg) {
+        // TODO
+    }
+
+    /**
      * @param cacheName Cache name
      * @param cacheId Cache ID.
      */

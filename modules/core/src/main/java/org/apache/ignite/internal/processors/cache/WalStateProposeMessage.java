@@ -56,7 +56,7 @@ public class WalStateProposeMessage implements DiscoveryCustomMessage {
     private final boolean enable;
 
     /** Whether message should be ignored. */
-    private boolean ignored;
+    private transient boolean ignored;
 
     /**
      * Constructor.

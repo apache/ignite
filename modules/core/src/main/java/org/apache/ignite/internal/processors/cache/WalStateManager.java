@@ -166,7 +166,11 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             }
 
             if (hasWal()) {
-                // TODO
+                CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
+
+                assert grpDesc != null;
+
+                grpDesc.addPendingWalChangeRequest(msg);
             }
         }
     }
@@ -182,8 +186,6 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
         if (hasWal() || userFut != null) {
             // Is group still there?
-            int grpId = msg.groupId();
-
             CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
 
             if (grpDesc == null) {
