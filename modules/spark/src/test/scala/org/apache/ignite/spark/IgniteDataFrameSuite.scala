@@ -15,10 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spark.impl
+package org.apache.ignite.spark
 
-import org.apache.spark.Partition
+import org.scalatest.Suites
 
-case class IgnitePartition(idx: Int) extends Partition {
-    override def index: Int = idx
-}
+/**
+  * Test suite for Spark DataFram API implementation.
+  */
+class IgniteDataFrameSuite extends Suites (
+    new IgniteDataFrameSchemaSpec,
+    new IgniteSQLDataFrameSpec,
+    new IgniteDataFrameWrongConfigSpec,
+    new IgniteCatalogSpec
+)
