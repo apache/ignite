@@ -135,6 +135,10 @@ public class WalStateProcessor extends GridCacheSharedManagerAdapter {
      * @param msg Message.
      */
     public void onProposeDiscovery(WalStateProposeMessage msg) {
+        synchronized (mux) {
+
+        }
+
         // TODO
     }
 
