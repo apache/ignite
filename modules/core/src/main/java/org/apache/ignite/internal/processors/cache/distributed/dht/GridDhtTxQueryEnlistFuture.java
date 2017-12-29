@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccLongList;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -727,8 +728,16 @@ public final class GridDhtTxQueryEnlistFuture extends GridCacheFutureAdapter<Gri
 
         int cmp = Long.compare(ver.coordinatorVersion(), mvccVer.coordinatorVersion());
 
-        if (cmp == 0)
+        if (cmp == 0) {
             cmp = Long.compare(ver.counter(), mvccVer.counter());
+
+            if (cmp < 0) {
+                MvccLongList txs = mvccVer.activeTransactions();
+
+                if (txs != null && txs.contains(ver.counter()))
+                    cmp = 1;
+            }
+        }
 
         if (cmp > 0) {
             onDone(new IgniteCheckedException("Mvcc version mismatch."));
