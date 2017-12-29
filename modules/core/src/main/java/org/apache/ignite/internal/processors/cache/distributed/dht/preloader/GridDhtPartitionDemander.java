@@ -60,6 +60,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -609,11 +610,11 @@ public class GridDhtPartitionDemander {
             return;
 
         if (log.isDebugEnabled())
-            log.debug("Received supply message: " + supply);
+            log.debug("Received supply message [grp=" + grp.cacheOrGroupName() + ", msg=" + supply + ']');
 
         // Check whether there were class loading errors on unmarshal
         if (supply.classError() != null) {
-            U.warn(log, "Rebalancing from node cancelled [node=" + id +
+            U.warn(log, "Rebalancing from node cancelled [grp=" + grp.cacheOrGroupName() + ", node=" + id +
                 "]. Class got undeployed during preloading: " + supply.classError());
 
             fut.cancel(id);
@@ -744,19 +745,22 @@ public class GridDhtPartitionDemander {
 
             if (!topologyChanged(fut) && !fut.isDone()) {
                 // Send demand message.
-                ctx.io().sendOrderedMessage(node, rebalanceTopics.get(idx),
-                    d, grp.ioPolicy(), grp.config().getRebalanceTimeout());
+                try {
+                    ctx.io().sendOrderedMessage(node, rebalanceTopics.get(idx),
+                        d, grp.ioPolicy(), grp.config().getRebalanceTimeout());
+                }
+                catch (ClusterTopologyCheckedException e) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Node left during rebalancing [grp=" + grp.cacheOrGroupName() +
+                            ", node=" + node.id() + ", msg=" + e.getMessage() + ']');
+                    }
+                }
             }
         }
-        catch (IgniteCheckedException e) {
-            if (log.isDebugEnabled())
-                log.debug("Node left during rebalancing [node=" + node.id() +
-                    ", msg=" + e.getMessage() + ']');
-        }
-        catch (IgniteSpiException e) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to send message to node (current node is stopping?) [node=" + node.id() +
-                    ", msg=" + e.getMessage() + ']');
+        catch (IgniteSpiException | IgniteCheckedException e) {
+            LT.error(log, e, "Error during rebalancing [grp=" + grp.cacheOrGroupName() +
+                ", srcNode=" + node.id() +
+                ", err=" + e + ']');
         }
     }
 
