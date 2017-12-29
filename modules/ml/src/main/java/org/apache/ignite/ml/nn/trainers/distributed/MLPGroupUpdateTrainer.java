@@ -49,7 +49,7 @@ public class MLPGroupUpdateTrainer<P extends Serializable> extends
         MultilayerPerceptron,
         P,
         MultilayerPerceptron,
-        MLPGroupUpdateTrainerInput<P>,
+        AbstractMLPGroupUpdateTrainerInput<P>,
         MLPGroupUpdateTrainingContext<P>,
         P,
         MLPGroupUpdateTrainingLoopData<P>,
@@ -70,7 +70,7 @@ public class MLPGroupUpdateTrainer<P extends Serializable> extends
     }
 
     /** {@inheritDoc} */
-    @Override protected void initDistributedContext(MLPGroupUpdateTrainerInput<P> data, UUID trainingUUID) {
+    @Override protected void initDistributedContext(AbstractMLPGroupUpdateTrainerInput<P> data, UUID trainingUUID) {
         MLPGroupUpdateTrainerContextCache.getOrCreate(ignite).put(trainingUUID, new MLPGroupUpdateTrainingData<>(
                 data.updateCalculator(),
                 data.syncRate(),
@@ -83,7 +83,7 @@ public class MLPGroupUpdateTrainer<P extends Serializable> extends
 
     /** {@inheritDoc} */
     @Override protected IgniteFunction<GroupTrainerCacheKey<Void>, ResultAndUpdates<P>> distributedInitializer(
-        MLPGroupUpdateTrainerInput<P> data) {
+        AbstractMLPGroupUpdateTrainerInput<P> data) {
         MultilayerPerceptron initPerceptron = data.mdl();
         ParameterUpdateCalculator<MultilayerPerceptron, P> calculator = data.updateCalculator();
 
@@ -179,7 +179,7 @@ public class MLPGroupUpdateTrainer<P extends Serializable> extends
     }
 
     /** {@inheritDoc} */
-    @Override protected MLPGroupUpdateTrainerLocalContext<P> initialLocalContext(MLPGroupUpdateTrainerInput<P> data,
+    @Override protected MLPGroupUpdateTrainerLocalContext<P> initialLocalContext(AbstractMLPGroupUpdateTrainerInput<P> data,
         UUID trainingUUID) {
         return new MLPGroupUpdateTrainerLocalContext<>(trainingUUID, data.globalSteps(), data.allUpdatesReducer(), data.trainingsCount());
     }

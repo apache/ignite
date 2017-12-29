@@ -17,5 +17,92 @@
 
 package org.apache.ignite.ml.nn;
 
-public class MLPGroupUpdateTrainerCacheInput {
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
+import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
+import org.apache.ignite.ml.nn.initializers.MLPInitializer;
+import org.apache.ignite.ml.nn.trainers.distributed.AbstractMLPGroupUpdateTrainerInput;
+import org.apache.ignite.ml.nn.updaters.ParameterUpdateCalculator;
+import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.util.Utils;
+
+public class MLPGroupUpdateTrainerCacheInput<U> extends AbstractMLPGroupUpdateTrainerInput<U> {
+    private final IgniteCache<Integer, LabeledVector<Vector, Vector>> cache;
+    private final int batchSize;
+    private final MultilayerPerceptron mlp;
+
+    public MLPGroupUpdateTrainerCacheInput(MLPArchitecture arch, MLPInitializer init,
+        int networksCnt, int globalSteps, int syncRate,
+        IgniteFunction<List<U>, U> allUpdatesReducer,
+        IgniteFunction<List<U>, U> oneTrainingUpdatesReducer,
+        ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator,
+        IgniteCache<Integer, LabeledVector<Vector, Vector>> cache,
+        int batchSize) {
+        super(networksCnt, globalSteps, syncRate, allUpdatesReducer, oneTrainingUpdatesReducer, updateCalculator);
+
+        this.batchSize = batchSize;
+        this.cache = cache;
+        this.mlp = new MultilayerPerceptron(arch, init);
+    }
+
+    public MLPGroupUpdateTrainerCacheInput(MLPArchitecture arch, int networksCnt, int globalSteps, int syncRate,
+        IgniteFunction<List<U>, U> allUpdatesReducer,
+        IgniteFunction<List<U>, U> oneTrainingUpdatesReducer,
+        ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator,
+        IgniteCache<Integer, LabeledVector<Vector, Vector>> cache,
+        int batchSize) {
+        this(arch, null, networksCnt, globalSteps, syncRate, allUpdatesReducer, oneTrainingUpdatesReducer, updateCalculator, cache, batchSize);
+    }
+    /** {@inheritDoc} */
+    @Override public IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier() {
+        String cName = cache.getName();
+        int bs = batchSize;
+
+        return () -> {
+            Ignite ignite = Ignition.localIgnite();
+            IgniteCache<Integer, LabeledVector<Vector, Vector>> cache = ignite.getOrCreateCache(cName);
+            int total = cache.size();
+            Affinity<Integer> affinity = ignite.affinity(cName);
+
+            List<Integer> allKeys = IntStream.range(0, total).boxed().collect(Collectors.toList());
+            List<Integer> keys = new ArrayList<>(affinity.mapKeysToNodes(allKeys).get(ignite.cluster().localNode()));
+
+            int locKeysCnt = keys.size();
+
+            int[] selected = Utils.selectKDistinct(locKeysCnt, Math.min(bs, locKeysCnt));
+
+            // Get dimensions of vectors in cache. We suppose that every feature vector has
+            // same dimension d 1 and every label has the same dimension d2.
+            LabeledVector<Vector, Vector> dimEntry = cache.get(keys.get(selected[0]));
+
+            Matrix inputs = new DenseLocalOnHeapMatrix(dimEntry.features().size(), bs);
+            Matrix groundTruth = new DenseLocalOnHeapMatrix(dimEntry.label().size(), bs);
+
+            for (int i = 0; i < selected.length; i++) {
+                LabeledVector<Vector, Vector> labeled = cache.get(selected[i]);
+
+                inputs.assignColumn(i, labeled.features());
+                groundTruth.assignColumn(i, labeled.label());
+            }
+
+            return new IgniteBiTuple<>(inputs, groundTruth);
+        };
+    }
+
+    /** {@inheritDoc} */
+    @Override public MultilayerPerceptron mdl() {
+        return mlp;
+    }
 }

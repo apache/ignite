@@ -69,7 +69,7 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
         architecture = arch;
         below = null;
 
-        initLayers(initializer);
+        initLayers(initializer != null ? initializer : new RandomInitializer(new Random()));
     }
 
     /**
@@ -78,11 +78,7 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
      * @param arch Architecture.
      */
     public MultilayerPerceptron(MLPArchitecture arch) {
-        layers = new ArrayList<>(arch.layersCount() + 1);
-        architecture = arch;
-        below = null;
-
-        initLayers(new RandomInitializer(new Random()));
+        this(arch, null);
     }
 
     /**

@@ -29,7 +29,7 @@ import org.apache.ignite.ml.nn.updaters.ParameterUpdateCalculator;
 import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
 import org.apache.ignite.ml.trainers.group.GroupTrainerInput;
 
-public abstract class MLPGroupUpdateTrainerInput<U> implements GroupTrainerInput<Void>,LocalBatchTrainerInput<MultilayerPerceptron> {
+public abstract class AbstractMLPGroupUpdateTrainerInput<U> implements GroupTrainerInput<Void>,LocalBatchTrainerInput<MultilayerPerceptron> {
     private final int networksCount;
     private final int globalSteps;
     private final int syncRate;
@@ -37,7 +37,7 @@ public abstract class MLPGroupUpdateTrainerInput<U> implements GroupTrainerInput
     private final IgniteFunction<List<U>, U> oneTrainingUpdatesReducer;
     private final ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator;
 
-    public MLPGroupUpdateTrainerInput(int networksCnt, int globalSteps, int syncRate, IgniteFunction<List<U>, U> allUpdatesReducer,
+    public AbstractMLPGroupUpdateTrainerInput(int networksCnt, int globalSteps, int syncRate, IgniteFunction<List<U>, U> allUpdatesReducer,
         IgniteFunction<List<U>, U> oneTrainingUpdatesReducer, ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator) {
         this.networksCount = networksCnt;
         this.globalSteps = globalSteps;
