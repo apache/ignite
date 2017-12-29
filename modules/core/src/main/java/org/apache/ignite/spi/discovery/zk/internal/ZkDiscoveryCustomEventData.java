@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.util.UUID;
-import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 
@@ -60,7 +59,7 @@ class ZkDiscoveryCustomEventData extends ZkDiscoveryEventData {
         DiscoverySpiCustomMessage msg,
         String evtPath)
     {
-        super(evtId, DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT, topVer);
+        super(evtId, ZK_EVT_CUSTOM_EVT, topVer);
 
         assert sndNodeId != null;
         assert msg != null || origEvtId != 0 || !F.isEmpty(evtPath);

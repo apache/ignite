@@ -17,8 +17,6 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
-import org.apache.ignite.events.EventType;
-
 /**
  *
  */
@@ -35,7 +33,7 @@ class ZkDiscoveryNodeFailEventData extends ZkDiscoveryEventData {
      * @param failedNodeInternalId Failed node ID.
      */
     ZkDiscoveryNodeFailEventData(long evtId, long topVer, long failedNodeInternalId) {
-        super(evtId, EventType.EVT_NODE_FAILED, topVer);
+        super(evtId, ZK_EVT_NODE_FAILED, topVer);
 
         this.failedNodeInternalId = failedNodeInternalId;
     }

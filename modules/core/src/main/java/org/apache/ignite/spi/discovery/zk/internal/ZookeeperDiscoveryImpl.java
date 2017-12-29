@@ -92,6 +92,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2;
@@ -2426,7 +2427,7 @@ public class ZookeeperDiscoveryImpl {
             for (Map.Entry<Long, ZkDiscoveryEventData> e : rtState.evtsData.evts.entrySet()) {
                 ZkDiscoveryEventData evtData = e.getValue();
 
-                if (evtData.eventType() == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
+                if (evtData.eventType() == ZkDiscoveryEventData.ZK_EVT_CUSTOM_EVT) {
                     ZkDiscoveryCustomEventData evtData0 =
                         (ZkDiscoveryCustomEventData)newEvts.evts.get(evtData.eventId());
 
@@ -2459,15 +2460,14 @@ public class ZookeeperDiscoveryImpl {
 
         for (ZkDiscoveryEventData evtData : evts.tailMap(rtState.locNodeInfo.lastProcEvt, false).values()) {
             if (!rtState.joined) {
-                if (evtData.eventType() != EventType.EVT_NODE_JOINED)
+                if (evtData.eventType() != ZkDiscoveryEventData.ZK_EVT_NODE_JOIN)
                     continue;
 
                 ZkDiscoveryNodeJoinEventData evtData0 = (ZkDiscoveryNodeJoinEventData)evtData;
 
                 UUID joinedId = evtData0.nodeId;
 
-                boolean locJoin = evtData.eventType() == EventType.EVT_NODE_JOINED &&
-                    evtData0.joinedInternalId == rtState.internalOrder;
+                boolean locJoin = evtData0.joinedInternalId == rtState.internalOrder;
 
                 if (locJoin) {
                     assert locNode.id().equals(joinedId);
@@ -2482,7 +2482,7 @@ public class ZookeeperDiscoveryImpl {
                     log.debug("New discovery event data [evt=" + evtData + ", evtsHist=" + evts.size() + ']');
 
                 switch (evtData.eventType()) {
-                    case EventType.EVT_NODE_JOINED: {
+                    case ZkDiscoveryEventData.ZK_EVT_NODE_JOIN: {
                         ZkDiscoveryNodeJoinEventData evtData0 = (ZkDiscoveryNodeJoinEventData)evtData;
 
                         ZkJoiningNodeData joiningData;
@@ -2510,13 +2510,13 @@ public class ZookeeperDiscoveryImpl {
                         break;
                     }
 
-                    case EventType.EVT_NODE_FAILED: {
+                    case ZkDiscoveryEventData.ZK_EVT_NODE_FAILED: {
                         notifyNodeFail((ZkDiscoveryNodeFailEventData)evtData);
 
                         break;
                     }
 
-                    case DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT: {
+                    case ZkDiscoveryEventData.ZK_EVT_CUSTOM_EVT: {
                         ZkDiscoveryCustomEventData evtData0 = (ZkDiscoveryCustomEventData)evtData;
 
                         if (evtData0.ackEvent() && evtData0.topologyVersion() < locNode.order())
@@ -2742,7 +2742,7 @@ public class ZookeeperDiscoveryImpl {
 
             final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
-            lsnr.onDiscovery(evtData.eventType(),
+            lsnr.onDiscovery(EVT_NODE_JOINED,
                 evtData.topologyVersion(),
                 locNode,
                 topSnapshot,
@@ -3219,7 +3219,8 @@ public class ZookeeperDiscoveryImpl {
 
         final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
-        lsnr.onDiscovery(evtData.eventType(),
+        lsnr.onDiscovery(
+            DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
             evtData.topologyVersion(),
             sndNode,
             topSnapshot,
@@ -3244,7 +3245,7 @@ public class ZookeeperDiscoveryImpl {
 
         final List<ClusterNode> topSnapshot = rtState.top.topologySnapshot();
 
-        lsnr.onDiscovery(evtData.eventType(),
+        lsnr.onDiscovery(EVT_NODE_JOINED,
             evtData.topologyVersion(),
             joinedNode,
             topSnapshot,
@@ -3354,13 +3355,13 @@ public class ZookeeperDiscoveryImpl {
                 prevEvtData = null;
 
                 switch (evtData.eventType()) {
-                    case EventType.EVT_NODE_JOINED: {
+                    case ZkDiscoveryEventData.ZK_EVT_NODE_JOIN: {
                         handleProcessedJoinEventAsync((ZkDiscoveryNodeJoinEventData)evtData);
 
                         break;
                     }
 
-                    case DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT: {
+                    case ZkDiscoveryEventData.ZK_EVT_CUSTOM_EVT: {
                         DiscoverySpiCustomMessage ack = handleProcessedCustomEvent(ctx,
                             (ZkDiscoveryCustomEventData)evtData);
 
@@ -3378,7 +3379,7 @@ public class ZookeeperDiscoveryImpl {
                         break;
                     }
 
-                    case EventType.EVT_NODE_FAILED: {
+                    case ZkDiscoveryEventData.ZK_EVT_NODE_FAILED: {
                         if (log.isDebugEnabled())
                             log.debug("All nodes processed node fail [evtData=" + evtData + ']');
 

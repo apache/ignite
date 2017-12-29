@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.util.UUID;
-import org.apache.ignite.events.EventType;
 
 /**
  *
@@ -67,7 +66,7 @@ class ZkDiscoveryNodeJoinEventData extends ZkDiscoveryEventData {
         int dataForJoinedPartCnt,
         int secSubjPartCnt)
     {
-        super(evtId, EventType.EVT_NODE_JOINED, topVer);
+        super(evtId, ZK_EVT_NODE_JOIN, topVer);
 
         this.nodeId = nodeId;
         this.joinedInternalId = joinedInternalId;

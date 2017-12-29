@@ -20,18 +20,21 @@ package org.apache.ignite.spi.discovery.zk.internal;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Set;
-import java.util.TreeMap;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
-import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
-import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 
 /**
  *
  */
 abstract class ZkDiscoveryEventData implements Serializable {
+    /** */
+    static final byte ZK_EVT_NODE_JOIN = 1;
+
+    /** */
+    static final byte ZK_EVT_NODE_FAILED = 2;
+
+    /** */
+    static final byte ZK_EVT_CUSTOM_EVT = 3;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -39,7 +42,7 @@ abstract class ZkDiscoveryEventData implements Serializable {
     private final long evtId;
 
     /** */
-    private final int evtType;
+    private final byte evtType;
 
     /** */
     private final long topVer;
@@ -55,8 +58,8 @@ abstract class ZkDiscoveryEventData implements Serializable {
      * @param evtType Event type.
      * @param topVer Topology version.
      */
-    ZkDiscoveryEventData(long evtId, int evtType, long topVer) {
-        assert evtType == EVT_NODE_JOINED || evtType == EVT_NODE_FAILED || evtType == EVT_DISCOVERY_CUSTOM_EVT : evtType;
+    ZkDiscoveryEventData(long evtId, byte evtType, long topVer) {
+        assert evtType == ZK_EVT_NODE_JOIN || evtType == ZK_EVT_NODE_FAILED || evtType == ZK_EVT_CUSTOM_EVT : evtType;
 
         this.evtId = evtId;
         this.evtType = evtType;
@@ -149,7 +152,7 @@ abstract class ZkDiscoveryEventData implements Serializable {
     /**
      * @return Event type.
      */
-    int eventType() {
+    byte eventType() {
         return evtType;
     }
 
