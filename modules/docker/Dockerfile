@@ -20,8 +20,10 @@ FROM alpine:3.7
 
 # Set Ignite version
 ENV IGNITE_VERSION 2.3.0
+# Set Ignite binary name
+ENV IGNITE_BIN apache-ignite-${IGNITE_VERSION}-bin
 # Set Ignite home directory
-ENV IGNITE_HOME /opt/ignite/apache-ignite-fabric-${IGNITE_VERSION}-bin
+ENV IGNITE_HOME /opt/ignite/${IGNITE_BIN}
 
 # Set docker image metadata
 LABEL maintainer="Peter Ivanov <mr.weider@gmail.com>"
@@ -39,23 +41,22 @@ WORKDIR /opt/ignite
 # Get and unarchive Ignite (checking the signatures on the way)
 RUN set -x \
     && set -o errexit \
-    && curl -fSL "https://archive.apache.org/dist/ignite/${IGNITE_VERSION}/apache-ignite-fabric-${IGNITE_VERSION}-bin.zip" -o ignite.zip \
-    && curl -fSL "https://archive.apache.org/dist/ignite/${IGNITE_VERSION}/apache-ignite-fabric-${IGNITE_VERSION}-bin.zip.asc" -o ignite.zip.asc \
+    && curl -fSL "https://archive.apache.org/dist/ignite/${IGNITE_VERSION}/${IGNITE_BIN}.zip" -o ignite.zip \
+    && curl -fSL "https://archive.apache.org/dist/ignite/${IGNITE_VERSION}/${IGNITE_BIN}.zip.asc" -o ignite.zip.asc \
     && export GNUPGHOME="$(mktemp -d)" \
     && curl -fSl "https://archive.apache.org/dist/ignite/KEYS.txt" -o KEYS.txt \
     && gpg --import KEYS.txt \
     && gpg --batch --verify ignite.zip.asc ignite.zip \
     && unzip ignite.zip \
-    && rm -rfv "$GNUPGHOME" ignite.zip* KEYS.txt \
+    && rm -rfv "${GNUPGHOME}" ignite.zip* KEYS.txt \
     && unset GNUPGHOME
 
 
 # Copy entrypoint executable
-COPY ./run.sh $IGNITE_HOME/
+COPY ./run.sh ${IGNITE_HOME}/
 
 # Entrypoint
-CMD "$IGNITE_HOME/run.sh"
+CMD "${IGNITE_HOME}/run.sh"
 
 # Open required ports
 EXPOSE 11211 47100 47500 49112
-
