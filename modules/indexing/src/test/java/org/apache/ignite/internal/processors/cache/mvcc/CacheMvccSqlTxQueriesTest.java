@@ -54,6 +54,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.runMultiThreaded;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -1027,64 +1028,35 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
 
         IgniteCache cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        cache.putAll(F.asMap(1, 1, 2, 2, 3, 3));
+        cache.put(1, 1);
 
-        final Phaser phaser = new Phaser(2);
+        final CyclicBarrier barrier = new CyclicBarrier(2);
         final AtomicReference<Exception> ex = new AtomicReference<>();
 
-        final GridCompoundFuture fut = new GridCompoundFuture();
-
-        fut.add(multithreadedAsync(new Runnable() {
+        runMultiThreaded(new Runnable() {
             @Override public void run() {
                 IgniteEx node = grid(0);
 
                 try {
-                    phaser.arriveAndAwaitAdvance();
-
                     try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         tx.timeout(TIMEOUT);
 
-                        IgniteCache<Object, Object> cache0 = node.cache(DEFAULT_CACHE_NAME);
-
-                        SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE Integer SET _val = (_key * 10)");
-
-                        try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
-                            assertEquals(3L, cur.iterator().next().get(0));
-                        }
-
-                        tx.commit();
-                    }
-
-                    phaser.arrive();
-                }
-                catch (Exception e) {
-                    onException(ex, e);
-                }
-            }
-        }, 1));
-
-        fut.add(multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                IgniteEx node = grid(1);
-
-                try {
-                    try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        tx.timeout(TIMEOUT);
+                        barrier.await();
 
                         IgniteCache<Object, Object> cache0 = node.cache(DEFAULT_CACHE_NAME);
 
-                        SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE Integer SET _val = (_key * 10) where _key > 3");
+                        SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM Integer");
 
                         try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
-                            assertEquals(0L, cur.iterator().next().get(0));
+                            assertEquals(1, cur.getAll().size());
                         }
 
-                        awaitPhase(phaser, 2);
+                        barrier.await();
 
                         qry = new SqlFieldsQuery("UPDATE Integer SET _val = (_key * 10)");
 
                         try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
-                            assertEquals(0L, cur.iterator().next().get(0));
+                            assertEquals(1L, cur.iterator().next().get(0));
                         }
 
                         tx.commit();
@@ -1094,16 +1066,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
                     onException(ex, e);
                 }
             }
-        }, 1));
-
-        fut.markInitialized();
-
-        try {
-            fut.get(TIMEOUT);
-        }
-        catch (IgniteCheckedException e) {
-            onException(ex, e);
-        }
+        }, 2, "tx-thread");
 
         IgniteSQLException ex0 = X.cause(ex.get(), IgniteSQLException.class);
 
