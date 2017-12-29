@@ -430,6 +430,10 @@ public class GridSqlQueryParser {
         getter(AlterTableAlterColumn.class, "columnsToAdd");
 
     /** */
+    private static final Getter<AlterTableAlterColumn, ArrayList<Column>> ALTER_COLUMN_REMOVE_COLS =
+        getter(AlterTableAlterColumn.class, "columnsToRemove");
+
+    /** */
     private static final Getter<AlterTableAlterColumn, Boolean> ALTER_COLUMN_IF_NOT_EXISTS =
         getter(AlterTableAlterColumn.class, "ifNotExists");
 
@@ -1150,6 +1154,9 @@ public class GridSqlQueryParser {
             case CommandInterface.ALTER_TABLE_ADD_COLUMN:
                 return parseAddColumn(stmt);
 
+            case CommandInterface.ALTER_TABLE_DROP_COLUMN:
+                return parseDropColumn(stmt);
+
             default: {
                 String stmtName = null;
 
@@ -1162,11 +1169,6 @@ public class GridSqlQueryParser {
                     case CommandInterface.ALTER_TABLE_ALTER_COLUMN_SELECTIVITY:
                     case CommandInterface.ALTER_TABLE_ALTER_COLUMN_VISIBILITY:
                         stmtName = "ALTER COLUMN";
-
-                        break;
-
-                    case CommandInterface.ALTER_TABLE_DROP_COLUMN:
-                        stmtName = "DROP COLUMN";
 
                         break;
                 }
@@ -1253,6 +1255,39 @@ public class GridSqlQueryParser {
         res.schemaName(schema.getName());
 
         res.tableName(ALTER_COLUMN_TBL_NAME.get(addCol));
+
+        return res;
+    }
+
+    /**
+     * Parse {@code ALTER TABLE ... DROP COLUMN} statement.
+     * @param dropCol H2 statement.
+     * @see <a href="http://www.h2database.com/html/grammar.html#alter_table_add"></a>
+     */
+    private GridSqlStatement parseDropColumn(AlterTableAlterColumn dropCol) {
+        assert dropCol.getType() == CommandInterface.ALTER_TABLE_DROP_COLUMN;
+
+        GridSqlAlterTableDropColumn res = new GridSqlAlterTableDropColumn();
+
+        ArrayList<Column> h2DropCols = ALTER_COLUMN_REMOVE_COLS.get(dropCol);
+
+        String[] gridDropCols = new String[h2DropCols.size()];
+
+        for (int i = 0; i < h2DropCols.size(); i++)
+            gridDropCols[i] = h2DropCols.get(i).getName();
+
+        res.columns(gridDropCols);
+
+        if (gridDropCols.length == 1)
+            res.ifExists(!ALTER_COLUMN_IF_NOT_EXISTS.get(dropCol));
+
+        res.ifTableExists(ALTER_COLUMN_IF_TBL_EXISTS.get(dropCol));
+
+        Schema schema = SCHEMA_COMMAND_SCHEMA.get(dropCol);
+
+        res.schemaName(schema.getName());
+
+        res.tableName(ALTER_COLUMN_TBL_NAME.get(dropCol));
 
         return res;
     }

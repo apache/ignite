@@ -32,6 +32,55 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
     /// </summary>
     internal static class ClientCacheConfigurationSerializer
     {
+        /** Config property opcodes. */
+        private enum Op : short
+        {
+            // Name is required.
+            Name = 0,
+
+            // Most common properties.
+            CacheMode = 1,
+            AtomicityMode = 2,
+            Backups = 3,
+            WriteSynchronizationMode = 4,
+            CopyOnRead = 5,
+            ReadFromBackup = 6,
+
+            // Memory settings.
+            DataRegionName = 100,
+            OnheapCacheEnabled = 101,
+
+            // SQL.
+            QueryEntities = 200,
+            QueryParallelism = 201,
+            QueryDetailMetricsSize = 202,
+            SqlSchema = 203,
+            SqlIndexMaxInlineSize = 204,
+            SqlEscapeAll = 205,
+            MaxQueryIteratorsCount = 206,
+
+            // Rebalance.
+            RebalanceMode = 300,
+            RebalanceDelay = 301,
+            RebalanceTimeout = 302,
+            RebalanceBatchSize = 303,
+            RebalanceBatchesPrefetchCount = 304,
+            RebalanceOrder = 305,
+            RebalanceThrottle = 306,
+
+            // Advanced.
+            GroupName = 400,
+            KeyConfiguration = 401,
+            DefaultLockTimeout = 402,
+            MaxConcurrentAsyncOperations = 403,
+            PartitionLossPolicy = 404,
+            EagerTtl = 405, 
+            StatisticsEnabled = 406
+        }
+
+        /** Property count. */
+        private static readonly short PropertyCount = (short) Enum.GetValues(typeof(Op)).Length;
+        
         /// <summary>
         /// Copies one cache configuration to another.
         /// </summary>
@@ -48,7 +97,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             to.EagerTtl = from.EagerTtl;
             to.EnableStatistics = from.EnableStatistics;
             to.GroupName = from.GroupName;
-            to.Invalidate = from.Invalidate;
             to.LockTimeout = from.LockTimeout;
             to.MaxConcurrentAsyncOperations = from.MaxConcurrentAsyncOperations;
             to.MaxQueryIteratorsCount = from.MaxQueryIteratorsCount;
@@ -119,7 +167,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             to.EagerTtl = from.EagerTtl;
             to.EnableStatistics = from.EnableStatistics;
             to.GroupName = from.GroupName;
-            to.Invalidate = from.Invalidate;
             to.LockTimeout = from.LockTimeout;
             to.MaxConcurrentAsyncOperations = from.MaxConcurrentAsyncOperations;
             to.MaxQueryIteratorsCount = from.MaxQueryIteratorsCount;
@@ -148,7 +195,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /// <summary>
         /// Writes the specified config.
         /// </summary>
-        public static void Write(IBinaryStream stream, CacheClientConfiguration cfg)
+        public static void Write(IBinaryStream stream, CacheClientConfiguration cfg, bool skipCodes = false)
         {
             Debug.Assert(stream != null);
             Debug.Assert(cfg != null);
@@ -158,43 +205,110 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             var pos = writer.Stream.Position;
             writer.WriteInt(0);  // Reserve for length.
 
+            if (!skipCodes)
+            {
+                writer.WriteShort(PropertyCount); // Property count.
+            }
+
+            var code = skipCodes
+                ? (Action<Op>) (o => { })
+                : o => writer.WriteShort((short) o);
+
+            code(Op.AtomicityMode);
             writer.WriteInt((int)cfg.AtomicityMode);
+            
+            code(Op.Backups);
             writer.WriteInt(cfg.Backups);
+            
+            code(Op.CacheMode);
             writer.WriteInt((int)cfg.CacheMode);
+            
+            code(Op.CopyOnRead);
             writer.WriteBoolean(cfg.CopyOnRead);
+            
+            code(Op.DataRegionName);
             writer.WriteString(cfg.DataRegionName);
+            
+            code(Op.EagerTtl);
             writer.WriteBoolean(cfg.EagerTtl);
+            
+            code(Op.StatisticsEnabled);
             writer.WriteBoolean(cfg.EnableStatistics);
+            
+            code(Op.GroupName);
             writer.WriteString(cfg.GroupName);
-            writer.WriteBoolean(cfg.Invalidate);
+            
+            code(Op.DefaultLockTimeout);
             writer.WriteTimeSpanAsLong(cfg.LockTimeout);
+
+            code(Op.MaxConcurrentAsyncOperations);
             writer.WriteInt(cfg.MaxConcurrentAsyncOperations);
+
+            code(Op.MaxQueryIteratorsCount);
             writer.WriteInt(cfg.MaxQueryIteratorsCount);
+
+            code(Op.Name);
             writer.WriteString(cfg.Name);
+            
+            code(Op.OnheapCacheEnabled);
             writer.WriteBoolean(cfg.OnheapCacheEnabled);
+            
+            code(Op.PartitionLossPolicy);
             writer.WriteInt((int)cfg.PartitionLossPolicy);
+            
+            code(Op.QueryDetailMetricsSize);
             writer.WriteInt(cfg.QueryDetailMetricsSize);
+            
+            code(Op.QueryParallelism);
             writer.WriteInt(cfg.QueryParallelism);
+            
+            code(Op.ReadFromBackup);
             writer.WriteBoolean(cfg.ReadFromBackup);
+            
+            code(Op.RebalanceBatchSize);
             writer.WriteInt(cfg.RebalanceBatchSize);
+            
+            code(Op.RebalanceBatchesPrefetchCount);
             writer.WriteLong(cfg.RebalanceBatchesPrefetchCount);
+            
+            code(Op.RebalanceDelay);
             writer.WriteTimeSpanAsLong(cfg.RebalanceDelay);
+            
+            code(Op.RebalanceMode);
             writer.WriteInt((int)cfg.RebalanceMode);
+            
+            code(Op.RebalanceOrder);
             writer.WriteInt(cfg.RebalanceOrder);
+            
+            code(Op.RebalanceThrottle);
             writer.WriteTimeSpanAsLong(cfg.RebalanceThrottle);
+            
+            code(Op.RebalanceTimeout);
             writer.WriteTimeSpanAsLong(cfg.RebalanceTimeout);
+            
+            code(Op.SqlEscapeAll);
             writer.WriteBoolean(cfg.SqlEscapeAll);
+            
+            code(Op.SqlIndexMaxInlineSize);
             writer.WriteInt(cfg.SqlIndexMaxInlineSize);
+            
+            code(Op.SqlSchema);
             writer.WriteString(cfg.SqlSchema);
+            
+            code(Op.WriteSynchronizationMode);
             writer.WriteInt((int)cfg.WriteSynchronizationMode);
 
+            code(Op.KeyConfiguration);
             writer.WriteCollectionRaw(cfg.KeyConfiguration);
+            
+            code(Op.QueryEntities);
             writer.WriteCollectionRaw(cfg.QueryEntities);
 
             // Write length (so that part of the config can be skipped).
             var len = writer.Stream.Position - pos - 4;
             writer.Stream.WriteInt(pos, len);
         }
+        
         /// <summary>
         /// Reads the config.
         /// </summary>
@@ -216,7 +330,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             cfg.EagerTtl = reader.ReadBoolean();
             cfg.EnableStatistics = reader.ReadBoolean();
             cfg.GroupName = reader.ReadString();
-            cfg.Invalidate = reader.ReadBoolean();
             cfg.LockTimeout = reader.ReadLongAsTimespan();
             cfg.MaxConcurrentAsyncOperations = reader.ReadInt();
             cfg.MaxQueryIteratorsCount = reader.ReadInt();
