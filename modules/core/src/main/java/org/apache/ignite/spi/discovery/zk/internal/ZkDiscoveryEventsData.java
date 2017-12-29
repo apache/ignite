@@ -45,9 +45,6 @@ class ZkDiscoveryEventsData implements Serializable {
     /** Max node internal order in cluster. */
     long maxInternalOrder;
 
-    /** Min internal order in cluster. */
-    final long startInternalOrder;
-
     /** Cluster start time (recorded when first node in cluster starts). */
     final long clusterStartTime;
 
@@ -58,15 +55,12 @@ class ZkDiscoveryEventsData implements Serializable {
     private UUID commErrFutId;
 
     /**
-     * @param startInternalOrder Starting internal order for cluster (znodes having lower order belong
-     *      to previous cluster and should be ignored).
      * @param clusterStartTime Start time of first node in cluster.
      * @return Events.
      */
-    static ZkDiscoveryEventsData createForNewCluster(long startInternalOrder, long clusterStartTime) {
+    static ZkDiscoveryEventsData createForNewCluster(long clusterStartTime) {
         return new ZkDiscoveryEventsData(
             UUID.randomUUID(),
-            startInternalOrder,
             clusterStartTime,
             1L,
             new TreeMap<Long, ZkDiscoveryEventData>()
@@ -75,20 +69,17 @@ class ZkDiscoveryEventsData implements Serializable {
 
     /**
      * @param clusterId Cluster ID.
-     * @param startInternalOrder Starting internal order for cluster.
      * @param topVer Current topology version.
      * @param clusterStartTime Cluster start time.
      * @param evts Events history.
      */
     private ZkDiscoveryEventsData(
         UUID clusterId,
-        long startInternalOrder,
         long clusterStartTime,
         long topVer,
         TreeMap<Long, ZkDiscoveryEventData> evts)
     {
         this.clusterId = clusterId;
-        this.startInternalOrder = startInternalOrder;
         this.clusterStartTime = clusterStartTime;
         this.topVer = topVer;
         this.evts = evts;

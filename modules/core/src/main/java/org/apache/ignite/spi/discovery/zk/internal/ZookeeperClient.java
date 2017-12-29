@@ -462,6 +462,16 @@ public class ZookeeperClient implements Watcher {
 
     /**
      * @param path Path.
+     * @throws InterruptedException If interrupted.
+     * @throws KeeperException In case of error.
+     * @return {@code True} if given path exists.
+     */
+    boolean existsNoRetry(String path) throws InterruptedException, KeeperException {
+        return zk.exists(path, false) != null;
+    }
+
+    /**
+     * @param path Path.
      * @param ver Expected version.
      * @throws InterruptedException If interrupted.
      * @throws KeeperException In case of error.

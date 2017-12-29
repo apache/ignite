@@ -1984,6 +1984,10 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
                             if (!znode.contains("/")) // Ignore roots.
                                 continue;
 
+                            // TODO ZK
+                            if (znode.startsWith("jd/"))
+                                continue;
+
                             log.info("Found unexpected znode: " + znode);
 
                             return false;

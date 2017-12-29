@@ -93,6 +93,7 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
+import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2;
@@ -524,7 +525,7 @@ public class ZookeeperDiscoveryImpl {
         if (nodes.isEmpty())
             nodes = Collections.singletonList((ClusterNode)locNode);
 
-        lsnr.onDiscovery(EventType.EVT_NODE_SEGMENTED,
+        lsnr.onDiscovery(EVT_NODE_SEGMENTED,
             rtState.evtsData != null ? rtState.evtsData.topVer : 1L,
             locNode,
             nodes,
@@ -1264,9 +1265,6 @@ public class ZookeeperDiscoveryImpl {
 
             Long internalId = ZkIgnitePaths.aliveInternalId(aliveNodePath);
 
-            if (rtState.ignoreAliveNode(internalId))
-                continue;
-
             aliveSrvs.put(internalId, aliveNodePath);
         }
 
@@ -1313,9 +1311,6 @@ public class ZookeeperDiscoveryImpl {
 
         for (String aliveNodePath : aliveNodes) {
             Long internalId = ZkIgnitePaths.aliveInternalId(aliveNodePath);
-
-            if (rtState.ignoreAliveNode(internalId))
-                continue;
 
             if (ZkIgnitePaths.aliveNodeClientFlag(aliveNodePath))
                 aliveClients.put(internalId, aliveNodePath);
@@ -1550,16 +1545,6 @@ public class ZookeeperDiscoveryImpl {
         for (String child : aliveNodes) {
             Long internalId = ZkIgnitePaths.aliveInternalId(child);
 
-            if (rtState.ignoreAliveNode(internalId)) {
-                if (log.isInfoEnabled()) {
-                    LT.info(log, "Ignore node from previous cluster [startOrder=" + rtState.evtsData.startInternalOrder +
-                        ", nodeOrder=" + internalId +
-                        ", znode=" + child + ']');
-                }
-
-                continue;
-            }
-
             Object old = alives.put(internalId, child);
 
             assert old == null;
@@ -1594,6 +1579,8 @@ public class ZookeeperDiscoveryImpl {
                             ", totalEvts=" + rtState.evtsData.evts.size() + ']');
                     }
 
+                    handleProcessedEventsOnNodesFail(failedNodes);
+
                     throttleNewEventsGeneration();
 
                     rtState.zkClient.getChildrenAsync(zkPaths.aliveNodesDir, rtState.watcher, rtState.watcher);
@@ -1601,6 +1588,17 @@ public class ZookeeperDiscoveryImpl {
                     return;
                 }
             }
+        }
+
+        // Process failures before processing join, otherwise conflicts are possible in case of fast node stop/re-start.
+        if (newEvts > 0) {
+            saveAndProcessNewEvents();
+
+            handleProcessedEventsOnNodesFail(failedNodes);
+
+            rtState.zkClient.getChildrenAsync(zkPaths.aliveNodesDir, rtState.watcher, rtState.watcher);
+
+            return;
         }
 
         for (Map.Entry<Long, String> e : alives.entrySet()) {
@@ -2095,14 +2093,12 @@ public class ZookeeperDiscoveryImpl {
 
         spi.getSpiContext().removeTimeoutObject(rtState.joinErrTo);
 
-        cleanupPreviousClusterData();
+        cleanupPreviousClusterData(prevEvts != null ? prevEvts.maxInternalOrder + 1 : -1L);
 
         rtState.joined = true;
         rtState.gridStartTime = System.currentTimeMillis();
 
-        rtState.evtsData = ZkDiscoveryEventsData.createForNewCluster(
-            prevEvts != null ? prevEvts.maxInternalOrder + 1 : -1L,
-            rtState.gridStartTime);
+        rtState.evtsData = ZkDiscoveryEventsData.createForNewCluster(rtState.gridStartTime);
 
         if (log.isInfoEnabled()) {
             log.info("New cluster started [locId=" + locNode.id() +
@@ -2119,22 +2115,26 @@ public class ZookeeperDiscoveryImpl {
 
         final List<ClusterNode> topSnapshot = Collections.singletonList((ClusterNode)locNode);
 
-        lsnr.onDiscovery(EventType.EVT_NODE_JOINED,
+        lsnr.onDiscovery(EVT_NODE_JOINED,
             1L,
             locNode,
             topSnapshot,
             Collections.<Long, Collection<ClusterNode>>emptyMap(),
             null);
 
+        // Reset events (this is also notification for clients left from previous cluster).
         rtState.zkClient.setData(zkPaths.evtsPath, marshalZip(rtState.evtsData), -1);
 
         joinFut.onDone();
     }
 
     /**
+     * @param startInternalOrder Starting internal order for cluster (znodes having lower order belong
+     *      to clients from previous cluster and should be removed).
+
      * @throws Exception If failed.
      */
-    private void cleanupPreviousClusterData() throws Exception {
+    private void cleanupPreviousClusterData(long startInternalOrder) throws Exception {
         long start = System.currentTimeMillis();
 
         ZookeeperClient client = rtState.zkClient;
@@ -2161,6 +2161,13 @@ public class ZookeeperDiscoveryImpl {
         rtState.zkClient.deleteAll(zkPaths.customEvtsAcksDir,
             rtState.zkClient.getChildren(zkPaths.customEvtsAcksDir),
             -1);
+
+        if (startInternalOrder > 0) {
+            for (String alive : rtState.zkClient.getChildren(zkPaths.aliveNodesDir)) {
+                if (ZkIgnitePaths.aliveInternalId(alive) < startInternalOrder)
+                    rtState.zkClient.deleteIfExists(zkPaths.aliveNodesDir + "/" + alive, -1);
+            }
+        }
 
         long time = System.currentTimeMillis() - start;
 
@@ -3291,6 +3298,21 @@ public class ZookeeperDiscoveryImpl {
      */
     private Exception localNodeFail(String msg, boolean clientReconnect) {
         U.warn(log, msg);
+
+//        if (locNode.isClient() && rtState.zkClient.connected()) {
+//            String path = rtState.locNodeZkPath.substring(rtState.locNodeZkPath.lastIndexOf('/') + 1);
+//
+//            String joinDataPath = zkPaths.joiningNodeDataPath(locNode.id(), ZkIgnitePaths.aliveNodePrefixId(path));
+//
+//            try {
+//                if (rtState.zkClient.existsNoRetry(joinDataPath))
+//                    rtState.zkClient.deleteIfExistsNoRetry(joinDataPath, -1);
+//            }
+//            catch (Exception e) {
+//                if (log.isDebugEnabled())
+//                    log.debug("Failed to clean local node's join data on stop: " + e);
+//            }
+//        }
 
         if (clientReconnect && clientReconnectEnabled) {
             assert locNode.isClient() : locNode;
