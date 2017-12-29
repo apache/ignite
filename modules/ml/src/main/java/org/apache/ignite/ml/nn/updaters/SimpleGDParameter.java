@@ -17,13 +17,14 @@
 
 package org.apache.ignite.ml.nn.updaters;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
  * Parameters for {@link SimpleGDUpdateCalculator}.
  */
-public class SimpleGDParameter {
+public class SimpleGDParameter implements Serializable {
     /**
      * Gradient.
      */

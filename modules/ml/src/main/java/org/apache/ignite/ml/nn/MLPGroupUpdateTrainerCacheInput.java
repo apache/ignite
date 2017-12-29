@@ -28,13 +28,11 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.initializers.MLPInitializer;
 import org.apache.ignite.ml.nn.trainers.distributed.AbstractMLPGroupUpdateTrainerInput;
-import org.apache.ignite.ml.nn.updaters.ParameterUpdateCalculator;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.Utils;
 
@@ -44,26 +42,18 @@ public class MLPGroupUpdateTrainerCacheInput<U> extends AbstractMLPGroupUpdateTr
     private final MultilayerPerceptron mlp;
 
     public MLPGroupUpdateTrainerCacheInput(MLPArchitecture arch, MLPInitializer init,
-        int networksCnt, int globalSteps, int syncRate,
-        IgniteFunction<List<U>, U> allUpdatesReducer,
-        IgniteFunction<List<U>, U> oneTrainingUpdatesReducer,
-        ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator,
-        IgniteCache<Integer, LabeledVector<Vector, Vector>> cache,
+        int networksCnt, IgniteCache<Integer, LabeledVector<Vector, Vector>> cache,
         int batchSize) {
-        super(networksCnt, globalSteps, syncRate, allUpdatesReducer, oneTrainingUpdatesReducer, updateCalculator);
+        super(networksCnt);
 
         this.batchSize = batchSize;
         this.cache = cache;
         this.mlp = new MultilayerPerceptron(arch, init);
     }
 
-    public MLPGroupUpdateTrainerCacheInput(MLPArchitecture arch, int networksCnt, int globalSteps, int syncRate,
-        IgniteFunction<List<U>, U> allUpdatesReducer,
-        IgniteFunction<List<U>, U> oneTrainingUpdatesReducer,
-        ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator,
-        IgniteCache<Integer, LabeledVector<Vector, Vector>> cache,
+    public MLPGroupUpdateTrainerCacheInput(MLPArchitecture arch, int networksCnt, IgniteCache<Integer, LabeledVector<Vector, Vector>> cache,
         int batchSize) {
-        this(arch, null, networksCnt, globalSteps, syncRate, allUpdatesReducer, oneTrainingUpdatesReducer, updateCalculator, cache, batchSize);
+        this(arch, null, networksCnt, cache, batchSize);
     }
     /** {@inheritDoc} */
     @Override public IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier() {

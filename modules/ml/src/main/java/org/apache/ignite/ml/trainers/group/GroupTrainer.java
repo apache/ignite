@@ -85,7 +85,7 @@ abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends Seriali
         ComputationsChain<LC, K, V, T, T> chain = (i, c) -> i;
         IgniteFunction<GroupTrainerCacheKey<K>, ResultAndUpdates<IN>> distributedInitializer = distributedInitializer(data);
 
-        initDistributedContext(data, trainingUUID);
+        init(data, trainingUUID);
 
         M res = chain.
             thenDistributedForKeys(distributedInitializer, (t, lc) -> data.initialKeys(trainingUUID), reduceDistributedInitData()).
@@ -109,7 +109,7 @@ abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends Seriali
      */
     protected abstract LC initialLocalContext(T data, UUID trainingUUID);
 
-    protected void initDistributedContext(T data, UUID trainingUUID) {
+    protected void init(T data, UUID trainingUUID) {
 
     }
 

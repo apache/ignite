@@ -15,33 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.nn.architecture;
+package org.apache.ignite.ml.trainers.group;
 
-import java.io.Serializable;
+import java.util.function.Supplier;
 
-/**
- * Layer architecture.
- */
-public class LayerArchitecture implements Serializable {
-    /**
-     * Count of neurons on layer.
-     */
-    private final int neuronsCnt;
-
-    /**
-     * Construct LayerArchitecture.
-     *
-     * @param neuronsCnt Count of neurons in layer.
-     */
-    public LayerArchitecture(int neuronsCnt) {
-        this.neuronsCnt = neuronsCnt;
-    }
-
-    /**
-     * Get count of neurons in layer.
-     * @return Count of neurons in layer.
-     */
-    public int neuronsCount() {
-        return neuronsCnt;
-    }
+public interface MetaoptimizerGroupTrainerInput<K, M extends Metaoptimizer> extends GroupTrainerInput<K> {
+    Supplier<M> metaoptimizerSupplier();
 }

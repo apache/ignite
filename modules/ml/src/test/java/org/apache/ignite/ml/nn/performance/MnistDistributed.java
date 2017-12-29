@@ -18,40 +18,28 @@
 package org.apache.ignite.ml.nn.performance;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
-import java.util.Properties;
-import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorUtils;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.Activators;
 import org.apache.ignite.ml.nn.LabeledVectorsCache;
-import org.apache.ignite.ml.nn.LossFunctions;
+import org.apache.ignite.ml.nn.MLPGroupUpdateTrainerCacheInput;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
-import org.apache.ignite.ml.nn.SimpleMLPLocalBatchTrainerInput;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
-import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainer;
-import org.apache.ignite.ml.nn.updaters.RPropUpdateCalculator;
+import org.apache.ignite.ml.nn.trainers.distributed.MLPGroupUpdateTrainer;
+import org.apache.ignite.ml.nn.updaters.SimpleGDParameter;
 import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.trees.performance.ColumnDecisionTreeTrainerBenchmark;
-import org.apache.ignite.ml.util.MnistUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.ml.math.VectorUtils.num2Vec;
-import static org.apache.ignite.ml.nn.performance.MnistMLPTestUtil.asLabeledVector;
 import static org.apache.ignite.ml.nn.performance.MnistMLPTestUtil.loadMnist;
 
 /**
@@ -61,6 +49,7 @@ public class MnistDistributed extends GridCommonAbstractTest {
     /** Count of nodes. */
     private static final int NODE_COUNT = 4;
 
+    /** Features count in MNIST. */
     private static final int FEATURES_CNT = 28 * 28;
 
     /** Grid instance. */
@@ -87,6 +76,7 @@ public class MnistDistributed extends GridCommonAbstractTest {
     @Test
     public void testMNISTDistributed() throws IOException {
         int samplesCnt = 60_000;
+        int hiddenNeuronsCnt = 100;
 
         IgniteBiTuple<Stream<DenseLocalOnHeapVector>, Stream<DenseLocalOnHeapVector>> trainingAndTest = loadMnist(samplesCnt);
 
@@ -96,6 +86,14 @@ public class MnistDistributed extends GridCommonAbstractTest {
 
         IgniteCache<Integer, LabeledVector<Vector, Vector>> labeledVectorsCache = LabeledVectorsCache.createNew(ignite);
         loadIntoCache(trainingMnistLst, labeledVectorsCache);
+
+        MLPGroupUpdateTrainer<SimpleGDParameter> trainer = MLPGroupUpdateTrainer.getDefault(ignite);
+
+        MLPArchitecture arch = new MLPArchitecture(FEATURES_CNT).
+            withAddedLayer(hiddenNeuronsCnt, true, Activators.SIGMOID).
+            withAddedLayer(10, false, Activators.SIGMOID);
+
+        MultilayerPerceptron mlp = trainer.train(new MLPGroupUpdateTrainerCacheInput<>(arch, 8, labeledVectorsCache, 2000));
     }
 
     /**
@@ -123,5 +121,19 @@ public class MnistDistributed extends GridCommonAbstractTest {
                 sampleIdx++;
             }
         }
+    }
+
+//    /**
+//     * Split vector of size sz into two parts: feature vector of size featsCnt and label vector of size sz - featsCnt.
+//     *
+//     * @param v Vector to convert.
+//     * @param featsCnt Number of features.
+//     * @return LabeledVector.
+//     */
+    public static LabeledVector<Vector, Vector> asLabeledVector(Vector v, int featsCnt) {
+        Vector features = VectorUtils.copyPart(v, 0, featsCnt);
+        Vector lb = VectorUtils.num2Vec((int)v.get(featsCnt - 1), 10);
+
+        return new LabeledVector<>(features, lb);
     }
 }

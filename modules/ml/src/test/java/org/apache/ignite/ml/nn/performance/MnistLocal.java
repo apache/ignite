@@ -103,20 +103,6 @@ public class MnistLocal {
         Tracer.showAscii(predicted);
     }
 
-    /**
-     * Split vector of size sz into two parts: feature vector of size featsCnt and label vector of size sz - featsCnt.
-     *
-     * @param v Vector to convert.
-     * @param featsCnt Number of features.
-     * @return LabeledVector.
-     */
-    private static LabeledVector<Vector, Vector> asLabeledVector(Vector v, int featsCnt) {
-        Vector features = VectorUtils.copyPart(v, 0, featsCnt);
-        Vector lb = VectorUtils.copyPart(v, featsCnt, v.size() - featsCnt);
-
-        return new LabeledVector<>(features, lb);
-    }
-
     /** */
     private IgniteBiTuple<Matrix, Matrix> createDataset(Stream<DenseLocalOnHeapVector> s, int samplesCnt, int featCnt) {
         Matrix vectors = new DenseLocalOnHeapMatrix(featCnt, samplesCnt);

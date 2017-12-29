@@ -19,15 +19,15 @@ package org.apache.ignite.ml.trainers.group;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
-import org.apache.ignite.ml.trainers.group.chain.ComputationsChain;
 import org.apache.ignite.ml.trainers.group.chain.Chains;
+import org.apache.ignite.ml.trainers.group.chain.ComputationsChain;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 
@@ -59,17 +59,15 @@ G, O extends Serializable, X, Y> extends
     /**
      * Metaoptimizer.
      */
-    private Metaoptimizer<LC, X, Y, I, IN, O> metaoptimizer;
+    Metaoptimizer<LC, X, Y, I, IN, O> metaoptimizer;
 
     /**
      * Construct instance of this class.
      *
-     * @param metaoptimizer Metaoptimizer.
      * @param cache Cache on which group trainer is done.
      * @param ignite Ignite instance.
      */
-    public MetaoptimizerGroupTrainer(Metaoptimizer<LC, X, Y, I, IN, O> metaoptimizer,
-        IgniteCache<GroupTrainerCacheKey<K>, V> cache,
+    public MetaoptimizerGroupTrainer(Metaoptimizer<LC, X, Y, I, IN, O> metaoptimizer, IgniteCache<GroupTrainerCacheKey<K>, V> cache,
         Ignite ignite) {
         super(cache, ignite);
         this.metaoptimizer = metaoptimizer;
@@ -98,6 +96,10 @@ G, O extends Serializable, X, Y> extends
      * @return Supplier of context used in training loop step.
      */
     protected abstract IgniteSupplier<G> remoteContextExtractor(I input, LC ctx);
+
+    @Override protected void init(T data, UUID trainingUUID) {
+
+    }
 
     /**
      * Get function used to process data in training loop step.
