@@ -91,7 +91,7 @@ public class MnistDistributed extends GridCommonAbstractTest {
         IgniteCache<Integer, LabeledVector<Vector, Vector>> labeledVectorsCache = LabeledVectorsCache.createNew(ignite);
         loadIntoCache(trainingMnistLst, labeledVectorsCache);
 
-        MLPGroupUpdateTrainer<RPropParameterUpdate> trainer = MLPGroupUpdateTrainer.getDefault(ignite);
+        MLPGroupUpdateTrainer<RPropParameterUpdate> trainer = MLPGroupUpdateTrainer.getDefault(ignite).withMaxGlobalSteps(15).withSyncRate(2);
 
         MLPArchitecture arch = new MLPArchitecture(FEATURES_CNT).
             withAddedLayer(hiddenNeuronsCnt, true, Activators.SIGMOID).

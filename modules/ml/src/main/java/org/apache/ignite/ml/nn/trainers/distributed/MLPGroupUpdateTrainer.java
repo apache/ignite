@@ -59,7 +59,7 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
         MultilayerPerceptron,
         AbstractMLPGroupUpdateTrainerInput,
         MLPGroupUpdateTrainingContext<U>,
-        U,
+        ArrayList<U>,
         MLPGroupUpdateTrainingLoopData<U>,
         U> {
     /**
@@ -88,7 +88,8 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
     private final IgniteFunction<List<U>, U> allUpdatesReducer;
 
     /**
-     * Function used to reduce updates in one training (for example, sum all sequential gradient updates to get one gradient update).
+     * Function used to reduce updates in one training (for example, sum all sequential gradient updates to get one
+     * gradient update).
      */
     private final IgniteFunction<List<U>, U> localStepUpdatesReducer;
 
@@ -167,13 +168,13 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
         super.init(data, trainingUUID);
 
         MLPGroupUpdateTrainerDataCache.getOrCreate(ignite).put(trainingUUID, new MLPGroupUpdateTrainingData<>(
-                updateCalculator,
-                syncRate,
+            updateCalculator,
+            syncRate,
             localStepUpdatesReducer,
-                data.batchSupplier(),
-                loss, // TODO: Check how it is serialized.
-                tolerance
-            ));
+            data.batchSupplier(),
+            loss, // TODO: Check how it is serialized.
+            tolerance
+        ));
     }
 
     /** {@inheritDoc} */
@@ -193,7 +194,8 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteFunction<EntryAndContext<Void, MLPGroupTrainingCacheValue, MLPGroupUpdateTrainingContext<U>>, MLPGroupUpdateTrainingLoopData<U>> trainingLoopStepDataExtractor() {
+    @Override
+    protected IgniteFunction<EntryAndContext<Void, MLPGroupTrainingCacheValue, MLPGroupUpdateTrainingContext<U>>, MLPGroupUpdateTrainingLoopData<U>> trainingLoopStepDataExtractor() {
         return entryAndContext -> {
             MLPGroupUpdateTrainingContext<U> ctx = entryAndContext.context();
             Map.Entry<GroupTrainerCacheKey<Void>, MLPGroupTrainingCacheValue> entry = entryAndContext.entry();
@@ -276,7 +278,8 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
     }
 
     /** {@inheritDoc} */
-    @Override protected MLPGroupUpdateTrainerLocalContext<U> initialLocalContext(AbstractMLPGroupUpdateTrainerInput data,
+    @Override protected MLPGroupUpdateTrainerLocalContext<U> initialLocalContext(
+        AbstractMLPGroupUpdateTrainerInput data,
         UUID trainingUUID) {
         return new MLPGroupUpdateTrainerLocalContext<>(trainingUUID, maxGlobalSteps, allUpdatesReducer, data.trainingsCount());
     }
@@ -297,7 +300,8 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteFunction<EntryAndContext<Void, MLPGroupTrainingCacheValue, MLPGroupUpdateTrainingContext<U>>, ResultAndUpdates<MultilayerPerceptron>> finalResultsExtractor() {
+    @Override
+    protected IgniteFunction<EntryAndContext<Void, MLPGroupTrainingCacheValue, MLPGroupUpdateTrainingContext<U>>, ResultAndUpdates<MultilayerPerceptron>> finalResultsExtractor() {
         return context -> ResultAndUpdates.of(context.entry().getValue().perceptron());
     }
 
@@ -308,12 +312,34 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
     }
 
     /** {@inheritDoc} */
-    @Override protected MultilayerPerceptron mapFinalResult(MultilayerPerceptron res, MLPGroupUpdateTrainerLocalContext locCtx) {
+    @Override protected MultilayerPerceptron mapFinalResult(MultilayerPerceptron res,
+        MLPGroupUpdateTrainerLocalContext locCtx) {
         return res;
     }
 
     /** {@inheritDoc} */
     @Override protected void cleanup(MLPGroupUpdateTrainerLocalContext locCtx) {
 
+    }
+
+    /**
+     * Create new {@link MLPGroupUpdateTrainer} with new maxGlobalSteps value.
+     *
+     * @param maxGlobalSteps New maxGlobalSteps value.
+     * @return New {@link MLPGroupUpdateTrainer} with new maxGlobalSteps value.
+     */
+    public MLPGroupUpdateTrainer<U> withMaxGlobalSteps(int maxGlobalSteps) {
+        return new MLPGroupUpdateTrainer<>(maxGlobalSteps, syncRate, allUpdatesReducer, localStepUpdatesReducer, updateCalculator, loss, ignite, tolerance);
+    }
+
+    /**
+     * Create new {@link MLPGroupUpdateTrainer} with new syncRate value.
+     *
+     * @param syncRate New syncRate value.
+     * @return New {@link MLPGroupUpdateTrainer} with new syncRate value.
+     */
+    public MLPGroupUpdateTrainer<U> withSyncRate(int syncRate) {
+        return new MLPGroupUpdateTrainer<>(maxGlobalSteps, syncRate
+            , allUpdatesReducer, localStepUpdatesReducer, updateCalculator, loss, ignite, tolerance);
     }
 }

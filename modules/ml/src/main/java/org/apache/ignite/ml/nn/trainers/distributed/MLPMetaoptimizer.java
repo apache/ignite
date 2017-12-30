@@ -17,11 +17,14 @@
 
 package org.apache.ignite.ml.nn.trainers.distributed;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.trainers.group.Metaoptimizer;
 
-public class MLPMetaoptimizer<P> implements Metaoptimizer<MLPGroupUpdateTrainerLocalContext, MLPGroupUpdateTrainingLoopData<P>, P, P, P, P> {
+public class MLPMetaoptimizer<P> implements Metaoptimizer<MLPGroupUpdateTrainerLocalContext, MLPGroupUpdateTrainingLoopData<P>, P, P, P, ArrayList<P>> {
     private final IgniteFunction<List<P>, P> allUpdatesReducer;
 
     public MLPMetaoptimizer(IgniteFunction<List<P>, P> allUpdatesReducer) {
@@ -39,20 +42,31 @@ public class MLPMetaoptimizer<P> implements Metaoptimizer<MLPGroupUpdateTrainerL
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFunction<P, P> distributedPostprocessor() {
-        return x -> x;
+    @Override public IgniteFunction<P, ArrayList<P>> distributedPostprocessor() {
+        return p -> {
+            ArrayList<P> res = new ArrayList<>();
+            res.add(p);
+            return res;
+        };
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFunction<List<P>, P> postProcessReducer() {
-        return allUpdatesReducer;
+    @Override public IgniteFunction<List<ArrayList<P>>, ArrayList<P>> postProcessReducer() {
+        // Flatten.
+        return lists -> new ArrayList<>(lists.stream()
+            .flatMap(List::stream)
+            .collect(Collectors.toList()));
     }
 
     /** {@inheritDoc} */
-    @Override public P localProcessor(P input, MLPGroupUpdateTrainerLocalContext locCtx) {
+    @Override public P localProcessor(ArrayList<P> input, MLPGroupUpdateTrainerLocalContext locCtx) {
         locCtx.incrementCurrentStep();
 
-        return input;
+        System.out.println("Global step: " + locCtx.currentStep());
+
+        P totalUpdate = allUpdatesReducer.apply(input);
+
+        return totalUpdate;
     }
 
     /** {@inheritDoc} */
