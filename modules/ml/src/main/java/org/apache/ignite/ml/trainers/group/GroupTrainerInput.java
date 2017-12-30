@@ -22,7 +22,7 @@ import java.util.stream.Stream;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 
 /**
- * Interface for inputs fot {@link GroupTrainer}.
+ * Interface for {@link GroupTrainer} inputs.
  *
  * @param <K> Types of cache keys used for group training.
  */
