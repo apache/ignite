@@ -1,4 +1,4 @@
-# Apache Ignite In-Memory Computing Platform
+# Apache Ignite
 
 <a href="https://ignite.apache.org/"><img src="https://ignite.apache.org/images/logo3.png" hspace="20"/></a>
 
