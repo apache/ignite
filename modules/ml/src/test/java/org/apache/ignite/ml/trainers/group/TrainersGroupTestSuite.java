@@ -15,32 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml;
+package org.apache.ignite.ml.trainers.group;
 
-import org.apache.ignite.ml.clustering.ClusteringTestSuite;
-import org.apache.ignite.ml.knn.KNNTestSuite;
-import org.apache.ignite.ml.math.MathImplMainTestSuite;
-import org.apache.ignite.ml.nn.MLPTestSuite;
-import org.apache.ignite.ml.regressions.RegressionsTestSuite;
-import org.apache.ignite.ml.trainers.group.TrainersGroupTestSuite;
-import org.apache.ignite.ml.trees.DecisionTreesTestSuite;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Test suite for all module tests.
+ * Test suite for group trainer tests.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    MathImplMainTestSuite.class,
-    RegressionsTestSuite.class,
-    ClusteringTestSuite.class,
-    DecisionTreesTestSuite.class,
-    KNNTestSuite.class,
-    LocalModelsTest.class,
-    MLPTestSuite.class,
-    TrainersGroupTestSuite.class
+    DistributedWorkersChainTest.class,
+    GroupTrainerTest.class
 })
-public class IgniteMLTestSuite {
-    // No-op.
+public class TrainersGroupTestSuite {
 }
