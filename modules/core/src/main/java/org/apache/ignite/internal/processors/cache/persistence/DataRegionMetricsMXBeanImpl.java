@@ -67,6 +67,11 @@ class DataRegionMetricsMXBeanImpl implements DataRegionMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getIndexesAllocatedPages() {
+        return memMetrics.getIndexesAllocatedPages();
+    }
+
+    /** {@inheritDoc} */
     @Override public long getDirtyPages() {
         return memMetrics.getDirtyPages();
     }

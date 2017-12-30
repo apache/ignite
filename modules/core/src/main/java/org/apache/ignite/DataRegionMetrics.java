@@ -64,6 +64,15 @@ public interface DataRegionMetrics {
     public long getTotalAllocatedPages();
 
     /**
+     * Gets a total number of allocated pages for indexes related to the data region. When persistence is disabled, this
+     * metric shows the total number of pages for indexes in memory. When persistence is enabled, this metric shows the
+     * total number of pages in memory and on disk.
+     *
+     * @return Total number of allocated pages for indexes.
+     */
+    public long getIndexesAllocatedPages();
+
+    /**
      * Gets pages allocation rate of a memory region.
      *
      * @return Number of allocated pages per second.

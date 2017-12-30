@@ -60,6 +60,10 @@ public interface MemoryMetricsMXBean extends MemoryMetrics {
     @Override public long getTotalAllocatedPages();
 
     /** {@inheritDoc} */
+    @MXBeanDescription("Total number of allocated pages for indexes.")
+    @Override public long getIndexesAllocatedPages();
+
+    /** {@inheritDoc} */
     @MXBeanDescription("Allocation rate (pages per second) averaged across rateTimeInternal.")
     @Override public float getAllocationRate();
 

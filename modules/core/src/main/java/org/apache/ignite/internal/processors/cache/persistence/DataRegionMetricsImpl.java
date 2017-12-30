@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -34,6 +35,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** */
     private final LongAdder8 totalAllocatedPages = new LongAdder8();
+
+    /** */
+    private final LongAdder8 indexesAllocatedPages = new LongAdder8();
 
     /**
      * Counter for number of pages occupied by large entries (one entry is larger than one page).
@@ -99,6 +103,11 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedPages() {
         return metricsEnabled ? totalAllocatedPages.longValue() : 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getIndexesAllocatedPages() {
+        return metricsEnabled ? indexesAllocatedPages.longValue() : 0;
     }
 
     /** {@inheritDoc} */
@@ -209,9 +218,12 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     /**
      * Increments totalAllocatedPages counter.
      */
-    public void incrementTotalAllocatedPages() {
+    public void incrementTotalAllocatedPages(int partId) {
         if (metricsEnabled) {
             totalAllocatedPages.increment();
+
+            if (partId == PageIdAllocator.INDEX_PARTITION)
+                indexesAllocatedPages.increment();
 
             updateAllocationRateMetrics();
         }

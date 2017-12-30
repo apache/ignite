@@ -30,6 +30,9 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     private long totalAllocatedPages;
 
     /** */
+    private long indexesAllocatedPages;
+
+    /** */
     private float allocationRate;
 
     /** */
@@ -59,6 +62,7 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     public DataRegionMetricsSnapshot(DataRegionMetrics metrics) {
         name = metrics.getName();
         totalAllocatedPages = metrics.getTotalAllocatedPages();
+        indexesAllocatedPages = metrics.getIndexesAllocatedPages();
         allocationRate = metrics.getAllocationRate();
         evictionRate = metrics.getEvictionRate();
         largeEntriesPagesPercentage = metrics.getLargeEntriesPagesPercentage();
@@ -77,6 +81,11 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedPages() {
         return totalAllocatedPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getIndexesAllocatedPages() {
+        return indexesAllocatedPages;
     }
 
     /** {@inheritDoc} */

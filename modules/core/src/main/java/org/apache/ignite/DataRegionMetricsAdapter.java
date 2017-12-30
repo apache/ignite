@@ -70,6 +70,11 @@ public class DataRegionMetricsAdapter implements MemoryMetrics {
     }
 
     /** {@inheritDoc} */
+    @Override public long getIndexesAllocatedPages() {
+        return delegate.getIndexesAllocatedPages();
+    }
+
+    /** {@inheritDoc} */
     @Override public float getAllocationRate() {
         return delegate.getAllocationRate();
     }
