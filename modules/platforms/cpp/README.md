@@ -13,9 +13,9 @@ You can find the full Apache Ignite documentation here: [Full documentation][doc
 
 ## What is Apache Ignite?
 
-[Apache Ignite][apache-ignite-homepage] is the <b>in-memory</b> computing platform
-that is <b>durable</b>, <b>strongly consistent</b>, and <b>highly available</b>
-with powerful <b>SQL</b>, <b>key-value</b> and <b>processing</b> APIs.
+[Apache Ignite][apache-ignite-homepage] is a memory-centric multi-model distributed
+ <strong>database</strong>, <strong>caching</strong>, and <strong>processing</strong> platform for
+ transactional, analytical, and streaming workloads, delivering in-memory speeds at petabyte scale.
 
 <p align="center">
     <a href="https://apacheignite-cpp.readme.io/docs/">
