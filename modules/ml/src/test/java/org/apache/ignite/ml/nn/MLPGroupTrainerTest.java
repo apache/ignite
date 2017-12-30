@@ -28,7 +28,6 @@ import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.initializers.RandomInitializer;
 import org.apache.ignite.ml.nn.trainers.distributed.MLPGroupUpdateTrainer;
@@ -36,7 +35,10 @@ import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-public class MLPDistributedTrainerTest extends GridCommonAbstractTest {
+/**
+ * Test group trainer.
+ */
+public class MLPGroupTrainerTest extends GridCommonAbstractTest {
     /** Count of nodes. */
     private static final int NODE_COUNT = 3;
 
