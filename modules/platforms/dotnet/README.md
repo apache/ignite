@@ -1,4 +1,4 @@
-# Apache Ignite.NET In-Memory Computing Platform
+# Apache Ignite.NET SDK
 
 <a href="https://ignite.apache.org/"><img src="https://ignite.apache.org/images/logo3.png" hspace="20"/></a><img src="https://ptupitsyn.github.io/images/net-framework.png" hspace="20" />
 
