@@ -88,7 +88,7 @@ public class ResultAndUpdates<R> {
     }
 
     /**
-     * Add a cache updateCache to this object.
+     * Add a cache update to this object.
      *
      * @param cache Cache to be updated.
      * @param key Key of cache to be updated.

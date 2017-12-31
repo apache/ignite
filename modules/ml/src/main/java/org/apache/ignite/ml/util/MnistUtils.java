@@ -39,7 +39,7 @@ public class MnistUtils {
      *
      * @param imagesPath Path to the file with images.
      * @param labelsPath Path to the file with labels.
-     * @param rnd Random numbers generatror.
+     * @param rnd Random numbers generator.
      * @param cnt Count of samples to read.
      * @return Stream of MNIST samples.
      * @throws IgniteException In case of exception.

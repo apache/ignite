@@ -19,5 +19,10 @@ package org.apache.ignite.ml.math.functions;
 
 import java.io.Serializable;
 
+/**
+ * Serializable curried tri-function.
+ *
+ * @see IgniteCurriedBiFunction
+ */
 public interface IgniteCurriedTriFunction<A, B, C, D> extends IgniteFunction<A, IgniteCurriedBiFunction<B, C, D>>, Serializable {
 }

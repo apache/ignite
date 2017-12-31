@@ -66,9 +66,7 @@ public class LocalEntriesProcessorJob<K, V, C, R extends Serializable> extends B
     @Override protected Stream<EntryAndContext<K, V, C>> toProcess() {
         C ctx = ctxSupplier.get();
 
-        return selectLocalEntries().
-            //parallel().
-            map(e -> new EntryAndContext<>(e, ctx));
+        return selectLocalEntries().map(e -> new EntryAndContext<>(e, ctx));
     }
 
     /**
@@ -78,7 +76,7 @@ public class LocalEntriesProcessorJob<K, V, C, R extends Serializable> extends B
      */
     private Stream<Map.Entry<GroupTrainerCacheKey<K>, V>> selectLocalEntries() {
         Set<GroupTrainerCacheKey<K>> keys = keySupplier.get().
-            filter(k -> affinity().mapKeyToNode(k).isLocal()).
+            filter(k -> Objects.requireNonNull(affinity().mapKeyToNode(k)).isLocal()).
             filter(k -> k.trainingUUID().equals(trainingUUID)).
             collect(Collectors.toSet());
 

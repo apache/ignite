@@ -20,15 +20,24 @@ package org.apache.ignite.ml.trainers.group;
 import java.util.UUID;
 import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 
+/** */
 public class TestGroupTrainerLocalContext implements HasTrainingUUID {
+    /** */
     private int cnt = 0;
+
+    /** */
     private int maxCnt;
 
+    /** */
     private int eachNumberCnt;
+
+    /** */
     private int limit;
 
+    /** */
     private UUID trainingUUID;
 
+    /** */
     public TestGroupTrainerLocalContext(int maxCnt, int eachNumberCnt, int limit, UUID trainingUUID) {
         this.maxCnt = maxCnt;
         this.eachNumberCnt = eachNumberCnt;
@@ -37,32 +46,39 @@ public class TestGroupTrainerLocalContext implements HasTrainingUUID {
         this.cnt = 0;
     }
 
+    /** */
     public int cnt() {
         return cnt;
     }
 
+    /** */
     public void setCnt(int cnt) {
         this.cnt = cnt;
     }
 
+    /** */
     public TestGroupTrainerLocalContext incCnt() {
         this.cnt++;
 
         return this;
     }
 
+    /** */
     public int maxCnt() {
         return maxCnt;
     }
 
+    /** */
     public int eachNumberCnt() {
         return eachNumberCnt;
     }
 
+    /** */
     public int limit() {
         return limit;
     }
 
+    /** {@inheritDoc} */
     @Override public UUID trainingUUID() {
         return trainingUUID;
     }

@@ -24,9 +24,12 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 
+/** */
 public class TestGroupTrainingSecondCache {
+    /** */
     public static String CACHE_NAME = "TEST_GROUP_TRAINING_SECOND_CACHE";
 
+    /** */
     public static IgniteCache<GroupTrainerCacheKey<Character>, Integer> getOrCreate(Ignite ignite) {
         CacheConfiguration<GroupTrainerCacheKey<Character>, Integer> cfg = new CacheConfiguration<>();
 

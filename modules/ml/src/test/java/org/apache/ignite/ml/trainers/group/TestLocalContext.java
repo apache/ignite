@@ -20,23 +20,31 @@ package org.apache.ignite.ml.trainers.group;
 import java.util.UUID;
 import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 
+/** */
 public class TestLocalContext implements HasTrainingUUID {
+    /** */
     private final UUID trainingUUID;
+
+    /** */
     private int data;
 
+    /** */
     public TestLocalContext(int data, UUID trainingUUID) {
         this.data = data;
         this.trainingUUID = trainingUUID;
     }
 
+    /** */
     public int data() {
         return data;
     }
 
+    /** */
     public void setData(int data) {
         this.data = data;
     }
 
+    /** {@inheritDoc} */
     @Override public UUID trainingUUID() {
         return trainingUUID;
     }

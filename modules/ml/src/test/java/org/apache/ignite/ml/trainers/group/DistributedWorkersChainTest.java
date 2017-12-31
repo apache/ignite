@@ -36,9 +36,10 @@ import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
+/** */
 public class DistributedWorkersChainTest extends GridCommonAbstractTest {
     /** Count of nodes. */
-    private static final int NODE_COUNT = 4;
+    private static final int NODE_COUNT = 3;
 
     /** Grid instance. */
     protected Ignite ignite;
@@ -70,6 +71,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
+    /** */
     public void testId() {
         ComputationsChain<TestLocalContext, Double, Integer, Integer, Integer> chain = Chains.create();
 
@@ -79,6 +81,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         Assert.assertEquals(1L, (long)res);
     }
 
+    /** */
     public void testSimpleLocal() {
         ComputationsChain<TestLocalContext, Double, Integer, Integer, Integer> chain = Chains.create();
 
@@ -96,6 +99,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         Assert.assertEquals(initLocCtxData, locCtx.data());
     }
 
+    /** */
     public void testChainLocal() {
         ComputationsChain<TestLocalContext, Double, Integer, Integer, Integer> chain = Chains.create();
 
@@ -114,6 +118,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         Assert.assertEquals(initLocCtxData, locCtx.data());
     }
 
+    /** */
     public void testChangeLocalContext() {
         ComputationsChain<TestLocalContext, Double, Integer, Integer, Integer> chain = Chains.create();
         IgniteCache<GroupTrainerCacheKey<Double>, Integer> cache = TestGroupTrainingCache.getOrCreate(ignite);
@@ -130,6 +135,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         Assert.assertEquals(init, res.intValue());
     }
 
+    /** */
     public void testDistributed() {
         ComputationsChain<TestLocalContext, Double, Integer, Integer, Integer> chain = Chains.create();
         IgniteCache<GroupTrainerCacheKey<Double>, Integer> cache = TestGroupTrainingCache.getOrCreate(ignite);
@@ -164,6 +170,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         assertMapEqualsCache(m, cache);
     }
 
+    /** */
     private ResultAndUpdates<Integer> readAndIncrement(EntryAndContext<Double, Integer, Void> ec) {
         Integer val = ec.entry().getValue();
 
@@ -173,6 +180,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         return res;
     }
 
+    /** */
     private <K, V> void assertMapEqualsCache(Map<K, V> m, IgniteCache<K, V> cache) {
         assertEquals(m.size(), cache.size());
 

@@ -27,9 +27,12 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 
+/** */
 public class TestGroupTrainingCache {
+    /** */
     public static String CACHE_NAME = "TEST_GROUP_TRAINING_CACHE";
 
+    /** */
     public static IgniteCache<GroupTrainerCacheKey<Double>, Integer> getOrCreate(Ignite ignite) {
         CacheConfiguration<GroupTrainerCacheKey<Double>, Integer> cfg = new CacheConfiguration<>();
 
@@ -54,6 +57,7 @@ public class TestGroupTrainingCache {
         return ignite.getOrCreateCache(cfg);
     }
 
+    /** */
     public static Stream<GroupTrainerCacheKey<Double>> allKeys(int limit, int eachNumberCnt, UUID trainingUUID) {
         GroupTrainerCacheKey<Double>[] a =new GroupTrainerCacheKey[limit * eachNumberCnt];
 

@@ -71,7 +71,7 @@ public class LocalKeysProcessorJob<K, V, C, R extends Serializable> extends Base
      */
     private Stream<GroupTrainerCacheKey<K>> selectLocalKeys() {
         return keySupplier.get().
-            filter(k -> affinity().mapKeyToNode(k).isLocal()).
+            filter(k -> Objects.requireNonNull(affinity().mapKeyToNode(k)).isLocal()).
             filter(k -> k.trainingUUID().equals(trainingUUID));
     }
 }
