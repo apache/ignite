@@ -342,4 +342,15 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
         return new MLPGroupUpdateTrainer<>(maxGlobalSteps, syncRate
             , allUpdatesReducer, localStepUpdatesReducer, updateCalculator, loss, ignite, tolerance);
     }
+
+    /**
+     * Create new {@link MLPGroupUpdateTrainer} with new tolerance.
+     *
+     * @param tolerance New tolerance value.
+     * @return New {@link MLPGroupUpdateTrainer} with new tolerance value.
+     */
+    public MLPGroupUpdateTrainer<U> withTolerance(double tolerance) {
+        return new MLPGroupUpdateTrainer<>(maxGlobalSteps, syncRate
+            , allUpdatesReducer, localStepUpdatesReducer, updateCalculator, loss, ignite, tolerance);
+    }
 }

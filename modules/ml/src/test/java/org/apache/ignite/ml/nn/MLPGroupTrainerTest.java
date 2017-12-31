@@ -31,6 +31,7 @@ import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.initializers.RandomInitializer;
 import org.apache.ignite.ml.nn.trainers.distributed.MLPGroupUpdateTrainer;
+import org.apache.ignite.ml.nn.updaters.RPropParameterUpdate;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -94,17 +95,34 @@ public class MLPGroupTrainerTest extends GridCommonAbstractTest {
             }
         }
 
-        MLPGroupUpdateTrainerCacheInput trainerInput = new MLPGroupUpdateTrainerCacheInput(conf,
-            new RandomInitializer(rnd), 6, cache, 4);
+        int totalCnt = 100;
+        int failCnt = 0;
+        double maxFailRatio = 0.1;
+        MLPGroupUpdateTrainer<RPropParameterUpdate> trainer = MLPGroupUpdateTrainer.getDefault(ignite).
+            withSyncRate(3).
+            withTolerance(0.001).
+            withMaxGlobalSteps(1000);
 
-        MultilayerPerceptron mlp = MLPGroupUpdateTrainer.getDefault(ignite).train(trainerInput);
+        for (int i = 0; i < totalCnt; i++) {
 
-        Matrix predict = mlp.apply(xorInputs);
+            MLPGroupUpdateTrainerCacheInput trainerInput = new MLPGroupUpdateTrainerCacheInput(conf,
+                new RandomInitializer(rnd), 6, cache, 4);
 
-        Tracer.showAscii(predict);
+            MultilayerPerceptron mlp = trainer.train(trainerInput);
 
-        X.println(xorOutputs.getRow(0).minus(predict.getRow(0)).kNorm(2) + "");
+            Matrix predict = mlp.apply(xorInputs);
 
-        TestUtils.checkIsInEpsilonNeighbourhood(xorOutputs.getRow(0), predict.getRow(0), 5E-1);
+            Tracer.showAscii(predict);
+
+            X.println(xorOutputs.getRow(0).minus(predict.getRow(0)).kNorm(2) + "");
+
+            failCnt += TestUtils.checkIsInEpsilonNeighbourhoodBoolean(xorOutputs.getRow(0), predict.getRow(0), 5E-1) ? 0 : 1;
+        }
+
+        double failRatio = (double)failCnt / totalCnt;
+
+        System.out.println("Fail percentrage: " + (failRatio * 100) + "%.");
+
+        assertTrue(failRatio < maxFailRatio);
     }
 }
