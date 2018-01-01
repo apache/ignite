@@ -39,6 +39,7 @@ public class LayerArchitecture implements Serializable {
 
     /**
      * Get count of neurons in layer.
+     *
      * @return Count of neurons in layer.
      */
     public int neuronsCount() {

@@ -95,7 +95,6 @@ public class ResultAndUpdates<R> {
      * @param val New value.
      * @param <K> Type of key of cache to be updated.
      * @param <V> New value.
-     *
      * @return This object.
      */
     @SuppressWarnings("unchecked")
@@ -126,7 +125,8 @@ public class ResultAndUpdates<R> {
      * @return Sum of collection ResultAndUpdate objects.
      */
     @SuppressWarnings("unchecked")
-    static <R> ResultAndUpdates<R> sum(IgniteFunction<List<R>, R> reducer, Collection<ResultAndUpdates<R>> resultsAndUpdates) {
+    static <R> ResultAndUpdates<R> sum(IgniteFunction<List<R>, R> reducer,
+        Collection<ResultAndUpdates<R>> resultsAndUpdates) {
         Map<String, Map> allUpdates = new HashMap<>();
 
         for (ResultAndUpdates<R> ru : resultsAndUpdates) {

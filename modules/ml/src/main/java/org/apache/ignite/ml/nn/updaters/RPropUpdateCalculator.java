@@ -137,7 +137,8 @@ public class RPropUpdateCalculator<M extends SmoothParametrized> implements Para
     }
 
     /** {@inheritDoc} */
-    @Override public RPropParameterUpdate init(M mdl, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
+    @Override public RPropParameterUpdate init(M mdl,
+        IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
         this.loss = loss;
         return new RPropParameterUpdate(mdl.parametersCount(), initUpdate);
     }

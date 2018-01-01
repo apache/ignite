@@ -52,6 +52,7 @@ public class MLPArchitecture implements Serializable {
 
     /**
      * Count of layers in MLP.
+     *
      * @return Layers count.
      */
     public int layersCount() {
@@ -60,6 +61,7 @@ public class MLPArchitecture implements Serializable {
 
     /**
      * Size of input of MLP.
+     *
      * @return Size of input.
      */
     public int inputSize() {
@@ -68,6 +70,7 @@ public class MLPArchitecture implements Serializable {
 
     /**
      * Size of output of MLP.
+     *
      * @return Size of output.
      */
     public int outputSize() {
@@ -82,7 +85,8 @@ public class MLPArchitecture implements Serializable {
      * @param f Activation function of a new layer.
      * @return New MLP architecture with new layer added on top of all this architecture layers.
      */
-    public MLPArchitecture withAddedLayer(int neuronsCnt, boolean hasBias, IgniteDifferentiableDoubleToDoubleFunction f) {
+    public MLPArchitecture withAddedLayer(int neuronsCnt, boolean hasBias,
+        IgniteDifferentiableDoubleToDoubleFunction f) {
         ArrayList<LayerArchitecture> newLayers = new ArrayList<>(layers);
 
         newLayers.add(new TransformationLayerArchitecture(neuronsCnt, hasBias, f));

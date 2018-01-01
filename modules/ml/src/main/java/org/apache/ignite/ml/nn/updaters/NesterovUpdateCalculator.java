@@ -25,7 +25,8 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 /**
  * Class encapsulating Nesterov algorithm for MLP parameters updateCache.
  */
-public class NesterovUpdateCalculator<M extends SmoothParametrized> implements ParameterUpdateCalculator<M, NesterovParameterUpdate> {
+public class NesterovUpdateCalculator<M extends SmoothParametrized>
+    implements ParameterUpdateCalculator<M, NesterovParameterUpdate> {
     /**
      * Learning rate.
      */
@@ -52,8 +53,8 @@ public class NesterovUpdateCalculator<M extends SmoothParametrized> implements P
     }
 
     /** {@inheritDoc} */
-    @Override public NesterovParameterUpdate calculateNewUpdate(SmoothParametrized mdl, NesterovParameterUpdate updaterParameters,
-        int iteration, Matrix inputs, Matrix groundTruth) {
+    @Override public NesterovParameterUpdate calculateNewUpdate(SmoothParametrized mdl,
+        NesterovParameterUpdate updaterParameters, int iteration, Matrix inputs, Matrix groundTruth) {
         // TODO: create new updateCache object here instead of in-place change.
 
         if (iteration > 0) {
@@ -62,7 +63,8 @@ public class NesterovUpdateCalculator<M extends SmoothParametrized> implements P
         }
 
         Vector gradient = mdl.differentiateByParameters(loss, inputs, groundTruth);
-        updaterParameters.setPreviousUpdates(updaterParameters.prevIterationUpdates().plus(gradient.times(learningRate)));
+        updaterParameters.setPreviousUpdates(updaterParameters.prevIterationUpdates()
+            .plus(gradient.times(learningRate)));
 
         return updaterParameters;
     }
@@ -70,9 +72,9 @@ public class NesterovUpdateCalculator<M extends SmoothParametrized> implements P
     /** {@inheritDoc} */
     @Override public NesterovParameterUpdate init(M mdl,
         IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
-            this.loss = loss;
+        this.loss = loss;
 
-            return new NesterovParameterUpdate(mdl.parametersCount());
+        return new NesterovParameterUpdate(mdl.parametersCount());
     }
 
     /** {@inheritDoc} */

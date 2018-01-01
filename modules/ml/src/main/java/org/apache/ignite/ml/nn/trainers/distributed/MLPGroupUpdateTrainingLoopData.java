@@ -29,21 +29,34 @@ import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.updaters.ParameterUpdateCalculator;
 import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
 
+/** Multilayer perceptron group update training loop data. */
 public class MLPGroupUpdateTrainingLoopData<P> implements Serializable {
+    /** */
     private final ParameterUpdateCalculator<MultilayerPerceptron, P> updateCalculator;
+    /** */
     private final int stepsCnt;
+    /** */
     private final IgniteFunction<List<P>, P> updateReducer;
+    /** */
     private final P previousUpdate;
+    /** */
     private final IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier;
+    /** */
     private final IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
+    /** */
     private final double tolerance;
 
+    /** */
     private final GroupTrainerCacheKey<Void> key;
+    /** */
     private final MultilayerPerceptron mlp;
 
+    /** Create multilayer perceptron group update training loop data. */
     public MLPGroupUpdateTrainingLoopData(MultilayerPerceptron mlp,
-        ParameterUpdateCalculator<MultilayerPerceptron, P> updateCalculator, int stepsCnt, IgniteFunction<List<P>, P> updateReducer, P previousUpdate,
-        GroupTrainerCacheKey<Void> key, IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
+        ParameterUpdateCalculator<MultilayerPerceptron, P> updateCalculator, int stepsCnt,
+        IgniteFunction<List<P>, P> updateReducer, P previousUpdate,
+        GroupTrainerCacheKey<Void> key, IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier,
+        IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
         double tolerance) {
         this.mlp = mlp;
         this.updateCalculator = updateCalculator;
@@ -56,38 +69,47 @@ public class MLPGroupUpdateTrainingLoopData<P> implements Serializable {
         this.tolerance = tolerance;
     }
 
+    /** Get perceptron. */
     public MultilayerPerceptron mlp() {
         return mlp;
     }
 
+    /** Get update calculator. */
     public ParameterUpdateCalculator<MultilayerPerceptron, P> updateCalculator() {
         return updateCalculator;
     }
 
+    /** Get steps count. */
     public int stepsCnt() {
         return stepsCnt;
     }
 
+    /** Get update reducer. */
     public IgniteFunction<List<P>, P> getUpdateReducer() {
         return updateReducer;
     }
 
+    /** Get previous update. */
     public P previousUpdate() {
         return previousUpdate;
     }
 
+    /** Get group trainer cache key. */
     public GroupTrainerCacheKey<Void> key() {
         return key;
     }
 
+    /** Get batch supplier. */
     public IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier() {
         return batchSupplier;
     }
 
+    /** Get loss function. */
     public IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss() {
         return loss;
     }
 
+    /** Get tolerance. */
     public double tolerance() {
         return tolerance;
     }

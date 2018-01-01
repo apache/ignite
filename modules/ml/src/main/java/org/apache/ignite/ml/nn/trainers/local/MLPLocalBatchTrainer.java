@@ -50,7 +50,6 @@ public class MLPLocalBatchTrainer<P>
      */
     private static final int DEFAULT_MAX_ITERATIONS = 100;
 
-
     /**
      * Construct a trainer.
      *
@@ -72,6 +71,7 @@ public class MLPLocalBatchTrainer<P>
      * @return MLPLocalBatchTrainer with default parameters.
      */
     public static MLPLocalBatchTrainer<RPropParameterUpdate> getDefault() {
-        return new MLPLocalBatchTrainer<>(DEFAULT_LOSS, () -> new RPropUpdateCalculator<>(), DEFAULT_ERROR_THRESHOLD, DEFAULT_MAX_ITERATIONS);
+        return new MLPLocalBatchTrainer<>(DEFAULT_LOSS, () -> new RPropUpdateCalculator<>(), DEFAULT_ERROR_THRESHOLD,
+            DEFAULT_MAX_ITERATIONS);
     }
 }

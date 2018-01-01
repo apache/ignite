@@ -32,8 +32,7 @@ public class Chains {
      * @param <I> Type of input to computation chain.
      * @return Computation chain consisting of one returning its input as output.
      */
-    public static
-    <L extends HasTrainingUUID, K, V, I> ComputationsChain<L, K, V, I, I> create() {
+    public static <L extends HasTrainingUUID, K, V, I> ComputationsChain<L, K, V, I, I> create() {
         return (input, context) -> input;
     }
 
@@ -49,8 +48,8 @@ public class Chains {
      * @param <O> Type of output of computation chain.
      * @return Computation created from {@link DistributedEntryProcessingStep}.
      */
-    public static
-    <L extends HasTrainingUUID, K, V, C, I, O extends Serializable> ComputationsChain<L, K, V, I, O> create(DistributedEntryProcessingStep<L, K, V, C, I, O> step) {
+    public static <L extends HasTrainingUUID, K, V, C, I, O extends Serializable> ComputationsChain<L, K, V, I, O> create(
+        DistributedEntryProcessingStep<L, K, V, C, I, O> step) {
         ComputationsChain<L, K, V, I, I> chain = create();
         return chain.thenDistributedForEntries(step);
     }

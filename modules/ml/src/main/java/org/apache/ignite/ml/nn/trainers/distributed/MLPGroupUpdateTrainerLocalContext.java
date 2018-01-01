@@ -54,7 +54,8 @@ public class MLPGroupUpdateTrainerLocalContext<U> implements HasTrainingUUID {
     private int curStep;
 
     /** Create multilayer perceptron group update trainer local context. */
-    public MLPGroupUpdateTrainerLocalContext(UUID trainingUUID, int globalStepsMaxCnt, IgniteFunction<List<U>, U> allUpdatesReducer, int parallelTrainingsCnt) {
+    public MLPGroupUpdateTrainerLocalContext(UUID trainingUUID, int globalStepsMaxCnt,
+        IgniteFunction<List<U>, U> allUpdatesReducer, int parallelTrainingsCnt) {
         this.trainingUUID = trainingUUID;
         this.globalStepsMaxCnt = globalStepsMaxCnt;
         this.allUpdatesReducer = allUpdatesReducer;

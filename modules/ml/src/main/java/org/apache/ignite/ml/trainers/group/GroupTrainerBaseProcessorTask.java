@@ -122,7 +122,8 @@ public abstract class GroupTrainerBaseProcessorTask<K, V, C, T, R extends Serial
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res,
+        List<ComputeJobResult> rcvd) throws IgniteException {
         return super.result(res, rcvd);
     }
 

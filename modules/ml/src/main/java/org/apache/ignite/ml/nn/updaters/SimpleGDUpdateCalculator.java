@@ -46,7 +46,8 @@ public class SimpleGDUpdateCalculator<M extends SmoothParametrized> implements P
     }
 
     /** {@inheritDoc} */
-    @Override public SimpleGDParameter init(M mdl, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
+    @Override public SimpleGDParameter init(M mdl,
+        IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
         this.loss = loss;
         return new SimpleGDParameter(mdl.parametersCount(), learningRate);
     }

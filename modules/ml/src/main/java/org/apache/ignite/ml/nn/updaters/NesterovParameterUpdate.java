@@ -70,14 +70,6 @@ public class NesterovParameterUpdate implements Serializable {
         return prevIterationUpdates;
     }
 
-//    public double learningRate() {
-//        return learningRate;
-//    }
-//
-//    public double momentum() {
-//        return momentum;
-//    }
-
     /**
      * Get sum of parameters updates.
      *
@@ -88,7 +80,6 @@ public class NesterovParameterUpdate implements Serializable {
         return parameters.stream().filter(Objects::nonNull).map(NesterovParameterUpdate::prevIterationUpdates)
             .reduce(Vector::plus).map(NesterovParameterUpdate::new).orElse(null);
     }
-
 
     /**
      * Get average of parameters updates.

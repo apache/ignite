@@ -83,10 +83,12 @@ public class MLPGroupUpdateTrainerCacheInput extends AbstractMLPGroupUpdateTrain
      * @param cache Cache with labeled vectors.
      * @param batchSize Size of batch to return on each training iteration.
      */
-    public MLPGroupUpdateTrainerCacheInput(MLPArchitecture arch, int networksCnt, IgniteCache<Integer, LabeledVector<Vector, Vector>> cache,
+    public MLPGroupUpdateTrainerCacheInput(MLPArchitecture arch, int networksCnt,
+        IgniteCache<Integer, LabeledVector<Vector, Vector>> cache,
         int batchSize) {
         this(arch, null, networksCnt, cache, batchSize);
     }
+
     /** {@inheritDoc} */
     @Override public IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier() {
         String cName = cache.getName();

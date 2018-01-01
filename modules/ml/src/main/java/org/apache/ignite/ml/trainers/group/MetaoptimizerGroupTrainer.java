@@ -52,9 +52,9 @@ import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
  * @param <Y> Type of data which is returned by postprocessor.
  */
 public abstract class MetaoptimizerGroupTrainer<LC extends HasTrainingUUID, K, V, IN extends Serializable,
-R extends Serializable, I extends Serializable,
-M extends Model, T extends GroupTrainerInput<K>,
-G, O extends Serializable, X, Y> extends
+    R extends Serializable, I extends Serializable,
+    M extends Model, T extends GroupTrainerInput<K>,
+    G, O extends Serializable, X, Y> extends
     GroupTrainer<LC, K, V, IN, R, I, M, T, G> {
     /**
      * Metaoptimizer.
@@ -67,7 +67,8 @@ G, O extends Serializable, X, Y> extends
      * @param cache Cache on which group trainer is done.
      * @param ignite Ignite instance.
      */
-    public MetaoptimizerGroupTrainer(Metaoptimizer<LC, X, Y, I, IN, O> metaoptimizer, IgniteCache<GroupTrainerCacheKey<K>, V> cache,
+    public MetaoptimizerGroupTrainer(Metaoptimizer<LC, X, Y, I, IN, O> metaoptimizer,
+        IgniteCache<GroupTrainerCacheKey<K>, V> cache,
         Ignite ignite) {
         super(cache, ignite);
         this.metaoptimizer = metaoptimizer;

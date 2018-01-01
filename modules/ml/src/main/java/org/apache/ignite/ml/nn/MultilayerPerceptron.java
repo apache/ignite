@@ -552,7 +552,8 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
      * @param nonlinearity Nonlinearity of current layer.
      * @return Gradients matrix.
      */
-    private Matrix differentiateNonlinearity(Matrix linearOut, IgniteDifferentiableDoubleToDoubleFunction nonlinearity) {
+    private Matrix differentiateNonlinearity(Matrix linearOut,
+        IgniteDifferentiableDoubleToDoubleFunction nonlinearity) {
         Matrix diff = linearOut.copy();
 
         diff.map(nonlinearity::differential);

@@ -20,7 +20,6 @@ package org.apache.ignite.ml.trainers.group;
 import java.io.Serializable;
 import java.util.List;
 import java.util.stream.Stream;
-import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.chain.DistributedEntryProcessingStep;
@@ -31,7 +30,8 @@ import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
  * Distributed step
  * TODO: IGNITE-7322: add full description.
  */
-class MetaoptimizerDistributedStep<L extends HasTrainingUUID, K, V, G, I extends Serializable, O extends Serializable, X, Y, D extends Serializable> implements DistributedEntryProcessingStep<L,K,V,G,I,O> {
+class MetaoptimizerDistributedStep<L extends HasTrainingUUID, K, V, G, I extends Serializable, O extends Serializable,
+    X, Y, D extends Serializable> implements DistributedEntryProcessingStep<L, K, V, G, I, O> {
     /**
      * {@link Metaoptimizer}.
      */

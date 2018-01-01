@@ -42,6 +42,7 @@ public class LocalKeysProcessorJob<K, V, C, R extends Serializable> extends Base
 
     /**
      * Construct instance of this class with given arguments.
+     *
      * @param worker Worker.
      * @param keySupplier Supplier of keys.
      * @param reducer Reducer.
