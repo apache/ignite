@@ -24,7 +24,6 @@ import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.chain.Chains;
@@ -34,7 +33,8 @@ import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 /**
  * Test group trainer.
  */
-public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext, Double, Integer, Integer, Integer, Double, ConstModel<Integer>, SimpleGroupTrainerInput, Void> {
+public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext, Double, Integer, Integer, Integer,
+    Double, ConstModel<Integer>, SimpleGroupTrainerInput, Void> {
     /**
      * Construct instance of this class with given parameters.
      *
@@ -45,7 +45,8 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
     }
 
     /** {@inheritDoc} */
-    @Override protected TestGroupTrainerLocalContext initialLocalContext(SimpleGroupTrainerInput data, UUID trainingUUID) {
+    @Override protected TestGroupTrainerLocalContext initialLocalContext(SimpleGroupTrainerInput data,
+        UUID trainingUUID) {
         return new TestGroupTrainerLocalContext(data.iterCnt(), data.eachNumberCount(), data.limit(), trainingUUID);
     }
 
@@ -55,7 +56,8 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
         return key -> {
             long i = key.nodeLocalEntityIndex();
             UUID trainingUUID = key.trainingUUID();
-            IgniteCache<GroupTrainerCacheKey<Double>, Integer> cache = TestGroupTrainingCache.getOrCreate(Ignition.localIgnite());
+            IgniteCache<GroupTrainerCacheKey<Double>, Integer> cache
+                = TestGroupTrainingCache.getOrCreate(Ignition.localIgnite());
 
             long sum = i * data.eachNumberCount();
 
@@ -114,7 +116,8 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteFunction<EntryAndContext<Double, Integer, Void>, ResultAndUpdates<Integer>> finalResultsExtractor() {
+    @Override protected IgniteFunction<EntryAndContext<Double, Integer, Void>,
+        ResultAndUpdates<Integer>> finalResultsExtractor() {
         return entryAndCtx -> {
             Integer val = entryAndCtx.entry().getValue();
             return ResultAndUpdates.of(val % 2 == 0 ? val : 0);
@@ -133,7 +136,9 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
 
     /** {@inheritDoc} */
     @Override protected void cleanup(TestGroupTrainerLocalContext locCtx) {
-        Stream<GroupTrainerCacheKey<Double>> toRemote = TestGroupTrainingCache.allKeys(locCtx.limit(), locCtx.eachNumberCnt(), locCtx.trainingUUID());
+        Stream<GroupTrainerCacheKey<Double>> toRemote = TestGroupTrainingCache.allKeys(locCtx.limit(),
+            locCtx.eachNumberCnt(), locCtx.trainingUUID());
+
         TestGroupTrainingCache.getOrCreate(ignite).removeAll(toRemote.collect(Collectors.toSet()));
     }
 }

@@ -21,14 +21,14 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 import org.apache.ignite.ml.trainers.group.chain.DistributedEntryProcessingStep;
 
 /** */
-public class TestTrainingLoopStep implements DistributedEntryProcessingStep<TestGroupTrainerLocalContext, Double, Integer, Void, Double, Double> {
+public class TestTrainingLoopStep implements DistributedEntryProcessingStep<TestGroupTrainerLocalContext,
+    Double, Integer, Void, Double, Double> {
     /** {@inheritDoc} */
     @Override public IgniteSupplier<Void> remoteContextSupplier(Double input, TestGroupTrainerLocalContext locCtx) {
         // No context is needed.
@@ -41,7 +41,8 @@ public class TestTrainingLoopStep implements DistributedEntryProcessingStep<Test
             Integer oldVal = entryAndContext.entry().getValue();
             double v = oldVal * oldVal;
             ResultAndUpdates<Double> res = ResultAndUpdates.of(v);
-            res.updateCache(TestGroupTrainingCache.getOrCreate(Ignition.localIgnite()), entryAndContext.entry().getKey(), (int)v);
+            res.updateCache(TestGroupTrainingCache.getOrCreate(Ignition.localIgnite()),
+                entryAndContext.entry().getKey(), (int)v);
             return res;
         };
     }

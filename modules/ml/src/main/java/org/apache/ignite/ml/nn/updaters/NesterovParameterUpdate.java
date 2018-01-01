@@ -32,16 +32,6 @@ public class NesterovParameterUpdate implements Serializable {
      */
     protected Vector prevIterationUpdates;
 
-//    /**
-//     * Learning rate.
-//     */
-//    protected double learningRate;
-//
-//    /**
-//     * Momentum
-//     */
-//    protected double momentum;
-
     /**
      * Construct NesterovParameterUpdate.
      *
@@ -49,8 +39,6 @@ public class NesterovParameterUpdate implements Serializable {
      */
     public NesterovParameterUpdate(int paramsCnt) {
         prevIterationUpdates = new DenseLocalOnHeapVector(paramsCnt).assign(0);
-//        this.learningRate = learningRate;
-//        this.momentum = momentum;
     }
 
     /**
@@ -97,7 +85,8 @@ public class NesterovParameterUpdate implements Serializable {
      * @return Sum of parameters updates.
      */
     public static NesterovParameterUpdate sum(List<NesterovParameterUpdate> parameters) {
-        return parameters.stream().filter(Objects::nonNull).map(NesterovParameterUpdate::prevIterationUpdates).reduce(Vector::plus).map(NesterovParameterUpdate::new).orElse(null);
+        return parameters.stream().filter(Objects::nonNull).map(NesterovParameterUpdate::prevIterationUpdates)
+            .reduce(Vector::plus).map(NesterovParameterUpdate::new).orElse(null);
     }
 
 
