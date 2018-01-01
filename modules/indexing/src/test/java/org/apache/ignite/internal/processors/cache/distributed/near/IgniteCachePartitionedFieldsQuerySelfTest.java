@@ -17,11 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import java.util.List;
+import javax.cache.Cache;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractFieldsQuerySelfTest;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -47,11 +52,42 @@ public class IgniteCachePartitionedFieldsQuerySelfTest extends IgniteCacheAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cache(@Nullable String name, boolean primitives) {
-        CacheConfiguration cc = super.cache(name, primitives);
+    @SuppressWarnings("unchecked")
+    @Override protected CacheConfiguration cacheConfiguration() {
+        CacheConfiguration cc = super.cacheConfiguration();
 
         cc.setNearConfiguration(nearConfiguration());
 
         return cc;
+    }
+
+    /** @throws Exception If failed. */
+    public void testLocalQuery() throws Exception {
+        doTestLocalQuery(intCache, new SqlFieldsQuery("select _key, _val from Integer"));
+    }
+
+    /** @throws Exception If failed. */
+    public void testLocalQueryNoOpCache() throws Exception {
+        doTestLocalQuery(noOpCache, new SqlFieldsQuery("select _key, _val from \"Integer-Integer\".Integer"));
+    }
+
+    /**
+     * Execute given query locally and check results.
+     * @param cache Cache to run query on.
+     * @param fldsQry Query.
+     */
+    private void doTestLocalQuery(IgniteCache<?, ?> cache, SqlFieldsQuery fldsQry) throws InterruptedException {
+        awaitPartitionMapExchange(true, true, null);
+
+        int exp = 0;
+
+        for(Cache.Entry e: intCache.localEntries(CachePeekMode.PRIMARY)){
+            if(e.getValue() instanceof Integer)
+                exp++;
+        }
+
+        QueryCursor<List<?>> qry = cache.query(fldsQry.setLocal(true));
+
+        assertEquals(exp, qry.getAll().size());
     }
 }

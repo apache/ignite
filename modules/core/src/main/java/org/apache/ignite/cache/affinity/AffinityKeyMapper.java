@@ -18,6 +18,7 @@
 package org.apache.ignite.cache.affinity;
 
 import java.io.Serializable;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 
 /**
  * Affinity mapper which maps cache key to an affinity key. Affinity key is a key which will be
@@ -41,7 +42,9 @@ import java.io.Serializable;
  * {@link AffinityKeyMapped @AffinityKeyMapped} documentation.
  * @see AffinityFunction
  * @see AffinityKeyMapped
+ * @deprecated Use {@link AffinityKeyMapped} or {@link CacheKeyConfiguration#setAffinityKeyFieldName(String)} instead.
  */
+@Deprecated
 public interface AffinityKeyMapper extends Serializable {
     /**
      * Maps passed in key to an alternate key which will be used for node affinity.

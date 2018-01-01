@@ -120,11 +120,6 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
         return !U.isWindows();
     }
 
-    /** {@inheritDoc} */
-    @Override protected boolean timesSupported() {
-        return false;
-    }
-
     /**
      *
      * @throws Exception If failed.

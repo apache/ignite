@@ -100,18 +100,18 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     /** */
     private static final IgnitePredicate<ClusterNode> serverNode = new P1<ClusterNode>() {
         @Override public boolean apply(ClusterNode n) {
-            String gridName = G.ignite(n.id()).name();
+            String igniteInstanceName = G.ignite(n.id()).name();
 
-            return gridName != null && gridName.contains("server");
+            return igniteInstanceName != null && igniteInstanceName.contains("server");
         }
     };
 
     /** */
     private static final IgnitePredicate<ClusterNode> clientNode = new P1<ClusterNode>() {
         @Override public boolean apply(ClusterNode n) {
-            String gridName = G.ignite(n.id()).name();
+            String igniteInstanceName = G.ignite(n.id()).name();
 
-            return gridName != null && gridName.contains("client");
+            return igniteInstanceName != null && igniteInstanceName.contains("client");
         }
     };
 
@@ -122,8 +122,8 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     private boolean cacheOn;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
         c.getTransactionConfiguration().setDefaultTxIsolation(REPEATABLE_READ);
@@ -144,8 +144,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
             plc.setMaxSize(1000);
 
             cc.setEvictionPolicy(plc);
-            cc.setEvictSynchronized(false);
-            cc.setSwapEnabled(false);
+            cc.setOnheapCacheEnabled(true);
             cc.setWriteSynchronizationMode(FULL_SYNC);
             cc.setRebalanceMode(NONE);
 
@@ -228,7 +227,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
                     String terminalId = String.valueOf(++tid);
 
                     // Server partition cache
-                    UUID mappedId = srvr1.affinity(null).mapKeyToNode(terminalId).id();
+                    UUID mappedId = srvr1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(terminalId).id();
 
                     if (!srvrId.equals(mappedId))
                         continue;
@@ -342,11 +341,9 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
                     long submitTime1 = t0;
 
-                    IgniteCompute comp = g.compute(g.cluster().forPredicate(serverNode)).withAsync();
+                    IgniteCompute comp = g.compute(g.cluster().forPredicate(serverNode));
 
-                    comp.execute(RequestTask.class, new Message(terminalId, nodeId));
-
-                    ComputeTaskFuture<Void> f1 = comp.future();
+                    ComputeTaskFuture<Void> f1 = comp.executeAsync(RequestTask.class, new Message(terminalId, nodeId));
 
                     submitTime.setIfGreater(System.currentTimeMillis() - submitTime1);
 
@@ -354,9 +351,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
                     submitTime1 = System.currentTimeMillis();
 
-                    comp.execute(ResponseTask.class, new Message(terminalId, nodeId));
-
-                    ComputeTaskFuture<Void> f2 = comp.future();
+                    ComputeTaskFuture<Void> f2 = comp.executeAsync(ResponseTask.class, new Message(terminalId, nodeId));
 
                     submitTime.setIfGreater(System.currentTimeMillis() - submitTime1);
 
@@ -432,14 +427,20 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         private static final long MAX = 5000;
 
         /** */
+        @AffinityKeyMapped
+        private String affKey;
+
+        /** */
         @IgniteInstanceResource
         private Ignite ignite;
 
         /**
          * @param msg Message.
          */
-        PerfJob(@Nullable Message msg) {
+        PerfJob(Message msg) {
             super(msg);
+
+            affKey = msg.getTerminalId();
         }
 
         /**
@@ -452,7 +453,6 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         /**
          * @return Terminal ID.
          */
-        @AffinityKeyMapped
         public String terminalId() {
             return message().getTerminalId();
         }
@@ -475,7 +475,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
             doWork();
 
-            GridNearCacheAdapter near = (GridNearCacheAdapter)((IgniteKernal) ignite).internalCache();
+            GridNearCacheAdapter near = (GridNearCacheAdapter)((IgniteKernal) ignite).internalCache(DEFAULT_CACHE_NAME);
             GridDhtCacheAdapter dht = near.dht();
 
             long start = cntrs.get2().get();
@@ -604,15 +604,17 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
                         if (g.name().contains("server")) {
                             GridNearCacheAdapter<AffinityKey<String>, Object> near =
                                 (GridNearCacheAdapter<AffinityKey<String>, Object>)((IgniteKernal)g).
-                                    <AffinityKey<String>, Object>internalCache();
+                                    <AffinityKey<String>, Object>internalCache(DEFAULT_CACHE_NAME);
                             GridDhtCacheAdapter<AffinityKey<String>, Object> dht = near.dht();
 
                             for (AffinityKey<String> k : keys) {
                                 GridNearCacheEntry nearEntry = (GridNearCacheEntry)near.peekEx(k);
                                 GridDhtCacheEntry dhtEntry = (GridDhtCacheEntry)dht.peekEx(k);
 
-                                X.println("Near entry [grid="+ g.name() + ", key=" + k + ", entry=" + nearEntry);
-                                X.println("DHT entry [grid=" + g.name() + ", key=" + k + ", entry=" + dhtEntry);
+                                X.println("Near entry [igniteInstanceName="+ g.name() + ", key=" + k + ", entry=" +
+                                    nearEntry);
+                                X.println("DHT entry [igniteInstanceName=" + g.name() + ", key=" + k + ", entry=" +
+                                    dhtEntry);
                             }
                         }
                     }
@@ -690,7 +692,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @param terminalId Terminal ID.
          */
         private void put(Object o, String cacheKey, String terminalId) {
-//            CacheProjection<AffinityKey<String>, Object> cache = ((IgniteKernal)ignite).cache(null);
+//            CacheProjection<AffinityKey<String>, Object> cache = ((IgniteKernal)ignite).cache(DEFAULT_CACHE_NAME);
 //
 //            AffinityKey<String> affinityKey = new AffinityKey<>(cacheKey, terminalId);
 //
@@ -709,7 +711,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         private <T> Object get(String cacheKey, String terminalId) {
             Object key = new AffinityKey<>(cacheKey, terminalId);
 
-            return (T) ignite.cache(null).get(key);
+            return (T) ignite.cache(DEFAULT_CACHE_NAME).get(key);
         }
     }
 

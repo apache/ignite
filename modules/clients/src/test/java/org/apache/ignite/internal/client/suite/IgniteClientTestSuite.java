@@ -57,7 +57,9 @@ import org.apache.ignite.internal.processors.rest.RestProcessorMultiStartSelfTes
 import org.apache.ignite.internal.processors.rest.RestProcessorStartSelfTest;
 import org.apache.ignite.internal.processors.rest.TaskCommandHandlerSelfTest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.TcpRestParserSelfTest;
-import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolSelfTest;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolConnectSelfTest;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolServerSelfTest;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.RedisProtocolStringSelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
 
 /**
@@ -89,7 +91,9 @@ public class IgniteClientTestSuite extends TestSuite {
         suite.addTestSuite(ClientMemcachedProtocolSelfTest.class);
 
         // Test TCP rest processor with original REDIS client.
-        suite.addTestSuite(RedisProtocolSelfTest.class);
+        suite.addTestSuite(RedisProtocolStringSelfTest.class);
+        suite.addTestSuite(RedisProtocolConnectSelfTest.class);
+        suite.addTestSuite(RedisProtocolServerSelfTest.class);
 
         suite.addTestSuite(RestProcessorStartSelfTest.class);
 

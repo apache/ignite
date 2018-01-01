@@ -15,14 +15,15 @@
  * limitations under the License.
  */
 
+import templateUrl from 'views/templates/batch-confirm.tpl.pug';
+
 // Service for confirm or skip several steps.
 export default ['IgniteConfirmBatch', ['$rootScope', '$q', '$modal', ($root, $q, $modal) => {
     const scope = $root.$new();
 
     scope.confirmModal = $modal({
-        templateUrl: '/templates/batch-confirm.html',
+        templateUrl,
         scope,
-        placement: 'center',
         show: false,
         backdrop: 'static',
         keyboard: false

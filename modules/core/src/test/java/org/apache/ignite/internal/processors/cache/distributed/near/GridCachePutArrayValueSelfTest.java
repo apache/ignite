@@ -39,8 +39,8 @@ public class GridCachePutArrayValueSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cacheCfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cacheCfg = super.cacheConfiguration(igniteInstanceName);
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(1);
@@ -54,7 +54,7 @@ public class GridCachePutArrayValueSelfTest extends GridCacheAbstractSelfTest {
     public void testInternalKeys() throws Exception {
         assert gridCount() >= 2;
 
-        IgniteCache<InternalKey, Object> jcache = grid(0).cache(null);
+        IgniteCache<InternalKey, Object> jcache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         final InternalKey key = new InternalKey(0); // Hangs on the first remote put.
 

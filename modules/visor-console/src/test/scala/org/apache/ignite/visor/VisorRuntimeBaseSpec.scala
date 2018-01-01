@@ -20,8 +20,8 @@ package org.apache.ignite.visor
 import org.apache.ignite.Ignition
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.visor.commands.open.VisorOpenCommand._
-
 import org.scalatest._
+import VisorRuntimeBaseSpec._
 
 /**
  * Base abstract class for unit tests requiring Visor runtime.
@@ -33,19 +33,19 @@ abstract class VisorRuntimeBaseSpec(private[this] val num: Int) extends FunSpec 
     /**
      * Gets grid configuration.
      *
-     * @param name Grid name.
+     * @param name Ignite instance name.
      * @return Grid configuration.
      */
     protected def config(name: String): IgniteConfiguration = {
         val cfg = new IgniteConfiguration
 
-        cfg.setGridName(name)
+        cfg.setIgniteInstanceName(name)
 
         cfg
     }
 
     protected def openVisor() {
-        visor.open(config("visor-demo-node"), "n/a")
+        visor.open(config(VISOR_INSTANCE_NAME), "n/a")
     }
 
     protected def closeVisorQuiet() {
@@ -74,4 +74,9 @@ abstract class VisorRuntimeBaseSpec(private[this] val num: Int) extends FunSpec 
     override protected def afterEach() {
         closeVisorQuiet()
     }
+}
+
+/** Singleton companion object. */
+object VisorRuntimeBaseSpec {
+    val VISOR_INSTANCE_NAME = "visor-demo-node"
 }

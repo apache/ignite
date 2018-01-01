@@ -18,14 +18,16 @@
 namespace Apache.Ignite.Core.Common
 {
     using System;
+    using System.Diagnostics;
     using System.Globalization;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Ignite guid with additional local ID.
     /// </summary>
     [Serializable]
-    public struct IgniteGuid : IEquatable<IgniteGuid>
+    public struct IgniteGuid : IEquatable<IgniteGuid>, IBinaryWriteAware
     {
         /** Global id. */
         private readonly Guid _globalId;
@@ -45,6 +47,20 @@ namespace Apache.Ignite.Core.Common
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="IgniteGuid"/> struct.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        internal IgniteGuid(IBinaryRawReader reader)
+        {
+            Debug.Assert(reader != null);
+
+            var stream = ((BinaryReader) reader).Stream;
+
+            _localId = stream.ReadLong();
+            _globalId = BinaryUtils.ReadGuid(stream);
+        }
+
+        /// <summary>
         /// Gets the global id.
         /// </summary>
         public Guid GlobalId
@@ -60,20 +76,38 @@ namespace Apache.Ignite.Core.Common
             get { return _localId; }
         }
 
-        /** <inheritDoc /> */
+        /// <summary>
+        /// Indicates whether the current object is equal to another object of the same type.
+        /// </summary>
+        /// <param name="other">An object to compare with this object.</param>
+        /// <returns>
+        /// true if the current object is equal to the <paramref name="other" /> parameter; otherwise, false.
+        /// </returns>
         public bool Equals(IgniteGuid other)
         {
             return _globalId.Equals(other._globalId) && _localId == other._localId;
         }
 
-        /** <inheritDoc /> */
+        /// <summary>
+        /// Determines whether the specified <see cref="object" />, is equal to this instance.
+        /// </summary>
+        /// <param name="obj">The <see cref="object" /> to compare with this instance.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified <see cref="object" /> is equal to this instance; otherwise, <c>false</c>.
+        /// </returns>
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
             return obj is IgniteGuid && Equals((IgniteGuid) obj);
         }
 
-        /** <inheritDoc /> */
+        /// <summary>
+        /// Returns a hash code for this instance.
+        /// </summary>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms and
+        /// data structures like a hash table. 
+        /// </returns>
         public override int GetHashCode()
         {
             unchecked
@@ -82,25 +116,16 @@ namespace Apache.Ignite.Core.Common
             }
         }
 
-        /** <inheritDoc /> */
+        /// <summary>
+        /// Returns a <see cref="string" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="string" /> that represents this instance.
+        /// </returns>
         public override string ToString()
         {
             return string.Format(CultureInfo.InvariantCulture, 
                 "IgniteGuid [GlobalId={0}, LocalId={1}]", GlobalId, LocalId);
-        }
-
-        /// <summary>
-        /// Reads this object from the given reader.
-        /// </summary> 
-        /// <param name="r">Reader.</param>
-        internal static IgniteGuid? Read(IBinaryRawReader r)
-        {
-            var guid = r.ReadGuid();
-
-            if (guid == null)
-                return null;
-
-            return new IgniteGuid(guid.Value, r.ReadLong());
         }
 
         /// <summary>
@@ -127,6 +152,21 @@ namespace Apache.Ignite.Core.Common
         public static bool operator !=(IgniteGuid a, IgniteGuid b)
         {
             return !(a == b);
+        }
+
+        /// <summary>
+        /// Writes this object to the given writer.
+        /// </summary>
+        /// <param name="writer">Writer.</param>
+        /// <exception cref="System.NotImplementedException"></exception>
+        void IBinaryWriteAware.WriteBinary(IBinaryWriter writer)
+        {
+            Debug.Assert(writer != null);
+
+            var stream = ((BinaryWriter) writer.GetRawWriter()).Stream;
+
+            stream.WriteLong(_localId);
+            BinaryUtils.WriteGuid(_globalId, stream);
         }
     }
 }

@@ -18,25 +18,75 @@
 package org.apache.ignite.lang;
 
 /**
- * Allows to enable asynchronous mode on Ignite APIs.
+ * Allows to enable asynchronous mode on Ignite APIs, e.g.
+ * <pre>
+ *     IgniteFuture f = cache.getAsync();
+ * </pre>
+ * instead of old-style async API:
+ * <pre>
+ *     IgniteCache asyncCache = cache.withAsync();
+ *     asyncCache.get(key);
+ *     IgniteFuture fut = asyncCache.future();
+ * </pre>
+ * @deprecated since 2.0. Please use specialized asynchronous methods.
  */
+@Deprecated
 public interface IgniteAsyncSupport {
     /**
      * Gets instance of this component with asynchronous mode enabled.
      *
      * @return Instance of this component with asynchronous mode enabled.
+     *
+     * @deprecated since 2.0. Please use new specialized async method
+     * e.g.
+     * <pre>
+     *     IgniteFuture f = cache.getAsync();
+     * </pre>
+     * instead of old-style async API:
+     * <pre>
+     *     IgniteCache asyncCache = cache.withAsync();
+     *     asyncCache.get(key);
+     *     IgniteFuture fut = asyncCache.future();
+     * </pre>
      */
+    @Deprecated
     public IgniteAsyncSupport withAsync();
 
     /**
      * @return {@code True} if asynchronous mode is enabled.
+     *
+     * @deprecated since 2.0. Please use new specialized async method
+     * e.g.
+     * <pre>
+     *     IgniteFuture f = cache.getAsync();
+     * </pre>
+     * instead of old-style async API:
+     * <pre>
+     *     IgniteCache asyncCache = cache.withAsync();
+     *     asyncCache.get(key);
+     *     IgniteFuture fut = asyncCache.future();
+     * </pre>
      */
+    @Deprecated
     public boolean isAsync();
 
     /**
      * Gets and resets future for previous asynchronous operation.
      *
      * @return Future for previous asynchronous operation.
+     *
+     * @deprecated since 2.0. Please use new specialized async method
+     * e.g.
+     * <pre>
+     *     IgniteFuture f = cache.getAsync();
+     * </pre>
+     * instead of old-style async API:
+     * <pre>
+     *     IgniteCache asyncCache = cache.withAsync();
+     *     asyncCache.get(key);
+     *     IgniteFuture fut = asyncCache.future();
+     * </pre>
      */
+    @Deprecated
     public <R> IgniteFuture<R> future();
 }

@@ -74,27 +74,6 @@ abstract class IgniteBinaryIdentityBenchmark extends IgniteCacheAbstractBenchmar
     }
 
     /**
-     * @param key Key field value.
-     * @return Binary object with hash code explicitly set at build time.
-     */
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    BinaryObject createLegacyIdentityBinaryKey(int key) {
-        BinaryObjectBuilder bldr = ignite().binary().builder("BinaryKeyWithLegacyIdentity");
-
-        setBuilderFields(bldr, key);
-
-        int hash = 0;
-
-        hash = 31 * hash + 1;
-        hash = 31 * hash + ("SomeString".hashCode());
-        hash = 31 * hash + Long.valueOf(key).hashCode();
-
-        bldr.hashCode(hash);
-
-        return bldr.build();
-    }
-
-    /**
      * @param builder Builder.
      * @param key Key field value.
      */

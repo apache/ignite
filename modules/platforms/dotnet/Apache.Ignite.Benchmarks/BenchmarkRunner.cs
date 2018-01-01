@@ -20,8 +20,8 @@ namespace Apache.Ignite.Benchmarks
     using System;
     using System.Diagnostics;
     using System.Text;
-    using Apache.Ignite.Benchmarks.Binary;
     using Apache.Ignite.Benchmarks.Interop;
+    using Apache.Ignite.Benchmarks.ThinClient;
 
     /// <summary>
     /// Benchmark runner.
@@ -36,8 +36,8 @@ namespace Apache.Ignite.Benchmarks
         public static void Main(string[] args)
         {
             args = new[] { 
-                typeof(GetBenchmark).FullName,
-                "-ConfigPath", @"C:\W\incubator-ignite\modules\platforms\dotnet\Apache.Ignite.Benchmarks\Config\benchmark.xml",
+                typeof(ThinClientGetBenchmark).FullName,
+                "-ConfigPath", @"S:\W\incubator-ignite\modules\platforms\dotnet\Apache.Ignite.Benchmarks\Config\benchmark.xml",
                 "-Threads", "1",
                 "-Warmup", "0",
                 "-Duration", "60",

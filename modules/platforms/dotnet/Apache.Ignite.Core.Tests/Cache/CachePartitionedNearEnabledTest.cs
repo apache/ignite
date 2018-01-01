@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     using NUnit.Framework;
 
     [Category(TestUtils.CategoryIntensive)]
-    public class CachePartitionedNearEnabledTest : CacheAbstractTest
+    public class CachePartitionedNearEnabledTest : CacheAbstractTransactionalTest
     {
         protected override int GridCount()
         {
@@ -33,11 +33,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         protected override bool NearEnabled()
-        {
-            return true;
-        }
-
-        protected override bool TxEnabled()
         {
             return true;
         }

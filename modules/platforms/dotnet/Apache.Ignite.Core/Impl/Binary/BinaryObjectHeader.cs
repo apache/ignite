@@ -58,7 +58,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             OffsetTwoBytes  = 0x10,
 
             /** Flag: compact footer, no field IDs. */
-            CompactFooter   = 0x20
+            CompactFooter   = 0x20,
+
+            /** Flag: raw data contains .NET type information. */
+            CustomDotNetType   = 0x40
         }
 
         /** Actual header layout */
@@ -164,6 +167,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Gets the custom .NET type flag.
+        /// </summary>
+        public bool IsCustomDotNetType
+        {
+            get { return (Flags & Flag.CustomDotNetType) == Flag.CustomDotNetType; }
+        }
+
+        /// <summary>
         /// Gets the size of the schema field offset (1, 2 or 4 bytes).
         /// </summary>
         public int SchemaFieldOffsetSize
@@ -211,18 +222,37 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Gets the raw offset of this object in specified stream.
         /// </summary>
         /// <param name="stream">The stream.</param>
-        /// <param name="position">The position.</param>
+        /// <param name="position">The binary object position in the stream.</param>
         /// <returns>Raw offset.</returns>
         public int GetRawOffset(IBinaryStream stream, int position)
         {
             Debug.Assert(stream != null);
 
+            // Either schema or raw is not present - offset is in the header.
             if (!HasRaw || !HasSchema)
                 return SchemaOffset;
 
+            // Both schema and raw data are present: raw offset is in the last 4 bytes.
             stream.Seek(position + Length - 4, SeekOrigin.Begin);
 
             return stream.ReadInt();
+        }
+
+        /// <summary>
+        /// Gets the footer offset where raw and non-raw data ends.
+        /// </summary>
+        /// <value>Footer offset.</value>
+        public int FooterStartOffset
+        {
+            get
+            {
+                // No schema: all we have is data. There is no offset in last 4 bytes.
+                if (!HasSchema)
+                    return Length;
+
+                // There is schema. Regardless of raw data presence, footer starts with schema.
+                return SchemaOffset;
+            }
         }
 
         /// <summary>
@@ -326,6 +356,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         public static bool operator !=(BinaryObjectHeader left, BinaryObjectHeader right)
         {
             return !left.Equals(right);
+        }
+
+        /** <inheritdoc /> */
+        public override string ToString()
+        {
+            return string.Format("BinaryObjectHeader [Header={0}, Version={1}, Flags={2}, TypeId={3}, " +
+                                 "HashCode={4}, Length={5}, SchemaId={6}, SchemaOffset={7}]", 
+                                 Header, Version, Flags, TypeId, HashCode, Length, SchemaId, SchemaOffset);
         }
     }
 }

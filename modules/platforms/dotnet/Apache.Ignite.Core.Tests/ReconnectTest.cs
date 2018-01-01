@@ -48,12 +48,17 @@ namespace Apache.Ignite.Core.Tests
 
             var clientCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                GridName = "client",
+                IgniteInstanceName = "client",
                 ClientMode = true
             };
 
             var server = Ignition.Start(serverCfg);
+
+            Assert.AreEqual(1, server.GetCluster().GetNodes().Count);
+
             var client = Ignition.Start(clientCfg);
+
+            Assert.AreEqual(2, client.GetCluster().GetNodes().Count);
 
             ClientReconnectEventArgs eventArgs = null;
 
@@ -70,13 +75,19 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.IsNotNull(ex);
 
+            // Wait a bit for cluster restart detection.
+            Thread.Sleep(1000);
+
             // Start the server and wait for reconnect.
             Ignition.Start(serverCfg);
+
+            // Check reconnect task.
             Assert.IsTrue(ex.ClientReconnectTask.Result);
+            
+            // Wait a bit for notifications.
+            Thread.Sleep(100);
 
             // Check the event args.
-            Thread.Sleep(100);  // Wait for event handler
-
             Assert.IsNotNull(eventArgs);
             Assert.IsTrue(eventArgs.HasClusterRestarted);
 
@@ -89,7 +100,8 @@ namespace Apache.Ignite.Core.Tests
 
             // Check that old cache instance does not work.
             var cacheEx1 = Assert.Throws<InvalidOperationException>(() => cache.Get(1));
-            Assert.AreEqual("Cache has been closed or destroyed: " + CacheName, cacheEx1.Message);
+            Assert.IsTrue(cacheEx1.Message.EndsWith("Failed to perform cache operation (cache is stopped): cache"), 
+                cacheEx1.Message);
         }
 
         /// <summary>
@@ -162,6 +174,17 @@ namespace Apache.Ignite.Core.Tests
             return new IgniteProcess(
                 "-springConfigUrl=" + cfg.SpringConfigUrl, "-J-ea", "-J-Xcheck:jni", "-J-Xms512m", "-J-Xmx512m",
                 "-J-DIGNITE_QUIET=false");
+        }
+
+
+        /// <summary>
+        /// Test set up.
+        /// </summary>
+        [SetUp]
+        public void SetUp()
+        {
+            Ignition.StopAll(true);
+            IgniteProcess.KillAll();
         }
 
         /// <summary>

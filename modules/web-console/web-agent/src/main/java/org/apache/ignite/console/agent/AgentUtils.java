@@ -17,11 +17,17 @@
 
 package org.apache.ignite.console.agent;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
+import io.socket.client.Ack;
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.ProtectionDomain;
+import java.util.Arrays;
 import org.apache.log4j.Logger;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * Utility methods.
@@ -29,6 +35,24 @@ import org.apache.log4j.Logger;
 public class AgentUtils {
     /** */
     private static final Logger log = Logger.getLogger(AgentUtils.class.getName());
+
+    /** JSON object mapper. */
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    static {
+        // Register special module with basic serializers.
+        MAPPER.registerModule(new JsonOrgModule());
+    }
+
+    /** */
+    private static final Ack NOOP_CB = new Ack() {
+        @Override public void call(Object... args) {
+            if (args != null && args.length > 0 && args[0] instanceof Throwable)
+                log.error("Failed to execute request on agent.", (Throwable) args[0]);
+            else
+                log.info("Request on agent successfully executed " + Arrays.toString(args));
+        }
+    };
 
     /**
      * Default constructor.
@@ -107,5 +131,55 @@ public class AgentUtils {
             return file;
 
         return null;
+    }
+
+    /**
+     * Get callback from handler arguments.
+     *
+     * @param args Arguments.
+     * @return Callback or noop callback.
+     */
+    public static Ack safeCallback(Object[] args) {
+        boolean hasCb = args != null && args.length > 0 && args[args.length - 1] instanceof Ack;
+
+        return hasCb ? (Ack)args[args.length - 1] : NOOP_CB;
+    }
+
+    /**
+     * Remove callback from handler arguments.
+     *
+     * @param args Arguments.
+     * @return Arguments without callback.
+     */
+    public static Object[] removeCallback(Object[] args) {
+        boolean hasCb = args != null && args.length > 0 && args[args.length - 1] instanceof Ack;
+
+        return hasCb ? Arrays.copyOf(args, args.length - 1) : args;
+    }
+
+    /**
+     * Map java object to JSON object.
+     *
+     * @param obj Java object.
+     * @return {@link JSONObject} or {@link JSONArray}.
+     * @throws IllegalArgumentException If conversion fails due to incompatible type.
+     */
+    public static Object toJSON(Object obj) {
+        if (obj instanceof Iterable)
+            return MAPPER.convertValue(obj, JSONArray.class);
+
+        return MAPPER.convertValue(obj, JSONObject.class);
+    }
+
+    /**
+     * Map JSON object to java object.
+     *
+     * @param obj {@link JSONObject} or {@link JSONArray}.
+     * @param toValType Expected value type.
+     * @return Mapped object type of {@link T}.
+     * @throws IllegalArgumentException If conversion fails due to incompatible type.
+     */
+    public static <T> T fromJSON(Object obj, Class<T> toValType) throws IllegalArgumentException {
+        return MAPPER.convertValue(obj, toValType);
     }
 }

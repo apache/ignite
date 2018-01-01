@@ -18,29 +18,34 @@
 ACLOCAL_AMFLAGS =-I m4
 
 nobase_include_HEADERS = \
-    ignite/binary/binary_raw_reader.h \
-    ignite/binary/binary_reader.h \
-    ignite/binary/binary_writer.h \
-    ignite/binary/binary_raw_writer.h \
-    ignite/binary/binary_containers.h \
-    ignite/binary/binary.h \
-    ignite/binary/binary_consts.h \
-    ignite/binary/binary_type.h \
-    ignite/impl/binary/binary_type_handler.h \
-    ignite/impl/binary/binary_id_resolver.h \
-    ignite/impl/binary/binary_type_manager.h \
-    ignite/impl/binary/binary_type_updater.h \
-    ignite/impl/binary/binary_common.h \
-    ignite/impl/binary/binary_writer_impl.h \
-    ignite/impl/binary/binary_type_snapshot.h \
-    ignite/impl/binary/binary_reader_impl.h \
-    ignite/impl/binary/binary_schema.h \
-    ignite/impl/binary/binary_utils.h \
-    ignite/impl/interop/interop_memory.h \
-    ignite/impl/interop/interop.h \
-    ignite/impl/interop/interop_stream_position_guard.h \
-    ignite/impl/interop/interop_output_stream.h \
-    ignite/impl/interop/interop_input_stream.h
+	ignite/binary/binary_raw_reader.h \
+	ignite/binary/binary_reader.h \
+	ignite/binary/binary_writer.h \
+	ignite/binary/binary_raw_writer.h \
+	ignite/binary/binary_containers.h \
+	ignite/binary/binary.h \
+	ignite/binary/binary_consts.h \
+	ignite/binary/binary_type.h \
+	ignite/binary/binary_object.h \
+	ignite/impl/binary/binary_type_handler.h \
+	ignite/impl/binary/binary_id_resolver.h \
+	ignite/impl/binary/binary_type_impl.h \
+	ignite/impl/binary/binary_type_manager.h \
+	ignite/impl/binary/binary_type_updater.h \
+	ignite/impl/binary/binary_common.h \
+	ignite/impl/binary/binary_writer_impl.h \
+	ignite/impl/binary/binary_field_meta.h \
+	ignite/impl/binary/binary_type_snapshot.h \
+	ignite/impl/binary/binary_reader_impl.h \
+	ignite/impl/binary/binary_schema.h \
+	ignite/impl/binary/binary_utils.h \
+	ignite/impl/binary/binary_object_header.h \
+	ignite/impl/binary/binary_object_impl.h \
+	ignite/impl/interop/interop_memory.h \
+	ignite/impl/interop/interop.h \
+	ignite/impl/interop/interop_stream_position_guard.h \
+	ignite/impl/interop/interop_output_stream.h \
+	ignite/impl/interop/interop_input_stream.h
 
 uninstall-hook:
 	if [ -d ${includedir}/ignite ]; then find ${includedir}/ignite -type d -empty -delete; fi

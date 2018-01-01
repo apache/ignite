@@ -61,6 +61,7 @@ public class GridH2Null extends GridH2ValueMessage {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("SimplifiableIfStatement")
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
@@ -74,7 +75,7 @@ public class GridH2Null extends GridH2ValueMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -4;
     }
 

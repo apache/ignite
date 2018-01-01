@@ -106,17 +106,26 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="writeAction">Write action.</param>
         /// <param name="readAction">Read action.</param>
         /// <param name="raw">Raw mode.</param>
+        /// <param name="forceTimestamp">Force timestamp serialization for DateTime fields..</param>
         public static void GetTypeActions(FieldInfo field, out BinaryReflectiveWriteAction writeAction,
-            out BinaryReflectiveReadAction readAction, bool raw)
+            out BinaryReflectiveReadAction readAction, bool raw, bool forceTimestamp)
         {
+            Debug.Assert(field != null);
+            Debug.Assert(field.DeclaringType != null);
+
             var type = field.FieldType;
+
+            forceTimestamp = forceTimestamp ||
+                             field.DeclaringType.GetCustomAttributes(typeof(TimestampAttribute), true).Any();
 
             if (type.IsPrimitive)
                 HandlePrimitive(field, out writeAction, out readAction, raw);
             else if (type.IsArray)
+            {
                 HandleArray(field, out writeAction, out readAction, raw);
+            }
             else
-                HandleOther(field, out writeAction, out readAction, raw);
+                HandleOther(field, out writeAction, out readAction, raw, forceTimestamp);
         }
 
         /// <summary>
@@ -219,7 +228,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     : GetWriter<float>(field, (f, w, o) => w.WriteFloat(f, o));
                 readAction = raw ? GetRawReader(field, r => r.ReadFloat()) : GetReader(field, (f, r) => r.ReadFloat(f));
             }
-            else if (type == typeof (double))
+            else if (type == typeof(double))
             {
                 writeAction = raw
                     ? GetRawWriter<double>(field, (w, o) => w.WriteDouble(o))
@@ -228,8 +237,29 @@ namespace Apache.Ignite.Core.Impl.Binary
                     ? GetRawReader(field, r => r.ReadDouble())
                     : GetReader(field, (f, r) => r.ReadDouble(f));
             }
+            else if (type == typeof(IntPtr))
+            {
+                writeAction = raw
+                    ? GetRawWriter<IntPtr>(field, (w, o) => w.WriteLong((long) o))
+                    : GetWriter<IntPtr>(field, (f, w, o) => w.WriteLong(f, (long) o));
+                readAction = raw
+                    ? GetRawReader(field, r => (IntPtr) r.ReadLong())
+                    : GetReader(field, (f, r) => (IntPtr) r.ReadLong(f));
+            }
+            else if (type == typeof(UIntPtr))
+            {
+                writeAction = raw
+                    ? GetRawWriter<UIntPtr>(field, (w, o) => w.WriteLong((long) o))
+                    : GetWriter<UIntPtr>(field, (f, w, o) => w.WriteLong(f, (long) o));
+                readAction = raw
+                    ? GetRawReader(field, r => (UIntPtr) r.ReadLong())
+                    : GetReader(field, (f, r) => (UIntPtr) r.ReadLong(f));
+            }
             else
-                throw new IgniteException("Unsupported primitive type: " + type.Name);
+            {
+                throw new IgniteException(string.Format("Unsupported primitive type '{0}' [Field={1}, " +
+                                                        "DeclaringType={2}", type, field, field.DeclaringType));
+            }
         }
 
         /// <summary>
@@ -242,7 +272,22 @@ namespace Apache.Ignite.Core.Impl.Binary
         private static void HandleArray(FieldInfo field, out BinaryReflectiveWriteAction writeAction,
             out BinaryReflectiveReadAction readAction, bool raw)
         {
-            Type elemType = field.FieldType.GetElementType();
+            if (field.FieldType.GetArrayRank() > 1)
+            {
+                writeAction = raw
+                    ? GetRawWriter<Array>(field, (w, o) => w.WriteObject(
+                        o == null ? null : new MultidimensionalArrayHolder(o)))
+                    : GetWriter<Array>(field, (f, w, o) => w.WriteObject(f,
+                        o == null ? null : new MultidimensionalArrayHolder(o)));
+                readAction = raw
+                    ? GetRawReader(field, r => r.ReadObject<object>())
+                    : GetReader(field, (f, r) => r.ReadObject<object>(f));
+
+                return;
+            }
+
+            var elemType = field.FieldType.GetElementType();
+            Debug.Assert(elemType != null);
 
             if (elemType == typeof (bool))
             {
@@ -400,47 +445,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Determines whether specified field is a query field (has QueryFieldAttribute).
-        /// </summary>
-        private static bool IsQueryField(FieldInfo fieldInfo)
-        {
-            Debug.Assert(fieldInfo != null && fieldInfo.DeclaringType != null);
-
-            var fieldName = BinaryUtils.CleanFieldName(fieldInfo.Name);
-
-            object[] attrs = null;
-
-            if (fieldName != fieldInfo.Name)
-            {
-                // Backing field, check corresponding property
-                var prop = fieldInfo.DeclaringType.GetProperty(fieldName, fieldInfo.FieldType);
-
-                if (prop != null)
-                    attrs = prop.GetCustomAttributes(true);
-            }
-
-            attrs = attrs ?? fieldInfo.GetCustomAttributes(true);
-
-            return attrs.OfType<QuerySqlFieldAttribute>().Any();
-        }
-
-        /// <summary>
         /// Handle other type.
         /// </summary>
         /// <param name="field">The field.</param>
         /// <param name="writeAction">Write action.</param>
         /// <param name="readAction">Read action.</param>
         /// <param name="raw">Raw mode.</param>
+        /// <param name="forceTimestamp">Force timestamp serialization for DateTime fields..</param>
         private static void HandleOther(FieldInfo field, out BinaryReflectiveWriteAction writeAction,
-            out BinaryReflectiveReadAction readAction, bool raw)
+            out BinaryReflectiveReadAction readAction, bool raw, bool forceTimestamp)
         {
             var type = field.FieldType;
 
-            var genericDef = type.IsGenericType ? type.GetGenericTypeDefinition() : null;
-
-            bool nullable = genericDef == typeof (Nullable<>);
-
-            var nullableType = nullable ? type.GetGenericArguments()[0] : null;
+            var nullableType = Nullable.GetUnderlyingType(type);
 
             if (type == typeof (decimal))
             {
@@ -469,22 +486,22 @@ namespace Apache.Ignite.Core.Impl.Binary
                     ? GetRawReader(field, r => r.ReadObject<Guid>())
                     : GetReader(field, (f, r) => r.ReadObject<Guid>(f));
             }
-            else if (nullable && nullableType == typeof (Guid))
+            else if (nullableType == typeof (Guid))
             {
                 writeAction = raw
                     ? GetRawWriter<Guid?>(field, (w, o) => w.WriteGuid(o))
                     : GetWriter<Guid?>(field, (f, w, o) => w.WriteGuid(f, o));
                 readAction = raw ? GetRawReader(field, r => r.ReadGuid()) : GetReader(field, (f, r) => r.ReadGuid(f));
             }
-            else if (type.IsEnum)
+            else if ((nullableType ?? type).IsEnum && 
+                !new[] {typeof(long), typeof(ulong)}.Contains(Enum.GetUnderlyingType(nullableType ?? type)))
             {
                 writeAction = raw
-                    ? GetRawWriter<object>(field, (w, o) => w.WriteEnum(o), true)
-                    : GetWriter<object>(field, (f, w, o) => w.WriteEnum(f, o), true);
+                    ? GetRawWriter<object>(field, (w, o) => w.WriteEnum(o))
+                    : GetWriter<object>(field, (f, w, o) => w.WriteEnum(f, o));
                 readAction = raw ? GetRawReader(field, MthdReadEnumRaw) : GetReader(field, MthdReadEnum);
             }
-            else if (type == BinaryUtils.TypDictionary ||
-                     type.GetInterface(BinaryUtils.TypDictionary.FullName) != null && !type.IsGenericType)
+            else if (type == typeof(IDictionary) || type == typeof(Hashtable))
             {
                 writeAction = raw
                     ? GetRawWriter<IDictionary>(field, (w, o) => w.WriteDictionary(o))
@@ -493,8 +510,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     ? GetRawReader(field, r => r.ReadDictionary())
                     : GetReader(field, (f, r) => r.ReadDictionary(f));
             }
-            else if (type == BinaryUtils.TypCollection ||
-                     type.GetInterface(BinaryUtils.TypCollection.FullName) != null && !type.IsGenericType)
+            else if (type == typeof(ICollection) || type == typeof(ArrayList))
             {
                 writeAction = raw
                     ? GetRawWriter<ICollection>(field, (w, o) => w.WriteCollection(o))
@@ -503,22 +519,31 @@ namespace Apache.Ignite.Core.Impl.Binary
                     ? GetRawReader(field, r => r.ReadCollection())
                     : GetReader(field, (f, r) => r.ReadCollection(f));
             }
-            else if (type == typeof (DateTime) && IsQueryField(field) && !raw)
+            else if (type == typeof(DateTime) && IsTimestamp(field, forceTimestamp, raw))
             {
-                // Special case for DateTime and query fields.
-                // If a field is marked with [QuerySqlField], write it as TimeStamp so that queries work.
-                // This is not needed in raw mode (queries do not work anyway).
-                // It may cause issues when field has attribute, but is used in a cache without queries, and user
-                // may expect non-UTC dates to work. However, such cases are rare, and there are workarounds.
-
                 writeAction = GetWriter<DateTime>(field, (f, w, o) => w.WriteTimestamp(f, o));
                 readAction = GetReader(field, (f, r) => r.ReadObject<DateTime>(f));
             }
-            else if (nullableType == typeof (DateTime) && IsQueryField(field) && !raw)
+            else if (nullableType == typeof(DateTime) && IsTimestamp(field, forceTimestamp, raw))
             {
                 writeAction = GetWriter<DateTime?>(field, (f, w, o) => w.WriteTimestamp(f, o));
                 readAction = GetReader(field, (f, r) => r.ReadTimestamp(f));
             }
+            else if (type.IsPointer)
+                unsafe
+                {
+                    // Expression trees do not work with pointers properly, use reflection.
+                    var fieldName = BinaryUtils.CleanFieldName(field.Name);
+                    writeAction = raw
+                        ? (BinaryReflectiveWriteAction) ((o, w) =>
+                            w.GetRawWriter().WriteLong((long) Pointer.Unbox(field.GetValue(o))))
+                        : ((o, w) => w.WriteLong(fieldName, (long) Pointer.Unbox(field.GetValue(o))));
+
+                    readAction = raw
+                        ? (BinaryReflectiveReadAction) ((o, r) =>
+                            field.SetValue(o, Pointer.Box((void*) r.GetRawReader().ReadLong(), field.FieldType)))
+                        : ((o, r) => field.SetValue(o, Pointer.Box((void*) r.ReadLong(fieldName), field.FieldType)));
+                }
             else
             {
                 writeAction = raw ? GetRawWriter(field, MthdWriteObjRaw) : GetWriter(field, MthdWriteObj);
@@ -527,11 +552,50 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Determines whether specified field should be written as timestamp.
+        /// </summary>
+        private static bool IsTimestamp(FieldInfo field, bool forceTimestamp, bool raw)
+        {
+            if (forceTimestamp)
+            {
+                return true;
+            }
+
+            Debug.Assert(field != null && field.DeclaringType != null);
+
+            var fieldName = BinaryUtils.CleanFieldName(field.Name);
+
+            object[] attrs = null;
+
+            if (fieldName != field.Name)
+            {
+                // Backing field, check corresponding property
+                var prop = field.DeclaringType.GetProperty(fieldName, field.FieldType);
+
+                if (prop != null)
+                    attrs = prop.GetCustomAttributes(true);
+            }
+
+            attrs = attrs ?? field.GetCustomAttributes(true);
+
+            if (attrs.Any(x => x is TimestampAttribute))
+            {
+                return true;
+            }
+
+            // Special case for DateTime and query fields.
+            // If a field is marked with [QuerySqlField], write it as TimeStamp so that queries work.
+            // This is not needed in raw mode (queries do not work anyway).
+            // It may cause issues when field has attribute, but is used in a cache without queries, and user
+            // may expect non-UTC dates to work. However, such cases are rare, and there are workarounds.
+            return !raw && attrs.Any(x => x is QuerySqlFieldAttribute);
+        }
+
+        /// <summary>
         /// Gets the reader with a specified write action.
         /// </summary>
         private static BinaryReflectiveWriteAction GetWriter<T>(FieldInfo field,
-            Expression<Action<string, IBinaryWriter, T>> write,
-            bool convertFieldValToObject = false)
+            Expression<Action<string, IBinaryWriter, T>> write)
         {
             Debug.Assert(field != null);
             Debug.Assert(field.DeclaringType != null);   // non-static
@@ -542,8 +606,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             var targetParamConverted = Expression.Convert(targetParam, field.DeclaringType);
             Expression fldExpr = Expression.Field(targetParamConverted, field);
 
-            if (convertFieldValToObject)
-                fldExpr = Expression.Convert(fldExpr, typeof (object));
+            if (field.FieldType != typeof(T))
+            {
+                fldExpr = Expression.Convert(fldExpr, typeof(T));
+            }
 
             // Call Writer method
             var writerParam = Expression.Parameter(typeof(IBinaryWriter));
@@ -558,8 +624,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Gets the reader with a specified write action.
         /// </summary>
         private static BinaryReflectiveWriteAction GetRawWriter<T>(FieldInfo field,
-            Expression<Action<IBinaryRawWriter, T>> write,
-            bool convertFieldValToObject = false)
+            Expression<Action<IBinaryRawWriter, T>> write)
         {
             Debug.Assert(field != null);
             Debug.Assert(field.DeclaringType != null);   // non-static
@@ -570,8 +635,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             var targetParamConverted = Expression.Convert(targetParam, field.DeclaringType);
             Expression fldExpr = Expression.Field(targetParamConverted, field);
 
-            if (convertFieldValToObject)
-                fldExpr = Expression.Convert(fldExpr, typeof (object));
+            if (field.FieldType != typeof(T))
+                fldExpr = Expression.Convert(fldExpr, typeof (T));
 
             // Call Writer method
             var writerParam = Expression.Parameter(typeof(IBinaryWriter));
@@ -646,7 +711,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             Expression readExpr = Expression.Invoke(read, fldNameParam, readerParam);
 
             if (typeof(T) != field.FieldType)
+            {
                 readExpr = Expression.Convert(readExpr, field.FieldType);
+            }
 
             // Assign field value
             var targetParam = Expression.Parameter(typeof(object));
@@ -722,7 +789,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             // Assign field value
             var targetParam = Expression.Parameter(typeof(object));
-            var targetParamConverted = Expression.Convert(targetParam, field.DeclaringType);
+            var targetParamConverted = Expression.Convert(targetParam, typeof(object));
             var assignExpr = Expression.Call(DelegateConverter.GetWriteFieldMethod(field), targetParamConverted, 
                 readExpr);
 

@@ -45,24 +45,16 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** URL. */
-    private static final String URL = "jdbc:ignite://127.0.0.1/";
+    private static final String URL = "jdbc:ignite://127.0.0.1/pers";
 
     /** Statement. */
     private Statement stmt;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
-
-        cache.setCacheMode(PARTITIONED);
-        cache.setBackups(1);
-        cache.setWriteSynchronizationMode(FULL_SYNC);
-        cache.setAtomicityMode(TRANSACTIONAL);
-        cache.setIndexedTypes(String.class, Organization.class, AffinityKey.class, Person.class);
-
-        cfg.setCacheConfiguration(cache);
+        cfg.setCacheConfiguration(cacheConfiguration());
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -75,26 +67,42 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /**
+     * @return Cache configuration.
+     */
+    protected CacheConfiguration cacheConfiguration() {
+        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+
+        cache.setCacheMode(PARTITIONED);
+        cache.setBackups(1);
+        cache.setWriteSynchronizationMode(FULL_SYNC);
+        cache.setAtomicityMode(TRANSACTIONAL);
+
+        return cache;
+    }
+
+
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(3);
 
-        IgniteCache<String, Organization> orgCache = grid(0).cache(null);
+        IgniteCache<String, Organization> orgCache = jcache(grid(0), cacheConfiguration(), "org",
+            String.class, Organization.class);
 
         assert orgCache != null;
 
         orgCache.put("o1", new Organization(1, "A"));
         orgCache.put("o2", new Organization(2, "B"));
 
-        IgniteCache<AffinityKey<String>, Person> personCache = grid(0).cache(null);
+        IgniteCache<AffinityKey, Person> personCache = jcache(grid(0), cacheConfiguration(), "pers",
+            AffinityKey.class, Person.class);
 
         assert personCache != null;
 
         personCache.put(new AffinityKey<>("p1", "o1"), new Person(1, "John White", 25, 1));
         personCache.put(new AffinityKey<>("p2", "o1"), new Person(2, "Joe Black", 35, 1));
         personCache.put(new AffinityKey<>("p3", "o2"), new Person(3, "Mike Green", 40, 2));
-
-        Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
 
     /** {@inheritDoc} */
@@ -125,7 +133,7 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
      */
     public void testJoin() throws Exception {
         ResultSet rs = stmt.executeQuery(
-            "select p.id, p.name, o.name as orgName from Person p, Organization o where p.orgId = o.id");
+            "select p.id, p.name, o.name as orgName from \"pers\".Person p, \"org\".Organization o where p.orgId = o.id");
 
         assert rs != null;
 
@@ -160,7 +168,7 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
      */
     public void testJoinWithoutAlias() throws Exception {
         ResultSet rs = stmt.executeQuery(
-            "select p.id, p.name, o.name from Person p, Organization o where p.orgId = o.id");
+            "select p.id, p.name, o.name from \"pers\".Person p, \"org\".Organization o where p.orgId = o.id");
 
         assert rs != null;
 
@@ -197,7 +205,7 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testIn() throws Exception {
-        ResultSet rs = stmt.executeQuery("select name from Person where age in (25, 35)");
+        ResultSet rs = stmt.executeQuery("select name from \"pers\".Person where age in (25, 35)");
 
         assert rs != null;
 
@@ -217,7 +225,7 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBetween() throws Exception {
-        ResultSet rs = stmt.executeQuery("select name from Person where age between 24 and 36");
+        ResultSet rs = stmt.executeQuery("select name from \"pers\".Person where age between 24 and 36");
 
         assert rs != null;
 
@@ -237,7 +245,7 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCalculatedValue() throws Exception {
-        ResultSet rs = stmt.executeQuery("select age * 2 from Person");
+        ResultSet rs = stmt.executeQuery("select age * 2 from \"pers\".Person");
 
         assert rs != null;
 

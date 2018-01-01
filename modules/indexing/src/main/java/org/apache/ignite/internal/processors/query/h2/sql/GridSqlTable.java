@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.Collections;
+import java.util.List;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.h2.command.Parser;
 import org.h2.table.Table;
 import org.jetbrains.annotations.Nullable;
@@ -37,7 +39,7 @@ public class GridSqlTable extends GridSqlElement {
     private final GridH2Table tbl;
 
     /** */
-    private boolean affKeyCond;
+    private List<String> useIndexes;
 
     /**
      * @param schema Schema.
@@ -60,7 +62,7 @@ public class GridSqlTable extends GridSqlElement {
      * @param tbl H2 Table.
      */
     private GridSqlTable(@Nullable String schema, String tblName, @Nullable Table tbl) {
-        super(Collections.<GridSqlElement>emptyList());
+        super(Collections.<GridSqlAst>emptyList());
 
         assert schema != null : "schema";
         assert tblName != null : "tblName";
@@ -71,26 +73,53 @@ public class GridSqlTable extends GridSqlElement {
         this.tbl = tbl instanceof GridH2Table ? (GridH2Table)tbl : null;
     }
 
-    /**
-     * @param affKeyCond If affinity key condition is found.
-     */
-    public void affinityKeyCondition(boolean affKeyCond) {
-        this.affKeyCond = affKeyCond;
-    }
-
-    /**
-     * @return {@code true} If affinity key condition is found.
-     */
-    public boolean affinityKeyCondition() {
-        return affKeyCond;
-    }
-
     /** {@inheritDoc} */
     @Override public String getSQL() {
+        return getBeforeAliasSql() + getAfterAliasSQL();
+    }
+
+    /**
+     * @return SQL for the table before alias.
+     */
+    public String getBeforeAliasSql() {
         if (schema == null)
             return Parser.quoteIdentifier(tblName);
 
         return Parser.quoteIdentifier(schema) + '.' + Parser.quoteIdentifier(tblName);
+    }
+
+    /**
+     * @return SQL for the table after alias.
+     */
+    public String getAfterAliasSQL() {
+        if (useIndexes == null)
+            return "";
+
+        SB b = new SB();
+
+        b.a(" USE INDEX (");
+
+        boolean first = true;
+
+        for (String idx : useIndexes) {
+            if (first)
+                first = false;
+            else
+                b.a(", ");
+
+            b.a(Parser.quoteIdentifier(idx));
+        }
+
+        b.a(')');
+
+        return b.toString();
+    }
+
+    /**
+     * @param useIndexes List of indexes.
+     */
+    public void useIndexes(List<String> useIndexes) {
+        this.useIndexes = useIndexes;
     }
 
     /**

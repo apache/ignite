@@ -16,28 +16,30 @@
  */
 
 import angular from 'angular';
-import templateNotFoundPage from '../../../views/404.jade';
-import templateNotAuthorizedPage from '../../../views/403.jade';
+import templateNotFoundPage from 'views/404.tpl.pug';
+import templateNotAuthorizedPage from 'views/403.tpl.pug';
 
 angular
     .module('ignite-console.states.errors', [
         'ui.router'
     ])
-    .config(['$stateProvider', 'AclRouteProvider', function($stateProvider) {
+    .config(['$stateProvider', function($stateProvider) {
         // set up the states
         $stateProvider
             .state('404', {
                 url: '/404',
                 templateUrl: templateNotFoundPage,
-                metaTags: {
+                tfMetaTags: {
                     title: 'Page not found'
-                }
+                },
+                unsaved: true
             })
             .state('403', {
                 url: '/403',
                 templateUrl: templateNotAuthorizedPage,
-                metaTags: {
+                tfMetaTags: {
                     title: 'Not authorized'
-                }
+                },
+                unsaved: true
             });
     }]);

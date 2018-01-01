@@ -41,6 +41,7 @@ import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridIoUserMessage;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
@@ -328,7 +329,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     @SuppressWarnings("deprecation")
     public void triggerMessage(ClusterNode node, Object msg) {
         for (GridMessageListener lsnr : msgLsnrs)
-            lsnr.onMessage(node.id(), msg);
+            lsnr.onMessage(node.id(), msg, GridIoPolicy.SYSTEM_POOL);
     }
 
     /** {@inheritDoc} */
@@ -601,6 +602,11 @@ public class GridSpiTestContext implements IgniteSpiContext {
             timeoutProcessor.removeTimeoutObject(new GridSpiTimeoutObject(obj));
     }
 
+    /** {@inheritDoc} */
+    @Override public Map<String, Object> nodeAttributes() {
+        return Collections.emptyMap();
+    }
+
     /**
      * @param cacheName Cache name.
      * @return Map representing cache.
@@ -662,13 +668,12 @@ public class GridSpiTestContext implements IgniteSpiContext {
         @SuppressWarnings({
             "SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions",
             "OverlyStrongTypeCast"})
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             GridIoUserMessage ioMsg = (GridIoUserMessage)msg;
 
-            ClusterNode node = locNode;
-                Object msgBody = ioMsg.body();
+            Object msgBody = ioMsg.body();
 
-                assert msgBody != null || ioMsg.bodyBytes() != null;
+            assert msgBody != null || ioMsg.bodyBytes() != null;
         }
 
         /** {@inheritDoc} */

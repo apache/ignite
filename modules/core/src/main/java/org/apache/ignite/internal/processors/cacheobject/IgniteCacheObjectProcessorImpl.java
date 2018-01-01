@@ -18,14 +18,13 @@
 package org.apache.ignite.internal.processors.cacheobject;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
+import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.UUID;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -33,19 +32,17 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
+import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 
 /**
  *
@@ -57,8 +54,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     /** */
     private IgniteBinary noOpBinary = new NoOpBinary();
 
-    /**
-     *
+    /*
+     * Static initializer
      */
     static {
         IMMUTABLE_CLS.add(String.class);
@@ -83,11 +80,6 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public String affinityField(String keyType) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteBinary binary() {
         return noOpBinary;
     }
@@ -101,12 +93,12 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] marshal(CacheObjectContext ctx, Object val) throws IgniteCheckedException {
+    @Override public byte[] marshal(CacheObjectValueContext ctx, Object val) throws IgniteCheckedException {
         return CU.marshal(ctx.kernalContext().cache().context(), ctx.addDeploymentInfo(), val);
     }
 
     /** {@inheritDoc} */
-    @Override public Object unmarshal(CacheObjectContext ctx, byte[] bytes, ClassLoader clsLdr)
+    @Override public Object unmarshal(CacheObjectValueContext ctx, byte[] bytes, ClassLoader clsLdr)
         throws IgniteCheckedException {
         return U.unmarshal(ctx.kernalContext(), bytes, U.resolveClassLoader(clsLdr, ctx.kernalContext().config()));
     }
@@ -149,31 +141,6 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject toCacheObject(GridCacheContext ctx, long valPtr, boolean tmp)
-        throws IgniteCheckedException {
-        assert valPtr != 0;
-
-        int size = GridUnsafe.getInt(valPtr);
-
-        byte type = GridUnsafe.getByte(valPtr + 4);
-
-        byte[] bytes = U.copyMemory(valPtr + 5, size);
-
-        if (ctx.kernalContext().config().isPeerClassLoadingEnabled() &&
-            ctx.offheapTiered() &&
-            type != CacheObject.TYPE_BYTE_ARR) {
-            IgniteUuid valClsLdrId = U.readGridUuid(valPtr + 5 + size);
-
-            ClassLoader ldr =
-                valClsLdrId != null ? ctx.deploy().getClassLoader(valClsLdrId) : ctx.deploy().localLoader();
-
-            return toCacheObject(ctx.cacheObjectContext(), unmarshal(ctx.cacheObjectContext(), bytes, ldr), false);
-        }
-        else
-            return toCacheObject(ctx.cacheObjectContext(), type, bytes);
-    }
-
-    /** {@inheritDoc} */
     @Override public CacheObject toCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) {
         switch (type) {
             case CacheObject.TYPE_BYTE_ARR:
@@ -184,6 +151,74 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         }
 
         throw new IllegalArgumentException("Invalid object type: " + type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) throws IgniteCheckedException {
+        switch (type) {
+            case CacheObject.TYPE_BYTE_ARR:
+                throw new IllegalArgumentException("Byte arrays cannot be used as cache keys.");
+
+            case CacheObject.TYPE_REGULAR:
+                return new KeyCacheObjectImpl(ctx.kernalContext().cacheObjects().unmarshal(ctx, bytes, null), bytes, -1);
+        }
+
+        throw new IllegalArgumentException("Invalid object type: " + type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObject toCacheObject(CacheObjectContext ctx, ByteBuffer buf) {
+        int len = buf.getInt();
+
+        assert len >= 0 : len;
+
+        byte type = buf.get();
+
+        byte[] data = new byte[len];
+
+        buf.get(data);
+
+        return toCacheObject(ctx, type, data);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IncompleteCacheObject toCacheObject(
+        final CacheObjectContext ctx,
+        final ByteBuffer buf,
+        @Nullable IncompleteCacheObject incompleteObj
+    ) throws IgniteCheckedException {
+        if (incompleteObj == null)
+            incompleteObj = new IncompleteCacheObject(buf);
+
+        if (incompleteObj.isReady())
+            return incompleteObj;
+
+        incompleteObj.readData(buf);
+
+        if (incompleteObj.isReady())
+            incompleteObj.object(toCacheObject(ctx, incompleteObj.type(), incompleteObj.data()));
+
+        return incompleteObj;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IncompleteCacheObject toKeyCacheObject(
+        final CacheObjectContext ctx,
+        final ByteBuffer buf,
+        @Nullable IncompleteCacheObject incompleteObj
+    ) throws IgniteCheckedException {
+        if (incompleteObj == null)
+            incompleteObj = new IncompleteCacheObject(buf);
+
+        if (incompleteObj.isReady())
+            return incompleteObj;
+
+        incompleteObj.readData(buf);
+
+        if (incompleteObj.isReady())
+            incompleteObj.object(toKeyCacheObject(ctx, incompleteObj.type(), incompleteObj.data()));
+
+        return incompleteObj;
     }
 
     /** {@inheritDoc} */
@@ -232,7 +267,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
                 ctx.kernalContext().affinity().partition0(ctx.cacheName(), obj, null);
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to get partition");
+            U.error(log, "Failed to get partition", e);
 
             return  -1;
         }
@@ -242,16 +277,13 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     @Override public CacheObjectContext contextForCache(CacheConfiguration ccfg) throws IgniteCheckedException {
         assert ccfg != null;
 
-        CacheMemoryMode memMode = ccfg.getMemoryMode();
-
-        boolean storeVal = ctx.config().isPeerClassLoadingEnabled() ||
-            GridQueryProcessor.isEnabled(ccfg) ||
-            !ccfg.isCopyOnRead();
+        boolean storeVal = !ccfg.isCopyOnRead() || (!isBinaryEnabled(ccfg) &&
+            (QueryUtils.isEnabled(ccfg) || ctx.config().isPeerClassLoadingEnabled()));
 
         CacheObjectContext res = new CacheObjectContext(ctx,
             ccfg.getName(),
             ccfg.getAffinityMapper() != null ? ccfg.getAffinityMapper() : new GridCacheDefaultAffinityKeyMapper(),
-            ccfg.isCopyOnRead() && memMode != OFFHEAP_VALUES,
+            ccfg.isCopyOnRead(),
             storeVal,
             ctx.config().isPeerClassLoadingEnabled() && !isBinaryEnabled(ccfg));
 
@@ -269,11 +301,6 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onUtilityCacheStarted() throws IgniteCheckedException {
         // No-op.
     }
 
@@ -312,154 +339,4 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         return false;
     }
 
-    /**
-     * Wraps key provided by user, must be serialized before stored in cache.
-     */
-    private static class UserKeyCacheObjectImpl extends KeyCacheObjectImpl {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         *
-         */
-        public UserKeyCacheObjectImpl() {
-            //No-op.
-        }
-
-        /**
-         * @param key Key.
-         */
-        UserKeyCacheObjectImpl(Object key) {
-            this(key, -1);
-        }
-
-        /**
-         * @param key Key.
-         */
-        UserKeyCacheObjectImpl(Object key, int part) {
-            super(key, null, part);
-        }
-
-        /**
-         * @param key Key.
-         */
-        UserKeyCacheObjectImpl(Object key, byte[] valBytes, int part) {
-            super(key, valBytes, part);
-        }
-
-        /** {@inheritDoc} */
-        @Override public KeyCacheObject copy(int part) {
-            if (this.partition() == part)
-                return this;
-
-            return new UserKeyCacheObjectImpl(val, valBytes, part);
-        }
-
-        /** {@inheritDoc} */
-        @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
-            try {
-                if (!ctx.processor().immutable(val)) {
-                    if (valBytes == null)
-                        valBytes = ctx.processor().marshal(ctx, val);
-
-                    ClassLoader ldr = ctx.p2pEnabled() ?
-                        IgniteUtils.detectClassLoader(IgniteUtils.detectClass(this.val)) : U.gridClassLoader();
-
-                    Object val = ctx.processor().unmarshal(ctx, valBytes, ldr);
-
-                    return new KeyCacheObjectImpl(val, valBytes);
-                }
-
-                return new KeyCacheObjectImpl(val, valBytes);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal object: " + val, e);
-            }
-        }
-    }
-
-    /**
-     * Wraps value provided by user, must be serialized before stored in cache.
-     */
-    private static class UserCacheObjectImpl extends CacheObjectImpl {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         *
-         */
-        public UserCacheObjectImpl() {
-            //No-op.
-        }
-
-        /**
-         * @param val Value.
-         * @param valBytes Value bytes.
-         */
-        public UserCacheObjectImpl(Object val, byte[] valBytes) {
-            super(val, valBytes);
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
-            return super.value(ctx, false); // Do not need copy since user value is not in cache.
-        }
-
-        /** {@inheritDoc} */
-        @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
-            try {
-                if (valBytes == null)
-                    valBytes = ctx.processor().marshal(ctx, val);
-
-                if (ctx.storeValue()) {
-                    ClassLoader ldr = ctx.p2pEnabled() ?
-                        IgniteUtils.detectClass(this.val).getClassLoader() : val.getClass().getClassLoader();
-
-                    Object val = this.val != null && ctx.processor().immutable(this.val) ? this.val :
-                        ctx.processor().unmarshal(ctx, valBytes, ldr);
-
-                    return new CacheObjectImpl(val, valBytes);
-                }
-
-                return new CacheObjectImpl(null, valBytes);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to marshal object: " + val, e);
-            }
-        }
-    }
-
-    /**
-     * Wraps value provided by user, must be copied before stored in cache.
-     */
-    private static class UserCacheObjectByteArrayImpl extends CacheObjectByteArrayImpl {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         *
-         */
-        public UserCacheObjectByteArrayImpl() {
-            // No-op.
-        }
-
-        /**
-         * @param val Value.
-         */
-        public UserCacheObjectByteArrayImpl(byte[] val) {
-            super(val);
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
-            return super.value(ctx, false); // Do not need copy since user value is not in cache.
-        }
-
-        /** {@inheritDoc} */
-        @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
-            byte[] valCpy = Arrays.copyOf(val, val.length);
-
-            return new CacheObjectByteArrayImpl(valCpy);
-        }
-    }
 }

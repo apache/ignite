@@ -109,7 +109,6 @@ public interface CacheMetrics {
      */
     public float getAverageRemoveTime();
 
-
     /**
      * The mean time to execute tx commit.
      *
@@ -144,13 +143,6 @@ public interface CacheMetrics {
      * @return Cache name.
      */
     public String name();
-
-    /**
-     * Gets number of entries that was swapped to disk.
-     *
-     * @return Number of entries that was swapped to disk.
-     */
-    public long getOverflowSize();
 
     /**
      * The total number of get requests to the off-heap memory.
@@ -209,6 +201,14 @@ public interface CacheMetrics {
     public float getOffHeapMissPercentage();
 
     /**
+     * Gets the number of cache entries in heap memory, including entries held by active transactions, entries in
+     * onheap cache and near entries.
+     *
+     * @return Number of entries in heap memory.
+     */
+    public long getHeapEntriesCount();
+
+    /**
      * Gets number of entries stored in off-heap memory.
      *
      * @return Number of entries stored in off-heap memory.
@@ -235,76 +235,6 @@ public interface CacheMetrics {
      * @return Memory size allocated in off-heap.
      */
     public long getOffHeapAllocatedSize();
-
-    /**
-     * Gets off-heap memory maximum size.
-     *
-     * @return Off-heap memory maximum size.
-     */
-    public long getOffHeapMaxSize();
-
-    /**
-     * The total number of get requests to the swap.
-     *
-     * @return The number of gets.
-     */
-    public long getSwapGets();
-
-    /**
-     * The total number of put requests to the swap.
-     *
-     * @return The number of puts.
-     */
-    public long getSwapPuts();
-
-    /**
-     * The total number of removals from the swap.
-     *
-     * @return The number of removals.
-     */
-    public long getSwapRemovals();
-
-    /**
-     * The number of get requests that were satisfied by the swap.
-     *
-     * @return The swap hits number.
-     */
-    public long getSwapHits();
-
-    /**
-     * A miss is a get request that is not satisfied by swap.
-     *
-     * @return The swap misses number.
-     */
-    public long getSwapMisses();
-
-    /**
-     * Gets number of entries stored in swap.
-     *
-     * @return Number of entries stored in swap.
-     */
-    public long getSwapEntriesCount();
-
-    /**
-     * Gets size of swap.
-     *
-     * @return Size of swap.
-     */
-    public long getSwapSize();
-
-    /**
-     * Gets the percentage of hits on swap.
-     *
-     * @return The percentage of hits on swap.
-     */
-    public float getSwapHitPercentage();
-
-    /**
-     * Gets the percentage of misses on swap.
-     *
-     * @return The percentage of misses on swap.
-     */
-    public float getSwapMissPercentage();
 
     /**
      * Gets number of non-{@code null} values in the cache.
@@ -551,6 +481,61 @@ public interface CacheMetrics {
     public boolean isStoreByValue();
 
     /**
+     * @return Total number of partitions on current node.
+     */
+    public int getTotalPartitionsCount();
+
+    /**
+     * @return Number of currently rebalancing partitions on current node.
+     */
+    public int getRebalancingPartitionsCount();
+
+    /**
+     * @return Estimated number of keys to be rebalanced on current node.
+     */
+    public long getKeysToRebalanceLeft();
+
+    /**
+     * @return Estimated rebalancing speed in keys.
+     */
+    public long getRebalancingKeysRate();
+
+    /**
+     * @return Estimated rebalancing speed in bytes.
+     */
+    public long getRebalancingBytesRate();
+
+    /**
+     * This method is deprecated and will be deleted in future major release.
+     *
+     * Use {@link #getEstimatedRebalancingFinishTime()} instead.
+     *
+     * @return Estimated rebalancing finished time.
+     */
+    @Deprecated
+    public long estimateRebalancingFinishTime();
+
+    /**
+     * This method is deprecated and will be deleted in future major release.
+     *
+     * Use {@link #getRebalancingStartTime()} instead.
+     *
+     * @return Rebalancing start time.
+     */
+    @Deprecated
+    public long rebalancingStartTime();
+
+    /**
+     * @return Estimated rebalancing finish time.
+     */
+    public long getEstimatedRebalancingFinishTime();
+
+    /**
+     * @return Rebalancing start time.
+     */
+    public long getRebalancingStartTime();
+
+    /**
      * Checks whether statistics collection is enabled in this cache.
      * <p>
      * The default value is {@code false}.
@@ -591,4 +576,18 @@ public interface CacheMetrics {
      * @see CacheWriter
      */
     public boolean isWriteThrough();
+
+    /**
+     * Checks whether cache topology is valid for read operations.
+     *
+     * @return {@code true} when cache topology is valid for reading.
+     */
+    public boolean isValidForReading();
+
+    /**
+     * Checks whether cache topology is valid for write operations.
+     *
+     * @return {@code true} when cache topology is valid for writing.
+     */
+    public boolean isValidForWriting();
 }

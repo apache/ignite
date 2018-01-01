@@ -22,9 +22,11 @@ import java.io.Serializable;
 import java.io.StringWriter;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
-import org.apache.ignite.internal.util.GridSpinReadWriteLock;
+import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -40,18 +42,19 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
 
     /** */
     @GridToStringExclude
-    private final GridSpinReadWriteLock rwLock = new GridSpinReadWriteLock();
+    private final ReadWriteLock rwLock =
+        new StripedCompositeReadWriteLock(Runtime.getRuntime().availableProcessors());
 
     /** */
     @GridToStringExclude
-    private IgniteFutureImpl<?> reconnectFut;
+    private volatile IgniteFutureImpl<?> reconnectFut;
 
     /** */
     private final AtomicReference<GridKernalState> state = new AtomicReference<>(GridKernalState.STOPPED);
 
     /** */
     @GridToStringExclude
-    private final String gridName;
+    private final String igniteInstanceName;
 
     /**
      * User stack trace.
@@ -61,10 +64,10 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
     private String stackTrace;
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      */
-    public GridKernalGatewayImpl(String gridName) {
-        this.gridName = gridName;
+    public GridKernalGatewayImpl(String igniteInstanceName) {
+        this.igniteInstanceName = igniteInstanceName;
     }
 
     /** {@inheritDoc} */
@@ -73,18 +76,20 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
         if (stackTrace == null)
             stackTrace = stackTrace();
 
-        rwLock.readLock();
+        Lock lock = rwLock.readLock();
+
+        lock.lock();
 
         GridKernalState state = this.state.get();
 
         if (state != GridKernalState.STARTED) {
             // Unlock just acquired lock.
-            rwLock.readUnlock();
+            lock.unlock();
 
             if (state == GridKernalState.DISCONNECTED) {
                 assert reconnectFut != null;
 
-                throw new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected: " + gridName);
+                throw new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected: " + igniteInstanceName);
             }
 
             throw illegalState();
@@ -96,15 +101,15 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
         if (stackTrace == null)
             stackTrace = stackTrace();
 
-        rwLock.readLock();
+        rwLock.readLock().lock();
 
         if (state.get() == GridKernalState.DISCONNECTED)
-            throw new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected: " + gridName);
+            throw new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected: " + igniteInstanceName);
     }
 
     /** {@inheritDoc} */
     @Override public void readUnlock() {
-        rwLock.readUnlock();
+        rwLock.readLock().unlock();
     }
 
     /** {@inheritDoc} */
@@ -118,7 +123,7 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
         // Busy wait is intentional.
         while (true)
             try {
-                if (rwLock.tryWriteLock(200, TimeUnit.MILLISECONDS))
+                if (rwLock.writeLock().tryLock(200, TimeUnit.MILLISECONDS))
                     break;
                 else
                     Thread.sleep(200);
@@ -135,7 +140,7 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
 
     /** {@inheritDoc} */
     @Override public boolean tryWriteLock(long timeout) throws InterruptedException {
-        boolean acquired = rwLock.tryWriteLock(timeout, TimeUnit.MILLISECONDS);
+        boolean acquired = rwLock.writeLock().tryLock(timeout, TimeUnit.MILLISECONDS);
 
         if (acquired) {
             if (stackTrace == null)
@@ -149,6 +154,12 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
 
     /** {@inheritDoc} */
     @Override public GridFutureAdapter<?> onDisconnected() {
+        if (state.get() == GridKernalState.DISCONNECTED) {
+            assert reconnectFut != null;
+
+            return (GridFutureAdapter<?>)reconnectFut.internalFuture();
+        }
+
         GridFutureAdapter<?> fut = new GridFutureAdapter<>();
 
         reconnectFut = new IgniteFutureImpl<>(fut);
@@ -188,13 +199,13 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
      */
     private IllegalStateException illegalState() {
         return new IllegalStateException("Grid is in invalid state to perform this operation. " +
-            "It either not started yet or has already being or have stopped [gridName=" + gridName +
+            "It either not started yet or has already being or have stopped [igniteInstanceName=" + igniteInstanceName +
             ", state=" + state + ']');
     }
 
     /** {@inheritDoc} */
     @Override public void writeUnlock() {
-        rwLock.writeUnlock();
+        rwLock.writeLock().unlock();
     }
 
     /** {@inheritDoc} */

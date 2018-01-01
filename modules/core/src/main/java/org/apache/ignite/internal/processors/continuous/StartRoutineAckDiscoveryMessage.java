@@ -23,6 +23,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,11 +39,11 @@ public class StartRoutineAckDiscoveryMessage extends AbstractContinuousMessage {
 
     /** */
     @GridToStringExclude
-    private final Map<Integer, Long> updateCntrs;
+    private final Map<Integer, T2<Long, Long>> updateCntrs;
 
     /** */
     @GridToStringExclude
-    private final Map<UUID, Map<Integer, Long>> updateCntrsPerNode;
+    private final Map<UUID, Map<Integer, T2<Long, Long>>> updateCntrsPerNode;
 
     /**
      * @param routineId Routine id.
@@ -52,8 +53,8 @@ public class StartRoutineAckDiscoveryMessage extends AbstractContinuousMessage {
      */
     public StartRoutineAckDiscoveryMessage(UUID routineId,
         Map<UUID, IgniteCheckedException> errs,
-        Map<Integer, Long> cntrs,
-        Map<UUID, Map<Integer, Long>> cntrsPerNode) {
+        Map<Integer, T2<Long, Long>> cntrs,
+        Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode) {
         super(routineId);
 
         this.errs = new HashMap<>(errs);
@@ -69,14 +70,14 @@ public class StartRoutineAckDiscoveryMessage extends AbstractContinuousMessage {
     /**
      * @return Update counters for partitions.
      */
-    public Map<Integer, Long> updateCounters() {
+    public Map<Integer, T2<Long, Long>> updateCounters() {
         return updateCntrs;
     }
 
     /**
      * @return Update counters for partitions per each node.
      */
-    public Map<UUID, Map<Integer, Long>> updateCountersPerNode() {
+    public Map<UUID, Map<Integer, T2<Long, Long>>> updateCountersPerNode() {
         return updateCntrsPerNode;
     }
 

@@ -43,13 +43,12 @@ public class GridFailFastNodeFailureDetectionSelfTest extends GridCommonAbstract
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(IP_FINDER);
-        disco.setHeartbeatFrequency(10_000);
 
         // Set parameters for fast ping failure.
         disco.setSocketTimeout(100);
@@ -57,6 +56,7 @@ public class GridFailFastNodeFailureDetectionSelfTest extends GridCommonAbstract
         disco.setReconnectCount(2);
 
         cfg.setDiscoverySpi(disco);
+        cfg.setMetricsUpdateFrequency(10_000);
 
         return cfg;
     }
@@ -113,7 +113,7 @@ public class GridFailFastNodeFailureDetectionSelfTest extends GridCommonAbstract
 
         failNode(ignite1);
 
-        assert failLatch.await(1000, MILLISECONDS);
+        assert failLatch.await(1500, MILLISECONDS);
     }
 
     /**

@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         /// <summary>
         /// Initializes a new instance of the <see cref="AtomicReferenceTest"/> class.
         /// </summary>
-        public AtomicReferenceTest() : base("config\\compute\\compute-grid1.xml")
+        public AtomicReferenceTest() : base("Config\\Compute\\compute-grid1.xml")
         {
             // No-op.
         }
@@ -128,7 +128,6 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         /// Tests DateTime in the atomic.
         /// </summary>
         [Test]
-        [Ignore("IGNITE-2578")]
         public void TestDateTime()
         {
             TestOperations(DateTime.Now, DateTime.Now.AddDays(-1));
@@ -138,7 +137,6 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         /// Tests serializable objects in the atomic.
         /// </summary>
         [Test]
-        [Ignore("IGNITE-2578")]
         public void TestSerializable()
         {
             TestOperations(new SerializableObj {Foo = 16}, new SerializableObj {Foo = -5});

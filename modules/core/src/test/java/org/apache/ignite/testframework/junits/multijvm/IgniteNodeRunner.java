@@ -56,7 +56,7 @@ public class IgniteNodeRunner {
         File.separator + "igniteConfiguration.tmp_";
 
     /** */
-    private static volatile Ignite ignite;
+    protected static volatile Ignite ignite;
 
     /**
      * Starts {@link Ignite} instance accorging to given arguments.
@@ -96,21 +96,42 @@ public class IgniteNodeRunner {
      * @throws IOException If failed.
      * @see #readCfgFromFileAndDeleteFile(String)
      */
-    public static String storeToFile(IgniteConfiguration cfg) throws IOException {
+    public static String storeToFile(IgniteConfiguration cfg, boolean resetDiscovery) throws IOException, IgniteCheckedException {
         String fileName = IGNITE_CONFIGURATION_FILE + cfg.getNodeId();
 
+        storeToFile(cfg, fileName, true, resetDiscovery);
+
+        return fileName;
+    }
+
+    /**
+     * Stores {@link IgniteConfiguration} to file as xml.
+     *
+     * @param cfg Ignite Configuration.
+     * @param fileName A name of file where the configuration was stored.
+     * @param resetMarshaller Reset marshaller configuration to default.
+     * @param resetDiscovery Reset discovery configuration to default.
+     * @throws IOException If failed.
+     * @see #readCfgFromFileAndDeleteFile(String)
+     */
+    public static void storeToFile(IgniteConfiguration cfg, String fileName,
+        boolean resetMarshaller,
+        boolean resetDiscovery) throws IOException, IgniteCheckedException {
         try(OutputStream out = new BufferedOutputStream(new FileOutputStream(fileName))) {
             IgniteConfiguration cfg0 = new IgniteConfiguration(cfg);
 
+            if (resetMarshaller)
+                cfg0.setMarshaller(null);
+
+            if (resetDiscovery)
+                cfg0.setDiscoverySpi(null);
+
+            cfg0.setWorkDirectory(U.defaultWorkDirectory());
             cfg0.setMBeanServer(null);
-            cfg0.setMarshaller(null);
-            cfg0.setDiscoverySpi(null);
             cfg0.setGridLogger(null);
 
             new XStream().toXML(cfg0, out);
         }
-
-        return fileName;
     }
 
     /**
@@ -119,22 +140,27 @@ public class IgniteNodeRunner {
      * @param fileName File name.
      * @return Readed configuration.
      * @throws IOException If failed.
-     * @see #storeToFile(IgniteConfiguration)
+     * @see #storeToFile(IgniteConfiguration, boolean)
+     * @throws IgniteCheckedException On error.
      */
     private static IgniteConfiguration readCfgFromFileAndDeleteFile(String fileName)
         throws IOException, IgniteCheckedException {
         try(BufferedReader cfgReader = new BufferedReader(new FileReader(fileName))) {
             IgniteConfiguration cfg = (IgniteConfiguration)new XStream().fromXML(cfgReader);
 
-            Marshaller marsh = IgniteTestResources.getMarshaller();
+            if (cfg.getMarshaller() == null) {
+                Marshaller marsh = IgniteTestResources.getMarshaller();
 
-            cfg.setMarshaller(marsh);
+                cfg.setMarshaller(marsh);
+            }
 
-            X.println("Configured marshaller class: " + marsh.getClass().getName());
+            X.println("Configured marshaller class: " + cfg.getMarshaller().getClass().getName());
 
-            TcpDiscoverySpi disco = new TcpDiscoverySpi();
-            disco.setIpFinder(GridCacheAbstractFullApiSelfTest.LOCAL_IP_FINDER);
-            cfg.setDiscoverySpi(disco);
+            if (cfg.getDiscoverySpi() == null) {
+                TcpDiscoverySpi disco = new TcpDiscoverySpi();
+                disco.setIpFinder(GridCacheAbstractFullApiSelfTest.LOCAL_IP_FINDER);
+                cfg.setDiscoverySpi(disco);
+            }
 
             return cfg;
         }
@@ -161,9 +187,9 @@ public class IgniteNodeRunner {
                 MonitoredVm vm = monitoredHost.getMonitoredVm(new VmIdentifier("//" + jvmId + "?mode=r"), 0);
 
                 if (IgniteNodeRunner.class.getName().equals(MonitoredVmUtil.mainClass(vm, true))) {
-                    Process killProc = U.isWindows() ?
-                        Runtime.getRuntime().exec(new String[] {"taskkill", "/pid", jvmId.toString(), "/f", "/t"}) :
-                        Runtime.getRuntime().exec(new String[] {"kill", "-9", jvmId.toString()});
+                    Process killProc = Runtime.getRuntime().exec(U.isWindows() ?
+                        new String[] {"taskkill", "/pid", jvmId.toString(), "/f", "/t"} :
+                        new String[] {"kill", "-9", jvmId.toString()});
 
                     killProc.waitFor();
 

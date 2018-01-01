@@ -37,25 +37,6 @@ hr {
     outline: none;
 }
 
-.navbar-default .navbar-brand, .navbar-default .navbar-brand:hover {
-    position: absolute;
-    left: 0;
-    text-align: center;
-}
-
-.navbar-brand {
-    padding: 5px 0;
-    margin: 10px 0;
-}
-
-.modal.center .modal-dialog {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    -webkit-transform: translateX(-50%) translateY(-50%);
-    transform: translateX(-50%) translateY(-50%);
-}
-
 .border-left {
     box-shadow: 1px 0 0 0 $gray-lighter inset;
 }
@@ -64,18 +45,10 @@ hr {
     box-shadow: 1px 0 0 0 $gray-lighter;
 }
 
-.theme-line header {
-    background-color: $ignite-background-color;
-}
-
 .theme-line .docs-header h1 {
     color: $ignite-header-color;
     margin-top: 0;
     font-size: 22px;
-}
-
-.theme-line .footer {
-    text-align: center;
 }
 
 .table.table-vertical-middle tbody > tr > td {
@@ -87,56 +60,7 @@ hr {
     padding-right: 10px;
 }
 
-ul.navbar-nav, .sidebar-nav {
-    li.active > a {
-        color: $link-color;
-    }
 
-    li.active > a:not(.dropdown-toggle) {
-        cursor: default;
-        pointer-events: none;
-    }
-}
-
-.theme-line .sidebar-nav {
-    padding-bottom: 30px;
-
-    ul {
-        padding: 0;
-        list-style: none;
-        margin: 3px 0 0;
-
-        li {
-            line-height: $input-height;
-
-            a {
-                font-size: 18px;
-                color: $ignite-header-color;
-                position: relative;
-                white-space: nowrap;
-                overflow: hidden;
-                -o-text-overflow: ellipsis;
-                text-overflow: ellipsis;
-
-                span.fa-stack {
-                    margin-right: 5px;
-                    font-size: 12px;
-                    height: 26px;
-                }
-            }
-
-            a:hover { color: $link-hover-color; }
-
-            a.active {
-                color: $link-color;
-            }
-        }
-    }
-}
-
-.theme-line .sidebar-nav ul li a:hover {
-    text-decoration: none;
-}
 
 .theme-line .select {
     li a.active {
@@ -170,7 +94,7 @@ ul.navbar-nav, .sidebar-nav {
 }
 
 .theme-line ul.dropdown-menu {
-    min-width: 120px;
+    min-width: 0;
     max-width: 280px;
     max-height: 20em;
     overflow: auto;
@@ -227,7 +151,7 @@ ul.navbar-nav, .sidebar-nav {
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
-        
+
         &:hover,
         &:focus {
             text-decoration: none;
@@ -256,9 +180,6 @@ ul.navbar-nav, .sidebar-nav {
     }
 }
 
-.theme-line .border-left .sidebar-nav {
-    padding-left: 15px;
-}
 
 .theme-line .suggest {
     padding: 5px;
@@ -266,49 +187,25 @@ ul.navbar-nav, .sidebar-nav {
     font-size: 12px;
 }
 
-.theme-line header {
-    border-bottom: 8px solid $ignite-border-bottom-color;
-
-    p {
-        color: $ignite-header-color;
-    }
-}
-
-.header .nav.navbar-nav.pull-right > li > a {
-    padding-right: 0;
-}
-
-.header .title {
-    margin: 20px 0 5px 0;
-    padding: 0 15px;
-
-    font-size: 1.4em;
-}
-
-.header .nav.navbar-nav .not-link {
-    padding: 15px;
-    display: inline-block;
-}
-
 .nav > li {
     > a {
-        color: $navbar-default-link-color
-    }
-    > a:hover {
-        color: $link-hover-color
-    }
-    > a.active {
-        color: $link-color
-    }
-}
+        color: $navbar-default-link-color;
 
-.theme-line header .navbar-nav a {
-    line-height: 25px;
-    font-size: 18px;
-}
+        &:hover,
+        &:focus {
+            color: $link-hover-color;
+        }
 
-.theme-line .section-right {
-    padding-left: 30px;
+        &.active {
+            color: $link-color;
+        }
+    }
+
+    &.disabled > a {
+        label:hover, label:focus, i:hover, i:focus {
+            cursor: default;
+        }
+    }
 }
 
 .body-overlap .main-content {
@@ -324,6 +221,7 @@ ul.navbar-nav, .sidebar-nav {
 
 body {
     font-weight: 400;
+    background-color: $ignite-new-background-color;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -331,74 +229,18 @@ h1, h2, h3, h4, h5, h6 {
     margin-bottom: 10px;
 }
 
-.container-footer {
-    margin-top: 20px;
-    margin-bottom: 20px;
-
-    p {
-        font-size: 12px;
-        margin-bottom: 0;
-    }
-}
-
 /* Modal */
-.modal {
-    display: block;
-    overflow: hidden;
-}
-
-.modal .close {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    float: none;
-}
-
-.modal-header {
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-}
-
-// Close icon
-.modal-header .close {
-    margin-right: -2px;
-}
-
-// Modal icon
-.modal-header h4 > i.fa {
-    cursor: default;
-    float: left;
-    line-height: $modal-title-line-height;
-}
-
-.modal .modal-dialog {
-    width: 650px;
-}
-
-.modal .modal-content {
-    background-color: $gray-lighter;
-
-    .input-tip {
-        padding-top: 1px;
-    }
-}
-
-.modal .modal-content .modal-header {
-    background-color: $ignite-background-color;
-    text-align: center;
-    color: $ignite-header-color;
-    padding: 15px 25px 15px 15px;
-}
-
-.modal .modal-content .modal-header h4 {
-    font-size: 22px;
-}
-
-.modal .modal-content .modal-footer {
+.login-header {
     margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 2em;
 }
 
-.modal-footer {
+.login-footer {
+    padding: 15px 0;
+    text-align: right;
+    border-top: 1px solid #e5e5e5;
+
     label {
         float: left;
         margin: 0;
@@ -411,48 +253,29 @@ h1, h2, h3, h4, h5, h6 {
     .checkbox {
         margin: 0;
     }
-}
-
-.login-header {
-    margin-top: 0;
-    margin-bottom: 20px;
-    font-size: 2em;
-}
-
-.login-footer {
-    @extend .modal-footer;
-
-    padding-left: 0;
-    padding-right: 0;
 
     .btn {
         margin-right: 0;
     }
 }
 
-.modal-body {
-    margin-left: 20px;
-    margin-right: 20px;
+body {
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
-.modal-body-with-scroll {
-    max-height: 420px;
-    overflow-y: auto;
-    margin: 0;
-}
-
-.greedy {
+body > .wrapper,
+    // Nested ui-view, like on password reset state
+body > .wrapper > ui-view {
+    display: flex;
+    flex-direction: column;
     min-height: 100%;
-    height: #{"calc(100vh - 270px)"};
-}
+    flex: 1 0 auto;
 
-.signin-greedy {
-    height: #{"calc(100vh - 300px)"};
-}
-
-@media (min-width: 768px) {
-    .navbar-nav > li > a {
-        padding: 0 15px;
+    .body-container {
+        flex: 1 0 auto;
+        padding-bottom: 30px;
     }
 }
 
@@ -478,6 +301,14 @@ h1, h2, h3, h4, h5, h6 {
     .checkbox label {
         line-height: 20px !important;
         vertical-align: middle;
+    }
+}
+
+.use-cache {
+    display: flex;
+
+    input[type="checkbox"] {
+        width: 20px;
     }
 }
 
@@ -601,6 +432,10 @@ button.form-control {
 .theme-line .notebook-header {
     border-color: $gray-lighter;
 
+    button:last-child {
+        margin-right: 0;
+    }
+
     h1 {
         padding: 0;
         margin: 0;
@@ -611,7 +446,7 @@ button.form-control {
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            margin-top: 5px;
+            height: 24px;
         }
 
         .btn-group {
@@ -637,7 +472,7 @@ button.form-control {
 }
 
 .theme-line .paragraphs {
-    .panel-group .panel + .panel {
+    .panel-group .panel-paragraph + .panel-paragraph {
         margin-top: 30px;
     }
 
@@ -647,14 +482,6 @@ button.form-control {
 
     .sql-editor {
         padding: 5px 0;
-
-        .ace_cursor {
-            opacity: 1;
-        }
-
-        .ace_hidden-cursors {
-            opacity: 1;
-        }
 
         .ace_gutter-cell, .ace_folding-enabled > .ace_gutter-cell {
             padding-right: 5px;
@@ -679,8 +506,14 @@ button.form-control {
         line-height: 55px;
     }
 
-    .sql-controls {
+    .panel-collapse {
         border-top: 1px solid $ignite-border-color;
+    }
+
+    .sql-controls {
+        position: relative;
+        top: -1px;
+        border-top: 1px solid #ddd;
 
         padding: 10px 10px;
 
@@ -690,8 +523,49 @@ button.form-control {
         }
 
         label {
-            line-height: 20px !important;
+            line-height: 28px;
             vertical-align: middle;
+        }
+
+        .btn {
+            line-height: 20px;
+        }
+
+        .ignite-form-field {
+            margin-right: 10px;
+
+            .ignite-form-field__label {
+                float: left;
+                width: auto;
+                margin-right: 5px;
+                line-height: 28px;
+            }
+
+            .ignite-form-field__label + div {
+                display: block;
+                float: none;
+                width: auto;
+            }
+        }
+
+        .tipLabel .btn {
+            float: right;
+        }
+
+        .pull-right {
+            margin-left: 10px;
+
+            .ignite-form-field {
+                margin-right: -24px;
+
+                label {
+                    margin-left: 5px;
+                }
+            }
+        }
+
+        .col-sm-3 + .tipLabel {
+            margin-left: 0;
         }
     }
 
@@ -701,8 +575,7 @@ button.form-control {
         .error {
             padding: 10px 10px;
 
-            text-align: center;
-            color: $brand-primary;
+            text-align: left;
         }
 
         .empty {
@@ -739,6 +612,19 @@ button.form-control {
 
             padding: 5px 10px;
         }
+
+        grid-column-selector {
+            margin-right: 5px;
+
+            .btn-ignite {
+                padding: 5px 0;
+                box-shadow: none !important;
+
+                .fa {
+                    font-size: 14px;
+                }
+            }
+        }
     }
 }
 
@@ -758,7 +644,7 @@ button.form-control {
     }
 
     .btn-group {
-        vertical-align:top;
+        vertical-align: top;
         margin-left: 10px;
 
         i { line-height: 18px; }
@@ -1243,6 +1129,17 @@ button.form-control {
     .clickable { cursor: pointer; }
 }
 
+
+.theme-line .summary {
+    .actions-note {
+        i {
+            margin-right: 5px;
+        }
+
+        margin: 15px 0;
+    }
+}
+
 .theme-line .popover.summary-project-structure {
     @extend .popover.settings;
 
@@ -1460,11 +1357,6 @@ input.ng-dirty.ng-invalid, button.ng-dirty.ng-invalid {
     color: $ignite-header-color;
 }
 
-.viewedUser {
-    text-align: center;
-    background-color: $brand-warning;
-}
-
 a {
     cursor: pointer;
 }
@@ -1560,16 +1452,21 @@ th[st-sort] {
     padding: 10px 10px 10px 20px;
 }
 
+// Hack to solve an issue where scrollbars aren't visible in Safari.
+// Safari seems to clip part of the scrollbar element. By giving the
+// element a background, we're telling Safari that it *really* needs to
+// paint the whole area. See https://github.com/ajaxorg/ace/issues/2872
+.ace_scrollbar-inner {
+	background-color: #FFF;
+	opacity: 0.01;
+
+    .ace_dark & {
+        background-color: #000;
+    }
+}
+
 .ace_content {
     padding-left: 5px;
-}
-
-.ace_hidden-cursors {
-    opacity: 0;
-}
-
-.ace_cursor {
-    opacity: 0;
 }
 
 .ace_editor {
@@ -1583,6 +1480,16 @@ th[st-sort] {
 
     .ace_gutter-cell, .ace_folding-enabled > .ace_gutter-cell {
         padding-left: 0.65em;
+    }
+}
+
+.preview-panel, .summary-tabs {
+    .ace_hidden-cursors {
+        opacity: 0;
+    }
+
+    .ace_cursor {
+        opacity: 0;
     }
 }
 
@@ -1693,6 +1600,7 @@ th[st-sort] {
 }
 
 .chart-settings-link {
+    margin-top: -2px;
     padding-left: 10px;
     line-height: $input-height;
 
@@ -1789,6 +1697,12 @@ th[st-sort] {
 
 .panel-tip-container {
     display: inline-block;
+}
+
+.panel-top-align {
+    label {
+        vertical-align: top !important;
+    }
 }
 
 button.dropdown-toggle {
@@ -1989,6 +1903,10 @@ treecontrol.tree-classic {
 
     .ui-grid-column-menu-button-last-col {
         margin-right: 0
+    }
+
+    .ui-grid-cell-actions {
+        line-height: 28px;
     }
 
     .no-rows {
@@ -2224,5 +2142,72 @@ html,body,.splash-screen {
     &.ng-animate {
         -webkit-animation: none 0s;
         animation: none 0s;
+    }
+}
+
+.admin-page {
+    .docs-header {
+        display: flex;
+        flex-direction: row;
+        align-items: baseline;
+
+        margin: 40px 0 20px 0;
+
+        h1 {
+            font-size: 24px;
+            margin: 0 10px 0 0;
+        }
+    }
+
+    .panel-heading {
+        height: 38px;
+
+        border-bottom: 0;
+        padding-bottom: 0;
+
+        cursor: default;
+
+        i {
+            margin-top: 2px;
+            margin-right: 10px;
+        }
+
+        sub {
+            bottom: 0;
+        }
+    }
+
+    .ui-grid-header-cell input {
+      font-weight: normal;
+    }
+
+    .ui-grid-header-cell input {
+      font-weight: normal;
+    }
+
+    .ui-grid-filter-select {
+        width: calc(100% - 10px);
+    }
+
+    .ui-grid-cell-contents > i {
+        line-height: $line-height-base;
+    }
+}
+
+.center-container {
+    position: absolute !important;
+}
+
+.demo-mode {
+    padding-top: 30px;
+}
+
+// Fix for injecting svg icon into BS btn
+.btn--with-icon {
+    display: flex;
+    align-items: center;
+
+    span {
+        margin-left: 5px;
     }
 }

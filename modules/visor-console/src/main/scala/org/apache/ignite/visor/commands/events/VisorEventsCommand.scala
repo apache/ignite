@@ -28,7 +28,7 @@ import java.util.UUID
 
 import org.apache.ignite.internal.visor.event.VisorGridEvent
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
-import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
+import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTaskArg
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable._
@@ -86,7 +86,6 @@ import scala.language.implicitConversions
  *            cl Cloud events.
  *            ca Cache events.
  *            cr Cache rebalance events.
- *            sw Swapspace events.
  *     -t=<num>s|m|h|d
  *         Defines time frame for querying events:
  *            =<num>s Queries events fired during last <num> seconds.
@@ -128,9 +127,7 @@ class VisorEventsCommand extends VisorConsoleCommand {
      * Starts command in interactive mode.
      */
     def events() {
-        if (!isConnected)
-            adviseToConnect()
-        else
+        if (checkConnected()) {
             askForNode("Select node from:") match {
                 case Some(id) => ask("Sort [c]ronologically or by [e]vent type (c/e) [c]: ", "c") match {
                     case "c" | "C" => nl(); events("-s=t -id=" + id)
@@ -139,6 +136,7 @@ class VisorEventsCommand extends VisorConsoleCommand {
                 }
                 case None => ()
             }
+        }
     }
 
     /**
@@ -168,7 +166,6 @@ class VisorEventsCommand extends VisorConsoleCommand {
             case "ta" => EVTS_TASK_EXECUTION
             case "ca" => EVTS_CACHE
             case "cr" => EVTS_CACHE_REBALANCE
-            case "sw" => EVTS_SWAPSPACE
             case t => throw new IllegalArgumentException("Unknown event mnemonic: " + t)
         }
     }
@@ -184,7 +181,7 @@ class VisorEventsCommand extends VisorConsoleCommand {
     protected def mnemonic(e: VisorGridEvent) = {
         assert(e != null)
 
-        e.typeId() match {
+        e.getTypeId match {
             case t if EVTS_CHECKPOINT.contains(t) => "ch"
             case t if EVTS_DEPLOYMENT.contains(t) => "de"
             case t if EVTS_DISCOVERY_ALL.contains(t) => "di"
@@ -192,7 +189,6 @@ class VisorEventsCommand extends VisorConsoleCommand {
             case t if EVTS_TASK_EXECUTION.contains(t) => "ta"
             case t if EVTS_CACHE.contains(t) => "ca"
             case t if EVTS_CACHE_REBALANCE.contains(t) => "cr"
-            case t if EVTS_SWAPSPACE.contains(t) => "sw"
             case t => throw new IllegalArgumentException("Unknown event type: " + t)
         }
     }
@@ -211,7 +207,7 @@ class VisorEventsCommand extends VisorConsoleCommand {
      * @param args Command parameters.
      */
     def events(args: String) {
-        if (isConnected) {
+        if (checkConnected()) {
             val argLst = parseArgs(args)
 
             parseNode(argLst) match {
@@ -242,7 +238,7 @@ class VisorEventsCommand extends VisorConsoleCommand {
 
                     val sortedOpt = sort(evts.toList, argValue("s", argLst), hasArgName("r", argLst))
 
-                    if (!sortedOpt.isDefined)
+                    if (sortedOpt.isEmpty)
                         return
 
                     val sorted = sortedOpt.get
@@ -267,8 +263,8 @@ class VisorEventsCommand extends VisorConsoleCommand {
 
                     st += ("Node ID8(@ID)", nodeId8Addr(nid))
                     st += ("Total", sorted.size)
-                    st += ("Earliest timestamp", formatDateTime(evts.maxBy(_.timestamp).timestamp))
-                    st += ("Oldest timestamp", formatDateTime(evts.minBy(_.timestamp).timestamp))
+                    st += ("Earliest timestamp", formatDateTime(evts.maxBy(_.getTimestamp).getTimestamp))
+                    st += ("Oldest timestamp", formatDateTime(evts.minBy(_.getTimestamp).getTimestamp))
 
                     st.render()
 
@@ -279,13 +275,13 @@ class VisorEventsCommand extends VisorConsoleCommand {
                     var sum = Map[Int, (String, Int, Long, Long)]()
 
                     evts.foreach(evt => {
-                        val info = sum.getOrElse(evt.typeId(), (null, 0, Long.MinValue, Long.MaxValue))
+                        val info = sum.getOrElse(evt.getTypeId, (null, 0, Long.MinValue, Long.MaxValue))
 
-                        sum += (evt.typeId -> (
-                            "(" + mnemonic(evt) + ") " + evt.name(),
+                        sum += (evt.getTypeId -> (
+                            "(" + mnemonic(evt) + ") " + evt.getName,
                             info._2 + 1,
-                            if (evt.timestamp() > info._3) evt.timestamp() else info._3,
-                            if (evt.timestamp() < info._4) evt.timestamp() else info._4)
+                            if (evt.getTimestamp > info._3) evt.getTimestamp else info._3,
+                            if (evt.getTimestamp < info._4) evt.getTimestamp else info._4)
                             )
                     })
 
@@ -325,14 +321,12 @@ class VisorEventsCommand extends VisorConsoleCommand {
                     all #= ("Timestamp", "Description")
 
                     sorted.take(cnt).foreach(evt =>
-                        all += (formatDateTime(evt.timestamp()), U.compact(evt.shortDisplay))
+                        all += (formatDateTime(evt.getTimestamp), U.compact(evt.getShortDisplay))
                     )
 
                     all.render()
             }
         }
-        else
-            adviseToConnect()
     }
 
     /**
@@ -368,8 +362,8 @@ class VisorEventsCommand extends VisorConsoleCommand {
             Some(evts)
         else
             arg.get.trim match {
-                case "e" => Some(if (reverse) evts.sortBy(_.name).reverse else evts.sortBy(_.name))
-                case "t" => Some(if (reverse) evts.sortBy(_.timestamp).reverse else evts.sortBy(_.timestamp))
+                case "e" => Some(if (reverse) evts.sortBy(_.getName).reverse else evts.sortBy(_.getName))
+                case "t" => Some(if (reverse) evts.sortBy(_.getTimestamp).reverse else evts.sortBy(_.getTimestamp))
                 case a: String =>
                     scold("Invalid sorting argument: " + a)
 
@@ -403,7 +397,7 @@ object VisorEventsCommand {
         ),
         spec = List(
             "events",
-            "events {-id=<node-id>|-id8=<node-id8>} {-e=<ch,de,di,jo,ta,ca,cr,sw>}",
+            "events {-id=<node-id>|-id8=<node-id8>} {-e=<ch,de,di,jo,ta,ca,cr>}",
             "    {-t=<num>s|m|h|d} {-s=e|t} {-r} {-c=<n>}"
         ),
         args = List(
@@ -420,7 +414,7 @@ object VisorEventsCommand {
                 "Either '-id' or '-id8' can be specified.",
                 "If called without the arguments - starts in interactive mode."
             ),
-            "-e=<ch,de,di,jo,ta,ca,cr,sw>" -> List(
+            "-e=<ch,de,di,jo,ta,ca,cr>" -> List(
                 "Comma separated list of event types that should be queried:",
                 "   ch Checkpoint events.",
                 "   de Deployment events.",
@@ -428,11 +422,10 @@ object VisorEventsCommand {
                 "   jo Job execution events.",
                 "   ta Task execution events.",
                 "   ca Cache events.",
-                "   cr Cache rebalance events.",
-                "   sw Swapspace events."
+                "   cr Cache rebalance events."
             ),
             "-t=<num>s|m|h|d" -> List(
-                "Defines time frame for quering events:",
+                "Defines time frame for querying events:",
                 "   =<num>s Queries events fired during last <num> seconds.",
                 "   =<num>m Queries events fired during last <num> minutes.",
                 "   =<num>h Queries events fired during last <num> hours.",

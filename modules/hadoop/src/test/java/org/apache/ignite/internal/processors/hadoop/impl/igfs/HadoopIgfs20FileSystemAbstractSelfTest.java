@@ -66,7 +66,6 @@ import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsMetrics;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
-import org.apache.ignite.internal.processors.hadoop.impl.igfs.HadoopIgfsUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsCommonAbstractTest;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
@@ -148,10 +147,10 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     /**
      * Get primary IPC endpoint configuration.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return IPC primary endpoint configuration.
      */
-    protected abstract IgfsIpcEndpointConfiguration primaryIpcEndpointConfiguration(String gridName);
+    protected abstract IgfsIpcEndpointConfiguration primaryIpcEndpointConfiguration(String igniteInstanceName);
 
     /**
      * Gets secondary file system URI path.
@@ -189,23 +188,21 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
             // Start secondary IGFS.
             FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-            igfsCfg.setDataCacheName("partitioned");
-            igfsCfg.setMetaCacheName("replicated");
             igfsCfg.setName("igfs_secondary");
             igfsCfg.setIpcEndpointConfiguration(secondaryIpcEndpointConfiguration());
             igfsCfg.setManagementPort(-1);
             igfsCfg.setBlockSize(512 * 1024);
             igfsCfg.setPrefetchBlocks(1);
 
-            CacheConfiguration cacheCfg = defaultCacheConfiguration();
+            CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
-            cacheCfg.setName("partitioned");
-            cacheCfg.setCacheMode(PARTITIONED);
-            cacheCfg.setNearConfiguration(null);
-            cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-            cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(GRP_SIZE));
-            cacheCfg.setBackups(0);
-            cacheCfg.setAtomicityMode(TRANSACTIONAL);
+            dataCacheCfg.setName("partitioned");
+            dataCacheCfg.setCacheMode(PARTITIONED);
+            dataCacheCfg.setNearConfiguration(null);
+            dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+            dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(GRP_SIZE));
+            dataCacheCfg.setBackups(0);
+            dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
             CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
@@ -214,16 +211,19 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
             metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
             metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
+            igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+            igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
+
             IgniteConfiguration cfg = new IgniteConfiguration();
 
-            cfg.setGridName("grid_secondary");
+            cfg.setIgniteInstanceName("grid_secondary");
 
             TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
             discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
             cfg.setDiscoverySpi(discoSpi);
-            cfg.setCacheConfiguration(metaCacheCfg, cacheCfg);
+            cfg.setCacheConfiguration(metaCacheCfg, dataCacheCfg);
             cfg.setFileSystemConfiguration(igfsCfg);
             cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
             cfg.setLocalHost(U.getLocalHost().getHostAddress());
@@ -238,21 +238,20 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** {@inheritDoc} */
-    @Override public String getTestGridName() {
+    @Override public String getTestIgniteInstanceName() {
         return "grid";
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
-        cfg.setFileSystemConfiguration(igfsConfiguration(gridName));
+        cfg.setFileSystemConfiguration(igfsConfiguration(igniteInstanceName));
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
         cfg.setLocalHost("127.0.0.1");
         cfg.setCommunicationSpi(communicationSpi());
@@ -263,13 +262,12 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     /**
      * Gets cache configuration.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Cache configuration.
      */
-    protected CacheConfiguration[] cacheConfiguration(String gridName) {
+    protected CacheConfiguration dataCacheConfiguration(String igniteInstanceName) {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
-        cacheCfg.setName("partitioned");
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setNearConfiguration(null);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
@@ -277,37 +275,45 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
         cacheCfg.setBackups(0);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
+        return cacheCfg;
+    }
 
-        metaCacheCfg.setName("replicated");
-        metaCacheCfg.setCacheMode(REPLICATED);
-        metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
+    /**
+     * Gets cache configuration.
+     *
+     * @param gridName Grid name.
+     * @return Cache configuration.
+     */
+    protected CacheConfiguration metaCacheConfiguration(String gridName) {
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
-        return new CacheConfiguration[] {metaCacheCfg, cacheCfg};
+        ccfg.setCacheMode(REPLICATED);
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
+
+        return ccfg;
     }
 
     /**
      * Gets IGFS configuration.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return IGFS configuration.
      */
-    protected FileSystemConfiguration igfsConfiguration(String gridName) throws IgniteCheckedException {
+    protected FileSystemConfiguration igfsConfiguration(String igniteInstanceName) throws IgniteCheckedException {
         FileSystemConfiguration cfg = new FileSystemConfiguration();
 
-        cfg.setDataCacheName("partitioned");
-        cfg.setMetaCacheName("replicated");
         cfg.setName("igfs");
         cfg.setPrefetchBlocks(1);
-        cfg.setMaxSpaceSize(64 * 1024 * 1024);
         cfg.setDefaultMode(mode);
+        cfg.setMetaCacheConfiguration(metaCacheConfiguration(igniteInstanceName));
+        cfg.setDataCacheConfiguration(dataCacheConfiguration(igniteInstanceName));
 
         if (mode != PRIMARY)
             cfg.setSecondaryFileSystem(new IgniteHadoopIgfsSecondaryFileSystem(secondaryFileSystemUriPath(),
                 secondaryFileSystemConfigPath(), SECONDARY_FS_USER));
 
-        cfg.setIpcEndpointConfiguration(primaryIpcEndpointConfiguration(gridName));
+        cfg.setIpcEndpointConfiguration(primaryIpcEndpointConfiguration(igniteInstanceName));
         cfg.setManagementPort(-1);
 
         cfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
@@ -769,8 +775,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
         os.close();
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 fs.setOwner(file, "aUser", null);
 
                 return null;

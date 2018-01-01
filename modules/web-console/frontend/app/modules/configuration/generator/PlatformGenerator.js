@@ -168,7 +168,7 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
                 .intProperty('unacknowledgedMessagesBufferSize')
                 // .intProperty('socketWriteTimeout')
                 .intProperty('selectorsCount');
-                // .emptyBeanProperty('addressResolver');
+            // .emptyBeanProperty('addressResolver');
 
             if (commSpi.nonEmpty())
                 cfg.beanProperty('CommunicationSpi', commSpi);
@@ -176,7 +176,7 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
             cfg.intProperty('networkTimeout', 'NetworkTimeout')
                 .intProperty('networkSendRetryDelay')
                 .intProperty('networkSendRetryCount');
-                // .intProperty('discoveryStartupDelay');
+            // .intProperty('discoveryStartupDelay');
 
             return cfg;
         }
@@ -291,13 +291,13 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
         }
 
         // Generate cache memory group.
-        static cacheMemory(cache, ccfg = this.cacheConfigurationBean(cache)) {
+        static cacheMemory(cache, available, ccfg = this.cacheConfigurationBean(cache)) {
             ccfg.enumProperty('memoryMode');
 
             if (ccfg.valueOf('memoryMode') !== 'OFFHEAP_VALUES')
                 ccfg.intProperty('offHeapMaxMemory');
 
-            // this._evictionPolicy(ccfg, 'evictionPolicy', cache.evictionPolicy, cacheDflts.evictionPolicy);
+            // this._evictionPolicy(ccfg, available, false, cache.evictionPolicy, cacheDflts.evictionPolicy);
 
             ccfg.intProperty('startSize')
                 .boolProperty('swapEnabled', 'EnableSwap');
@@ -483,7 +483,7 @@ export default ['JavaTypes', 'igniteClusterPlatformDefaults', 'igniteCachePlatfo
 
                 bean.intProperty('nearStartSize');
 
-                this._evictionPolicy(bean, 'nearEvictionPolicy',
+                this._evictionPolicy(bean, true,
                     bean.valueOf('nearEvictionPolicy'), cacheDflts.evictionPolicy);
 
                 ccfg.beanProperty('nearConfiguration', bean);

@@ -65,13 +65,13 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonA
     /**
      * @return whether {@link #marsh} is an instance of {@link BinaryMarshaller} or not.
      */
-    private boolean isBinaryMarshaller() {
+    protected boolean isBinaryMarshaller() {
         return marsh instanceof BinaryMarshaller;
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
 
@@ -139,7 +139,7 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonA
         BinaryObjectBuilder bldr = ignite(0).binary().builder("Person");
 
         bldr.setField("id", id);
-        bldr.setField("name", name);
+        bldr.setField("firstName", name);
         bldr.setField("secondName", secondName);
 
         return bldr.build();
@@ -167,7 +167,7 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonA
      * @return Cache configuration.
      */
     protected static CacheConfiguration cacheConfig(String name, boolean partitioned, boolean escapeSql) {
-        return new CacheConfiguration()
+        return new CacheConfiguration(DEFAULT_CACHE_NAME)
             .setName(name)
             .setCacheMode(partitioned ? CacheMode.PARTITIONED : CacheMode.REPLICATED)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
@@ -186,7 +186,7 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonA
         LinkedHashMap<String, String> flds = new LinkedHashMap<>();
 
         flds.put("id", Integer.class.getName());
-        flds.put("name", String.class.getName());
+        flds.put("firstName", String.class.getName());
         flds.put("secondName", String.class.getName());
 
         e.setFields(flds);
@@ -214,7 +214,7 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonA
         protected int id;
 
         /** */
-        @QuerySqlField
+        @QuerySqlField(name = "firstName")
         protected final String name;
 
         /** */

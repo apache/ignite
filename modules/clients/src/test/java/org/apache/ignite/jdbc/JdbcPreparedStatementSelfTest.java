@@ -71,8 +71,8 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
     private PreparedStatement stmt;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
 
@@ -100,7 +100,7 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
 
-        IgniteCache<Integer, TestObject> cache = grid(0).cache(null);
+        IgniteCache<Integer, TestObject> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         assert cache != null;
 
@@ -123,8 +123,6 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
 
         cache.put(1, o);
         cache.put(2, new TestObject(2));
-
-        Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
 
     /** {@inheritDoc} */
@@ -153,6 +151,41 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
 
             assert conn.isClosed();
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRepeatableUsage() throws Exception {
+        stmt = conn.prepareStatement("select * from TestObject where id = ?");
+
+        stmt.setInt(1, 1);
+
+        ResultSet rs = stmt.executeQuery();
+
+        int cnt = 0;
+
+        while (rs.next()) {
+            if (cnt == 0)
+                assertEquals(1, rs.getInt(1));
+
+            cnt++;
+        }
+
+        assertEquals(1, cnt);
+
+        cnt = 0;
+
+        rs = stmt.executeQuery();
+
+        while (rs.next()) {
+            if (cnt == 0)
+                assertEquals(1, rs.getInt(1));
+
+            cnt++;
+        }
+
+        assertEquals(1, cnt);
     }
 
     /**

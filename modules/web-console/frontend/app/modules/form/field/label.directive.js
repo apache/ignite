@@ -20,7 +20,7 @@ export default ['igniteFormFieldLabel', [() => {
         restrict: 'E',
         compile() {
             return {
-                post($scope, $element, $attrs, [form, field], $transclude) {
+                post($scope, $element, $attrs, [field], $transclude) {
                     $transclude($scope, function(clone) {
                         const text = clone.text();
 
@@ -42,6 +42,6 @@ export default ['igniteFormFieldLabel', [() => {
         },
         replace: true,
         transclude: true,
-        require: ['^form', '?^igniteFormField']
+        require: ['?^igniteFormField']
     };
 }]];

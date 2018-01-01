@@ -24,24 +24,23 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Task that will find affinity node for key.
  */
 @GridInternal
-public class VisorCacheAffinityNodeTask extends VisorOneNodeTask<IgniteBiTuple<String, Object>, UUID> {
+public class VisorCacheAffinityNodeTask extends VisorOneNodeTask<VisorCacheAffinityNodeTaskArg, UUID> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCacheAffinityNodeJob job(IgniteBiTuple<String, Object> arg) {
+    @Override protected VisorCacheAffinityNodeJob job(VisorCacheAffinityNodeTaskArg arg) {
         return new VisorCacheAffinityNodeJob(arg, debug);
     }
 
     /** Job that will find affinity node for key. */
-    private static class VisorCacheAffinityNodeJob extends VisorJob<IgniteBiTuple<String, Object>, UUID> {
+    private static class VisorCacheAffinityNodeJob extends VisorJob<VisorCacheAffinityNodeTaskArg, UUID> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -49,15 +48,15 @@ public class VisorCacheAffinityNodeTask extends VisorOneNodeTask<IgniteBiTuple<S
          * @param arg Cache name and key to find affinity node.
          * @param debug Debug flag.
          */
-        private VisorCacheAffinityNodeJob(IgniteBiTuple<String, Object> arg, boolean debug) {
+        private VisorCacheAffinityNodeJob(VisorCacheAffinityNodeTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected UUID run(@Nullable IgniteBiTuple<String, Object> arg) throws IgniteException {
+        @Override protected UUID run(@Nullable VisorCacheAffinityNodeTaskArg arg) throws IgniteException {
             assert arg != null;
 
-            ClusterNode node = ignite.affinity(arg.getKey()).mapKeyToNode(arg.getValue());
+            ClusterNode node = ignite.affinity(arg.getCacheName()).mapKeyToNode(arg.getKey());
 
             return node != null ? node.id() : null;
         }

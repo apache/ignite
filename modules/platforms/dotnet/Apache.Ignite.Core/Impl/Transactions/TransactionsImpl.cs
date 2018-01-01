@@ -22,13 +22,12 @@ namespace Apache.Ignite.Core.Impl.Transactions
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
     /// Transactions facade.
     /// </summary>
-    internal class TransactionsImpl : PlatformTarget, ITransactions
+    internal class TransactionsImpl : PlatformTargetAdapter, ITransactions
     {
         /** */
         private const int OpCacheConfigParameters = 1;
@@ -63,6 +62,8 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /** */
         private const int OpResetMetrics = 11;
 
+        /** */
+        private const int OpPrepare = 12;
 
         /** */
         private readonly TransactionConcurrency _dfltConcurrency;
@@ -80,29 +81,19 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// Initializes a new instance of the <see cref="TransactionsImpl" /> class.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaller.</param>
         /// <param name="localNodeId">Local node id.</param>
-        public TransactionsImpl(IUnmanagedTarget target, Marshaller marsh,
-            Guid localNodeId) : base(target, marsh)
+        public TransactionsImpl(IPlatformTargetInternal target, Guid localNodeId) : base(target)
         {
             _localNodeId = localNodeId;
 
-            TransactionConcurrency concurrency = default(TransactionConcurrency);
-            TransactionIsolation isolation = default(TransactionIsolation);
-            TimeSpan timeout = default(TimeSpan);
+            var res = target.OutStream(OpCacheConfigParameters, reader => Tuple.Create(
+                (TransactionConcurrency) reader.ReadInt(),
+                (TransactionIsolation) reader.ReadInt(),
+                reader.ReadLongAsTimespan()));
 
-            DoInOp(OpCacheConfigParameters, stream =>
-            {
-                var reader = marsh.StartUnmarshal(stream).GetRawReader();
-
-                concurrency = (TransactionConcurrency) reader.ReadInt();
-                isolation = (TransactionIsolation) reader.ReadInt();
-                timeout = reader.ReadLongAsTimespan();
-            });
-
-            _dfltConcurrency = concurrency;
-            _dfltIsolation = isolation;
-            _dfltTimeout = timeout;
+            _dfltConcurrency = res.Item1;
+            _dfltIsolation = res.Item2;
+            _dfltTimeout = res.Item3;
         }
 
         /** <inheritDoc /> */
@@ -156,6 +147,32 @@ namespace Apache.Ignite.Core.Impl.Transactions
         public void ResetMetrics()
         {
             DoOutInOp(OpResetMetrics);
+        }
+
+        /** <inheritDoc /> */
+        public TransactionConcurrency DefaultTransactionConcurrency
+        {
+            get { return _dfltConcurrency; }
+        }
+
+        /** <inheritDoc /> */
+        public TransactionIsolation DefaultTransactionIsolation
+        {
+            get { return _dfltIsolation; }
+        }
+
+        /** <inheritDoc /> */
+        public TimeSpan DefaultTimeout
+        {
+            get { return _dfltTimeout; }
+        }
+
+        /// <summary>
+        /// Executes prepare step of the two phase commit.
+        /// </summary>
+        internal void TxPrepare(TransactionImpl tx)
+        {
+            DoOutInOp(OpPrepare, tx.Id);
         }
 
         /// <summary>

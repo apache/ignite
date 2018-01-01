@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Common
     /// <summary>
     /// IgniteHome resolver.
     /// </summary>
-    internal static class IgniteHome
+    public static class IgniteHome
     {
         /** Environment variable: IGNITE_HOME. */
         internal const string EnvIgniteHome = "IGNITE_HOME";
@@ -57,7 +57,9 @@ namespace Apache.Ignite.Core.Impl.Common
                 throw new IgniteException(string.Format("{0} is not valid: '{1}'", EnvIgniteHome, home));
 
             if (log != null)
-                log.Debug("IgniteHome resolved to '{0}'", home);
+            {
+                log.Debug("IGNITE_HOME resolved to: {0}", home);
+            }
 
             return home;
         }
@@ -108,13 +110,23 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <returns>Value indicating whether specified dir looks like a Ignite home.</returns>
         private static bool IsIgniteHome(DirectoryInfo dir)
         {
-            return dir.Exists &&
-                   (dir.EnumerateDirectories().Count(x => x.Name == "examples" || x.Name == "bin") == 2 &&
-                    dir.EnumerateDirectories().Count(x => x.Name == "modules" || x.Name == "platforms") == 1)
-                   || // NuGet home
-                   (dir.EnumerateDirectories().Any(x => x.Name == "Libs") &&
-                    (dir.EnumerateFiles("Apache.Ignite.Core.dll").Any() ||
-                     dir.EnumerateFiles("Apache.Ignite.*.nupkg").Any()));
+            try
+            {
+                return dir.Exists &&
+                       (dir.EnumerateDirectories().Count(x => x.Name == "examples" || x.Name == "bin") == 2 &&
+                        dir.EnumerateDirectories().Count(x => x.Name == "modules" || x.Name == "platforms") == 1)
+                       || // NuGet home
+                       (dir.EnumerateDirectories().Any(x => x.Name == "libs") &&
+                        (dir.EnumerateFiles("Apache.Ignite.Core.dll").Any() ||
+                         dir.EnumerateFiles("Apache.Ignite.*.nupkg").Any() ||
+                         dir.EnumerateFiles("apache.ignite.*.nupkg").Any() ||  // Lowercase on Linux
+                         dir.EnumerateFiles("apache.ignite.nuspec").Any() ||  // Lowercase on Linux
+                         dir.EnumerateFiles("Apache.Ignite.nuspec").Any()));
+            }
+            catch (IOException)
+            {
+                return false;
+            }
         }
     }
 }

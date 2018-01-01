@@ -60,7 +60,6 @@ public class GridFailoverManager extends GridManagerAdapter<FailoverSpi> {
      * @param jobRes Job result.
      * @param top Collection of all topology nodes.
      * @param affPartId Partition number.
-     * @param affKey Affinity key.
      * @param affCacheName Affinity cache name.
      * @param topVer Affinity topology version.
      * @return New node to route this job to.
@@ -69,14 +68,12 @@ public class GridFailoverManager extends GridManagerAdapter<FailoverSpi> {
         ComputeJobResult jobRes,
         List<ClusterNode> top,
         int affPartId,
-        @Nullable Object affKey,
         @Nullable String affCacheName,
         @Nullable AffinityTopologyVersion topVer) {
         return getSpi(taskSes.getFailoverSpi()).failover(new GridFailoverContextImpl(taskSes,
             jobRes,
             ctx.loadBalancing(),
             affPartId,
-            affKey,
             affCacheName,
             topVer),
             top);

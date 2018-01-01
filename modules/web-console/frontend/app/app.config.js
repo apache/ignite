@@ -16,16 +16,21 @@
  */
 
 import _ from 'lodash';
+import angular from 'angular';
 
 const nonNil = _.negate(_.isNil);
 const nonEmpty = _.negate(_.isEmpty);
+const id8 = (uuid) => uuid.substring(0, 8).toUpperCase();
 
 _.mixin({
     nonNil,
-    nonEmpty
+    nonEmpty,
+    id8
 });
 
-import alertTemplateUrl from '../views/templates/alert.jade';
+import alertTemplateUrl from 'views/templates/alert.tpl.pug';
+import dropdownTemplateUrl from 'views/templates/dropdown.tpl.pug';
+import validationTemplateUrl from 'views/templates/validation-error.tpl.pug';
 
 const igniteConsoleCfg = angular.module('ignite-console.config', ['ngAnimate', 'mgcrea.ngStrap']);
 
@@ -38,6 +43,7 @@ igniteConsoleCfg.config(['$animateProvider', ($animateProvider) => {
 igniteConsoleCfg.config(['$modalProvider', ($modalProvider) => {
     angular.extend($modalProvider.defaults, {
         animation: 'am-fade-and-scale',
+        placement: 'center',
         html: true
     });
 }]);
@@ -48,7 +54,7 @@ igniteConsoleCfg.config(['$popoverProvider', ($popoverProvider) => {
         trigger: 'manual',
         placement: 'right',
         container: 'body',
-        templateUrl: '/templates/validation-error.html'
+        templateUrl: validationTemplateUrl
     });
 }]);
 
@@ -70,9 +76,10 @@ igniteConsoleCfg.config(['$selectProvider', ($selectProvider) => {
         maxLength: '5',
         allText: 'Select All',
         noneText: 'Clear All',
-        templateUrl: '/templates/select.html',
+        template: '<bs-select-menu></bs-select-menu>',
         iconCheckmark: 'fa fa-check',
-        caretHtml: ''
+        caretHtml: '',
+        animation: ''
     });
 }]);
 
@@ -91,6 +98,20 @@ igniteConsoleCfg.config(['$alertProvider', ($alertProvider) => {
 // AngularStrap dropdowns () configuration.
 igniteConsoleCfg.config(['$dropdownProvider', ($dropdownProvider) => {
     angular.extend($dropdownProvider.defaults, {
-        templateUrl: 'templates/dropdown.html'
+        templateUrl: dropdownTemplateUrl,
+        animation: ''
     });
+}]);
+
+// AngularStrap dropdowns () configuration.
+igniteConsoleCfg.config(['$datepickerProvider', ($datepickerProvider) => {
+    angular.extend($datepickerProvider.defaults, {
+        autoclose: true,
+        iconLeft: 'icon-datepicker-left',
+        iconRight: 'icon-datepicker-right'
+    });
+}]);
+
+igniteConsoleCfg.config(['$translateProvider', ($translateProvider) => {
+    $translateProvider.useSanitizeValueStrategy('sanitize');
 }]);

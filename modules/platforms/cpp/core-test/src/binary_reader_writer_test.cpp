@@ -16,8 +16,10 @@
  */
 
 #ifndef _MSC_VER
-    #define BOOST_TEST_DYN_LINK
+#   define BOOST_TEST_DYN_LINK
 #endif
+
+#include <memory>
 
 #include <boost/test/unit_test.hpp>
 
@@ -46,16 +48,7 @@ void CheckPrimitive(T val)
     BinaryWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
     BinaryWriter writer(&writerImpl);
 
-    try
-    {
-        Write<T>(writer, NULL, val);
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(Write<T>(writer, NULL, val), IgniteError, IsBinaryError);
 
     Write<T>(writer, "test", val);
 
@@ -70,30 +63,15 @@ void CheckPrimitive(T val)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+        footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
-    try
-    {
-        Read<T>(reader, NULL);
+    BOOST_CHECK_EXCEPTION(Read<T>(reader, NULL), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    T readVal = Read<T>(reader, "test");
 
-    try
-    {
-        T readVal = Read<T>(reader, "test"); 
-
-        BOOST_REQUIRE(readVal == val);
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_FAIL(err.GetText());
-    }
+    BOOST_REQUIRE(readVal == val);
 }
 
 template<typename T>
@@ -111,21 +89,12 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
 
     out.Position(IGNITE_DFLT_HDR_LEN);
 
-    try
-    {
-        T nullFieldArr[2];
+    T nullFieldArr[2];
 
-        nullFieldArr[0] = val1;
-        nullFieldArr[1] = val2;
+    nullFieldArr[0] = val1;
+    nullFieldArr[1] = val2;
 
-        WriteArray<T>(writer, NULL, nullFieldArr, 2);
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(WriteArray<T>(writer, NULL, nullFieldArr, 2), IgniteError, IsBinaryError);
 
     T arr1[2];
     arr1[0] = dflt;
@@ -150,7 +119,8 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
         int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
         int32_t footerEnd = footerBegin + 5;
 
-        BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
+        BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+            footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
         BinaryReader reader(&readerImpl);
 
         in.Position(IGNITE_DFLT_HDR_LEN);
@@ -183,7 +153,8 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
         int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
         int32_t footerEnd = footerBegin + 5;
 
-        BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
+        BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+            footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
         BinaryReader reader(&readerImpl);
 
         in.Position(IGNITE_DFLT_HDR_LEN);
@@ -220,7 +191,8 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
         int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
         int32_t footerEnd = footerBegin + 5;
 
-        BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
+        BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+            footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
         BinaryReader reader(&readerImpl);
 
         in.Position(IGNITE_DFLT_HDR_LEN);
@@ -260,7 +232,8 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
         int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
         int32_t footerEnd = footerBegin + 5;
 
-        BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
+        BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+            footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
         BinaryReader reader(&readerImpl);
 
         in.Position(IGNITE_DFLT_HDR_LEN);
@@ -269,16 +242,7 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
         in.Position(IGNITE_DFLT_HDR_LEN);
         BOOST_REQUIRE(ReadArray<T>(reader, fieldName, NULL, 2) == 2);
 
-        try
-        {
-            ReadArray<T>(reader, NULL, arr1, 2);
-
-            BOOST_FAIL("Not restricted.");
-        }
-        catch (IgniteError& err)
-        {
-            BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-        }
+        BOOST_CHECK_EXCEPTION(ReadArray<T>(reader, NULL, arr1, 2), IgniteError, IsBinaryError);
 
         BOOST_REQUIRE(ReadArray<T>(reader, fieldName, arr1, 0) == 2);
         BOOST_REQUIRE(arr1[0] == dflt);
@@ -296,219 +260,55 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
 
 void CheckWritesRestricted(BinaryWriter& writer)
 {
-    try
-    {
-        writer.WriteInt8("field", 1);
+    BOOST_CHECK_EXCEPTION(writer.WriteInt8("field", 1), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    int8_t arr[1];
+    BOOST_CHECK_EXCEPTION(writer.WriteInt8Array("field", arr, 1), IgniteError, IsBinaryError);
 
-    try
-    {
-        int8_t arr[1];
+    Guid guid(1, 1);
+    BOOST_CHECK_EXCEPTION(writer.WriteGuid("field", guid), IgniteError, IsBinaryError);
 
-        writer.WriteInt8Array("field", arr, 1);
+    Date date(1);
+    BOOST_CHECK_EXCEPTION(writer.WriteDate("field", date), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    Time time(1);
+    BOOST_CHECK_EXCEPTION(writer.WriteTime("field", time), IgniteError, IsBinaryError);
 
-    try
-    {
-        Guid val(1, 1);
+    Timestamp ts(1);
+    BOOST_CHECK_EXCEPTION(writer.WriteTimestamp("field", ts), IgniteError, IsBinaryError);
 
-        writer.WriteGuid("field", val);
+    BOOST_CHECK_EXCEPTION(writer.WriteString("field", "test"), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(writer.WriteArray<int8_t>("field"), IgniteError, IsBinaryError);
 
-    try
-    {
-        Date val(1);
+    BOOST_CHECK_EXCEPTION(writer.WriteCollection<int8_t>("field"), IgniteError, IsBinaryError);
 
-        writer.WriteDate("field", val);
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        Timestamp val(1);
-
-        writer.WriteTimestamp("field", val);
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        writer.WriteString("field", "test");
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try 
-    {
-        writer.WriteArray<int8_t>("field");
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try 
-    {
-        writer.WriteCollection<int8_t>("field");
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try 
-    {
-        writer.WriteMap<int8_t, int8_t>("field");
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION((writer.WriteMap<int8_t, int8_t>("field")), IgniteError, IsBinaryError);
 }
 
 void CheckReadsRestricted(BinaryReader& reader)
 {
-    try
-    {
-        reader.ReadInt8("field");
+    BOOST_CHECK_EXCEPTION(reader.ReadInt8("field"), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    int8_t arr[1];
+    BOOST_CHECK_EXCEPTION(reader.ReadInt8Array("field", arr, 1), IgniteError, IsBinaryError);
 
-    try
-    {
-        int8_t arr[1];
+    BOOST_CHECK_EXCEPTION(reader.ReadGuid("field"), IgniteError, IsBinaryError);
 
-        reader.ReadInt8Array("field", arr, 1);
+    BOOST_CHECK_EXCEPTION(reader.ReadDate("field"), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(reader.ReadTimestamp("field"), IgniteError, IsBinaryError);
 
-    try
-    {
-        reader.ReadGuid("field");
+    BOOST_CHECK_EXCEPTION(reader.ReadString("field"), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(reader.ReadArray<int8_t>("field"), IgniteError, IsBinaryError);
 
-    try
-    {
-        reader.ReadDate("field");
+    BOOST_CHECK_EXCEPTION(reader.ReadCollection<int8_t>("field"), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        reader.ReadTimestamp("field");
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        reader.ReadString("field");
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        reader.ReadArray<int8_t>("field");
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        reader.ReadCollection<int8_t>("field");
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        reader.ReadMap<int8_t, int8_t>("field");
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION((reader.ReadMap<int8_t, int8_t>("field")), IgniteError, IsBinaryError);
 }
 
-void CheckCollectionEmpty(CollectionType* colType)
+void CheckCollectionEmpty(CollectionType::Type* colType)
 {
     TemplatedBinaryIdResolver<BinaryDummy> idRslvr;
 
@@ -529,27 +329,9 @@ void CheckCollectionEmpty(CollectionType* colType)
 
     writer.WriteInt8("field2", 1);
 
-    try
-    {
-        colWriter.Write(1);
+    BOOST_CHECK_EXCEPTION(colWriter.Write(1), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        colWriter.Close();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(colWriter.Close(), IgniteError, IsBinaryError);
 
     writerImpl.PostWrite();
 
@@ -560,7 +342,8 @@ void CheckCollectionEmpty(CollectionType* colType)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+        footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -570,27 +353,18 @@ void CheckCollectionEmpty(CollectionType* colType)
     if (colType)
         BOOST_REQUIRE(colReader.GetType() == *colType);
     else
-        BOOST_REQUIRE(colReader.GetType() == IGNITE_COLLECTION_UNDEFINED);
+        BOOST_REQUIRE(colReader.GetType() == CollectionType::UNDEFINED);
 
     BOOST_REQUIRE(colReader.GetSize() == 0);
     BOOST_REQUIRE(!colReader.HasNext());
     BOOST_REQUIRE(!colReader.IsNull());
 
-    try
-    {
-        colReader.GetNext();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(colReader.GetNext(), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(reader.ReadInt8("field2") == 1);
 }
 
-void CheckCollection(CollectionType* colType)
+void CheckCollection(CollectionType::Type* colType)
 {
     BinaryInner writeVal1 = BinaryInner(1);
     BinaryInner writeVal2 = BinaryInner(0);
@@ -619,27 +393,9 @@ void CheckCollection(CollectionType* colType)
 
     writer.WriteInt8("field2", 1);
 
-    try
-    {
-        colWriter.Write(1);
+    BOOST_CHECK_EXCEPTION(colWriter.Write(1), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        colWriter.Close();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(colWriter.Close(), IgniteError, IsBinaryError);
 
     writerImpl.PostWrite();
 
@@ -650,7 +406,8 @@ void CheckCollection(CollectionType* colType)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+        footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -662,7 +419,7 @@ void CheckCollection(CollectionType* colType)
     if (colType)
         BOOST_REQUIRE(colReader.GetType() == *colType);
     else
-        BOOST_REQUIRE(colReader.GetType() == IGNITE_COLLECTION_UNDEFINED);
+        BOOST_REQUIRE(colReader.GetType() == CollectionType::UNDEFINED);
 
     BOOST_REQUIRE(colReader.GetSize() == 3);
     BOOST_REQUIRE(!colReader.IsNull());
@@ -678,21 +435,12 @@ void CheckCollection(CollectionType* colType)
 
     BOOST_REQUIRE(!colReader.HasNext());
 
-    try
-    {
-        colReader.GetNext();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(colReader.GetNext(), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(reader.ReadInt8("field2") == 1);
 }
 
-void CheckCollectionIterators(CollectionType* colType)
+void CheckCollectionIterators(CollectionType::Type* colType)
 {
     typedef std::vector<BinaryInner> BinaryInnerVector;
     BinaryInnerVector writeValues;
@@ -727,14 +475,15 @@ void CheckCollectionIterators(CollectionType* colType)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+        footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
 
     BOOST_REQUIRE(reader.ReadCollectionSize("field1") == writeValues.size());
 
-    CollectionType expectedCollectionType = colType ? *colType : IGNITE_COLLECTION_UNDEFINED;
+    CollectionType::Type expectedCollectionType = colType ? *colType : CollectionType::UNDEFINED;
     BOOST_REQUIRE(reader.ReadCollectionType("field1") == expectedCollectionType);
 
     BinaryInnerVector readValues;
@@ -751,7 +500,7 @@ void CheckCollectionIterators(CollectionType* colType)
     BOOST_REQUIRE(reader.ReadInt8("field2") == 1);
 }
 
-void CheckMapEmpty(MapType* mapType)
+void CheckMapEmpty(MapType::Type* mapType)
 {
     TemplatedBinaryIdResolver<BinaryDummy> idRslvr;
 
@@ -772,27 +521,9 @@ void CheckMapEmpty(MapType* mapType)
 
     writer.WriteInt8("field2", 1);
 
-    try
-    {
-        mapWriter.Write(1, BinaryInner(1));
+    BOOST_CHECK_EXCEPTION(mapWriter.Write(1, BinaryInner(1)), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        mapWriter.Close();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(mapWriter.Close(), IgniteError, IsBinaryError);
 
     writerImpl.PostWrite();
 
@@ -803,7 +534,8 @@ void CheckMapEmpty(MapType* mapType)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+        footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -813,30 +545,20 @@ void CheckMapEmpty(MapType* mapType)
     if (mapType)
         BOOST_REQUIRE(mapReader.GetType() == *mapType);
     else
-        BOOST_REQUIRE(mapReader.GetType() == IGNITE_MAP_UNDEFINED);
+        BOOST_REQUIRE(mapReader.GetType() == MapType::UNDEFINED);
 
     BOOST_REQUIRE(mapReader.GetSize() == 0);
     BOOST_REQUIRE(!mapReader.HasNext());
     BOOST_REQUIRE(!mapReader.IsNull());
 
-    try
-    {
-        int8_t key;
-        BinaryInner val;
-
-        mapReader.GetNext(&key, &val);
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    int8_t key;
+    BinaryInner val;
+    BOOST_CHECK_EXCEPTION(mapReader.GetNext(key, val), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(reader.ReadInt8("field2") == 1);
 }
 
-void CheckMap(MapType* mapType)
+void CheckMap(MapType::Type* mapType)
 {
     BinaryInner writeVal1 = BinaryInner(1);
     BinaryInner writeVal2 = BinaryInner(0);
@@ -865,27 +587,9 @@ void CheckMap(MapType* mapType)
 
     writer.WriteInt8("field2", 1);
 
-    try
-    {
-        mapWriter.Write(4, BinaryInner(4));
+    BOOST_CHECK_EXCEPTION(mapWriter.Write(4, BinaryInner(4)), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        mapWriter.Close();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(mapWriter.Close(), IgniteError, IsBinaryError);
 
     writerImpl.PostWrite();
 
@@ -896,7 +600,8 @@ void CheckMap(MapType* mapType)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+        footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -908,7 +613,7 @@ void CheckMap(MapType* mapType)
     if (mapType)
         BOOST_REQUIRE(mapReader.GetType() == *mapType);
     else
-        BOOST_REQUIRE(mapReader.GetType() == IGNITE_MAP_UNDEFINED);
+        BOOST_REQUIRE(mapReader.GetType() == MapType::UNDEFINED);
 
     BOOST_REQUIRE(mapReader.GetSize() == 3);
     BOOST_REQUIRE(!mapReader.IsNull());
@@ -918,30 +623,21 @@ void CheckMap(MapType* mapType)
 
     BOOST_REQUIRE(mapReader.HasNext());
 
-    mapReader.GetNext(&key, &val);
+    mapReader.GetNext(key, val);
     BOOST_REQUIRE(key == 1);
     BOOST_REQUIRE(val.GetValue() == writeVal1.GetValue());
 
-    mapReader.GetNext(&key, &val);
+    mapReader.GetNext(key, val);
     BOOST_REQUIRE(key == 2);
     BOOST_REQUIRE(val.GetValue() == writeVal2.GetValue());
 
-    mapReader.GetNext(&key, &val);
+    mapReader.GetNext(key, val);
     BOOST_REQUIRE(key == 3);
     BOOST_REQUIRE(val.GetValue() == writeVal3.GetValue());
 
     BOOST_REQUIRE(!mapReader.HasNext());
 
-    try
-    {
-        mapReader.GetNext(&key, &val);
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(mapReader.GetNext(key, val), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(reader.ReadInt8("field2") == 1);
 }
@@ -1000,6 +696,13 @@ BOOST_AUTO_TEST_CASE(TestPrimitiveDate)
     Date val(time(NULL) * 1000);
 
     CheckPrimitive<Date>(val);
+}
+
+BOOST_AUTO_TEST_CASE(TestPrimitiveTime)
+{
+    Time val(time(NULL) * 1000);
+
+    CheckPrimitive<Time>(val);
 }
 
 BOOST_AUTO_TEST_CASE(TestPrimitiveTimestamp)
@@ -1067,6 +770,15 @@ BOOST_AUTO_TEST_CASE(TestPrimitiveArrayDate)
     CheckPrimitiveArray<Date>(dflt, val1, val2);
 }
 
+BOOST_AUTO_TEST_CASE(TestPrimitiveArrayTime)
+{
+    Time dflt(1);
+    Time val1(2);
+    Time val2(3);
+
+    CheckPrimitiveArray<Time>(dflt, val1, val2);
+}
+
 BOOST_AUTO_TEST_CASE(TestPrimitiveArrayTimestamp)
 {
     Timestamp dflt(1);
@@ -1088,16 +800,7 @@ BOOST_AUTO_TEST_CASE(TestGuidNull)
 
     out.Position(IGNITE_DFLT_HDR_LEN);
 
-    try
-    {
-        writer.WriteNull(NULL);
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(writer.WriteNull(NULL), IgniteError, IsBinaryError);
 
     writer.WriteNull("test");
 
@@ -1110,21 +813,13 @@ BOOST_AUTO_TEST_CASE(TestGuidNull)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+        footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
     BinaryReader reader(&readerImpl);
     
     in.Position(IGNITE_DFLT_HDR_LEN);
 
-    try
-    {
-        reader.ReadGuid(NULL);
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(reader.ReadGuid(NULL), IgniteError, IsBinaryError);
 
     Guid expVal;
     Guid actualVal = reader.ReadGuid("test");
@@ -1144,16 +839,7 @@ BOOST_AUTO_TEST_CASE(TestDateNull)
 
     out.Position(IGNITE_DFLT_HDR_LEN);
 
-    try
-    {
-        writer.WriteNull(NULL);
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(writer.WriteNull(NULL), IgniteError, IsBinaryError);
 
     writer.WriteNull("test");
 
@@ -1166,24 +852,55 @@ BOOST_AUTO_TEST_CASE(TestDateNull)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+        footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
     BinaryReader reader(&readerImpl);
     
     in.Position(IGNITE_DFLT_HDR_LEN);
 
-    try
-    {
-        reader.ReadDate(NULL);
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(reader.ReadDate(NULL), IgniteError, IsBinaryError);
 
     Date expVal;
     Date actualVal = reader.ReadDate("test");
+
+    BOOST_REQUIRE(actualVal == expVal);
+}
+
+BOOST_AUTO_TEST_CASE(TestTimeNull)
+{
+    TemplatedBinaryIdResolver<BinaryDummy> idRslvr;
+
+    InteropUnpooledMemory mem(1024);
+
+    InteropOutputStream out(&mem);
+    BinaryWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
+    BinaryWriter writer(&writerImpl);
+
+    out.Position(IGNITE_DFLT_HDR_LEN);
+
+    BOOST_CHECK_EXCEPTION(writer.WriteNull(NULL), IgniteError, IsBinaryError);
+
+    writer.WriteNull("test");
+
+    writerImpl.PostWrite();
+
+    out.Synchronize();
+
+    InteropInputStream in(&mem);
+
+    int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
+    int32_t footerEnd = footerBegin + 5;
+
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+        footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
+    BinaryReader reader(&readerImpl);
+
+    in.Position(IGNITE_DFLT_HDR_LEN);
+
+    BOOST_CHECK_EXCEPTION(reader.ReadTime(NULL), IgniteError, IsBinaryError);
+
+    Time expVal;
+    Time actualVal = reader.ReadTime("test");
 
     BOOST_REQUIRE(actualVal == expVal);
 }
@@ -1200,16 +917,7 @@ BOOST_AUTO_TEST_CASE(TestTimestampNull)
 
     out.Position(IGNITE_DFLT_HDR_LEN);
 
-    try
-    {
-        writer.WriteNull(NULL);
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(writer.WriteNull(NULL), IgniteError, IsBinaryError);
 
     writer.WriteNull("test");
 
@@ -1222,21 +930,13 @@ BOOST_AUTO_TEST_CASE(TestTimestampNull)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+        footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
 
-    try
-    {
-        reader.ReadTimestamp(NULL);
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(reader.ReadTimestamp(NULL), IgniteError, IsBinaryError);
 
     Timestamp expVal;
     Timestamp actualVal = reader.ReadTimestamp("test");
@@ -1259,38 +959,11 @@ BOOST_AUTO_TEST_CASE(TestString) {
     const char* writeVal2 = "test";
     std::string writeVal3 = writeVal1;
 
-    try
-    {
-        writer.WriteString(NULL, writeVal1);
+    BOOST_CHECK_EXCEPTION(writer.WriteString(NULL, writeVal1), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(writer.WriteString(NULL, writeVal1, 4), IgniteError, IsBinaryError);
 
-    try
-    {
-        writer.WriteString(NULL, writeVal1, 4);
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        writer.WriteString(NULL, writeVal3);
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(writer.WriteString(NULL, writeVal3), IgniteError, IsBinaryError);
 
     writer.WriteString("field1", writeVal1);
     writer.WriteString("field2", writeVal1, 4);
@@ -1307,34 +980,16 @@ BOOST_AUTO_TEST_CASE(TestString) {
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 5;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+        footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
 
-    try
-    {
-        char nullCheckRes[9];
+    char nullCheckRes[9];
+    BOOST_CHECK_EXCEPTION(reader.ReadString(NULL, nullCheckRes, 9), IgniteError, IsBinaryError);
 
-        reader.ReadString(NULL, nullCheckRes, 9);
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        reader.ReadString(NULL);
-
-        BOOST_FAIL("Not restricted.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(reader.ReadString(NULL), IgniteError, IsBinaryError);
 
     char readVal1[9];
     char readVal2[5];
@@ -1385,7 +1040,8 @@ BOOST_AUTO_TEST_CASE(TestStringArrayNull)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+        footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1396,29 +1052,9 @@ BOOST_AUTO_TEST_CASE(TestStringArrayNull)
     BOOST_REQUIRE(!arrReader.HasNext());
     BOOST_REQUIRE(arrReader.IsNull());
 
-    try
-    {
-        char res[100];
-
-        arrReader.GetNext(res, 100);
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        arrReader.GetNext();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    char res[100];
+    BOOST_CHECK_EXCEPTION(arrReader.GetNext(res, 100), IgniteError, IsBinaryError);
+    BOOST_CHECK_EXCEPTION(arrReader.GetNext(), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(reader.ReadInt8("field2") == 1);
 }
@@ -1443,55 +1079,14 @@ BOOST_AUTO_TEST_CASE(TestStringArrayEmpty)
 
     writer.WriteInt8("field2", 1);
 
-    try
-    {
-        const char* val = "test";
+    const char* val1 = "test";
+    BOOST_CHECK_EXCEPTION(arrWriter.Write(val1, 4), IgniteError, IsBinaryError);
+    BOOST_CHECK_EXCEPTION(arrWriter.Write(val1), IgniteError, IsBinaryError);
 
-        arrWriter.Write(val, 4);
+    std::string val2 = "test";
+    BOOST_CHECK_EXCEPTION(arrWriter.Write(val2), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        const char* val = "test";
-
-        arrWriter.Write(val);
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        std::string val = "test";
-
-        arrWriter.Write(val);
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        arrWriter.Close();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(arrWriter.Close(), IgniteError, IsBinaryError);
 
     writerImpl.PostWrite();
 
@@ -1502,7 +1097,8 @@ BOOST_AUTO_TEST_CASE(TestStringArrayEmpty)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+        footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1513,29 +1109,10 @@ BOOST_AUTO_TEST_CASE(TestStringArrayEmpty)
     BOOST_REQUIRE(!arrReader.HasNext());
     BOOST_REQUIRE(!arrReader.IsNull());
 
-    try
-    {
-        char res[100];
+    char res[100];
+    BOOST_CHECK_EXCEPTION(arrReader.GetNext(res, 100), IgniteError, IsBinaryError);
 
-        arrReader.GetNext(res, 100);
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        arrReader.GetNext();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(arrReader.GetNext(), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(reader.ReadInt8("field2") == 1);
 }
@@ -1570,55 +1147,14 @@ BOOST_AUTO_TEST_CASE(TestStringArray)
 
     writer.WriteInt8("field2", 1);
 
-    try
-    {
-        const char* val = "test";
+    const char* val1 = "test";
+    BOOST_CHECK_EXCEPTION(arrWriter.Write(val1, 4), IgniteError, IsBinaryError);
+    BOOST_CHECK_EXCEPTION(arrWriter.Write(val1), IgniteError, IsBinaryError);
 
-        arrWriter.Write(val, 4);
+    std::string val2 = "test";
+    BOOST_CHECK_EXCEPTION(arrWriter.Write(val2), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        const char* val = "test";
-
-        arrWriter.Write(val);
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        std::string val = "test";
-
-        arrWriter.Write(val);
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        arrWriter.Close();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(arrWriter.Close(), IgniteError, IsBinaryError);
 
     writerImpl.PostWrite();
 
@@ -1629,7 +1165,8 @@ BOOST_AUTO_TEST_CASE(TestStringArray)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+        footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1688,29 +1225,10 @@ BOOST_AUTO_TEST_CASE(TestStringArray)
 
     BOOST_REQUIRE(!arrReader.HasNext());
 
-    try
-    {
-        char res[100];
+    char res[100];
+    BOOST_CHECK_EXCEPTION(arrReader.GetNext(res, 100), IgniteError, IsBinaryError);
 
-        arrReader.GetNext(res, 100);
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        arrReader.GetNext();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(arrReader.GetNext(), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(reader.ReadInt8("field2") == 1);
 }
@@ -1743,7 +1261,8 @@ BOOST_AUTO_TEST_CASE(TestObject)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 3;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+        footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN); 
@@ -1787,7 +1306,8 @@ BOOST_AUTO_TEST_CASE(TestNestedObject)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 3;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+        footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1829,7 +1349,8 @@ BOOST_AUTO_TEST_CASE(TestArrayNull)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+        footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1840,16 +1361,7 @@ BOOST_AUTO_TEST_CASE(TestArrayNull)
     BOOST_REQUIRE(!arrReader.HasNext());
     BOOST_REQUIRE(arrReader.IsNull());
 
-    try
-    {
-        arrReader.GetNext();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(arrReader.GetNext(), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(reader.ReadInt8("field2") == 1);
 }
@@ -1874,27 +1386,9 @@ BOOST_AUTO_TEST_CASE(TestArrayEmpty)
 
     writer.WriteInt8("field2", 1);
 
-    try
-    {
-        arrWriter.Write(1);
+    BOOST_CHECK_EXCEPTION(arrWriter.Write(1), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        arrWriter.Close();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(arrWriter.Close(), IgniteError, IsBinaryError);
 
     writerImpl.PostWrite();
 
@@ -1905,7 +1399,8 @@ BOOST_AUTO_TEST_CASE(TestArrayEmpty)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+        footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1916,16 +1411,7 @@ BOOST_AUTO_TEST_CASE(TestArrayEmpty)
     BOOST_REQUIRE(!arrReader.HasNext());
     BOOST_REQUIRE(!arrReader.IsNull());
 
-    try
-    {
-        arrReader.GetNext();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(arrReader.GetNext(), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(reader.ReadInt8("field2") == 1);
 }
@@ -1958,27 +1444,9 @@ BOOST_AUTO_TEST_CASE(TestArray)
 
     writer.WriteInt8("field2", 1);
 
-    try
-    {
-        arrWriter.Write(1);
+    BOOST_CHECK_EXCEPTION(arrWriter.Write(1), IgniteError, IsBinaryError);
 
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
-
-    try
-    {
-        arrWriter.Close();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(arrWriter.Close(), IgniteError, IsBinaryError);
 
     writerImpl.PostWrite();
 
@@ -1989,7 +1457,8 @@ BOOST_AUTO_TEST_CASE(TestArray)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+        footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -2012,16 +1481,7 @@ BOOST_AUTO_TEST_CASE(TestArray)
 
     BOOST_REQUIRE(!arrReader.HasNext());
 
-    try
-    {
-        arrReader.GetNext();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(arrReader.GetNext(), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(reader.ReadInt8("field2") == 1);
 }
@@ -2050,28 +1510,20 @@ BOOST_AUTO_TEST_CASE(TestCollectionNull)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+        footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
 
     BinaryCollectionReader<BinaryInner> colReader = reader.ReadCollection<BinaryInner>("field1");
 
-    BOOST_REQUIRE(colReader.GetType() == IGNITE_COLLECTION_UNDEFINED);
+    BOOST_REQUIRE(colReader.GetType() == CollectionType::UNDEFINED);
     BOOST_REQUIRE(colReader.GetSize() == -1);
     BOOST_REQUIRE(!colReader.HasNext());
-    BOOST_REQUIRE(colReader.IsNull()); 
+    BOOST_REQUIRE(colReader.IsNull());
 
-    try
-    {
-        colReader.GetNext();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(colReader.GetNext(), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(reader.ReadInt8("field2") == 1);
 }
@@ -2083,7 +1535,7 @@ BOOST_AUTO_TEST_CASE(TestCollectionEmpty)
 
 BOOST_AUTO_TEST_CASE(TestCollectionEmptyTyped)
 {
-    CollectionType typ = IGNITE_COLLECTION_LINKED_HASH_SET;
+    CollectionType::Type typ = CollectionType::LINKED_HASH_SET;
 
     CheckCollectionEmpty(&typ);
 }
@@ -2095,7 +1547,7 @@ BOOST_AUTO_TEST_CASE(TestCollection)
 
 BOOST_AUTO_TEST_CASE(testCollectionTyped)
 {
-    CollectionType typ = IGNITE_COLLECTION_LINKED_HASH_SET;
+    CollectionType::Type typ = CollectionType::LINKED_HASH_SET;
 
     CheckCollection(&typ);
 }
@@ -2107,7 +1559,7 @@ BOOST_AUTO_TEST_CASE(TestCollectionIterators)
 
 BOOST_AUTO_TEST_CASE(TestCollectionIteratorsTyped)
 {
-    CollectionType typ = IGNITE_COLLECTION_LINKED_HASH_SET;
+    CollectionType::Type typ = CollectionType::LINKED_HASH_SET;
 
     CheckCollectionIterators(&typ);
 }
@@ -2136,31 +1588,22 @@ BOOST_AUTO_TEST_CASE(TestMapNull)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+        footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
 
     BinaryMapReader<int8_t, BinaryInner> mapReader = reader.ReadMap<int8_t, BinaryInner>("field1");
 
-    BOOST_REQUIRE(mapReader.GetType() == IGNITE_MAP_UNDEFINED);
+    BOOST_REQUIRE(mapReader.GetType() == MapType::UNDEFINED);
     BOOST_REQUIRE(mapReader.GetSize() == -1);
     BOOST_REQUIRE(!mapReader.HasNext());
     BOOST_REQUIRE(mapReader.IsNull());
 
-    try
-    {
-        int8_t key;
-        BinaryInner val;
-
-        mapReader.GetNext(&key, &val);
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    int8_t key;
+    BinaryInner val;
+    BOOST_CHECK_EXCEPTION(mapReader.GetNext(key, val), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(reader.ReadInt8("field2") == 1);
 }
@@ -2172,7 +1615,7 @@ BOOST_AUTO_TEST_CASE(TestMapEmpty)
 
 BOOST_AUTO_TEST_CASE(TestMapEmptyTyped)
 {
-    MapType typ = IGNITE_MAP_LINKED_HASH_MAP;
+    MapType::Type typ = MapType::LINKED_HASH_MAP;
 
     CheckMapEmpty(&typ);
 }
@@ -2184,7 +1627,7 @@ BOOST_AUTO_TEST_CASE(TestMap)
 
 BOOST_AUTO_TEST_CASE(TestMapTyped)
 {
-    MapType typ = IGNITE_MAP_LINKED_HASH_MAP;
+    MapType::Type typ = MapType::LINKED_HASH_MAP;
 
     CheckMap(&typ);
 }
@@ -2203,16 +1646,7 @@ BOOST_AUTO_TEST_CASE(TestRawMode)
 
     BinaryRawWriter rawWriter = writer.RawWriter();
 
-    try
-    {
-        writer.RawWriter();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(writer.RawWriter(), IgniteError, IsBinaryError);
 
     rawWriter.WriteInt8(1);
 
@@ -2227,23 +1661,15 @@ BOOST_AUTO_TEST_CASE(TestRawMode)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, footerBegin, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, footerBegin,
+        footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
     BinaryReader reader(&readerImpl);
     
     in.Position(IGNITE_DFLT_HDR_LEN);
 
     BinaryRawReader rawReader = reader.RawReader();
 
-    try
-    {
-        reader.RawReader();
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(reader.RawReader(), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(rawReader.ReadInt8() == 1);
 
@@ -2304,7 +1730,7 @@ BOOST_AUTO_TEST_CASE(TestFieldSeek)
 
     BinaryReaderImpl readerImpl(&in, &idRslvr, pos, usrType, 
                                   typeId, hashCode, len, rawOff, 
-                                  footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
+                                  footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
 
     BinaryReader reader(&readerImpl);
 
@@ -2345,16 +1771,7 @@ BOOST_AUTO_TEST_CASE(TestFieldSeek)
     in.Position(IGNITE_DFLT_HDR_LEN);
     BOOST_REQUIRE(reader.ReadInt32("val1") == 1);
 
-    try
-    {
-        reader.ReadInt64("val2");
-
-        BOOST_FAIL("Error expected.");
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
-    }
+    BOOST_CHECK_EXCEPTION(reader.ReadInt64("val2"), IgniteError, IsBinaryError);
 
     BOOST_REQUIRE(reader.ReadInt32("val2") == 2);
 
@@ -2435,7 +1852,8 @@ BOOST_AUTO_TEST_CASE(TestSchemaOffset2ByteFields)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 6 * fieldsNum;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_TWO_BYTES);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+        footerBegin, footerEnd, BinaryOffsetType::TWO_BYTES);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -2480,7 +1898,8 @@ BOOST_AUTO_TEST_CASE(TestSchemaOffset4ByteFields)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 8 * fieldsNum;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_FOUR_BYTES);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+        footerBegin, footerEnd, BinaryOffsetType::FOUR_BYTES);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -2520,7 +1939,8 @@ BOOST_AUTO_TEST_CASE(TestSchemaOffset2ByteArray)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 6 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_TWO_BYTES);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+        footerBegin, footerEnd, BinaryOffsetType::TWO_BYTES);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -2554,12 +1974,56 @@ BOOST_AUTO_TEST_CASE(TestSchemaOffset4ByteArray)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 8 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_FOUR_BYTES);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+        footerBegin, footerEnd, BinaryOffsetType::FOUR_BYTES);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
 
     BOOST_REQUIRE(reader.ReadInt32("field2") == 42);
+}
+
+BOOST_AUTO_TEST_CASE(TestPrimitivePointers)
+{
+    TemplatedBinaryIdResolver<BinaryDummy> idRslvr;
+
+    InteropUnpooledMemory mem(1024);
+
+    InteropOutputStream out(&mem);
+    BinaryWriterImpl writerImpl(&out, &idRslvr, 0, 0, 0);
+    BinaryWriter writer(&writerImpl);
+
+    out.Position(IGNITE_DFLT_HDR_LEN);
+
+    std::string field1 = "Lorem ipsum";
+    int32_t field2 = 42;
+
+    writer.WriteObject("field1", &field1);
+    writer.WriteObject<int8_t*>("null", 0);
+    writer.WriteObject("field2", &field2);
+
+    writerImpl.PostWrite();
+
+    out.Synchronize();
+
+    InteropInputStream in(&mem);
+
+    int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
+    int32_t footerEnd = footerBegin + 5 * 3;
+
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100,
+        footerBegin, footerEnd, BinaryOffsetType::ONE_BYTE);
+    BinaryReader reader(&readerImpl);
+
+    in.Position(IGNITE_DFLT_HDR_LEN);
+
+    std::auto_ptr<int32_t> field2Res(reader.ReadObject<int32_t*>("field2"));
+    std::auto_ptr<int8_t> fieldNullRes(reader.ReadObject<int8_t*>("null"));
+    std::auto_ptr<std::string> field1Res(reader.ReadObject<std::string*>("field1"));
+
+    BOOST_CHECK_EQUAL(*field1Res, field1);
+    BOOST_CHECK(fieldNullRes.get() == 0);
+    BOOST_CHECK_EQUAL(*field2Res, field2);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

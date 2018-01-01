@@ -40,14 +40,14 @@ namespace
     /** SQL state 01S01 constant. */
     const std::string STATE_01S01 = "01S01";
 
-    /** SQL state 22026 constant. */
-    const std::string STATE_22026 = "22026";
-
-    /** SQL state 24000 constant. */
-    const std::string STATE_24000 = "24000";
+    /** SQL state 01S02 constant. */
+    const std::string STATE_01S02 = "01S02";
 
     /** SQL state 07009 constant. */
     const std::string STATE_07009 = "07009";
+
+    /** SQL state 07006 constant. */
+    const std::string STATE_07006 = "07006";
 
     /** SQL state 08001 constant. */
     const std::string STATE_08001 = "08001";
@@ -58,11 +58,56 @@ namespace
     /** SQL state 08003 constant. */
     const std::string STATE_08003 = "08003";
 
+    /** SQL state 08004 constant. */
+    const std::string STATE_08004 = "08004";
+
+    /** SQL state 08S01 constant. */
+    const std::string STATE_08S01 = "08S01";
+
+    /** SQL state 22026 constant. */
+    const std::string STATE_22026 = "22026";
+
+    /** SQL state 23000 constant. */
+    const std::string STATE_23000 = "23000";
+
+    /** SQL state 24000 constant. */
+    const std::string STATE_24000 = "24000";
+
+    /** SQL state 3F000 constant. */
+    const std::string STATE_3F000 = "3F000";
+
+    /** SQL state 42000 constant. */
+    const std::string STATE_42000 = "42000";
+
+    /** SQL state 42S01 constant. */
+    const std::string STATE_42S01 = "42S01";
+
+    /** SQL state 42S02 constant. */
+    const std::string STATE_42S02 = "42S02";
+
+    /** SQL state 42S11 constant. */
+    const std::string STATE_42S11 = "42S11";
+
+    /** SQL state 42S12 constant. */
+    const std::string STATE_42S12 = "42S12";
+
+    /** SQL state 42S21 constant. */
+    const std::string STATE_42S21 = "42S21";
+
+    /** SQL state 42S22 constant. */
+    const std::string STATE_42S22 = "42S22";
+
     /** SQL state HY000 constant. */
     const std::string STATE_HY000 = "HY000";
 
     /** SQL state HY001 constant. */
     const std::string STATE_HY001 = "HY001";
+
+    /** SQL state HY003 constant. */
+    const std::string STATE_HY003 = "HY003";
+
+    /** SQL state HY004 constant. */
+    const std::string STATE_HY004 = "HY004";
 
     /** SQL state HY009 constant. */
     const std::string STATE_HY009 = "HY009";
@@ -70,11 +115,32 @@ namespace
     /** SQL state HY010 constant. */
     const std::string STATE_HY010 = "HY010";
 
+    /** SQL state HY090 constant. */
+    const std::string STATE_HY090 = "HY090";
+
+    /** SQL state HY092 constant. */
+    const std::string STATE_HY092 = "HY092";
+
+    /** SQL state HY097 constant. */
+    const std::string STATE_HY097 = "HY097";
+
+    /** SQL state HY105 constant. */
+    const std::string STATE_HY105 = "HY105";
+
+    /** SQL state HY106 constant. */
+    const std::string STATE_HY106 = "HY106";
+
     /** SQL state HYC00 constant. */
     const std::string STATE_HYC00 = "HYC00";
 
+    /** SQL state HYT00 constant. */
+    const std::string STATE_HYT00 = "HYT00";
+
     /** SQL state HYT01 constant. */
     const std::string STATE_HYT01 = "HYT01";
+
+    /** SQL state IM001 constant. */
+    const std::string STATE_IM001 = "IM001";
 }
 
 namespace ignite
@@ -84,7 +150,7 @@ namespace ignite
         namespace diagnostic
         {
             DiagnosticRecord::DiagnosticRecord() :
-                sqlState(SQL_STATE_UNKNOWN),
+                sqlState(SqlState::UNKNOWN),
                 message(),
                 connectionName(),
                 serverName(),
@@ -95,7 +161,7 @@ namespace ignite
                 // No-op.
             }
 
-            DiagnosticRecord::DiagnosticRecord(SqlState sqlState,
+            DiagnosticRecord::DiagnosticRecord(SqlState::Type sqlState,
                 const std::string& message, const std::string& connectionName,
                 const std::string& serverName, int32_t rowNum, int32_t columnNum) :
                 sqlState(sqlState),
@@ -130,6 +196,8 @@ namespace ignite
 
                 if (odbcSubclasses.empty())
                 {
+                    // This is a fixed list taken from ODBC doc.
+                    // Please do not add/remove values here.
                     odbcSubclasses.insert("01S00");
                     odbcSubclasses.insert("01S01");
                     odbcSubclasses.insert("01S02");
@@ -201,50 +269,113 @@ namespace ignite
             {
                 switch (sqlState)
                 {
-                    case SQL_STATE_01004_DATA_TRUNCATED:
+                    case SqlState::S01004_DATA_TRUNCATED:
                         return STATE_01004;
 
-                    case SQL_STATE_01S00_INVALID_CONNECTION_STRING_ATTRIBUTE:
+                    case SqlState::S01S00_INVALID_CONNECTION_STRING_ATTRIBUTE:
                         return STATE_01S00;
 
-                    case SQL_STATE_01S01_ERROR_IN_ROW:
+                    case SqlState::S01S01_ERROR_IN_ROW:
                         return STATE_01S01;
 
-                    case SQL_STATE_22026_DATA_LENGTH_MISMATCH:
+                    case SqlState::S01S02_OPTION_VALUE_CHANGED:
+                        return STATE_01S02;
+
+                    case SqlState::S07006_RESTRICTION_VIOLATION:
+                        return STATE_07006;
+
+                    case SqlState::S22026_DATA_LENGTH_MISMATCH:
                         return STATE_22026;
 
-                    case SQL_STATE_24000_INVALID_CURSOR_STATE:
+                    case SqlState::S23000_INTEGRITY_CONSTRAINT_VIOLATION:
+                        return STATE_23000;
+
+                    case SqlState::S24000_INVALID_CURSOR_STATE:
                         return STATE_24000;
 
-                    case SQL_STATE_07009_INVALID_DESCRIPTOR_INDEX:
+                    case SqlState::S3F000_INVALID_SCHEMA_NAME:
+                        return STATE_3F000;
+
+                    case SqlState::S42000_SYNTAX_ERROR_OR_ACCESS_VIOLATION:
+                        return STATE_42000;
+
+                    case SqlState::S42S01_TABLE_OR_VIEW_ALREADY_EXISTS:
+                        return STATE_42S01;
+
+                    case SqlState::S42S02_TABLE_OR_VIEW_NOT_FOUND:
+                        return STATE_42S02;
+
+                    case SqlState::S42S11_INDEX_ALREADY_EXISTS:
+                        return STATE_42S11;
+
+                    case SqlState::S42S12_INDEX_NOT_FOUND:
+                        return STATE_42S12;
+
+                    case SqlState::S42S21_COLUMN_ALREADY_EXISTS:
+                        return STATE_42S21;
+
+                    case SqlState::S42S22_COLUMN_NOT_FOUND:
+                        return STATE_42S22;
+
+                    case SqlState::S07009_INVALID_DESCRIPTOR_INDEX:
                         return STATE_07009;
 
-                    case SQL_STATE_08001_CANNOT_CONNECT:
+                    case SqlState::S08001_CANNOT_CONNECT:
                         return STATE_08001;
 
-                    case SQL_STATE_08002_ALREADY_CONNECTED:
+                    case SqlState::S08002_ALREADY_CONNECTED:
                         return STATE_08002;
 
-                    case SQL_STATE_08003_NOT_CONNECTED:
+                    case SqlState::S08003_NOT_CONNECTED:
                         return STATE_08003;
 
-                    case SQL_STATE_HY000_GENERAL_ERROR:
+                    case SqlState::S08004_CONNECTION_REJECTED:
+                        return STATE_08004;
+
+                    case SqlState::S08S01_LINK_FAILURE:
+                        return STATE_08S01;
+
+                    case SqlState::SHY000_GENERAL_ERROR:
                         return STATE_HY000;
 
-                    case SQL_STATE_HY001_MEMORY_ALLOCATION:
+                    case SqlState::SHY001_MEMORY_ALLOCATION:
                         return STATE_HY001;
 
-                    case SQL_STATE_HY009_INVALID_USE_OF_NULL_POINTER:
+                    case SqlState::SHY003_INVALID_APPLICATION_BUFFER_TYPE:
+                        return STATE_HY003;
+
+                    case SqlState::SHY009_INVALID_USE_OF_NULL_POINTER:
                         return STATE_HY009;
 
-                    case SQL_STATE_HY010_SEQUENCE_ERROR:
+                    case SqlState::SHY010_SEQUENCE_ERROR:
                         return STATE_HY010;
 
-                    case SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED:
+                    case SqlState::SHY090_INVALID_STRING_OR_BUFFER_LENGTH:
+                        return STATE_HY090;
+
+                    case SqlState::SHY092_OPTION_TYPE_OUT_OF_RANGE:
+                        return STATE_HY092;
+
+                    case SqlState::SHY097_COLUMN_TYPE_OUT_OF_RANGE:
+                        return STATE_HY097;
+
+                    case SqlState::SHY105_INVALID_PARAMETER_TYPE:
+                        return STATE_HY105;
+
+                    case SqlState::SHY106_FETCH_TYPE_OUT_OF_RANGE:
+                        return STATE_HY106;
+
+                    case SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED:
                         return STATE_HYC00;
 
-                    case SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT:
+                    case SqlState::SHYT00_TIMEOUT_EXPIRED:
+                        return STATE_HYT00;
+
+                    case SqlState::SHYT01_CONNECTION_TIMEOUT:
                         return STATE_HYT01;
+
+                    case SqlState::SIM001_FUNCTION_NOT_SUPPORTED:
+                        return STATE_IM001;
 
                     default:
                         break;

@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     public class NearCacheConfiguration
     {
         /// <summary> Initial default near cache size. </summary>
-        public const int DefaultNearStartSize = CacheConfiguration.DefaultStartSize / 4;
+        public const int DefaultNearStartSize = 1500000 / 4;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NearCacheConfiguration"/> class.

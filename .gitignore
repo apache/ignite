@@ -27,6 +27,8 @@ git-patch-prop-local.sh
 .project
 /modules/platforms/**/*.VC.db
 **/dotnet/libs/
+*.classname*
+*.exe
 
 #Visual Studio files
 *.[Oo]bj
@@ -51,11 +53,42 @@ git-patch-prop-local.sh
 *.opensdf
 *.db
 *.opendb
+.vs
 ipch/
 [Oo]bj/
 [Bb]in
 [Dd]ebug*/
 [Rr]elease*/
 packages
-*.classname
 *.nupkg
+
+#Autotools temp files
+/modules/platforms/cpp/**/Makefile
+/modules/platforms/cpp/**/Makefile.in
+/modules/platforms/cpp/**/aclocal.m4
+/modules/platforms/cpp/**/.libs/
+/modules/platforms/cpp/**/.dirstamp
+/modules/platforms/cpp/**/*.la
+/modules/platforms/cpp/ar-lib
+/modules/platforms/cpp/compile
+/modules/platforms/cpp/confdefs.h
+/modules/platforms/cpp/config.guess
+/modules/platforms/cpp/config.h
+/modules/platforms/cpp/config.h.in
+/modules/platforms/cpp/config.status
+/modules/platforms/cpp/config.sub
+/modules/platforms/cpp/configure
+/modules/platforms/cpp/core-test/ignite-tests
+/modules/platforms/cpp/core/ignite.pc
+/modules/platforms/cpp/depcomp
+/modules/platforms/cpp/ignite/ignite
+/modules/platforms/cpp/install-sh
+/modules/platforms/cpp/libtool
+/modules/platforms/cpp/ltmain.sh
+/modules/platforms/cpp/m4/
+/modules/platforms/cpp/missing
+/modules/platforms/cpp/odbc-test/ignite-odbc-tests
+/modules/platforms/cpp/stamp-h1
+
+#Files related to ML manual-runnable tests
+/modules/ml/src/test/resources/manualrun/trees/columntrees.manualrun.properties

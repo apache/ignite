@@ -292,7 +292,7 @@ class WebSessionV2 implements HttpSession {
             try {
                 genuineSes.invalidate();
             }
-            catch (IllegalStateException e) {
+            catch (IllegalStateException ignored) {
                 // Already invalidated, keep going.
             }
         }

@@ -15,10 +15,24 @@
  * limitations under the License.
  */
 
+#include <cassert>
+
 #include "test_utils.h"
 
-namespace ignite
+namespace ignite_test
 {
+    std::string GetOdbcErrorState(SQLSMALLINT handleType, SQLHANDLE handle)
+    {
+        SQLCHAR sqlstate[7] = {};
+        SQLINTEGER nativeCode;
+
+        SQLCHAR message[ODBC_BUFFER_SIZE];
+        SQLSMALLINT reallen = 0;
+
+        SQLGetDiagRec(handleType, handle, 1, sqlstate, &nativeCode, message, ODBC_BUFFER_SIZE, &reallen);
+
+        return std::string(reinterpret_cast<char*>(sqlstate));
+    }
 
     std::string GetOdbcErrorMessage(SQLSMALLINT handleType, SQLHANDLE handle)
     {
@@ -30,7 +44,72 @@ namespace ignite
 
         SQLGetDiagRec(handleType, handle, 1, sqlstate, &nativeCode, message, ODBC_BUFFER_SIZE, &reallen);
 
-        return std::string(reinterpret_cast<char*>(sqlstate)) + ": " +
-            std::string(reinterpret_cast<char*>(message), reallen);
+        std::string res(reinterpret_cast<char*>(sqlstate));
+
+        if (!res.empty())
+            res.append(": ").append(reinterpret_cast<char*>(message), reallen);
+        else
+            res = "No results";
+
+        return res;
+    }
+
+    void InitConfig(ignite::IgniteConfiguration& cfg, const char* cfgFile)
+    {
+        using namespace ignite;
+
+        assert(cfgFile != 0);
+
+        cfg.jvmOpts.push_back("-Xdebug");
+        cfg.jvmOpts.push_back("-Xnoagent");
+        cfg.jvmOpts.push_back("-Djava.compiler=NONE");
+        cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
+        cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
+        cfg.jvmOpts.push_back("-Duser.timezone=GMT");
+        cfg.jvmOpts.push_back("-DIGNITE_QUIET=false");
+        cfg.jvmOpts.push_back("-DIGNITE_CONSOLE_APPENDER=false");
+        cfg.jvmOpts.push_back("-DIGNITE_UPDATE_NOTIFIER=false");
+        cfg.jvmOpts.push_back("-Duser.language=en");
+
+        cfg.igniteHome = jni::ResolveIgniteHome();
+        cfg.jvmClassPath = jni::CreateIgniteHomeClasspath(cfg.igniteHome, true);
+
+#ifdef IGNITE_TESTS_32
+        cfg.jvmInitMem = 256;
+        cfg.jvmMaxMem = 768;
+#else
+        cfg.jvmInitMem = 1024;
+        cfg.jvmMaxMem = 4096;
+#endif
+
+        char* cfgPath = getenv("IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH");
+
+        assert(cfgPath != 0);
+
+        cfg.springCfgPath = std::string(cfgPath).append("/").append(cfgFile);
+    }
+
+    ignite::Ignite StartNode(const char* cfgFile)
+    {
+        using namespace ignite;
+
+        IgniteConfiguration cfg;
+
+        InitConfig(cfg, cfgFile);
+
+        return Ignition::Start(cfg);
+    }
+
+    ignite::Ignite StartNode(const char* cfgFile, const char* name)
+    {
+        using namespace ignite;
+
+        assert(name != 0);
+
+        IgniteConfiguration cfg;
+
+        InitConfig(cfg, cfgFile);
+
+        return Ignition::Start(cfg, name);
     }
 }

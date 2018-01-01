@@ -42,7 +42,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -57,8 +56,8 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
     private int idx;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -67,12 +66,11 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
 
         cfg.setDiscoverySpi(discoSpi);
 
-        CacheConfiguration cCfg = new CacheConfiguration();
+        CacheConfiguration cCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cCfg.setCacheMode(PARTITIONED);
         cCfg.setBackups(1);
         cCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cCfg.setAtomicWriteOrderMode(PRIMARY);
 
         cfg.setCacheConfiguration(cCfg);
 
@@ -122,7 +120,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
     public void testSingleTransformMessage() throws Exception {
         startGrids(2);
 
-        int cacheId = ((IgniteKernal)grid(0)).internalCache(null).context().cacheId();
+        int cacheId = ((IgniteKernal)grid(0)).internalCache(DEFAULT_CACHE_NAME).context().cacheId();
 
         try {
             awaitPartitionMapExchange();
@@ -206,7 +204,7 @@ public class CacheAtomicSingleMessageCountSelfTest extends GridCommonAbstractTes
             throws IgniteSpiException {
 
             if (((GridIoMessage)msg).message() instanceof GridCacheMessage) {
-                int msgCacheId = ((GridCacheMessage)((GridIoMessage)msg).message()).cacheId();
+                int msgCacheId = ((GridCacheIdMessage)((GridIoMessage)msg).message()).cacheId();
 
                 if (filterCacheId == null || filterCacheId == msgCacheId) {
                     AtomicInteger cntr = cntMap.get(((GridIoMessage)msg).message().getClass());

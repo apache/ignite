@@ -31,6 +31,7 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -227,13 +228,15 @@ public class CacheStoreBalancingWrapper<K, V> implements CacheStore<K, V> {
         delegate.sessionEnd(commit);
     }
 
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CacheStoreBalancingWrapper.class, this);
+    }
+
     /**
      *
      */
     private class LoadFuture extends GridFutureAdapter<Map<K, V>> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Collection of keys for pending cleanup. */
         private volatile Collection<K> keys;
 

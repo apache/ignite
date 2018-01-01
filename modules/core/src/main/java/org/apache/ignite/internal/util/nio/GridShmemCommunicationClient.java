@@ -123,7 +123,7 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
 
     /** {@inheritDoc} */
     @Override public synchronized boolean sendMessage(UUID nodeId, Message msg,
-        IgniteInClosure<IgniteException> closure) throws IgniteCheckedException {
+        IgniteInClosure<IgniteException> c) throws IgniteCheckedException {
         assert nodeId != null;
 
         if (closed())
@@ -142,8 +142,8 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
 
         markUsed();
 
-        if (closure != null)
-            closure.apply(null);
+        if (c != null)
+            c.apply(null);
 
         return false;
     }

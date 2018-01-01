@@ -31,7 +31,10 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStrea
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lifecycle.LifecycleAware;
@@ -44,6 +47,7 @@ import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 /**
@@ -87,6 +91,9 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     /** Key used to distinguish session deployment.  */
     private static final Object KEY_SES = new Object();
 
+    /** Key to designate a set of stores that share current session.  */
+    private static final Object KEY_SES_STORES = new Object();
+
     /** */
     @CacheStoreSessionResource
     private CacheStoreSession ses;
@@ -98,12 +105,15 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     private Map<String, ?> props;
 
     /** Native factory. */
+    @GridToStringInclude
     private final Object nativeFactory;
 
     /** Interop processor. */
+    @GridToStringExclude
     protected PlatformContext platformCtx;
 
     /** Pointer to native store. */
+    @GridToStringExclude
     protected long ptr;
 
     /**
@@ -195,7 +205,11 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     writer.writeByte(OP_LOAD_ALL);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
-                    writer.writeCollection(keys0);
+
+                    writer.writeInt(keys0.size());
+
+                    for (Object o : keys0)
+                        writer.writeObject(o);
                 }
             }, new IgniteInClosureX<BinaryRawReaderEx>() {
                 @Override public void applyx(BinaryRawReaderEx reader) {
@@ -305,7 +319,11 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     writer.writeByte(OP_RMV_ALL);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
-                    writer.writeCollection(keys);
+
+                    writer.writeInt(keys.size());
+
+                    for (Object o : keys)
+                        writer.writeObject(o);
                 }
             }, null);
         }
@@ -323,6 +341,23 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
                     writer.writeBoolean(commit);
+
+                    // When multiple stores (caches) participate in a single transaction,
+                    // they share a single session, but sessionEnd is called on each store.
+                    // Same thing happens on platform side: session is shared; each store must be notified,
+                    // then session should be closed.
+                    Collection<Long> stores = (Collection<Long>) ses.properties().get(KEY_SES_STORES);
+                    assert stores != null;
+
+                    stores.remove(ptr);
+                    boolean last = stores.isEmpty();
+
+                    writer.writeBoolean(last);
+
+                    if (last) {
+                        // Session object has been released on platform side, remove marker.
+                        ses.properties().remove(KEY_SES);
+                    }
                 }
             }, null);
         }
@@ -401,6 +436,16 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
             ses.properties().put(KEY_SES, sesPtr);
         }
 
+        // Keep track of all stores that use current session (cross-cache tx uses single session for all caches).
+        Collection<Long> stores = (Collection<Long>) ses.properties().get(KEY_SES_STORES);
+
+        if (stores == null) {
+            stores = new HashSet<>();
+            ses.properties().put(KEY_SES_STORES, stores);
+        }
+
+        stores.add(ptr);
+
         return sesPtr;
     }
 
@@ -442,5 +487,10 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
             return res;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PlatformDotNetCacheStore.class, this);
     }
 }

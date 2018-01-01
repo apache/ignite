@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -32,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridH2ValueMessageFactory implements MessageFactory {
     /** {@inheritDoc} */
-    @Nullable @Override public Message create(byte type) {
+    @Nullable @Override public Message create(short type) {
         switch (type) {
             case -4:
                 return GridH2Null.INSTANCE;
@@ -108,6 +109,15 @@ public class GridH2ValueMessageFactory implements MessageFactory {
 
             case -35:
                 return new GridH2RowRangeBounds();
+
+            case -54:
+                return new QueryTable();
+
+            case -55:
+                return new GridH2DmlRequest();
+
+            case -56:
+                return new GridH2DmlResponse();
         }
 
         return null;

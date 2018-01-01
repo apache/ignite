@@ -137,8 +137,10 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
 
     /**
      * Does actual test TeraSort job Through Ignite API
+     *
+     * @param gzip Whether to use GZIP.
      */
-    protected final void teraSort() throws Exception {
+    protected final void teraSort(boolean gzip) throws Exception {
         System.out.println("TeraSort ===============================================================");
 
         getFileSystem().delete(new Path(sortOutDir), true);
@@ -164,6 +166,10 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
         jobConf.set("mapred.max.split.size", String.valueOf(splitSize));
 
         jobConf.setBoolean(HadoopJobProperty.SHUFFLE_MAPPER_STRIPED_OUTPUT.propertyName(), true);
+        jobConf.setInt(HadoopJobProperty.SHUFFLE_MSG_SIZE.propertyName(), 4096);
+
+        if (gzip)
+            jobConf.setBoolean(HadoopJobProperty.SHUFFLE_MSG_GZIP.propertyName(), true);
 
         jobConf.set(HadoopJobProperty.JOB_PARTIALLY_RAW_COMPARATOR.propertyName(),
             TextPartiallyRawComparator.class.getName());
@@ -172,7 +178,7 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
 
         HadoopJobId jobId = new HadoopJobId(UUID.randomUUID(), 1);
 
-        IgniteInternalFuture<?> fut = grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration()));
+        IgniteInternalFuture<?> fut = grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration(), null));
 
         fut.get();
     }
@@ -347,19 +353,39 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
 
     /**
      * Runs generate/sort/validate phases of the terasort sample.
-     * @throws Exception
+     *
+     * @throws Exception If failed.
      */
     public void testTeraSort() throws Exception {
+        checkTeraSort(false);
+    }
+
+    /**
+     * Runs generate/sort/validate phases of the terasort sample.
+     *
+     * @throws Exception If failed.
+     */
+    public void testTeraSortGzip() throws Exception {
+        checkTeraSort(true);
+    }
+
+    /**
+     * Check terasort.
+     *
+     * @param gzip GZIP flag.
+     * @throws Exception If failed.
+     */
+    private void checkTeraSort(boolean gzip) throws Exception {
         teraGenerate();
 
-        teraSort();
+        teraSort(gzip);
 
         teraValidate();
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration igc = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration igc = super.getConfiguration(igniteInstanceName);
 
         HadoopConfiguration hc = createHadoopConfiguration();
 

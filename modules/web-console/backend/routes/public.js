@@ -17,24 +17,24 @@
 
 'use strict';
 
+const express = require('express');
+const passport = require('passport');
+
 // Fire me up!
 
 module.exports = {
     implements: 'routes/public',
-    inject: ['require(express)', 'require(passport)', 'mongo', 'services/mails', 'services/users', 'services/auth']
+    inject: ['mongo', 'services/mails', 'services/users', 'services/auth']
 };
 
 /**
- *
- * @param express
- * @param passport
  * @param mongo
  * @param mailsService
  * @param {UsersService} usersService
  * @param {AuthService} authService
  * @returns {Promise}
  */
-module.exports.factory = function(express, passport, mongo, mailsService, usersService, authService) {
+module.exports.factory = function(mongo, mailsService, usersService, authService) {
     return new Promise((factoryResolve) => {
         const router = new express.Router();
 

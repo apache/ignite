@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.visor.cache;
 
-import org.apache.ignite.IgniteCache;
+import java.util.Collection;
+import java.util.HashSet;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
@@ -27,37 +29,42 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * Task that stop specified caches on specified node.
  */
 @GridInternal
-public class VisorCacheStopTask extends VisorOneNodeTask<String, Void> {
+public class VisorCacheStopTask extends VisorOneNodeTask<VisorCacheStopTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCacheStopJob job(String arg) {
+    @Override protected VisorCacheStopJob job(VisorCacheStopTaskArg arg) {
         return new VisorCacheStopJob(arg, debug);
     }
 
     /**
      * Job that stop specified caches.
      */
-    private static class VisorCacheStopJob extends VisorJob<String, Void> {
+    private static class VisorCacheStopJob extends VisorJob<VisorCacheStopTaskArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
          * Create job.
          *
-         * @param cacheName Cache name to clear.
+         * @param arg Task argument.
          * @param debug Debug flag.
          */
-        private VisorCacheStopJob(String cacheName, boolean debug) {
-            super(cacheName, debug);
+        private VisorCacheStopJob(VisorCacheStopTaskArg arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(String cacheName) {
-            IgniteCache cache = ignite.cache(cacheName);
+        @Override protected Void run(VisorCacheStopTaskArg arg) {
+            Collection<String> cacheNames = F.isEmpty(arg.getCacheNames())
+                ? F.asList(arg.getCacheName())
+                : new HashSet<>(arg.getCacheNames());
 
-            cache.destroy();
+            if (F.isEmpty(cacheNames))
+                throw new IllegalStateException("Cache names was not specified.");
+
+            ignite.destroyCaches(cacheNames);
 
             return null;
         }

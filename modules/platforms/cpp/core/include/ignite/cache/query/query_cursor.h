@@ -186,11 +186,11 @@ namespace ignite
                  *
                  * This method should only be used on the valid instance.
                  *
-                 * @param Vector where query entries will be stored.
+                 * @param res Vector where query entries will be stored.
                  *
                  * @throw IgniteError class instance in case of failure.
                  */
-                void GetAll(std::vector<CacheEntry<K, V>>& res)
+                void GetAll(std::vector<CacheEntry<K, V> >& res)
                 {
                     IgniteError err;
 
@@ -205,21 +205,45 @@ namespace ignite
                  *
                  * This method should only be used on the valid instance.
                  * 
-                 * @param Vector where query entries will be stored.
+                 * @param res Vector where query entries will be stored.
                  * @param err Used to set operation result.
                  */
-                void GetAll(std::vector<CacheEntry<K, V>>& res, IgniteError& err)
+                void GetAll(std::vector<CacheEntry<K, V> >& res, IgniteError& err)
                 {
                     impl::cache::query::QueryCursorImpl* impl0 = impl.Get();
 
                     if (impl0) {
-                        impl::OutQueryGetAllOperation<K, V> outOp(&res);
+                        impl::OutQueryGetAllOperation<K, V> outOp(res);
 
                         impl0->GetAll(outOp, err);
                     }
                     else
                         err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                             "Instance is not usable (did you check for error?).");
+                }
+
+                /**
+                 * Get all entries.
+                 *
+                 * This method should only be used on the valid instance.
+                 * 
+                 * @param iter Output iterator.
+                 */
+                template<typename OutIter>
+                void GetAll(OutIter iter)
+                {
+                    impl::cache::query::QueryCursorImpl* impl0 = impl.Get();
+
+                    if (impl0) {
+                        impl::OutQueryGetAllOperationIter<K, V, OutIter> outOp(iter);
+
+                        impl0->GetAll(outOp);
+                    }
+                    else
+                    {
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                            "Instance is not usable (did you check for error?).");
+                    }
                 }
 
                 /**

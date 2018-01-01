@@ -22,6 +22,8 @@ import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
+import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 
 /**
  * Contains event type constants. The decision to use class and not enumeration
@@ -43,7 +45,6 @@ import org.apache.ignite.lang.IgnitePredicate;
  * <li>{@link #EVTS_ERROR}</li>
  * <li>{@link #EVTS_IGFS}</li>
  * <li>{@link #EVTS_JOB_EXECUTION}</li>
- * <li>{@link #EVTS_SWAPSPACE}</li>
  * <li>{@link #EVTS_TASK_EXECUTION}</li>
  * </ul>
  * <p>
@@ -137,7 +138,7 @@ public interface EventType {
      * Built-in event type: node metrics updated.
      * <br>
      * Generated when node's metrics are updated. In most cases this callback
-     * is invoked with every heartbeat received from a node (including local node).
+     * is invoked with every metrics update received from a node (including local node).
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
@@ -495,26 +496,6 @@ public interface EventType {
      public static final int EVT_CACHE_OBJECT_UNLOCKED = 67;
 
     /**
-     * Built-in event type: cache object swapped from swap storage.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see CacheEvent
-     */
-    public static final int EVT_CACHE_OBJECT_SWAPPED = 68;
-
-    /**
-     * Built-in event type: cache object unswapped from swap storage.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see CacheEvent
-     */
-    public static final int EVT_CACHE_OBJECT_UNSWAPPED = 69;
-
-    /**
      * Built-in event type: cache object was expired when reading it.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
@@ -523,77 +504,6 @@ public interface EventType {
      * @see CacheEvent
      */
     public static final int EVT_CACHE_OBJECT_EXPIRED = 70;
-
-    /**
-     * Built-in event type: swap space data read.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see SwapSpaceEvent
-     */
-    public static final int EVT_SWAP_SPACE_DATA_READ = 71;
-
-    /**
-     * Built-in event type: swap space data stored.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see SwapSpaceEvent
-     */
-    public static final int EVT_SWAP_SPACE_DATA_STORED = 72;
-
-    /**
-     * Built-in event type: swap space data removed.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see SwapSpaceEvent
-     */
-    public static final int EVT_SWAP_SPACE_DATA_REMOVED = 73;
-
-    /**
-     * Built-in event type: swap space cleared.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see SwapSpaceEvent
-     */
-    public static final int EVT_SWAP_SPACE_CLEARED = 74;
-
-    /**
-     * Built-in event type: swap space data evicted.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see SwapSpaceEvent
-     */
-    public static final int EVT_SWAP_SPACE_DATA_EVICTED = 75;
-
-    /**
-     * Built-in event type: cache object stored in off-heap storage.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see CacheEvent
-     */
-    public static final int EVT_CACHE_OBJECT_TO_OFFHEAP = 76;
-
-    /**
-     * Built-in event type: cache object moved from off-heap storage back into memory.
-     * <p>
-     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal Ignite events and should not be used by user-defined events.
-     *
-     * @see CacheEvent
-     */
-    public static final int EVT_CACHE_OBJECT_FROM_OFFHEAP = 77;
-
     /**
      * Built-in event type: cache rebalance started.
      * <p>
@@ -859,6 +769,18 @@ public interface EventType {
     public static final int EVT_IGFS_FILE_PURGED = 127;
 
     /**
+     * Built-in event type: WAL segment movement to archive folder completed
+     * <p>
+     * Fired for each completed WAL segment which was moved to archive
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see WalSegmentArchivedEvent
+     */
+    public static final int EVT_WAL_SEGMENT_ARCHIVED = 128;
+
+    /**
      * All checkpoint events. This array can be directly passed into
      * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
      * subscribe to all checkpoint events.
@@ -994,8 +916,6 @@ public interface EventType {
         EVT_CACHE_OBJECT_REMOVED,
         EVT_CACHE_OBJECT_LOCKED,
         EVT_CACHE_OBJECT_UNLOCKED,
-        EVT_CACHE_OBJECT_SWAPPED,
-        EVT_CACHE_OBJECT_UNSWAPPED,
         EVT_CACHE_OBJECT_EXPIRED
     };
 
@@ -1028,26 +948,12 @@ public interface EventType {
     /**
      * All cache query events. This array can be directly passed into
      * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
-     * subscribe to all cache query events.
+     * subscribe to all cache query events and requires to set {@link MemoryEventStorageSpi}
+     * or other implementation different from {@link NoopEventStorageSpi}.
      */
     public static final int[] EVTS_CACHE_QUERY = {
         EVT_CACHE_QUERY_EXECUTED,
         EVT_CACHE_QUERY_OBJECT_READ
-    };
-
-    /**
-     * All swap space events. This array can be directly passed into
-     * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
-     * subscribe to all cloud events.
-     *
-     * @see SwapSpaceEvent
-     */
-    public static final int[] EVTS_SWAPSPACE = {
-        EVT_SWAP_SPACE_CLEARED,
-        EVT_SWAP_SPACE_DATA_REMOVED,
-        EVT_SWAP_SPACE_DATA_READ,
-        EVT_SWAP_SPACE_DATA_STORED,
-        EVT_SWAP_SPACE_DATA_EVICTED
     };
 
     /**

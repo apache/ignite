@@ -35,7 +35,6 @@ import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSet;
-import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheIteratorConverter;
@@ -496,7 +495,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
         Collection<ClusterNode> nodes;
 
         if (collocated) {
-            List<ClusterNode> nodes0 = ctx.affinity().nodes(hdrPart, topVer);
+            List<ClusterNode> nodes0 = ctx.affinity().nodesByPartition(hdrPart, topVer);
 
             nodes = !nodes0.isEmpty() ?
                 Collections.singleton(nodes0.contains(ctx.localNode()) ? ctx.localNode() : F.first(nodes0)) : nodes0;
@@ -559,8 +558,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      * @return Item key.
      */
     private SetItemKey itemKey(Object item) {
-        return collocated ? (binaryMarsh ? new CollocatedSetItemKey(name, id, item) : new CollocatedItemKey(name, id, item))
-            : new GridCacheSetItemKey(id, item);
+        return collocated ? new CollocatedSetItemKey(name, id, item) : new GridCacheSetItemKey(id, item);
     }
 
     /** {@inheritDoc} */
@@ -605,57 +603,6 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             // No-op.
-        }
-    }
-
-    /**
-     * Item key for collocated set.
-     */
-    private static class CollocatedItemKey extends GridCacheSetItemKey {
-        /** */
-        private static final long serialVersionUID = -1400701398705953750L;
-
-        /** */
-        private String setName;
-
-        /**
-         * Required by {@link Externalizable}.
-         */
-        public CollocatedItemKey() {
-            // No-op.
-        }
-
-        /**
-         * @param setName Set name.
-         * @param setId Set unique ID.
-         * @param item Set item.
-         */
-        private CollocatedItemKey(String setName, IgniteUuid setId, Object item) {
-            super(setId, item);
-
-            this.setName = setName;
-        }
-
-        /**
-         * @return Item affinity key.
-         */
-        @AffinityKeyMapped
-        public Object affinityKey() {
-            return setName;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            super.writeExternal(out);
-
-            U.writeString(out, setName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            super.readExternal(in);
-
-            setName = U.readString(in);
         }
     }
 }

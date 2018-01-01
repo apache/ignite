@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl;
 
+import com.google.common.primitives.Longs;
+import com.google.common.primitives.UnsignedBytes;
+import java.io.DataInputStream;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Writable;
@@ -25,6 +28,8 @@ import org.apache.hadoop.mapreduce.JobID;
 import org.apache.hadoop.mapreduce.JobPriority;
 import org.apache.hadoop.mapreduce.JobStatus;
 import org.apache.hadoop.mapreduce.MRJobConfig;
+import org.apache.hadoop.security.Credentials;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopDefaultJobInfo;
@@ -32,6 +37,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobStatus;
 import org.apache.ignite.internal.processors.hadoop.HadoopSplitWrapper;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import java.io.ByteArrayInputStream;
@@ -208,10 +214,12 @@ public class HadoopUtils {
      * Creates JobInfo from hadoop configuration.
      *
      * @param cfg Hadoop configuration.
+     * @param credentials Credentials.
      * @return Job info.
      * @throws IgniteCheckedException If failed.
      */
-    public static HadoopDefaultJobInfo createJobInfo(Configuration cfg) throws IgniteCheckedException {
+    public static HadoopDefaultJobInfo createJobInfo(Configuration cfg, byte[] credentials)
+        throws IgniteCheckedException {
         JobConf jobConf = new JobConf(cfg);
 
         boolean hasCombiner = jobConf.get("mapred.combiner.class") != null
@@ -266,7 +274,8 @@ public class HadoopUtils {
         for (Map.Entry<String, String> entry : jobConf)
             props.put(entry.getKey(), entry.getValue());
 
-        return new HadoopDefaultJobInfo(jobConf.getJobName(), jobConf.getUser(), hasCombiner, numReduces, props);
+        return new HadoopDefaultJobInfo(jobConf.getJobName(), jobConf.getUser(), hasCombiner, numReduces, props,
+            credentials);
     }
 
     /**
@@ -327,5 +336,103 @@ public class HadoopUtils {
         finally {
             HadoopCommonUtils.restoreContextClassLoader(oldLdr);
         }
+    }
+
+    /**
+     * Internal comparison routine.
+     *
+     * @param buf1 Bytes 1.
+     * @param len1 Length 1.
+     * @param ptr2 Pointer 2.
+     * @param len2 Length 2.
+     * @return Result.
+     */
+    @SuppressWarnings("SuspiciousNameCombination")
+    public static int compareBytes(byte[] buf1, int len1, long ptr2, int len2) {
+        int minLength = Math.min(len1, len2);
+
+        int minWords = minLength / Longs.BYTES;
+
+        for (int i = 0; i < minWords * Longs.BYTES; i += Longs.BYTES) {
+            long lw = GridUnsafe.getLong(buf1, GridUnsafe.BYTE_ARR_OFF + i);
+            long rw = GridUnsafe.getLong(ptr2 + i);
+
+            long diff = lw ^ rw;
+
+            if (diff != 0) {
+                if (GridUnsafe.BIG_ENDIAN)
+                    return (lw + Long.MIN_VALUE) < (rw + Long.MIN_VALUE) ? -1 : 1;
+
+                // Use binary search
+                int n = 0;
+                int y;
+                int x = (int) diff;
+
+                if (x == 0) {
+                    x = (int) (diff >>> 32);
+
+                    n = 32;
+                }
+
+                y = x << 16;
+
+                if (y == 0)
+                    n += 16;
+                else
+                    x = y;
+
+                y = x << 8;
+
+                if (y == 0)
+                    n += 8;
+
+                return (int) (((lw >>> n) & 0xFFL) - ((rw >>> n) & 0xFFL));
+            }
+        }
+
+        // The epilogue to cover the last (minLength % 8) elements.
+        for (int i = minWords * Longs.BYTES; i < minLength; i++) {
+            int res = UnsignedBytes.compare(buf1[i], GridUnsafe.getByte(ptr2 + i));
+
+            if (res != 0)
+                return res;
+        }
+
+        return len1 - len2;
+    }
+
+    /**
+     * Deserialization of Hadoop Writable object.
+     *
+     * @param writable Writable object to deserialize to.
+     * @param bytes byte array to deserialize.
+     */
+    public static void deserialize(Writable writable, byte[] bytes) throws IOException {
+        DataInputStream dataIn = new DataInputStream(new ByteArrayInputStream(bytes));
+
+        writable.readFields(dataIn);
+
+        dataIn.close();
+    }
+
+    /**
+     * Create UserGroupInformation for specified user and credentials.
+     *
+     * @param user User.
+     * @param credentialsBytes Credentials byte array.
+     */
+    public static UserGroupInformation createUGI(String user, byte[] credentialsBytes) throws IOException {
+        Credentials credentials = new Credentials();
+
+        HadoopUtils.deserialize(credentials, credentialsBytes);
+
+        UserGroupInformation ugi = UserGroupInformation.createRemoteUser(user);
+
+        ugi.addCredentials(credentials);
+
+        if (credentials.numberOfTokens() > 0)
+            ugi.setAuthenticationMethod(UserGroupInformation.AuthenticationMethod.TOKEN);
+
+        return ugi;
     }
 }

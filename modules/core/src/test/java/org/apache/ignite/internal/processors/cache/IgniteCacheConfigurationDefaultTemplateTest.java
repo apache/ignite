@@ -34,12 +34,12 @@ public class IgniteCacheConfigurationDefaultTemplateTest extends GridCommonAbstr
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        CacheConfiguration templateCfg = new CacheConfiguration();
+        CacheConfiguration templateCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         templateCfg.setName("org.apache.ignite.template*");
         templateCfg.setBackups(3);
@@ -66,11 +66,11 @@ public class IgniteCacheConfigurationDefaultTemplateTest extends GridCommonAbstr
 
         checkDefaultTemplate(ignite, "org.apache.ignite.templat");
 
-        checkDefaultTemplate(ignite, null);
+        checkDefaultTemplate(ignite, DEFAULT_CACHE_NAME);
 
         checkGetOrCreate(ignite, "org.apache.ignite.template", 3);
 
-        CacheConfiguration templateCfg = new CacheConfiguration();
+        CacheConfiguration templateCfg = new CacheConfiguration("*");
 
         templateCfg.setBackups(4);
 

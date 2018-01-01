@@ -25,13 +25,13 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
 
 /**
@@ -49,10 +49,6 @@ public class GridH2QueryContext {
 
     /** */
     private volatile boolean cleared;
-
-    /** Index snapshots. */
-    @GridToStringInclude
-    private Map<Long, Object> snapshots;
 
     /** */
     private List<GridReservable> reservations;
@@ -79,7 +75,7 @@ public class GridH2QueryContext {
     private UUID[] partsNodes;
 
     /** */
-    private boolean distributedJoins;
+    private DistributedJoinMode distributedJoinMode;
 
     /** */
     private int pageSize;
@@ -94,7 +90,22 @@ public class GridH2QueryContext {
      * @param type Query type.
      */
     public GridH2QueryContext(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
-        key = new Key(locNodeId, nodeId, qryId, type);
+        assert type != MAP;
+
+        key = new Key(locNodeId, nodeId, qryId, 0, type);
+    }
+
+    /**
+     * @param locNodeId Local node ID.
+     * @param nodeId The node who initiated the query.
+     * @param qryId The query ID.
+     * @param segmentId Index segment ID.
+     * @param type Query type.
+     */
+    public GridH2QueryContext(UUID locNodeId, UUID nodeId, long qryId, int segmentId, GridH2QueryType type) {
+        assert segmentId == 0 || type == MAP;
+
+        key = new Key(locNodeId, nodeId, qryId, segmentId, type);
     }
 
     /**
@@ -133,20 +144,20 @@ public class GridH2QueryContext {
     }
 
     /**
-     * @param distributedJoins Distributed joins can be run in this query.
+     * @param distributedJoinMode Distributed join mode.
      * @return {@code this}.
      */
-    public GridH2QueryContext distributedJoins(boolean distributedJoins) {
-        this.distributedJoins = distributedJoins;
+    public GridH2QueryContext distributedJoinMode(DistributedJoinMode distributedJoinMode) {
+        this.distributedJoinMode = distributedJoinMode;
 
         return this;
     }
 
     /**
-     * @return {@code true} If distributed joins can be run in this query.
+     * @return Distributed join mode.
      */
-    public boolean distributedJoins() {
-        return distributedJoins;
+    public DistributedJoinMode distributedJoinMode() {
+        return distributedJoinMode;
     }
 
     /**
@@ -226,49 +237,9 @@ public class GridH2QueryContext {
         return nodeIds[p];
     }
 
-    /**
-     * @param idxId Index ID.
-     * @param snapshot Index snapshot.
-     */
-    public void putSnapshot(long idxId, Object snapshot) {
-        assert snapshot != null;
-        assert get() == null : "need to snapshot indexes before setting query context for correct visibility";
-
-        if (snapshot instanceof GridReservable && !((GridReservable)snapshot).reserve())
-            throw new IllegalStateException("Must be already reserved before.");
-
-        if (snapshots == null)
-            snapshots = new HashMap<>();
-
-        if (snapshots.put(idxId, snapshot) != null)
-            throw new IllegalStateException("Index already snapshoted.");
-    }
-
-    /**
-     * Clear taken snapshots.
-     */
-    public void clearSnapshots() {
-        if (F.isEmpty(snapshots))
-            return;
-
-        for (Object snapshot : snapshots.values()) {
-            if (snapshot instanceof GridReservable)
-                ((GridReservable)snapshot).release();
-        }
-
-        snapshots = null;
-    }
-
-    /**
-     * @param idxId Index ID.
-     * @return Index snapshot or {@code null} if none.
-     */
-    @SuppressWarnings("unchecked")
-    public <T> T getSnapshot(long idxId) {
-        if (snapshots == null)
-            return null;
-
-        return (T)snapshots.get(idxId);
+    /** @return index segment ID. */
+    public int segment() {
+        return key.segmentId;
     }
 
     /**
@@ -303,11 +274,12 @@ public class GridH2QueryContext {
 
     /**
      * @param ownerId Owner node ID.
+     * @param segmentId Index segment ID.
      * @param batchLookupId Batch lookup ID.
      * @param src Range source.
      */
-    public synchronized void putSource(UUID ownerId, int batchLookupId, Object src) {
-        SourceKey srcKey = new SourceKey(ownerId, batchLookupId);
+    public synchronized void putSource(UUID ownerId, int segmentId, int batchLookupId, Object src) {
+        SourceKey srcKey = new SourceKey(ownerId, segmentId, batchLookupId);
 
         if (src != null) {
             if (sources == null)
@@ -321,15 +293,16 @@ public class GridH2QueryContext {
 
     /**
      * @param ownerId Owner node ID.
+     * @param segmentId Index segment ID.
      * @param batchLookupId Batch lookup ID.
      * @return Range source.
      */
     @SuppressWarnings("unchecked")
-    public synchronized <T> T getSource(UUID ownerId, int batchLookupId) {
+    public synchronized <T> T getSource(UUID ownerId, int segmentId, int batchLookupId) {
         if (sources == null)
             return null;
 
-        return (T)sources.get(new SourceKey(ownerId, batchLookupId));
+        return (T)sources.get(new SourceKey(ownerId, segmentId, batchLookupId));
     }
 
     /**
@@ -337,13 +310,6 @@ public class GridH2QueryContext {
      */
     public int nextBatchLookupId() {
         return ++batchLookupIdGen;
-    }
-
-    /**
-     * @return If indexes were snapshotted before query execution.
-     */
-    public boolean hasIndexSnapshots() {
-        return snapshots != null;
     }
 
     /**
@@ -356,7 +322,7 @@ public class GridH2QueryContext {
          assert qctx.get() == null;
 
          // We need MAP query context to be available to other threads to run distributed joins.
-         if (x.key.type == MAP && x.distributedJoins() && qctxs.putIfAbsent(x.key, x) != null)
+         if (x.key.type == MAP && x.distributedJoinMode() != OFF && qctxs.putIfAbsent(x.key, x) != null)
              throw new IllegalStateException("Query context is already set.");
 
          qctx.set(x);
@@ -381,7 +347,14 @@ public class GridH2QueryContext {
      * @return {@code True} if context was found.
      */
     public static boolean clear(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
-        return doClear(new Key(locNodeId, nodeId, qryId, type), false);
+        boolean res = false;
+
+        for (Key key : qctxs.keySet()) {
+            if (key.locNodeId.equals(locNodeId) && key.nodeId.equals(nodeId) && key.qryId == qryId && key.type == type)
+                res |= doClear(new Key(locNodeId, nodeId, qryId, key.segmentId, type), false);
+        }
+
+        return res;
     }
 
     /**
@@ -407,10 +380,9 @@ public class GridH2QueryContext {
     /**
      * @param nodeStop Node is stopping.
      */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void clearContext(boolean nodeStop) {
         cleared = true;
-
-        clearSnapshots();
 
         List<GridReservable> r = reservations;
 
@@ -463,6 +435,7 @@ public class GridH2QueryContext {
      * @param locNodeId Local node ID.
      * @param nodeId The node who initiated the query.
      * @param qryId The query ID.
+     * @param segmentId Index segment ID.
      * @param type Query type.
      * @return Query context.
      */
@@ -470,9 +443,10 @@ public class GridH2QueryContext {
         UUID locNodeId,
         UUID nodeId,
         long qryId,
+        int segmentId,
         GridH2QueryType type
     ) {
-        return qctxs.get(new Key(locNodeId, nodeId, qryId, type));
+        return qctxs.get(new Key(locNodeId, nodeId, qryId, segmentId, type));
     }
 
     /**
@@ -528,15 +502,19 @@ public class GridH2QueryContext {
         private final long qryId;
 
         /** */
+        private final int segmentId;
+
+        /** */
         private final GridH2QueryType type;
 
         /**
          * @param locNodeId Local node ID.
          * @param nodeId The node who initiated the query.
          * @param qryId The query ID.
+         * @param segmentId Index segment ID.
          * @param type Query type.
          */
-        private Key(UUID locNodeId, UUID nodeId, long qryId, GridH2QueryType type) {
+        private Key(UUID locNodeId, UUID nodeId, long qryId, int segmentId, GridH2QueryType type) {
             assert locNodeId != null;
             assert nodeId != null;
             assert type != null;
@@ -544,6 +522,7 @@ public class GridH2QueryContext {
             this.locNodeId = locNodeId;
             this.nodeId = nodeId;
             this.qryId = qryId;
+            this.segmentId = segmentId;
             this.type = type;
         }
 
@@ -568,6 +547,7 @@ public class GridH2QueryContext {
             res = 31 * res + nodeId.hashCode();
             res = 31 * res + (int)(qryId ^ (qryId >>> 32));
             res = 31 * res + type.hashCode();
+            res = 31 * res + segmentId;
 
             return res;
         }
@@ -586,27 +566,38 @@ public class GridH2QueryContext {
         UUID ownerId;
 
         /** */
+        int segmentId;
+
+        /** */
         int batchLookupId;
 
         /**
          * @param ownerId Owner node ID.
+         * @param segmentId Index segment ID.
          * @param batchLookupId Batch lookup ID.
          */
-        SourceKey(UUID ownerId, int batchLookupId) {
+        SourceKey(UUID ownerId, int segmentId, int batchLookupId) {
             this.ownerId = ownerId;
+            this.segmentId = segmentId;
             this.batchLookupId = batchLookupId;
         }
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
+            if (o == null || !(o instanceof SourceKey))
+                return false;
+
             SourceKey srcKey = (SourceKey)o;
 
-            return batchLookupId == srcKey.batchLookupId && ownerId.equals(srcKey.ownerId);
+            return batchLookupId == srcKey.batchLookupId && segmentId == srcKey.segmentId &&
+                ownerId.equals(srcKey.ownerId);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return 31 * ownerId.hashCode() + batchLookupId;
+            int hash = ownerId.hashCode();
+            hash = 31 * hash + segmentId;
+            return 31 * hash + batchLookupId;
         }
     }
 }

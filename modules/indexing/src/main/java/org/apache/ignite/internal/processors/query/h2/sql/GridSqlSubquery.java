@@ -17,40 +17,31 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import java.util.Collections;
+import java.util.ArrayList;
+
 
 /**
- * Subquery.
+ * Subquery expression.
  */
 public class GridSqlSubquery extends GridSqlElement {
-    /** */
-    private GridSqlQuery select;
-
     /**
-     * @param select Select.
+     * @param subQry Subquery.
      */
-    public GridSqlSubquery(GridSqlQuery select) {
-        super(Collections.<GridSqlElement>emptyList());
+    public GridSqlSubquery(GridSqlQuery subQry) {
+        super(new ArrayList<GridSqlAst>(1));
 
-        this.select = select;
+        addChild(subQry);
     }
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
-        return "(" + select.getSQL() + ")";
+        return "(" + subquery().getSQL() + ")";
     }
 
     /**
-     * @return Select.
+     * @return Subquery AST.
      */
-    public GridSqlQuery select() {
-        return select;
-    }
-
-    /**
-     * @param select New select.
-     */
-    public void select(GridSqlQuery select) {
-        this.select = select;
+    public <X extends GridSqlQuery> X subquery() {
+        return child(0);
     }
 }

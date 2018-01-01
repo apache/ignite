@@ -27,8 +27,8 @@
 #include <string>
 #include <vector>
 
-#include "ignite/cache/query/query_argument.h"
-#include "ignite/binary/binary_raw_writer.h"
+#include <ignite/impl/cache/query/query_argument.h>
+#include <ignite/binary/binary_raw_writer.h>
 
 namespace ignite
 {
@@ -49,10 +49,12 @@ namespace ignite
                  */
                 SqlFieldsQuery(const std::string& sql) :
                     sql(sql),
+                    schema(),
                     pageSize(1024),
                     loc(false),
                     distributedJoins(false),
                     enforceJoinOrder(false),
+                    lazy(false),
                     args()
                 {
                     // No-op.
@@ -66,10 +68,12 @@ namespace ignite
                  */
                 SqlFieldsQuery(const std::string& sql, bool loc) :
                     sql(sql),
+                    schema(),
                     pageSize(1024),
                     loc(false),
                     distributedJoins(false),
                     enforceJoinOrder(false),
+                    lazy(false),
                     args()
                 {
                     // No-op.
@@ -82,15 +86,17 @@ namespace ignite
                  */
                 SqlFieldsQuery(const SqlFieldsQuery& other) :
                     sql(other.sql),
+                    schema(other.schema),
                     pageSize(other.pageSize),
                     loc(other.loc),
                     distributedJoins(other.distributedJoins),
                     enforceJoinOrder(other.enforceJoinOrder),
+                    lazy(other.lazy),
                     args()
                 {
                     args.reserve(other.args.size());
 
-                    typedef std::vector<QueryArgumentBase*>::const_iterator Iter;
+                    typedef std::vector<impl::cache::query::QueryArgumentBase*>::const_iterator Iter;
 
                     for (Iter i = other.args.begin(); i != other.args.end(); ++i)
                         args.push_back((*i)->Copy());
@@ -118,7 +124,7 @@ namespace ignite
                  */
                 ~SqlFieldsQuery()
                 {
-                    typedef std::vector<QueryArgumentBase*>::const_iterator Iter;
+                    typedef std::vector<impl::cache::query::QueryArgumentBase*>::const_iterator Iter;
 
                     for (Iter it = args.begin(); it != args.end(); ++it)
                         delete *it;
@@ -133,12 +139,16 @@ namespace ignite
                 {
                     if (this != &other)
                     {
-                        std::swap(sql, other.sql);
-                        std::swap(pageSize, other.pageSize);
-                        std::swap(loc, other.loc);
-                        std::swap(distributedJoins, other.distributedJoins);
-                        std::swap(enforceJoinOrder, other.enforceJoinOrder);
-                        std::swap(args, other.args);
+                        using std::swap;
+
+                        swap(sql, other.sql);
+                        swap(schema, other.schema);
+                        swap(pageSize, other.pageSize);
+                        swap(loc, other.loc);
+                        swap(distributedJoins, other.distributedJoins);
+                        swap(enforceJoinOrder, other.enforceJoinOrder);
+                        swap(lazy, other.lazy);
+                        swap(args, other.args);
                     }
                 }
 
@@ -203,6 +213,38 @@ namespace ignite
                 }
 
                 /**
+                 * Gets lazy query execution flag.
+                 *
+                 * See SetLazy(bool) for more information.
+                 *
+                 * @return Lazy flag.
+                 */
+                bool IsLazy() const
+                {
+                    return lazy;
+                }
+
+                /**
+                 * Sets lazy query execution flag.
+                 *
+                 * By default Ignite attempts to fetch the whole query result set to memory and send it to the client.
+                 * For small and medium result sets this provides optimal performance and minimize duration of internal
+                 * database locks, thus increasing concurrency.
+                 *
+                 * If result set is too big to fit in available memory this could lead to excessive GC pauses and even
+                 * OutOfMemoryError. Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing
+                 * memory consumption at the cost of moderate performance hit.
+                 *
+                 * Defaults to @c false, meaning that the whole result set is fetched to memory eagerly.
+                 *
+                 * @param lazy Lazy query execution flag.
+                 */
+                void SetLazy(bool lazy)
+                {
+                    this->lazy = lazy;
+                }
+
+                /**
                  * Checks if join order of tables if enforced.
                  *
                  * @return Flag value.
@@ -214,13 +256,11 @@ namespace ignite
 
                 /**
                  * Sets flag to enforce join order of tables in the query.
-                 * If set to true query optimizer will not reorder tables in
-                 * join. By default is false.
                  *
-                 * It is not recommended to enable this property unless you are
-                 * sure that your indexes and the query itself are correct and
-                 * tuned as much as possible but query optimizer still produces
-                 * wrong join order.
+                 * If set to true query optimizer will not reorder tables in join. By default is false.
+                 *
+                 * It is not recommended to enable this property unless you are sure that your indexes and the query
+                 * itself are correct and tuned as much as possible but query optimizer still produces wrong join order.
                  *
                  * @param enforce Flag value.
                  */
@@ -255,16 +295,63 @@ namespace ignite
                 /**
                  * Add argument.
                  *
-                 * Template argument type should be copy-constructable and
-                 * assignable. Also BinaryType class template should be specialized
-                 * for this type.
+                 * Template argument type should be copy-constructable and assignable. Also BinaryType class template
+                 * should be specialized for this type.
                  *
                  * @param arg Argument.
                  */
                 template<typename T>
                 void AddArgument(const T& arg)
                 {
-                    args.push_back(new QueryArgument<T>(arg));
+                    args.push_back(new impl::cache::query::QueryArgument<T>(arg));
+                }
+
+                /**
+                 * Add array of bytes as an argument.
+                 *
+                 * @param src Array pointer.
+                 * @param len Array length in bytes.
+                 */
+                void AddInt8ArrayArgument(const int8_t* src, int32_t len)
+                {
+                    args.push_back(new impl::cache::query::QueryInt8ArrayArgument(src, len));
+                }
+
+                /**
+                 * Remove all added arguments.
+                 */
+                void ClearArguments()
+                {
+                    std::vector<impl::cache::query::QueryArgumentBase*>::iterator iter;
+                    for (iter = args.begin(); iter != args.end(); ++iter)
+                        delete *iter;
+
+                    args.clear();
+                }
+
+                /**
+                 * Set schema name for the query.
+                 * If not set, current cache name is used, which means you can omit schema name for tables within the
+                 * current cache.
+                 *
+                 * @param schema Schema. Empty string to unset.
+                 */
+                void SetSchema(const std::string& schema)
+                {
+                    this->schema = schema;
+                }
+
+                /**
+                 * Get schema name for the query.
+                 *
+                 * If not set, current cache name is used, which means you can omit schema name for tables within the
+                 * current cache.
+                 *
+                 * @return Schema. Empty string if not set.
+                 */
+                const std::string& GetSchema() const
+                {
+                    return schema;
                 }
 
                 /**
@@ -280,16 +367,30 @@ namespace ignite
 
                     writer.WriteInt32(static_cast<int32_t>(args.size()));
 
-                    for (std::vector<QueryArgumentBase*>::const_iterator it = args.begin(); it != args.end(); ++it)
+                    std::vector<impl::cache::query::QueryArgumentBase*>::const_iterator it;
+
+                    for (it = args.begin(); it != args.end(); ++it)
                         (*it)->Write(writer);
 
                     writer.WriteBool(distributedJoins);
                     writer.WriteBool(enforceJoinOrder);
+                    writer.WriteBool(lazy);
+                    writer.WriteInt32(0);       // Timeout, ms
+                    writer.WriteBool(false);    // ReplicatedOnly
+                    writer.WriteBool(false);    // Colocated
+
+                    if (schema.empty())
+                        writer.WriteNull();
+                    else
+                        writer.WriteString(schema);
                 }
 
             private:
                 /** SQL string. */
                 std::string sql;
+
+                /** SQL Schema. */
+                std::string schema;
 
                 /** Page size. */
                 int32_t pageSize;
@@ -303,8 +404,11 @@ namespace ignite
                 /** Enforce join order flag. */
                 bool enforceJoinOrder;
 
+                /** Lazy flag. */
+                bool lazy;
+
                 /** Arguments. */
-                std::vector<QueryArgumentBase*> args;
+                std::vector<impl::cache::query::QueryArgumentBase*> args;
             };
         }
     }    

@@ -34,6 +34,24 @@ namespace ignite
             {
             public:
                 /**
+                 * Operation result.
+                 */
+                struct OperationResult
+                {
+                    enum Type
+                    {
+                        /** Null. */
+                        AI_NULL = 0,
+
+                        /** Success. */
+                        AI_SUCCESS = 1,
+
+                        /** Error. */
+                        AI_ERROR = -1
+                    };
+                };
+
+                /**
                  * Constructor used to create new instance.
                  *
                  * @param env Environment.
@@ -42,9 +60,19 @@ namespace ignite
                 InteropTarget(ignite::common::concurrent::SharedPointer<IgniteEnvironment> env, jobject javaRef);
 
                 /**
+                * Constructor used to create new instance.
+                *
+                * @param env Environment.
+                * @param javaRef Reference to java object.
+                * @param javaRef Whether javaRef release in destructor should be skipped.
+                */
+                InteropTarget(ignite::common::concurrent::SharedPointer<IgniteEnvironment> env, jobject javaRef, 
+                    bool skipJavaRefRelease);
+
+                /**
                  * Destructor.
                  */
-                ~InteropTarget();
+                virtual ~InteropTarget();
 
                 /**
                  * Internal out operation.
@@ -54,7 +82,7 @@ namespace ignite
                  * @param err Error.
                  * @return Result.
                  */
-                bool OutOp(int32_t opType, InputOperation& inOp, IgniteError* err);
+                bool OutOp(int32_t opType, InputOperation& inOp, IgniteError& err);
 
                 /**
                  * Internal out operation.
@@ -63,17 +91,26 @@ namespace ignite
                  * @param err Error.
                  * @return Result.
                  */
-                bool OutOp(int32_t opType, IgniteError* err);
+                bool OutOp(int32_t opType, IgniteError& err);
 
                 /**
-                 * Internal out operation.
+                 * Internal in operation.
                  *
                  * @param opType Operation type.
-                 * @param inOp Input.
+                 * @param outOp Output.
                  * @param err Error.
                  * @return Result.
                  */
-                bool InOp(int32_t opType, OutputOperation& outOp, IgniteError* err);
+                bool InOp(int32_t opType, OutputOperation& outOp, IgniteError& err);
+
+                /**
+                 * Internal in Object operation.
+                 *
+                 * @param opType Operation type.
+                 * @param err Error.
+                 * @return Object.
+                 */
+                jobject InOpObject(int32_t opType, IgniteError& err);
 
                 /**
                  * Internal out-in operation.
@@ -84,7 +121,7 @@ namespace ignite
                  * @param outOp Output.
                  * @param err Error.
                  */
-                void OutInOp(int32_t opType, InputOperation& inOp, OutputOperation& outOp, IgniteError* err);
+                void OutInOp(int32_t opType, InputOperation& inOp, OutputOperation& outOp, IgniteError& err);
 
                 /**
                  * Internal out-in operation.
@@ -95,7 +132,27 @@ namespace ignite
                  * @param outOp Output.
                  * @param err Error.
                  */
-                void OutInOpX(int32_t opType, InputOperation& inOp, OutputOperation& outOp, IgniteError* err);
+                void OutInOpX(int32_t opType, InputOperation& inOp, OutputOperation& outOp, IgniteError& err);
+
+                /**
+                 * In stream out long operation.
+                 *
+                 * @param opType Type of operation.
+                 * @param outInMem Input and output memory.
+                 * @param err Error.
+                 * @return Operation result.
+                 */
+                OperationResult::Type InStreamOutLong(int32_t opType, InteropMemory& outInMem, IgniteError& err);
+
+                /**
+                 * In stream out object operation.
+                 *
+                 * @param opType Type of operation.
+                 * @param outInMem Input and output memory.
+                 * @param err Error.
+                 * @return Java object references.
+                 */
+                jobject InStreamOutObject(int32_t opType, InteropMemory& outInMem, IgniteError& err);
 
                 /**
                 * Internal out-in operation.
@@ -104,7 +161,7 @@ namespace ignite
                 * @param val Value.
                 * @param err Error.
                 */
-                int64_t OutInOpLong(int32_t opType, int64_t val, IgniteError* err);
+                int64_t OutInOpLong(int32_t opType, int64_t val, IgniteError& err);
 
                 /**
                  * Get environment shared pointer.
@@ -144,6 +201,9 @@ namespace ignite
                 /** Handle to Java object. */
                 jobject javaRef;
 
+                /** javaRef release flag. */
+                bool skipJavaRefRelease;
+
                 IGNITE_NO_COPY_ASSIGNMENT(InteropTarget)
 
                 /**
@@ -154,7 +214,7 @@ namespace ignite
                  * @param err Error.
                  * @return Memory pointer.
                  */
-                int64_t WriteTo(interop::InteropMemory* mem, InputOperation& inOp, IgniteError* err);
+                int64_t WriteTo(interop::InteropMemory* mem, InputOperation& inOp, IgniteError& err);
 
                 /**
                  * Read data from memory.
@@ -163,6 +223,14 @@ namespace ignite
                  * @param outOp Output operation.
                  */
                 void ReadFrom(interop::InteropMemory* mem, OutputOperation& outOp);
+
+                /**
+                 * Read error data from memory.
+                 *
+                 * @param mem Memory.
+                 * @param err Error.
+                 */
+                void ReadError(interop::InteropMemory* mem, IgniteError& err);
             };
         }
     }    

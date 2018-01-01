@@ -17,13 +17,10 @@
 
 package org.apache.ignite.cache.store.cassandra.persistence;
 
-import java.beans.PropertyDescriptor;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
@@ -53,7 +50,7 @@ public class ValuePersistenceSettings extends PersistenceSettings {
 
         NodeList nodes = el.getElementsByTagName(FIELD_ELEMENT);
 
-        fields = detectFields(nodes);
+        fields = detectPojoFields(nodes);
 
         if (fields.isEmpty())
             throw new IllegalStateException("Failed to initialize value fields for class '" + getJavaClass().getName() + "'");
@@ -75,46 +72,13 @@ public class ValuePersistenceSettings extends PersistenceSettings {
         return "value";
     }
 
-    /**
-     * Extracts POJO fields from a list of corresponding XML field nodes.
-     *
-     * @param fieldNodes Field nodes to process.
-     * @return POJO fields list.
-     */
-    private List<PojoField> detectFields(NodeList fieldNodes) {
-        List<PojoField> list = new LinkedList<>();
+    /** {@inheritDoc} */
+    @Override protected PojoField createPojoField(Element el, Class clazz) {
+        return new PojoValueField(el, clazz);
+    }
 
-        if (fieldNodes == null || fieldNodes.getLength() == 0) {
-            List<PropertyDescriptor> primitivePropDescriptors = PropertyMappingHelper.getPojoPropertyDescriptors(getJavaClass(), true);
-            for (PropertyDescriptor desc : primitivePropDescriptors) {
-                boolean valid = desc.getWriteMethod() != null ||
-                        desc.getReadMethod().getAnnotation(QuerySqlField.class) != null;
-
-                // Skip POJO field if it's read-only and is not annotated with @QuerySqlField.
-                if (valid)
-                    list.add(new PojoValueField(desc));
-            }
-
-            return list;
-        }
-
-        List<PropertyDescriptor> allPropDescriptors = PropertyMappingHelper.getPojoPropertyDescriptors(getJavaClass(), false);
-
-        int cnt = fieldNodes.getLength();
-
-        for (int i = 0; i < cnt; i++) {
-            PojoValueField field = new PojoValueField((Element)fieldNodes.item(i), getJavaClass());
-
-            PropertyDescriptor desc = findPropertyDescriptor(allPropDescriptors, field.getName());
-
-            if (desc == null) {
-                throw new IllegalArgumentException("Specified POJO field '" + field.getName() +
-                    "' doesn't exist in '" + getJavaClass().getName() + "' class");
-            }
-
-            list.add(field);
-        }
-
-        return list;
+    /** {@inheritDoc} */
+    @Override protected PojoField createPojoField(PojoFieldAccessor accessor) {
+        return new PojoValueField(accessor);
     }
 }

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.nio.file.attribute.BasicFileAttributeView;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
@@ -122,7 +124,10 @@ public class IgfsLocalSecondaryFileSystemTestAdapter implements IgfsSecondaryFil
 
     /** {@inheritDoc} */
     @Override public T2<Long, Long> times(String path) throws IOException {
-        throw new UnsupportedOperationException("times");
+        BasicFileAttributes attrs = Files.getFileAttributeView(path(path), BasicFileAttributeView.class)
+            .readAttributes();
+
+        return new T2<>(attrs.lastModifiedTime().toMillis(), attrs.lastAccessTime().toMillis());
     }
 
     /** {@inheritDoc} */

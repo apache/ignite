@@ -21,17 +21,16 @@ import java.io.Externalizable;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheLocalConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
-import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCachePreloader;
 import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -64,9 +63,15 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
      * @param ctx Cache registry.
      */
     public GridLocalCache(GridCacheContext<K, V> ctx) {
-        super(ctx, ctx.config().getStartSize());
+        super(ctx);
 
-        preldr = new GridCachePreloaderAdapter(ctx);
+        preldr = new GridCachePreloaderAdapter(ctx.group());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteCheckedException {
+        if (map == null)
+            map = new GridCacheLocalConcurrentMap(ctx, entryFactory(), DFLT_START_CACHE_SIZE);
     }
 
     /** {@inheritDoc} */
@@ -79,17 +84,17 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         return preldr;
     }
 
-    /** {@inheritDoc} */
-    @Override protected GridCacheMapEntryFactory entryFactory() {
+    /**
+     * @return Entry factory.
+     */
+    private GridCacheMapEntryFactory entryFactory() {
         return new GridCacheMapEntryFactory() {
             @Override public GridCacheMapEntry create(
                 GridCacheContext ctx,
                 AffinityTopologyVersion topVer,
-                KeyCacheObject key,
-                int hash,
-                CacheObject val
+                KeyCacheObject key
             ) {
-                return new GridLocalCacheEntry(ctx, key, hash, val);
+                return new GridLocalCacheEntry(ctx, key);
             }
         };
     }
@@ -98,7 +103,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
      * @param key Key of entry.
      * @return Cache entry.
      */
-    @Nullable GridLocalCacheEntry peekExx(KeyCacheObject key) {
+    @Nullable private GridLocalCacheEntry peekExx(KeyCacheObject key) {
         return (GridLocalCacheEntry)peekEx(key);
     }
 
@@ -118,6 +123,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         boolean retval,
         TransactionIsolation isolation,
         boolean invalidate,
+        long createTtl,
         long accessTtl) {
         return lockAllAsync(keys, timeout, tx, CU.empty0());
     }
@@ -146,35 +152,8 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         GridLocalLockFuture<K, V> fut = new GridLocalLockFuture<>(ctx, keys, tx, this, timeout, filter);
 
         try {
-            for (KeyCacheObject key : keys) {
-                while (true) {
-                    GridLocalCacheEntry entry = null;
-
-                    try {
-                        entry = entryExx(key);
-
-                        entry.unswap(false);
-
-                        if (!ctx.isAll(entry, filter)) {
-                            fut.onFailed();
-
-                            return fut;
-                        }
-
-                        // Removed exception may be thrown here.
-                        GridCacheMvccCandidate cand = fut.addEntry(entry);
-
-                        if (cand == null && fut.isDone())
-                            return fut;
-
-                        break;
-                    }
-                    catch (GridCacheEntryRemovedException ignored) {
-                        if (log().isDebugEnabled())
-                            log().debug("Got removed entry in lockAsync(..) method (will retry): " + entry);
-                    }
-                }
-            }
+            if (!fut.addEntries(keys))
+                return fut;
 
             if (!ctx.mvcc().addFuture(fut))
                 fut.onError(new IgniteCheckedException("Duplicate future ID (internal error): " + fut));
@@ -228,9 +207,29 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
      * @param fut Clears future from cache.
      */
     void onFutureDone(GridLocalLockFuture fut) {
-        if (ctx.mvcc().removeMvccFuture(fut)) {
+        if (ctx.mvcc().removeVersionedFuture(fut)) {
             if (log().isDebugEnabled())
                 log().debug("Explicitly removed future from map of futures: " + fut);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public long localSizeLong(CachePeekMode[] peekModes) throws IgniteCheckedException {
+        PeekModes modes = parsePeekModes(peekModes, true);
+
+        modes.primary = true;
+        modes.backup = true;
+
+        if (modes.offheap)
+            return ctx.offheap().cacheEntriesCount(ctx.cacheId());
+        else if (modes.heap)
+            return size();
+        else
+            return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long localSizeLong(int part, CachePeekMode[] peekModes) throws IgniteCheckedException {
+        return localSizeLong(peekModes);
     }
 }

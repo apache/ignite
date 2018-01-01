@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -39,6 +40,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * File block location in the grid.
@@ -61,6 +63,7 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable,
     private Collection<String> names;
 
     /** */
+    @GridToStringInclude
     private Collection<String> hosts;
 
     /**
@@ -102,6 +105,44 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable,
     }
 
     /**
+     * @param start Start.
+     * @param len Length.
+     * @param block Block.
+     */
+    public IgfsBlockLocationImpl(long start, long len, IgfsBlockLocation block) {
+        assert start >= 0;
+        assert len > 0;
+
+        this.start = start;
+        this.len = len;
+
+        nodeIds = block.nodeIds();
+        names = block.names();
+        hosts = block.hosts();
+    }
+
+    /**
+     * @param start Start.
+     * @param len Length.
+     * @param names Collection of host:port addresses.
+     * @param hosts Collection of host:port addresses.
+     */
+    public IgfsBlockLocationImpl(long start, long len, Collection<String> names, Collection<String> hosts) {
+        assert start >= 0;
+        assert len > 0;
+        assert names != null && !names.isEmpty();
+        assert hosts != null && !hosts.isEmpty();
+
+        this.start = start;
+        this.len = len;
+
+        nodeIds = Collections.emptySet();
+
+        this.names = names;
+        this.hosts = hosts;
+    }
+
+    /**
      * @return Start position.
      */
     @Override public long start() {
@@ -113,6 +154,20 @@ public class IgfsBlockLocationImpl implements IgfsBlockLocation, Externalizable,
      */
     @Override public long length() {
         return len;
+    }
+
+    /**
+     * @param addLen Length to increase.
+     */
+    public void increaseLength(long addLen) {
+        len += addLen;
+    }
+
+    /**
+     * @param len Block length.
+     */
+    public void length(long len) {
+        this.len = len;
     }
 
     /**

@@ -49,7 +49,7 @@ public class IgniteCacheQueryNoRebalanceSelfTest extends GridCommonAbstractTest 
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         ccfg.setBackups(0);
         ccfg.setIndexedTypes(Integer.class, Integer.class);
         ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
@@ -70,7 +70,7 @@ public class IgniteCacheQueryNoRebalanceSelfTest extends GridCommonAbstractTest 
      * Tests correct query execution with disabled re-balancing.
      */
     public void testQueryNoRebalance() {
-        IgniteCache<Object, Object> cache = grid().cache(null);
+        IgniteCache<Object, Object> cache = grid().cache(DEFAULT_CACHE_NAME);
 
         cache.put(1, 1);
 

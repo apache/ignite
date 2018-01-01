@@ -38,6 +38,6 @@
 
         <property name="localHost" value="127.0.0.1"/>
 
-        <property name="gridName" value="springInjectionTest"/>
+        <property name="igniteInstanceName" value="springInjectionTest"/>
     </bean>
 </beans>

@@ -20,49 +20,52 @@ ACLOCAL_AMFLAGS =-I m4
 lib_LTLIBRARIES = libignite-binary.la
 
 SUBDIRS = \
-    include
+	include
 
 AM_CPPFLAGS = \
-    -I$(srcdir)/include \
-    -I@top_srcdir@/common/include \
-    -I@top_srcdir@/common/os/linux/include \
-    -DIGNITE_IMPL \
-    -D__STDC_LIMIT_MACROS \
-    -D__STDC_CONSTANT_MACROS
+	-I$(srcdir)/include \
+	-I@top_srcdir@/common/include \
+	-I@top_srcdir@/common/os/linux/include \
+	-DIGNITE_IMPL \
+	-D__STDC_LIMIT_MACROS \
+	-D__STDC_CONSTANT_MACROS
 
 AM_CXXFLAGS = \
-    -Wall \
-    -std=c++0x
+	-Wall \
+	-std=c++03
 
 libignite_binary_la_LIBADD = \
-    @top_srcdir@/common/libignite-common.la
+	@top_srcdir@/common/libignite-common.la
 
 libignite_binary_la_LDFLAGS = \
-    -no-undefined \
-    -version-info 0:0:0 \
-    -release $(PACKAGE_VERSION)
+	-no-undefined \
+	-version-info 0:0:0 \
+	-release $(PACKAGE_VERSION)
 
 libignite_binary_la_DEPENDENCIES = \
-    @top_srcdir@/common/libignite-common.la
+	@top_srcdir@/common/libignite-common.la
 
 libignite_binary_la_SOURCES = \
-    src/binary/binary_containers.cpp \
-    src/binary/binary_raw_writer.cpp \
-    src/binary/binary_writer.cpp \
-    src/binary/binary_reader.cpp \
-    src/binary/binary_type.cpp \
-    src/binary/binary_raw_reader.cpp \
-    src/impl/binary/binary_type_manager.cpp \
-    src/impl/binary/binary_utils.cpp \
-    src/impl/binary/binary_reader_impl.cpp \
-    src/impl/binary/binary_type_handler.cpp \
-    src/impl/binary/binary_writer_impl.cpp \
-    src/impl/binary/binary_type_updater.cpp \
-    src/impl/binary/binary_schema.cpp \
-    src/impl/binary/binary_type_snapshot.cpp \
-    src/impl/interop/interop_memory.cpp \
-    src/impl/interop/interop_output_stream.cpp \
-    src/impl/interop/interop_input_stream.cpp
+	src/binary/binary_containers.cpp \
+	src/binary/binary_raw_writer.cpp \
+	src/binary/binary_writer.cpp \
+	src/binary/binary_reader.cpp \
+	src/binary/binary_type.cpp \
+	src/binary/binary_raw_reader.cpp \
+	src/impl/binary/binary_type_manager.cpp \
+	src/impl/binary/binary_type_impl.cpp \
+	src/impl/binary/binary_utils.cpp \
+	src/impl/binary/binary_reader_impl.cpp \
+	src/impl/binary/binary_type_handler.cpp \
+	src/impl/binary/binary_writer_impl.cpp \
+	src/impl/binary/binary_schema.cpp \
+	src/impl/binary/binary_type_snapshot.cpp \
+	src/impl/binary/binary_object_header.cpp \
+	src/impl/binary/binary_object_impl.cpp \
+	src/impl/binary/binary_field_meta.cpp \
+	src/impl/interop/interop_memory.cpp \
+	src/impl/interop/interop_output_stream.cpp \
+	src/impl/interop/interop_input_stream.cpp
 
 clean-local:
 	$(RM) *.gcno *.gcda

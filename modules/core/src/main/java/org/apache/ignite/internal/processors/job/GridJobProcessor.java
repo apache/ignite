@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
@@ -54,6 +55,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.GridTaskSessionRequest;
 import org.apache.ignite.internal.SkipDaemon;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.collision.GridCollisionJobContextAdapter;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -73,6 +75,7 @@ import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -444,7 +447,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         final Condition cond = lock.newCondition();
 
         GridMessageListener msgLsnr = new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 String err = null;
                 GridJobSiblingsResponse res = null;
 
@@ -518,7 +521,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
             ctx.io().addMessageListener(topic, msgLsnr);
 
             // 3. Send message.
-            ctx.io().send(taskNode, TOPIC_JOB_SIBLINGS,
+            ctx.io().sendToGridTopic(taskNode, TOPIC_JOB_SIBLINGS,
                 new GridJobSiblingsRequest(ses.getId(),
                     loc ? topic : null,
                     loc ? null : U.marshal(marsh, topic)),
@@ -853,8 +856,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     }
                 });
 
-            if (metricsUpdateFreq > -1L)
-                updateJobMetrics();
+            updateJobMetrics();
         }
         finally {
             handlingCollision.set(Boolean.FALSE);
@@ -865,24 +867,21 @@ public class GridJobProcessor extends GridProcessorAdapter {
      *
      */
     private void updateJobMetrics() {
-        assert metricsUpdateFreq > -1L;
+        assert metricsUpdateFreq > 0L;
 
-        if (metricsUpdateFreq == 0L)
+        long now = U.currentTimeMillis();
+        long lastUpdate = metricsLastUpdateTstamp.get();
+
+        if (now - lastUpdate > metricsUpdateFreq && metricsLastUpdateTstamp.compareAndSet(lastUpdate, now))
             updateJobMetrics0();
-        else {
-            long now = U.currentTimeMillis();
-            long lastUpdate = metricsLastUpdateTstamp.get();
 
-            if (now - lastUpdate > metricsUpdateFreq && metricsLastUpdateTstamp.compareAndSet(lastUpdate, now))
-                updateJobMetrics0();
-        }
     }
 
     /**
      *
      */
     private void updateJobMetrics0() {
-        assert metricsUpdateFreq > -1L;
+        assert metricsUpdateFreq > 0L;
 
         GridJobMetricsSnapshot m = new GridJobMetricsSnapshot();
 
@@ -1044,6 +1043,13 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                     U.resolveClassLoader(dep.classLoader(), ctx.config()));
                         }
 
+                        IgnitePredicate<ClusterNode> topologyPred = req.getTopologyPredicate();
+
+                        if (topologyPred == null && req.getTopologyPredicateBytes() != null) {
+                            topologyPred = U.unmarshal(marsh, req.getTopologyPredicateBytes(),
+                                U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                        }
+
                         // Note that we unmarshal session/job attributes here with proper class loader.
                         GridTaskSessionImpl taskSes = ctx.session().createTaskSession(
                             req.getSessionId(),
@@ -1052,13 +1058,15 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             dep,
                             req.getTaskClassName(),
                             req.topology(),
+                            topologyPred,
                             req.getStartTaskTime(),
                             endTime,
                             siblings,
                             sesAttrs,
                             req.isSessionFullSupport(),
                             req.isInternal(),
-                            req.getSubjectId());
+                            req.getSubjectId(),
+                            req.executorName());
 
                         taskSes.setCheckpointSpi(req.getCheckpointSpi());
                         taskSes.setClassLoader(dep.classLoader());
@@ -1098,7 +1106,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         evtLsnr,
                         holdLsnr,
                         partsReservation,
-                        req.getTopVer());
+                        req.getTopVer(),
+                        req.executorName());
 
                     jobCtx.job(job);
 
@@ -1274,7 +1283,20 @@ public class GridJobProcessor extends GridProcessorAdapter {
      */
     private boolean executeAsync(GridJobWorker jobWorker) {
         try {
-            ctx.getExecutorService().execute(jobWorker);
+            if (jobWorker.executorName() != null) {
+                Executor customExec = ctx.pools().customExecutor(jobWorker.executorName());
+
+                if (customExec != null)
+                    customExec.execute(jobWorker);
+                else {
+                    LT.warn(log, "Custom executor doesn't exist (local job will be processed in default " +
+                        "thread pool): " + jobWorker.executorName());
+
+                    ctx.getExecutorService().execute(jobWorker);
+                }
+            }
+            else
+                ctx.getExecutorService().execute(jobWorker);
 
             if (metricsUpdateFreq > -1L)
                 startedJobsCnt.increment();
@@ -1379,11 +1401,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 ctx.task().processJobExecuteResponse(ctx.localNodeId(), jobRes);
             else
                 // Send response to common topic as unordered message.
-                ctx.io().send(sndNode, TOPIC_TASK, jobRes, req.isInternal() ? MANAGEMENT_POOL : SYSTEM_POOL);
+                ctx.io().sendToGridTopic(sndNode, TOPIC_TASK, jobRes, req.isInternal() ? MANAGEMENT_POOL : SYSTEM_POOL);
         }
         catch (IgniteCheckedException e) {
             // The only option here is to log, as we must assume that resending will fail too.
-            if (isDeadNode(node.id()))
+            if ((e instanceof ClusterTopologyCheckedException) || isDeadNode(node.id()))
                 // Avoid stack trace for left nodes.
                 U.error(log, "Failed to reply to sender node because it left grid [nodeId=" + node.id() +
                     ", jobId=" + req.getJobId() + ']');
@@ -1481,7 +1503,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Job processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Job processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>   activeJobsSize: " + activeJobs.size());
         X.println(">>>   passiveJobsSize: " + (jobAlwaysActivate ? "n/a" : passiveJobs.size()));
         X.println(">>>   cancelledJobsSize: " + cancelledJobs.size());
@@ -1568,7 +1590,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         }
                     }
                     finally {
-                        if (checkPartMapping && !cctx.affinity().primary(partId, topVer).id().equals(ctx.localNodeId()))
+                        if (checkPartMapping && !cctx.affinity().primaryByPartition(partId, topVer).id().equals(ctx.localNodeId()))
                             throw new IgniteException("Failed partition reservation. " +
                                 "Partition is not primary on the node. [partition=" + partId + ", cacheName=" + cctx.name() +
                                 ", nodeId=" + ctx.localNodeId() + ", topology=" + topVer + ']');
@@ -1771,6 +1793,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 if (jobAlwaysActivate) {
                     if (metricsUpdateFreq > -1L)
                         updateJobMetrics();
+
+                    if (!activeJobs.remove(worker.getJobId(), worker))
+                        cancelledJobs.remove(worker.getJobId(), worker);
+
+                    heldJobs.remove(worker.getJobId());
                 }
                 else {
                     if (!rwLock.tryReadLock()) {
@@ -1780,6 +1807,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         return;
                     }
 
+                    if (!activeJobs.remove(worker.getJobId(), worker))
+                        cancelledJobs.remove(worker.getJobId(), worker);
+
+                    heldJobs.remove(worker.getJobId());
+
                     try {
                         handleCollisions();
                     }
@@ -1787,11 +1819,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         rwLock.readUnlock();
                     }
                 }
-
-                if (!activeJobs.remove(worker.getJobId(), worker))
-                    cancelledJobs.remove(worker.getJobId(), worker);
-
-                heldJobs.remove(worker.getJobId());
             }
         }
     }
@@ -1842,7 +1869,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      */
     private class JobSessionListener implements GridMessageListener {
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert nodeId != null;
             assert msg != null;
 
@@ -1858,7 +1885,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      */
     private class JobCancelListener implements GridMessageListener {
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert nodeId != null;
             assert msg != null;
 
@@ -1876,7 +1903,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      */
     private class JobExecutionListener implements GridMessageListener {
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             assert nodeId != null;
             assert msg != null;
 

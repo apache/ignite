@@ -18,20 +18,25 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.Collections;
+import org.apache.ignite.internal.util.typedef.F;
+import org.h2.command.Parser;
 import org.h2.table.Column;
 
 /**
  * Column.
  */
-public class GridSqlColumn extends GridSqlElement implements GridSqlValue {
+public class GridSqlColumn extends GridSqlElement {
     /** */
-    private final GridSqlElement expressionInFrom;
+    private GridSqlAst from;
 
     /** */
-    private final String colName;
+    private String schema;
 
-    /** SQL from original query. May be qualified or unqualified column name. */
-    private final String sqlText;
+    /** */
+    private String tblAlias;
+
+    /** */
+    private String colName;
 
     /** */
     private Column col;
@@ -39,18 +44,30 @@ public class GridSqlColumn extends GridSqlElement implements GridSqlValue {
     /**
      * @param col Column.
      * @param from From.
-     * @param name Name.
-     * @param sqlText Text.
+     * @param colName Column name.
      */
-    public GridSqlColumn(Column col, GridSqlElement from, String name, String sqlText) {
-        super(Collections.<GridSqlElement>emptyList());
+    public GridSqlColumn(Column col, GridSqlAst from, String colName) {
+        this(col, from, null, null, colName);
+    }
 
-        assert sqlText != null;
+    /**
+     * @param col Column.
+     * @param from From.
+     * @param schema Schema name.
+     * @param tblAlias Table alias.
+     * @param colName Column name.
+     */
+    public GridSqlColumn(Column col, GridSqlAst from, String schema, String tblAlias, String colName) {
+        super(Collections.<GridSqlAst>emptyList());
 
-        expressionInFrom = from;
-        colName = name;
-        this.sqlText = sqlText;
+        assert !F.isEmpty(colName): colName;
+
         this.col = col;
+        this.from = from;
+
+        this.colName = colName;
+        this.schema = schema;
+        this.tblAlias = tblAlias;
     }
 
     /**
@@ -60,16 +77,45 @@ public class GridSqlColumn extends GridSqlElement implements GridSqlValue {
         return colName;
     }
 
+    /**
+     * @return Schema name.
+     */
+    public String schema() {
+        return schema;
+    }
+
+    /**
+     * @param tblAlias Table alias.
+     */
+    public void tableAlias(String tblAlias) {
+        this.tblAlias = tblAlias;
+    }
+
     /** {@inheritDoc} */
     @Override public String getSQL() {
-        return sqlText;
+        String sql = Parser.quoteIdentifier(colName);
+
+        if (tblAlias != null)
+            sql = Parser.quoteIdentifier(tblAlias) + "." + sql;
+
+        if (schema != null)
+            sql = Parser.quoteIdentifier(schema) + "." + sql;
+
+        return sql;
     }
 
     /**
      * @return Expression in from.
      */
-    public GridSqlElement expressionInFrom() {
-        return expressionInFrom;
+    public GridSqlAst expressionInFrom() {
+        return from;
+    }
+
+    /**
+     * @param from Expression in from.
+     */
+    public void expressionInFrom(GridSqlAlias from) {
+        this.from = from;
     }
 
     /**

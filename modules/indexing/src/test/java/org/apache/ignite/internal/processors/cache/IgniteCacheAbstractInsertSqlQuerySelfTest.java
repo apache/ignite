@@ -20,24 +20,23 @@ package org.apache.ignite.internal.processors.cache;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryAbstractIdentityResolver;
-import org.apache.ignite.binary.BinaryArrayIdentityResolver;
-import org.apache.ignite.binary.BinaryFieldIdentityResolver;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -45,6 +44,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest.AllTypes;
 
 /**
  *
@@ -77,31 +78,17 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         BinaryConfiguration binCfg = new BinaryConfiguration();
 
         binCfg.setTypeConfigurations(Arrays.asList(
             new BinaryTypeConfiguration() {{
                 setTypeName(Key.class.getName());
-
-                setIdentityResolver(BinaryArrayIdentityResolver.instance());
             }},
             new BinaryTypeConfiguration() {{
                 setTypeName(Key2.class.getName());
-
-                setIdentityResolver(BinaryArrayIdentityResolver.instance());
-            }},
-            new BinaryTypeConfiguration() {{
-                setTypeName(Key3.class.getName());
-
-                setIdentityResolver(new BinaryFieldIdentityResolver().setFieldNames("key"));
-            }},
-            new BinaryTypeConfiguration() {{
-                setTypeName(Key4.class.getName());
-
-                setIdentityResolver(new Key4Id());
             }}
         ));
 
@@ -121,28 +108,39 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
         if (!isBinaryMarshaller())
             createCaches();
         else
             createBinaryCaches();
+
+        ignite(0).createCache(cacheConfig("I2AT", true, false, Integer.class, AllTypes.class));
     }
 
     /**
      *
      */
-    protected void createCaches() {
-        ignite(0).createCache(cacheConfig("S2P", true, false, String.class, Person.class, String.class, String.class));
-        ignite(0).createCache(cacheConfig("I2P", true, false, Integer.class, Person.class));
-        ignite(0).createCache(cacheConfig("K2P", true, false, Key.class, Person.class));
-        ignite(0).createCache(cacheConfig("K22P", true, true, Key2.class, Person2.class));
-        ignite(0).createCache(cacheConfig("I2I", true, false, Integer.class, Integer.class));
+    void createCaches() {
+        ignite(0).getOrCreateCache(cacheConfig("S2P", true, false, String.class, Person.class, String.class,
+            String.class));
+        ignite(0).getOrCreateCache(cacheConfig("I2P", true, false, Integer.class, Person.class));
+        ignite(0).getOrCreateCache(cacheConfig("K2P", true, false, Key.class, Person.class));
+        ignite(0).getOrCreateCache(cacheConfig("K22P", true, true, Key2.class, Person2.class));
+        ignite(0).getOrCreateCache(cacheConfig("I2I", true, false, Integer.class, Integer.class));
+        ignite(0).getOrCreateCache(cacheConfig("U2I", true, false, UUID.class, Integer.class));
     }
 
     /**
      *
      */
     final void createBinaryCaches() {
+        ignite(0).getOrCreateCache(cacheConfig("U2I", true, false, UUID.class, Integer.class));
+
         {
             CacheConfiguration s2pCcfg = cacheConfig("S2P", true, false);
 
@@ -151,7 +149,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             LinkedHashMap<String, String> flds = new LinkedHashMap<>();
 
             flds.put("id", Integer.class.getName());
-            flds.put("name", String.class.getName());
+            flds.put("firstName", String.class.getName());
 
             s2p.setFields(flds);
 
@@ -161,7 +159,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
             s2pCcfg.setQueryEntities(Arrays.asList(s2p, s2s));
 
-            ignite(0).createCache(s2pCcfg);
+            ignite(0).getOrCreateCache(s2pCcfg);
         }
 
         {
@@ -172,7 +170,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             LinkedHashMap<String, String> flds = new LinkedHashMap<>();
 
             flds.put("id", Integer.class.getName());
-            flds.put("name", String.class.getName());
+            flds.put("firstName", String.class.getName());
 
             i2p.setFields(flds);
 
@@ -180,7 +178,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
             i2pCcfg.setQueryEntities(Collections.singletonList(i2p));
 
-            ignite(0).createCache(i2pCcfg);
+            ignite(0).getOrCreateCache(i2pCcfg);
         }
 
         {
@@ -194,7 +192,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
             flds.put("key", Integer.class.getName());
             flds.put("id", Integer.class.getName());
-            flds.put("name", String.class.getName());
+            flds.put("firstName", String.class.getName());
 
             k2p.setFields(flds);
 
@@ -202,7 +200,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
             k2pCcfg.setQueryEntities(Collections.singletonList(k2p));
 
-            ignite(0).createCache(k2pCcfg);
+            ignite(0).getOrCreateCache(k2pCcfg);
         }
 
         {
@@ -216,7 +214,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
             flds.put("Id", Integer.class.getName());
             flds.put("id", Integer.class.getName());
-            flds.put("name", String.class.getName());
+            flds.put("firstName", String.class.getName());
             flds.put("IntVal", Integer.class.getName());
 
             k22p.setFields(flds);
@@ -225,53 +223,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
             k22pCcfg.setQueryEntities(Collections.singletonList(k22p));
 
-            ignite(0).createCache(k22pCcfg);
-        }
-
-        {
-            CacheConfiguration k32pCcfg = cacheConfig("K32P", true, false);
-
-            QueryEntity k32p = new QueryEntity(Key3.class.getName(), "Person");
-
-            k32p.setKeyFields(new HashSet<>(Arrays.asList("key", "strKey")));
-
-            LinkedHashMap<String, String> flds = new LinkedHashMap<>();
-
-            flds.put("key", Integer.class.getName());
-            flds.put("strKey", String.class.getName());
-            flds.put("id", Integer.class.getName());
-            flds.put("name", String.class.getName());
-
-            k32p.setFields(flds);
-
-            k32p.setIndexes(Collections.<QueryIndex>emptyList());
-
-            k32pCcfg.setQueryEntities(Collections.singletonList(k32p));
-
-            ignite(0).createCache(k32pCcfg);
-        }
-
-        {
-            CacheConfiguration k42pCcfg = cacheConfig("K42P", true, false);
-
-            QueryEntity k42p = new QueryEntity(Key4.class.getName(), "Person");
-
-            k42p.setKeyFields(new HashSet<>(Arrays.asList("key", "strKey")));
-
-            LinkedHashMap<String, String> flds = new LinkedHashMap<>();
-
-            flds.put("key", Integer.class.getName());
-            flds.put("strKey", String.class.getName());
-            flds.put("id", Integer.class.getName());
-            flds.put("name", String.class.getName());
-
-            k42p.setFields(flds);
-
-            k42p.setIndexes(Collections.<QueryIndex>emptyList());
-
-            k42pCcfg.setQueryEntities(Collections.singletonList(k42p));
-
-            ignite(0).createCache(k42pCcfg);
+            ignite(0).getOrCreateCache(k22pCcfg);
         }
 
         {
@@ -285,7 +237,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
             i2iCcfg.setQueryEntities(Collections.singletonList(i2i));
 
-            ignite(0).createCache(i2iCcfg);
+            ignite(0).getOrCreateCache(i2iCcfg);
         }
     }
 
@@ -296,16 +248,12 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        ignite(0).cache("S2P").clear();
-        ignite(0).cache("I2P").clear();
-        ignite(0).cache("K2P").clear();
-        ignite(0).cache("K22P").clear();
-        ignite(0).cache("I2I").clear();
-
-        if (isBinaryMarshaller()) {
-            ignite(0).cache("K32P").clear();
-            ignite(0).cache("K42P").clear();
-        }
+        ignite(0).destroyCache("S2P");
+        ignite(0).destroyCache("I2P");
+        ignite(0).destroyCache("K2P");
+        ignite(0).destroyCache("K22P");
+        ignite(0).destroyCache("I2I");
+        ignite(0).destroyCache("I2AT");
 
         super.afterTest();
     }
@@ -357,14 +305,23 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
      * @param idxTypes Indexed types.
      * @return Cache configuration.
      */
-    private static CacheConfiguration cacheConfig(String name, boolean partitioned, boolean escapeSql, Class<?>... idxTypes) {
-        return new CacheConfiguration()
+    static CacheConfiguration cacheConfig(String name, boolean partitioned, boolean escapeSql, Class<?>... idxTypes) {
+        CacheConfiguration res = new CacheConfiguration(DEFAULT_CACHE_NAME)
             .setName(name)
             .setCacheMode(partitioned ? CacheMode.PARTITIONED : CacheMode.REPLICATED)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setBackups(1)
             .setSqlEscapeAll(escapeSql)
             .setIndexedTypes(idxTypes);
+
+        for (int i = 0; i < idxTypes.length / 2; i++) {
+            Class<?> keyType = idxTypes[i];
+
+            if (!QueryUtils.isSqlType(keyType))
+                res.setKeyConfiguration(new CacheKeyConfiguration(keyType));
+        }
+
+        return res;
     }
 
     /**
@@ -381,6 +338,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
         /** */
         @QuerySqlField
+        @AffinityKeyMapped
         public final int key;
 
         /** {@inheritDoc} */
@@ -436,65 +394,6 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
     /**
      *
      */
-    final static class Key3 implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        public Key3(int key) {
-            this.key = key;
-            this.strKey = Integer.toString(key);
-        }
-
-        /** */
-        @QuerySqlField
-        public final int key;
-
-        /** */
-        @QuerySqlField
-        public final String strKey;
-    }
-
-    /**
-     *
-     */
-    final static class Key4 implements Serializable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        public Key4(int key) {
-            this.key = key;
-            this.strKey = Integer.toString(key);
-        }
-
-        /** */
-        @QuerySqlField
-        public final int key;
-
-        /** */
-        @QuerySqlField
-        public final String strKey;
-    }
-
-    /**
-     *
-     */
-    final static class Key4Id extends BinaryAbstractIdentityResolver {
-        /** {@inheritDoc} */
-        @Override protected int hashCode0(BinaryObject obj) {
-            return (int) obj.field("key") * 100;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected boolean equals0(BinaryObject o1, BinaryObject o2) {
-            return (int) o1.field("key") == (int) o2.field("key");
-        }
-    }
-
-    /**
-     *
-     */
     protected static class Person implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
@@ -515,7 +414,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
         protected int id;
 
         /** */
-        @QuerySqlField
+        @QuerySqlField(name = "firstName")
         protected String name;
 
         /** {@inheritDoc} */

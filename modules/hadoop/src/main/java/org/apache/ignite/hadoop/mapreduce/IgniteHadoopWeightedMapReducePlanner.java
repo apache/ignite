@@ -21,16 +21,16 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.hadoop.HadoopJob;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
 import org.apache.ignite.internal.processors.hadoop.HadoopFileBlock;
-import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
-import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlan;
+import org.apache.ignite.hadoop.HadoopInputSplit;
+import org.apache.ignite.hadoop.HadoopMapReducePlan;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsEndpoint;
-import org.apache.ignite.internal.processors.hadoop.planner.HadoopAbstractMapReducePlanner;
+import org.apache.ignite.hadoop.planner.HadoopAbstractMapReducePlanner;
 import org.apache.ignite.internal.processors.hadoop.planner.HadoopDefaultMapReducePlan;
 import org.apache.ignite.internal.processors.hadoop.planner.HadoopMapReducePlanGroup;
 import org.apache.ignite.internal.processors.hadoop.planner.HadoopMapReducePlanTopology;
@@ -117,7 +117,7 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
     @Override public HadoopMapReducePlan preparePlan(HadoopJob job, Collection<ClusterNode> nodes,
         @Nullable HadoopMapReducePlan oldPlan) throws IgniteCheckedException {
         List<HadoopInputSplit> splits = HadoopCommonUtils.sortInputSplits(job.input());
-        int reducerCnt = job.info().reducers();
+        int reducerCnt = job.reducers();
 
         if (reducerCnt < 0)
             throw new IgniteCheckedException("Number of reducers must be non-negative, actual: " + reducerCnt);
@@ -212,10 +212,7 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
             if (IgniteFileSystem.IGFS_SCHEME.equalsIgnoreCase(split0.file().getScheme())) {
                 HadoopIgfsEndpoint endpoint = new HadoopIgfsEndpoint(split0.file().getAuthority());
 
-                IgfsEx igfs = null;
-
-                if (F.eq(ignite.name(), endpoint.grid()))
-                    igfs = (IgfsEx)((IgniteEx)ignite).igfsx(endpoint.igfs());
+                IgfsEx igfs = (IgfsEx)((IgniteEx)ignite).igfsx(endpoint.igfs());
 
                 if (igfs != null && !igfs.isProxy(split0.file())) {
                     IgfsPath path = new IgfsPath(split0.file());
@@ -640,9 +637,12 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
      * Set local mapper weight. See {@link #getLocalMapperWeight()} for more information.
      *
      * @param locMapperWeight Local mapper weight.
+     * @return {@code this} for chaining.
      */
-    public void setLocalMapperWeight(int locMapperWeight) {
+    public IgniteHadoopWeightedMapReducePlanner setLocalMapperWeight(int locMapperWeight) {
         this.locMapperWeight = locMapperWeight;
+
+        return this;
     }
 
     /**
@@ -661,9 +661,12 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
      * Set remote mapper weight. See {@link #getRemoteMapperWeight()} for more information.
      *
      * @param rmtMapperWeight Remote mapper weight.
+     * @return {@code this} for chaining.
      */
-    public void setRemoteMapperWeight(int rmtMapperWeight) {
+    public IgniteHadoopWeightedMapReducePlanner setRemoteMapperWeight(int rmtMapperWeight) {
         this.rmtMapperWeight = rmtMapperWeight;
+
+        return this;
     }
 
     /**
@@ -682,9 +685,12 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
      * Set local reducer weight. See {@link #getLocalReducerWeight()} for more information.
      *
      * @param locReducerWeight Local reducer weight.
+     * @return {@code this} for chaining.
      */
-    public void setLocalReducerWeight(int locReducerWeight) {
+    public IgniteHadoopWeightedMapReducePlanner setLocalReducerWeight(int locReducerWeight) {
         this.locReducerWeight = locReducerWeight;
+
+        return this;
     }
 
     /**
@@ -703,9 +709,12 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
      * Set remote reducer weight. See {@link #getRemoteReducerWeight()} for more information.
      *
      * @param rmtReducerWeight Remote reducer weight.
+     * @return {@code this} for chaining.
      */
-    public void setRemoteReducerWeight(int rmtReducerWeight) {
+    public IgniteHadoopWeightedMapReducePlanner setRemoteReducerWeight(int rmtReducerWeight) {
         this.rmtReducerWeight = rmtReducerWeight;
+
+        return this;
     }
 
     /**
@@ -725,9 +734,13 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
      * information.
      *
      * @param reducerMigrationThresholdWeight Reducer migration threshold weight.
+     * @return {@code this} for chaining.
      */
-    public void setPreferLocalReducerThresholdWeight(int reducerMigrationThresholdWeight) {
+    public IgniteHadoopWeightedMapReducePlanner setPreferLocalReducerThresholdWeight(
+        int reducerMigrationThresholdWeight) {
         this.preferLocReducerThresholdWeight = reducerMigrationThresholdWeight;
+
+        return this;
     }
 
     /** {@inheritDoc} */

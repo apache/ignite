@@ -15,78 +15,108 @@
  * limitations under the License.
  */
 
-export default ['$scope', 'JavaTransformer', function($scope, java) {
+export default ['IgniteVersion', 'JavaTransformer', function(Version, java) {
     const ctrl = this;
 
-    delete ctrl.data;
+    this.$onInit = () => {
+        delete ctrl.data;
 
-    const client = ctrl.client === 'true';
+        const client = ctrl.client === 'true';
 
-    // Setup generator.
-    switch (ctrl.generator) {
-        case 'igniteConfiguration':
-            const clsName = client ? 'ClientConfigurationFactory' : 'ServerConfigurationFactory';
+        const available = Version.available.bind(Version);
 
-            ctrl.generate = (cluster) => java.cluster(cluster, 'config', clsName, client);
+        // Setup generator.
+        switch (ctrl.generator) {
+            case 'igniteConfiguration':
+                const clsName = client ? 'ClientConfigurationFactory' : 'ServerConfigurationFactory';
 
-            break;
-        case 'clusterCaches':
-            ctrl.generate = (cluster, caches) => {
-                const clusterCaches = _.reduce(caches, (acc, cache) => {
-                    if (_.includes(cluster.caches, cache.value))
-                        acc.push(cache.cache);
+                ctrl.generate = (cluster) => java.cluster(cluster, Version.currentSbj.getValue(), 'config', clsName, client);
 
-                    return acc;
-                }, []);
+                break;
+            case 'clusterCaches':
+                ctrl.generate = (cluster, caches) => {
+                    const clusterCaches = _.reduce(caches, (acc, cache) => {
+                        if (_.includes(cluster.caches, cache.value))
+                            acc.push(cache.cache);
 
-                const cfg = java.generator.clusterGeneral(cluster);
+                        return acc;
+                    }, []);
 
-                java.generator.clusterCaches(cluster, clusterCaches, null, false, cfg);
+                    const cfg = java.generator.clusterGeneral(cluster, available);
 
-                return java.toSection(cfg);
-            };
+                    java.generator.clusterCaches(cluster, clusterCaches, null, available, false, cfg);
 
-            break;
-        case 'cacheStore':
-        case 'cacheQuery':
-            ctrl.generate = (cache, domains) => {
-                const cacheDomains = _.reduce(domains, (acc, domain) => {
-                    if (_.includes(cache.domains, domain.value))
-                        acc.push(domain.meta);
+                    return java.toSection(cfg);
+                };
 
-                    return acc;
-                }, []);
+                break;
+            case 'cacheStore':
+            case 'cacheQuery':
+                ctrl.generate = (cache, domains) => {
+                    const cacheDomains = _.reduce(domains, (acc, domain) => {
+                        if (_.includes(cache.domains, domain.value))
+                            acc.push(domain.meta);
 
-                return java[ctrl.generator](cache, cacheDomains);
-            };
+                        return acc;
+                    }, []);
 
-            break;
-        case 'cacheNodeFilter':
-            ctrl.generate = (cache, igfss) => {
-                const cacheIgfss = _.reduce(igfss, (acc, igfs) => {
-                    acc.push(igfs.igfs);
+                    return java[ctrl.generator](cache, cacheDomains, available);
+                };
 
-                    return acc;
-                }, []);
-
-                return java.cacheNodeFilter(cache, cacheIgfss);
-            };
-
-            break;
-        case 'igfss':
-            ctrl.generate = (cluster, igfss) => {
-                const clusterIgfss = _.reduce(igfss, (acc, igfs) => {
-                    if (_.includes(cluster.igfss, igfs.value))
+                break;
+            case 'cacheNodeFilter':
+                ctrl.generate = (cache, igfss) => {
+                    const cacheIgfss = _.reduce(igfss, (acc, igfs) => {
                         acc.push(igfs.igfs);
 
-                    return acc;
-                }, []);
+                        return acc;
+                    }, []);
 
-                return java.clusterIgfss(clusterIgfss);
-            };
+                    return java.cacheNodeFilter(cache, cacheIgfss);
+                };
 
-            break;
-        default:
-            ctrl.generate = (master, detail) => java[ctrl.generator](master, detail);
-    }
+                break;
+            case 'clusterServiceConfiguration':
+                ctrl.generate = (cluster, caches) => {
+                    const clusterCaches = _.reduce(caches, (acc, cache) => {
+                        if (_.includes(cluster.caches, cache.value))
+                            acc.push(cache.cache);
+
+                        return acc;
+                    }, []);
+
+                    return java.clusterServiceConfiguration(cluster.serviceConfigurations, clusterCaches);
+                };
+
+                break;
+            case 'clusterCheckpoint':
+                ctrl.generate = (cluster, caches) => {
+                    const clusterCaches = _.reduce(caches, (acc, cache) => {
+                        if (_.includes(cluster.caches, cache.value))
+                            acc.push(cache.cache);
+
+                        return acc;
+                    }, []);
+
+                    return java.clusterCheckpoint(cluster, clusterCaches);
+                };
+
+                break;
+            case 'igfss':
+                ctrl.generate = (cluster, igfss) => {
+                    const clusterIgfss = _.reduce(igfss, (acc, igfs) => {
+                        if (_.includes(cluster.igfss, igfs.value))
+                            acc.push(igfs.igfs);
+
+                        return acc;
+                    }, []);
+
+                    return java.clusterIgfss(clusterIgfss, available);
+                };
+
+                break;
+            default:
+                ctrl.generate = (master) => java[ctrl.generator](master, available);
+        }
+    };
 }];

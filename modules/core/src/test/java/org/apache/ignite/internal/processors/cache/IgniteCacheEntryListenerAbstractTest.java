@@ -58,7 +58,6 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -75,7 +74,6 @@ import static javax.cache.event.EventType.CREATED;
 import static javax.cache.event.EventType.EXPIRED;
 import static javax.cache.event.EventType.REMOVED;
 import static javax.cache.event.EventType.UPDATED;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -107,22 +105,20 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         if (lsnrCfg != null)
             cfg.addCacheEntryListenerConfiguration(lsnrCfg);
 
         cfg.setEagerTtl(eagerTtl());
 
-        cfg.setMemoryMode(memoryMode());
-
         return cfg;
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         MemoryEventStorageSpi eventSpi = new MemoryEventStorageSpi();
         eventSpi.setExpireCount(50);
@@ -130,13 +126,6 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         cfg.setEventStorageSpi(eventSpi);
 
         return cfg;
-    }
-
-    /**
-     * @return Cache memory mode.
-     */
-    protected CacheMemoryMode memoryMode() {
-        return ONHEAP_TIERED;
     }
 
     /** {@inheritDoc} */
@@ -339,7 +328,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
                 if (!eagerTtl()) {
                     U.sleep(1100);
 
-                    assertNull(primaryCache(key, cache.getName()).get(key(key)));
+                    assertNull(primaryCache(key(key), cache.getName()).get(key(key)));
 
                     evtsLatch.await(5000, MILLISECONDS);
 
@@ -379,7 +368,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
             Map<Integer, Integer> vals = new HashMap<>();
 
-            for (Integer key : nearKeys(grid.cache(null), 100, 1_000_000))
+            for (Integer key : nearKeys(grid.cache(DEFAULT_CACHE_NAME), 100, 1_000_000))
                 vals.put(key, 1);
 
             final AtomicBoolean done = new AtomicBoolean();
@@ -643,7 +632,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         try {
             awaitPartitionMapExchange();
 
-            IgniteCache<Object, Object> cache = grid.cache(null);
+            IgniteCache<Object, Object> cache = grid.cache(DEFAULT_CACHE_NAME);
 
             Integer key = Integer.MAX_VALUE;
 
@@ -667,7 +656,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         try {
             awaitPartitionMapExchange();
 
-            IgniteCache<Object, Object> cache = grid.cache(null);
+            IgniteCache<Object, Object> cache = grid.cache(DEFAULT_CACHE_NAME);
 
             log.info("Check filter for listener in configuration.");
 

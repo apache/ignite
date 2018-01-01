@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventAdapter;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
@@ -29,18 +28,19 @@ import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformEventFilterListener;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
-import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 /**
  * Interop events.
  */
+@SuppressWarnings("unchecked")
 public class PlatformEvents extends PlatformAbstractTarget {
     /** */
     private static final int OP_REMOTE_QUERY = 1;
@@ -91,9 +91,6 @@ public class PlatformEvents extends PlatformAbstractTarget {
     private final IgniteEvents events;
 
     /** */
-    private final IgniteEvents eventsAsync;
-
-    /** */
     private final EventResultWriter eventResWriter;
 
     /** */
@@ -111,7 +108,6 @@ public class PlatformEvents extends PlatformAbstractTarget {
         assert events != null;
 
         this.events = events;
-        eventsAsync = events.withAsync();
 
         eventResWriter = new EventResultWriter(platformCtx);
         eventColResWriter = new EventCollectionResultWriter(platformCtx);
@@ -148,16 +144,12 @@ public class PlatformEvents extends PlatformAbstractTarget {
                 return TRUE;
 
             case OP_REMOTE_QUERY_ASYNC:
-                startRemoteQuery(reader, eventsAsync);
-
-                readAndListenFuture(reader, currentFuture(), eventColResWriter);
+                readAndListenFuture(reader, startRemoteQueryAsync(reader, events), eventColResWriter);
 
                 return TRUE;
 
             case OP_WAIT_FOR_LOCAL_ASYNC: {
-                startWaitForLocal(reader, eventsAsync);
-
-                readAndListenFuture(reader, currentFuture(), eventResWriter);
+                readAndListenFuture(reader, startWaitForLocalAsync(reader, events), eventResWriter);
 
                 return TRUE;
             }
@@ -230,6 +222,19 @@ public class PlatformEvents extends PlatformAbstractTarget {
                 break;
             }
 
+            case OP_STOP_LOCAL_LISTEN: {
+                int id = reader.readInt();
+                int[] types = reader.readIntArray();
+
+                IgnitePredicate lsnr = new PlatformLocalEventListener(id);
+
+                boolean res = events.stopLocalListen(lsnr, types);
+
+                writer.writeBoolean(res);
+
+                break;
+            }
+
             default:
                 super.processInStreamOutStream(type, reader, writer);
         }
@@ -253,6 +258,23 @@ public class PlatformEvents extends PlatformAbstractTarget {
     }
 
     /**
+     * Starts the waitForLocal asynchronously.
+     *
+     * @param reader Reader
+     * @param events Events.
+     * @return Result.
+     */
+    private IgniteFuture<EventAdapter> startWaitForLocalAsync(BinaryRawReaderEx reader, IgniteEvents events) {
+        Long filterHnd = reader.readObject();
+
+        IgnitePredicate filter = filterHnd != null ? localFilter(filterHnd) : null;
+
+        int[] eventTypes = readEventTypes(reader);
+
+        return events.waitForLocalAsync(filter, eventTypes);
+    }
+
+    /**
      * Starts the remote query.
      *
      * @param reader Reader.
@@ -269,6 +291,25 @@ public class PlatformEvents extends PlatformAbstractTarget {
         PlatformEventFilterListener filter = platformCtx.createRemoteEventFilter(pred, types);
 
         return events.remoteQuery(filter, timeout);
+    }
+
+    /**
+     * Starts the remote query asynchronously.
+     *
+     * @param reader Reader.
+     * @param events Events.
+     * @return Result.
+     */
+    private IgniteFuture<List<Event>> startRemoteQueryAsync(BinaryRawReaderEx reader, IgniteEvents events) {
+        Object pred = reader.readObjectDetached();
+
+        long timeout = reader.readLong();
+
+        int[] types = readEventTypes(reader);
+
+        PlatformEventFilterListener filter = platformCtx.createRemoteEventFilter(pred, types);
+
+        return events.remoteQueryAsync(filter, timeout);
     }
 
     /** {@inheritDoc} */
@@ -308,24 +349,6 @@ public class PlatformEvents extends PlatformAbstractTarget {
         }
 
         return super.processInLongOutLong(type, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture currentFuture() throws IgniteCheckedException {
-        return ((IgniteFutureImpl)eventsAsync.future()).internalFuture();
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public PlatformFutureUtils.Writer futureWriter(int opId) {
-        switch (opId) {
-            case OP_WAIT_FOR_LOCAL:
-                return eventResWriter;
-
-            case OP_REMOTE_QUERY:
-                return eventColResWriter;
-        }
-
-        return null;
     }
 
     /**

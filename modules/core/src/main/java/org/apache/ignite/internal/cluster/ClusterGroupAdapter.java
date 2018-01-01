@@ -54,6 +54,7 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.igfs.IgfsNodePredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -83,8 +84,8 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     /** Services. */
     private transient IgniteServices svcs;
 
-    /** Grid name. */
-    private String gridName;
+    /** Ignite instance name. */
+    private String igniteInstanceName;
 
     /** Subject ID. */
     protected UUID subjId;
@@ -188,7 +189,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
         this.ctx = ctx;
 
-        gridName = ctx.gridName();
+        igniteInstanceName = ctx.igniteInstanceName();
     }
 
     /** {@inheritDoc} */
@@ -212,7 +213,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         if (compute == null) {
             assert ctx != null;
 
-            compute = new IgniteComputeImpl(ctx, this, subjId, false);
+            compute = new IgniteComputeImpl(ctx, this, subjId);
         }
 
         return compute;
@@ -576,36 +577,46 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final ClusterGroup forCacheNodes(@Nullable String cacheName) {
+    @Override public final ClusterGroup forCacheNodes(String cacheName) {
+        CU.validateCacheName(cacheName);
+
         checkDaemon();
 
         return forPredicate(new CachesFilter(cacheName, true, true, true));
     }
 
     /** {@inheritDoc} */
-    @Override public final ClusterGroup forDataNodes(@Nullable String cacheName) {
+    @Override public final ClusterGroup forDataNodes(String cacheName) {
+        CU.validateCacheName(cacheName);
+
         checkDaemon();
 
         return forPredicate(new CachesFilter(cacheName, true, false, false));
     }
 
     /** {@inheritDoc} */
-    @Override public final ClusterGroup forClientNodes(@Nullable String cacheName) {
+    @Override public final ClusterGroup forClientNodes(String cacheName) {
+        CU.validateCacheName(cacheName);
+
         checkDaemon();
 
         return forPredicate(new CachesFilter(cacheName, false, true, true));
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forCacheNodes(@Nullable String cacheName, boolean affNodes, boolean nearNodes,
+    @Override public ClusterGroup forCacheNodes(String cacheName, boolean affNodes, boolean nearNodes,
         boolean clientNodes) {
+        CU.validateCacheName(cacheName);
+
         checkDaemon();
 
         return forPredicate(new CachesFilter(cacheName, affNodes, nearNodes, clientNodes));
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forIgfsMetadataDataNodes(@Nullable String igfsName, @Nullable String metaCacheName) {
+    @Override public ClusterGroup forIgfsMetadataDataNodes(String igfsName, String metaCacheName) {
+        assert metaCacheName != null;
+
         return forPredicate(new IgfsNodePredicate(igfsName)).forDataNodes(metaCacheName);
     }
 
@@ -699,7 +710,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, gridName);
+        U.writeString(out, igniteInstanceName);
         U.writeUuid(out, subjId);
 
         out.writeBoolean(ids != null);
@@ -712,7 +723,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        gridName = U.readString(in);
+        igniteInstanceName = U.readString(in);
         subjId = U.readUuid(in);
 
         if (in.readBoolean())
@@ -764,7 +775,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         /**
          * @param cacheName Cache name.
          */
-        private CachesFilter(@Nullable String cacheName, boolean affNodes, boolean nearNodes, boolean clients) {
+        private CachesFilter(String cacheName, boolean affNodes, boolean nearNodes, boolean clients) {
             this.cacheName = cacheName;
             this.affNodes = affNodes;
             this.nearNodes = nearNodes;

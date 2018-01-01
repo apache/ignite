@@ -20,8 +20,10 @@ package org.apache.ignite.internal.util.nio;
 import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MAX_KEYS_CNT;
@@ -105,7 +107,7 @@ public class GridNioSessionImpl implements GridNioSession {
         try {
             resetSendScheduleTime();
 
-            return chain().onSessionWrite(this, msg, true);
+            return chain().onSessionWrite(this, msg, true, null);
         }
         catch (IgniteCheckedException e) {
             close();
@@ -115,9 +117,10 @@ public class GridNioSessionImpl implements GridNioSession {
     }
 
     /** {@inheritDoc} */
-    @Override public void sendNoFuture(Object msg) throws IgniteCheckedException {
+    @Override public void sendNoFuture(Object msg, IgniteInClosure<IgniteException> ackC)
+        throws IgniteCheckedException {
         try {
-            chain().onSessionWrite(this, msg, false);
+            chain().onSessionWrite(this, msg, false, ackC);
         }
         catch (IgniteCheckedException e) {
             close();

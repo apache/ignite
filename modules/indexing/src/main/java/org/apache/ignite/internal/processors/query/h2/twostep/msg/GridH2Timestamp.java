@@ -123,7 +123,7 @@ public class GridH2Timestamp extends GridH2ValueMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -15;
     }
 

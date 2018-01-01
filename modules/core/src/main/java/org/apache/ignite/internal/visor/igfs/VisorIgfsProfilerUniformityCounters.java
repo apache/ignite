@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.visor.igfs;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.ArrayList;
-import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 import static org.apache.ignite.internal.visor.igfs.VisorIgfsProfiler.UNIFORMITY_BLOCKS;
 import static org.apache.ignite.internal.visor.igfs.VisorIgfsProfiler.UNIFORMITY_DFLT_BLOCK_SIZE;
@@ -32,7 +36,7 @@ import static org.apache.ignite.internal.visor.igfs.VisorIgfsProfiler.UNIFORMITY
  * </p>
  * Count read frequency for each file and compare with ideal uniform distribution.
  */
-public class VisorIgfsProfilerUniformityCounters implements Serializable, LessNamingBean {
+public class VisorIgfsProfilerUniformityCounters extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,7 +47,14 @@ public class VisorIgfsProfilerUniformityCounters implements Serializable, LessNa
     private long blockSize = UNIFORMITY_DFLT_BLOCK_SIZE;
 
     /** Collection of calculated counters. */
-    private final ArrayList<Integer> counters = new ArrayList<>();
+    private ArrayList<Integer> counters = new ArrayList<>();
+
+    /**
+     * Default constructor.
+     */
+    public VisorIgfsProfilerUniformityCounters() {
+        // No-op.
+    }
 
     /**
      * Calculate block size.
@@ -198,5 +209,24 @@ public class VisorIgfsProfilerUniformityCounters implements Serializable, LessNa
             // Calc uniformity coefficient.
             return 1.0 - sigma;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        out.writeLong(fileSize);
+        out.writeLong(blockSize);
+        U.writeCollection(out, counters);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        fileSize = in.readLong();
+        blockSize = in.readLong();
+        counters = (ArrayList<Integer>)U.readIntList(in);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorIgfsProfilerUniformityCounters.class, this);
     }
 }

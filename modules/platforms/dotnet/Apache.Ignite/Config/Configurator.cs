@@ -176,9 +176,12 @@ namespace Apache.Ignite.Config
         /// </summary>
         private static string FindValue(IEnumerable<Tuple<string, string>> args, string name)
         {
-            return args.Where(x => name.Equals(x.Item1, StringComparison.OrdinalIgnoreCase))
-                    .Select(x => x.Item2)
-                    .FirstOrDefault();
+            // Search in reverse so that command line has preference over config file.
+            return args
+                .Reverse()
+                .Where(x => name.Equals(x.Item1, StringComparison.OrdinalIgnoreCase))
+                .Select(x => x.Item2)
+                .FirstOrDefault();
         }
     }
 }

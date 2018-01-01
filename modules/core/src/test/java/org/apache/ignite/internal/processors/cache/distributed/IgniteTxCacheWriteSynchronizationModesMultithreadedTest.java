@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
@@ -31,6 +32,7 @@ import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
@@ -50,6 +52,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionOptimisticException;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
@@ -83,8 +86,8 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     private static final int MULTITHREADED_TEST_KEYS = 100;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
@@ -104,6 +107,8 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
+        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL,"true");
+
         startGrids(SRVS);
 
         clientMode = true;
@@ -118,6 +123,8 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
 
         super.afterTestsStopped();
     }
@@ -194,7 +201,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
         boolean restart) throws Exception {
         final Ignite ignite = ignite(0);
 
-        createCache(ignite, cacheConfiguration(null, syncMode, backups, store), nearCache);
+        createCache(ignite, cacheConfiguration(DEFAULT_CACHE_NAME, syncMode, backups, store), nearCache);
 
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -262,8 +269,8 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
                             tx.commit();
                         }
                     }
-                    catch (CacheException | IgniteException e) {
-                        // Ignore.
+                    catch (CacheException | IgniteException ignored) {
+                        // No-op.
                     }
                 }
             });
@@ -289,10 +296,10 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
 
                             break;
                         }
-                        catch (TransactionOptimisticException e) {
+                        catch (TransactionOptimisticException ignored) {
                            // Retry.
                         }
-                        catch (CacheException | IgniteException e) {
+                        catch (CacheException | IgniteException ignored) {
                             break;
                         }
                     }
@@ -302,7 +309,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
         finally {
             stop.set(true);
 
-            ignite.destroyCache(null);
+            ignite.destroyCache(DEFAULT_CACHE_NAME);
 
             if (restartFut != null)
                 restartFut.get();
@@ -313,7 +320,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
      * @param c Test iteration closure.
      * @throws Exception If failed.
      */
-    public void commitMultithreaded(final IgniteBiInClosure<Ignite, IgniteCache<Integer, Integer>> c) throws Exception {
+    private void commitMultithreaded(final IgniteBiInClosure<Ignite, IgniteCache<Integer, Integer>> c) throws Exception {
         final long stopTime = System.currentTimeMillis() + 10_000;
 
         GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
@@ -324,14 +331,14 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
 
                 Ignite ignite = ignite(nodeIdx);
 
-                IgniteCache<Integer, Integer> cache = ignite.cache(null);
+                IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                 while (System.currentTimeMillis() < stopTime)
                     c.apply(ignite, cache);
             }
         }, NODES * 3, "tx-thread");
 
-        final IgniteCache<Integer, Integer> cache = ignite(0).cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 
         for (int key = 0; key < MULTITHREADED_TEST_KEYS; key++) {
             final Integer key0 = key;
@@ -341,9 +348,9 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
                     final Integer val = cache.get(key0);
 
                     for (int i = 1; i < NODES; i++) {
-                        IgniteCache<Integer, Integer> cache = ignite(i).cache(null);
+                        IgniteCache<Integer, Integer> cache = ignite(i).cache(DEFAULT_CACHE_NAME);
 
-                        if (!val.equals(cache.get(key0)))
+                        if (!Objects.equals(val, cache.get(key0)))
                             return false;
                     }
                     return true;
@@ -377,11 +384,11 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
      * @param store If {@code true} configures cache store.
      * @return Cache configuration.
      */
-    private CacheConfiguration<Object, Object> cacheConfiguration(String name,
+    private CacheConfiguration<Object, Object> cacheConfiguration(@NotNull String name,
         CacheWriteSynchronizationMode syncMode,
         int backups,
         boolean store) {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setName(name);
         ccfg.setAtomicityMode(TRANSACTIONAL);

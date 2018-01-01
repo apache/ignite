@@ -15,7 +15,10 @@
  * limitations under the License.
  */
 
+#include <limits>
+
 #include "ignite/odbc/system/odbc_constants.h"
+#include "ignite/odbc/query/batch_query.h"
 #include "ignite/odbc/query/data_query.h"
 #include "ignite/odbc/query/column_metadata_query.h"
 #include "ignite/odbc/query/table_metadata_query.h"
@@ -27,6 +30,8 @@
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/message.h"
 #include "ignite/odbc/statement.h"
+#include "ignite/odbc/log.h"
+#include "ignite/odbc/odbc_error.h"
 
 namespace ignite
 {
@@ -38,9 +43,9 @@ namespace ignite
             currentQuery(),
             rowsFetched(0),
             rowStatuses(0),
-            paramBindOffset(0),
             columnBindOffset(0),
-            currentParamIdx(0)
+            parameters(),
+            timeout(0)
         {
             // No-op.
         }
@@ -50,26 +55,55 @@ namespace ignite
             // No-op.
         }
 
-        void Statement::BindColumn(uint16_t columnIdx, const app::ApplicationDataBuffer& buffer)
+        void Statement::BindColumn(uint16_t columnIdx, int16_t targetType, void* targetValue, SqlLen bufferLength, SqlLen* strLengthOrIndicator)
         {
-            IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
-
-            columnBindings[columnIdx] = buffer;
-
-            columnBindings[columnIdx].SetPtrToOffsetPtr(&columnBindOffset);
+            IGNITE_ODBC_API_CALL(InternalBindColumn(columnIdx, targetType, targetValue, bufferLength, strLengthOrIndicator));
         }
 
-        void Statement::UnbindColumn(uint16_t columnIdx)
+        SqlResult::Type Statement::InternalBindColumn(uint16_t columnIdx, int16_t targetType, void* targetValue, SqlLen bufferLength, SqlLen* strLengthOrIndicator)
         {
-            IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
+            using namespace type_traits;
+            OdbcNativeType::Type driverType = ToDriverType(targetType);
 
+            if (driverType == OdbcNativeType::AI_UNSUPPORTED)
+            {
+                AddStatusRecord(SqlState::SHY003_INVALID_APPLICATION_BUFFER_TYPE, "The argument TargetType was not a valid data type.");
+
+                return SqlResult::AI_ERROR;
+            }
+
+            if (bufferLength < 0)
+            {
+                AddStatusRecord(SqlState::SHY090_INVALID_STRING_OR_BUFFER_LENGTH,
+                    "The value specified for the argument BufferLength was less than 0.");
+
+                return SqlResult::AI_ERROR;
+            }
+
+            if (targetValue || strLengthOrIndicator)
+            {
+                app::ApplicationDataBuffer dataBuffer(driverType, targetValue, bufferLength, strLengthOrIndicator);
+
+                SafeBindColumn(columnIdx, dataBuffer);
+            }
+            else
+                SafeUnbindColumn(columnIdx);
+
+            return SqlResult::AI_SUCCESS;
+        }
+
+        void Statement::SafeBindColumn(uint16_t columnIdx, const app::ApplicationDataBuffer& buffer)
+        {
+            columnBindings[columnIdx] = buffer;
+        }
+
+        void Statement::SafeUnbindColumn(uint16_t columnIdx)
+        {
             columnBindings.erase(columnIdx);
         }
 
-        void Statement::UnbindAllColumns()
+        void Statement::SafeUnbindAllColumns()
         {
-            IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
-
             columnBindings.clear();
         }
 
@@ -92,57 +126,95 @@ namespace ignite
             return res;
         }
 
-        SqlResult Statement::InternalGetColumnNumber(int32_t &res)
+        SqlResult::Type Statement::InternalGetColumnNumber(int32_t &res)
         {
             const meta::ColumnMetaVector* meta = GetMeta();
 
             if (!meta)
             {
-                AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query is not executed.");
+                AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query is not executed.");
 
-                return SQL_RESULT_ERROR;
+                return SqlResult::AI_ERROR;
             }
 
             res = static_cast<int32_t>(meta->size());
 
-            return SQL_RESULT_SUCCESS;
+            return SqlResult::AI_SUCCESS;
         }
 
-        void Statement::BindParameter(uint16_t paramIdx, const app::Parameter& param)
+        void Statement::BindParameter(uint16_t paramIdx, int16_t ioType, int16_t bufferType, int16_t paramSqlType,
+            SqlUlen columnSize, int16_t decDigits, void* buffer, SqlLen bufferLen, SqlLen* resLen)
         {
-            IGNITE_ODBC_API_CALL(InternalBindParameter(paramIdx, param));
+            IGNITE_ODBC_API_CALL(InternalBindParameter(paramIdx, ioType, bufferType, paramSqlType, columnSize,
+                decDigits, buffer, bufferLen, resLen));
         }
 
-
-        SqlResult Statement::InternalBindParameter(uint16_t paramIdx, const app::Parameter& param)
+        SqlResult::Type Statement::InternalBindParameter(uint16_t paramIdx, int16_t ioType, int16_t bufferType,
+            int16_t paramSqlType, SqlUlen columnSize, int16_t decDigits, void* buffer, SqlLen bufferLen, SqlLen* resLen)
         {
+            using namespace type_traits;
+            using app::ApplicationDataBuffer;
+            using app::Parameter;
+
             if (paramIdx == 0)
             {
-                AddStatusRecord(SQL_STATE_24000_INVALID_CURSOR_STATE,
-                    "The value specified for the argument ParameterNumber was less than 1.");
+                std::stringstream builder;
+                builder << "The value specified for the argument ParameterNumber was less than 1. [ParameterNumber=" 
+                    << paramIdx << ']';
 
-                return SQL_RESULT_ERROR;
+                AddStatusRecord(SqlState::S24000_INVALID_CURSOR_STATE, builder.str());
+
+                return SqlResult::AI_ERROR;
             }
 
-            paramBindings[paramIdx] = param;
+            if (ioType != SQL_PARAM_INPUT)
+            {
+                std::stringstream builder;
+                builder << "The value specified for the argument InputOutputType was not SQL_PARAM_INPUT. [ioType=" 
+                    << ioType << ']';
 
-            paramBindings[paramIdx].GetBuffer().SetPtrToOffsetPtr(&paramBindOffset);
+                AddStatusRecord(SqlState::SHY105_INVALID_PARAMETER_TYPE, builder.str());
 
-            return SQL_RESULT_SUCCESS;
-        }
+                return SqlResult::AI_ERROR;
+            }
 
-        void Statement::UnbindParameter(uint16_t paramIdx)
-        {
-            IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
+            if (!IsSqlTypeSupported(paramSqlType))
+            {
+                std::stringstream builder;
+                builder << "Data type is not supported. [typeId=" << paramSqlType << ']';
 
-            paramBindings.erase(paramIdx);
-        }
+                AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED, builder.str());
 
-        void Statement::UnbindAllParameters()
-        {
-            IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
+                return SqlResult::AI_ERROR;
+            }
 
-            paramBindings.clear();
+            OdbcNativeType::Type driverType = ToDriverType(bufferType);
+
+            if (driverType == OdbcNativeType::AI_UNSUPPORTED)
+            {
+                std::stringstream builder;
+                builder << "The argument TargetType was not a valid data type. [TargetType=" << bufferType << ']';
+
+                AddStatusRecord(SqlState::SHY003_INVALID_APPLICATION_BUFFER_TYPE, builder.str());
+
+                return SqlResult::AI_ERROR;
+            }
+
+            if (!buffer && !resLen)
+            {
+                AddStatusRecord(SqlState::SHY009_INVALID_USE_OF_NULL_POINTER,
+                    "ParameterValuePtr and StrLen_or_IndPtr are both null pointers.");
+
+                return SqlResult::AI_ERROR;
+            }
+
+            ApplicationDataBuffer dataBuffer(driverType, buffer, bufferLen, resLen);
+
+            Parameter param(dataBuffer, paramSqlType, columnSize, decDigits);
+
+            parameters.BindParameter(paramIdx, param);
+
+            return SqlResult::AI_SUCCESS;
         }
 
         void Statement::SetAttribute(int attr, void* value, SQLINTEGER valueLen)
@@ -150,22 +222,22 @@ namespace ignite
             IGNITE_ODBC_API_CALL(InternalSetAttribute(attr, value, valueLen));
         }
 
-        SqlResult Statement::InternalSetAttribute(int attr, void* value, SQLINTEGER valueLen)
+        SqlResult::Type Statement::InternalSetAttribute(int attr, void* value, SQLINTEGER valueLen)
         {
             switch (attr)
             {
                 case SQL_ATTR_ROW_ARRAY_SIZE:
                 {
-                    SQLULEN val = reinterpret_cast<SQLULEN>(value);
+                    SqlUlen val = reinterpret_cast<SqlUlen>(value);
 
-                    LOG_MSG("SQL_ATTR_ROW_ARRAY_SIZE: %d\n", val);
+                    LOG_MSG("SQL_ATTR_ROW_ARRAY_SIZE: " << val);
 
                     if (val != 1)
                     {
-                        AddStatusRecord(SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                        AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
                             "Fetching of more than one row by call is not supported.");
 
-                        return SQL_RESULT_ERROR;
+                        return SqlResult::AI_ERROR;
                     }
 
                     break;
@@ -199,16 +271,53 @@ namespace ignite
                     break;
                 }
 
+                case SQL_ATTR_PARAMSET_SIZE:
+                {
+                    parameters.SetParamSetSize(reinterpret_cast<SqlUlen>(value));
+
+                    break;
+                }
+
+                case SQL_ATTR_PARAMS_PROCESSED_PTR:
+                {
+                    parameters.SetParamsProcessedPtr(reinterpret_cast<SqlUlen*>(value));
+
+                    break;
+                }
+
+                case SQL_ATTR_QUERY_TIMEOUT:
+                {
+                    SqlUlen uTimeout = reinterpret_cast<SqlUlen>(value);
+
+                    if (uTimeout > INT32_MAX)
+                    {
+                        timeout = INT32_MAX;
+
+                        std::stringstream ss;
+
+                        ss << "Value is too big: " << uTimeout << ", changing to " << timeout << ".";
+                        std::string msg = ss.str();
+
+                        AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, msg);
+
+                        return SqlResult::AI_SUCCESS_WITH_INFO;
+                    }
+
+                    timeout = static_cast<int32_t>(uTimeout);
+
+                    break;
+                }
+
                 default:
                 {
-                    AddStatusRecord(SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                    AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
                         "Specified attribute is not supported.");
 
-                    return SQL_RESULT_ERROR;
+                    return SqlResult::AI_ERROR;
                 }
             }
 
-            return SQL_RESULT_SUCCESS;
+            return SqlResult::AI_SUCCESS;
         }
 
         void Statement::GetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER* valueLen)
@@ -216,13 +325,13 @@ namespace ignite
             IGNITE_ODBC_API_CALL(InternalGetAttribute(attr, buf, bufLen, valueLen));
         }
 
-        SqlResult Statement::InternalGetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER* valueLen)
+        SqlResult::Type Statement::InternalGetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER* valueLen)
         {
             if (!buf)
             {
-                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, "Data buffer is NULL.");
+                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Data buffer is NULL.");
 
-                return SQL_RESULT_ERROR;
+                return SqlResult::AI_ERROR;
             }
 
             switch (attr)
@@ -236,6 +345,9 @@ namespace ignite
 
                     *val = static_cast<SQLPOINTER>(this);
 
+                    if (valueLen)
+                        *valueLen = SQL_IS_POINTER;
+
                     break;
                 }
 
@@ -245,14 +357,20 @@ namespace ignite
 
                     *val = static_cast<SQLINTEGER>(1);
 
+                    if (valueLen)
+                        *valueLen = SQL_IS_INTEGER;
+
                     break;
                 }
 
                 case SQL_ATTR_ROWS_FETCHED_PTR:
                 {
-                    SQLULEN** val = reinterpret_cast<SQLULEN**>(buf);
+                    SqlUlen** val = reinterpret_cast<SqlUlen**>(buf);
 
-                    *val = reinterpret_cast<SQLULEN*>(GetRowsFetchedPtr());
+                    *val = reinterpret_cast<SqlUlen*>(GetRowsFetchedPtr());
+
+                    if (valueLen)
+                        *valueLen = SQL_IS_POINTER;
 
                     break;
                 }
@@ -263,6 +381,9 @@ namespace ignite
 
                     *val = reinterpret_cast<SQLUSMALLINT*>(GetRowStatusesPtr());
 
+                    if (valueLen)
+                        *valueLen = SQL_IS_POINTER;
+
                     break;
                 }
 
@@ -270,49 +391,110 @@ namespace ignite
                 {
                     SQLULEN** val = reinterpret_cast<SQLULEN**>(buf);
 
-                    *val = reinterpret_cast<SQLULEN*>(GetParamBindOffsetPtr());
+                    *val = reinterpret_cast<SQLULEN*>(parameters.GetParamBindOffsetPtr());
+
+                    if (valueLen)
+                        *valueLen = SQL_IS_POINTER;
 
                     break;
                 }
 
                 case SQL_ATTR_ROW_BIND_OFFSET_PTR:
                 {
-                    SQLULEN** val = reinterpret_cast<SQLULEN**>(buf);
+                    SqlUlen** val = reinterpret_cast<SqlUlen**>(buf);
 
-                    *val = reinterpret_cast<SQLULEN*>(GetColumnBindOffsetPtr());
+                    *val = reinterpret_cast<SqlUlen*>(GetColumnBindOffsetPtr());
+
+                    if (valueLen)
+                        *valueLen = SQL_IS_POINTER;
+
+                    break;
+                }
+
+                case SQL_ATTR_PARAMSET_SIZE:
+                {
+                    SqlUlen* val = reinterpret_cast<SqlUlen*>(buf);
+
+                    *val = static_cast<SqlUlen>(parameters.GetParamSetSize());
+
+                    if (valueLen)
+                        *valueLen = SQL_IS_UINTEGER;
+
+                    break;
+                }
+
+                case SQL_ATTR_PARAMS_PROCESSED_PTR:
+                {
+                    SqlUlen** val = reinterpret_cast<SqlUlen**>(buf);
+
+                    *val = parameters.GetParamsProcessedPtr();
+
+                    if (valueLen)
+                        *valueLen = SQL_IS_POINTER;
+
+                    break;
+                }
+
+                case SQL_ATTR_QUERY_TIMEOUT:
+                {
+                    SqlUlen *uTimeout = reinterpret_cast<SqlUlen*>(buf);
+
+                    *uTimeout = static_cast<SqlUlen>(timeout);
 
                     break;
                 }
 
                 default:
                 {
-                    AddStatusRecord(SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                    AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
                         "Specified attribute is not supported.");
 
-                    return SQL_RESULT_ERROR;
+                    return SqlResult::AI_ERROR;
                 }
             }
 
-            return SQL_RESULT_SUCCESS;
+            return SqlResult::AI_SUCCESS;
         }
 
-        uint16_t Statement::GetParametersNumber()
+        void Statement::GetParametersNumber(uint16_t& paramNum)
         {
-            IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
+            IGNITE_ODBC_API_CALL(InternalGetParametersNumber(paramNum));
+        }
 
-            return static_cast<uint16_t>(paramBindings.size());
+        SqlResult::Type Statement::InternalGetParametersNumber(uint16_t& paramNum)
+        {
+            if (!currentQuery.get())
+            {
+                AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query is not prepared.");
+
+                return SqlResult::AI_ERROR;
+            }
+
+            if (currentQuery->GetType() != query::QueryType::DATA)
+            {
+                paramNum = 0;
+
+                return SqlResult::AI_SUCCESS;
+            }
+
+            if (!parameters.IsMetadataSet())
+            {
+                SqlResult::Type res = UpdateParamsMeta();
+
+                if (res != SqlResult::AI_SUCCESS)
+                    return res;
+            }
+
+            paramNum = parameters.GetExpectedParamNum();
+
+            return SqlResult::AI_SUCCESS;
         }
 
         void Statement::SetParamBindOffsetPtr(int* ptr)
         {
             IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
 
-            paramBindOffset = ptr;
-        }
-
-        int* Statement::GetParamBindOffsetPtr()
-        {
-            return paramBindOffset;
+            parameters.SetParamBindOffsetPtr(ptr);
         }
 
         void Statement::GetColumnData(uint16_t columnIdx, app::ApplicationDataBuffer& buffer)
@@ -320,18 +502,18 @@ namespace ignite
             IGNITE_ODBC_API_CALL(InternalGetColumnData(columnIdx, buffer));
         }
 
-        SqlResult Statement::InternalGetColumnData(uint16_t columnIdx,
+        SqlResult::Type Statement::InternalGetColumnData(uint16_t columnIdx,
             app::ApplicationDataBuffer& buffer)
         {
             if (!currentQuery.get())
             {
-                AddStatusRecord(SQL_STATE_24000_INVALID_CURSOR_STATE,
+                AddStatusRecord(SqlState::S24000_INVALID_CURSOR_STATE,
                     "Cursor is not in the open state.");
 
-                return SQL_RESULT_ERROR;
+                return SqlResult::AI_ERROR;
             }
 
-            SqlResult res = currentQuery->GetColumn(columnIdx, buffer);
+            SqlResult::Type res = currentQuery->GetColumn(columnIdx, buffer);
 
             return res;
         }
@@ -341,17 +523,17 @@ namespace ignite
             IGNITE_ODBC_API_CALL(InternalPrepareSqlQuery(query));
         }
 
-        SqlResult Statement::InternalPrepareSqlQuery(const std::string& query)
+        SqlResult::Type Statement::InternalPrepareSqlQuery(const std::string& query)
         {
             if (currentQuery.get())
                 currentQuery->Close();
 
-            currentQuery.reset(new query::DataQuery(*this, connection, query, paramBindings));
-
             // Resetting parameters types as we are changing the query.
-            paramTypes.clear();
+            parameters.Prepare();
 
-            return SQL_RESULT_SUCCESS;
+            currentQuery.reset(new query::DataQuery(*this, connection, query, parameters, timeout));
+
+            return SqlResult::AI_SUCCESS;
         }
 
         void Statement::ExecuteSqlQuery(const std::string& query)
@@ -359,11 +541,11 @@ namespace ignite
             IGNITE_ODBC_API_CALL(InternalExecuteSqlQuery(query));
         }
 
-        SqlResult Statement::InternalExecuteSqlQuery(const std::string& query)
+        SqlResult::Type Statement::InternalExecuteSqlQuery(const std::string& query)
         {
-            SqlResult result = InternalPrepareSqlQuery(query);
+            SqlResult::Type result = InternalPrepareSqlQuery(query);
 
-            if (result != SQL_RESULT_SUCCESS)
+            if (result != SqlResult::AI_SUCCESS)
                 return result;
 
             return InternalExecuteSqlQuery();
@@ -374,29 +556,40 @@ namespace ignite
             IGNITE_ODBC_API_CALL(InternalExecuteSqlQuery());
         }
 
-        SqlResult Statement::InternalExecuteSqlQuery()
+        SqlResult::Type Statement::InternalExecuteSqlQuery()
         {
             if (!currentQuery.get())
             {
-                AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query is not prepared.");
+                AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query is not prepared.");
 
-                return SQL_RESULT_ERROR;
+                return SqlResult::AI_ERROR;
             }
 
-            bool paramDataReady = true;
-
-            app::ParameterBindingMap::iterator it;
-            for (it = paramBindings.begin(); it != paramBindings.end(); ++it)
+            if (parameters.GetParamSetSize() > 1 && currentQuery->GetType() == query::QueryType::DATA)
             {
-                app::Parameter& param = it->second;
+                query::DataQuery& qry = static_cast<query::DataQuery&>(*currentQuery);
 
-                param.ResetStoredData();
+                currentQuery.reset(new query::BatchQuery(*this, connection, qry.GetSql(), parameters, timeout));
+            }
+            else if (parameters.GetParamSetSize() == 1 && currentQuery->GetType() == query::QueryType::BATCH)
+            {
+                query::BatchQuery& qry = static_cast<query::BatchQuery&>(*currentQuery);
 
-                paramDataReady &= param.IsDataReady();
+                currentQuery.reset(new query::DataQuery(*this, connection, qry.GetSql(), parameters, timeout));
             }
 
-            if (!paramDataReady)
-                return SQL_RESULT_NEED_DATA;
+            if (parameters.IsDataAtExecNeeded())
+            {
+                if (currentQuery->GetType() == query::QueryType::BATCH)
+                {
+                    AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                        "Data-at-execution is not supported together with batching.");
+
+                    return SqlResult::AI_ERROR;
+                }
+
+                return SqlResult::AI_NEED_DATA;
+            }
 
             return currentQuery->Execute();
         }
@@ -407,19 +600,19 @@ namespace ignite
             IGNITE_ODBC_API_CALL(InternalExecuteGetColumnsMetaQuery(schema, table, column));
         }
 
-        SqlResult Statement::InternalExecuteGetColumnsMetaQuery(const std::string& schema,
+        SqlResult::Type Statement::InternalExecuteGetColumnsMetaQuery(const std::string& schema,
             const std::string& table, const std::string& column)
         {
             if (currentQuery.get())
                 currentQuery->Close();
 
-            std::string cache(schema);
+            std::string schema0(schema);
 
-            if (cache.empty())
-                cache = connection.GetCache();
+            if (schema0.empty())
+                schema0 = connection.GetSchema();
 
             currentQuery.reset(new query::ColumnMetadataQuery(*this,
-                connection, cache, table, column));
+                connection, schema, table, column));
 
             return currentQuery->Execute();
         }
@@ -431,7 +624,7 @@ namespace ignite
                 catalog, schema, table, tableType));
         }
 
-        SqlResult Statement::InternalExecuteGetTablesMetaQuery(const std::string& catalog,
+        SqlResult::Type Statement::InternalExecuteGetTablesMetaQuery(const std::string& catalog,
             const std::string& schema, const std::string& table, const std::string& tableType)
         {
             if (currentQuery.get())
@@ -452,7 +645,7 @@ namespace ignite
                 primarySchema, primaryTable, foreignCatalog, foreignSchema, foreignTable));
         }
 
-        SqlResult Statement::InternalExecuteGetForeignKeysQuery(const std::string& primaryCatalog,
+        SqlResult::Type Statement::InternalExecuteGetForeignKeysQuery(const std::string& primaryCatalog,
             const std::string& primarySchema, const std::string& primaryTable,
             const std::string& foreignCatalog, const std::string& foreignSchema,
             const std::string& foreignTable)
@@ -472,7 +665,7 @@ namespace ignite
             IGNITE_ODBC_API_CALL(InternalExecuteGetPrimaryKeysQuery(catalog, schema, table));
         }
 
-        SqlResult Statement::InternalExecuteGetPrimaryKeysQuery(const std::string& catalog,
+        SqlResult::Type Statement::InternalExecuteGetPrimaryKeysQuery(const std::string& catalog,
             const std::string& schema, const std::string& table)
         {
             if (currentQuery.get())
@@ -492,16 +685,16 @@ namespace ignite
                 catalog, schema, table, scope, nullable));
         }
 
-        SqlResult Statement::InternalExecuteSpecialColumnsQuery(int16_t type,
+        SqlResult::Type Statement::InternalExecuteSpecialColumnsQuery(int16_t type,
             const std::string& catalog, const std::string& schema,
             const std::string& table, int16_t scope, int16_t nullable)
         {
             if (type != SQL_BEST_ROWID && type != SQL_ROWVER)
             {
-                AddStatusRecord(SQL_STATE_HY097_COLUMN_TYPE_OUT_OF_RANGE,
+                AddStatusRecord(SqlState::SHY097_COLUMN_TYPE_OUT_OF_RANGE,
                     "An invalid IdentifierType value was specified.");
 
-                return SQL_RESULT_ERROR;
+                return SqlResult::AI_ERROR;
             }
 
             if (currentQuery.get())
@@ -518,14 +711,16 @@ namespace ignite
             IGNITE_ODBC_API_CALL(InternalExecuteGetTypeInfoQuery(sqlType));
         }
 
-        SqlResult Statement::InternalExecuteGetTypeInfoQuery(int16_t sqlType)
+        SqlResult::Type Statement::InternalExecuteGetTypeInfoQuery(int16_t sqlType)
         {
-            if (!type_traits::IsSqlTypeSupported(sqlType))
+            if (sqlType != SQL_ALL_TYPES && !type_traits::IsSqlTypeSupported(sqlType))
             {
-                AddStatusRecord(SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
-                    "Data type is not supported.");
+                std::stringstream builder;
+                builder << "Data type is not supported. [typeId=" << sqlType << ']';
 
-                return SQL_RESULT_ERROR;
+                AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED, builder.str());
+
+                return SqlResult::AI_ERROR;
             }
 
             if (currentQuery.get())
@@ -536,22 +731,81 @@ namespace ignite
             return currentQuery->Execute();
         }
 
+        void Statement::FreeResources(int16_t option)
+        {
+            IGNITE_ODBC_API_CALL(InternalFreeResources(option));
+        }
+
+        SqlResult::Type Statement::InternalFreeResources(int16_t option)
+        {
+            switch (option)
+            {
+                case SQL_DROP:
+                {
+                    AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Deprecated, call SQLFreeHandle instead");
+
+                    return SqlResult::AI_ERROR;
+                }
+
+                case SQL_CLOSE:
+                {
+                    return InternalClose();
+                }
+
+                case SQL_UNBIND:
+                {
+                    SafeUnbindAllColumns();
+
+                    break;
+                }
+
+                case SQL_RESET_PARAMS:
+                {
+                    parameters.UnbindAll();
+
+                    break;
+                }
+
+                default:
+                {
+                    AddStatusRecord(SqlState::SHY092_OPTION_TYPE_OUT_OF_RANGE, "The value specified for the argument Option was invalid");
+                    return SqlResult::AI_ERROR;
+                }
+            }
+            return SqlResult::AI_SUCCESS;
+        }
+
         void Statement::Close()
         {
             IGNITE_ODBC_API_CALL(InternalClose());
         }
 
-        SqlResult Statement::InternalClose()
+        SqlResult::Type Statement::InternalClose()
         {
             if (!currentQuery.get())
-                return SQL_RESULT_SUCCESS;
-            
-            SqlResult result = currentQuery->Close();
+                return SqlResult::AI_SUCCESS;
 
-            if (result == SQL_RESULT_SUCCESS)
-                currentQuery.reset();
+            SqlResult::Type result = currentQuery->Close();
 
             return result;
+        }
+
+        void Statement::FetchScroll(int16_t orientation, int64_t offset)
+        {
+            IGNITE_ODBC_API_CALL(InternalFetchScroll(orientation, offset));
+        }
+
+        SqlResult::Type Statement::InternalFetchScroll(int16_t orientation, int64_t offset)
+        {
+            UNREFERENCED_PARAMETER(offset);
+
+            if (orientation != SQL_FETCH_NEXT)
+            {
+                AddStatusRecord(SqlState::SHY106_FETCH_TYPE_OUT_OF_RANGE, "The value specified for the argument FetchOrientation was not SQL_FETCH_NEXT.");
+                return SqlResult::AI_ERROR;
+            }
+
+            return InternalFetchRow();
         }
 
         void Statement::FetchRow()
@@ -559,22 +813,28 @@ namespace ignite
             IGNITE_ODBC_API_CALL(InternalFetchRow());
         }
 
-        SqlResult Statement::InternalFetchRow()
+        SqlResult::Type Statement::InternalFetchRow()
         {
             if (rowsFetched)
                 *rowsFetched = 0;
 
             if (!currentQuery.get())
             {
-                AddStatusRecord(SQL_STATE_24000_INVALID_CURSOR_STATE,
+                AddStatusRecord(SqlState::S24000_INVALID_CURSOR_STATE,
                     "Cursor is not in the open state.");
 
-                return SQL_RESULT_ERROR;
+                return SqlResult::AI_ERROR;
             }
 
-            SqlResult res = currentQuery->FetchNextRow(columnBindings);
+            if (columnBindOffset)
+            {
+                for (app::ColumnBindingMap::iterator it = columnBindings.begin(); it != columnBindings.end(); ++it)
+                    it->second.SetByteOffset(*columnBindOffset);
+            }
+            
+            SqlResult::Type res = currentQuery->FetchNextRow(columnBindings);
 
-            if (res == SQL_RESULT_SUCCESS)
+            if (res == SqlResult::AI_SUCCESS)
             {
                 if (rowsFetched)
                     *rowsFetched = 1;
@@ -599,19 +859,21 @@ namespace ignite
             return currentQuery.get() && currentQuery->DataAvailable();
         }
 
-        void Statement::NextResults()
+        void Statement::MoreResults()
         {
-            IGNITE_ODBC_API_CALL(InternalNextResults());
+            IGNITE_ODBC_API_CALL(InternalMoreResults());
         }
 
-        SqlResult Statement::InternalNextResults()
+        SqlResult::Type Statement::InternalMoreResults()
         {
             if (!currentQuery.get())
-                return SQL_RESULT_NO_DATA;
+            {
+                AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query is not executed.");
 
-            SqlResult result = currentQuery->Close();
+                return SqlResult::AI_ERROR;
+            }
 
-            return result == SQL_RESULT_SUCCESS ? SQL_RESULT_NO_DATA : result;
+            return currentQuery->NextResultSet();
         }
 
         void Statement::GetColumnAttribute(uint16_t colIdx, uint16_t attrId,
@@ -621,7 +883,7 @@ namespace ignite
                 strbuf, buflen, reslen, numbuf));
         }
 
-        SqlResult Statement::InternalGetColumnAttribute(uint16_t colIdx,
+        SqlResult::Type Statement::InternalGetColumnAttribute(uint16_t colIdx,
             uint16_t attrId, char* strbuf, int16_t buflen, int16_t* reslen,
             SqlLen* numbuf)
         {
@@ -629,17 +891,17 @@ namespace ignite
 
             if (!meta)
             {
-                AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query is not executed.");
+                AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query is not executed.");
 
-                return SQL_RESULT_ERROR;
+                return SqlResult::AI_ERROR;
             }
 
             if (colIdx > meta->size() + 1 || colIdx < 1)
             {
-                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR,
+                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
                     "Column index is out of range.", 0, colIdx);
 
-                return SQL_RESULT_ERROR;
+                return SqlResult::AI_ERROR;
             }
 
             const meta::ColumnMeta& columnMeta = meta->at(colIdx - 1);
@@ -666,13 +928,13 @@ namespace ignite
 
             if (!found)
             {
-                AddStatusRecord(SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
                     "Unknown attribute.");
 
-                return SQL_RESULT_ERROR;
+                return SqlResult::AI_ERROR;
             }
 
-            return SQL_RESULT_SUCCESS;
+            return SqlResult::AI_SUCCESS;
         }
 
         int64_t Statement::AffectedRows()
@@ -684,18 +946,18 @@ namespace ignite
             return rowCnt;
         }
 
-        SqlResult Statement::InternalAffectedRows(int64_t& rowCnt)
+        SqlResult::Type Statement::InternalAffectedRows(int64_t& rowCnt)
         {
             if (!currentQuery.get())
             {
-                AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query is not executed.");
+                AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query is not executed.");
 
-                return SQL_RESULT_ERROR;
+                return SqlResult::AI_ERROR;
             }
 
             rowCnt = currentQuery->AffectedRows();
 
-            return SQL_RESULT_SUCCESS;
+            return SqlResult::AI_SUCCESS;
         }
 
         void Statement::SetRowsFetchedPtr(size_t* ptr)
@@ -723,58 +985,47 @@ namespace ignite
             IGNITE_ODBC_API_CALL(InternalSelectParam(paramPtr));
         }
 
-        SqlResult Statement::InternalSelectParam(void** paramPtr)
+        SqlResult::Type Statement::InternalSelectParam(void** paramPtr)
         {
             if (!paramPtr)
             {
-                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR,
+                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
                     "Invalid parameter: ValuePtrPtr is null.");
 
-                return SQL_RESULT_ERROR;
+                return SqlResult::AI_ERROR;
             }
 
             if (!currentQuery.get())
             {
-                AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query is not prepared.");
+                AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query is not prepared.");
 
-                return SQL_RESULT_ERROR;
+                return SqlResult::AI_ERROR;
             }
 
-            app::ParameterBindingMap::iterator it;
+            app::Parameter *selected = parameters.GetSelectedParameter();
 
-            if (currentParamIdx)
+            if (selected && !selected->IsDataReady())
             {
-                it = paramBindings.find(currentParamIdx);
+                AddStatusRecord(SqlState::S22026_DATA_LENGTH_MISMATCH,
+                    "Less data was sent for a parameter than was specified with "
+                    "the StrLen_or_IndPtr argument in SQLBindParameter.");
 
-                if (it != paramBindings.end() && !it->second.IsDataReady())
-                {
-                    AddStatusRecord(SQL_STATE_22026_DATA_LENGTH_MISMATCH,
-                        "Less data was sent for a parameter than was specified with "
-                        "the StrLen_or_IndPtr argument in SQLBindParameter.");
-
-                    return SQL_RESULT_ERROR;
-                }
+                return SqlResult::AI_ERROR;
             }
 
-            for (it = paramBindings.begin(); it != paramBindings.end(); ++it)
+            selected = parameters.SelectNextParameter();
+
+            if (selected)
             {
-                uint16_t paramIdx = it->first;
-                app::Parameter& param = it->second;
+                *paramPtr = selected->GetBuffer().GetData();
 
-                if (!param.IsDataReady())
-                {
-                    *paramPtr = param.GetBuffer().GetData();
-
-                    currentParamIdx = paramIdx;
-
-                    return SQL_RESULT_NEED_DATA;
-                }
+                return SqlResult::AI_NEED_DATA;
             }
 
-            SqlResult res = currentQuery->Execute();
+            SqlResult::Type res = currentQuery->Execute();
 
-            if (res != SQL_RESULT_SUCCESS)
-                res = SQL_RESULT_SUCCESS_WITH_INFO;
+            if (res != SqlResult::AI_SUCCESS)
+                res = SqlResult::AI_SUCCESS_WITH_INFO;
 
             return res;
         }
@@ -784,40 +1035,38 @@ namespace ignite
             IGNITE_ODBC_API_CALL(InternalPutData(data, len));
         }
 
-        SqlResult Statement::InternalPutData(void* data, SqlLen len)
+        SqlResult::Type Statement::InternalPutData(void* data, SqlLen len)
         {
             if (!data && len != 0 && len != SQL_DEFAULT_PARAM && len != SQL_NULL_DATA)
             {
-                AddStatusRecord(SQL_STATE_HY009_INVALID_USE_OF_NULL_POINTER,
+                AddStatusRecord(SqlState::SHY009_INVALID_USE_OF_NULL_POINTER,
                     "Invalid parameter: DataPtr is null StrLen_or_Ind is not 0, "
                     "SQL_DEFAULT_PARAM, or SQL_NULL_DATA.");
 
-                return SQL_RESULT_ERROR;
+                return SqlResult::AI_ERROR;
             }
 
-            if (currentParamIdx == 0)
+            if (!parameters.IsParameterSelected())
             {
-                AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR,
+                AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR,
                     "Parameter is not selected with the SQLParamData.");
 
-                return SQL_RESULT_ERROR;
+                return SqlResult::AI_ERROR;
             }
 
-            app::ParameterBindingMap::iterator it = paramBindings.find(currentParamIdx);
+            app::Parameter* param = parameters.GetSelectedParameter();
 
-            if (it == paramBindings.end())
+            if (!param)
             {
-                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR,
+                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
                     "Selected parameter has been unbound.");
 
-                return SQL_RESULT_ERROR;
+                return SqlResult::AI_ERROR;
             }
 
-            app::Parameter& param = it->second;
+            param->PutData(data, len);
 
-            param.PutData(data, len);
-
-            return SQL_RESULT_SUCCESS;
+            return SqlResult::AI_SUCCESS;
         }
 
         void Statement::DescribeParam(int16_t paramNum, int16_t* dataType,
@@ -827,42 +1076,36 @@ namespace ignite
                 dataType, paramSize, decimalDigits, nullable));
         }
 
-        SqlResult Statement::InternalDescribeParam(int16_t paramNum, int16_t* dataType,
+        SqlResult::Type Statement::InternalDescribeParam(int16_t paramNum, int16_t* dataType,
             SqlUlen* paramSize, int16_t* decimalDigits, int16_t* nullable)
         {
             query::Query *qry = currentQuery.get();
             if (!qry)
             {
-                AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query is not prepared.");
+                AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query is not prepared.");
 
-                return SQL_RESULT_ERROR;
+                return SqlResult::AI_ERROR;
             }
 
-            if (qry->GetType() != query::Query::DATA)
+            if (qry->GetType() != query::QueryType::DATA)
             {
-                AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query is not SQL data query.");
+                AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query is not SQL data query.");
 
-                return SQL_RESULT_ERROR;
+                return SqlResult::AI_ERROR;
             }
 
-            int8_t type = 0;
+            int8_t type = parameters.GetParamType(paramNum, 0);
 
-            if (paramNum > 0 && static_cast<size_t>(paramNum) <= paramTypes.size())
-                type = paramTypes[paramNum - 1];
-
-            LOG_MSG("Type: %d\n", type);
+            LOG_MSG("Type: " << type);
 
             if (!type)
             {
-                SqlResult res = UpdateParamsMeta();
+                SqlResult::Type res = UpdateParamsMeta();
 
-                if (res != SQL_RESULT_SUCCESS)
+                if (res != SqlResult::AI_SUCCESS)
                     return res;
 
-                if (paramNum < 1 || static_cast<size_t>(paramNum) > paramTypes.size())
-                    type = impl::binary::IGNITE_HDR_NULL;
-                else
-                    type = paramTypes[paramNum - 1];
+                type = parameters.GetParamType(paramNum, impl::binary::IGNITE_HDR_NULL);
             }
 
             if (dataType)
@@ -877,50 +1120,58 @@ namespace ignite
             if (nullable)
                 *nullable = type_traits::BinaryTypeNullability(type);
 
-            return SQL_RESULT_SUCCESS;
+            return SqlResult::AI_SUCCESS;
         }
 
-        SqlResult Statement::UpdateParamsMeta()
+        SqlResult::Type Statement::UpdateParamsMeta()
         {
             query::Query *qry0 = currentQuery.get();
 
             assert(qry0 != 0);
-            assert(qry0->GetType() == query::Query::DATA);
+            assert(qry0->GetType() == query::QueryType::DATA);
 
             query::DataQuery* qry = static_cast<query::DataQuery*>(qry0);
 
-            const std::string& cacheName = connection.GetCache();
+            const std::string& schema = connection.GetSchema();
             const std::string& sql = qry->GetSql();
 
-            QueryGetParamsMetaRequest req(cacheName, sql);
+            QueryGetParamsMetaRequest req(schema, sql);
             QueryGetParamsMetaResponse rsp;
 
             try
             {
                 connection.SyncMessage(req, rsp);
             }
+            catch (const OdbcError& err)
+            {
+                AddStatusRecord(err);
+
+                return SqlResult::AI_ERROR;
+            }
             catch (const IgniteError& err)
             {
-                AddStatusRecord(SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT, err.GetText());
+                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
 
-                return SQL_RESULT_ERROR;
+                return SqlResult::AI_ERROR;
             }
 
-            if (rsp.GetStatus() != RESPONSE_STATUS_SUCCESS)
+            if (rsp.GetStatus() != ResponseStatus::SUCCESS)
             {
-                LOG_MSG("Error: %s\n", rsp.GetError().c_str());
+                LOG_MSG("Error: " << rsp.GetError());
 
-                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, rsp.GetError());
+                AddStatusRecord(ResponseStatusToSqlState(rsp.GetStatus()), rsp.GetError());
 
-                return SQL_RESULT_ERROR;
+                return SqlResult::AI_ERROR;
             }
 
-            paramTypes = rsp.GetTypeIds();
+            parameters.UpdateParamsTypes(rsp.GetTypeIds());
 
-            for (size_t i = 0; i < paramTypes.size(); ++i)
-                LOG_MSG("[%zu] Parameter type: %u\n", i, paramTypes[i]);
+            for (size_t i = 0; i < rsp.GetTypeIds().size(); ++i)
+            {
+                LOG_MSG("[" << i << "] Parameter type: " << rsp.GetTypeIds()[i]);
+            }
 
-            return SQL_RESULT_SUCCESS;
+            return SqlResult::AI_SUCCESS;
         }
     }
 }

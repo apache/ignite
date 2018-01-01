@@ -60,7 +60,6 @@ import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -114,10 +113,10 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
     public static final boolean TRANSACTIONAL = false;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (isFirstGrid(gridName)) {
+        if (isFirstGrid(igniteInstanceName)) {
             cfg.setClientMode(true);
 
             assert cfg.getDiscoverySpi() instanceof TcpDiscoverySpi : cfg.getDiscoverySpi();
@@ -152,13 +151,12 @@ public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
      * @see #getConfiguration().
      */
     protected CacheConfiguration<IntegerKey, Integer> getCacheConfiguration() {
-        CacheConfiguration<IntegerKey, Integer> cfg = new CacheConfiguration<>();
+        CacheConfiguration<IntegerKey, Integer> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cfg.setAtomicityMode(TRANSACTIONAL ? CacheAtomicityMode.TRANSACTIONAL : CacheAtomicityMode.ATOMIC);
         cfg.setCacheMode(CacheMode.PARTITIONED);
         cfg.setName(TEST_CACHE_NAME);
         cfg.setAffinity(new RendezvousAffinityFunction(true /* machine-safe */, 271));
-        cfg.setAtomicWriteOrderMode(PRIMARY);
         cfg.setBackups(1);
         cfg.setRebalanceMode(CacheRebalanceMode.SYNC);
         cfg.setWriteSynchronizationMode(FULL_SYNC);

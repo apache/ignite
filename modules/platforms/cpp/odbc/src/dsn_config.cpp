@@ -96,11 +96,20 @@ namespace ignite
 
             uint16_t port = ReadDsnInt(dsn, Configuration::Key::port, config.GetTcpPort());
 
-            std::string cache = ReadDsnString(dsn, Configuration::Key::cache, config.GetCache().c_str());
+            std::string schema = ReadDsnString(dsn, Configuration::Key::schema, config.GetSchema().c_str());
 
             bool distributedJoins = ReadDsnBool(dsn, Configuration::Key::distributedJoins, config.IsDistributedJoins());
 
             bool enforceJoinOrder = ReadDsnBool(dsn, Configuration::Key::enforceJoinOrder, config.IsEnforceJoinOrder());
+
+            bool replicatedOnly = ReadDsnBool(dsn, Configuration::Key::replicatedOnly, config.IsReplicatedOnly());
+
+            bool collocated = ReadDsnBool(dsn, Configuration::Key::collocated, config.IsCollocated());
+
+            bool lazy = ReadDsnBool(dsn, Configuration::Key::lazy, config.IsLazy());
+
+            bool skipReducerOnUpdate =
+                ReadDsnBool(dsn, Configuration::Key::skipReducerOnUpdate, config.IsSkipReducerOnUpdate());
 
             std::string version = ReadDsnString(dsn, Configuration::Key::protocolVersion,
                 config.GetProtocolVersion().ToString().c_str());
@@ -113,9 +122,13 @@ namespace ignite
             config.SetAddress(address);
             config.SetHost(server);
             config.SetTcpPort(port);
-            config.SetCache(cache);
+            config.SetSchema(schema);
             config.SetDistributedJoins(distributedJoins);
             config.SetEnforceJoinOrder(enforceJoinOrder);
+            config.SetReplicatedOnly(replicatedOnly);
+            config.SetCollocated(collocated);
+            config.SetLazy(lazy);
+            config.SetSkipReducerOnUpdate(skipReducerOnUpdate);
             config.SetProtocolVersion(version);
             config.SetPageSize(pageSize);
         }

@@ -23,8 +23,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -33,8 +31,9 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public abstract class GridCacheAbstractPartitionedByteArrayValuesSelfTest extends
     GridCacheAbstractDistributedByteArrayValuesSelfTest {
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TransactionConfiguration tCfg = new TransactionConfiguration();
 
@@ -47,45 +46,13 @@ public abstract class GridCacheAbstractPartitionedByteArrayValuesSelfTest extend
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration0() {
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setNearConfiguration(nearConfiguration());
         cfg.setBackups(1);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setSwapEnabled(true);
-        cfg.setEvictSynchronized(false);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration offheapCacheConfiguration0() {
-        CacheConfiguration cfg = new CacheConfiguration();
-
-        cfg.setCacheMode(PARTITIONED);
-        cfg.setAtomicityMode(TRANSACTIONAL);
-        cfg.setNearConfiguration(nearConfiguration());
-        cfg.setBackups(1);
-        cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setMemoryMode(OFFHEAP_VALUES);
-        cfg.setOffHeapMaxMemory(100 * 1024 * 1024);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration offheapTieredCacheConfiguration0() {
-        CacheConfiguration cfg = new CacheConfiguration();
-
-        cfg.setCacheMode(PARTITIONED);
-        cfg.setAtomicityMode(TRANSACTIONAL);
-        cfg.setNearConfiguration(nearConfiguration());
-        cfg.setBackups(1);
-        cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setMemoryMode(OFFHEAP_TIERED);
-        cfg.setOffHeapMaxMemory(100 * 1024 * 1024);
 
         return cfg;
     }

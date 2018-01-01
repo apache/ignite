@@ -58,8 +58,8 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
     private boolean client;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
 
@@ -69,7 +69,7 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
             CacheConfiguration[] ccfgs = new CacheConfiguration[CACHES];
 
             for (int i = 0; i < CACHES; i++) {
-                CacheConfiguration ccfg = new CacheConfiguration();
+                CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
                 ccfg.setCacheMode(PARTITIONED);
                 ccfg.setAtomicityMode(TRANSACTIONAL);

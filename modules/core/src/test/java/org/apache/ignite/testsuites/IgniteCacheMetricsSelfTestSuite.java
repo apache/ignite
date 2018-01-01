@@ -18,7 +18,12 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMBeanTest;
+import org.apache.ignite.internal.processors.cache.CacheGroupsMetricsRebalanceTest;
+import org.apache.ignite.internal.processors.cache.CacheMetricsEnableRuntimeTest;
 import org.apache.ignite.internal.processors.cache.CacheMetricsForClusterGroupSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheValidatorMetricsTest;
+import org.apache.ignite.internal.processors.cache.OffheapCacheMetricsForClusterGroupSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicPartitionedMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicPartitionedTckMetricsSelfTestImpl;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearMetricsSelfTest;
@@ -26,10 +31,10 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePar
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheAtomicReplicatedMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedMetricsSelfTest;
-import org.apache.ignite.internal.processors.cache.local.CacheOffHeapAndSwapMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalMetricsNoStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalTckMetricsSelfTestImpl;
+import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicMetricsNoReadThroughSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalMetricsSelfTest;
 
 /**
@@ -44,11 +49,11 @@ public class IgniteCacheMetricsSelfTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Cache Metrics Test Suite");
 
         suite.addTestSuite(GridCacheLocalMetricsSelfTest.class);
+        suite.addTestSuite(GridCacheLocalAtomicMetricsNoReadThroughSelfTest.class);
         suite.addTestSuite(GridCacheNearMetricsSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedMetricsSelfTest.class);
         suite.addTestSuite(GridCachePartitionedMetricsSelfTest.class);
         suite.addTestSuite(GridCachePartitionedHitsAndMissesSelfTest.class);
-        suite.addTestSuite(CacheOffHeapAndSwapMetricsSelfTest.class);
 
         // Atomic cache.
         suite.addTestSuite(GridCacheAtomicLocalMetricsSelfTest.class);
@@ -58,8 +63,16 @@ public class IgniteCacheMetricsSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheAtomicPartitionedTckMetricsSelfTestImpl.class);
         suite.addTestSuite(GridCacheAtomicLocalTckMetricsSelfTestImpl.class);
 
+        suite.addTestSuite(CacheGroupsMetricsRebalanceTest.class);
+
+        suite.addTestSuite(CacheGroupMetricsMBeanTest.class);
+        suite.addTestSuite(CacheValidatorMetricsTest.class);
+
+        suite.addTestSuite(CacheMetricsEnableRuntimeTest.class);
+
         // Cluster wide metrics.
         suite.addTestSuite(CacheMetricsForClusterGroupSelfTest.class);
+        suite.addTestSuite(OffheapCacheMetricsForClusterGroupSelfTest.class);
 
         return suite;
     }

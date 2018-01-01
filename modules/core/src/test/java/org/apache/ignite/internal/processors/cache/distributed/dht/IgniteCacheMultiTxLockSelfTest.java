@@ -64,8 +64,8 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -73,19 +73,19 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(CACHE_NAME);
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(PRIMARY_SYNC);
         ccfg.setBackups(2);
         ccfg.setCacheMode(PARTITIONED);
-        ccfg.setStartSize(100000);
 
         LruEvictionPolicy plc = new LruEvictionPolicy();
         plc.setMaxSize(100000);
 
         ccfg.setEvictionPolicy(plc);
+        ccfg.setOnheapCacheEnabled(true);
 
         c.setCacheConfiguration(ccfg);
 

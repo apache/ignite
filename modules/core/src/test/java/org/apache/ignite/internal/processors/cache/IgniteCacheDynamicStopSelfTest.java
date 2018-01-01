@@ -67,7 +67,7 @@ public class IgniteCacheDynamicStopSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void checkStopStartCacheWithDataLoader(final boolean allowOverwrite) throws Exception {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
 
@@ -79,7 +79,7 @@ public class IgniteCacheDynamicStopSelfTest extends GridCommonAbstractTest {
             /** {@inheritDoc} */
             @Override public Object call() throws Exception {
                 while (!stop.get()) {
-                    try (IgniteDataStreamer<Integer, Integer> str = ignite(0).dataStreamer(null)) {
+                    try (IgniteDataStreamer<Integer, Integer> str = ignite(0).dataStreamer(DEFAULT_CACHE_NAME)) {
                         str.allowOverwrite(allowOverwrite);
 
                         int i = 0;
@@ -119,7 +119,7 @@ public class IgniteCacheDynamicStopSelfTest extends GridCommonAbstractTest {
         try {
             Thread.sleep(500);
 
-            ignite(0).destroyCache(null);
+            ignite(0).destroyCache(DEFAULT_CACHE_NAME);
 
             Thread.sleep(500);
 
@@ -135,11 +135,11 @@ public class IgniteCacheDynamicStopSelfTest extends GridCommonAbstractTest {
 
         int cnt = 0;
 
-        for (Cache.Entry<Object, Object> ignored : ignite(0).cache(null))
+        for (Cache.Entry<Object, Object> ignored : ignite(0).cache(DEFAULT_CACHE_NAME))
             cnt++;
 
         info(">>> cnt=" + cnt);
 
-        ignite(0).destroyCache(null);
+        ignite(0).destroyCache(DEFAULT_CACHE_NAME);
     }
 }

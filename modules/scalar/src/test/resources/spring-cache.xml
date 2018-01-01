@@ -26,6 +26,7 @@
         <property name="cacheConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="default"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="nearConfiguration">
@@ -78,9 +79,6 @@
 
     <!-- Template for all example cache configurations. -->
     <bean id="cache-template" abstract="true" class="org.apache.ignite.configuration.CacheConfiguration">
-        <!-- Initial cache size. -->
-        <property name="startSize" value="3000000"/>
-
         <!-- Set synchronous rebalancing (default is asynchronous). -->
         <property name="rebalanceMode" value="SYNC"/>
 

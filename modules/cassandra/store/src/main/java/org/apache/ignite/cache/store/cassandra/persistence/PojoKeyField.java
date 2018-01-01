@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cache.store.cassandra.persistence;
 
-import java.beans.PropertyDescriptor;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.w3c.dom.Element;
 
@@ -55,7 +54,7 @@ public class PojoKeyField extends PojoField {
             try {
                 sortOrder = SortOrder.valueOf(el.getAttribute(SORT_ATTR).trim().toUpperCase());
             }
-            catch (IllegalArgumentException e) {
+            catch (IllegalArgumentException ignored) {
                 throw new IllegalArgumentException("Incorrect sort order '" + el.getAttribute(SORT_ATTR) + "' specified");
             }
         }
@@ -64,10 +63,15 @@ public class PojoKeyField extends PojoField {
     /**
      * Constructs Ignite cache key POJO object descriptor.
      *
-     * @param desc property descriptor.
+     * @param accessor property descriptor.
      */
-    public PojoKeyField(PropertyDescriptor desc) {
-        super(desc);
+    public PojoKeyField(PojoFieldAccessor accessor) {
+        super(accessor);
+
+        QuerySqlField sqlField = (QuerySqlField)accessor.getAnnotation(QuerySqlField.class);
+
+        if (sqlField != null && sqlField.descending())
+            sortOrder = SortOrder.DESC;
     }
 
     /**
@@ -77,11 +81,5 @@ public class PojoKeyField extends PojoField {
      */
     public SortOrder getSortOrder() {
         return sortOrder;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void init(QuerySqlField sqlField) {
-        if (sqlField.descending())
-            sortOrder = SortOrder.DESC;
     }
 }

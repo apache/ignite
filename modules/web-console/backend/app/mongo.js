@@ -17,6 +17,8 @@
 
 'use strict';
 
+const passportMongo = require('passport-local-mongoose');
+
 // Fire me up!
 
 /**
@@ -24,16 +26,10 @@
  */
 module.exports = {
     implements: 'mongo',
-    inject: ['require(passport-local-mongoose)', 'settings', 'ignite_modules/mongo:*', 'mongoose']
+    inject: ['settings', 'mongoose']
 };
 
-module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose) {
-    // Use native promises
-    mongoose.Promise = global.Promise;
-
-    // Connect to mongoDB database.
-    mongoose.connect(settings.mongoUrl, {server: {poolSize: 4}});
-
+const defineSchema = (mongoose) => {
     const Schema = mongoose.Schema;
     const ObjectId = mongoose.Schema.Types.ObjectId;
     const result = { connection: mongoose.connection };
@@ -45,9 +41,12 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         firstName: String,
         lastName: String,
         email: String,
+        phone: String,
         company: String,
         country: String,
+        registered: Date,
         lastLogin: Date,
+        lastActivity: Date,
         admin: Boolean,
         token: String,
         resetPasswordToken: String
@@ -59,27 +58,34 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         usernameLowerCase: true
     });
 
+    const transform = (doc, ret) => {
+        return {
+            _id: ret._id,
+            email: ret.email,
+            phone: ret.phone,
+            firstName: ret.firstName,
+            lastName: ret.lastName,
+            company: ret.company,
+            country: ret.country,
+            admin: ret.admin,
+            token: ret.token,
+            registered: ret.registered,
+            lastLogin: ret.lastLogin,
+            lastActivity: ret.lastActivity
+        };
+    };
+
     // Configure transformation to JSON.
-    AccountSchema.set('toJSON', {
-        transform: (doc, ret) => {
-            return {
-                _id: ret._id,
-                email: ret.email,
-                firstName: ret.firstName,
-                lastName: ret.lastName,
-                company: ret.company,
-                country: ret.country,
-                admin: ret.admin,
-                token: ret.token,
-                lastLogin: ret.lastLogin
-            };
-        }
-    });
+    AccountSchema.set('toJSON', { transform });
+
+    // Configure transformation to JSON.
+    AccountSchema.set('toObject', { transform });
 
     result.errCodes = {
         DUPLICATE_KEY_ERROR: 11000,
         DUPLICATE_KEY_UPDATE_ERROR: 11001
     };
+
     // Define Account model.
     result.Account = mongoose.model('Account', AccountSchema);
 
@@ -96,10 +102,13 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
 
     // Define Domain model schema.
     const DomainModelSchema = new Schema({
-        space: {type: ObjectId, ref: 'Space', index: true},
+        space: {type: ObjectId, ref: 'Space', index: true, required: true},
         caches: [{type: ObjectId, ref: 'Cache'}],
         queryMetadata: {type: String, enum: ['Annotations', 'Configuration']},
         kind: {type: String, enum: ['query', 'store', 'both']},
+        tableName: String,
+        keyFieldName: String,
+        valueFieldName: String,
         databaseSchema: String,
         databaseTable: String,
         keyType: String,
@@ -116,6 +125,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             javaFieldName: String,
             javaFieldType: String
         }],
+        queryKeyFields: [String],
         fields: [{name: String, className: String}],
         aliases: [{field: String, alias: String}],
         indexes: [{
@@ -133,12 +143,33 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
 
     // Define Cache schema.
     const CacheSchema = new Schema({
-        space: {type: ObjectId, ref: 'Space', index: true},
+        space: {type: ObjectId, ref: 'Space', index: true, required: true},
         name: {type: String},
+        groupName: {type: String},
         clusters: [{type: ObjectId, ref: 'Cluster'}],
         domains: [{type: ObjectId, ref: 'DomainModel'}],
         cacheMode: {type: String, enum: ['PARTITIONED', 'REPLICATED', 'LOCAL']},
         atomicityMode: {type: String, enum: ['ATOMIC', 'TRANSACTIONAL']},
+        partitionLossPolicy: {type: String, enum: ['READ_ONLY_SAFE', 'READ_ONLY_ALL', 'READ_WRITE_SAFE', 'READ_WRITE_ALL', 'IGNORE']},
+
+        affinity: {
+            kind: {type: String, enum: ['Default', 'Rendezvous', 'Fair', 'Custom']},
+            Rendezvous: {
+                affinityBackupFilter: String,
+                partitions: Number,
+                excludeNeighbors: Boolean
+            },
+            Fair: {
+                affinityBackupFilter: String,
+                partitions: Number,
+                excludeNeighbors: Boolean
+            },
+            Custom: {
+                className: String
+            }
+        },
+
+        affinityMapper: String,
 
         nodeFilter: {
             kind: {type: String, enum: ['Default', 'Exclude', 'IGFS', 'OnNodes', 'Custom']},
@@ -158,6 +189,8 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         offHeapMaxMemory: Number,
         startSize: Number,
         swapEnabled: Boolean,
+
+        onheapCacheEnabled: Boolean,
 
         evictionPolicy: {
             kind: {type: String, enum: ['LRU', 'FIFO', 'SORTED']},
@@ -235,6 +268,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         writeBehindFlushSize: Number,
         writeBehindFlushFrequency: Number,
         writeBehindFlushThreadCount: Number,
+        writeBehindCoalescing: {type: Boolean, default: true},
 
         invalidate: Boolean,
         defaultLockTimeout: Number,
@@ -247,6 +281,8 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         longQueryWarningTimeout: Number,
         sqlFunctionClasses: [String],
         snapshotableIndex: Boolean,
+        queryDetailMetricsSize: Number,
+        queryParallelism: Number,
         statisticsEnabled: Boolean,
         managementEnabled: Boolean,
         readFromBackup: Boolean,
@@ -295,7 +331,12 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
                     maxSize: Number
                 }
             }
-        }
+        },
+        evictionFilter: String,
+        memoryPolicyName: String,
+        dataRegionName: String,
+        sqlIndexMaxInlineSize: Number,
+        topologyValidator: String
     });
 
     CacheSchema.index({name: 1, space: 1}, {unique: true});
@@ -304,7 +345,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
     result.Cache = mongoose.model('Cache', CacheSchema);
 
     const IgfsSchema = new Schema({
-        space: {type: ObjectId, ref: 'Space', index: true},
+        space: {type: ObjectId, ref: 'Space', index: true, required: true},
         name: {type: String},
         clusters: [{type: ObjectId, ref: 'Cluster'}],
         affinnityGroupSize: Number,
@@ -345,7 +386,8 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             userName: String
         },
         colocateMetadata: Boolean,
-        relaxedConsistency: Boolean
+        relaxedConsistency: Boolean,
+        updateFileLengthOnFlush: Boolean
     });
 
     IgfsSchema.index({name: 1, space: 1}, {unique: true});
@@ -355,8 +397,9 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
 
     // Define Cluster schema.
     const ClusterSchema = new Schema({
-        space: {type: ObjectId, ref: 'Space', index: true},
+        space: {type: ObjectId, ref: 'Space', index: true, required: true},
         name: {type: String},
+        activeOnStart: {type: Boolean, default: true},
         localHost: String,
         discovery: {
             localAddress: String,
@@ -382,7 +425,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             authenticator: String,
             forceServerMode: Boolean,
             clientReconnectDisabled: Boolean,
-            kind: {type: String, enum: ['Vm', 'Multicast', 'S3', 'Cloud', 'GoogleStorage', 'Jdbc', 'SharedFs', 'ZooKeeper']},
+            kind: {type: String, enum: ['Vm', 'Multicast', 'S3', 'Cloud', 'GoogleStorage', 'Jdbc', 'SharedFs', 'ZooKeeper', 'Kubernetes']},
             Vm: {
                 addresses: [String]
             },
@@ -503,12 +546,29 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
                 basePath: String,
                 serviceName: String,
                 allowDuplicateRegistrations: Boolean
+            },
+            Kubernetes: {
+                serviceName: String,
+                namespace: String,
+                masterUrl: String,
+                accountToken: String
             }
         },
         atomicConfiguration: {
             backups: Number,
             cacheMode: {type: String, enum: ['LOCAL', 'REPLICATED', 'PARTITIONED']},
-            atomicSequenceReserveSize: Number
+            atomicSequenceReserveSize: Number,
+            affinity: {
+                kind: {type: String, enum: ['Default', 'Rendezvous', 'Custom']},
+                Rendezvous: {
+                    affinityBackupFilter: String,
+                    partitions: Number,
+                    excludeNeighbors: Boolean
+                },
+                Custom: {
+                    className: String
+                }
+            }
         },
         binaryConfiguration: {
             idMapper: String,
@@ -646,7 +706,10 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
         odbc: {
             odbcEnabled: Boolean,
             endpointAddress: String,
-            maxOpenCursors: Number
+            socketSendBufferSize: Number,
+            socketReceiveBufferSize: Number,
+            maxOpenCursors: Number,
+            threadPoolSize: Number
         },
         attributes: [{name: String, value: String}],
         collision: {
@@ -792,6 +855,17 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
                 className: String
             }
         }],
+        clientConnectorConfiguration: {
+            enabled: Boolean,
+            host: String,
+            port: Number,
+            portRange: Number,
+            socketSendBufferSize: Number,
+            socketReceiveBufferSize: Number,
+            tcpNoDelay: {type: Boolean, default: true},
+            maxOpenCursorsPerConnection: Number,
+            threadPoolSize: Number
+        },
         loadBalancingSpi: [{
             kind: {type: String, enum: ['RoundRobin', 'Adaptive', 'WeightedRandom', 'Custom']},
             RoundRobin: {
@@ -823,7 +897,193 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             Custom: {
                 className: String
             }
-        }]
+        }],
+        deploymentSpi: {
+            kind: {type: String, enum: ['URI', 'Local', 'Custom']},
+            URI: {
+                uriList: [String],
+                temporaryDirectoryPath: String,
+                scanners: [String],
+                listener: String,
+                checkMd5: Boolean,
+                encodeUri: Boolean
+            },
+            Local: {
+                listener: String
+            },
+            Custom: {
+                className: String
+            }
+        },
+        warmupClosure: String,
+        hadoopConfiguration: {
+            mapReducePlanner: {
+                kind: {type: String, enum: ['Weighted', 'Custom']},
+                Weighted: {
+                    localMapperWeight: Number,
+                    remoteMapperWeight: Number,
+                    localReducerWeight: Number,
+                    remoteReducerWeight: Number,
+                    preferLocalReducerThresholdWeight: Number
+                },
+                Custom: {
+                    className: String
+                }
+            },
+            finishedJobInfoTtl: Number,
+            maxParallelTasks: Number,
+            maxTaskQueueSize: Number,
+            nativeLibraryNames: [String]
+        },
+        serviceConfigurations: [{
+            name: String,
+            service: String,
+            maxPerNodeCount: Number,
+            totalCount: Number,
+            nodeFilter: {
+                kind: {type: String, enum: ['Default', 'Exclude', 'IGFS', 'OnNodes', 'Custom']},
+                Exclude: {
+                    nodeId: String
+                },
+                IGFS: {
+                    igfs: {type: ObjectId, ref: 'Igfs'}
+                },
+                Custom: {
+                    className: String
+                }
+            },
+            cache: {type: ObjectId, ref: 'Cache'},
+            affinityKey: String
+        }],
+        cacheSanityCheckEnabled: {type: Boolean, default: true},
+        classLoader: String,
+        consistentId: String,
+        failureDetectionTimeout: Number,
+        clientFailureDetectionTimeout: Number,
+        workDirectory: String,
+        lateAffinityAssignment: Boolean,
+        utilityCacheKeepAliveTime: Number,
+        asyncCallbackPoolSize: Number,
+        dataStreamerThreadPoolSize: Number,
+        queryThreadPoolSize: Number,
+        stripedPoolSize: Number,
+        serviceThreadPoolSize: Number,
+        utilityCacheThreadPoolSize: Number,
+        executorConfiguration: [{
+            name: String,
+            size: Number
+        }],
+        dataStorageConfiguration: {
+            systemRegionInitialSize: Number,
+            systemRegionMaxSize: Number,
+            pageSize: Number,
+            concurrencyLevel: Number,
+            defaultDataRegionConfiguration: {
+                name: String,
+                initialSize: Number,
+                maxSize: Number,
+                swapPath: String,
+                pageEvictionMode: {type: String, enum: ['DISABLED', 'RANDOM_LRU', 'RANDOM_2_LRU']},
+                evictionThreshold: Number,
+                emptyPagesPoolSize: Number,
+                metricsEnabled: Boolean,
+                metricsSubIntervalCount: Number,
+                metricsRateTimeInterval: Number,
+                persistenceEnabled: Boolean,
+                checkpointPageBufferSize: Number
+            },
+            dataRegionConfigurations: [{
+                name: String,
+                initialSize: Number,
+                maxSize: Number,
+                swapPath: String,
+                pageEvictionMode: {type: String, enum: ['DISABLED', 'RANDOM_LRU', 'RANDOM_2_LRU']},
+                evictionThreshold: Number,
+                emptyPagesPoolSize: Number,
+                metricsEnabled: Boolean,
+                metricsSubIntervalCount: Number,
+                metricsRateTimeInterval: Number,
+                persistenceEnabled: Boolean,
+                checkpointPageBufferSize: Number
+            }],
+            storagePath: String,
+            metricsEnabled: Boolean,
+            alwaysWriteFullPages: Boolean,
+            checkpointFrequency: Number,
+            checkpointPageBufferSize: Number,
+            checkpointThreads: Number,
+            checkpointWriteOrder: {type: String, enum: ['RANDOM', 'SEQUENTIAL']},
+            walPath: String,
+            walArchivePath: String,
+            walMode: {type: String, enum: ['DEFAULT', 'LOG_ONLY', 'BACKGROUND', 'NONE']},
+            walSegments: Number,
+            walSegmentSize: Number,
+            walHistorySize: Number,
+            walFlushFrequency: Number,
+            walFsyncDelayNanos: Number,
+            walRecordIteratorBufferSize: Number,
+            lockWaitTime: Number,
+            walThreadLocalBufferSize: Number,
+            metricsSubIntervalCount: Number,
+            metricsRateTimeInterval: Number,
+            fileIOFactory: {type: String, enum: ['RANDOM', 'ASYNC']},
+            walAutoArchiveAfterInactivity: Number,
+            writeThrottlingEnabled: Boolean
+        },
+        memoryConfiguration: {
+            systemCacheInitialSize: Number,
+            systemCacheMaxSize: Number,
+            pageSize: Number,
+            concurrencyLevel: Number,
+            defaultMemoryPolicyName: String,
+            defaultMemoryPolicySize: Number,
+            memoryPolicies: [{
+                name: String,
+                initialSize: Number,
+                maxSize: Number,
+                swapFilePath: String,
+                pageEvictionMode: {type: String, enum: ['DISABLED', 'RANDOM_LRU', 'RANDOM_2_LRU']},
+                evictionThreshold: Number,
+                emptyPagesPoolSize: Number,
+                metricsEnabled: Boolean,
+                subIntervals: Number,
+                rateTimeInterval: Number
+            }]
+        },
+        longQueryWarningTimeout: Number,
+        sqlConnectorConfiguration: {
+            enabled: Boolean,
+            host: String,
+            port: Number,
+            portRange: Number,
+            socketSendBufferSize: Number,
+            socketReceiveBufferSize: Number,
+            tcpNoDelay: {type: Boolean, default: true},
+            maxOpenCursorsPerConnection: Number,
+            threadPoolSize: Number
+        },
+        persistenceStoreConfiguration: {
+            enabled: Boolean,
+            persistentStorePath: String,
+            metricsEnabled: Boolean,
+            alwaysWriteFullPages: Boolean,
+            checkpointingFrequency: Number,
+            checkpointingPageBufferSize: Number,
+            checkpointingThreads: Number,
+            walStorePath: String,
+            walArchivePath: String,
+            walMode: {type: String, enum: ['DEFAULT', 'LOG_ONLY', 'BACKGROUND', 'NONE']},
+            walSegments: Number,
+            walSegmentSize: Number,
+            walHistorySize: Number,
+            walFlushFrequency: Number,
+            walFsyncDelayNanos: Number,
+            walRecordIteratorBufferSize: Number,
+            lockWaitTime: Number,
+            rateTimeInterval: Number,
+            tlbSize: Number,
+            subIntervals: Number
+        }
     });
 
     ClusterSchema.index({name: 1, space: 1}, {unique: true});
@@ -833,7 +1093,7 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
 
     // Define Notebook schema.
     const NotebookSchema = new Schema({
-        space: {type: ObjectId, ref: 'Space', index: true},
+        space: {type: ObjectId, ref: 'Space', index: true, required: true},
         name: String,
         expandedParagraphs: [Number],
         paragraphs: [{
@@ -843,13 +1103,19 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
             result: {type: String, enum: ['none', 'table', 'bar', 'pie', 'line', 'area']},
             pageSize: Number,
             timeLineSpan: String,
+            maxPages: Number,
             hideSystemColumns: Boolean,
             cacheName: String,
+            useAsDefaultSchema: Boolean,
             chartsOptions: {barChart: {stacked: Boolean}, areaChart: {style: String}},
             rate: {
                 value: Number,
                 unit: Number
-            }
+            },
+            qryType: String,
+            nonCollocatedJoins: {type: Boolean, default: false},
+            enforceJoinOrder: {type: Boolean, default: false},
+            lazy: {type: Boolean, default: false}
         }]
     });
 
@@ -858,16 +1124,91 @@ module.exports.factory = function(passportMongo, settings, pluginMongo, mongoose
     // Define Notebook model.
     result.Notebook = mongoose.model('Notebook', NotebookSchema);
 
+    // Define Activities schema.
+    const ActivitiesSchema = new Schema({
+        owner: {type: ObjectId, ref: 'Account'},
+        date: Date,
+        group: String,
+        action: String,
+        amount: { type: Number, default: 0 }
+    });
+
+    ActivitiesSchema.index({ owner: 1, group: 1, action: 1, date: 1}, { unique: true });
+
+    // Define Activities model.
+    result.Activities = mongoose.model('Activities', ActivitiesSchema);
+
+    // Define Notifications schema.
+    const NotificationsSchema = new Schema({
+        owner: {type: ObjectId, ref: 'Account'},
+        date: Date,
+        message: String
+    });
+
+    // Define Notifications model.
+    result.Notifications = mongoose.model('Notifications', NotificationsSchema);
+
     result.handleError = function(res, err) {
         // TODO IGNITE-843 Send error to admin
         res.status(err.code || 500).send(err.message);
     };
 
-    // Registering the routes of all plugin modules
-    for (const name in pluginMongo) {
-        if (pluginMongo.hasOwnProperty(name))
-            pluginMongo[name].register(mongoose, result);
-    }
-
     return result;
+};
+
+module.exports.factory = function(settings, mongoose) {
+    // Use native promises
+    mongoose.Promise = global.Promise;
+
+    console.log('Trying to connect to local MongoDB...');
+
+    // Connect to mongoDB database.
+    return mongoose.connect(settings.mongoUrl, {server: {poolSize: 4}})
+        .catch(() => {
+            console.log('Failed to connect to local MongoDB, will try to download and start embedded MongoDB');
+
+            const {MongodHelper} = require('mongodb-prebuilt');
+            const {MongoDBDownload} = require('mongodb-download');
+
+            const helper = new MongodHelper(['--port', '27017', '--dbpath', `${process.cwd()}/user_data`]);
+
+            helper.mongoBin.mongoDBPrebuilt.mongoDBDownload = new MongoDBDownload({
+                downloadDir: `${process.cwd()}/libs/mongodb`,
+                version: '3.4.7'
+            });
+
+            let mongodRun;
+
+            if (settings.packaged) {
+                mongodRun = new Promise((resolve, reject) => {
+                    helper.resolveLink = resolve;
+                    helper.rejectLink = reject;
+
+                    helper.mongoBin.runCommand()
+                        .then(() => {
+                            helper.mongoBin.childProcess.removeAllListeners('close');
+
+                            helper.mongoBin.childProcess.stderr.on('data', (data) => helper.stderrHandler(data));
+                            helper.mongoBin.childProcess.stdout.on('data', (data) => helper.stdoutHandler(data));
+                            helper.mongoBin.childProcess.on('close', (code) => helper.closeHandler(code));
+                        });
+                });
+            }
+            else
+                mongodRun = helper.run();
+
+            return mongodRun
+                .catch((err) => console.log('Failed to start embedded MongoDB', err))
+                .then(() => {
+                    console.log('Embedded MongoDB successfully started');
+
+                    return mongoose.connect(settings.mongoUrl, {server: {poolSize: 4}});
+                })
+                .catch((err) => {
+                    console.log('Failed to connect to embedded MongoDB', err);
+
+                    return Promise.reject(err);
+                });
+        })
+        .then(() => defineSchema(mongoose));
 };

@@ -20,47 +20,52 @@
 #include "ignite/odbc/type_traits.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/message.h"
+#include "ignite/odbc/log.h"
+#include "ignite/odbc/odbc_error.h"
 #include "ignite/odbc/query/column_metadata_query.h"
 
 namespace
 {
-    enum ResultColumn
+    struct ResultColumn
     {
-        /** Catalog name. NULL if not applicable to the data source. */
-        TABLE_CAT = 1,
+        enum Type
+        {
+            /** Catalog name. NULL if not applicable to the data source. */
+            TABLE_CAT = 1,
 
-        /** Schema name. NULL if not applicable to the data source. */
-        TABLE_SCHEM,
+            /** Schema name. NULL if not applicable to the data source. */
+            TABLE_SCHEM,
 
-        /** Table name. */
-        TABLE_NAME,
+            /** Table name. */
+            TABLE_NAME,
 
-        /** Column name. */
-        COLUMN_NAME,
+            /** Column name. */
+            COLUMN_NAME,
 
-        /** SQL data type. */
-        DATA_TYPE,
+            /** SQL data type. */
+            DATA_TYPE,
 
-        /** Data source–dependent data type name. */
-        TYPE_NAME,
+            /** Data source–dependent data type name. */
+            TYPE_NAME,
 
-        /** Column size. */
-        COLUMN_SIZE,
+            /** Column size. */
+            COLUMN_SIZE,
 
-        /** The length in bytes of data transferred on fetch. */
-        BUFFER_LENGTH,
+            /** The length in bytes of data transferred on fetch. */
+            BUFFER_LENGTH,
 
-        /** The total number of significant digits to the right of the decimal point. */
-        DECIMAL_DIGITS,
+            /** The total number of significant digits to the right of the decimal point. */
+            DECIMAL_DIGITS,
 
-        /** Precision. */
-        NUM_PREC_RADIX,
+            /** Precision. */
+            NUM_PREC_RADIX,
 
-        /** Nullability of the data in column. */
-        NULLABLE,
+            /** Nullability of the data in column. */
+            NULLABLE,
 
-        /** A description of the column. */
-        REMARKS
+            /** A description of the column. */
+            REMARKS
+        };
     };
 }
 
@@ -73,12 +78,13 @@ namespace ignite
             ColumnMetadataQuery::ColumnMetadataQuery(diagnostic::Diagnosable& diag, 
                 Connection& connection, const std::string& schema,
                 const std::string& table, const std::string& column) :
-                Query(diag, COLUMN_METADATA),
+                Query(diag, QueryType::COLUMN_METADATA),
                 connection(connection),
                 schema(schema),
                 table(table),
                 column(column),
                 executed(false),
+                fetched(false),
                 meta(),
                 columnsMeta()
             {
@@ -111,16 +117,17 @@ namespace ignite
                 // No-op.
             }
 
-            SqlResult ColumnMetadataQuery::Execute()
+            SqlResult::Type ColumnMetadataQuery::Execute()
             {
                 if (executed)
                     Close();
 
-                SqlResult result = MakeRequestGetColumnsMeta();
+                SqlResult::Type result = MakeRequestGetColumnsMeta();
 
-                if (result == SQL_RESULT_SUCCESS)
+                if (result == SqlResult::AI_SUCCESS)
                 {
                     executed = true;
+                    fetched = false;
 
                     cursor = meta.begin();
                 }
@@ -133,94 +140,102 @@ namespace ignite
                 return columnsMeta;
             }
 
-            SqlResult ColumnMetadataQuery::FetchNextRow(app::ColumnBindingMap & columnBindings)
+            SqlResult::Type ColumnMetadataQuery::FetchNextRow(app::ColumnBindingMap & columnBindings)
             {
                 if (!executed)
                 {
-                    diag.AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query was not executed.");
+                    diag.AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query was not executed.");
 
-                    return SQL_RESULT_ERROR;
+                    return SqlResult::AI_ERROR;
                 }
 
+                if (!fetched)
+                    fetched = true;
+                else
+                    ++cursor;
+
                 if (cursor == meta.end())
-                    return SQL_RESULT_NO_DATA;
+                    return SqlResult::AI_NO_DATA;
 
                 app::ColumnBindingMap::iterator it;
 
                 for (it = columnBindings.begin(); it != columnBindings.end(); ++it)
                     GetColumn(it->first, it->second);
 
-                ++cursor;
-
-                return SQL_RESULT_SUCCESS;
+                return SqlResult::AI_SUCCESS;
             }
 
-            SqlResult ColumnMetadataQuery::GetColumn(uint16_t columnIdx, app::ApplicationDataBuffer & buffer)
+            SqlResult::Type ColumnMetadataQuery::GetColumn(uint16_t columnIdx, app::ApplicationDataBuffer & buffer)
             {
                 if (!executed)
                 {
-                    diag.AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query was not executed.");
+                    diag.AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query was not executed.");
 
-                    return SQL_RESULT_ERROR;
+                    return SqlResult::AI_ERROR;
                 }
 
                 if (cursor == meta.end())
-                    return SQL_RESULT_NO_DATA;
+                {
+                    diag.AddStatusRecord(SqlState::S24000_INVALID_CURSOR_STATE,
+                        "Cursor has reached end of the result set.");
+
+                    return SqlResult::AI_ERROR;
+                }
 
                 const meta::ColumnMeta& currentColumn = *cursor;
                 uint8_t columnType = currentColumn.GetDataType();
 
                 switch (columnIdx)
                 {
-                    case TABLE_CAT:
+                    case ResultColumn::TABLE_CAT:
                     {
                         buffer.PutNull();
                         break;
                     }
 
-                    case TABLE_SCHEM:
+                    case ResultColumn::TABLE_SCHEM:
                     {
                         buffer.PutString(currentColumn.GetSchemaName());
                         break;
                     }
 
-                    case TABLE_NAME:
+                    case ResultColumn::TABLE_NAME:
                     {
                         buffer.PutString(currentColumn.GetTableName());
                         break;
                     }
 
-                    case COLUMN_NAME:
+                    case ResultColumn::COLUMN_NAME:
                     {
                         buffer.PutString(currentColumn.GetColumnName());
                         break;
                     }
 
-                    case DATA_TYPE:
+                    case ResultColumn::DATA_TYPE:
                     {
                         buffer.PutInt16(type_traits::BinaryToSqlType(columnType));
                         break;
                     }
 
-                    case TYPE_NAME:
+                    case ResultColumn::TYPE_NAME:
                     {
                         buffer.PutString(type_traits::BinaryTypeToSqlTypeName(currentColumn.GetDataType()));
                         break;
                     }
 
-                    case COLUMN_SIZE:
+                    case ResultColumn::COLUMN_SIZE:
                     {
                         buffer.PutInt16(type_traits::BinaryTypeColumnSize(columnType));
                         break;
                     }
 
-                    case BUFFER_LENGTH:
+                    case ResultColumn::BUFFER_LENGTH:
                     {
                         buffer.PutInt16(type_traits::BinaryTypeTransferLength(columnType));
                         break;
                     }
 
-                    case DECIMAL_DIGITS:
+                    case ResultColumn::DECIMAL_DIGITS:
                     {
                         int32_t decDigits = type_traits::BinaryTypeDecimalDigits(columnType);
                         if (decDigits < 0)
@@ -230,19 +245,19 @@ namespace ignite
                         break;
                     }
 
-                    case NUM_PREC_RADIX:
+                    case ResultColumn::NUM_PREC_RADIX:
                     {
                         buffer.PutInt16(type_traits::BinaryTypeNumPrecRadix(columnType));
                         break;
                     }
 
-                    case NULLABLE:
+                    case ResultColumn::NULLABLE:
                     {
                         buffer.PutInt16(type_traits::BinaryTypeNullability(columnType));
                         break;
                     }
 
-                    case REMARKS:
+                    case ResultColumn::REMARKS:
                     {
                         buffer.PutNull();
                         break;
@@ -252,16 +267,16 @@ namespace ignite
                         break;
                 }
 
-                return SQL_RESULT_SUCCESS;
+                return SqlResult::AI_SUCCESS;
             }
 
-            SqlResult ColumnMetadataQuery::Close()
+            SqlResult::Type ColumnMetadataQuery::Close()
             {
                 meta.clear();
 
                 executed = false;
 
-                return SQL_RESULT_SUCCESS;
+                return SqlResult::AI_SUCCESS;
             }
 
             bool ColumnMetadataQuery::DataAvailable() const
@@ -274,7 +289,12 @@ namespace ignite
                 return 0;
             }
 
-            SqlResult ColumnMetadataQuery::MakeRequestGetColumnsMeta()
+            SqlResult::Type ColumnMetadataQuery::NextResultSet()
+            {
+                return SqlResult::AI_NO_DATA;
+            }
+
+            SqlResult::Type ColumnMetadataQuery::MakeRequestGetColumnsMeta()
             {
                 QueryGetColumnsMetaRequest req(schema, table, column);
                 QueryGetColumnsMetaResponse rsp;
@@ -283,34 +303,38 @@ namespace ignite
                 {
                     connection.SyncMessage(req, rsp);
                 }
+                catch (const OdbcError& err)
+                {
+                    diag.AddStatusRecord(err);
+
+                    return SqlResult::AI_ERROR;
+                }
                 catch (const IgniteError& err)
                 {
-                    diag.AddStatusRecord(SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT, err.GetText());
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
 
-                    return SQL_RESULT_ERROR;
+                    return SqlResult::AI_ERROR;
                 }
 
-                if (rsp.GetStatus() != RESPONSE_STATUS_SUCCESS)
+                if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                 {
-                    LOG_MSG("Error: %s\n", rsp.GetError().c_str());
+                    LOG_MSG("Error: " << rsp.GetError());
+                    diag.AddStatusRecord(ResponseStatusToSqlState(rsp.GetStatus()), rsp.GetError());
 
-                    diag.AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, rsp.GetError());
-
-                    return SQL_RESULT_ERROR;
+                    return SqlResult::AI_ERROR;
                 }
 
                 meta = rsp.GetMeta();
 
                 for (size_t i = 0; i < meta.size(); ++i)
                 {
-                    LOG_MSG("[%d] SchemaName:     %s\n", i, meta[i].GetSchemaName().c_str());
-                    LOG_MSG("[%d] TableName:      %s\n", i, meta[i].GetTableName().c_str());
-                    LOG_MSG("[%d] ColumnName:     %s\n", i, meta[i].GetColumnName().c_str());
-                    LOG_MSG("[%d] ColumnType:     %d\n", i, meta[i].GetDataType());
-                    LOG_MSG("\n");
+                    LOG_MSG("\n[" << i << "] SchemaName:     " << meta[i].GetSchemaName()
+                         << "\n[" << i << "] TableName:      " << meta[i].GetTableName()
+                         << "\n[" << i << "] ColumnName:     " << meta[i].GetColumnName()
+                         << "\n[" << i << "] ColumnType:     " << static_cast<int32_t>(meta[i].GetDataType()));
                 }
 
-                return SQL_RESULT_SUCCESS;
+                return SqlResult::AI_SUCCESS;
             }
         }
     }

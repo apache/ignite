@@ -74,8 +74,8 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
     private static int port;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
@@ -276,11 +276,11 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
 
         Ignite ignite = grid(0);
 
-        IgniteCache<Integer, String> cache = ignite.cache(null);
+        IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         cache.clear();
 
-        try (IgniteDataStreamer<Integer, String> stmr = ignite.dataStreamer(null)) {
+        try (IgniteDataStreamer<Integer, String> stmr = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
             stmr.allowOverwrite(true);
             stmr.autoFlushFrequency(10);
 
@@ -330,7 +330,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
                 }
             };
 
-            ignite.events(ignite.cluster().forCacheNodes(null)).remoteListen(locLsnr, null, EVT_CACHE_OBJECT_PUT);
+            ignite.events(ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME)).remoteListen(locLsnr, null, EVT_CACHE_OBJECT_PUT);
 
             sockStmr.start();
 

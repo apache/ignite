@@ -59,7 +59,7 @@ public class DefaultIgfsSecondaryFileSystemTestAdapter implements IgfsSecondaryF
 
     /** {@inheritDoc} */
     @Override public void format() throws IOException {
-        igfsEx.format();
+        igfsEx.clear();
     }
 
     /** {@inheritDoc} */
@@ -107,7 +107,7 @@ public class DefaultIgfsSecondaryFileSystemTestAdapter implements IgfsSecondaryF
         if (info == null)
             throw new IOException("Path not found: " + path);
 
-        return new T2<>(info.accessTime(), info.modificationTime());
+        return new T2<>(info.modificationTime(), info.accessTime());
     }
 
     /** {@inheritDoc} */

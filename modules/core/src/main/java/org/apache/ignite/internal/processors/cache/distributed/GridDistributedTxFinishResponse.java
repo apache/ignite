@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -41,23 +42,67 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
     /** Future ID. */
     private IgniteUuid futId;
 
+    /** */
+    @GridToStringExclude
+    private byte flags;
+
+    /** */
+    private int part;
+
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public GridDistributedTxFinishResponse() {
         /* No-op. */
     }
 
     /**
+     * @param part Partition.
      * @param txId Transaction id.
      * @param futId Future ID.
      */
-    public GridDistributedTxFinishResponse(GridCacheVersion txId, IgniteUuid futId) {
+    public GridDistributedTxFinishResponse(int part, GridCacheVersion txId, IgniteUuid futId) {
         assert txId != null;
         assert futId != null;
 
+        this.part = part;
         this.txId = txId;
         this.futId = futId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int handlerId() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean cacheGroupMessage() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public final int partition() {
+        return part;
+    }
+
+    /**
+     * Sets flag mask.
+     *
+     * @param flag Set or clear.
+     * @param mask Mask.
+     */
+    protected final void setFlag(boolean flag, int mask) {
+        flags = flag ? (byte)(flags | mask) : (byte)(flags & ~mask);
+    }
+
+    /**
+     * Reags flag mask.
+     *
+     * @param mask Mask to read.
+     * @return Flag value.
+     */
+    protected final boolean isFlag(int mask) {
+        return (flags & mask) != 0;
     }
 
     /**
@@ -86,12 +131,6 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public int partition() {
-        // TODO https://issues.apache.org/jira/browse/IGNITE-4371
-        return Integer.MIN_VALUE;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -106,6 +145,12 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
         }
 
         switch (writer.state()) {
+            case 2:
+                if (!writer.writeByte("flags", flags))
+                    return false;
+
+                writer.incrementState();
+
             case 3:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
@@ -113,6 +158,12 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
                 writer.incrementState();
 
             case 4:
+                if (!writer.writeInt("part", part))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
                 if (!writer.writeMessage("txId", txId))
                     return false;
 
@@ -134,6 +185,14 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
             return false;
 
         switch (reader.state()) {
+            case 2:
+                flags = reader.readByte("flags");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
             case 3:
                 futId = reader.readIgniteUuid("futId");
 
@@ -143,6 +202,14 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
                 reader.incrementState();
 
             case 4:
+                part = reader.readInt("part");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
                 txId = reader.readMessage("txId");
 
                 if (!reader.isLastRead())
@@ -156,13 +223,13 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 24;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 6;
     }
 
     /** {@inheritDoc} */

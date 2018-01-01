@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.igfs;
 
 import java.util.Collection;
 import java.util.Collections;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.igfs.IgfsPath;
@@ -45,7 +46,7 @@ public class IgfsNoopProcessor extends IgfsProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> IGFS processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> IGFS processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>   igfsCacheSize: " + 0);
     }
 
@@ -55,12 +56,12 @@ public class IgfsNoopProcessor extends IgfsProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFileSystem igfs(@Nullable String name) {
+    @Nullable @Override public IgniteFileSystem igfs(String name) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IpcServerEndpoint> endpoints(@Nullable String name) {
+    @Override public Collection<IpcServerEndpoint> endpoints(String name) {
         return Collections.emptyList();
     }
 
@@ -68,5 +69,15 @@ public class IgfsNoopProcessor extends IgfsProcessorAdapter {
     @Nullable @Override public ComputeJob createJob(IgfsJob job, @Nullable String igfsName, IgfsPath path,
         long start, long length, IgfsRecordResolver recRslv) {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+        // No-op
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate(GridKernalContext kctx) {
+        // No-op
     }
 }

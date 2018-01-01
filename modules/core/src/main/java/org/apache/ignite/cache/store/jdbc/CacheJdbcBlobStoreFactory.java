@@ -130,7 +130,7 @@ public class CacheJdbcBlobStoreFactory<K, V> implements Factory<CacheJdbcBlobSto
 
                 store.setDataSource(data);
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteCheckedException ignored) {
                 throw new IgniteException("Failed to load bean in application context [beanName=" + dataSrcBean +
                     ", igniteConfig=" + appCtx + ']');
             }

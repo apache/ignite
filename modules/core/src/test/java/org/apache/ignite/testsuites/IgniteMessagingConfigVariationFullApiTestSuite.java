@@ -27,8 +27,6 @@ import org.apache.ignite.testframework.configvariations.ConfigVariations;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.configvariations.Parameters;
 
-import javax.cache.configuration.Factory;
-
 /**
  * Test sute for Messaging process.
  */
@@ -39,7 +37,7 @@ public class IgniteMessagingConfigVariationFullApiTestSuite extends TestSuite {
         Parameters.objectParameters("setMarshaller",
             Parameters.factory(JdkMarshaller.class),
             Parameters.factory(BinaryMarshaller.class),
-            ConfigVariations.optimizedMarshallerFactory()
+            ConfigVariations.binaryMarshallerFactory()
         ),
         Parameters.booleanParameters("setPeerClassLoadingEnabled")
     };

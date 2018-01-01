@@ -23,14 +23,19 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.ComponentModel;
     using System.Configuration;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
+    using System.IO;
     using System.Linq;
     using System.Reflection;
+    using System.Text;
     using System.Xml;
+    using System.Xml.Serialization;
+    using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Events;
 
     /// <summary>
-    /// Serializes <see cref="IgniteConfiguration"/> to XML.
+    /// Serializes and deserializes Ignite configurations to and from XML.
     /// </summary>
     internal static class IgniteConfigurationXmlSerializer
     {
@@ -44,18 +49,39 @@ namespace Apache.Ignite.Core.Impl.Common
         private const string KeyValPairElement = "pair";
 
         /** Schema. */
-        private const string Schema = "http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection";
+        private const string Schema = "http://ignite.apache.org/schema/dotnet/{0}Section";
 
         /// <summary>
-        /// Deserializes <see cref="IgniteConfiguration"/> from specified <see cref="XmlReader"/>.
+        /// Deserializes configuration of specified type from XML string.
+        /// </summary>
+        /// <param name="xml">Xml string.</param>
+        /// <returns>Resulting configuration.</returns>
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
+        [SuppressMessage("Microsoft.Usage", "CA2202: Do not call Dispose more than one time on an object")]
+        public static T Deserialize<T>(string xml) where T : new()
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(xml, "xml");
+
+            using (var stringReader = new StringReader(xml))
+            using (var xmlReader = XmlReader.Create(stringReader))
+            {
+                // Skip XML header.
+                xmlReader.MoveToContent();
+
+                return Deserialize<T>(xmlReader);
+            }
+        }
+
+        /// <summary>
+        /// Deserializes configuration of specified type from specified <see cref="XmlReader"/>.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        /// <returns>Resulting <see cref="IgniteConfiguration"/>.</returns>
-        public static IgniteConfiguration Deserialize(XmlReader reader)
+        /// <returns>Resulting configuration.</returns>
+        public static T Deserialize<T>(XmlReader reader) where T : new()
         {
             IgniteArgumentCheck.NotNull(reader, "reader");
 
-            var cfg = new IgniteConfiguration();
+            var cfg = new T();
 
             if (reader.NodeType == XmlNodeType.Element || reader.Read())
                 ReadElement(reader, cfg, new TypeResolver());
@@ -64,30 +90,67 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /// <summary>
-        /// Serializes specified <see cref="IgniteConfiguration" /> to <see cref="XmlWriter" />.
+        /// Serializes specified configuration to <see cref="XmlWriter" />.
         /// </summary>
         /// <param name="configuration">The configuration.</param>
         /// <param name="writer">The writer.</param>
         /// <param name="rootElementName">Name of the root element.</param>
-        public static void Serialize(IgniteConfiguration configuration, XmlWriter writer, string rootElementName)
+        public static void Serialize(object configuration, XmlWriter writer, string rootElementName)
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
             IgniteArgumentCheck.NotNull(writer, "writer");
             IgniteArgumentCheck.NotNullOrEmpty(rootElementName, "rootElementName");
 
-            WriteElement(configuration, writer, rootElementName, typeof(IgniteConfiguration));
+            WriteElement(configuration, writer, rootElementName, configuration.GetType(), writeSchema: true);
+        }
+
+        /// <summary>
+        /// Serializes specified configuration to <see cref="XmlWriter" />.
+        /// </summary>
+        /// <param name="configuration">The configuration.</param>
+        /// <param name="rootElementName">Name of the root element.</param>
+        /// <returns>XML string.</returns>
+        public static string Serialize(object configuration, string rootElementName)
+        {
+            var sb = new StringBuilder();
+
+            var settings = new XmlWriterSettings
+            {
+                Indent = true
+            };
+
+            using (var xmlWriter = XmlWriter.Create(sb, settings))
+            {
+                Serialize(configuration, xmlWriter, rootElementName);
+            }
+
+            return sb.ToString();
         }
 
         /// <summary>
         /// Writes new element.
         /// </summary>
         private static void WriteElement(object obj, XmlWriter writer, string rootElementName, Type valueType, 
-            PropertyInfo property = null)
+            PropertyInfo property = null, bool writeSchema = false)
         {
-            if (valueType == typeof(IgniteConfiguration))
-                writer.WriteStartElement(rootElementName, Schema);  // write xmlns for the root element
+            if (property != null)
+            {
+                if (!property.CanWrite && !IsKeyValuePair(property.DeclaringType))
+                    return;
+
+                if (IsIgnored(property))
+                    return;
+            }
+
+            if (writeSchema)
+            {
+                // Write xmlns for the root element.
+                writer.WriteStartElement(rootElementName, string.Format(Schema, valueType.Name));
+            }
             else
+            {
                 writer.WriteStartElement(rootElementName);
+            }
 
             if (IsBasicType(valueType))
                 WriteBasicProperty(obj, writer, valueType, property);
@@ -142,14 +205,24 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private static void WriteComplexProperty(object obj, XmlWriter writer, Type valueType)
         {
-            var props = GetNonDefaultProperties(obj).ToList();
+            var props = GetNonDefaultProperties(obj).OrderBy(x => x.Name).ToList();
 
-            // Specify type for interfaces and abstract classes
-            if (valueType.IsAbstract)
+            var realType = obj.GetType();
+
+            // Specify type when it differs from declared type.
+            if (valueType != realType)
+            {
                 writer.WriteAttributeString(TypNameAttribute, TypeStringConverter.Convert(obj.GetType()));
+            }
+
+            if (IsBasicType(obj.GetType()))
+            {
+                WriteBasicProperty(obj, writer, realType, null);
+                return;
+            }
 
             // Write attributes
-            foreach (var prop in props.Where(p => IsBasicType(p.PropertyType)))
+            foreach (var prop in props.Where(p => IsBasicType(p.PropertyType) && !IsIgnored(p)))
             {
                 var converter = GetConverter(prop, prop.PropertyType);
                 var stringValue = converter.ConvertToInvariantString(prop.GetValue(obj, null));
@@ -172,10 +245,14 @@ namespace Apache.Ignite.Core.Impl.Common
             // Read attributes
             while (reader.MoveToNextAttribute())
             {
-                var name = reader.Name;
-                var val = reader.Value;
+                if (reader.Name == TypNameAttribute || reader.Name == XmlnsAttribute)
+                    continue;
 
-                SetProperty(target, name, val);
+                var prop = GetPropertyOrThrow(reader.Name, reader.Value, target.GetType());
+
+                var value = ConvertBasicValue(reader.Value, prop, prop.PropertyType);
+
+                prop.SetValue(target, value, null);
             }
 
             // Read content
@@ -186,31 +263,47 @@ namespace Apache.Ignite.Core.Impl.Common
                 if (reader.NodeType != XmlNodeType.Element)
                     continue;
 
-                var name = reader.Name;
-                var prop = GetPropertyOrThrow(name, reader.Value, targetType);
-                var propType = prop.PropertyType;
+                var prop = GetPropertyOrThrow(reader.Name, reader.Value, targetType);
 
-                if (IsBasicType(propType))
-                {
-                    // Regular property in xmlElement form
-                    SetProperty(target, name, reader.ReadString());
-                }
-                else if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof (ICollection<>))
-                {
-                    // Collection
-                    ReadCollectionProperty(reader, prop, target, resolver);
-                }
-                else if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof (IDictionary<,>))
-                {
-                    // Dictionary
-                    ReadDictionaryProperty(reader, prop, target);
-                }
-                else
-                {
-                    // Nested object (complex property)
-                    prop.SetValue(target, ReadComplexProperty(reader, propType, prop.Name, targetType, resolver), null);
-                }
+                var value = ReadPropertyValue(reader, resolver, prop, targetType);
+
+                prop.SetValue(target, value, null);
             }
+        }
+
+        /// <summary>
+        /// Reads the property value.
+        /// </summary>
+        private static object ReadPropertyValue(XmlReader reader, TypeResolver resolver, 
+            PropertyInfo prop, Type targetType)
+        {
+            var propType = prop.PropertyType;
+
+            if (propType == typeof(object))
+            {
+                propType = ResolvePropertyType(reader, propType, prop.Name, targetType, resolver);
+            }
+
+            if (IsBasicType(propType))
+            {
+                // Regular property in xmlElement form.
+                return ConvertBasicValue(reader.ReadString(), prop, propType);
+            }
+
+            if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(ICollection<>))
+            {
+                // Collection.
+                return ReadCollectionProperty(reader, prop, targetType, resolver);
+            }
+
+            if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(IDictionary<,>))
+            {
+                // Dictionary.
+                return ReadDictionaryProperty(reader, prop, resolver);
+            }
+
+            // Nested object (complex property).
+            return ReadComplexProperty(reader, propType, prop.Name, targetType, resolver);
         }
 
         /// <summary>
@@ -219,31 +312,7 @@ namespace Apache.Ignite.Core.Impl.Common
         private static object ReadComplexProperty(XmlReader reader, Type propType, string propName, Type targetType, 
             TypeResolver resolver)
         {
-            if (propType.IsAbstract)
-            {
-                var typeName = reader.GetAttribute(TypNameAttribute);
-
-                var derivedTypes = GetConcreteDerivedTypes(propType);
-
-                propType = typeName == null
-                    ? null
-                    : resolver.ResolveType(typeName) ?? derivedTypes.FirstOrDefault(x => x.Name == typeName);
-
-                if (propType == null)
-                {
-                    var message = string.Format("'type' attribute is required for '{0}.{1}' property", targetType.Name,
-                        propName);
-
-                    if (typeName != null)
-                    {
-                        message += ", specified type cannot be resolved: " + typeName;
-                    }
-                    else if (derivedTypes.Any())
-                        message += ", possible values are: " + string.Join(", ", derivedTypes.Select(x => x.Name));
-
-                    throw new ConfigurationErrorsException(message);
-                }
-            }
+            propType = ResolvePropertyType(reader, propType, propName, targetType, resolver);
 
             var nestedVal = Activator.CreateInstance(propType);
 
@@ -258,9 +327,46 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /// <summary>
+        /// Resolves the type of the property.
+        /// </summary>
+        private static Type ResolvePropertyType(XmlReader reader, Type propType, string propName, Type targetType,
+            TypeResolver resolver)
+        {
+            var typeName = reader.GetAttribute(TypNameAttribute);
+
+            if (!propType.IsAbstract && typeName == null)
+                return propType;
+
+            var res = typeName == null
+                ? null
+                : resolver.ResolveType(typeName) ??
+                  GetConcreteDerivedTypes(propType).FirstOrDefault(x => x.Name == typeName);
+
+            if (res != null)
+                return res;
+
+            var message = string.Format("'type' attribute is required for '{0}.{1}' property", targetType.Name,
+                propName);
+
+            var derivedTypes = GetConcreteDerivedTypes(propType);
+
+
+            if (typeName != null)
+            {
+                message += ", specified type cannot be resolved: " + typeName;
+            }
+            else if (derivedTypes.Any())
+            {
+                message += ", possible values are: " + string.Join(", ", derivedTypes.Select(x => x.Name));
+            }
+
+            throw new ConfigurationErrorsException(message);
+        }
+
+        /// <summary>
         /// Reads the collection.
         /// </summary>
-        private static void ReadCollectionProperty(XmlReader reader, PropertyInfo prop, object target, 
+        private static IList ReadCollectionProperty(XmlReader reader, PropertyInfo prop, Type targetType, 
             TypeResolver resolver)
         {
             var elementType = prop.PropertyType.GetGenericArguments().Single();
@@ -286,21 +392,23 @@ namespace Apache.Ignite.Core.Impl.Common
 
                     list.Add(converter != null
                         ? converter.ConvertFromInvariantString(subReader.ReadString())
-                        : ReadComplexProperty(subReader, elementType, prop.Name, target.GetType(), resolver));
+                        : ReadComplexProperty(subReader, elementType, prop.Name, targetType, resolver));
                 }
             }
 
-            prop.SetValue(target, list, null);
+            return list;
         }
         
         /// <summary>
         /// Reads the dictionary.
         /// </summary>
-        private static void ReadDictionaryProperty(XmlReader reader, PropertyInfo prop, object target)
+        private static IDictionary ReadDictionaryProperty(XmlReader reader, PropertyInfo prop, TypeResolver resolver)
         {
             var keyValTypes = prop.PropertyType.GetGenericArguments();
 
             var dictType = typeof (Dictionary<,>).MakeGenericType(keyValTypes);
+
+            var pairType = typeof(Pair<,>).MakeGenericType(keyValTypes);
 
             var dict = (IDictionary) Activator.CreateInstance(dictType);
 
@@ -317,35 +425,29 @@ namespace Apache.Ignite.Core.Impl.Common
                             string.Format("Invalid dictionary element in IgniteConfiguration: expected '{0}', " +
                                           "but was '{1}'", KeyValPairElement, subReader.Name));
 
-                    var key = subReader.GetAttribute("key");
+                    var pair = (IPair) Activator.CreateInstance(pairType);
 
-                    if (key == null)
-                        throw new ConfigurationErrorsException(
-                            "Invalid dictionary entry, key attribute is missing for property " + prop);
+                    var pairReader = subReader.ReadSubtree();
 
-                    dict[key] = subReader.GetAttribute("value");
+                    pairReader.Read();
+
+                    ReadElement(pairReader, pair, resolver);
+
+                    dict[pair.Key] = pair.Value;
                 }
             }
 
-            prop.SetValue(target, dict, null);
+            return dict;
         }
 
         /// <summary>
-        /// Sets the property.
+        /// Reads the basic value.
         /// </summary>
-        private static void SetProperty(object target, string propName, string propVal)
+        private static object ConvertBasicValue(string propVal, PropertyInfo property, Type propertyType)
         {
-            if (propName == TypNameAttribute || propName == XmlnsAttribute)
-                return;
+            var converter = GetConverter(property, propertyType);
 
-            var type = target.GetType();
-            var property = GetPropertyOrThrow(propName, propVal, type);
-
-            var converter = GetConverter(property, property.PropertyType);
-
-            var convertedVal = converter.ConvertFromInvariantString(propVal);
-
-            property.SetValue(target, convertedVal, null);
+            return converter.ConvertFromInvariantString(propVal);
         }
 
         /// <summary>
@@ -353,21 +455,31 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private static List<Type> GetConcreteDerivedTypes(Type type)
         {
-            return type.Assembly.GetTypes().Where(t => t.IsClass && !t.IsAbstract && type.IsAssignableFrom(t)).ToList();
+            return TypeResolver.GetAssemblyTypesSafe(typeof(IIgnite).Assembly)
+                .Where(t => t.IsClass && !t.IsAbstract && type.IsAssignableFrom(t)).ToList();
         }
 
         /// <summary>
         /// Gets specified property from a type or throws an exception.
         /// </summary>
-        private static PropertyInfo GetPropertyOrThrow(string propName, string propVal, Type type)
+        private static PropertyInfo GetPropertyOrThrow(string propName, object propVal, Type type)
         {
             var property = type.GetProperty(XmlNameToPropertyName(propName));
 
             if (property == null)
+            {
                 throw new ConfigurationErrorsException(
                     string.Format(
                         "Invalid IgniteConfiguration attribute '{0}={1}', there is no such property on '{2}'",
                         propName, propVal, type));
+            }
+
+            if (!property.CanWrite)
+            {
+                throw new ConfigurationErrorsException(string.Format(
+                        "Invalid IgniteConfiguration attribute '{0}={1}', property '{2}.{3}' is not writeable",
+                        propName, propVal, type, property.Name));
+            }
 
             return property;
         }
@@ -405,11 +517,20 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             Debug.Assert(propertyType != null);
 
-            if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof (KeyValuePair<,>))
+            if (IsKeyValuePair(propertyType))
                 return false;
 
-            return propertyType.IsValueType || propertyType == typeof (string) || propertyType == typeof (Type) ||
-                   propertyType == typeof (object);
+            return propertyType.IsValueType || propertyType == typeof (string) || propertyType == typeof (Type);
+        }
+
+        /// <summary>
+        /// Determines whether specified type is KeyValuePair.
+        /// </summary>
+        private static bool IsKeyValuePair(Type propertyType)
+        {
+            Debug.Assert(propertyType != null);
+
+            return propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof (KeyValuePair<,>);
         }
 
         /// <summary>
@@ -417,7 +538,6 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private static TypeConverter GetConverter(PropertyInfo property, Type propertyType)
         {
-            Debug.Assert(property != null);
             Debug.Assert(propertyType != null);
 
             if (propertyType.IsEnum)
@@ -429,7 +549,12 @@ namespace Apache.Ignite.Core.Impl.Common
             if (propertyType == typeof(bool))
                 return BooleanLowerCaseConverter.Instance;
 
-            if (property.DeclaringType == typeof (IgniteConfiguration) && property.Name == "IncludedEventTypes")
+            if (property != null &&
+                property.DeclaringType == typeof (IgniteConfiguration) && property.Name == "IncludedEventTypes")
+                return EventTypeConverter.Instance;
+
+            if (property != null &&
+                property.DeclaringType == typeof (LocalEventListener) && property.Name == "EventTypes")
                 return EventTypeConverter.Instance;
 
             if (propertyType == typeof (object))
@@ -451,7 +576,9 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             Debug.Assert(obj != null);
 
-            return obj.GetType().GetProperties().Where(p => !Equals(p.GetValue(obj, null), GetDefaultValue(p)));
+            return obj.GetType().GetProperties()
+                .Where(p => p.GetIndexParameters().Length == 0 &&  // Skip indexed properties.
+                            !Equals(p.GetValue(obj, null), GetDefaultValue(p)));
         }
 
         /// <summary>
@@ -462,14 +589,76 @@ namespace Apache.Ignite.Core.Impl.Common
             var attr = property.GetCustomAttributes(true).OfType<DefaultValueAttribute>().FirstOrDefault();
 
             if (attr != null)
+            {
                 return attr.Value;
+            }
+
+            var declType = property.DeclaringType;
+            if (declType != null && !declType.IsAbstract && declType.GetConstructor(new Type[0]) != null)
+            {
+                return property.GetValue(Activator.CreateInstance(declType), null);
+            }
 
             var propertyType = property.PropertyType;
 
             if (propertyType.IsValueType)
+            {
                 return Activator.CreateInstance(propertyType);
+            }
 
             return null;
+        }
+
+        /// <summary>
+        /// Determines whether the specified property is marked with XmlIgnore.
+        /// </summary>
+        private static bool IsIgnored(PropertyInfo property)
+        {
+            Debug.Assert(property != null);
+
+            return property.GetCustomAttributes(typeof(XmlIgnoreAttribute), true).Any();
+        }
+
+        /// <summary>
+        /// Non-generic Pair accessor.
+        /// </summary>
+        private interface IPair
+        {
+            /// <summary>
+            /// Gets the key.
+            /// </summary>
+            object Key { get; }
+
+            /// <summary>
+            /// Gets the value.
+            /// </summary>
+            object Value { get; }
+        }
+
+        /// <summary>
+        /// Surrogate dictionary entry to overcome immutable KeyValuePair.
+        /// </summary>
+        private class Pair<TK, TV> : IPair
+        {
+            // ReSharper disable once UnusedAutoPropertyAccessor.Local
+            // ReSharper disable once MemberCanBePrivate.Local
+            public TK Key { get; set; }
+
+            // ReSharper disable once UnusedAutoPropertyAccessor.Local
+            // ReSharper disable once MemberCanBePrivate.Local
+            public TV Value { get; set; }
+
+            /** <inheritdoc /> */
+            object IPair.Key
+            {
+                get { return Key; }
+            }
+
+            /** <inheritdoc /> */
+            object IPair.Value
+            {
+                get { return Value; }
+            }
         }
     }
 }

@@ -39,7 +39,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -65,8 +64,8 @@ public class IgniteCacheDistributedJoinPartitionedAndReplicatedTest extends Grid
     private boolean client;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi spi = ((TcpDiscoverySpi)cfg.getDiscoverySpi());
 
@@ -83,11 +82,10 @@ public class IgniteCacheDistributedJoinPartitionedAndReplicatedTest extends Grid
      * @return Cache configuration.
      */
     private CacheConfiguration configuration(String name, CacheMode cacheMode) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(name);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setCacheMode(cacheMode);
 
@@ -196,6 +194,8 @@ public class IgniteCacheDistributedJoinPartitionedAndReplicatedTest extends Grid
      * @throws Exception If failed.
      */
     public void testJoin2() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5956");
+
         join(true, PARTITIONED, REPLICATED, PARTITIONED);
     }
 

@@ -56,7 +56,7 @@ import org.apache.ignite.internal.IgniteServicesImpl;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.ClusterNodeLocalMapImpl;
 import org.apache.ignite.internal.executor.GridExecutorService;
-import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -89,7 +89,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     private static Marshaller marsh;
 
     /** */
-    private static String gridName;
+    private static String igniteInstanceName;
 
     /** Closure job. */
     protected IgniteInClosure<String> c1 = new IgniteInClosure<String>() {
@@ -129,16 +129,16 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration namedCache = new CacheConfiguration();
+        CacheConfiguration namedCache = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         namedCache.setName(CACHE_NAME);
         namedCache.setAtomicityMode(TRANSACTIONAL);
 
         cfg.setMarshaller(marshaller());
-        cfg.setCacheConfiguration(new CacheConfiguration(), namedCache);
+        cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME), namedCache);
 
         return cfg;
     }
@@ -151,14 +151,14 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         marsh = grid().configuration().getMarshaller();
-        gridName = grid().configuration().getGridName();
+        igniteInstanceName = grid().configuration().getIgniteInstanceName();
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testDefaultCache() throws Exception {
-        IgniteCache<String, String> cache = grid().cache(null);
+        IgniteCache<String, String> cache = grid().cache(DEFAULT_CACHE_NAME);
 
         cache.put("key", "val");
 
@@ -171,14 +171,14 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         assert inBean.getObjectField() != null;
         assert outBean.getObjectField() != null;
 
-        assert inBean.getObjectField().getClass().equals(IgniteCacheProxy.class);
-        assert outBean.getObjectField().getClass().equals(IgniteCacheProxy.class);
+        assert inBean.getObjectField().getClass().equals(GatewayProtectedCacheProxy.class);
+        assert outBean.getObjectField().getClass().equals(GatewayProtectedCacheProxy.class);
 
         assert inBean != outBean;
 
         IgniteCache<String, String> cache0 = (IgniteCache<String, String>)outBean.getObjectField();
 
-        assertNull(cache0.getName());
+        assertEquals(DEFAULT_CACHE_NAME, cache0.getName());
         assertEquals("val", cache0.get("key"));
 
         outBean.checkNullResources();
@@ -201,8 +201,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         assert inBean.getObjectField() != null;
         assert outBean.getObjectField() != null;
 
-        assert inBean.getObjectField().getClass().equals(IgniteCacheProxy.class);
-        assert outBean.getObjectField().getClass().equals(IgniteCacheProxy.class);
+        assert inBean.getObjectField().getClass().equals(GatewayProtectedCacheProxy.class);
+        assert outBean.getObjectField().getClass().equals(GatewayProtectedCacheProxy.class);
 
         assert inBean != outBean;
 
@@ -481,8 +481,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         final Ignite ignite = grid();
 
         GridMarshallerTestBean inBean = newTestBean(ignite.cluster().forPredicate(new IgnitePredicate<ClusterNode>() {
-            @Override
-            public boolean apply(ClusterNode n) {
+            @Override public boolean apply(ClusterNode n) {
                 return n.id().equals(ignite.cluster().localNode().id());
             }
         }));
@@ -661,8 +660,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
             IgniteCompute compute = compute(grid().cluster().forNode(g1.cluster().localNode()));
 
             compute.run(new IgniteRunnable() {
-                @Override
-                public void run() {
+                @Override public void run() {
                     // No-op.
                 }
             });
@@ -707,7 +705,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
                 }
             }, EVTS_CACHE);
 
-            grid().cache(null).put(1, 1);
+            grid().cache(DEFAULT_CACHE_NAME).put(1, 1);
 
             GridMarshallerTestBean inBean = newTestBean(evts);
 
@@ -846,16 +844,15 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
             }
         });
 
-        // Any deserialization has to be executed under a thread, that contains the grid name.
-        new IgniteThread(gridName, "unmarshal-thread", f).start();
+        // Any deserialization has to be executed under a thread, that contains the Ignite instance name.
+        new IgniteThread(igniteInstanceName, "unmarshal-thread", f).start();
 
         try {
             return f.get();
         }
         catch (Exception e) {
-            if (e.getCause() instanceof IgniteCheckedException) {
+            if (e.getCause() instanceof IgniteCheckedException)
                 throw (IgniteCheckedException)e.getCause();
-            }
 
             fail(e.getCause().getMessage());
         }

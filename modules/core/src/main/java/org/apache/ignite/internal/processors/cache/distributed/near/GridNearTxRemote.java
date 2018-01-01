@@ -115,7 +115,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
             ctx, 
             nodeId, 
             xidVer,
-            commitVer, 
+            commitVer,
             sys, 
             plc, 
             concurrency, 
@@ -217,6 +217,11 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean remote() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean near() {
         return true;
     }
@@ -289,7 +294,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      *
      * @param key Evicted key.
      */
-    public void addEvicted(IgniteTxKey key) {
+    void addEvicted(IgniteTxKey key) {
         evicted.add(key);
     }
 
@@ -332,9 +337,9 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
             try {
                 cached.unswap();
 
-                CacheObject val = cached.peek(true, false, false, null);
+                CacheObject val = cached.peek(null);
 
-                if (val == null && cached.evictInternal(false, xidVer, null)) {
+                if (val == null && cached.evictInternal(xidVer, null, false)) {
                     evicted.add(entry.txKey());
 
                     return false;
@@ -393,9 +398,9 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
             else {
                 cached.unswap();
 
-                CacheObject peek = cached.peek(true, false, false, null);
+                CacheObject peek = cached.peek(null);
 
-                if (peek == null && cached.evictInternal(false, xidVer, null)) {
+                if (peek == null && cached.evictInternal(xidVer, null, false)) {
                     cached.context().cache().removeIfObsolete(key.key());
 
                     evicted.add(key);

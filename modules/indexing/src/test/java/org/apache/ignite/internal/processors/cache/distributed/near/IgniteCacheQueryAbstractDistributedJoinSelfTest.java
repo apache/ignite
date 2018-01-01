@@ -86,10 +86,10 @@ public class IgniteCacheQueryAbstractDistributedJoinSelfTest extends GridCommonA
     private static TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        if ("client".equals(gridName))
+        if ("client".equals(igniteInstanceName))
             c.setClientMode(true);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();

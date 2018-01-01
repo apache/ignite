@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.ArrayList;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.h2.command.Parser;
 
 /**
@@ -34,7 +36,7 @@ public class GridSqlAlias extends GridSqlElement {
      * @param alias Alias.
      * @param expr Expr.
      */
-    public GridSqlAlias(String alias, GridSqlElement expr) {
+    public GridSqlAlias(String alias, GridSqlAst expr) {
         this(alias, expr, false);
     }
 
@@ -43,10 +45,12 @@ public class GridSqlAlias extends GridSqlElement {
      * @param expr Expr.
      * @param useAs Use 'AS' keyword.
      */
-    public GridSqlAlias(String alias, GridSqlElement expr, boolean useAs) {
-        super(new ArrayList<GridSqlElement>(1));
+    public GridSqlAlias(String alias, GridSqlAst expr, boolean useAs) {
+        super(new ArrayList<GridSqlAst>(1));
 
         addChild(expr);
+
+        assert !F.isEmpty(alias): alias;
 
         this.useAs = useAs;
         this.alias = alias;
@@ -56,17 +60,32 @@ public class GridSqlAlias extends GridSqlElement {
      * @param el Element.
      * @return Unwrapped from alias element.
      */
-    public static GridSqlElement unwrap(GridSqlElement el) {
+    @SuppressWarnings("unchecked")
+    public static <X extends GridSqlAst> X unwrap(GridSqlAst el) {
         el = el instanceof GridSqlAlias ? el.child() : el;
 
         assert el != null;
 
-        return el;
+        return (X)el;
     }
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
-        return child().getSQL() + (useAs ? " AS " : " ") + Parser.quoteIdentifier(alias);
+        SB b = new SB();
+
+        GridSqlAst child = child(0);
+
+        boolean tbl = child instanceof GridSqlTable;
+
+        b.a(tbl ? ((GridSqlTable)child).getBeforeAliasSql() : child.getSQL());
+
+        b.a(useAs ? " AS " : " ");
+        b.a(Parser.quoteIdentifier(alias));
+
+        if (tbl)
+            b.a(((GridSqlTable)child).getAfterAliasSQL());
+
+        return b.toString();
     }
 
     /**

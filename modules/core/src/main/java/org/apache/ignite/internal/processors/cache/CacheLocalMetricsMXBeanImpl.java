@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 
 /**
@@ -41,11 +43,6 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     /** {@inheritDoc} */
     @Override public String name() {
         return cache.metrics0().name();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getOverflowSize() {
-        return cache.metrics0().getOverflowSize();
     }
 
     /** {@inheritDoc} */
@@ -94,6 +91,11 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getHeapEntriesCount() {
+        return cache.metrics0().getHeapEntriesCount();
+    }
+
+    /** {@inheritDoc} */
     @Override public long getOffHeapPrimaryEntriesCount() {
         return cache.metrics0().getOffHeapPrimaryEntriesCount();
     }
@@ -106,56 +108,6 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     /** {@inheritDoc} */
     @Override public long getOffHeapAllocatedSize() {
         return cache.metrics0().getOffHeapAllocatedSize();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getOffHeapMaxSize() {
-        return cache.metrics0().getOffHeapMaxSize();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapGets() {
-        return cache.metrics0().getSwapGets();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapPuts() {
-        return cache.metrics0().getSwapPuts();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapRemovals() {
-        return cache.metrics0().getSwapRemovals();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapHits() {
-        return cache.metrics0().getSwapHits();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapMisses() {
-        return cache.metrics0().getSwapMisses();
-    }
-
-    /** {@inheritDoc} */
-    @Override public float getSwapHitPercentage() {
-        return cache.metrics0().getSwapHitPercentage();
-    }
-
-    /** {@inheritDoc} */
-    @Override public float getSwapMissPercentage() {
-        return cache.metrics0().getSwapMissPercentage();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapEntriesCount() {
-        return cache.metrics0().getSwapEntriesCount();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSwapSize() {
-        return cache.metrics0().getSwapSize();
     }
 
     /** {@inheritDoc} */
@@ -406,5 +358,80 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     /** {@inheritDoc} */
     @Override public boolean isWriteThrough() {
         return cache.metrics0().isWriteThrough();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getTotalPartitionsCount() {
+        return cache.metrics0().getTotalPartitionsCount();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getRebalancingPartitionsCount() {
+        return cache.metrics0().getRebalancingPartitionsCount();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getKeysToRebalanceLeft() {
+        return cache.metrics0().getKeysToRebalanceLeft();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalancingKeysRate() {
+        return cache.metrics0().getRebalancingKeysRate();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalancingBytesRate() {
+        return cache.metrics0().getRebalancingBytesRate();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long estimateRebalancingFinishTime() {
+        return cache.metrics0().estimateRebalancingFinishTime();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long rebalancingStartTime() {
+        return cache.metrics0().rebalancingStartTime();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getEstimatedRebalancingFinishTime() {
+        return cache.metrics0().getEstimatedRebalancingFinishTime();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalancingStartTime() {
+        return cache.metrics0().getRebalancingStartTime();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isValidForReading() {
+        return cache.metrics0().isValidForReading();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isValidForWriting() {
+        return cache.metrics0().isValidForWriting();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void enableStatistics() {
+        try {
+            cache.context().shared().cache().enableStatistics(Collections.singleton(cache.name()), true);
+        }
+        catch (IgniteCheckedException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void disableStatistics() {
+        try {
+            cache.context().shared().cache().enableStatistics(Collections.singleton(cache.name()), false);
+        }
+        catch (IgniteCheckedException e) {
+            throw new RuntimeException(e.getMessage());
+        }
     }
 }

@@ -25,7 +25,6 @@ namespace Apache.Ignite.Core.Tests.Log
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.Compute;
-    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Resource;
@@ -58,7 +57,7 @@ namespace Apache.Ignite.Core.Tests.Log
             using (var ignite = Ignition.Start(cfg))
             {
                 // Check injection
-                Assert.AreEqual(((Ignite) ignite).Proxy, ((TestLogger) cfg.Logger).Ignite);
+                Assert.AreEqual(ignite, ((TestLogger) cfg.Logger).Ignite);
 
                 // Check initial message
                 Assert.IsTrue(TestLogger.Entries[0].Message.StartsWith("Starting Ignite.NET"));
@@ -76,9 +75,10 @@ namespace Apache.Ignite.Core.Tests.Log
 
             // Test that all levels are present
             foreach (var level in AllLevels.Where(x => x != LogLevel.Error))
+            {
                 Assert.IsTrue(TestLogger.Entries.Any(x => x.Level == level), "No messages with level " + level);
+            }
         }
-
 
         /// <summary>
         /// Tests startup error in Java.
@@ -112,13 +112,14 @@ namespace Apache.Ignite.Core.Tests.Log
             Assert.Throws<IgniteException>(() =>
                 Ignition.Start(new IgniteConfiguration(GetConfigWithLogger())
                 {
-                    LifecycleBeans = new[] {new FailBean()}
+                    LifecycleHandlers = new[] {new FailBean()}
                 }));
 
             var err = TestLogger.Entries.First(x => x.Level == LogLevel.Error);
             Assert.IsInstanceOf<ArithmeticException>(err.Exception);
         }
 
+#if !NETCOREAPP2_0  // Exception serialization is not supported in .NET Core
         /// <summary>
         /// Tests that .NET exception propagates through Java to the log.
         /// </summary>
@@ -127,19 +128,24 @@ namespace Apache.Ignite.Core.Tests.Log
         {
             // Start 2 nodes: PlatformNativeException does not occur in local scenario
             using (var ignite = Ignition.Start(GetConfigWithLogger()))
-            using (Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) {GridName = "1"}))
+            using (Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) {IgniteInstanceName = "1"}))
             {
                 var compute = ignite.GetCluster().ForRemotes().GetCompute();
 
-                Assert.Throws<ArithmeticException>(() => compute.Call(new FailFunc()));
+                var ex = Assert.Throws<AggregateException>(() => compute.Call(new FailFunc()));
+                Assert.IsNotNull(ex.InnerException);
+                Assert.IsInstanceOf<ArithmeticException>(ex.InnerException.InnerException);
 
                 // Log updates may not arrive immediately
                 TestUtils.WaitForCondition(() => TestLogger.Entries.Any(x => x.Exception != null), 3000);
 
                 var errFromJava = TestLogger.Entries.Single(x => x.Exception != null);
-                Assert.AreEqual("Error in func.", ((ArithmeticException) errFromJava.Exception.InnerException).Message);
+                Assert.IsNotNull(errFromJava.Exception.InnerException);
+                Assert.AreEqual("Error in func.", 
+                    ((ArithmeticException) errFromJava.Exception.InnerException).Message);
             }
         }
+#endif
 
         /// <summary>
         /// Tests the <see cref="QueryEntity"/> validation.
@@ -426,7 +432,7 @@ namespace Apache.Ignite.Core.Tests.Log
         /// <summary>
         /// Failing lifecycle bean.
         /// </summary>
-        private class FailBean : ILifecycleBean
+        private class FailBean : ILifecycleHandler
         {
             public void OnLifecycleEvent(LifecycleEventType evt)
             {

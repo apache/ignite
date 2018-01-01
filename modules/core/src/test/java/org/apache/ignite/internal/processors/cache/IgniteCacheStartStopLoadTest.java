@@ -64,8 +64,8 @@ public class IgniteCacheStartStopLoadTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        return super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName);
     }
 
     /** {@inheritDoc} */
@@ -91,7 +91,7 @@ public class IgniteCacheStartStopLoadTest extends GridCommonAbstractTest {
 
             GridTestUtils.runMultiThreaded(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    CacheConfiguration ccfg = new CacheConfiguration();
+                    CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
                     ccfg.setName(CACHE_NAMES[idx.getAndIncrement()]);
 
@@ -113,7 +113,6 @@ public class IgniteCacheStartStopLoadTest extends GridCommonAbstractTest {
 
                 cache.put(1, obj);
 
-                weakMap.put(((IgniteCacheProxy)cache).delegate(), Boolean.TRUE);
                 weakMap.put(obj, Boolean.TRUE);
             }
 

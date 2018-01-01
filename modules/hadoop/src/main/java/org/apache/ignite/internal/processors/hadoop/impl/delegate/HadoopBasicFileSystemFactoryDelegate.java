@@ -154,7 +154,7 @@ public class HadoopBasicFileSystemFactoryDelegate implements HadoopFileSystemFac
             try {
                 fullUri = new URI(proxy0.getUri());
             }
-            catch (URISyntaxException use) {
+            catch (URISyntaxException ignored) {
                 throw new IgniteException("Failed to resolve secondary file system URI: " + proxy0.getUri());
             }
         }

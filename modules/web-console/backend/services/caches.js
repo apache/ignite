@@ -17,21 +17,22 @@
 
 'use strict';
 
+const _ = require('lodash');
+
 // Fire me up!
 
 module.exports = {
     implements: 'services/caches',
-    inject: ['require(lodash)', 'mongo', 'services/spaces', 'errors']
+    inject: ['mongo', 'services/spaces', 'errors']
 };
 
 /**
- * @param _
  * @param mongo
  * @param {SpacesService} spaceService
  * @param errors
  * @returns {CachesService}
  */
-module.exports.factory = (_, mongo, spaceService, errors) => {
+module.exports.factory = (mongo, spaceService, errors) => {
     /**
      * Convert remove status operation to own presentation.
      *
@@ -57,6 +58,8 @@ module.exports.factory = (_, mongo, spaceService, errors) => {
             .catch((err) => {
                 if (err.code === mongo.errCodes.DUPLICATE_KEY_UPDATE_ERROR || err.code === mongo.errCodes.DUPLICATE_KEY_ERROR)
                     throw new errors.DuplicateKeyException('Cache with name: "' + cache.name + '" already exist.');
+                else
+                    throw err;
             });
     };
 
@@ -76,6 +79,8 @@ module.exports.factory = (_, mongo, spaceService, errors) => {
             .catch((err) => {
                 if (err.code === mongo.errCodes.DUPLICATE_KEY_ERROR)
                     throw new errors.DuplicateKeyException('Cache with name: "' + cache.name + '" already exist.');
+                else
+                    throw err;
             });
     };
 
@@ -131,6 +136,8 @@ module.exports.factory = (_, mongo, spaceService, errors) => {
 
             return mongo.Cluster.update({caches: {$in: [cacheId]}}, {$pull: {caches: cacheId}}, {multi: true}).exec()
                 .then(() => mongo.Cluster.update({}, {$pull: {checkpointSpi: {kind: 'Cache', Cache: {cache: cacheId}}}}, {multi: true}).exec())
+                // TODO WC-201 fix clenup of cache on deletion for cluster service configuration.
+                // .then(() => mongo.Cluster.update({'serviceConfigurations.cache': cacheId}, {$unset: {'serviceConfigurations.$.cache': ''}}, {multi: true}).exec())
                 .then(() => mongo.DomainModel.update({caches: {$in: [cacheId]}}, {$pull: {caches: cacheId}}, {multi: true}).exec())
                 .then(() => mongo.Cache.remove({_id: cacheId}).exec())
                 .then(convertRemoveStatus);

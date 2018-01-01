@@ -38,7 +38,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
-import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -107,6 +106,8 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         GridRestCommandHandler hnd = new TestableCacheCommandHandler(grid().context(), "getAsync");
 
         GridRestCacheRequest req = new GridRestCacheRequest();
+
+        req.cacheName(DEFAULT_CACHE_NAME);
 
         req.command(GridRestCommand.CACHE_GET);
 
@@ -186,6 +187,8 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
 
         GridRestCacheRequest req = new GridRestCacheRequest();
 
+        req.cacheName(DEFAULT_CACHE_NAME);
+
         req.command(append ? GridRestCommand.CACHE_APPEND : GridRestCommand.CACHE_PREPEND);
 
         req.key(key);
@@ -207,6 +210,35 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         }
 
         return res;
+    }
+
+    /**
+     * Tests the execution of the CACHE_CLEAR command.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCacheClear() throws Exception {
+        GridRestCommandHandler hnd = new GridCacheCommandHandler(((IgniteKernal)grid()).context());
+
+        GridRestCacheRequest req = new GridRestCacheRequest();
+
+        req.cacheName(DEFAULT_CACHE_NAME);
+
+        req.command(GridRestCommand.CACHE_CLEAR);
+
+        try {
+            // Change cache state.
+            for (int i = 0; i < 10; i++ ) {
+                jcache().put(UUID.randomUUID().toString(), UUID.randomUUID().toString());
+            }
+
+            assertTrue(jcache().size() == 10);
+
+            assertTrue((Boolean) hnd.handleAsync(req).get().getResponse());
+        }
+        finally {
+            assertTrue(jcache().size() == 0);
+        }
     }
 
     /**

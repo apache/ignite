@@ -28,9 +28,11 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -58,6 +60,13 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectByteArrayImpl;
+import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectImpl;
+import org.apache.ignite.internal.processors.cacheobject.UserKeyCacheObjectImpl;
+import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -65,8 +74,8 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 
 /**
  * Binary utils.
@@ -91,6 +100,9 @@ public class BinaryUtils {
     /** Binary classes. */
     private static final Collection<Class<?>> BINARY_CLS = new HashSet<>();
 
+    /** Class for SingletonList obtained at runtime. */
+    public static final Class<? extends Collection> SINGLETON_LIST_CLS = Collections.singletonList(null).getClass();
+
     /** Flag: user type. */
     public static final short FLAG_USR_TYP = 0x0001;
 
@@ -109,8 +121,9 @@ public class BinaryUtils {
     /** Flag: compact footer, no field IDs. */
     public static final short FLAG_COMPACT_FOOTER = 0x0020;
 
-    /** Flag: no hash code has been set. */
-    public static final short FLAG_EMPTY_HASH_CODE = 0x0040;
+    /** Flag: raw data contains .NET type information. Always 0 in Java. Keep it here for information only. */
+    @SuppressWarnings("unused")
+    public static final short FLAG_CUSTOM_DOTNET_TYPE = 0x0040;
 
     /** Offset which fits into 1 byte. */
     public static final int OFFSET_1 = 1;
@@ -141,7 +154,7 @@ public class BinaryUtils {
     /** FNV1 hash prime. */
     private static final int FNV1_PRIME = 0x01000193;
 
-    /**
+    /*
      * Static class initializer.
      */
     static {
@@ -158,6 +171,7 @@ public class BinaryUtils {
         PLAIN_CLASS_TO_FLAG.put(UUID.class, GridBinaryMarshaller.UUID);
         PLAIN_CLASS_TO_FLAG.put(Date.class, GridBinaryMarshaller.DATE);
         PLAIN_CLASS_TO_FLAG.put(Timestamp.class, GridBinaryMarshaller.TIMESTAMP);
+        PLAIN_CLASS_TO_FLAG.put(Time.class, GridBinaryMarshaller.TIME);
 
         PLAIN_CLASS_TO_FLAG.put(byte[].class, GridBinaryMarshaller.BYTE_ARR);
         PLAIN_CLASS_TO_FLAG.put(short[].class, GridBinaryMarshaller.SHORT_ARR);
@@ -172,6 +186,7 @@ public class BinaryUtils {
         PLAIN_CLASS_TO_FLAG.put(UUID[].class, GridBinaryMarshaller.UUID_ARR);
         PLAIN_CLASS_TO_FLAG.put(Date[].class, GridBinaryMarshaller.DATE_ARR);
         PLAIN_CLASS_TO_FLAG.put(Timestamp[].class, GridBinaryMarshaller.TIMESTAMP_ARR);
+        PLAIN_CLASS_TO_FLAG.put(Time[].class, GridBinaryMarshaller.TIME_ARR);
 
         for (Map.Entry<Class<?>, Byte> entry : PLAIN_CLASS_TO_FLAG.entrySet())
             FLAG_TO_CLASS.put(entry.getValue(), entry.getKey());
@@ -187,8 +202,8 @@ public class BinaryUtils {
 
         for (byte b : new byte[] {
             GridBinaryMarshaller.BYTE, GridBinaryMarshaller.SHORT, GridBinaryMarshaller.INT, GridBinaryMarshaller.LONG, GridBinaryMarshaller.FLOAT, GridBinaryMarshaller.DOUBLE,
-            GridBinaryMarshaller.CHAR, GridBinaryMarshaller.BOOLEAN, GridBinaryMarshaller.DECIMAL, GridBinaryMarshaller.STRING, GridBinaryMarshaller.UUID, GridBinaryMarshaller.DATE, GridBinaryMarshaller.TIMESTAMP,
-            GridBinaryMarshaller.BYTE_ARR, GridBinaryMarshaller.SHORT_ARR, GridBinaryMarshaller.INT_ARR, GridBinaryMarshaller.LONG_ARR, GridBinaryMarshaller.FLOAT_ARR, GridBinaryMarshaller.DOUBLE_ARR,
+            GridBinaryMarshaller.CHAR, GridBinaryMarshaller.BOOLEAN, GridBinaryMarshaller.DECIMAL, GridBinaryMarshaller.STRING, GridBinaryMarshaller.UUID, GridBinaryMarshaller.DATE, GridBinaryMarshaller.TIMESTAMP, GridBinaryMarshaller.TIME,
+            GridBinaryMarshaller.BYTE_ARR, GridBinaryMarshaller.SHORT_ARR, GridBinaryMarshaller.INT_ARR, GridBinaryMarshaller.LONG_ARR, GridBinaryMarshaller.FLOAT_ARR, GridBinaryMarshaller.DOUBLE_ARR, GridBinaryMarshaller.TIME_ARR,
             GridBinaryMarshaller.CHAR_ARR, GridBinaryMarshaller.BOOLEAN_ARR, GridBinaryMarshaller.DECIMAL_ARR, GridBinaryMarshaller.STRING_ARR, GridBinaryMarshaller.UUID_ARR, GridBinaryMarshaller.DATE_ARR, GridBinaryMarshaller.TIMESTAMP_ARR,
             GridBinaryMarshaller.ENUM, GridBinaryMarshaller.ENUM_ARR, GridBinaryMarshaller.NULL}) {
 
@@ -207,6 +222,7 @@ public class BinaryUtils {
         BINARY_CLS.add(UUID.class);
         BINARY_CLS.add(Date.class);
         BINARY_CLS.add(Timestamp.class);
+        BINARY_CLS.add(Time.class);
         BINARY_CLS.add(BigDecimal.class);
         BINARY_CLS.add(byte[].class);
         BINARY_CLS.add(short[].class);
@@ -220,6 +236,7 @@ public class BinaryUtils {
         BINARY_CLS.add(UUID[].class);
         BINARY_CLS.add(Date[].class);
         BINARY_CLS.add(Timestamp[].class);
+        BINARY_CLS.add(Time[].class);
         BINARY_CLS.add(BigDecimal[].class);
 
         FIELD_TYPE_NAMES = new String[104];
@@ -237,6 +254,7 @@ public class BinaryUtils {
         FIELD_TYPE_NAMES[GridBinaryMarshaller.STRING] = "String";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.DATE] = "Date";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.TIMESTAMP] = "Timestamp";
+        FIELD_TYPE_NAMES[GridBinaryMarshaller.TIME] = "Time";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.ENUM] = "Enum";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.OBJ] = "Object";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.BINARY_OBJ] = "Object";
@@ -256,8 +274,10 @@ public class BinaryUtils {
         FIELD_TYPE_NAMES[GridBinaryMarshaller.STRING_ARR] = "String[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.DATE_ARR] = "Date[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.TIMESTAMP_ARR] = "Timestamp[]";
+        FIELD_TYPE_NAMES[GridBinaryMarshaller.TIME_ARR] = "Time[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.OBJ_ARR] = "Object[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.ENUM_ARR] = "Enum[]";
+        FIELD_TYPE_NAMES[GridBinaryMarshaller.BINARY_ENUM] = "Enum";
 
         if (wrapTrees()) {
             CLS_TO_WRITE_REPLACER.put(TreeMap.class, new BinaryTreeMapWriteReplacer());
@@ -347,16 +367,13 @@ public class BinaryUtils {
 
     /**
      * @param typeId Field type ID.
-     * @return Field type name.
+     * @return Field type name or {@code null} if unknown.
      */
     public static String fieldTypeName(int typeId) {
-        assert typeId >= 0 && typeId < FIELD_TYPE_NAMES.length : typeId;
+        if(typeId < 0 || typeId >= FIELD_TYPE_NAMES.length)
+            return null;
 
-        String typeName = FIELD_TYPE_NAMES[typeId];
-
-        assert typeName != null : typeId;
-
-        return typeName;
+        return FIELD_TYPE_NAMES[typeId];
     }
 
     /**
@@ -445,6 +462,11 @@ public class BinaryUtils {
 
                 break;
 
+            case GridBinaryMarshaller.TIME:
+                writer.doWriteTime((Time)val);
+
+                break;
+
             case GridBinaryMarshaller.BYTE_ARR:
                 writer.doWriteByteArray((byte[])val);
 
@@ -510,6 +532,11 @@ public class BinaryUtils {
 
                 break;
 
+            case GridBinaryMarshaller.TIME_ARR:
+                writer.doWriteTimeArray((Time[])val);
+
+                break;
+
             default:
                 throw new IllegalArgumentException("Can't write object with type: " + val.getClass());
         }
@@ -560,7 +587,8 @@ public class BinaryUtils {
      * @return {@code true} if content of serialized array value cannot contain references to other object.
      */
     public static boolean isPlainArrayType(int type) {
-        return (type >= GridBinaryMarshaller.BYTE_ARR && type <= GridBinaryMarshaller.DATE_ARR) || type == GridBinaryMarshaller.TIMESTAMP_ARR;
+        return (type >= GridBinaryMarshaller.BYTE_ARR && type <= GridBinaryMarshaller.DATE_ARR)
+            || type == GridBinaryMarshaller.TIMESTAMP_ARR || type == GridBinaryMarshaller.TIME_ARR;
     }
 
     /**
@@ -573,11 +601,12 @@ public class BinaryUtils {
         if (type != null)
             return type;
 
-        if (cls.isEnum())
+        if (isEnum(cls))
             return GridBinaryMarshaller.ENUM;
 
         if (cls.isArray())
-            return cls.getComponentType().isEnum() || cls.getComponentType() == Enum.class ? GridBinaryMarshaller.ENUM_ARR : GridBinaryMarshaller.OBJ_ARR;
+            return cls.getComponentType().isEnum() || cls.getComponentType() == Enum.class ?
+                GridBinaryMarshaller.ENUM_ARR : GridBinaryMarshaller.OBJ_ARR;
 
         if (isSpecialCollection(cls))
             return GridBinaryMarshaller.COL;
@@ -679,7 +708,28 @@ public class BinaryUtils {
             (!wrapTrees() && cls == TreeSet.class) ||
             cls == ConcurrentSkipListSet.class ||
             cls == ArrayList.class ||
-            cls == LinkedList.class;
+            cls == LinkedList.class ||
+            cls == SINGLETON_LIST_CLS;
+    }
+
+    /**
+     * @param obj Object to check.
+     * @return True if this is an object of a known type.
+     */
+    public static boolean knownCacheObject(Object obj) {
+        if (obj == null)
+            return false;
+
+        Class<?> cls= obj.getClass();
+
+        return cls == KeyCacheObjectImpl.class ||
+            cls == BinaryObjectImpl.class ||
+            cls == CacheObjectImpl.class ||
+            cls == CacheObjectByteArrayImpl.class ||
+            cls == BinaryEnumObjectImpl.class ||
+            cls == UserKeyCacheObjectImpl.class ||
+            cls == UserCacheObjectImpl.class ||
+            cls == UserCacheObjectByteArrayImpl.class;
     }
 
     /**
@@ -695,7 +745,7 @@ public class BinaryUtils {
         return cls == byte[].class || cls == short[].class || cls == int[].class || cls == long[].class ||
             cls == float[].class || cls == double[].class || cls == char[].class || cls == boolean[].class ||
             cls == String[].class || cls == UUID[].class || cls == Date[].class || cls == Timestamp[].class ||
-            cls == BigDecimal[].class;
+            cls == BigDecimal[].class || cls == Time[].class;
     }
 
     /**
@@ -720,6 +770,8 @@ public class BinaryUtils {
             return new ArrayList<>(((Collection)col).size());
         else if (cls == LinkedList.class)
             return new LinkedList<>();
+        else if (cls == SINGLETON_LIST_CLS)
+            return new MutableSingletonList<>();
 
         return null;
     }
@@ -947,19 +999,33 @@ public class BinaryUtils {
             }
 
             // Check and merge fields.
+            Map<String, BinaryFieldMetadata> mergedFields;
+
+            if (FIELDS_SORTED_ORDER)
+                mergedFields = new TreeMap<>(oldMeta.fieldsMap());
+            else
+                mergedFields = new LinkedHashMap<>(oldMeta.fieldsMap());
+
+            Map<String, BinaryFieldMetadata> newFields = newMeta.fieldsMap();
+
             boolean changed = false;
 
-            Map<String, Integer> mergedFields = new HashMap<>(oldMeta.fieldsMap());
-            Map<String, Integer> newFields = newMeta.fieldsMap();
+            Map<String, Integer> mergedEnumMap = null;
 
-            for (Map.Entry<String, Integer> newField : newFields.entrySet()) {
-                Integer oldFieldType = mergedFields.put(newField.getKey(), newField.getValue());
+            if (!F.isEmpty(newMeta.enumMap())) {
+                mergedEnumMap = mergeEnumValues(oldMeta.typeName(), oldMeta.enumMap(), newMeta.enumMap());
 
-                if (oldFieldType == null)
+                changed = mergedEnumMap.size() > oldMeta.enumMap().size();
+            }
+
+            for (Map.Entry<String, BinaryFieldMetadata> newField : newFields.entrySet()) {
+                BinaryFieldMetadata oldFieldMeta = mergedFields.put(newField.getKey(), newField.getValue());
+
+                if (oldFieldMeta == null)
                     changed = true;
                 else {
-                    String oldFieldTypeName = fieldTypeName(oldFieldType);
-                    String newFieldTypeName = fieldTypeName(newField.getValue());
+                    String oldFieldTypeName = fieldTypeName(oldFieldMeta.typeId());
+                    String newFieldTypeName = fieldTypeName(newField.getValue().typeId());
 
                     if (!F.eq(oldFieldTypeName, newFieldTypeName)) {
                         throw new BinaryObjectException(
@@ -982,7 +1048,7 @@ public class BinaryUtils {
 
             // Return either old meta if no changes detected, or new merged meta.
             return changed ? new BinaryMetadata(oldMeta.typeId(), oldMeta.typeName(), mergedFields,
-                oldMeta.affinityKeyFieldName(), mergedSchemas, oldMeta.isEnum()) : oldMeta;
+                oldMeta.affinityKeyFieldName(), mergedSchemas, oldMeta.isEnum(), mergedEnumMap) : oldMeta;
         }
     }
 
@@ -994,7 +1060,7 @@ public class BinaryUtils {
     public static BinaryWriteMode mode(Class<?> cls) {
         assert cls != null;
 
-        /** Primitives. */
+        // Primitives.
         if (cls == byte.class)
             return BinaryWriteMode.P_BYTE;
         else if (cls == boolean.class)
@@ -1012,7 +1078,7 @@ public class BinaryUtils {
         else if (cls == double.class)
             return BinaryWriteMode.P_DOUBLE;
 
-        /** Boxed primitives. */
+        // Boxed primitives.
         else if (cls == Byte.class)
             return BinaryWriteMode.BYTE;
         else if (cls == Boolean.class)
@@ -1030,7 +1096,7 @@ public class BinaryUtils {
         else if (cls == Double.class)
             return BinaryWriteMode.DOUBLE;
 
-        /** The rest types. */
+        // The rest types.
         else if (cls == BigDecimal.class)
             return BinaryWriteMode.DECIMAL;
         else if (cls == String.class)
@@ -1041,6 +1107,8 @@ public class BinaryUtils {
             return BinaryWriteMode.DATE;
         else if (cls == Timestamp.class)
             return BinaryWriteMode.TIMESTAMP;
+        else if (cls == Time.class)
+            return BinaryWriteMode.TIME;
         else if (cls == byte[].class)
             return BinaryWriteMode.BYTE_ARR;
         else if (cls == short[].class)
@@ -1067,6 +1135,8 @@ public class BinaryUtils {
             return BinaryWriteMode.DATE_ARR;
         else if (cls == Timestamp[].class)
             return BinaryWriteMode.TIMESTAMP_ARR;
+        else if (cls == Time[].class)
+            return BinaryWriteMode.TIME_ARR;
         else if (cls.isArray())
             return cls.getComponentType().isEnum() ? BinaryWriteMode.ENUM_ARR : BinaryWriteMode.OBJECT_ARR;
         else if (cls == BinaryObjectImpl.class)
@@ -1077,8 +1147,10 @@ public class BinaryUtils {
             return BinaryWriteMode.COL;
         else if (isSpecialMap(cls))
             return BinaryWriteMode.MAP;
-        else if (cls.isEnum())
+        else if (isEnum(cls))
             return BinaryWriteMode.ENUM;
+        else if (cls == BinaryEnumObjectImpl.class)
+            return BinaryWriteMode.BINARY_ENUM;
         else if (cls == Class.class)
             return BinaryWriteMode.CLASS;
         else if (Proxy.class.isAssignableFrom(cls))
@@ -1094,7 +1166,7 @@ public class BinaryUtils {
      * @return {@code True} if this is a special collection class.
      */
     public static boolean isSpecialCollection(Class cls) {
-        return ArrayList.class.equals(cls) || LinkedList.class.equals(cls) ||
+        return ArrayList.class.equals(cls) || LinkedList.class.equals(cls) || SINGLETON_LIST_CLS.equals(cls) ||
             HashSet.class.equals(cls) || LinkedHashSet.class.equals(cls);
     }
 
@@ -1106,6 +1178,21 @@ public class BinaryUtils {
      */
     public static boolean isSpecialMap(Class cls) {
         return HashMap.class.equals(cls) || LinkedHashMap.class.equals(cls);
+    }
+
+    /**
+     * Check if class represents a Enum.
+     *
+     * @param cls Class.
+     * @return {@code True} if this is a Enum class.
+     */
+    public static boolean isEnum(Class cls) {
+        if (cls.isEnum())
+            return true;
+
+        Class sCls = cls.getSuperclass();
+
+        return sCls != null && sCls.isEnum();
     }
 
     /**
@@ -1187,13 +1274,15 @@ public class BinaryUtils {
         int scale = in.readInt();
         byte[] mag = doReadByteArray(in);
 
+        boolean negative = mag[0] < 0;
+
+        if (negative)
+            mag[0] &= 0x7F;
+
         BigInteger intVal = new BigInteger(mag);
 
-        if (scale < 0) {
-            scale &= 0x7FFFFFFF;
-
+        if (negative)
             intVal = intVal.negate();
-        }
 
         return new BigDecimal(intVal, scale);
     }
@@ -1258,6 +1347,15 @@ public class BinaryUtils {
         ts.setNanos(ts.getNanos() + nanos);
 
         return ts;
+    }
+
+    /**
+     * @return Value.
+     */
+    public static Time doReadTime(BinaryInputStream in) {
+        long time = in.readLong();
+
+        return new Time(time);
     }
 
     /**
@@ -1387,8 +1485,33 @@ public class BinaryUtils {
 
     /**
      * @return Value.
+     * @throws BinaryObjectException In case of error.
      */
-    public static BinaryObject doReadBinaryObject(BinaryInputStream in, BinaryContext ctx) {
+    public static Time[] doReadTimeArray(BinaryInputStream in) throws BinaryObjectException {
+        int len = in.readInt();
+
+        Time[] arr = new Time[len];
+
+        for (int i = 0; i < len; i++) {
+            byte flag = in.readByte();
+
+            if (flag == GridBinaryMarshaller.NULL)
+                arr[i] = null;
+            else {
+                if (flag != GridBinaryMarshaller.TIME)
+                    throw new BinaryObjectException("Invalid flag value: " + flag);
+
+                arr[i] = doReadTime(in);
+            }
+        }
+
+        return arr;
+    }
+
+    /**
+     * @return Value.
+     */
+    public static BinaryObject doReadBinaryObject(BinaryInputStream in, BinaryContext ctx, boolean detach) {
         if (in.offheapPointer() > 0) {
             int len = in.readInt();
 
@@ -1404,16 +1527,49 @@ public class BinaryUtils {
             byte[] arr = doReadByteArray(in);
             int start = in.readInt();
 
-            return new BinaryObjectImpl(ctx, arr, start);
+            BinaryObjectImpl binO = new BinaryObjectImpl(ctx, arr, start);
+
+            if (detach) {
+                binO.detachAllowed(true);
+
+                return binO.detach();
+            }
+
+            return binO;
         }
     }
 
     /**
-     * @return Value.
+     * @param in Binary input stream.
+     * @param ctx Binary context.
+     * @param ldr Class loader.
+     * @return Class object specified at the input stream.
+     * @throws BinaryObjectException If failed.
      */
     public static Class doReadClass(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr)
         throws BinaryObjectException {
+        return doReadClass(in, ctx, ldr, true);
+    }
+
+    /**
+     * @param in Binary input stream.
+     * @param ctx Binary context.
+     * @param ldr Class loader.
+     * @param deserialize Doesn't load the class when the flag is {@code false}. Class information is skipped.
+     * @return Class object specified at the input stream if {@code deserialize == true}. Otherwise returns {@code null}
+     * @throws BinaryObjectException If failed.
+     */
+    public static Class doReadClass(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, boolean deserialize)
+        throws BinaryObjectException {
         int typeId = in.readInt();
+
+        if (!deserialize) {
+            // Skip class name at the stream.
+            if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
+                doReadClassName(in);
+
+            return null;
+        }
 
         return doReadClass(in, ctx, ldr, typeId);
     }
@@ -1466,18 +1622,19 @@ public class BinaryUtils {
     }
 
     /**
+     * @param in Binary input stream.
+     * @param ctx Binary context.
+     * @param ldr Class loader.
      * @param typeId Type id.
-     * @return Value.
+     * @return Class object specified at the input stream.
+     * @throws BinaryObjectException If failed.
      */
     public static Class doReadClass(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, int typeId)
         throws BinaryObjectException {
         Class cls;
 
-        if (typeId == GridBinaryMarshaller.OBJECT_TYPE_ID)
-            return Object.class;
-
         if (typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
-            cls = ctx.descriptorForTypeId(true, typeId, ldr, false).describedClass();
+            cls = ctx.descriptorForTypeId(true, typeId, ldr, true).describedClass();
         else {
             String clsName = doReadClassName(in);
 
@@ -1508,9 +1665,6 @@ public class BinaryUtils {
         @Nullable ClassLoader ldr, boolean deserialize) {
         Class cls;
 
-        if (typeId == GridBinaryMarshaller.OBJECT_TYPE_ID)
-            return Object.class;
-
         if (typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
             cls = ctx.descriptorForTypeId(true, typeId, ldr, deserialize).describedClass();
         else {
@@ -1526,6 +1680,17 @@ public class BinaryUtils {
         }
 
         return cls;
+    }
+
+    /**
+     * Read binary enum.
+     *
+     * @param in Input stream.
+     * @param ctx Binary context.
+     * @return Enum.
+     */
+    public static BinaryEnumObjectImpl doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx) {
+        return doReadBinaryEnum(in, ctx, doReadEnumType(in));
     }
 
     /**
@@ -1751,6 +1916,9 @@ public class BinaryUtils {
             case GridBinaryMarshaller.TIMESTAMP:
                 return doReadTimestamp(in);
 
+            case GridBinaryMarshaller.TIME:
+                return doReadTime(in);
+
             case GridBinaryMarshaller.BYTE_ARR:
                 return doReadByteArray(in);
 
@@ -1790,6 +1958,9 @@ public class BinaryUtils {
             case GridBinaryMarshaller.TIMESTAMP_ARR:
                 return doReadTimestampArray(in);
 
+            case GridBinaryMarshaller.TIME_ARR:
+                return doReadTimeArray(in);
+
             case GridBinaryMarshaller.OBJ_ARR:
                 return doReadObjectArray(in, ctx, ldr, handles, false);
 
@@ -1800,9 +1971,10 @@ public class BinaryUtils {
                 return doReadMap(in, ctx, ldr, handles, false, null);
 
             case GridBinaryMarshaller.BINARY_OBJ:
-                return doReadBinaryObject(in, ctx);
+                return doReadBinaryObject(in, ctx, detach);
 
             case GridBinaryMarshaller.ENUM:
+            case GridBinaryMarshaller.BINARY_ENUM:
                 return doReadBinaryEnum(in, ctx, doReadEnumType(in));
 
             case GridBinaryMarshaller.ENUM_ARR:
@@ -1825,6 +1997,10 @@ public class BinaryUtils {
     }
 
     /**
+     * @param in Binary input stream.
+     * @param ctx Binary context.
+     * @param ldr Class loader.
+     * @param handles Holder for handles.
      * @param deserialize Deep flag.
      * @return Value.
      * @throws BinaryObjectException In case of error.
@@ -1833,7 +2009,7 @@ public class BinaryUtils {
         BinaryReaderHandlesHolder handles, boolean deserialize) throws BinaryObjectException {
         int hPos = positionForHandle(in);
 
-        Class compType = doReadClass(in, ctx, ldr);
+        Class compType = doReadClass(in, ctx, ldr, deserialize);
 
         int len = in.readInt();
 
@@ -1881,6 +2057,11 @@ public class BinaryUtils {
 
                     break;
 
+                case GridBinaryMarshaller.SINGLETON_LIST:
+                    col = new MutableSingletonList<>();
+
+                    break;
+
                 case GridBinaryMarshaller.HASH_SET:
                     col = U.newHashSet(size);
 
@@ -1911,7 +2092,7 @@ public class BinaryUtils {
         for (int i = 0; i < size; i++)
             col.add(deserializeOrUnmarshal(in, ctx, ldr, handles, deserialize));
 
-        return col;
+        return colType == GridBinaryMarshaller.SINGLETON_LIST ? U.convertToSingletonList(col) : col;
     }
 
     /**
@@ -2222,7 +2403,9 @@ public class BinaryUtils {
         if (ctx == null)
             throw new BinaryObjectException("BinaryContext is not set for the object.");
 
-        return new BinaryTypeProxy(ctx, obj.typeId());
+        String clsName = obj instanceof BinaryEnumObjectImpl ? ((BinaryEnumObjectImpl)obj).className() : null;
+
+        return new BinaryTypeProxy(ctx, obj.typeId(), clsName);
     }
 
     /**
@@ -2247,6 +2430,85 @@ public class BinaryUtils {
      */
     public static BinaryWriteReplacer writeReplacer(Class cls) {
         return cls != null ? CLS_TO_WRITE_REPLACER.get(cls) : null;
+    }
+
+    /**
+     * Checks enum values mapping.
+     *
+     * @param typeName Name of the type.
+     * @param enumValues Enum name to ordinal mapping.
+     * @throws BinaryObjectException
+     */
+    public static void validateEnumValues(String typeName, @Nullable Map<String, Integer> enumValues)
+            throws BinaryObjectException {
+
+        if (enumValues == null)
+            return;
+
+        Map<Integer, String> tmpMap = new LinkedHashMap<>(enumValues.size());
+        for (Map.Entry<String, Integer> e: enumValues.entrySet()) {
+
+            String prevName = tmpMap.put(e.getValue(), e.getKey());
+
+            if (prevName != null)
+                throw new BinaryObjectException("Conflicting enum values. Name '" + e.getKey() +
+                        "' uses ordinal value (" + e.getValue() +
+                        ") that is also used for name '" + prevName +
+                        "' [typeName='" + typeName + "']");
+        }
+    }
+
+    /**
+     * Merges enum value mappings and checks for conflicts.
+     *
+     * Possible conflicts:
+     * - same name is used for different ordinal values.
+     * - ordinal value is used more than once.
+     *
+     * @param typeName Name of the type.
+     * @param oldValues Old enum value mapping.
+     * @param newValues New enum value mapping.
+     * @throws BinaryObjectException in case of name or value conflict.
+     */
+    public static Map<String, Integer> mergeEnumValues(String typeName,
+            @Nullable Map<String, Integer> oldValues,
+            Map<String, Integer> newValues)
+            throws BinaryObjectException {
+
+        assert newValues != null;
+
+        int size = (oldValues != null) ? oldValues.size() + newValues.size() : newValues.size();
+
+        Map<Integer, String> revMap = new LinkedHashMap<>(size);
+        Map<String, Integer> mergedMap = new LinkedHashMap<>(size);
+
+        if (oldValues != null) {
+            //assuming that old values were validated earlier once.
+            for (Map.Entry<String, Integer> e : oldValues.entrySet()) {
+                revMap.put(e.getValue(), e.getKey());
+                mergedMap.put(e.getKey(), e.getValue());
+            }
+        }
+
+        for (Map.Entry<String, Integer> e: newValues.entrySet()) {
+            String prevName = revMap.put(e.getValue(), e.getKey());
+
+            if (prevName != null && !prevName.equals(e.getKey()))
+                throw new BinaryObjectException("Conflicting enum values. Name '" + e.getKey() +
+                        "' uses ordinal value (" + e.getValue() +
+                        ") that is also used for name '" + prevName +
+                        "' [typeName='" + typeName + "']");
+
+            Integer prevVal = mergedMap.put(e.getKey(), e.getValue());
+
+            if (prevVal != null && !prevVal.equals(e.getValue()))
+                throw new BinaryObjectException("Conflicting enum values. Value (" + e.getValue() +
+                        ") has name '" + e.getKey() +
+                        "' that is also used for value '" + prevVal +
+                        "' [typeName='" + typeName + "']");
+        }
+
+        return mergedMap;
     }
 
     /**

@@ -18,9 +18,12 @@
 namespace Apache.Ignite.Linq.Impl
 {
     using System.Threading;
+    using Apache.Ignite.Linq.Impl.Dml;
     using Remotion.Linq.Parsing.ExpressionVisitors.Transformation;
+    using Remotion.Linq.Parsing.ExpressionVisitors.TreeEvaluation;
     using Remotion.Linq.Parsing.Structure;
     using Remotion.Linq.Parsing.Structure.ExpressionTreeProcessors;
+    using Remotion.Linq.Parsing.Structure.NodeTypeProviders;
 
     /// <summary>
     /// Cache query parser.
@@ -46,11 +49,50 @@ namespace Apache.Ignite.Linq.Impl
         {
             var transformerRegistry = ExpressionTransformerRegistry.CreateDefault();
 
-            var proc = new TransformingExpressionTreeProcessor(transformerRegistry);
+            var proc = CreateCompoundProcessor(transformerRegistry);
 
-            var parser = new ExpressionTreeParser(ExpressionTreeParser.CreateDefaultNodeTypeProvider(), proc);
+            var parser = new ExpressionTreeParser(CreateNodeTypeProvider(), proc);
 
             return new QueryParser(parser);
+        }
+
+        /// <summary>
+        /// Creates the node type provider.
+        /// </summary>
+        private static INodeTypeProvider CreateNodeTypeProvider()
+        {
+            var methodInfoRegistry = MethodInfoBasedNodeTypeRegistry.CreateFromRelinqAssembly();
+
+            methodInfoRegistry.Register(RemoveAllExpressionNode.GetSupportedMethods(), 
+                typeof(RemoveAllExpressionNode));
+
+            return new CompoundNodeTypeProvider(new INodeTypeProvider[]
+            {
+                methodInfoRegistry,
+                MethodNameBasedNodeTypeRegistry.CreateFromRelinqAssembly()
+            });
+        }
+
+        /// <summary>
+        /// Creates CompoundExpressionTreeProcessor.
+        /// </summary>
+        private static CompoundExpressionTreeProcessor CreateCompoundProcessor(
+            IExpressionTranformationProvider tranformationProvider)
+        {
+            return new CompoundExpressionTreeProcessor(
+                new IExpressionTreeProcessor[]
+                {
+                    new PartialEvaluatingExpressionTreeProcessor(new NullEvaluatableExpressionFilter()),
+                    new TransformingExpressionTreeProcessor(tranformationProvider)
+                });
+        }
+
+        /// <summary>
+        /// Empty implementation of IEvaluatableExpressionFilter.
+        /// </summary>
+        private sealed class NullEvaluatableExpressionFilter : EvaluatableExpressionFilterBase
+        {
+            // No-op.
         }
     }
 }

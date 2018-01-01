@@ -30,10 +30,10 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -74,12 +74,12 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
     private static final int KEY_RANGE = 1000;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
-        if (gridName.equals(getTestGridName(GRID_CNT - 1)))
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(GRID_CNT - 1)))
             cfg.setClientMode(true);
 
         return cfg;
@@ -107,59 +107,59 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return Test near cache flag.
+     */
+    protected boolean nearCacheEnabled() {
+        return false;
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testTxOperations() throws Exception {
-        txOperations(PARTITIONED, FULL_SYNC, false, false);
+        txOperations(PARTITIONED, FULL_SYNC, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCrossCacheTxOperations() throws Exception {
-        txOperations(PARTITIONED, FULL_SYNC, true, false);
+        txOperations(PARTITIONED, FULL_SYNC, true);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCrossCacheTxOperationsPrimarySync() throws Exception {
-        txOperations(PARTITIONED, PRIMARY_SYNC, true, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCrossCacheTxOperationsFairAffinity() throws Exception {
-        txOperations(PARTITIONED, FULL_SYNC, true, true);
+        txOperations(PARTITIONED, PRIMARY_SYNC, true);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCrossCacheTxOperationsReplicated() throws Exception {
-        txOperations(REPLICATED, FULL_SYNC, true, false);
+        txOperations(REPLICATED, FULL_SYNC, true);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCrossCacheTxOperationsReplicatedPrimarySync() throws Exception {
-        txOperations(REPLICATED, PRIMARY_SYNC, true, false);
+        txOperations(REPLICATED, PRIMARY_SYNC, true);
     }
 
     /**
      * @param name Cache name.
      * @param cacheMode Cache mode.
      * @param writeSync Write synchronization mode.
-     * @param fairAff If {@code true} uses {@link FairAffinityFunction}, otherwise {@link RendezvousAffinityFunction}.
+     * @param nearCache Near cache flag.
      * @return Cache configuration.
      */
     protected CacheConfiguration cacheConfiguration(String name,
         CacheMode cacheMode,
         CacheWriteSynchronizationMode writeSync,
-        boolean fairAff) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        boolean nearCache) {
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(name);
         ccfg.setCacheMode(cacheMode);
@@ -169,7 +169,10 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
         if (cacheMode == PARTITIONED)
             ccfg.setBackups(1);
 
-        ccfg.setAffinity(fairAff ? new FairAffinityFunction() : new RendezvousAffinityFunction());
+        ccfg.setAffinity(new RendezvousAffinityFunction());
+
+        if (nearCache)
+            ccfg.setNearConfiguration(new NearCacheConfiguration());
 
         return ccfg;
     }
@@ -177,34 +180,32 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
     /**
      * @param cacheMode Cache mode.
      * @param writeSync Write synchronization mode.
-     * @param fairAff Fair affinity flag.
+     * @param nearCache Near cache flag.
      * @param ignite Node to use.
      * @param name Cache name.
      */
     protected void createCache(CacheMode cacheMode,
         CacheWriteSynchronizationMode writeSync,
-        boolean fairAff,
+        boolean nearCache,
         Ignite ignite,
         String name) {
-        ignite.createCache(cacheConfiguration(name, cacheMode, writeSync, fairAff));
+        ignite.createCache(cacheConfiguration(name, cacheMode, writeSync, nearCache));
     }
 
     /**
      * @param cacheMode Cache mode.
      * @param writeSync Write synchronization mode.
      * @param crossCacheTx If {@code true} uses cross cache transaction.
-     * @param fairAff If {@code true} uses {@link FairAffinityFunction}, otherwise {@link RendezvousAffinityFunction}.
      * @throws Exception If failed.
      */
     private void txOperations(CacheMode cacheMode,
         CacheWriteSynchronizationMode writeSync,
-        boolean crossCacheTx,
-        boolean fairAff) throws Exception {
+        boolean crossCacheTx) throws Exception {
         Ignite ignite = ignite(0);
 
         try {
-            createCache(cacheMode, writeSync, fairAff, ignite, CACHE1);
-            createCache(cacheMode, writeSync, fairAff, ignite, CACHE2);
+            createCache(cacheMode, writeSync, nearCacheEnabled(), ignite, CACHE1);
+            createCache(cacheMode, writeSync, false, ignite, CACHE2);
 
             txOperations(PESSIMISTIC, REPEATABLE_READ, crossCacheTx, false);
             txOperations(PESSIMISTIC, REPEATABLE_READ, crossCacheTx, true);

@@ -17,37 +17,61 @@
 
 package org.apache.ignite.internal;
 
-import java.io.File;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.cache.event.CacheEntryEvent;
-import javax.cache.event.EventType;
-import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
+import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
+import org.apache.ignite.internal.processors.marshaller.MarshallerMappingTransport;
+import org.apache.ignite.internal.processors.pool.PoolProcessor;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.testframework.GridTestClassLoader;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+
+import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 
 /**
  * Test marshaller context.
  */
 public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
     /** Inner logger. */
-    private InnerLogger innerLog = null;
+    private InnerLogger innerLog;
+
+    /** */
+    private GridTestKernalContext ctx;
+
+    /** */
+    private static final int THREADS = 4;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         innerLog = new InnerLogger();
 
-        log = innerLog;
+        IgniteConfiguration iCfg = new IgniteConfiguration();
+        iCfg.setClientMode(false);
+
+        ctx = new GridTestKernalContext(innerLog, iCfg) {
+            @Override public IgniteLogger log(Class<?> cls) {
+                return innerLog;
+            }
+        };
+
+        ctx.setSystemExecutorService(Executors.newFixedThreadPool(THREADS));
+
+        ctx.add(new PoolProcessor(ctx));
+        ctx.add(new GridClosureProcessor(ctx));
     }
 
     /**
-     * Mumtithread test, used custom class loader
+     * Multithreaded test, used custom class loader
      */
     public void testMultithreadedUpdate() throws Exception {
         multithreaded(new Callable<Object>() {
@@ -55,7 +79,10 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
                 GridTestClassLoader classLoader = new GridTestClassLoader(
                     InternalExecutor.class.getName(),
                     MarshallerContextImpl.class.getName(),
-                    MarshallerContextImpl.ContinuousQueryListener.class.getName()
+                    MarshallerContextImpl.CombinedMap.class.getName(),
+                    MappingStoreTask.class.getName(),
+                    MarshallerMappingFileStore.class.getName(),
+                    MarshallerMappingTransport.class.getName()
                 );
 
                 Thread.currentThread().setContextClassLoader(classLoader);
@@ -64,17 +91,40 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
 
                 Object internelExecutor = clazz.newInstance();
 
-                clazz.getMethod("executeTest", GridTestLog4jLogger.class).invoke(internelExecutor, log);
+                clazz.getMethod("executeTest", GridTestLog4jLogger.class, GridKernalContext.class)
+                        .invoke(internelExecutor, log, ctx);
 
                 return null;
             }
-        }, 4);
+        }, THREADS);
+
+        final CountDownLatch arrive = new CountDownLatch(THREADS);
+
+        // Wait for all pending tasks in closure processor to complete.
+        for (int i = 0; i < THREADS; i++) {
+            ctx.closure().runLocalSafe(new GridPlainRunnable() {
+                @Override public void run() {
+                    arrive.countDown();
+
+                    try {
+                        arrive.await();
+                    }
+                    catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+
+                        throw new IgniteInterruptedException(e);
+                    }
+                }
+            }, true);
+        }
+
+        arrive.await();
 
         assertTrue(InternalExecutor.counter.get() == 0);
 
-        assertTrue(innerLog.contains("File already locked"));
-
         assertTrue(!innerLog.contains("Exception"));
+
+        assertTrue(innerLog.contains("File already locked"));
     }
 
     /**
@@ -87,21 +137,16 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
         /**
         * Executes onUpdated
         */
-        public void executeTest(GridTestLog4jLogger log) throws Exception {
+        public void executeTest(GridTestLog4jLogger log, GridKernalContext ctx) throws Exception {
             counter.incrementAndGet();
 
-            File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false);
+            MarshallerContextImpl marshallerContext = new MarshallerContextImpl(null);
+            marshallerContext.onMarshallerProcessorStarted(ctx, null);
 
-            final MarshallerContextImpl.ContinuousQueryListener queryListener = new MarshallerContextImpl.ContinuousQueryListener(log, workDir);
+            MarshallerMappingItem item = new MarshallerMappingItem(JAVA_ID, 1, String.class.getName());
 
-            final ArrayList evts = new ArrayList<CacheEntryEvent<Integer, String>>();
-
-            IgniteCacheProxy cache = new IgniteCacheProxy();
-
-            evts.add(new CacheContinuousQueryManager.CacheEntryEventImpl(cache, EventType.CREATED, 1, String.class.getName()));
-
-            for (int i = 0; i < 100; i++)
-                queryListener.onUpdated(evts);
+            for (int i = 0; i < 400; i++)
+                marshallerContext.onMappingAccepted(item);
         }
     }
 

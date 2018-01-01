@@ -20,12 +20,11 @@ import aclData from './permissions';
 
 import Auth from './Auth.service';
 import User from './User.service';
-import AclRouteProvider from './AclRoute.provider';
 
-angular
-.module('ignite-console.user', [
+angular.module('ignite-console.user', [
     'mm.acl',
-    'ignite-console.config'
+    'ignite-console.config',
+    'ignite-console.core'
 ])
 .factory('sessionRecoverer', ['$injector', '$q', ($injector, $q) => {
     return {
@@ -34,10 +33,10 @@ angular
             if (response.status === 401) {
                 $injector.get('User').clean();
 
-                const $state = $injector.get('$state');
+                const stateName = $injector.get('$uiRouterGlobals').current.name;
 
-                if ($state.current.name !== 'signin')
-                    $state.go('signin');
+                if (!_.includes(['', 'signin'], stateName))
+                    $injector.get('$state').go('signin');
             }
 
             return $q.reject(response);
@@ -49,8 +48,7 @@ angular
 }])
 .service(...Auth)
 .service(...User)
-.provider('AclRoute', AclRouteProvider)
-.run(['$rootScope', 'AclService', ($root, AclService) => {
+.run(['$rootScope', '$transitions', 'AclService', 'User', 'IgniteActivitiesData', ($root, $transitions, AclService, User, Activities) => {
     AclService.setAbilities(aclData);
     AclService.attachRole('guest');
 
@@ -69,5 +67,27 @@ angular
             role = 'becomed';
 
         AclService.attachRole(role);
+    });
+
+    $transitions.onBefore({}, (trans) => {
+        const $state = trans.router.stateService;
+        const {name, permission} = trans.to();
+
+        if (_.isEmpty(permission))
+            return;
+
+        return trans.injector().get('User').read()
+            .then(() => {
+                if (AclService.can(permission)) {
+                    Activities.post({action: $state.href(name, trans.params('to'))});
+
+                    return;
+                }
+
+                return $state.target(trans.to().failState || '403');
+            })
+            .catch(() => {
+                return $state.target(trans.to().failState || '403');
+            });
     });
 }]);

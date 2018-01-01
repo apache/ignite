@@ -48,9 +48,10 @@ public interface MessageWriter {
      * Writes message header.
      *
      * @param type Message type.
-     * @param fieldCnt Fields count.ß
+     * @param fieldCnt Fields count.
+     * @return {@code true} if successfully. Otherwise returns {@code false}.
      */
-    public boolean writeHeader(byte type, byte fieldCnt);
+    public boolean writeHeader(short type, byte fieldCnt);
 
     /**
      * Writes {@code byte} value.

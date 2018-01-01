@@ -26,6 +26,7 @@ import org.apache.ignite.internal.GridJobSiblingsRequest;
 import org.apache.ignite.internal.GridJobSiblingsResponse;
 import org.apache.ignite.internal.GridTaskCancelRequest;
 import org.apache.ignite.internal.GridTaskSessionRequest;
+import org.apache.ignite.internal.IgniteDiagnosticMessage;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequest;
@@ -42,10 +43,11 @@ import org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult;
 import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
-import org.apache.ignite.internal.processors.cache.GridCacheEvictionRequest;
-import org.apache.ignite.internal.processors.cache.GridCacheEvictionResponse;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
+import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.binary.MetadataRequestMessage;
+import org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessage;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
@@ -67,20 +69,24 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrep
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicDeferredUpdateResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicNearResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicCheckUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicFullUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateFilterRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateInvokeRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.NearCacheUpdates;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.UpdateErrors;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CacheGroupAffinityMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest;
@@ -111,18 +117,16 @@ import org.apache.ignite.internal.processors.cache.transactions.TxLocksResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
-import org.apache.ignite.internal.processors.clock.GridClockDeltaSnapshotMessage;
-import org.apache.ignite.internal.processors.clock.GridClockDeltaVersion;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerResponse;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
+import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopDirectShuffleMessage;
 import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleAck;
 import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleFinishRequest;
 import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleFinishResponse;
 import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleMessage;
-import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopDirectShuffleMessage;
 import org.apache.ignite.internal.processors.igfs.IgfsAckMessage;
 import org.apache.ignite.internal.processors.igfs.IgfsBlockKey;
 import org.apache.ignite.internal.processors.igfs.IgfsBlocksMessage;
@@ -131,14 +135,17 @@ import org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange;
 import org.apache.ignite.internal.processors.igfs.IgfsFragmentizerRequest;
 import org.apache.ignite.internal.processors.igfs.IgfsFragmentizerResponse;
 import org.apache.ignite.internal.processors.igfs.IgfsSyncMessage;
+import org.apache.ignite.internal.processors.marshaller.MissingMappingRequestMessage;
+import org.apache.ignite.internal.processors.marshaller.MissingMappingResponseMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
-import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryRequest;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRequest;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultResponse;
 import org.apache.ignite.internal.util.GridByteArrayList;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridMessageCollection;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
@@ -147,6 +154,10 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.collision.jobstealing.JobStealingRequest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
+import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage2;
+import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
+import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
 import org.jsr166.ConcurrentHashMap8;
 
 /**
@@ -154,7 +165,7 @@ import org.jsr166.ConcurrentHashMap8;
  */
 public class GridIoMessageFactory implements MessageFactory {
     /** Custom messages registry. Used for test purposes. */
-    private static final Map<Byte, IgniteOutClosure<Message>> CUSTOM = new ConcurrentHashMap8<>();
+    private static final Map<Short, IgniteOutClosure<Message>> CUSTOM = new ConcurrentHashMap8<>();
 
     /** Extensions. */
     private final MessageFactory[] ext;
@@ -167,12 +178,54 @@ public class GridIoMessageFactory implements MessageFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public Message create(byte type) {
+    @Override public Message create(short type) {
         Message msg = null;
 
         switch (type) {
+            // -54 is reserved for SQL.
+            // -46 ... -51 - snapshot messages.
+            case -61:
+                msg = new IgniteDiagnosticMessage();
+
+                break;
+
+            case -53:
+                msg = new SchemaOperationStatusMessage();
+
+                break;
+
+            case -52:
+                msg = new GridIntList();
+
+                break;
+
+            case -51:
+                msg = new NearCacheUpdates();
+
+                break;
+
+            case -50:
+                msg = new GridNearAtomicCheckUpdateRequest();
+
+                break;
+
+            case -49:
+                msg = new UpdateErrors();
+
+                break;
+
+            case -48:
+                msg = new GridDhtAtomicNearResponse();
+
+                break;
+
+            case -45:
+                msg = new GridChangeGlobalStateMessageResponse();
+
+                break;
+
             case -44:
-                msg = new TcpCommunicationSpi.HandshakeMessage2();
+                msg = new HandshakeMessage2();
 
                 break;
 
@@ -242,17 +295,17 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case TcpCommunicationSpi.NODE_ID_MSG_TYPE:
-                msg = new TcpCommunicationSpi.NodeIdMessage();
+                msg = new NodeIdMessage();
 
                 break;
 
             case TcpCommunicationSpi.RECOVERY_LAST_ID_MSG_TYPE:
-                msg = new TcpCommunicationSpi.RecoveryLastReceivedMessage();
+                msg = new RecoveryLastReceivedMessage();
 
                 break;
 
             case TcpCommunicationSpi.HANDSHAKE_MSG_TYPE:
-                msg = new TcpCommunicationSpi.HandshakeMessage();
+                msg = new HandshakeMessage();
 
                 break;
 
@@ -323,16 +376,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 13:
                 msg = new GridEventStorageMessage();
-
-                break;
-
-            case 14:
-                msg = new GridCacheEvictionRequest();
-
-                break;
-
-            case 15:
-                msg = new GridCacheEvictionResponse();
 
                 break;
 
@@ -471,11 +514,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 45:
-                msg = new GridDhtPartitionSupplyMessage();
-
-                break;
-
             case 46:
                 msg = new GridDhtPartitionsFullMessage();
 
@@ -546,11 +584,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 60:
-                msg = new GridClockDeltaSnapshotMessage();
-
-                break;
-
             case 61:
                 msg = new GridContinuousMessage();
 
@@ -616,13 +649,28 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 82:
-                msg = new JobStealingRequest();
+            case 78:
+                msg = new MissingMappingRequestMessage();
 
                 break;
 
-            case 83:
-                msg = new GridClockDeltaVersion();
+            case 79:
+                msg = new MissingMappingResponseMessage();
+
+                break;
+
+            case 80:
+                msg = new MetadataRequestMessage();
+
+                break;
+
+            case 81:
+                msg = new MetadataResponseMessage();
+
+                break;
+
+            case 82:
+                msg = new JobStealingRequest();
 
                 break;
 
@@ -757,8 +805,8 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 110:
-                msg = new GridQueryRequest();
-
+                // EMPTY type
+                // GridQueryRequest was removed
                 break;
 
             case 111:
@@ -777,7 +825,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 114:
-                msg = new GridDhtPartitionSupplyMessageV2();
+                msg = new GridDhtPartitionSupplyMessage();
 
                 break;
 
@@ -826,9 +874,16 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            // [-3..119] [124..127] [-36..-44]- this
+            case 128:
+                msg = new CacheGroupAffinityMessage();
+
+                break;
+
+
+            // [-3..119] [124..128] [-23..-27] [-36..-55]- this
             // [120..123] - DR
             // [-4..-22, -30..-35] - SQL
+            // [2048..2053] - Snapshots
             default:
                 if (ext != null) {
                     for (MessageFactory factory : ext) {
@@ -859,7 +914,7 @@ public class GridIoMessageFactory implements MessageFactory {
      * @param type Message type.
      * @param c Message producer.
      */
-    public static void registerCustom(byte type, IgniteOutClosure<Message> c) {
+    public static void registerCustom(short type, IgniteOutClosure<Message> c) {
         assert c != null;
 
         CUSTOM.put(type, c);

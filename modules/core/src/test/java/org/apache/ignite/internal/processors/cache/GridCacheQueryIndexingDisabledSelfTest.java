@@ -38,8 +38,8 @@ public class GridCacheQueryIndexingDisabledSelfTest extends GridCacheAbstractSel
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
 
@@ -49,19 +49,16 @@ public class GridCacheQueryIndexingDisabledSelfTest extends GridCacheAbstractSel
     /**
      * @param c Closure.
      */
-    private void doTest(Callable<Object> c) {
-        GridTestUtils.assertThrows(log, c, CacheException.class, "Indexing is disabled for cache: null");
+    private void doTest(Callable<Object> c, String expectedMsg) {
+        GridTestUtils.assertThrows(log, c, CacheException.class, expectedMsg);
     }
 
     /**
      * @throws IgniteCheckedException If failed.
      */
     public void testSqlFieldsQuery() throws IgniteCheckedException {
-        doTest(new Callable<Object>() {
-            @Override public Object call() throws IgniteCheckedException {
-                return jcache().query(new SqlFieldsQuery("select * from dual")).getAll();
-            }
-        });
+        // Should not throw despite the cache not having QueryEntities.
+        jcache().query(new SqlFieldsQuery("select * from dual")).getAll();
     }
 
     /**
@@ -72,18 +69,19 @@ public class GridCacheQueryIndexingDisabledSelfTest extends GridCacheAbstractSel
             @Override public Object call() throws IgniteCheckedException {
                 return jcache().query(new TextQuery<>(String.class, "text")).getAll();
             }
-        });
+        }, "Indexing is disabled for cache: default");
     }
 
     /**
      * @throws IgniteCheckedException If failed.
      */
     public void testSqlQuery() throws IgniteCheckedException {
+        // Failure occurs not on validation stage, hence specific error message.
         doTest(new Callable<Object>() {
             @Override public Object call() throws IgniteCheckedException {
                 return jcache().query(new SqlQuery<>(String.class, "1 = 1")).getAll();
             }
-        });
+        }, "Failed to find SQL table for type: String");
     }
 
     /**

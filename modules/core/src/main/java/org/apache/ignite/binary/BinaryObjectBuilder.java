@@ -127,16 +127,6 @@ public interface BinaryObjectBuilder {
     public BinaryObjectBuilder removeField(String fieldName);
 
     /**
-     * Sets hash code for resulting binary object returned by {@link #build()} method.
-     * <p>
-     * If not set {@code 0} is used.
-     *
-     * @param hashCode Hash code.
-     * @return {@code this} instance for chaining.
-     */
-    public BinaryObjectBuilder hashCode(int hashCode);
-
-    /**
      * Builds binary object.
      *
      * @return Binary object.

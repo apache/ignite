@@ -322,6 +322,23 @@ public abstract class GridClientConnection {
         boolean keepBinaries) throws GridClientConnectionResetException, GridClientClosedException;
 
     /**
+     * Change grid global state.
+     *
+     * @param active Active.
+     * @param destNodeId Destination node id.
+     */
+    public abstract GridClientFuture<?> changeState(boolean active, UUID destNodeId)
+            throws GridClientClosedException, GridClientConnectionResetException;
+
+    /**
+     * Get current grid state.
+     *
+     * @param destNodeId Destination node id.
+     */
+    public abstract GridClientFuture<Boolean> currentState(UUID destNodeId)
+        throws GridClientClosedException, GridClientConnectionResetException;
+
+    /**
      * Gets node by node ID.
      *
      * @param id Node ID.

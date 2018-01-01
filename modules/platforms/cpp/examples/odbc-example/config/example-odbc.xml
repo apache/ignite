@@ -26,12 +26,6 @@
         http://www.springframework.org/schema/util
         http://www.springframework.org/schema/util/spring-util.xsd">
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-
-        <!-- Enabling ODBC. -->
-        <property name="odbcConfiguration">
-            <bean class="org.apache.ignite.configuration.OdbcConfiguration"></bean>
-        </property>
-
         <property name="cacheConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">

@@ -83,7 +83,7 @@ class VisorGcCommand extends VisorConsoleCommand {
     def gc(args: String) {
         assert(args != null)
 
-        if (isConnected) {
+        if (checkConnected()) {
             val argLst = parseArgs(args)
 
             try {
@@ -104,8 +104,8 @@ class VisorGcCommand extends VisorConsoleCommand {
 
                 res.foreach {
                     case (nid, stat) =>
-                        val roundHb = stat.get1() / (1024L * 1024L)
-                        val roundHa = stat.get2() / (1024L * 1024L)
+                        val roundHb = stat.getSizeBefore / (1024L * 1024L)
+                        val roundHa = stat.getSizeAfter / (1024L * 1024L)
 
                         val sign = if (roundHa > roundHb) "+" else ""
 
@@ -123,8 +123,6 @@ class VisorGcCommand extends VisorConsoleCommand {
                 case e: IgniteException => scold(e)
             }
         }
-        else
-            adviseToConnect()
     }
 
     /**

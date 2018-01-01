@@ -36,11 +36,14 @@
     <properties>
         <ignite.edition>fabric</ignite.edition>
         <hadoop.version>2.4.1</hadoop.version>
-        <spark.version>1.5.2</spark.version>
-        <spring.version>4.1.0.RELEASE</spring.version>
+        <spark.hadoop.version>2.6.5</spark.hadoop.version>
+        <spark.version>2.2.0</spark.version>
+        <spring.version>4.3.7.RELEASE</spring.version> <!-- don't forget to update spring-data version -->
+        <spring.data.version>1.13.1.RELEASE</spring.data.version> <!-- don't forget to update spring version -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
         <doxygen.exec>doxygen</doxygen.exec>
+        <docfx.exec>docfx</docfx.exec>
         <git.exec>git</git.exec>
         <maven.bundle.plugin.version>2.5.4</maven.bundle.plugin.version>
         <javadoc.opts>-XDenableSunApiLintControl</javadoc.opts>
@@ -53,7 +56,7 @@
         <aspectj.bundle.version>1.7.2_1</aspectj.bundle.version>
         <aspectj.version>1.7.2</aspectj.version>
         <aws.sdk.bundle.version>1.10.12_1</aws.sdk.bundle.version>
-        <aws.sdk.version>1.10.29</aws.sdk.version>
+        <aws.sdk.version>1.11.75</aws.sdk.version>
         <camel.version>2.16.0</camel.version>
         <commons.beanutils.bundle.version>1.8.3_1</commons.beanutils.bundle.version>
         <commons.beanutils.version>1.8.3</commons.beanutils.version>
@@ -70,12 +73,11 @@
         <guava.version>18.0</guava.version>
         <guava14.version>14.0.1</guava14.version>
         <guava16.version>16.0.1</guava16.version>
-        <h2.version>1.4.191</h2.version>
-        <hadoop.version>2.4.1</hadoop.version>
+        <h2.version>1.4.195</h2.version>
         <httpclient.version>4.5.1</httpclient.version>
         <httpcore.version>4.4.3</httpcore.version>
         <jackson.version>1.9.13</jackson.version>
-        <jackson2.version>2.7.5</jackson2.version>
+        <jackson2.version>2.6.5</jackson2.version>
         <javax.cache.bundle.version>1.0.0_1</javax.cache.bundle.version>
         <javax.cache.version>1.0.0</javax.cache.version>
         <jetbrains.annotations.version>13.0</jetbrains.annotations.version>
@@ -88,19 +90,18 @@
         <jtidy.version>r938</jtidy.version>
         <kafka.version>0.10.0.1</kafka.version>
         <karaf.version>4.0.2</karaf.version>
-        <lucene.bundle.version>3.5.0_1</lucene.bundle.version>
-        <lucene.version>3.5.0</lucene.version>
+        <lucene.bundle.version>5.5.2_1</lucene.bundle.version>
+        <lucene.version>5.5.2</lucene.version>
         <oro.bundle.version>2.0.8_6</oro.bundle.version>
         <osgi.core.version>5.0.0</osgi.core.version>
         <osgi.enterprise.version>5.0.0</osgi.enterprise.version>
         <paho.version>1.0.2</paho.version>
+        <rocketmq.version>4.2.0</rocketmq.version>
         <scala210.jline.version>2.10.4</scala210.jline.version>
-        <scala210.library.version>2.10.4</scala210.library.version>
-        <scala211.library.version>2.11.7</scala211.library.version>
+        <scala210.library.version>2.10.6</scala210.library.version>
+        <scala211.library.version>2.11.8</scala211.library.version>
         <slf4j.version>1.7.7</slf4j.version>
         <slf4j16.version>1.6.4</slf4j16.version>
-        <spark.version>1.5.2</spark.version>
-        <spring.version>4.1.0.RELEASE</spring.version>
         <spring41.osgi.feature.version>4.1.7.RELEASE_1</spring41.osgi.feature.version>
         <tomcat.version>8.0.23</tomcat.version>
         <twitter.hbc.version>2.2.0</twitter.hbc.version>
@@ -108,6 +109,7 @@
         <yammer.metrics.core.version>2.2.0</yammer.metrics.core.version>
         <zkclient.version>0.5</zkclient.version>
         <zookeeper.version>3.4.6</zookeeper.version>
+        <javassist.version>3.20.0-GA</javassist.version>
 
         <!-- OSGI Manifest generation default property values -->
         <osgi.import.package>*</osgi.import.package>
@@ -447,6 +449,22 @@
                                 <title>Flink integration</title>
                                 <packages>org.apache.ignite.sink.flink*</packages>
                             </group>
+                            <group>
+                                <title>SpringData integration</title>
+                                <packages>org.apache.ignite.springdata.repository*</packages>
+                            </group>
+                            <group>
+                                <title>RocketMQ integration</title>
+                                <packages>org.apache.ignite.rocketmq*</packages>
+                            </group>
+                            <group>
+                                <title>Ignite Development Utils</title>
+                                <packages>org.apache.ignite.development.utils*</packages>
+                            </group>
+                            <group>
+                                <title>Ignite ML</title>
+                                <packages>org.apache.ignite.ml*</packages>
+                            </group>
                         </groups>
                         <header>
                             <![CDATA[
@@ -462,7 +480,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <a target=_blank href="https://ignite.apache.org"><nobr>2015 Copyright &#169; Apache Software Foundation</nobr></a>
+                                                            <a target=_blank href="https://ignite.apache.org"><nobr>2017 Copyright &#169; Apache Software Foundation</nobr></a>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -470,7 +488,6 @@
                                         </td>
                                         <td width="100%" align="right" valign="center">
                                             <a href="https://twitter.com/ApacheIgnite" class="twitter-follow-button" data-show-count="false" data-size="large">Follow @ApacheIgnite</a>
-                                            <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
                                         </td>
                                     </tr>
                                     <tr>
@@ -791,15 +808,22 @@
                                         <exclude>**/*.sql</exclude><!--sql files-->
                                         <exclude>**/*README*.txt</exclude><!--readme files-->
                                         <exclude>**/*README*.md</exclude><!--readme files-->
+                                        <exclude>**/*index*.md</exclude><!--readme files-->
                                         <exclude>**/*.timestamp</exclude><!--tmp-files-->
                                         <exclude>**/*.iml</exclude><!--IDEA files-->
                                         <exclude>**/pom-installed.xml</exclude><!--tmp-files-->
                                         <exclude>**/keystore/*.jks</exclude><!--bin-files-->
                                         <exclude>**/keystore/*.pem</exclude><!--auto generated files-->
                                         <exclude>**/keystore/*.pfx</exclude><!--bin-files-->
+                                        <exclude>**/keystore/ca/*.jks</exclude><!--bin-files-->
+                                        <exclude>**/keystore/ca/*.key</exclude><!--bin-files-->
+                                        <exclude>**/keystore/ca/*.txt</exclude><!--auto generated files-->
+                                        <exclude>**/keystore/ca/*.txt.attr</exclude><!--auto generated files-->
+                                        <exclude>**/keystore/ca/*serial</exclude><!--auto generated files-->
+                                        <exclude>**/META-INF/services/**</exclude> <!-- Interface mappings: cannot be changed -->
                                         <!--special excludes-->
                                         <exclude>idea/ignite_codeStyle.xml</exclude>
-                                        <exclude>**/DEVNOTES.txt</exclude>
+                                        <exclude>**/DEVNOTES*.txt</exclude>
                                         <exclude>**/NOTICE*</exclude>
                                         <exclude>**/LICENSE*</exclude>
                                         <exclude>src/main/java/org/apache/ignite/internal/util/offheap/unsafe/GridOffHeapSnapTreeMap.java</exclude><!--BSD license-->
@@ -815,10 +839,11 @@
                                         <exclude>src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
                                         <exclude>examples/src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
                                         <exclude>src/main/resources/person.csv</exclude><!--CacheLoadOnlyStoreExample csv-->
+                                        <exclude>**/resources/datasets/knn/*</exclude><!--Dataset examples in ml module-->
+                                        <exclude>**/resources/datasets/regression/*</exclude><!--Dataset examples in ml module-->
+                                        <exclude>**/ml/knn/datasets/*</exclude><!--Datasets for ML KNN in examples module-->
                                         <exclude>examples/src/main/resources/person.csv</exclude><!--CacheLoadOnlyStoreExample csv-->
-                                        <exclude>src/main/java/META-INF/services/javax.cache.spi.CachingProvider</exclude><!--cannot be changed-->
                                         <exclude>src/main/java/org/jetbrains/annotations/*.java</exclude><!--copyright-->
-                                        <exclude>src/main/resources/META-INF/services/org.apache.hadoop.mapreduce.protocol.ClientProtocolProvider</exclude><!--cannot be changed-->
                                         <exclude>dev-tools/IGNITE-*.patch</exclude>
                                         <exclude>dev-tools/.gradle/**/*</exclude>
                                         <exclude>dev-tools/gradle/wrapper/**/*</exclude>
@@ -850,11 +875,8 @@
                                         <exclude>ipc/shmem/igniteshmem/libigniteshmem.la</exclude><!--tmp (not under VCS)-->
                                         <exclude>ipc/shmem/igniteshmem/libigniteshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo</exclude><!--tmp (not under VCS)-->
                                         <!--platforms-->
-                                        <exclude>src/main/java/META-INF/services/org.apache.ignite.internal.processors.platform.PlatformBootstrapFactory</exclude>
-                                        <exclude>src/main/resources/META-INF/services/org.apache.ignite.internal.processors.platform.PlatformBootstrapFactory</exclude>
                                         <exclude>src/test/binaries/repo/org/apache/ignite/binary/test1/1.1/test1-1.1.jar</exclude>
                                         <exclude>src/test/binaries/repo/org/apache/ignite/binary/test2/1.1/test2-1.1.jar</exclude>
-                                        <exclude>**/META-INF/services/*.PlatformBootstrapFactory</exclude>
                                         <exclude>**/Makefile.am</exclude>
                                         <exclude>**/configure.ac</exclude>
                                         <exclude>**/Makefile.amrel</exclude>
@@ -868,6 +890,7 @@
                                         <exclude>**/*.FxCop</exclude>
                                         <exclude>**/*.ruleset</exclude>
                                         <exclude>**/*.csproj</exclude>
+                                        <exclude>**/*.ndproj</exclude>
                                         <exclude>**/*.csprojrel</exclude>
                                         <exclude>**/*.vcxproj</exclude>
                                         <exclude>**/*.vcxprojrel</exclude>
@@ -898,9 +921,15 @@
                                         <exclude>**/backend/config/settings.json.sample</exclude>
                                         <exclude>**/backend/node_modules/**</exclude>
                                         <exclude>**/frontend/build/**</exclude>
+                                        <exclude>**/frontend/public/images/**/*.png</exclude>
+                                        <exclude>**/frontend/public/images/**/*.svg</exclude>
                                         <exclude>**/frontend/ignite_modules/**</exclude>
                                         <exclude>**/frontend/ignite_modules_temp/**</exclude>
                                         <exclude>**/frontend/node_modules/**</exclude>
+                                        <!--RPM packaging, IGNITE-7107-->
+                                        <exclude>**/packaging/rpm/SOURCES/name.service</exclude>
+                                        <exclude>**/packaging/rpm/SOURCES/service.sh</exclude>
+                                        <exclude>**/packaging/rpm/SPECS/apache-ignite.spec</exclude>
                                     </excludes>
                                 </configuration>
                             </execution>
@@ -994,12 +1023,8 @@
         </profile>
 
         <profile>
-            <id>release</id>
-            <activation>
-                <property>
-                    <name>!skipDefault</name><!--activeByDefault-->
-                </property>
-            </activation>
+            <id>licenses</id>
+
             <dependencies>
                 <dependency>
                     <groupId>org.apache.ignite</groupId>

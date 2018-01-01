@@ -64,8 +64,8 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         if (cnt.getAndIncrement() == 0)
@@ -73,7 +73,7 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
         else {
             cfg.setIndexingSpi(new MyBrokenIndexingSpi());
 
-            CacheConfiguration ccfg = cacheConfiguration(gridName);
+            CacheConfiguration ccfg = cacheConfiguration(igniteInstanceName);
             ccfg.setName("test-cache");
             ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
@@ -123,7 +123,7 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
      */
     private static class MyBrokenIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
         /** {@inheritDoc} */
-        @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+        @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
             // No-op.
         }
 
@@ -133,29 +133,19 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Iterator<Cache.Entry<?, ?>> query(@Nullable String spaceName, Collection<Object> params,
+        @Override public Iterator<Cache.Entry<?, ?>> query(@Nullable String cacheName, Collection<Object> params,
             @Nullable IndexingQueryFilter filters) throws IgniteSpiException {
            return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void store(@Nullable String spaceName, Object key, Object val, long expirationTime)
+        @Override public void store(@Nullable String cacheName, Object key, Object val, long expirationTime)
             throws IgniteSpiException {
             throw new IgniteSpiException("Test exception");
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(@Nullable String spaceName, Object key) throws IgniteSpiException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onSwap(@Nullable String spaceName, Object key) throws IgniteSpiException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onUnswap(@Nullable String spaceName, Object key, Object val) throws IgniteSpiException {
+        @Override public void remove(@Nullable String cacheName, Object key) throws IgniteSpiException {
             // No-op.
         }
     }

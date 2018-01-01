@@ -18,18 +18,20 @@
 /**
  * Docker file generation entry point.
  */
-class GeneratorDocker {
+export default class IgniteDockerGenerator {
+    escapeFileName = (name) => name.replace(/[\\\/*\"\[\],\.:;|=<>?]/g, '-').replace(/ /g, '_');
+
     /**
      * Generate from section.
      *
      * @param {Object} cluster Cluster.
-     * @param {String} ver Ignite version.
+     * @param {Object} targetVer Target version.
      * @returns {String}
      */
-    from(cluster, ver) {
+    from(cluster, targetVer) {
         return [
             '# Start from Apache Ignite image.',
-            `FROM apacheignite/ignite:${ver}`
+            `FROM apacheignite/ignite:${targetVer.ignite}`
         ].join('\n');
     }
 
@@ -37,14 +39,14 @@ class GeneratorDocker {
      * Generate Docker file for cluster.
      *
      * @param {Object} cluster Cluster.
-     * @param {String} ver Ignite version.
+     * @param {Object} targetVer Target version.
      */
-    generate(cluster, ver) {
+    generate(cluster, targetVer) {
         return [
-            this.from(cluster, ver),
+            this.from(cluster, targetVer),
             '',
             '# Set config uri for node.',
-            `ENV CONFIG_URI config/${cluster.name}-server.xml`,
+            `ENV CONFIG_URI ${this.escapeFileName(cluster.name)}-server.xml`,
             '',
             '# Copy ignite-http-rest from optional.',
             'ENV OPTION_LIBS ignite-rest-http',
@@ -62,8 +64,7 @@ class GeneratorDocker {
             '',
             '# Copy project jars to node classpath.',
             `RUN mkdir $IGNITE_HOME/libs/${cluster.name} && \\`,
-            `   find ${cluster.name}/target -name "*.jar" -type f -exec cp {} $IGNITE_HOME/libs/${cluster.name} \\; && \\`,
-            `   cp -r ${cluster.name}/config/* $IGNITE_HOME/config`
+            `   find ${cluster.name}/target -name "*.jar" -type f -exec cp {} $IGNITE_HOME/libs/${cluster.name} \\;`
         ].join('\n');
     }
 
@@ -74,5 +75,3 @@ class GeneratorDocker {
         ].join('\n');
     }
 }
-
-export default ['GeneratorDocker', GeneratorDocker];

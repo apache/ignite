@@ -69,7 +69,7 @@ class GridCacheLogger implements IgniteLogger, Externalizable {
         this.cctx = cctx;
         this.ctgr = ctgr;
 
-        cacheName = '<' + cctx.namexx() + "> ";
+        cacheName = '<' + cctx.name() + "> ";
 
         log = cctx.kernalContext().log(ctgr);
     }

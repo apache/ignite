@@ -143,9 +143,6 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
      * @param writer Writer.
      */
     private void writeEntryAndProcessor(MutableEntry entry, BinaryRawWriter writer) {
-        writer.writeObject(entry.getKey());
-        writer.writeObject(entry.getValue());
-
         if (ptr != 0) {
             // Execute locally - we have a pointer to native processor.
             writer.writeBoolean(true);
@@ -156,6 +153,9 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
             writer.writeBoolean(false);
             writer.writeObject(proc);
         }
+
+        writer.writeObject(entry.getKey());
+        writer.writeObject(entry.getValue());
     }
 
     /**

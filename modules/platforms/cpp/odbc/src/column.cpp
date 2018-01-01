@@ -40,7 +40,7 @@ namespace
 
                 break;
             }
-            
+
             case IGNITE_TYPE_OBJECT:
             {
                 int8_t protoVer = stream.ReadInt8();
@@ -88,6 +88,7 @@ namespace
             case IGNITE_TYPE_DOUBLE:
             case IGNITE_TYPE_BOOL:
             case IGNITE_HDR_NULL:
+            case IGNITE_TYPE_ARRAY_BYTE:
             {
                 // No-op.
                 break;
@@ -281,11 +282,31 @@ namespace ignite
                     break;
                 }
 
+                case IGNITE_TYPE_TIME:
+                {
+                    reader.ReadTime();
+
+                    sizeTmp = 8;
+
+                    break;
+                }
+
                 case IGNITE_TYPE_TIMESTAMP:
                 {
                     reader.ReadTimestamp();
 
                     sizeTmp = 12;
+
+                    break;
+                }
+
+                case IGNITE_TYPE_ARRAY_BYTE:
+                {
+                    sizeTmp = reader.ReadInt32();
+                    assert(sizeTmp >= 0);
+
+                    startPosTmp = stream->Position();
+                    stream->Position(stream->Position() + sizeTmp);
 
                     break;
                 }
@@ -304,22 +325,22 @@ namespace ignite
             size = sizeTmp;
         }
 
-        SqlResult Column::ReadToBuffer(BinaryReaderImpl& reader, app::ApplicationDataBuffer& dataBuf)
+        SqlResult::Type Column::ReadToBuffer(BinaryReaderImpl& reader, app::ApplicationDataBuffer& dataBuf)
         {
             if (!IsValid())
-                return SQL_RESULT_ERROR;
+                return SqlResult::AI_ERROR;
 
             if (GetUnreadDataLength() == 0)
             {
                 dataBuf.PutNull();
 
-                return SQL_RESULT_NO_DATA;
+                return SqlResult::AI_NO_DATA;
             }
 
             InteropInputStream* stream = reader.GetStream();
 
             if (!stream)
-                return SQL_RESULT_ERROR;
+                return SqlResult::AI_ERROR;
 
             InteropStreamPositionGuard<InteropInputStream> guard(*stream);
 
@@ -429,7 +450,7 @@ namespace ignite
                     int32_t len;
 
                     if (!GetObjectLength(*stream, len))
-                        return SQL_RESULT_ERROR;
+                        return SqlResult::AI_ERROR;
 
                     std::vector<int8_t> data(len);
 
@@ -473,14 +494,37 @@ namespace ignite
                     break;
                 }
 
+                case IGNITE_TYPE_TIME:
+                {
+                    Time time = reader.ReadTime();
+
+                    dataBuf.PutTime(time);
+
+                    break;
+                }
+
+                case IGNITE_TYPE_ARRAY_BYTE:
+                {
+                    stream->Position(startPos + offset);
+                    int32_t maxRead = std::min(GetUnreadDataLength(), static_cast<int32_t>(dataBuf.GetSize()));
+                    std::vector<int8_t> data(maxRead);
+
+                    stream->ReadInt8Array(&data[0], static_cast<int32_t>(data.size()));
+
+                    int32_t written = dataBuf.PutBinaryData(data.data(), data.size());
+
+                    IncreaseOffset(written);
+                    break;
+                }
+
                 default:
                 {
                     // This is a fail case. Return false.
-                    return SQL_RESULT_ERROR;
+                    return SqlResult::AI_ERROR;
                 }
             }
 
-            return SQL_RESULT_SUCCESS;
+            return SqlResult::AI_SUCCESS;
         }
 
         void Column::IncreaseOffset(int32_t value)

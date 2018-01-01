@@ -24,13 +24,11 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Semaphore;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
-import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -188,13 +186,7 @@ public class GridJobExecutionSingleNodeSemaphoreLoadTest {
             @Nullable @Override public Object call() throws Exception {
                 sem.acquire();
 
-                IgniteCompute comp = g.compute().withAsync();
-
-                comp.execute(GridJobExecutionLoadTestTask.class, null);
-
-                ComputeTaskFuture<Object> f = comp.future();
-
-                f.listen(lsnr);
+                g.compute().executeAsync(GridJobExecutionLoadTestTask.class, null).listen(lsnr);
 
                 iterCntr.increment();
 

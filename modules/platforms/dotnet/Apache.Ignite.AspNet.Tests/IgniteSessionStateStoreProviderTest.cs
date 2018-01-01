@@ -64,7 +64,7 @@ namespace Apache.Ignite.AspNet.Tests
         [TestFixtureSetUp]
         public void TestFixtureSetUp()
         {
-            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) { GridName = GridName });
+            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) { IgniteInstanceName = GridName });
         }
 
         /// <summary>

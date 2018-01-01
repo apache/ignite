@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -48,22 +47,19 @@ public class AffinityHistoryCleanupTest extends GridCommonAbstractTest {
     /** */
     private boolean client;
 
-    /** */
-    private boolean lateAffAssignment;
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         CacheConfiguration[] ccfgs = new CacheConfiguration[4];
 
         for (int i = 0; i < ccfgs.length; i++) {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ccfg.setName("static-cache-" + i);
-            ccfg.setAffinity(i % 2 == 0 ? new RendezvousAffinityFunction() : new FairAffinityFunction());
+            ccfg.setAffinity(new RendezvousAffinityFunction());
 
             ccfgs[i] = ccfg;
         }
@@ -71,8 +67,6 @@ public class AffinityHistoryCleanupTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(ccfgs);
 
         cfg.setClientMode(client);
-
-        cfg.setLateAffinityAssignment(lateAffAssignment);
 
         return cfg;
     }
@@ -88,183 +82,6 @@ public class AffinityHistoryCleanupTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAffinityHistoryCleanup() throws Exception {
-        String histProp = System.getProperty(IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE);
-
-        try {
-            System.setProperty(IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE, "5");
-
-            Ignite ignite = startGrid(0);
-
-            checkHistory(ignite, F.asList(topVer(1, 0)), 1);
-
-            for (int i = 0; i < 3; i++) {
-                startGrid(1);
-
-                stopGrid(1);
-            }
-
-            checkHistory(ignite, F.asList(
-                topVer(3, 0),
-                topVer(4, 0),
-                topVer(5, 0),
-                topVer(6, 0),
-                topVer(7, 0)),
-                5);
-
-            client = true;
-
-            startGrid(1);
-
-            stopGrid(1);
-
-            checkHistory(ignite, F.asList(
-                topVer(3, 0),
-                topVer(4, 0),
-                topVer(5, 0),
-                topVer(6, 0),
-                topVer(7, 0),
-                topVer(8, 0),
-                topVer(9, 0)),
-                5);
-
-            startGrid(1);
-
-            stopGrid(1);
-
-            checkHistory(ignite, F.asList(
-                topVer(3, 0),
-                topVer(4, 0),
-                topVer(5, 0),
-                topVer(6, 0),
-                topVer(7, 0),
-                topVer(8, 0),
-                topVer(9, 0),
-                topVer(10, 0),
-                topVer(11, 0)),
-                5);
-
-            startGrid(1);
-
-            checkHistory(ignite, F.asList(
-                topVer(3, 0),
-                topVer(4, 0),
-                topVer(5, 0),
-                topVer(6, 0),
-                topVer(7, 0),
-                topVer(8, 0),
-                topVer(9, 0),
-                topVer(10, 0),
-                topVer(11, 0),
-                topVer(12, 0)),
-                5);
-
-            stopGrid(1);
-
-            checkHistory(ignite, F.asList(
-                topVer(8, 0),
-                topVer(9, 0),
-                topVer(10, 0),
-                topVer(11, 0),
-                topVer(12, 0),
-                topVer(13, 0)),
-                0);
-
-            client = false;
-
-            startGrid(1);
-
-            stopGrid(1);
-
-            checkHistory(ignite, F.asList(
-                topVer(8, 0),
-                topVer(9, 0),
-                topVer(10, 0),
-                topVer(11, 0),
-                topVer(12, 0),
-                topVer(13, 0),
-                topVer(14, 0),
-                topVer(15, 0)),
-                2);
-
-            startGrid(1);
-
-            stopGrid(1);
-
-            checkHistory(ignite, F.asList(
-                topVer(8, 0),
-                topVer(9, 0),
-                topVer(10, 0),
-                topVer(11, 0),
-                topVer(12, 0),
-                topVer(13, 0),
-                topVer(14, 0),
-                topVer(15, 0),
-                topVer(16, 0),
-                topVer(17, 0)),
-                4);
-
-            startGrid(1);
-
-            checkHistory(ignite, F.asList(
-                topVer(13, 0),
-                topVer(14, 0),
-                topVer(15, 0),
-                topVer(16, 0),
-                topVer(17, 0),
-                topVer(18, 0)),
-                5);
-
-            stopGrid(1);
-
-            checkHistory(ignite, F.asList(
-                topVer(14, 0),
-                topVer(15, 0),
-                topVer(16, 0),
-                topVer(17, 0),
-                topVer(18, 0),
-                topVer(19, 0)),
-                6);
-
-            startGrid(1);
-
-            checkHistory(ignite, F.asList(
-                topVer(16, 0),
-                topVer(17, 0),
-                topVer(18, 0),
-                topVer(19, 0),
-                topVer(20, 0)),
-                5);
-
-            client = true;
-
-            startGrid(2);
-
-            stopGrid(2);
-
-            checkHistory(ignite, F.asList(
-                topVer(16, 0),
-                topVer(17, 0),
-                topVer(18, 0),
-                topVer(19, 0),
-                topVer(20, 0),
-                topVer(21, 0),
-                topVer(22, 0)),
-                5);
-        }
-        finally {
-            if (histProp != null)
-                System.setProperty(IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE, histProp);
-            else
-                System.clearProperty(IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE);
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAffinityHistoryCleanupLateAffinityAssignment() throws Exception {
-        lateAffAssignment = true;
-
         String histProp = System.getProperty(IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE);
 
         try {

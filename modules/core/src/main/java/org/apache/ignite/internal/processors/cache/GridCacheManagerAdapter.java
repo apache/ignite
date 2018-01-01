@@ -34,7 +34,7 @@ public class GridCacheManagerAdapter<K, V> implements GridCacheManager<K, V> {
     protected IgniteLogger log;
 
     /** Starting flag. */
-    private final AtomicBoolean starting = new AtomicBoolean(false);
+    protected final AtomicBoolean starting = new AtomicBoolean(false);
 
     /** {@inheritDoc} */
     @Override public final void start(GridCacheContext<K, V> cctx) throws IgniteCheckedException {
@@ -75,12 +75,12 @@ public class GridCacheManagerAdapter<K, V> implements GridCacheManager<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public final void stop(boolean cancel) {
+    @Override public final void stop(boolean cancel, boolean destroy) {
         if (!starting.get())
             // Ignoring attempt to stop manager that has never been started.
             return;
 
-        stop0(cancel);
+        stop0(cancel, destroy);
 
         if (log != null && log.isDebugEnabled())
             log.debug(stopInfo());
@@ -88,8 +88,9 @@ public class GridCacheManagerAdapter<K, V> implements GridCacheManager<K, V> {
 
     /**
      * @param cancel Cancel flag.
+     * @param destroy Cache destroy flag.
      */
-    protected void stop0(boolean cancel) {
+    protected void stop0(boolean cancel, boolean destroy) {
         // No-op.
     }
 

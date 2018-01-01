@@ -212,7 +212,8 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Job metrics processor processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Job metrics processor processor memory stats [igniteInstanceName=" +
+            ctx.igniteInstanceName() + ']');
     }
 
     /**
@@ -237,6 +238,9 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
         /** */
         private int totalRejectedJobs;
 
+        /** */
+        private long totalExecTime;
+
         /**
          * @param size Size (should be power of 2).
          */
@@ -257,6 +261,7 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
             totalFinishedJobs += s.getFinishedJobs();
             totalCancelledJobs += s.getCancelJobs();
             totalRejectedJobs += s.getRejectJobs();
+            totalExecTime += s.getExecutionTime();
         }
 
         /**
@@ -276,7 +281,7 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
                 rdc.collect(s);
             }
 
-            rdc.collectTotals(totalFinishedJobs, totalCancelledJobs, totalRejectedJobs);
+            rdc.collectTotals(totalFinishedJobs, totalCancelledJobs, totalRejectedJobs, totalExecTime);
         }
     }
 
@@ -323,9 +328,7 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
         /** */
         private GridJobMetricsSnapshot lastSnapshot;
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public boolean collect(GridJobMetricsSnapshot s) {
             assert s != null;
 
@@ -372,11 +375,12 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
          * @param totalCancelledJobs Cancelled jobs.
          * @param totalRejectedJobs Rejected jobs.
          */
-        void collectTotals(int totalFinishedJobs, int totalCancelledJobs, int totalRejectedJobs) {
+        void collectTotals(int totalFinishedJobs, int totalCancelledJobs, int totalRejectedJobs, long totalExecTime) {
             // Totals.
             m.setTotalExecutedJobs(m.getTotalExecutedJobs() + totalFinishedJobs);
             m.setTotalCancelledJobs(m.getTotalCancelledJobs() + totalCancelledJobs);
             m.setTotalRejectedJobs(m.getTotalRejectedJobs() + totalRejectedJobs);
+            m.setTotalJobsExecutionTime(m.getTotalJobsExecutionTime() + totalExecTime);
         }
 
         /** {@inheritDoc} */

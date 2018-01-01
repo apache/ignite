@@ -24,8 +24,23 @@ export default ['IgniteMessages', ['$alert', ($alert) => {
         prefix = prefix || '';
 
         if (err) {
-            if (err.hasOwnProperty('message'))
-                return prefix + err.message;
+            if (err.hasOwnProperty('data'))
+                err = err.data;
+
+            if (err.hasOwnProperty('message')) {
+                const msg = err.message;
+
+                const errIndex = msg.indexOf(' err=');
+
+                return prefix + (errIndex >= 0 ? msg.substring(errIndex + 5, msg.length - 1) : msg);
+            }
+
+            if (_.nonEmpty(err.className)) {
+                if (_.isEmpty(prefix))
+                    prefix = 'Internal cluster error: ';
+
+                return prefix + err.className;
+            }
 
             return prefix + err;
         }
@@ -34,30 +49,36 @@ export default ['IgniteMessages', ['$alert', ($alert) => {
     };
 
     const hideAlert = () => {
-        if (msgModal)
+        if (msgModal) {
             msgModal.hide();
+            msgModal.destroy();
+            msgModal = null;
+        }
     };
 
-    const _showMessage = (err, type, duration, icon) => {
+    const _showMessage = (message, err, type, duration) => {
         hideAlert();
 
-        const title = errorMessage(null, err);
+        const title = err ? errorMessage(message, err) : errorMessage(null, message);
 
         msgModal = $alert({type, title, duration});
 
-        msgModal.$scope.icon = icon;
+        msgModal.$scope.icon = `icon-${type}`;
     };
 
     return {
         errorMessage,
         hideAlert,
-        showError(err) {
-            _showMessage(err, 'danger', 10, 'fa-exclamation-triangle');
+        showError(message, err) {
+            if (message && message.cancelled)
+                return false;
+
+            _showMessage(message, err, 'danger', 10);
 
             return false;
         },
-        showInfo(err) {
-            _showMessage(err, 'success', 3, 'fa-check-circle-o');
+        showInfo(message) {
+            _showMessage(message, null, 'success', 3);
         }
     };
 }]];

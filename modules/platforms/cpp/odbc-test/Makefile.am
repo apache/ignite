@@ -40,13 +40,14 @@ AM_CPPFLAGS = \
 
 AM_CXXFLAGS = \
     -Wall \
-    -std=c++0x
+    -std=c++03
 
 ignite_odbc_tests_LDADD = \
     @top_srcdir@/core/libignite.la \
     -ldl \
     -lodbc \
-    -lpthread
+    -lpthread \
+    -lboost_regex
 
 ignite_odbc_tests_LDFLAGS = \
     -static-libtool-libs
@@ -61,6 +62,7 @@ ignite_odbc_tests_SOURCES = \
     src/column_test.cpp \
     src/configuration_test.cpp \
     src/row_test.cpp \
+    src/meta_queries_test.cpp \
     src/utility_test.cpp \
     src/queries_test.cpp \
     src/test_utils.cpp \
@@ -69,12 +71,18 @@ ignite_odbc_tests_SOURCES = \
     src/sql_numeric_functions_test.cpp \
     src/sql_aggregate_functions_test.cpp \
     src/sql_system_functions_test.cpp \
+    src/sql_esc_convert_function_test.cpp \
     src/sql_operators_test.cpp \
     src/sql_value_expressions_test.cpp \
     src/sql_types_test.cpp \
     src/sql_date_time_functions_test.cpp \
     src/sql_outer_join_test.cpp \
+    src/sql_get_info_test.cpp \
     src/api_robustness_test.cpp \
+    src/attributes_test.cpp \
+    src/errors_test.cpp \
+	src/odbc_test_suite.cpp \
+	src/types_test.cpp \
     ../odbc/src/cursor.cpp \
     ../odbc/src/config/connection_info.cpp \
     ../odbc/src/app/application_data_buffer.cpp \

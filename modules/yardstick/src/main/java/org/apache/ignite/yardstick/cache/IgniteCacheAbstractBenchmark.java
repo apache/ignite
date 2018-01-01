@@ -19,20 +19,29 @@ package org.apache.ignite.yardstick.cache;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
+import org.apache.ignite.yardstick.cache.model.SampleValue;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
+
+import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
  * Abstract class for Ignite benchmarks which use cache.
@@ -42,10 +51,55 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
     protected IgniteCache<K, V> cache;
 
     /** */
+    protected List<IgniteCache> testCaches;
+
+    /** */
     private ThreadLocal<ThreadRange> threadRange = new ThreadLocal<>();
 
     /** */
     private AtomicInteger threadIdx = new AtomicInteger();
+
+    /** */
+    private int caches;
+
+    /** */
+    private final AtomicInteger opCacheIdx = new AtomicInteger();
+
+    /** */
+    private final ThreadLocal<IgniteCache<K, V>> opCache = new ThreadLocal<>();
+
+    /**
+     * @return Cache for benchmark operation.
+     */
+    protected final IgniteCache<K, V> cacheForOperation() {
+        return cacheForOperation(false);
+    }
+
+    /**
+     * @param perThread If {@code true} then cache is selected once and set in thread local.
+     * @return Cache for benchmark operation.
+     */
+    protected final IgniteCache<K, V> cacheForOperation(boolean perThread) {
+        if (caches > 1) {
+            if (perThread) {
+                IgniteCache<K, V> cache = opCache.get();
+
+                if (cache == null) {
+                    cache = testCaches.get(opCacheIdx.getAndIncrement() % caches);
+
+                    opCache.set(cache);
+
+                    BenchmarkUtils.println(cfg, "Initialized cache for thread [cache=" + cache.getName() + ']');
+                }
+
+                return cache;
+            }
+            else
+                return testCaches.get(ThreadLocalRandom.current().nextInt(caches));
+        }
+
+        return cache;
+    }
 
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
@@ -53,9 +107,39 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
 
         cache = cache();
 
+        CacheConfiguration<?, ?> ccfg = cache.getConfiguration(CacheConfiguration.class);
+
+        String grpName = ccfg.getGroupName();
+
         BenchmarkUtils.println(cfg, "Benchmark setUp [name=" + getClass().getSimpleName() +
             ", cacheName="+ cache.getName() +
+            ", cacheGroup="+ grpName +
             ", cacheCfg=" + cache.getConfiguration(CacheConfiguration.class) + ']');
+
+        caches = args.cachesCount();
+
+        if (caches > 1) {
+            List<CacheConfiguration> toCreate = new ArrayList<>();
+
+            for (int i = 0; i < caches - 1; i++) {
+                JdkMarshaller marsh = new JdkMarshaller();
+
+                CacheConfiguration ccfg0 = marsh.unmarshal(marsh.marshal(ccfg), null);
+
+                ccfg0.setName(cache.getName() + "-" + i);
+
+                toCreate.add(ccfg0);
+            }
+
+            Collection<IgniteCache> caches = ignite().getOrCreateCaches(toCreate);
+
+            testCaches = new ArrayList<>(caches);
+
+            testCaches.add(cache);
+
+            BenchmarkUtils.println(cfg, "Created additional caches [caches=" + testCaches.size() +
+                ", grp=" + grpName + ']');
+        }
 
         if (args.printPartitionStatistics()) {
             Map<ClusterNode, T2<List<Integer>, List<Integer>>> parts = new HashMap<>();
@@ -101,6 +185,80 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
                 );
             }
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    protected final void loadCachesData() throws Exception {
+        List<IgniteCache> caches = testCaches != null ? testCaches : Collections.<IgniteCache>singletonList(cache);
+
+        if (caches.size() > 1) {
+            ExecutorService executor = Executors.newFixedThreadPool(10);
+
+            try {
+                List<Future<?>> futs = new ArrayList<>();
+
+                for (final IgniteCache cache : caches) {
+                    futs.add(executor.submit(new Runnable() {
+                        @Override public void run() {
+                            loadCacheData0(cache.getName());
+                        }
+                    }));
+                }
+
+                for (Future<?> fut : futs)
+                    fut.get();
+            }
+            finally {
+                executor.shutdown();
+            }
+        }
+        else
+            loadCacheData(caches.get(0).getName());
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param cnt Number of entries to load.
+     */
+    protected final void loadSampleValues(String cacheName, int cnt) {
+        try (IgniteDataStreamer<Object, Object> dataLdr = ignite().dataStreamer(cacheName)) {
+            for (int i = 0; i < cnt; i++) {
+                dataLdr.addData(i, new SampleValue(i));
+
+                if (i % 100000 == 0) {
+                    if (Thread.currentThread().isInterrupted())
+                        break;
+
+                    println("Loaded entries [cache=" + cacheName + ", cnt=" + i + ']');
+                }
+            }
+        }
+
+        println("Load entries done [cache=" + cacheName + ", cnt=" + cnt + ']');
+    }
+
+    /**
+     * @param cacheName Cache name.
+     */
+    private void loadCacheData0(String cacheName) {
+        println(cfg, "Loading data for cache: " + cacheName);
+
+        long start = System.nanoTime();
+
+        loadCacheData(cacheName);
+
+        long time = ((System.nanoTime() - start) / 1_000_000);
+
+        println(cfg, "Finished populating data [cache=" + cacheName + ", time=" + time + "ms]");
+    }
+
+    /**
+     * @param cacheName Cache name.
+     */
+    protected void loadCacheData(String cacheName) {
+        throw new IllegalStateException("Not implemented for " + getClass().getSimpleName());
     }
 
     /**

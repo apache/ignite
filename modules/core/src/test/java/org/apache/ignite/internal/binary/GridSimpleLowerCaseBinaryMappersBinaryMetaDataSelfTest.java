@@ -28,8 +28,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 public class GridSimpleLowerCaseBinaryMappersBinaryMetaDataSelfTest
     extends GridDefaultBinaryMappersBinaryMetaDataSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         BinaryConfiguration bCfg = cfg.getBinaryConfiguration();
 

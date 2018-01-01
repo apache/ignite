@@ -17,19 +17,23 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.util.Properties;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.sql.*;
-import java.util.*;
-
-import static org.apache.ignite.IgniteJdbcDriver.*;
-import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_NODE_ID;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Test JDBC with several local caches.
@@ -47,8 +51,8 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cache = defaultCacheConfiguration();
 
@@ -89,8 +93,6 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
 
         cache2.put("key1", 3);
         cache2.put("key2", 4);
-
-        Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
 
     /** {@inheritDoc} */
@@ -119,6 +121,34 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
                 assertEquals(++cnt, rs.getInt(1));
 
             assertEquals(2, cnt);
+        }
+        finally {
+            if (conn != null)
+                conn.close();
+        }
+    }
+
+    /**
+     * Verifies that <code>select count(*)</code> behaves correctly in
+     * {@link org.apache.ignite.cache.CacheMode#LOCAL} mode.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCountAll() throws Exception {
+        Properties cfg = new Properties();
+
+        cfg.setProperty(PROP_NODE_ID, grid(0).localNode().id().toString());
+
+        Connection conn = null;
+
+        try {
+            conn = DriverManager.getConnection(BASE_URL, cfg);
+
+            ResultSet rs = conn.createStatement().executeQuery("select count(*) from Integer");
+
+            assertTrue(rs.next());
+
+            assertEquals(2L, rs.getLong(1));
         }
         finally {
             if (conn != null)

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Externalizable;
 import java.io.Serializable;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -49,16 +48,17 @@ public class GridCacheAttributes implements Serializable {
 
     /**
      * @param cfg Cache configuration.
+     *
      */
     public GridCacheAttributes(CacheConfiguration cfg) {
         ccfg = cfg;
     }
 
     /**
-     * Public no-arg constructor for {@link Externalizable}.
+     * @return Cache group name.
      */
-    public GridCacheAttributes() {
-        // No-op.
+    public String groupName() {
+        return ccfg.getGroupName();
     }
 
     /**
@@ -146,22 +146,6 @@ public class GridCacheAttributes implements Serializable {
     }
 
     /**
-     * @return Affinity hash ID resolver class name.
-     */
-    public String affinityHashIdResolverClassName() {
-        AffinityFunction aff = ccfg.getAffinity();
-
-        if (aff instanceof RendezvousAffinityFunction) {
-            if (((RendezvousAffinityFunction) aff).getHashIdResolver() == null)
-                return null;
-
-            return className(((RendezvousAffinityFunction) aff).getHashIdResolver());
-        }
-
-        return null;
-    }
-
-    /**
      * @return Eviction filter class name.
      */
     public String evictionFilterClassName() {
@@ -170,13 +154,25 @@ public class GridCacheAttributes implements Serializable {
 
     /**
      * @return Eviction policy class name.
+     *
+     * @deprecated Use evictionPolicyFactoryClassName() instead.
      */
+    @Deprecated
     public String evictionPolicyClassName() {
         return className(ccfg.getEvictionPolicy());
     }
 
     /**
+     * @return Eviction policy factory class name.
+     */
+    public String evictionPolicyFactoryClassName() {
+        return className(ccfg.getEvictionPolicyFactory());
+    }
+
+    /**
      * @return Near eviction policy class name.
+     *
+     * @deprecated Use nearEvictionPolicyFactoryClassName() instead.
      */
     public String nearEvictionPolicyClassName() {
         NearCacheConfiguration nearCfg = ccfg.getNearConfiguration();
@@ -185,6 +181,13 @@ public class GridCacheAttributes implements Serializable {
             return null;
 
         return className(nearCfg.getNearEvictionPolicy());
+    }
+
+    /**
+     * @return Near eviction policy factory class name.
+     */
+    public String nearEvictionPolicyFactoryClassName() {
+        return className(ccfg.getEvictionPolicyFactory());
     }
 
     /**
@@ -205,27 +208,6 @@ public class GridCacheAttributes implements Serializable {
     }
 
     /**
-     * @return {@code True} if swap enabled.
-     */
-    public boolean swapEnabled() {
-        return ccfg.isSwapEnabled();
-    }
-
-    /**
-     * @return Flag indicating whether eviction is synchronized.
-     */
-    public boolean evictSynchronized() {
-        return ccfg.isEvictSynchronized();
-    }
-
-    /**
-     * @return Maximum eviction overflow ratio.
-     */
-    public float evictMaxOverflowRatio() {
-        return ccfg.getEvictMaxOverflowRatio();
-    }
-
-    /**
      * @return Default lock timeout.
      */
     public long defaultLockTimeout() {
@@ -237,6 +219,41 @@ public class GridCacheAttributes implements Serializable {
      */
     public int rebalanceBatchSize() {
         return ccfg.getRebalanceBatchSize();
+    }
+
+    /**
+     * @return Rebalance delay.
+     */
+    public long rebalanceDelay() {
+        return ccfg.getRebalanceDelay();
+    }
+
+    /**
+     * @return Rebalance prefetch count.
+     */
+    public long rebalanceBatchesPrefetchCount() {
+        return ccfg.getRebalanceBatchesPrefetchCount();
+    }
+
+    /**
+     * @return Rebalance order.
+     */
+    public int rebalanceOrder() {
+        return ccfg.getRebalanceOrder();
+    }
+
+    /**
+     * @return Rebalance throttle.
+     */
+    public long rebalanceThrottle() {
+        return ccfg.getRebalanceThrottle();
+    }
+
+    /**
+     * @return Rebalance timeout.
+     */
+    public long rebalanceTimeout() {
+        return ccfg.getRebalanceTimeout();
     }
 
     /**
@@ -303,10 +320,31 @@ public class GridCacheAttributes implements Serializable {
     }
 
     /**
+     * @return Write coalescing flag.
+     */
+    public boolean writeBehindCoalescing() {
+        return ccfg.getWriteBehindCoalescing();
+    }
+
+    /**
      * @return Interceptor class name.
      */
     public String interceptorClassName() {
         return className(ccfg.getInterceptor());
+    }
+
+    /**
+     * @return Node filter class name.
+     */
+    String nodeFilterClassName() {
+        return className(ccfg.getNodeFilter());
+    }
+
+    /**
+     * @return Topology validator class name.
+     */
+    String topologyValidatorClassName() {
+        return className(ccfg.getTopologyValidator());
     }
 
     /**

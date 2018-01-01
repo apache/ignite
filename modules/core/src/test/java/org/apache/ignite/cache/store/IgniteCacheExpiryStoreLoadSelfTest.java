@@ -35,7 +35,9 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -49,7 +51,7 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
     private static final int TIME_TO_LIVE = 1000;
 
     /** Additional time to wait expiry process in milliseconds. */
-    private static final int WAIT_TIME = 500;
+    private static final int WAIT_TIME = 1000;
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -63,8 +65,8 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setCacheStoreFactory(singletonFactory(new TestStore()));
         cfg.setReadThrough(true);
@@ -102,13 +104,8 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
         keys.add(primaryKey(jcache(1)));
         keys.add(primaryKey(jcache(2)));
 
-        if (async) {
-            IgniteCache<String, Integer> asyncCache = cache.withAsync();
-
-            asyncCache.loadCache(null, keys.toArray(new Integer[3]));
-
-            asyncCache.future().get();
-        }
+        if (async)
+            cache.loadCacheAsync(null, keys.toArray(new Integer[3])).get();
         else
             cache.loadCache(null, keys.toArray(new Integer[3]));
 
@@ -138,33 +135,32 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
      * @throws Exception If failed.
      */
     private void checkLocalLoad(boolean async) throws Exception {
-        IgniteCache<String, Integer> cache = jcache(0)
+        final IgniteCache<String, Integer> cache = jcache(0)
             .withExpiryPolicy(new CreatedExpiryPolicy(new Duration(MILLISECONDS, TIME_TO_LIVE)));
 
         List<Integer> keys = primaryKeys(cache, 3);
 
-        if (async) {
-            IgniteCache<String, Integer> asyncCache = cache.withAsync();
-
-            asyncCache.localLoadCache(null, keys.toArray(new Integer[3]));
-
-            asyncCache.future().get();
-        }
+        if (async)
+            cache.localLoadCacheAsync(null, keys.toArray(new Integer[3])).get();
         else
             cache.localLoadCache(null, keys.toArray(new Integer[3]));
 
         assertEquals(3, cache.localSize());
 
-        Thread.sleep(TIME_TO_LIVE + WAIT_TIME);
+        boolean res = GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                return cache.localSize() == 0;
+            }
+        }, TIME_TO_LIVE + WAIT_TIME);
 
-        assertEquals(0, cache.localSize());
+        assertTrue(res);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testLoadAllWithExpiry() throws Exception {
-        IgniteCache<Integer, Integer> cache = ignite(0).<Integer, Integer>cache(null)
+        IgniteCache<Integer, Integer> cache = ignite(0).<Integer, Integer>cache(DEFAULT_CACHE_NAME)
             .withExpiryPolicy(new CreatedExpiryPolicy(new Duration(MILLISECONDS, TIME_TO_LIVE)));
 
         Set<Integer> keys = new HashSet<>();

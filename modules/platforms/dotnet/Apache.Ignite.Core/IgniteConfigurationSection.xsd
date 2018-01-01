@@ -39,21 +39,6 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:simpleType name="cacheAtomicWriteOrderMode" final="restriction">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="Clock" />
-            <xs:enumeration value="Primary" />
-        </xs:restriction>
-    </xs:simpleType>
-
-    <xs:simpleType name="cacheMemoryMode" final="restriction">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="OnheapTiered" />
-            <xs:enumeration value="OffheapTiered" />
-            <xs:enumeration value="OffheapValues" />
-        </xs:restriction>
-    </xs:simpleType>
-
     <xs:simpleType name="cacheRebalanceMode" final="restriction">
         <xs:restriction base="xs:string">
             <xs:enumeration value="Sync" />
@@ -90,6 +75,47 @@
             <xs:enumeration value="ReadCommitted" />
             <xs:enumeration value="RepeatableRead" />
             <xs:enumeration value="Serializable" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="dataPageEvictionMode" final="restriction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Disabled" />
+            <xs:enumeration value="RandomLru" />
+            <xs:enumeration value="Random2Lru" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="partitionLossPolicy" final="restriction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="ReadOnlySafe" />
+            <xs:enumeration value="ReadOnlyAll" />
+            <xs:enumeration value="ReadWriteSafe" />
+            <xs:enumeration value="ReadWriteAll" />
+            <xs:enumeration value="Ignore" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="peerAssemblyLoadingMode" final="restriction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Disabled" />
+            <xs:enumeration value="CurrentAppDomain" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="walMode" final="restriction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Defauls" />
+            <xs:enumeration value="LogOnly" />
+            <xs:enumeration value="Background" />
+            <xs:enumeration value="None" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="checkpointWriteOrder" final="restriction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Random" />
+            <xs:enumeration value="Sequential" />
         </xs:restriction>
     </xs:simpleType>
 
@@ -192,7 +218,7 @@
                                     </xs:sequence>
                                 </xs:complexType>
                             </xs:element>
-                            <xs:element name="defaultNameMapper" minOccurs="0">
+                            <xs:element name="nameMapper" minOccurs="0">
                                 <xs:annotation>
                                     <xs:documentation>Default name mapper.</xs:documentation>
                                 </xs:annotation>
@@ -204,7 +230,7 @@
                                     </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
-                            <xs:element name="defaultIdMapper" minOccurs="0">
+                            <xs:element name="idMapper" minOccurs="0">
                                 <xs:annotation>
                                     <xs:documentation>Default ID mapper.</xs:documentation>
                                 </xs:annotation>
@@ -216,7 +242,7 @@
                                     </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
-                            <xs:element name="defaultSerializer" minOccurs="0">
+                            <xs:element name="serializer" minOccurs="0">
                                 <xs:annotation>
                                     <xs:documentation>Default serializer.</xs:documentation>
                                 </xs:annotation>
@@ -229,7 +255,7 @@
                                 </xs:complexType>
                             </xs:element>
                         </xs:all>
-                        <xs:attribute name="defaultKeepDeserialized" type="xs:boolean">
+                        <xs:attribute name="keepDeserialized" type="xs:boolean">
                             <xs:annotation>
                                 <xs:documentation>Default keep deserialized flag.</xs:documentation>
                             </xs:annotation>
@@ -295,6 +321,16 @@
                                                                                     <xs:attribute name="fieldTypeName" type="xs:string">
                                                                                         <xs:annotation>
                                                                                             <xs:documentation>Java field type name.</xs:documentation>
+                                                                                        </xs:annotation>
+                                                                                    </xs:attribute>
+                                                                                    <xs:attribute name="isKeyField" type="xs:boolean">
+                                                                                        <xs:annotation>
+                                                                                            <xs:documentation>Indicates whether this field belongs to the cache key.</xs:documentation>
+                                                                                        </xs:annotation>
+                                                                                    </xs:attribute>
+                                                                                    <xs:attribute name="notNull" type="xs:boolean">
+                                                                                        <xs:annotation>
+                                                                                            <xs:documentation>Indicates whether null value is allowed for the field.</xs:documentation>
                                                                                         </xs:annotation>
                                                                                     </xs:attribute>
                                                                                 </xs:complexType>
@@ -368,6 +404,11 @@
                                                                                             <xs:documentation>Index type.</xs:documentation>
                                                                                         </xs:annotation>
                                                                                     </xs:attribute>
+                                                                                    <xs:attribute name="inlineSize" type="xs:int">
+                                                                                        <xs:annotation>
+                                                                                            <xs:documentation>Index inline size in bytes. When enabled part of indexed value will be placed directly to index pages, thus minimizing data page accesses and increasing query performance.</xs:documentation>
+                                                                                        </xs:annotation>
+                                                                                    </xs:attribute>
                                                                                 </xs:complexType>
                                                                             </xs:element>
                                                                         </xs:sequence>
@@ -399,6 +440,27 @@
                                                                 <xs:annotation>
                                                                     <xs:documentation>
                                                                         .NET value type.
+                                                                    </xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
+                                                            <xs:attribute name="tableName" type="xs:string">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>
+                                                                        SQL table name. When not set, value type name is used.
+                                                                    </xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
+                                                            <xs:attribute name="keyFieldName" type="xs:string">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>
+                                                                        Name of the field that denotes the key.
+                                                                    </xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
+                                                            <xs:attribute name="valueFieldName" type="xs:string">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>
+                                                                        Name of the field that denotes the value.
                                                                     </xs:documentation>
                                                                 </xs:annotation>
                                                             </xs:attribute>
@@ -513,6 +575,53 @@
                                                 </xs:attribute>
                                             </xs:complexType>
                                         </xs:element>
+                                        <xs:element name="keyConfiguration" minOccurs="0">
+                                            <xs:annotation>
+                                                <xs:documentation>Cache key configuration collection.</xs:documentation>
+                                            </xs:annotation>
+                                            <xs:complexType>
+                                                <xs:sequence>
+                                                    <xs:element name="cacheKeyConfiguration" maxOccurs="unbounded">
+                                                        <xs:annotation>
+                                                            <xs:documentation>Cache key configuration.</xs:documentation>
+                                                        </xs:annotation>
+                                                        <xs:complexType>
+                                                            <xs:attribute name="typeName" type="xs:string" use="required">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>Key type name.</xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
+                                                            <xs:attribute name="affinityKeyFieldName" type="xs:string" use="required">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>Affinity key field name.</xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:sequence>
+                                            </xs:complexType>
+                                        </xs:element>
+                                        <xs:element name="pluginConfigurations" minOccurs="0">
+                                            <xs:annotation>
+                                                <xs:documentation>Cache plugin configurations.</xs:documentation>
+                                            </xs:annotation>
+                                            <xs:complexType>
+                                                <xs:sequence>
+                                                    <xs:element name="iCachePluginConfiguration" maxOccurs="unbounded">
+                                                        <xs:annotation>
+                                                            <xs:documentation>Cache plugin configuration.</xs:documentation>
+                                                        </xs:annotation>
+                                                        <xs:complexType>
+                                                            <xs:attribute name="type" type="xs:string" use="required">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:sequence>
+                                            </xs:complexType>
+                                        </xs:element>
                                     </xs:all>
                                     <xs:attribute name="name" type="xs:string">
                                         <xs:annotation>
@@ -529,40 +638,6 @@
                                             <xs:documentation>Write synchronization mode. This mode controls whether the main caller should wait for update on other nodes to complete or not.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
-                                    <xs:attribute name="evictSynchronized" type="xs:boolean">
-                                        <xs:annotation>
-                                            <xs:documentation>
-                                                Flag indicating whether eviction is synchronized between primary, backup and near nodes. If this parameter is true and swap is disabled then ICache.LocalEvict will involve all nodes where an entry is kept. If this property is set to false then eviction is done independently on different cache nodes. Note that it's not recommended to set this value to true if cache store is configured since it will allow to significantly improve cache performance.
-                                            </xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
-                                    <xs:attribute name="evictSynchronizedKeyBufferSize" type="xs:int">
-                                        <xs:annotation>
-                                            <xs:documentation>Size of the key buffer for synchronized evictions.</xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
-                                    <xs:attribute name="evictSynchronizedConcurrencyLevel" type="xs:int">
-                                        <xs:annotation>
-                                            <xs:documentation>
-                                                Concurrency level for synchronized evictions. This flag only makes sense with EvictSynchronized set to true. When synchronized evictions are enabled, it is possible that local eviction policy will try to evict entries faster than evictions can be synchronized with backup or near nodes. This value specifies how many concurrent synchronous eviction sessions should be allowed before the system is forced to wait and let synchronous evictions catch up with the eviction policy.
-                                            </xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
-                                    <xs:attribute name="evictSynchronizedTimeout" type="xs:string">
-                                        <xs:annotation>
-                                            <xs:documentation>Timeout for synchronized evictions</xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
-                                    <xs:attribute name="maxEvictionOverflowRatio" type="xs:decimal">
-                                        <xs:annotation>
-                                            <xs:documentation>This value denotes the maximum size of eviction queue in percents of cache size in case of distributed cache (replicated and partitioned) and using synchronized eviction</xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
-                                    <xs:attribute name="startSize" type="xs:int">
-                                        <xs:annotation>
-                                            <xs:documentation>Initial cache size which will be used to pre-create internal hash table after start.</xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
                                     <xs:attribute name="loadPreviousValue" type="xs:string">
                                         <xs:annotation>
                                             <xs:documentation>
@@ -573,11 +648,6 @@
                                     <xs:attribute name="atomicityMode" type="cacheAtomicityMode">
                                         <xs:annotation>
                                             <xs:documentation>Cache atomicity mode.</xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
-                                    <xs:attribute name="atomicWriteOrderMode" type="cacheAtomicWriteOrderMode">
-                                        <xs:annotation>
-                                            <xs:documentation>Cache write ordering mode.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
                                     <xs:attribute name="backups" type="xs:int">
@@ -607,11 +677,6 @@
                                             <xs:documentation>Batch size (in number bytes) to be loaded within a single rebalance message. Rebalancing algorithm will split total data set on every node into multiple batches prior to sending data.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
-                                    <xs:attribute name="enableSwap" type="xs:boolean">
-                                        <xs:annotation>
-                                            <xs:documentation>Flag indicating whether Ignite should use swap storage by default.</xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
                                     <xs:attribute name="maxConcurrentAsyncOperations" type="xs:int">
                                         <xs:annotation>
                                             <xs:documentation>Maximum number of allowed concurrent asynchronous operations, 0 for unlimited.</xs:documentation>
@@ -631,6 +696,13 @@
                                         <xs:annotation>
                                             <xs:documentation>
                                                 Number of threads that will perform cache flushing. Cache flushing is performed when cache size exceeds value defined by WriteBehindFlushSize, or flush interval defined by WriteBehindFlushFrequency is elapsed.
+                                            </xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="writeBehindCoalescing" type="xs:boolean">
+                                        <xs:annotation>
+                                            <xs:documentation>
+                                                Coalescing flag for write-behind cache store operations. Store operations (get or remove) with the same key are combined or coalesced to single, resulting operation to reduce pressure to underlying cache store.
                                             </xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
@@ -661,11 +733,6 @@
                                             <xs:documentation>Maximum amount of memory available to off-heap storage. Possible values are -1 means that off-heap storage is disabled. 0 means that Ignite will not limit off-heap storage (it's up to user to properly add and remove entries from cache to ensure that off-heap storage does not grow indefinitely. Any positive value specifies the limit of off-heap storage in bytes.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
-                                    <xs:attribute name="memoryMode" type="cacheMemoryMode">
-                                        <xs:annotation>
-                                            <xs:documentation>Memory mode for cache.</xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
                                     <xs:attribute name="longQueryWarningTimeout" type="xs:string">
                                         <xs:annotation>
                                             <xs:documentation>Timeout after which long query warning will be printed.</xs:documentation>
@@ -674,11 +741,6 @@
                                     <xs:attribute name="sqlEscapeAll" type="xs:boolean">
                                         <xs:annotation>
                                             <xs:documentation>If true all the SQL table and field names will be escaped with double quotes like ({ "tableName"."fieldsName"}). This enforces case sensitivity for field names and also allows having special characters in table and field names.</xs:documentation>
-                                        </xs:annotation>
-                                    </xs:attribute>
-                                    <xs:attribute name="sqlOnheapRowCacheSize" type="xs:int">
-                                        <xs:annotation>
-                                            <xs:documentation>Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access. This setting only makes sense when offheap is enabled for this cache.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
                                     <xs:attribute name="readThrough" type="xs:boolean">
@@ -723,6 +785,66 @@
                                             <xs:documentation>Value indicating whether statistics gathering is enabled on a cache. These statistics can be retrieved via ICache.GetMetrics().</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
+                                    <xs:attribute name="dataRegionName" type="xs:string">
+                                        <xs:annotation>
+                                            <xs:documentation>Name of the DataRegionConfiguration for this cache.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="partitionLossPolicy" type="partitionLossPolicy">
+                                        <xs:annotation>
+                                            <xs:documentation>Partition loss policy defines how Ignite will react to a situation when all nodes for some partition leave the cluster.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="groupName" type="xs:string">
+                                        <xs:annotation>
+                                            <xs:documentation>Cache group name. Caches with the same group name share single underlying 'physical' cache (partition set), but are logically isolated.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="sqlIndexMaxInlineSize" type="xs:int">
+                                        <xs:annotation>
+                                            <xs:documentation>Maximum size of SQL inline index. Part of indexed value will be placed directly to index pages, thus minimizing data page accesses and increasing query performance.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="onheapCacheEnabled" type="xs:boolean">
+                                        <xs:annotation>
+                                            <xs:documentation>Whether on-heap cache is enabled for the off-heap based page memory.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="storeConcurrentLoadAllThreshold" type="xs:int">
+                                        <xs:annotation>
+                                            <xs:documentation>Threshold to use when multiple keys are being loaded from an underlying cache store.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="rebalanceOrder" type="xs:int">
+                                        <xs:annotation>
+                                            <xs:documentation>Caches with bigger RebalanceOrder are rebalanced later than caches with smaller RebalanceOrder. 0 for unordered (immediate) rebalance.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="rebalanceBatchesPrefetchCount" type="xs:int">
+                                        <xs:annotation>
+                                            <xs:documentation>Rebalance batches prefetch count.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="maxQueryIteratorsCount" type="xs:int">
+                                        <xs:annotation>
+                                            <xs:documentation>Maximum number of active query iterators.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="queryDetailMetricsSize" type="xs:int">
+                                        <xs:annotation>
+                                            <xs:documentation>Size of the query detail metrics to be stored in memory.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="sqlSchema" type="xs:string">
+                                        <xs:annotation>
+                                            <xs:documentation>SQL schema. Non-quoted identifiers are not case sensitive. Quoted identifiers are case sensitive. Quoted cache name is used by default.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="queryParallelism" type="xs:int">
+                                        <xs:annotation>
+                                            <xs:documentation>Desired query parallelism within a single node.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
                         </xs:sequence>
@@ -748,13 +870,13 @@
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
-                <xs:element name="lifecycleBeans" minOccurs="0">
+                <xs:element name="lifecycleHandlers" minOccurs="0">
                     <xs:annotation>
-                        <xs:documentation>Lifecycle beans.</xs:documentation>
+                        <xs:documentation>Lifecycle event handlers.</xs:documentation>
                     </xs:annotation>
                     <xs:complexType>
                         <xs:sequence>
-                            <xs:element maxOccurs="unbounded" name="iLifecycleBean">
+                            <xs:element maxOccurs="unbounded" name="iLifecycleHandler">
                                 <xs:complexType>
                                     <xs:attribute name="type" type="xs:string" use="required">
                                         <xs:annotation>
@@ -864,11 +986,6 @@
                                 </xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="heartbeatFrequency" type="xs:string">
-                            <xs:annotation>
-                                <xs:documentation>Delay between issuing of heartbeat messages. SPI sends heartbeat messages in configurable time interval to other nodes to notify them about its state.</xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
                         <xs:attribute name="ipFinderCleanFrequency" type="xs:string">
                             <xs:annotation>
                                 <xs:documentation>IP finder clean frequency.</xs:documentation>
@@ -889,16 +1006,6 @@
                                 <xs:documentation>
                                     Local port range for local host ports (value must greater than or equal to <tt>0</tt>). If provided local port LocalPort is occupied, implementation will try to increment the port number for as long as it is less than initial value plus this range.
                                 </xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
-                        <xs:attribute name="maxMissedClientHeartbeats" type="xs:int">
-                            <xs:annotation>
-                                <xs:documentation>Maximum heartbeats count node can miss without failing client node.</xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
-                        <xs:attribute name="maxMissedHeartbeats" type="xs:int">
-                            <xs:annotation>
-                                <xs:documentation>Maximum heartbeats count node can miss without initiating status check.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                         <xs:attribute name="reconnectCount" type="xs:int">
@@ -1124,9 +1231,9 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
-                <xs:element name="swapSpaceSpi" minOccurs="0">
+                <xs:element name="eventStorageSpi" minOccurs="0">
                     <xs:annotation>
-                        <xs:documentation>Swap space SPI.</xs:documentation>
+                        <xs:documentation>Event storage space SPI.</xs:documentation>
                     </xs:annotation>
                     <xs:complexType>
                         <xs:attribute name="type" type="xs:string" use="required">
@@ -1134,37 +1241,693 @@
                                 <xs:documentation>Assembly-qualified type name.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="baseDirectory" type="xs:string">
+                        <xs:attribute name="expirationTimeout" type="xs:string">
                             <xs:annotation>
-                                <xs:documentation>Base directory.</xs:documentation>
+                                <xs:documentation>Expiration timeout for stored events. Negative for unlimited.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="maximumSparsity" type="xs:decimal">
+                        <xs:attribute name="maxEventCount" type="xs:long">
                             <xs:annotation>
-                                <xs:documentation>Maximum sparsity. This property defines maximum acceptable wasted file space to whole file size ratio. When this ratio becomes higher than specified number compacting thread starts working.</xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
-                        <xs:attribute name="maximumWriteQueueSize" type="xs:int">
-                            <xs:annotation>
-                                <xs:documentation>Maximum size of the write queue in bytes. If there are more values are waiting to be written to disk then specified size, SPI will block on write operation.</xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
-                        <xs:attribute name="readStripesNumber" type="xs:int">
-                            <xs:annotation>
-                                <xs:documentation>Read stripes number. Defines number of file channels to be used concurrently. Defaults to Environment.ProcessorCount.</xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
-                        <xs:attribute name="writeBufferSize" type="xs:int">
-                            <xs:annotation>
-                                <xs:documentation>Size of the write buffer, in bytes. Write to disk occurs only when this buffer is full.</xs:documentation>
+                                <xs:documentation>Maximum event count to store.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="memoryConfiguration" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Page memory configuration.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="memoryPolicies" minOccurs="0" maxOccurs="1">
+                                <xs:annotation>
+                                    <xs:documentation>Memory policies.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="memoryPolicyConfiguration" minOccurs="0" maxOccurs="unbounded">
+                                            <xs:complexType>
+                                                <xs:attribute name="emptyPagesPoolSize" type="xs:int">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Minimal number of empty pages to be present in reuse lists for this memory policy.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="evictionThreshold" type="xs:double">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Threshold for memory pages eviction initiation. For instance, if the threshold is 0.9 it means that the page memory will start the eviction only after 90% of the memory region (defined by this policy) is occupied.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="name" type="xs:string" use="required">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Memory policy name.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="pageEvictionMode" type="dataPageEvictionMode">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Page eviction mode.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="initialSize" type="xs:long">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Initial memory region size defined by this memory policy.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="maxSize" type="xs:long">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Maximum memory region size defined by this memory policy.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="swapFilePath" type="xs:string">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Path to the memory-mapped file the memory region defined by this memory policy will be mapped to.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="metricsEnabled" type="xs:boolean">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Enable memory metrics.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="subIntervals" type="xs:int">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Number of sub intervals to split RateTimeInterval into.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="rateTimeInterval" type="xs:string">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Rate time interval for AllocationRate and EvictionRate monitoring.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                        <xs:attribute name="concurrencyLevel" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Number of concurrent segments in Ignite internal page mapping tables.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="defaultMemoryPolicyName" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Name of the default memory policy in MemoryPolicies.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="pageSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the memory page.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="systemCacheInitialSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Initial size of a memory chunk reserved for system cache needs.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="systemCacheMaxSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Maximum size of a memory chunk reserved for system cache needs.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>                
+                <xs:element name="sqlConnectorConfiguration" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>SQL connector configuration (JDBC and ODBC).</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="port" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Connector port.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="host" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Connector host.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="portRange" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Connector port range.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="socketSendBufferSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the socket send buffer.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="socketReceiveBufferSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the socket receive buffer.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="tcpNoDelay" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>TCP_NODELAY socket option.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="maxOpenCursorsPerConnection" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Maximum open cursors per connection.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="threadPoolSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>SQL connector thread pool size.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="clientConnectorConfiguration" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Client connector configuration (JDBC, ODBC, thin clients).</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="port" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Connector port.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="host" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Connector host.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="portRange" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Connector port range.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="socketSendBufferSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the socket send buffer.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="socketReceiveBufferSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the socket receive buffer.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="tcpNoDelay" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>TCP_NODELAY socket option.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="maxOpenCursorsPerConnection" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Maximum open cursors per connection.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="threadPoolSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>SQL connector thread pool size.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="idleTimeout" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Idle timeout for client connections on the server side. If no packets come within idle timeout, the connection is closed by the server. Zero or negative for no timeout.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="persistentStoreConfiguration" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Persistent store configuration. Obsolete, use DataStorageConfiguration.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="persistentStorePath" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Path where data and indexes will be persisted.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="checkpointingFrequency" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Checkpointing frequency which is a minimal interval when the dirty pages will be written to the Persistent Store.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="checkpointingPageBufferSize" type="xs:long">
+                            <xs:annotation>
+                                <xs:documentation>Size of the checkpointing page buffer.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="checkpointingThreads" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Number of threads for checkpointing.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="lockWaitTime" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Persistent manager file lock wait time.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walHistorySize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Number of checkpoints to store in WAL (Write Ahead Log) history.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walSegments" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Number of WAL (Write Ahead Log) segments to work with.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walSegmentSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the WAL (Write Ahead Log) segment.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walStorePath" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Path to the directory where WAL (Write Ahead Log) is stored.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walArchivePath" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Path to the directory where WAL (Write Ahead Log) archive is stored.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walMode" type="walMode">
+                            <xs:annotation>
+                                <xs:documentation>WAL (Write Ahead Log) mode.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="tlbSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the TLB (Thread-Local Buffer), in bytes.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walFlushFrequency" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>WAL (Write Ahead Log) flush frequency.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walFsyncDelayNanos" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>WAL (Write Ahead Log) fsync (disk sync) delay, in nanoseconds.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walRecordIteratorBufferSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the WAL (Write Ahead Log) record iterator buffer, in bytes.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="alwaysWriteFullPages" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>Whether full pages should always be written.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="metricsEnabled" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>Enable persistent store metrics.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="subIntervals" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Number of sub intervals to split RateTimeInterval into.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="rateTimeInterval" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Rate time interval.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="checkpointWriteOrder" type="checkpointWriteOrder">
+                            <xs:annotation>
+                                <xs:documentation>Checkpoint page write order on disk.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="writeThrottlingEnabled" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>Threads that generate dirty pages too fast during ongoing checkpoint will be throttled.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="dataStorageConfiguration" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Data storage configuration.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="defaultDataRegionConfiguration">
+                                <xs:annotation>
+                                    <xs:documentation>Default data region configuration.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:attribute name="emptyPagesPoolSize" type="xs:int">
+                                        <xs:annotation>
+                                            <xs:documentation>Minimal number of empty pages to be present in reuse lists for this memory policy.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="evictionThreshold" type="xs:double">
+                                        <xs:annotation>
+                                            <xs:documentation>Threshold for memory pages eviction initiation. For instance, if the threshold is 0.9 it means that the page memory will start the eviction only after 90% of the memory region (defined by this policy) is occupied.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="name" type="xs:string" use="required">
+                                        <xs:annotation>
+                                            <xs:documentation>Data region name.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="pageEvictionMode" type="dataPageEvictionMode">
+                                        <xs:annotation>
+                                            <xs:documentation>Page eviction mode.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="initialSize" type="xs:long">
+                                        <xs:annotation>
+                                            <xs:documentation>Initial data region size.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="maxSize" type="xs:long">
+                                        <xs:annotation>
+                                            <xs:documentation>Maximum data region size.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="swapPath" type="xs:string">
+                                        <xs:annotation>
+                                            <xs:documentation>Path to the directory for memory-mapped files.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="metricsEnabled" type="xs:boolean">
+                                        <xs:annotation>
+                                            <xs:documentation>Enable memory metrics.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="metricsSubIntervalCount" type="xs:int">
+                                        <xs:annotation>
+                                            <xs:documentation>Number of sub intervals to split RateTimeInterval into.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="metricsRateTimeInterval" type="xs:string">
+                                        <xs:annotation>
+                                            <xs:documentation>Rate time interval for AllocationRate and EvictionRate monitoring.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="persistenceEnabled" type="xs:boolean">
+                                        <xs:annotation>
+                                            <xs:documentation>Enable disk persistence for this region.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="checkpointPageBufferSize" type="xs:long">
+                                        <xs:annotation>
+                                            <xs:documentation>Size of the checkpointing page buffer.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="dataRegionConfigurations">
+                                <xs:annotation>
+                                    <xs:documentation>Data region configurations.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element minOccurs="1" maxOccurs="unbounded" name="dataRegionConfiguration">
+                                            <xs:annotation>
+                                                <xs:documentation>Data region configuration.</xs:documentation>
+                                            </xs:annotation>
+                                            <xs:complexType>
+                                                <xs:attribute name="emptyPagesPoolSize" type="xs:int">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Minimal number of empty pages to be present in reuse lists for this memory policy.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="evictionThreshold" type="xs:double">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Threshold for memory pages eviction initiation. For instance, if the threshold is 0.9 it means that the page memory will start the eviction only after 90% of the memory region (defined by this policy) is occupied.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="name" type="xs:string" use="required">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Data region name.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="pageEvictionMode" type="dataPageEvictionMode">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Page eviction mode.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="initialSize" type="xs:long">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Initial data region size.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="maxSize" type="xs:long">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Maximum data region size.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="swapPath" type="xs:string">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Path to the directory for memory-mapped files.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="metricsEnabled" type="xs:boolean">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Enable memory metrics.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="metricsSubIntervalCount" type="xs:int">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Number of sub intervals to split RateTimeInterval into.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="metricsRateTimeInterval" type="xs:string">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Rate time interval for AllocationRate and EvictionRate monitoring.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="persistenceEnabled" type="xs:boolean">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Enable disk persistence for this region.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="checkpointPageBufferSize" type="xs:long">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Size of the checkpointing page buffer.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                            </xs:complexType>                                            
+                                        </xs:element>
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                        <xs:attribute name="storagePath" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Path where data and indexes will be persisted.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="checkpointFrequency" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Checkpointing frequency which is a minimal interval when the dirty pages will be written to the Persistent Store.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="checkpointThreads" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Number of threads for checkpointing.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="lockWaitTime" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Persistent manager file lock wait time.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walHistorySize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Number of checkpoints to store in WAL (Write Ahead Log) history.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walSegments" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Number of WAL (Write Ahead Log) segments to work with.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walSegmentSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the WAL (Write Ahead Log) segment.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walPath" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Path to the directory where WAL (Write Ahead Log) is stored.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walArchivePath" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Path to the directory where WAL (Write Ahead Log) archive is stored.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walMode" type="walMode">
+                            <xs:annotation>
+                                <xs:documentation>WAL (Write Ahead Log) mode.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walThreadLocalBufferSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the TLB (Thread-Local Buffer), in bytes.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walFlushFrequency" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>WAL (Write Ahead Log) flush frequency.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walFsyncDelayNanos" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>WAL (Write Ahead Log) fsync (disk sync) delay, in nanoseconds.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walRecordIteratorBufferSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the WAL (Write Ahead Log) record iterator buffer, in bytes.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="alwaysWriteFullPages" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>Whether full pages should always be written.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="metricsEnabled" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>Enable persistent store metrics.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="metricsSubIntervalCount" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Number of sub intervals to split RateTimeInterval into.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="metricsRateTimeInterval" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Rate time interval.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="checkpointWriteOrder" type="checkpointWriteOrder">
+                            <xs:annotation>
+                                <xs:documentation>Checkpoint page write order on disk.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="writeThrottlingEnabled" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>Threads that generate dirty pages too fast during ongoing checkpoint will be throttled.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walCompactionEnabled" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>If true, system will filter and compress WAL archive in background. Compressed WAL archive gets automatically decompressed on demand.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="pageSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the memory page.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="systemRegionInitialSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Initial size of a memory region reserved for system needs.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="systemRegionMaxSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Maximum size of a memory region reserved for system needs.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="concurrencyLevel" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Number of concurrent segments in Ignite internal page mapping tables.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walAutoArchiveAfterInactivity" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Inactivity time after which to run WAL segment auto archiving.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="pluginConfigurations" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Plugin configurations.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="iPluginConfiguration" maxOccurs="unbounded">
+                                <xs:annotation>
+                                    <xs:documentation>Plugin configuration.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:attribute name="type" type="xs:string" use="required">
+                                        <xs:annotation>
+                                            <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="pluginConfigurationClosureFactoryId" type="xs:int">
+                                        <xs:annotation>
+                                            <xs:documentation>Id to locate PlatformPluginConfigurationClosureFactory on Java side.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="consistentId" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Consistent globally unique node identifier which survives node restarts.</xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="localEventListeners" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Pre-configured local event listeners.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="localEventListener" maxOccurs="unbounded" minOccurs="0">
+                                <xs:annotation>
+                                    <xs:documentation>Listener holder.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="eventTypes">
+                                            <xs:annotation>
+                                                <xs:documentation>Event types to listen for.</xs:documentation>
+                                            </xs:annotation>
+                                            <xs:complexType>
+                                                <xs:sequence>
+                                                    <xs:element type="xs:string" name="int" maxOccurs="unbounded" minOccurs="1"/>
+                                                </xs:sequence>
+                                            </xs:complexType>
+                                        </xs:element>
+                                        <xs:element name="listener">
+                                            <xs:annotation>
+                                                <xs:documentation>Listener implementation.</xs:documentation>
+                                            </xs:annotation>
+                                            <xs:complexType>
+                                                <xs:attribute type="xs:string" name="type" use="required">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:sequence>
+                                    <xs:attribute type="xs:string" name="type" use="required">
+                                        <xs:annotation>
+                                            <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
             </xs:all>
-            <xs:attribute name="gridName" type="xs:string">
+            <xs:attribute name="igniteInstanceName" type="xs:string">
                 <xs:annotation>
                     <xs:documentation>Local Ignite instance name to be used with Ignition.GetIgnite.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="autoGenerateIgniteInstanceName" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Generate unique igniteInstanceName automatically.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
             <xs:attribute name="jvmDllPath" type="xs:string">
@@ -1302,6 +2065,85 @@
                         Failure detection timeout used by discovery and communication subsystems.
                     </xs:documentation>
                 </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="clientFailureDetectionTimeout" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>
+                        Failure detection timeout used by discovery and communication subsystems for client nodes.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="longQueryWarningTimeout" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>
+                        Timeout after which long query warning will be printed.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="peerAssemblyLoadingMode" type="peerAssemblyLoadingMode">
+                <xs:annotation>
+                    <xs:documentation>Indicates whether user assemblies should be loaded on remote nodes automatically.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="publicThreadPoolSize" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Size of the public thread pool, which processes compute jobs and user messages.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="stripedThreadPoolSize" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Size of the striped thread pool.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="serviceThreadPoolSize" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Size of the service thread pool.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="systemThreadPoolSize" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Size of the system thread pool.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="asyncCallbackThreadPoolSize" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Size of the async callback thread pool.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="managementThreadPoolSize" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Size of the management thread pool.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="dataStreamerThreadPoolSize" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Size of the data streamer thread pool.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="utilityCacheThreadPoolSize" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Size of the utility cache thread pool.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="queryThreadPoolSize" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Size of the query thread pool.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="isActiveOnStart" type="xs:boolean">
+                <xs:annotation>
+                    <xs:documentation>Whether grid should be active on start.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="clientConnectorConfigurationEnabled" type="xs:boolean">
+                <xs:annotation>
+                    <xs:documentation>Whether client connector should be enabled (allow thin clients, ODBC and JDBC drivers to work with Ignite).</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="redirectJavaConsoleOutput" type="xs:boolean">
+              <xs:annotation>
+                <xs:documentation>Whether Java console output should be redirected to Console.Out and Console.Error.</xs:documentation>
+              </xs:annotation>
             </xs:attribute>
         </xs:complexType>
     </xs:element>

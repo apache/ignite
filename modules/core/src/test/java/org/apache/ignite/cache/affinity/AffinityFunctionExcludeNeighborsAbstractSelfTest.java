@@ -55,8 +55,8 @@ public abstract class AffinityFunctionExcludeNeighborsAbstractSelfTest extends G
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         // Override node attributes in discovery spi.
         TcpDiscoverySpi spi = new TcpDiscoverySpi() {
@@ -122,7 +122,7 @@ public abstract class AffinityFunctionExcludeNeighborsAbstractSelfTest extends G
             for (int i = 0; i < grids; i++) {
                 final Ignite g = grid(i);
 
-                Affinity<Object> aff = g.affinity(null);
+                Affinity<Object> aff = g.affinity(DEFAULT_CACHE_NAME);
 
                 List<TcpDiscoveryNode> top = new ArrayList<>();
 
@@ -169,7 +169,7 @@ public abstract class AffinityFunctionExcludeNeighborsAbstractSelfTest extends G
         try {
             Object key = 12345;
 
-            Collection<? extends ClusterNode> affNodes = nodes(g.affinity(null), key);
+            Collection<? extends ClusterNode> affNodes = nodes(g.affinity(DEFAULT_CACHE_NAME), key);
 
             info("Affinity picture for grid: " + U.toShortString(affNodes));
 

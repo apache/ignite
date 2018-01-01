@@ -35,6 +35,7 @@
 
 #include "ignite/ignite.h"
 #include "ignite/ignition.h"
+#include "ignite/common/decimal.h"
 
 #include "test_type.h"
 
@@ -111,7 +112,6 @@ namespace ignite
          * Run query returning single result and check it to be equal to expected.
          *
          * @param request SQL request.
-         * @param expected Expected result.
          * @param type Result type.
          */
         template<typename T>
@@ -192,6 +192,24 @@ namespace ignite
 
     template<>
     void SqlTestSuiteFixture::CheckSingleResult<Timestamp>(const char* request);
+
+    template<>
+    void SqlTestSuiteFixture::CheckSingleResult<Time>(const char* request);
+
+    template<>
+    void SqlTestSuiteFixture::CheckSingleResult<std::vector<int8_t> >(const char* request, const std::vector<int8_t>& expected);
+
+    template<>
+    void SqlTestSuiteFixture::CheckSingleResult<ignite::common::Decimal>(const char* request, const ignite::common::Decimal& expected);
+
+    template<>
+    void SqlTestSuiteFixture::CheckSingleResult<Date>(const char* request, const Date& expected);
+
+    template<>
+    void SqlTestSuiteFixture::CheckSingleResult<Timestamp>(const char* request, const Timestamp& expected);
+
+    template<>
+    void SqlTestSuiteFixture::CheckSingleResult<Time>(const char* request, const Time& expected);
 }
 
 #endif //_IGNITE_ODBC_TEST_SQL_TEST_SUIT_FIXTURE

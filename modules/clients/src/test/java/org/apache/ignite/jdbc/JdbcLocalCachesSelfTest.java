@@ -48,8 +48,8 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
     private static final String URL = "jdbc:ignite://127.0.0.1/" + CACHE_NAME;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cache = defaultCacheConfiguration();
 
@@ -90,8 +90,6 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
 
         cache2.put("key1", 3);
         cache2.put("key2", 4);
-
-        Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
 
     /** {@inheritDoc} */

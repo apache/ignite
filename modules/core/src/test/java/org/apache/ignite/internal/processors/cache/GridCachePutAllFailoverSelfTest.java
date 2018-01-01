@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobContext;
@@ -102,9 +103,6 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /** Backups count. */
     private int backups;
 
-    /** */
-    private GridTestUtils.TestMemoryMode memMode = GridTestUtils.TestMemoryMode.HEAP;
-
     /** Filter to include only worker nodes. */
     private static final IgnitePredicate<ClusterNode> workerNodesFilter = new PN() {
         @SuppressWarnings("unchecked")
@@ -121,6 +119,20 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
     /** Test failover SPI. */
     private MasterFailoverSpi failoverSpi = new MasterFailoverSpi((IgnitePredicate)workerNodesFilter);
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, "true");
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
+    }
 
     /**
      * @throws Exception If failed.
@@ -206,60 +218,6 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
         checkPutAllFailoverColocated(false, 5, 2);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutAllFailoverColocatedNearEnabledTwoBackupsSwap() throws Exception {
-        memMode = GridTestUtils.TestMemoryMode.SWAP;
-
-        checkPutAllFailoverColocated(true, 5, 2);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutAllFailoverColocatedTwoBackupsSwap() throws Exception {
-        memMode = GridTestUtils.TestMemoryMode.SWAP;
-
-        checkPutAllFailoverColocated(false, 5, 2);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutAllFailoverColocatedNearEnabledTwoBackupsOffheapTiered() throws Exception {
-        memMode = GridTestUtils.TestMemoryMode.OFFHEAP_TIERED;
-
-        checkPutAllFailoverColocated(true, 5, 2);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutAllFailoverColocatedNearEnabledTwoBackupsOffheapTieredSwap() throws Exception {
-        memMode = GridTestUtils.TestMemoryMode.OFFHEAP_TIERED_SWAP;
-
-        checkPutAllFailoverColocated(true, 5, 2);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutAllFailoverColocatedNearEnabledTwoBackupsOffheapEvict() throws Exception {
-        memMode = GridTestUtils.TestMemoryMode.OFFHEAP_EVICT;
-
-        checkPutAllFailoverColocated(true, 5, 2);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutAllFailoverColocatedNearEnabledTwoBackupsOffheapEvictSwap() throws Exception {
-        memMode = GridTestUtils.TestMemoryMode.OFFHEAP_EVICT_SWAP;
-
-        checkPutAllFailoverColocated(true, 5, 2);
-    }
-
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return super.getTestTimeout() * 5;
@@ -318,7 +276,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
             final AtomicBoolean inputExhausted = new AtomicBoolean();
 
-            IgniteCompute comp = compute(master.cluster().forPredicate(workerNodesFilter)).withAsync();
+            IgniteCompute comp = compute(master.cluster().forPredicate(workerNodesFilter));
 
             for (Integer key : testKeys) {
                 dataChunk.add(key);
@@ -331,13 +289,11 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
                     log.info("Pushing data chunk [chunkNo=" + chunkCntr + "]");
 
-                    comp.execute(
+                    ComputeTaskFuture<Void> fut = comp.executeAsync(
                         new GridCachePutAllTask(
                             runningWorkers.get(rnd.nextInt(runningWorkers.size())).cluster().localNode().id(),
                             CACHE_NAME),
                             dataChunk);
-
-                    ComputeTaskFuture<Void> fut = comp.future();
 
                     resQueue.put(fut); // Blocks if queue is full.
 
@@ -514,7 +470,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
             final AtomicBoolean inputExhausted = new AtomicBoolean();
 
-            IgniteCompute comp = compute(master.cluster().forPredicate(workerNodesFilter)).withAsync();
+            IgniteCompute comp = compute(master.cluster().forPredicate(workerNodesFilter));
 
             for (Integer key : testKeys) {
                 ClusterNode mappedNode = master.affinity(CACHE_NAME).mapKeyToNode(key);
@@ -536,9 +492,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
                     log.info("Pushing data chunk [chunkNo=" + chunkCntr + "]");
 
-                    comp.execute(new GridCachePutAllTask(nodeId, CACHE_NAME), data);
-
-                    ComputeTaskFuture<Void> fut = comp.future();
+                    ComputeTaskFuture<Void> fut = comp.executeAsync(new GridCachePutAllTask(nodeId, CACHE_NAME), data);
 
                     resQueue.put(fut); // Blocks if queue is full.
 
@@ -587,9 +541,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             }
 
             for (Map.Entry<UUID, Collection<Integer>> entry : dataChunks.entrySet()) {
-                comp.execute(new GridCachePutAllTask(entry.getKey(), CACHE_NAME), entry.getValue());
-
-                ComputeTaskFuture<Void> fut = comp.future();
+                ComputeTaskFuture<Void> fut = comp.executeAsync(new GridCachePutAllTask(entry.getKey(), CACHE_NAME), entry.getValue());
 
                 resQueue.put(fut); // Blocks if queue is full.
 
@@ -712,8 +664,8 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -729,7 +681,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoverySpi);
 
-        if (gridName.startsWith("master")) {
+        if (igniteInstanceName.startsWith("master")) {
             cfg.setClientMode(true);
 
             cfg.setUserAttributes(ImmutableMap.of("segment", "master"));
@@ -739,14 +691,13 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
             cfg.setFailoverSpi(failoverSpi);
         }
-        else if (gridName.startsWith("worker")) {
+        else if (igniteInstanceName.startsWith("worker")) {
             cfg.setUserAttributes(ImmutableMap.of("segment", "worker"));
 
             CacheConfiguration cacheCfg = defaultCacheConfiguration();
             cacheCfg.setName("partitioned");
             cacheCfg.setAtomicityMode(atomicityMode());
             cacheCfg.setCacheMode(PARTITIONED);
-            cacheCfg.setStartSize(4500000);
 
             cacheCfg.setBackups(backups);
 
@@ -754,12 +705,11 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
             cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
 
-            GridTestUtils.setMemoryMode(cfg, cacheCfg, memMode, 1000, 10 * 1024);
 
             cfg.setCacheConfiguration(cacheCfg);
         }
         else
-            throw new IllegalStateException("Unexpected grid name: " + gridName);
+            throw new IllegalStateException("Unexpected Ignite instance name: " + igniteInstanceName);
 
         return cfg;
     }

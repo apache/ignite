@@ -50,7 +50,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
 
 /**
  * Log4j-based implementation for logging. This logger should be used
- * by loaders that have prefer <a target=_new href="http://logging.apache.org/log4j/docs/">log4j</a>-based logging.
+ * by loaders that have prefer <a target=_new href="http://logging.apache.org/log4j/1.2/">log4j</a>-based logging.
  * <p>
  * Here is a typical example of configuring log4j logger in Ignite configuration file:
  * <pre name="code" class="xml">
@@ -96,12 +96,14 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
     private Logger impl;
 
     /** Path to configuration file. */
-    private final String path;
+    @GridToStringExclude
+    private final String cfg;
 
     /** Quiet flag. */
     private final boolean quiet;
 
     /** Node ID. */
+    @GridToStringExclude
     private UUID nodeId;
 
     /**
@@ -123,7 +125,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
      * log level.
      *
      * @param init If {@code true}, then a default console appender with
-     *      following pattern layout will be created: {@code %d{ABSOLUTE} %-5p [%c{1}] %m%n}.
+     *      following pattern layout will be created: {@code %d{ISO8601} %-5p [%c{1}] %m%n}.
      *      If {@code false}, then no implicit initialization will take place,
      *      and {@code Log4j} should be configured prior to calling this
      *      constructor.
@@ -140,7 +142,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
         else
             quiet = true;
 
-        path = null;
+        cfg = null;
     }
 
     /**
@@ -151,7 +153,24 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
     public Log4JLogger(final Logger impl) {
         assert impl != null;
 
-        path = null;
+        addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
+            @Override public Logger apply(Boolean init) {
+                return impl;
+            }
+        });
+
+        quiet = quiet0;
+        cfg = null;
+    }
+
+    /**
+     * Creates new logger with given implementation.
+     *
+     * @param impl Log4j implementation to use.
+     * @param path Configuration file/url path.
+     */
+    private Log4JLogger(final Logger impl, final String path) {
+        assert impl != null;
 
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
@@ -160,6 +179,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
         });
 
         quiet = quiet0;
+        cfg = path;
     }
 
     /**
@@ -168,11 +188,11 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
      * @param path Path to log4j configuration XML file.
      * @throws IgniteCheckedException Thrown in case logger can't be created.
      */
-    public Log4JLogger(String path) throws IgniteCheckedException {
+    public Log4JLogger(final String path) throws IgniteCheckedException {
         if (path == null)
             throw new IgniteCheckedException("Configuration XML file for Log4j must be specified.");
 
-        this.path = path;
+        this.cfg = path;
 
         final URL cfgUrl = U.resolveIgniteUrl(path);
 
@@ -204,12 +224,12 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
         if (!cfgFile.exists() || cfgFile.isDirectory())
             throw new IgniteCheckedException("Log4j configuration path was not found or is a directory: " + cfgFile);
 
-        path = cfgFile.getAbsolutePath();
+        cfg = cfgFile.getAbsolutePath();
 
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
                 if (init)
-                    DOMConfigurator.configure(path);
+                    DOMConfigurator.configure(cfg);
 
                 return Logger.getRootLogger();
             }
@@ -228,7 +248,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
         if (cfgUrl == null)
             throw new IgniteCheckedException("Configuration XML file for Log4j must be specified.");
 
-        path = null;
+        cfg = cfgUrl.getPath();
 
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
@@ -371,7 +391,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
      * @return New console appender.
      */
     private Appender createConsoleAppender(Level maxLevel) {
-        String fmt = "[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n";
+        String fmt = "[%d{ISO8601}][%-5p][%t][%c{1}] %m%n";
 
         // Configure output that should go to System.out
         Appender app = new ConsoleAppender(new PatternLayout(fmt), ConsoleAppender.SYSTEM_OUT);
@@ -448,7 +468,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
     @Override public Log4JLogger getLogger(Object ctgr) {
         return new Log4JLogger(ctgr == null ? Logger.getRootLogger() :
             ctgr instanceof Class ? Logger.getLogger(((Class<?>)ctgr).getName()) :
-                Logger.getLogger(ctgr.toString()));
+                Logger.getLogger(ctgr.toString()), cfg);
     }
 
     /** {@inheritDoc} */
@@ -517,7 +537,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(Log4JLogger.class, this);
+        return S.toString(Log4JLogger.class, this, "config", this.cfg);
     }
 
     /** {@inheritDoc} */

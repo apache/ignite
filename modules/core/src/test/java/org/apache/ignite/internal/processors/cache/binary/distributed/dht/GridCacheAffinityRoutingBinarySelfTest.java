@@ -30,8 +30,8 @@ import org.apache.ignite.binary.BinaryTypeConfiguration;
  */
 public class GridCacheAffinityRoutingBinarySelfTest extends GridCacheAffinityRoutingSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration();
 

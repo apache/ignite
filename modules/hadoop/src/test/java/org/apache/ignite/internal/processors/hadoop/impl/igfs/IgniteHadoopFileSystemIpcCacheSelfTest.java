@@ -63,8 +63,8 @@ public class IgniteHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTe
     private static int cnt;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
         discoSpi.setIpFinder(IP_FINDER);
@@ -73,10 +73,10 @@ public class IgniteHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTe
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("partitioned");
-        igfsCfg.setMetaCacheName("replicated");
         igfsCfg.setName("igfs");
         igfsCfg.setManagementPort(FileSystemConfiguration.DFLT_MGMT_PORT + cnt);
+        igfsCfg.setDataCacheConfiguration(dataCacheConfiguration());
+        igfsCfg.setMetaCacheConfiguration(metaCacheConfiguration());
 
         IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
 
@@ -89,7 +89,7 @@ public class IgniteHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTe
 
         cfg.setFileSystemConfiguration(igfsCfg);
 
-        cfg.setCacheConfiguration(cacheConfiguration());
+        cfg.setCacheConfiguration(dataCacheConfiguration());
 
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 
@@ -109,25 +109,34 @@ public class IgniteHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTe
      *
      * @return Cache configuration.
      */
-    private CacheConfiguration[] cacheConfiguration() {
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+    private CacheConfiguration dataCacheConfiguration() {
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
-        cacheCfg.setName("partitioned");
-        cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setNearConfiguration(null);
-        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(GRP_SIZE));
-        cacheCfg.setBackups(0);
-        cacheCfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setName("partitioned");
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setNearConfiguration(null);
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(GRP_SIZE));
+        ccfg.setBackups(0);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
 
-        CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
+        return ccfg;
+    }
 
-        metaCacheCfg.setName("replicated");
-        metaCacheCfg.setCacheMode(REPLICATED);
-        metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
+    /**
+     * Gets cache configuration.
+     *
+     * @return Cache configuration.
+     */
+    private CacheConfiguration metaCacheConfiguration() {
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
-        return new CacheConfiguration[] {metaCacheCfg, cacheCfg};
+        ccfg.setName("replicated");
+        ccfg.setCacheMode(REPLICATED);
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
+
+        return ccfg;
     }
 
     /** {@inheritDoc} */
@@ -159,7 +168,7 @@ public class IgniteHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTe
 
         cache.clear(); // avoid influence of previous tests in the same process.
 
-        String name = "igfs:" + getTestGridName(0) + "@";
+        String name = "igfs:" + getTestIgniteInstanceName(0) + "@";
 
         Configuration cfg = new Configuration();
 

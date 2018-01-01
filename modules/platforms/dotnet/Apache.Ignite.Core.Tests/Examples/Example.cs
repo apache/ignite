@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Tests.Examples
     using System.Linq;
     using System.Text.RegularExpressions;
     using Apache.Ignite.Examples.Compute;
-    using Apache.Ignite.ExamplesDll.Compute;
     using NUnit.Framework;
 
     /// <summary>
@@ -41,7 +40,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         public bool NeedsTestDll { get; private set; }
 
         /** Name */
-        public string Name { get; private set; }
+        public Type ExampleType { get; private set; }
 
         /// <summary>
         /// Runs this example.
@@ -57,8 +56,14 @@ namespace Apache.Ignite.Core.Tests.Examples
                 // Each example has a ReadKey at the end, which throws an exception in test environment.
                 if (ex.Message != "Cannot read keys when either application does not have a console or " +
                     "when console input has been redirected from a file. Try Console.Read.")
+                {
                     throw;
+                }
+
+                return;
             }
+
+            throw new Exception("ReadKey missing at the end of the example.");
         }
 
         /// <summary>
@@ -68,15 +73,14 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             var examplesAsm = typeof (ClosureExample).Assembly;
 
-            var sourceFiles = Directory.GetFiles(PathUtil.ExamplesSourcePath, "*.cs", SearchOption.AllDirectories);
+            var sourceFiles = Directory.GetFiles(PathUtil.ExamplesSourcePath, "*.cs", SearchOption.AllDirectories)
+                .Where(x => !x.Contains("dotnetcore")).ToArray();
 
             Assert.IsTrue(sourceFiles.Any());
 
             var types = examplesAsm.GetTypes().Where(x => x.GetMethod("Main") != null).OrderBy(x => x.Name).ToArray();
 
             Assert.IsTrue(types.Any());
-
-            var examplesDllName = typeof(AverageSalaryJob).Assembly.GetName().Name;
 
             foreach (var type in types)
             {
@@ -87,9 +91,9 @@ namespace Apache.Ignite.Core.Tests.Examples
                 yield return new Example
                 {
                     ConfigPath = GetConfigPath(sourceCode),
-                    NeedsTestDll = sourceCode.Contains(examplesDllName),
+                    NeedsTestDll = sourceCode.Contains("-assembly="),
                     _runAction = GetRunAction(type),
-                    Name = type.Name
+                    ExampleType = type
                 };
             }
         }
@@ -99,7 +103,9 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// </summary>
         private static Action GetRunAction(Type type)
         {
-            return (Action) Delegate.CreateDelegate(typeof (Action), type.GetMethod("Main"));
+            var mainMethod = type.GetMethod("Main");
+            Assert.IsNotNull(mainMethod);
+            return (Action) Delegate.CreateDelegate(typeof (Action), mainMethod);
         }
 
         /// <summary>
@@ -116,7 +122,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         public override string ToString()
         {
             // This will be displayed in TeamCity and R# test runner
-            return Name;
+            return ExampleType.Name;
         }
     }
 }

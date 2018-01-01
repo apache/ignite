@@ -101,6 +101,21 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
     /** Type: enum array. */
     private static final int TYPE_AFFINITY_KEY = 19;
 
+    /** Type: enum from cache. */
+    private static final int TYPE_ENUM_FROM_CACHE = 20;
+
+    /** Type: enum array from cache. */
+    private static final int TYPE_ENUM_ARRAY_FROM_CACHE = 21;
+
+    /** Type: ignite uuid. */
+    private static final int TYPE_IGNITE_UUID = 22;
+
+    /** Type: binary enum. */
+    private static final int TYPE_BINARY_ENUM = 23;
+
+    /** Default cache name. */
+    public static final String DEFAULT_CACHE_NAME = "default";
+
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Integer arg) {
@@ -172,7 +187,9 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
                     return new HashMap<>(Collections.singletonMap(1, 1));
 
                 case TYPE_BINARY:
-                    return new PlatformComputeBinarizable(1);
+                    Integer field = (Integer) ignite.cache(DEFAULT_CACHE_NAME).get(TYPE_BINARY);
+
+                    return new PlatformComputeBinarizable(field);
 
                 case TYPE_BINARY_JAVA:
                     return new PlatformComputeJavaBinarizable(1);
@@ -190,6 +207,9 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
                 case TYPE_ENUM:
                     return PlatformComputeEnum.BAR;
 
+                case TYPE_ENUM_FROM_CACHE:
+                    return ignite.cache(DEFAULT_CACHE_NAME).get(TYPE_ENUM_FROM_CACHE);
+
                 case TYPE_ENUM_ARRAY:
                     return new PlatformComputeEnum[] {
                         PlatformComputeEnum.BAR,
@@ -197,8 +217,11 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
                         PlatformComputeEnum.FOO
                     };
 
+                case TYPE_ENUM_ARRAY_FROM_CACHE:
+                    return ignite.cache(DEFAULT_CACHE_NAME).get(TYPE_ENUM_ARRAY_FROM_CACHE);
+
                 case TYPE_ENUM_FIELD:
-                    IgniteCache<Integer, BinaryObject> cache = ignite.cache(null).withKeepBinary();
+                    IgniteCache<Integer, BinaryObject> cache = ignite.cache(DEFAULT_CACHE_NAME).withKeepBinary();
                     BinaryObject obj = cache.get(TYPE_ENUM_FIELD);
                     BinaryObject val = obj.field("interopEnum");
 
@@ -206,6 +229,19 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
 
                 case TYPE_AFFINITY_KEY:
                     return new AffinityKey<>("interopAffinityKey");
+
+                case TYPE_IGNITE_UUID:
+                    return ignite.cache(DEFAULT_CACHE_NAME).get(TYPE_IGNITE_UUID);
+
+                case TYPE_BINARY_ENUM: {
+                    Map<String, Integer> values = new HashMap<>(2);
+                    values.put("JavaFoo", 1);
+                    values.put("JavaBar", 2);
+
+                    ignite.binary().registerEnum("JavaDynEnum", values);
+
+                    return ignite.binary().buildEnum("JavaDynEnum", "JavaFoo");
+                }
 
                 default:
                     throw new IgniteException("Unknown type: " + type);

@@ -173,44 +173,16 @@ namespace ignite
                 jmethodID m_PlatformIgnition_stop;
                 jmethodID m_PlatformIgnition_stopAll;
 
-                jclass c_PlatformProcessor;
-                jmethodID m_PlatformProcessor_releaseStart;
-                jmethodID m_PlatformProcessor_cache;
-                jmethodID m_PlatformProcessor_createCache;
-                jmethodID m_PlatformProcessor_getOrCreateCache;
-                jmethodID m_PlatformProcessor_createCacheFromConfig;
-                jmethodID m_PlatformProcessor_getOrCreateCacheFromConfig;
-                jmethodID m_PlatformProcessor_createNearCache;
-                jmethodID m_PlatformProcessor_getOrCreateNearCache;
-                jmethodID m_PlatformProcessor_destroyCache;
-                jmethodID m_PlatformProcessor_affinity;
-                jmethodID m_PlatformProcessor_dataStreamer;
-                jmethodID m_PlatformProcessor_transactions;
-                jmethodID m_PlatformProcessor_projection;
-                jmethodID m_PlatformProcessor_compute;
-                jmethodID m_PlatformProcessor_message;
-                jmethodID m_PlatformProcessor_events;
-                jmethodID m_PlatformProcessor_services;
-                jmethodID m_PlatformProcessor_extensions;
-                jmethodID m_PlatformProcessor_atomicLong;
-                jmethodID m_PlatformProcessor_getIgniteConfiguration;
-                jmethodID m_PlatformProcessor_getCacheNames;
-                jmethodID m_PlatformProcessor_atomicSequence;
-                jmethodID m_PlatformProcessor_atomicReference;
-                jmethodID m_PlatformProcessor_loggerIsLevelEnabled;
-                jmethodID m_PlatformProcessor_loggerLog;
-                jmethodID m_PlatformProcessor_binaryProcessor;
-
                 jclass c_PlatformTarget;
                 jmethodID m_PlatformTarget_inLongOutLong;
                 jmethodID m_PlatformTarget_inStreamOutLong;
                 jmethodID m_PlatformTarget_inStreamOutObject;
                 jmethodID m_PlatformTarget_outStream;
                 jmethodID m_PlatformTarget_outObject;
+                jmethodID m_PlatformTarget_inStreamAsync;
+                jmethodID m_PlatformTarget_inStreamOutObjectAsync;
                 jmethodID m_PlatformTarget_inStreamOutStream;
                 jmethodID m_PlatformTarget_inObjectStreamOutObjectStream;
-                jmethodID m_PlatformTarget_listenFuture;
-                jmethodID m_PlatformTarget_listenFutureForOperation;
 
                 jclass c_PlatformUtils;
                 jmethodID m_PlatformUtils_reallocate;
@@ -334,10 +306,8 @@ namespace ignite
                 static void SetConsoleHandler(ConsoleWriteHandler consoleHandler);
                 static int RemoveConsoleHandler(ConsoleWriteHandler consoleHandler);
 
-                jobject IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr);
-                jobject IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, JniErrorInfo* errInfo);
-                jobject IgnitionInstance(char* name);
-                jobject IgnitionInstance(char* name, JniErrorInfo* errInfo);
+                void IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr);
+                void IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, JniErrorInfo* errInfo);
                 long long IgnitionEnvironmentPointer(char* name);
                 long long IgnitionEnvironmentPointer(char* name, JniErrorInfo* errInfo);
                 bool IgnitionStop(char* name, bool cancel);
@@ -345,39 +315,6 @@ namespace ignite
                 void IgnitionStopAll(bool cancel);
                 void IgnitionStopAll(bool cancel, JniErrorInfo* errInfo);
                 
-                void ProcessorReleaseStart(jobject obj);
-                jobject ProcessorProjection(jobject obj);
-                jobject ProcessorCache(jobject obj, const char* name);
-                jobject ProcessorCache(jobject obj, const char* name, JniErrorInfo* errInfo);
-                jobject ProcessorCreateCache(jobject obj, const char* name);
-                jobject ProcessorCreateCache(jobject obj, const char* name, JniErrorInfo* errInfo);
-                jobject ProcessorGetOrCreateCache(jobject obj, const char* name);
-                jobject ProcessorGetOrCreateCache(jobject obj, const char* name, JniErrorInfo* errInfo);
-                jobject ProcessorCreateCacheFromConfig(jobject obj, long long memPtr);
-                jobject ProcessorCreateCacheFromConfig(jobject obj, long long memPtr, JniErrorInfo* errInfo);
-                jobject ProcessorGetOrCreateCacheFromConfig(jobject obj, long long memPtr);
-                jobject ProcessorGetOrCreateCacheFromConfig(jobject obj, long long memPtr, JniErrorInfo* errInfo);
-                jobject ProcessorCreateNearCache(jobject obj, const char* name, long long memPtr);
-                jobject ProcessorGetOrCreateNearCache(jobject obj, const char* name, long long memPtr);
-                void ProcessorDestroyCache(jobject obj, const char* name);
-                void ProcessorDestroyCache(jobject obj, const char* name, JniErrorInfo* errInfo);
-                jobject ProcessorAffinity(jobject obj, const char* name);
-                jobject ProcessorDataStreamer(jobject obj, const char* name, bool keepPortable);
-                jobject ProcessorTransactions(jobject obj, JniErrorInfo* errInfo = NULL);
-                jobject ProcessorCompute(jobject obj, jobject prj);
-                jobject ProcessorMessage(jobject obj, jobject prj);
-                jobject ProcessorEvents(jobject obj, jobject prj);
-                jobject ProcessorServices(jobject obj, jobject prj);
-                jobject ProcessorExtensions(jobject obj);
-                jobject ProcessorAtomicLong(jobject obj, char* name, long long initVal, bool create);
-                jobject ProcessorAtomicSequence(jobject obj, char* name, long long initVal, bool create);
-                jobject ProcessorAtomicReference(jobject obj, char* name, long long memPtr, bool create);
-				void ProcessorGetIgniteConfiguration(jobject obj, long long memPtr);
-				void ProcessorGetCacheNames(jobject obj, long long memPtr);
-				bool ProcessorLoggerIsLevelEnabled(jobject obj, int level);
-				void ProcessorLoggerLog(jobject obj, int level, char* message, char* category, char* errorInfo);
-                jobject ProcessorBinaryProcessor(jobject obj);
-
                 long long TargetInLongOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 long long TargetInStreamOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 void TargetInStreamOutStream(jobject obj, int opType, long long inMemPtr, long long outMemPtr, JniErrorInfo* errInfo = NULL);
@@ -385,11 +322,11 @@ namespace ignite
                 jobject TargetInObjectStreamOutObjectStream(jobject obj, int opType, void* arg, long long inMemPtr, long long outMemPtr, JniErrorInfo* errInfo = NULL);
                 void TargetOutStream(jobject obj, int opType, long long memPtr, JniErrorInfo* errInfo = NULL);
                 jobject TargetOutObject(jobject obj, int opType, JniErrorInfo* errInfo = NULL);
-                void TargetListenFuture(jobject obj, long long futId, int typ);
-                void TargetListenFutureForOperation(jobject obj, long long futId, int typ, int opId);
+                void TargetInStreamAsync(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
+                jobject TargetInStreamOutObjectAsync(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
 
                 jobject CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
-                jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr);
+                jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
 
                 jobject Acquire(jobject obj);
 
@@ -405,9 +342,6 @@ namespace ignite
                 void ExceptionCheck(JNIEnv* env);
                 void ExceptionCheck(JNIEnv* env, JniErrorInfo* errInfo);
                 jobject LocalToGlobal(JNIEnv* env, jobject obj);
-                jobject ProcessorCache0(jobject proc, const char* name, jmethodID mthd, JniErrorInfo* errInfo);
-                jobject ProcessorCacheFromConfig0(jobject proc, long long memPtr, jmethodID mthd, JniErrorInfo* errInfo);
-                jobject ProcessorGetOrCreateNearCache0(jobject obj, const char* name, long long memPtr, jmethodID methodID);
             };
 
             JNIEXPORT jlong JNICALL JniCacheStoreCreate(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr);

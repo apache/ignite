@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Linq.Impl
 {
     using System.Linq;
+    using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Impl.Cache;
 
@@ -31,11 +32,11 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         /// <param name="cache">The cache.</param>
         /// <param name="queryOptions">The query options.</param>
-        public CacheQueryable(ICache<TKey, TValue> cache, QueryOptions queryOptions)
+        /// <param name="ignite">The ignite.</param>
+        public CacheQueryable(ICacheInternal cache, QueryOptions queryOptions, IIgnite ignite = null)
             : base(new CacheFieldsQueryProvider(CacheQueryParser.Instance,
-                new CacheFieldsQueryExecutor((ICacheInternal) cache, queryOptions.Local, queryOptions.PageSize,
-                    queryOptions.EnableDistributedJoins, queryOptions.EnforceJoinOrder), 
-                cache.Ignite, cache.GetConfiguration(), queryOptions.TableName, typeof(TValue)))
+                new CacheFieldsQueryExecutor(cache, queryOptions), 
+                ignite, cache.GetConfiguration(), queryOptions.TableName, typeof(TValue)))
         {
             // No-op.
         }

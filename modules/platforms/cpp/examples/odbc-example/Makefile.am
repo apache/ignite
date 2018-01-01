@@ -17,7 +17,7 @@
 
 ACLOCAL_AMFLAGS =-I m4
 
-noinst_PROGRAMS = ignite-odbcexample
+noinst_PROGRAMS = ignite-odbc-example
 
 AM_CPPFLAGS = \
     -I@top_srcdir@/include \
@@ -36,24 +36,24 @@ AM_CPPFLAGS = \
 
 AM_CXXFLAGS = \
     -Wall \
-    -std=c++0x
+    -std=c++03
 
-ignite_odbcexample_LDADD = \
+ignite_odbc_example_LDADD = \
     @top_srcdir@/../core/libignite.la \
     -lodbc \
     -lpthread
 
-ignite_odbcexample_LDFLAGS = \
+ignite_odbc_example_LDFLAGS = \
     -static-libtool-libs
 
-ignite_odbcexample_SOURCES = \
+ignite_odbc_example_SOURCES = \
     src/odbc_example.cpp
 
 run-check: check
-	./ignite-odbcexample -p
+	./ignite-odbc-example -p
 
 clean-local: clean-check
 	$(RM) *.gcno *.gcda
 
 clean-check:
-	$(RM) $(ignite_odbcexample_OBJECTS)
+	$(RM) $(ignite_odbc_example_OBJECTS)

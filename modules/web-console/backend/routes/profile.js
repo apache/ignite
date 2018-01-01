@@ -17,22 +17,22 @@
 
 'use strict';
 
+const express = require('express');
+const _ = require('lodash');
+
 // Fire me up!
 
 module.exports = {
     implements: 'routes/profiles',
-    inject: ['require(lodash)', 'require(express)', 'mongo', 'services/users']
+    inject: ['mongo', 'services/users']
 };
 
 /**
- *
- * @param _ Lodash module
- * @param express Express module
  * @param mongo
  * @param {UsersService} usersService
  * @returns {Promise}
  */
-module.exports.factory = function(_, express, mongo, usersService) {
+module.exports.factory = function(mongo, usersService) {
     return new Promise((resolveFactory) => {
         const router = new express.Router();
 
@@ -45,12 +45,12 @@ module.exports.factory = function(_, express, mongo, usersService) {
 
             usersService.save(req.body)
                 .then((user) => {
-                    const becomeUsed = req.session.viewedUser && user.admin;
+                    const becomeUsed = req.session.viewedUser && req.user.admin;
 
                     if (becomeUsed) {
                         req.session.viewedUser = user;
 
-                        return user;
+                        return req.user;
                     }
 
                     return new Promise((resolve, reject) => {
@@ -64,6 +64,7 @@ module.exports.factory = function(_, express, mongo, usersService) {
                         });
                     });
                 })
+                .then((user) => usersService.get(user, req.session.viewedUser))
                 .then(res.api.ok)
                 .catch(res.api.error);
         });

@@ -27,10 +27,10 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.services.Service;
@@ -56,16 +56,16 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setMarshaller(new OptimizedMarshaller(false));
+        cfg.setMarshaller(new BinaryMarshaller());
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(ipFinder).setForceServerMode(true));
 
         cfg.setCacheConfiguration();
 
-        if (gridName.equals(getTestGridName(0)))
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(0)))
             cfg.setClientMode(true);
 
         return cfg;
@@ -89,7 +89,7 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
         Set<String> srvNames = new HashSet<>(NODES_CNT - 1);
 
         for (int i = 1; i < NODES_CNT; ++i)
-            srvNames.add(getTestGridName(i));
+            srvNames.add(getTestIgniteInstanceName(i));
 
         for (int i = 0 ; i < NODES_CNT; i++) {
             log.info("Iteration: " + i);
@@ -137,7 +137,7 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
 
             assertEquals(1, res.size());
 
-            assertEquals(getTestGridName(0), F.first(res));
+            assertEquals(getTestIgniteInstanceName(0), F.first(res));
         }
     }
 

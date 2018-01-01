@@ -214,9 +214,6 @@ public class TxDeadlockDetection {
         /** Timed out flag. */
         private volatile boolean timedOut;
 
-        /** Mutex. */
-        private final Object mux = new Object();
-
         /**
          * @param cctx Context.
          * @param txId Tx ID.
@@ -401,7 +398,7 @@ public class TxDeadlockDetection {
         private UUID primary(IgniteTxKey txKey) {
             GridCacheContext ctx = cctx.cacheContext(txKey.cacheId());
 
-            ClusterNode node = ctx.affinity().primary(txKey.key(), topVer);
+            ClusterNode node = ctx.affinity().primaryByKey(txKey.key(), topVer);
 
             assert node != null : topVer;
 
@@ -521,7 +518,7 @@ public class TxDeadlockDetection {
          * @param val Value.
          */
         private boolean compareAndSet(UUID exp, UUID val) {
-            synchronized (mux) {
+            synchronized (this) {
                 if (Objects.equals(curNodeId, exp)) {
                     curNodeId = val;
 

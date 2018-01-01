@@ -187,10 +187,13 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
     public void testProjectionPredicateInternalStealing() throws Exception {
         final Ignite ignite3 = startGrid(3);
 
+        final UUID node1 = ignite1.cluster().localNode().id();
+        final UUID node3 = ignite3.cluster().localNode().id();
+
         IgnitePredicate<ClusterNode> p = new P1<ClusterNode>() {
             @Override public boolean apply(ClusterNode e) {
-                return ignite1.cluster().localNode().id().equals(e.id()) ||
-                    ignite3.cluster().localNode().id().equals(e.id()); // Limit projection with only grid1 or grid3 node.
+                return node1.equals(e.id()) ||
+                    node3.equals(e.id()); // Limit projection with only grid1 or grid3 node.
             }
         };
 
@@ -289,8 +292,8 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         JobStealingCollisionSpi colSpi = new JobStealingCollisionSpi();
 

@@ -25,15 +25,15 @@ import org.apache.ignite.configuration.IgniteConfiguration;
  */
 public interface ConfigFactory {
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param srcCfg Source config.
      * @return IgniteConfiguration.
      */
-    public IgniteConfiguration getConfiguration(String gridName, IgniteConfiguration srcCfg);
+    public IgniteConfiguration getConfiguration(String igniteInstanceName, IgniteConfiguration srcCfg);
 
     /**
-     * @param gridName Name.
+     * @param igniteInstanceName Name.
      * @return CacheConfiguration.
      */
-    public CacheConfiguration cacheConfiguration(String gridName);
+    public CacheConfiguration cacheConfiguration(String igniteInstanceName);
 }

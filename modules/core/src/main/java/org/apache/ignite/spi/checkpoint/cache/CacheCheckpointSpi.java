@@ -30,6 +30,7 @@ import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.checkpoint.CheckpointListener;
 import org.apache.ignite.spi.checkpoint.CheckpointSpi;
@@ -101,7 +102,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
  * @see org.apache.ignite.spi.checkpoint.CheckpointSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
-public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, CacheCheckpointSpiMBean {
+public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
     /** Default cache name (value is <tt>checkpoints</tt>). */
     public static final String DFLT_CACHE_NAME = "checkpoints";
 
@@ -124,19 +125,26 @@ public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSp
      * If cache name is not provided {@link #DFLT_CACHE_NAME} is used.
      *
      * @param cacheName Cache name.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setCacheName(String cacheName) {
+    public CacheCheckpointSpi setCacheName(String cacheName) {
         this.cacheName = cacheName;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public String getCacheName() {
+    /**
+     * Gets cache name to be used by this SPI..
+     *
+     * @return Cache name to be used by this SPI.
+     */
+    public String getCacheName() {
         return cacheName;
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+    @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         assertParameter(!F.isEmpty(cacheName), "!F.isEmpty(cacheName)");
 
         // Start SPI start stopwatch.
@@ -146,7 +154,7 @@ public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSp
         if (log.isDebugEnabled())
             log.debug(configInfo("cacheName", cacheName));
 
-        registerMBean(gridName, this, CacheCheckpointSpiMBean.class);
+        registerMBean(igniteInstanceName, new CacheCheckpointSpiMBeanImpl(this), CacheCheckpointSpiMBean.class);
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
@@ -247,7 +255,29 @@ public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSp
     }
 
     /** {@inheritDoc} */
+    @Override public CacheCheckpointSpi setName(String name) {
+        super.setName(name);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheCheckpointSpi.class, this);
+    }
+
+    /**
+     * MBean implementation for CacheCheckpointSpi.
+     */
+    private class CacheCheckpointSpiMBeanImpl extends IgniteSpiMBeanAdapter implements CacheCheckpointSpiMBean {
+        /** {@inheritDoc} */
+        CacheCheckpointSpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
+            super(spiAdapter);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getCacheName() {
+            return CacheCheckpointSpi.this.getCacheName();
+        }
     }
 }

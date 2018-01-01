@@ -86,8 +86,8 @@ public class HadoopSortingTest extends HadoopAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override public HadoopConfiguration hadoopConfiguration(String gridName) {
-        HadoopConfiguration cfg = super.hadoopConfiguration(gridName);
+    @Override public HadoopConfiguration hadoopConfiguration(String igniteInstanceName) {
+        HadoopConfiguration cfg = super.hadoopConfiguration(igniteInstanceName);
 
         // TODO: IGNITE-404: Uncomment when fixed.
         //cfg.setExternalExecution(false);
@@ -117,7 +117,7 @@ public class HadoopSortingTest extends HadoopAbstractSelfTest {
         X.printerrln("Data generation started.");
 
         grid(0).hadoop().submit(new HadoopJobId(UUID.randomUUID(), 1),
-            createJobInfo(job.getConfiguration())).get(180000);
+            createJobInfo(job.getConfiguration(), null)).get(180000);
 
         X.printerrln("Data generation complete.");
 
@@ -148,7 +148,7 @@ public class HadoopSortingTest extends HadoopAbstractSelfTest {
         X.printerrln("Job started.");
 
         grid(0).hadoop().submit(new HadoopJobId(UUID.randomUUID(), 2),
-            createJobInfo(job.getConfiguration())).get(180000);
+            createJobInfo(job.getConfiguration(), null)).get(180000);
 
         X.printerrln("Job complete.");
 

@@ -25,9 +25,9 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.hadoop.HadoopComponent;
 import org.apache.ignite.internal.processors.hadoop.HadoopContext;
-import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
+import org.apache.ignite.hadoop.HadoopInputSplit;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
-import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlan;
+import org.apache.ignite.hadoop.HadoopMapReducePlan;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInput;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskOutput;
@@ -63,7 +63,7 @@ public class HadoopShuffle extends HadoopComponent {
         super.start(ctx);
 
         ctx.kernalContext().io().addMessageListener(GridTopic.TOPIC_HADOOP_MSG, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 onMessageReceived(nodeId, (HadoopMessage)msg);
             }
         });
@@ -145,14 +145,15 @@ public class HadoopShuffle extends HadoopComponent {
         ClusterNode node = ctx.kernalContext().discovery().node(nodeId);
 
         if (msg instanceof Message)
-            ctx.kernalContext().io().send(node, GridTopic.TOPIC_HADOOP_MSG, (Message)msg, GridIoPolicy.PUBLIC_POOL);
+            ctx.kernalContext().io().sendToGridTopic(node, GridTopic.TOPIC_HADOOP_MSG, (Message)msg, GridIoPolicy.PUBLIC_POOL);
         else
-            ctx.kernalContext().io().sendUserMessage(F.asList(node), msg, GridTopic.TOPIC_HADOOP, false, 0);
+            ctx.kernalContext().io().sendUserMessage(F.asList(node), msg, GridTopic.TOPIC_HADOOP, false, 0, false);
     }
 
     /**
      * @param jobId Task info.
      * @return Shuffle job.
+     * @throws IgniteCheckedException If failed.
      */
     private HadoopShuffleJob<UUID> job(HadoopJobId jobId) throws IgniteCheckedException {
         HadoopShuffleJob<UUID> res = jobs.get(jobId);
@@ -186,7 +187,7 @@ public class HadoopShuffle extends HadoopComponent {
      * @param shuffleJob Job to start sending for.
      */
     private void startSending(HadoopShuffleJob<UUID> shuffleJob) {
-        shuffleJob.startSending(ctx.kernalContext().gridName(),
+        shuffleJob.startSending(ctx.kernalContext().igniteInstanceName(),
             new IgniteInClosure2X<UUID, HadoopMessage>() {
                 @Override public void applyx(UUID dest, HadoopMessage msg) throws IgniteCheckedException {
                     send0(dest, msg);

@@ -22,9 +22,7 @@ import java.util.List;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
@@ -63,17 +61,17 @@ public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
         TcpDiscoverySpi spi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
         spi.setIpFinder(IP_FINDER);
 
-        CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         ccfg.setIndexedTypes(Integer.class, String.class);
 
         cfg.setCacheConfiguration(ccfg);
 
-        if ("client".equals(gridName))
+        if ("client".equals(igniteInstanceName))
             cfg.setClientMode(true);
 
         return cfg;
@@ -90,7 +88,7 @@ public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstrac
     public void testQueryCancelsOnGridShutdown() throws Exception {
         try (Ignite client = startGrid("client")) {
 
-            IgniteCache<Object, Object> cache = client.cache(null);
+            IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
             assertEquals(0, cache.localSize());
 
@@ -143,7 +141,7 @@ public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstrac
     public void testQueryResponseFailCode() throws Exception {
         try (Ignite client = startGrid("client")) {
 
-            CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>();
+            CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
             cfg.setSqlFunctionClasses(Functions.class);
             cfg.setIndexedTypes(Integer.class, Integer.class);
             cfg.setName("test");

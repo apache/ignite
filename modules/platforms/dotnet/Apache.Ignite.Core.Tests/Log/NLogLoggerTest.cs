@@ -25,7 +25,6 @@ namespace Apache.Ignite.Core.Tests.Log
     using global::NLog;
     using global::NLog.Config;
     using global::NLog.Layouts;
-    using global::NLog.Targets;
     using NUnit.Framework;
     using LogLevel = Apache.Ignite.Core.Log.LogLevel;
 
@@ -35,7 +34,7 @@ namespace Apache.Ignite.Core.Tests.Log
     public class NLogLoggerTest
     {
         /** */
-        private MemoryTarget _logTarget;
+        private ConcurrentMemoryTarget _logTarget;
 
         /// <summary>
         /// Test set up.
@@ -45,7 +44,7 @@ namespace Apache.Ignite.Core.Tests.Log
         {
             var cfg = new LoggingConfiguration();
 
-            _logTarget = new MemoryTarget("mem")
+            _logTarget = new ConcurrentMemoryTarget
             {
                 Layout = new SimpleLayout("${Logger}|${Level}|${Message}|${exception}|${all-event-properties}")
             };

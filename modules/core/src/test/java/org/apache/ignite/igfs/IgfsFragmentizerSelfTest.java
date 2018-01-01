@@ -237,14 +237,15 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
             U.sleep(200);
         }
 
-        igfs.format();
+        igfs.clear();
 
         GridTestUtils.retryAssert(log, 50, 100, new CA() {
             @Override public void apply() {
                 for (int i = 0; i < NODE_CNT; i++) {
                     IgniteEx g = grid(i);
 
-                    GridCacheAdapter<Object, Object> cache = ((IgniteKernal)g).internalCache(DATA_CACHE_NAME);
+                    GridCacheAdapter<Object, Object> cache = ((IgniteKernal)g).internalCache(
+                        g.igfsx("igfs").configuration().getDataCacheConfiguration().getName());
 
                     assertTrue("Data cache is not empty [keys=" + cache.keySet() +
                         ", node=" + g.localNode().id() + ']', cache.isEmpty());

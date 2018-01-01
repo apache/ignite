@@ -484,7 +484,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
 
         final Ignite ignite = G.ignite();
 
-        final IgniteCache<Integer, Integer> cache = ignite.cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         assert cache != null;
 

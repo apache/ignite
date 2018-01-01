@@ -46,8 +46,8 @@ import static org.apache.ignite.internal.processors.hadoop.state.HadoopMapReduce
  */
 public class HadoopMapReduceEmbeddedSelfTest extends HadoopMapReduceTest {
     /** {@inheritDoc} */
-    @Override public HadoopConfiguration hadoopConfiguration(String gridName) {
-        HadoopConfiguration cfg = super.hadoopConfiguration(gridName);
+    @Override public HadoopConfiguration hadoopConfiguration(String igniteInstanceName) {
+        HadoopConfiguration cfg = super.hadoopConfiguration(igniteInstanceName);
 
         // TODO: IGNITE-404: Uncomment when fixed.
         //cfg.setExternalExecution(false);
@@ -55,14 +55,14 @@ public class HadoopMapReduceEmbeddedSelfTest extends HadoopMapReduceTest {
         return cfg;
     }
 
-    /*
+    /**
      * @throws Exception If fails.
      */
     public void testMultiReducerWholeMapReduceExecution() throws Exception {
         checkMultiReducerWholeMapReduceExecution(false);
     }
 
-    /*
+    /**
      * @throws Exception If fails.
      */
     public void testMultiReducerWholeMapReduceExecutionStriped() throws Exception {
@@ -100,6 +100,8 @@ public class HadoopMapReduceEmbeddedSelfTest extends HadoopMapReduceTest {
 
             if (striped)
                 jobConf.set(HadoopJobProperty.SHUFFLE_MAPPER_STRIPED_OUTPUT.propertyName(), "true");
+            else
+                jobConf.set(HadoopJobProperty.SHUFFLE_MAPPER_STRIPED_OUTPUT.propertyName(), "false");
 
             jobConf.set(CommonConfigurationKeys.IO_SERIALIZATIONS_KEY, CustomSerialization.class.getName());
 
@@ -141,7 +143,7 @@ public class HadoopMapReduceEmbeddedSelfTest extends HadoopMapReduceTest {
             job.setJarByClass(HadoopWordCount2.class);
 
             IgniteInternalFuture<?> fut = grid(0).hadoop().submit(new HadoopJobId(UUID.randomUUID(), 1),
-                    createJobInfo(job.getConfiguration()));
+                    createJobInfo(job.getConfiguration(), null));
 
             fut.get();
 

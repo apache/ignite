@@ -19,13 +19,13 @@ arguments:
 
 1. Address of the node to connect to:
    SERVER=<host_name_or_IP_address>;
-   
+
 2. Port on which OdbcProcessor of the node is listening:
    PORT=<TCP_port>;
-   
+
 3. Datagrid cache to connect to:
    CACHE=<cache_name>;
-   
+
 All arguments are case-insensitive so "SERVER", "Server" and "server" all are
 valid server address arguments.
 
@@ -46,11 +46,11 @@ ODBC driver you should perfrom the following steps:
    $ ldd /usr/local/lib/libignite-odbc.so.
    If there is unresolved links to other libraries you may want to add
    directories with these libraries to the LD_LIBRARY_PATH.
-   
+
 2. Edit file $IGNITE_HOME/platforms/cpp/odbc/install/ignite-odbc-install.ini
    and ensure that "Driver" parameter of the "Apache Ignite" section points
    to the right location where libignite-odbc.so is located.
-   
+
 3. To install Apache Ignite ODBC driver use the following command:
    $ odbcinst -i -d -f $IGNITE_HOME/platforms/cpp/odbc/install/ignite-odbc-install.ini
    To perform this command you most likely will need root privileges.
@@ -67,9 +67,12 @@ There are two ways to install ODBC driver currently. The first one is to use
 32-bit or 64-bit installer. This is the most simple way and you are recommended
 to stick to it by default.
 
+32-bit installer : $IGNITE_HOME/platforms/cpp/bin/odbc/ignite-odbc-x86.msi
+64-bit installer : $IGNITE_HOME/platforms/cpp/bin/odbc/ignite-odbc-amd64.msi
+
 However there is also another way to install driver manually using scripts. If
 you choose this method you should first choose a directory on your filesystem
-where your driver or drivers will be located. Once you have choosen the place
+where your driver or drivers will be located. Once you have chosen the place
 you should put your driver there and ensure that all driver dependencies can be
 resolved i.e. they can be found either in the %PATH% or in the same directory
 as the driver.
@@ -88,7 +91,7 @@ Thats it. Your driver/drivers are installed.
 
 After the installation
 =======================================
-   
+
 Now Apache Ignite ODBC driver is installed and ready for use. You can connect
 to it and use it like to any other ODBC driver.
 

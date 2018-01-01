@@ -17,22 +17,21 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Arrays;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.MarshallerContextAdapter;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.Arrays;
 
 /**
  *
@@ -88,20 +87,40 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
      * Marshaller context with no storage. Platform has to work in such environment as well by marshalling class name of
      * a binary object.
      */
-    private static class MarshallerContextWithNoStorage extends MarshallerContextAdapter {
-        /** */
-        public MarshallerContextWithNoStorage() {
-            super(null);
-        }
-
+    private static class MarshallerContextWithNoStorage implements MarshallerContext {
         /** {@inheritDoc} */
-        @Override protected boolean registerClassName(int id, String clsName) throws IgniteCheckedException {
+        @Override public boolean registerClassName(
+                byte platformId,
+                int typeId,
+                String clsName
+        ) throws IgniteCheckedException {
             return false;
         }
 
         /** {@inheritDoc} */
-        @Override protected String className(int id) throws IgniteCheckedException {
+        @Override public boolean registerClassNameLocally(byte platformId, int typeId, String clsName) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Class getClass(
+                int typeId,
+                ClassLoader ldr
+        ) throws ClassNotFoundException, IgniteCheckedException {
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getClassName(
+                byte platformId,
+                int typeId
+        ) throws ClassNotFoundException, IgniteCheckedException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isSystemType(String typeName) {
+            return false;
         }
     }
 

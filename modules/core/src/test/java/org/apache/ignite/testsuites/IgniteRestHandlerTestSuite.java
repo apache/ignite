@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheAtomic
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheCommandHandlerSelfTest;
 import org.apache.ignite.internal.processors.rest.handlers.log.GridLogCommandHandlerTest;
 import org.apache.ignite.internal.processors.rest.handlers.query.GridQueryCommandHandlerTest;
+import org.apache.ignite.internal.processors.rest.handlers.top.CacheTopologyCommandHandlerTest;
 
 /**
  * REST support tests.
@@ -38,6 +39,7 @@ public class IgniteRestHandlerTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheAtomicCommandHandlerSelfTest.class);
         suite.addTestSuite(GridLogCommandHandlerTest.class);
         suite.addTestSuite(GridQueryCommandHandlerTest.class);
+        suite.addTestSuite(CacheTopologyCommandHandlerTest.class);
 
         return suite;
     }

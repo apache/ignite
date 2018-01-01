@@ -17,12 +17,18 @@
 
 namespace Apache.Ignite.Core.Tests.Examples
 {
+    extern alias ExamplesDll;
     using System;
     using System.Collections.Generic;
+    using System.Configuration;
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Tests.Process;
-    using Apache.Ignite.ExamplesDll.Compute;
+    using Apache.Ignite.Examples.Compute;
+    using Apache.Ignite.Examples.Datagrid;
+    using Apache.Ignite.Examples.Messaging;
+    using Apache.Ignite.Examples.Misc;
+    using Apache.Ignite.Examples.ThinClient;
     using NUnit.Framework;
 
     /// <summary>
@@ -32,7 +38,36 @@ namespace Apache.Ignite.Core.Tests.Examples
     public class ExamplesTest
     {
         /** */
+        private static readonly Example[] AllExamples = Example.GetExamples().ToArray();
+
+        /** */
+        private static readonly Type[] LocalOnlyExamples =
+        {
+            typeof(LifecycleExample), typeof(ClientReconnectExample), typeof(MultiTieredCacheExample)
+        };
+
+        /** */
+        private static readonly Type[] RemoteOnlyExamples =
+        {
+            typeof(PeerAssemblyLoadingExample), typeof(MessagingExample), typeof(NearCacheExample),
+            typeof(ThinClientPutGetExample), typeof(ThinClientQueryExample)
+        };
+
+        /** */
+        private static readonly Type[] NoDllExamples =
+        {
+            typeof(BinaryModeExample), typeof(NearCacheExample), typeof(PeerAssemblyLoadingExample),
+            typeof(ThinClientPutGetExample)
+        };
+
+        /** Config file path. */
+        private string _configPath;
+
+        /** */
         private IDisposable _changedConfig;
+
+        /** */
+        private bool _remoteNodeStarted;
 
         /// <summary>
         /// Tests the example in a single node mode.
@@ -41,6 +76,14 @@ namespace Apache.Ignite.Core.Tests.Examples
         [Test, TestCaseSource("TestCasesLocal")]
         public void TestLocalNode(Example example)
         {
+            StopRemoteNodes();
+
+            if (LocalOnlyExamples.Contains(example.ExampleType))
+            {
+                Assert.IsFalse(example.NeedsTestDll, "Local-only example should not mention test dll.");
+                Assert.IsNull(example.ConfigPath, "Local-only example should not mention app.config path.");
+            }
+
             example.Run();
         }
 
@@ -69,41 +112,76 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// </summary>
         /// <param name="example">The example to run.</param>
         /// <param name="clientMode">Client mode flag.</param>
-        private static void TestRemoteNodes(Example example, bool clientMode)
+        private void TestRemoteNodes(Example example, bool clientMode)
         {
-            Assert.IsNotEmpty(example.ConfigPath);
+            Assert.IsTrue(PathUtil.ExamplesAppConfigPath.EndsWith(example.ConfigPath,
+                StringComparison.OrdinalIgnoreCase), "All examples should use the same app.config.");
 
-            var configPath = Path.Combine(PathUtil.IgniteHome, PathUtil.DevPrefix, example.ConfigPath);
+            Assert.IsTrue(example.NeedsTestDll || NoDllExamples.Contains(example.ExampleType),
+                "Examples that allow standalone nodes should mention test dll.");
 
-            // Try with multiple standalone nodes
-            for (var i = 0; i < 2; i++)
+            StartRemoteNodes();
+
+            Ignition.ClientMode = clientMode;
+
+            // Run twice to catch issues with standalone node state
+            example.Run();
+            example.Run();
+        }
+
+        /// <summary>
+        /// Starts standalone node.
+        /// </summary>
+        private void StartRemoteNodes()
+        {
+            if (_remoteNodeStarted)
+                return;
+
+            // Start a grid to monitor topology;
+            // Stop it after topology check so we don't interfere with example.
+            Ignition.ClientMode = false;
+
+            var fileMap = new ExeConfigurationFileMap { ExeConfigFilename = _configPath };
+            var config = ConfigurationManager.OpenMappedExeConfiguration(fileMap, ConfigurationUserLevel.None);
+            var section = (IgniteConfigurationSection) config.GetSection("igniteConfiguration");
+
+            // Disable client connector so that temporary node does not occupy the port.
+            var cfg = new IgniteConfiguration(section.IgniteConfiguration)
             {
-                // Start a grid to monitor topology
-                // Stop it after topology check so we don't interfere with example
-                Ignition.ClientMode = false;
+                ClientConnectorConfigurationEnabled = false,
+                CacheConfiguration = null
+            };
 
-                using (var ignite = Ignition.StartFromApplicationConfiguration(
-                    "igniteConfiguration", configPath))
+            using (var ignite = Ignition.Start(cfg))
+            {
+                var args = new List<string>
                 {
-                    var args = new List<string> { "-configFileName=" + configPath};
+                    "-configFileName=" + _configPath,
+                    "-assembly=" + typeof(ExamplesDll::Apache.Ignite.ExamplesDll.Compute.AverageSalaryJob)
+                        .Assembly.Location
+                };
 
-                    if (example.NeedsTestDll)
-                        args.Add(" -assembly=" + typeof(AverageSalaryJob).Assembly.Location);
+                var proc = new IgniteProcess(args.ToArray());
 
-                    var proc = new IgniteProcess(args.ToArray());
+                Assert.IsTrue(ignite.WaitTopology(2),
+                    string.Format("Standalone node failed to join topology: [{0}]", proc.GetInfo()));
 
-                    Assert.IsTrue(ignite.WaitTopology(i + 2), 
-                        string.Format("Standalone node failed to join topology: [{0}]", proc.GetInfo()));
+                Assert.IsTrue(proc.Alive, string.Format("Standalone node stopped unexpectedly: [{0}]",
+                    proc.GetInfo()));
+            }
 
-                    Assert.IsTrue(proc.Alive, string.Format("Standalone node stopped unexpectedly: [{0}]", 
-                        proc.GetInfo()));
-                }
+            _remoteNodeStarted = true;
+        }
 
-                Ignition.ClientMode = clientMode;
-
-                // Run twice to catch issues with standalone node state
-                example.Run();
-                example.Run();
+        /// <summary>
+        /// Stops standalone nodes.
+        /// </summary>
+        private void StopRemoteNodes()
+        {
+            if (_remoteNodeStarted)
+            {
+                IgniteProcess.KillAll();
+                _remoteNodeStarted = false;
             }
         }
 
@@ -117,7 +195,15 @@ namespace Apache.Ignite.Core.Tests.Examples
 
             Directory.SetCurrentDirectory(PathUtil.IgniteHome);
 
-            _changedConfig = TestAppConfig.Change(PathUtil.ExamplesAppConfigPath);
+            // Copy file to a temp location and replace multicast IP finder with static.
+            _configPath = Path.GetTempFileName();
+            
+            var configText = File.ReadAllText(PathUtil.ExamplesAppConfigPath)
+                .Replace("TcpDiscoveryMulticastIpFinder", "TcpDiscoveryStaticIpFinder");
+
+            File.WriteAllText(_configPath, configText);
+
+            _changedConfig = TestAppConfig.Change(_configPath);
         }
 
         /// <summary>
@@ -127,6 +213,12 @@ namespace Apache.Ignite.Core.Tests.Examples
         public void FixtureTearDown()
         {
             _changedConfig.Dispose();
+
+            Ignition.StopAll(true);
+
+            IgniteProcess.KillAll();
+
+            File.Delete(_configPath);
         }
 
         /// <summary>
@@ -136,7 +228,6 @@ namespace Apache.Ignite.Core.Tests.Examples
         public void TearDown()
         {
             Ignition.ClientMode = false;
-            IgniteProcess.KillAll();
         }
 
         /// <summary>
@@ -146,7 +237,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         // ReSharper disable once MemberCanBeMadeStatic.Global
         public IEnumerable<Example> TestCasesLocal
         {
-            get { return Example.GetExamples().Where(x => x.Name != "NearCacheExample"); }
+            get { return AllExamples.Where(x => !RemoteOnlyExamples.Contains(x.ExampleType)); }
         }
 
         /// <summary>
@@ -158,9 +249,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             get
             {
-                var localOnly = new[] {"LifecycleExample", "ClientReconnectExample", "MultiTieredCacheExample" };
-
-                return Example.GetExamples().Where(x => !localOnly.Contains(x.Name));
+                return AllExamples.Where(x => !LocalOnlyExamples.Contains(x.ExampleType));
             }
         }
     }

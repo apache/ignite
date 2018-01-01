@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.hadoop.delegate;
 
-import org.apache.ignite.internal.processors.igfs.IgfsSecondaryFileSystemV2;
+import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.lifecycle.LifecycleAware;
 
 /**
  * Interface to secondary file system implementation.
  */
-public interface HadoopIgfsSecondaryFileSystemDelegate extends IgfsSecondaryFileSystemV2, LifecycleAware {
+public interface HadoopIgfsSecondaryFileSystemDelegate extends IgfsSecondaryFileSystem, LifecycleAware {
     // No-op.
 }

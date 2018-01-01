@@ -71,17 +71,7 @@ namespace Apache.Ignite.Core.Impl.Resource
         /// </summary>
         /// <param name="target">Target object.</param>
         /// <param name="grid">Grid.</param>
-        public static void Inject(object target, Ignite grid)
-        {
-            Inject(target, grid.Proxy);
-        }
-
-        /// <summary>
-        /// Inject resources to the given target.
-        /// </summary>
-        /// <param name="target">Target object.</param>
-        /// <param name="grid">Grid.</param>
-        public static void Inject(object target, IgniteProxy grid)
+        public static void Inject(object target, IIgniteInternal grid)
         {
             if (target != null) {
                 var desc = Descriptor(target.GetType());

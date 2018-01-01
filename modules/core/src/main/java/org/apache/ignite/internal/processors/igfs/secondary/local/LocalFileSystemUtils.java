@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.igfs.secondary.local;
 
+import java.nio.file.attribute.BasicFileAttributeView;
+import java.nio.file.attribute.BasicFileAttributes;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -91,6 +93,7 @@ public class LocalFileSystemUtils {
      * Get POSIX attributes for file.
      *
      * @param file File.
+     * @return PosixFileAttributes.
      */
     @Nullable public static PosixFileAttributes posixAttributes(File file) {
         PosixFileAttributes attrs = null;
@@ -103,6 +106,28 @@ public class LocalFileSystemUtils {
         }
         catch (IOException e) {
             throw new IgfsException("Failed to read POSIX attributes: " + file.getAbsolutePath(), e);
+        }
+
+        return attrs;
+    }
+
+    /**
+     * Get POSIX attributes for file.
+     *
+     * @param file File.
+     * @return BasicFileAttributes.
+     */
+    @Nullable public static BasicFileAttributes basicAttributes(File file) {
+        BasicFileAttributes attrs = null;
+
+        try {
+            BasicFileAttributeView view = Files.getFileAttributeView(file.toPath(), BasicFileAttributeView.class);
+
+            if (view != null)
+                attrs = view.readAttributes();
+        }
+        catch (IOException e) {
+            throw new IgfsException("Failed to read basic file attributes: " + file.getAbsolutePath(), e);
         }
 
         return attrs;

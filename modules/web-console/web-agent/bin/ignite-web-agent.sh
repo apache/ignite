@@ -60,6 +60,11 @@ fi
 
 SOURCE="${BASH_SOURCE[0]}"
 
+#
+# Set IGNITE_HOME.
+#
+export IGNITE_HOME="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";
+
 DIR="$( dirname "$SOURCE" )"
 
 while [ -h "$SOURCE" ]
@@ -87,5 +92,7 @@ if [ -z "$JVM_OPTS" ] ; then
         JVM_OPTS="-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxMetaspaceSize=256m"
     fi
 fi
+
+JVM_OPTS="${JVM_OPTS} -Djava.net.useSystemProxies=true"
 
 "$JAVA" ${JVM_OPTS} -cp "*" org.apache.ignite.console.agent.AgentLauncher "$@"

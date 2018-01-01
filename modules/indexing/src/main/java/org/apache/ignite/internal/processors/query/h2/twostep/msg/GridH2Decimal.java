@@ -127,7 +127,7 @@ public class GridH2Decimal extends GridH2ValueMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -10;
     }
 

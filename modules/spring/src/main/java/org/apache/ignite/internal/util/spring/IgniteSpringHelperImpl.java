@@ -166,7 +166,7 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
         try {
             return (T)springCtx.getBean(beanName);
         }
-        catch (NoSuchBeanDefinitionException e) {
+        catch (NoSuchBeanDefinitionException ignored) {
             throw new IgniteCheckedException("Spring bean with provided name doesn't exist [url=" + url +
                 ", beanName=" + beanName + ']');
         }
@@ -199,7 +199,7 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
         try {
             return (T)springCtx.getBean(beanName);
         }
-        catch (NoSuchBeanDefinitionException e) {
+        catch (NoSuchBeanDefinitionException ignored) {
             throw new IgniteCheckedException("Spring bean with provided name doesn't exist " +
                 ", beanName=" + beanName + ']');
         }
@@ -216,7 +216,7 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
         try {
             return (T)springCtx.getBean(beanName);
         }
-        catch (NoSuchBeanDefinitionException e) {
+        catch (NoSuchBeanDefinitionException ignored) {
             throw new IgniteCheckedException("Spring bean with provided name doesn't exist " +
                 ", beanName=" + beanName + ']');
         }

@@ -31,7 +31,7 @@ import org.apache.hadoop.io.serializer.WritableSerialization;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.HadoopDefaultJobInfo;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerialization;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
@@ -69,7 +69,7 @@ public class HadoopV2JobSelfTest extends HadoopAbstractSelfTest {
     }
 
     /**
-     * Tests that {@link HadoopJob} provides wrapped serializer if it's set in configuration.
+     * Tests that {@link HadoopJobEx} provides wrapped serializer if it's set in configuration.
      *
      * @throws IgniteCheckedException If fails.
      */
@@ -80,13 +80,13 @@ public class HadoopV2JobSelfTest extends HadoopAbstractSelfTest {
         cfg.setMapOutputValueClass(Text.class);
         cfg.set(CommonConfigurationKeys.IO_SERIALIZATIONS_KEY, CustomSerialization.class.getName());
 
-        HadoopDefaultJobInfo info = createJobInfo(cfg);
+        HadoopDefaultJobInfo info = createJobInfo(cfg, null);
 
         final UUID uuid = UUID.randomUUID();
 
         HadoopJobId id = new HadoopJobId(uuid, 1);
 
-        HadoopJob job = info.createJob(HadoopV2Job.class, id, log, null, new HadoopHelperImpl());
+        HadoopJobEx job = info.createJob(HadoopV2Job.class, id, log, null, new HadoopHelperImpl());
 
         HadoopTaskContext taskCtx = job.getTaskContext(new HadoopTaskInfo(HadoopTaskType.MAP, null, 0, 0,
             null));

@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         /// <summary>
         /// Initializes a new instance of the <see cref="AtomicLongTest"/> class.
         /// </summary>
-        public AtomicLongTest() : base("config\\compute\\compute-grid1.xml")
+        public AtomicLongTest() : base("Config\\Compute\\compute-grid1.xml")
         {
             // No-op.
         }
@@ -115,6 +115,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         /// Tests multithreaded scenario.
         /// </summary>
         [Test]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestMultithreaded()
         {
             const int atomicCnt = 10;

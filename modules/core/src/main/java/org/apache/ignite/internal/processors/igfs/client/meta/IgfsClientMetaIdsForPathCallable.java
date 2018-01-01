@@ -45,10 +45,11 @@ public class IgfsClientMetaIdsForPathCallable extends IgfsClientAbstractCallable
      * Constructor.
      *
      * @param igfsName IGFS name.
+     * @param user IGFS user name.
      * @param path Path.
      */
-    public IgfsClientMetaIdsForPathCallable(@Nullable String igfsName, IgfsPath path) {
-        super(igfsName, path);
+    public IgfsClientMetaIdsForPathCallable(@Nullable String igfsName, @Nullable String user, IgfsPath path) {
+        super(igfsName, user, path);
     }
 
     /** {@inheritDoc} */

@@ -21,16 +21,15 @@
 
 module.exports = {
     implements: 'services/sessions',
-    inject: ['require(lodash)', 'mongo', 'errors']
+    inject: ['mongo', 'errors']
 };
 
 /**
- * @param _
  * @param mongo
  * @param errors
  * @returns {SessionsService}
  */
-module.exports.factory = (_, mongo, errors) => {
+module.exports.factory = (mongo, errors) => {
     class SessionsService {
         /**
          * Become user.
@@ -38,15 +37,11 @@ module.exports.factory = (_, mongo, errors) => {
          * @param {mongo.ObjectId|String} viewedUserId - id of user to become.
          */
         static become(session, viewedUserId) {
+            if (!session.req.user.admin)
+                return Promise.reject(new errors.IllegalAccessError('Became this user is not permitted. Only administrators can perform this actions.'));
+
             return mongo.Account.findById(viewedUserId).lean().exec()
-                .then((viewedUser) => {
-                    if (!session.req.user.admin)
-                        throw new errors.IllegalAccessError('Became this user is not permitted. Only administrators can perform this actions.');
-
-                    viewedUser.token = session.req.user.token;
-
-                    session.viewedUser = viewedUser;
-                });
+                .then((viewedUser) => session.viewedUser = viewedUser);
         }
 
         /**

@@ -1,7 +1,3 @@
-*.idea
-*.log
-.npmrc
-build/*
-node_modules
-ignite_modules_temp/*
+*.log.*
 public/stylesheets/*.css
+

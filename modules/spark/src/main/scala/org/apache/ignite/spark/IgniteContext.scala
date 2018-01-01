@@ -21,8 +21,11 @@ import org.apache.ignite._
 import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
 import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.internal.util.IgniteUtils
+import org.apache.ignite.spark.IgniteContext.setIgniteHome
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.{Logging, SparkContext}
+import org.apache.spark.SparkContext
+import org.apache.log4j.Logger
+import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 
 /**
  * Ignite context.
@@ -33,13 +36,16 @@ import org.apache.spark.{Logging, SparkContext}
 class IgniteContext(
     @transient val sparkContext: SparkContext,
     cfgF: () ⇒ IgniteConfiguration,
+    @deprecated("Embedded mode is deprecated and will be discontinued. Consider using standalone mode instead.")
     standalone: Boolean = true
-    ) extends Serializable with Logging {
+    ) extends Serializable {
     private val cfgClo = new Once(cfgF)
 
     private val igniteHome = IgniteUtils.getIgniteHome
 
     if (!standalone) {
+        Logging.log.warn("Embedded mode is deprecated and will be discontinued. Consider using standalone mode instead.")
+
         // Get required number of executors with default equals to number of available executors.
         val workers = sparkContext.getConf.getInt("spark.executor.instances",
             sparkContext.getExecutorStorageStatus.length)
@@ -47,7 +53,7 @@ class IgniteContext(
         if (workers <= 0)
             throw new IllegalStateException("No Spark executors found to start Ignite nodes.")
 
-        logInfo("Will start Ignite nodes on " + workers + " workers")
+        Logging.log.info("Will start Ignite nodes on " + workers + " workers")
 
         // Start ignite server node on each worker in server mode.
         sparkContext.parallelize(1 to workers, workers).foreachPartition(it ⇒ ignite())
@@ -56,18 +62,28 @@ class IgniteContext(
     // Make sure to start Ignite on context creation.
     ignite()
 
+    //Stop local ignite instance on application end.
+    //Instances on workers will be stopped with executor stop(jvm exit).
+    sparkContext.addSparkListener(new SparkListener {
+        override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
+            close()
+        }
+    })
+
     /**
      * Creates an instance of IgniteContext with the given spring configuration.
      *
      * @param sc Spark context.
      * @param springUrl Spring configuration path.
+     * @param standalone Standalone or embedded mode.
      */
+    @deprecated("Embedded mode is deprecated and will be discontinued. Consider using standalone mode instead.")
     def this(
         sc: SparkContext,
         springUrl: String,
-        client: Boolean
+        standalone: Boolean
         ) {
-        this(sc, () ⇒ IgnitionEx.loadConfiguration(springUrl).get1(), client)
+        this(sc, () ⇒ IgnitionEx.loadConfiguration(springUrl).get1(), standalone)
     }
 
     /**
@@ -123,27 +139,19 @@ class IgniteContext(
      * @return
      */
     def ignite(): Ignite = {
-        val home = IgniteUtils.getIgniteHome
-
-        if (home == null && igniteHome != null) {
-            logInfo("Setting IGNITE_HOME from driver not as it is not available on this worker: " + igniteHome)
-
-            IgniteUtils.nullifyHomeDirectory()
-
-            System.setProperty(IgniteSystemProperties.IGNITE_HOME, igniteHome)
-        }
+        setIgniteHome(igniteHome)
 
         val igniteCfg = cfgClo()
 
         // check if called from driver
-        if (sparkContext != null) igniteCfg.setClientMode(true)
+        if (standalone || sparkContext != null) igniteCfg.setClientMode(true)
 
         try {
             Ignition.getOrStart(igniteCfg)
         }
         catch {
             case e: IgniteException ⇒
-                logError("Failed to start Ignite.", e)
+                Logging.log.error("Failed to start Ignite.", e)
 
                 throw e
         }
@@ -153,7 +161,7 @@ class IgniteContext(
      * Stops supporting ignite instance. If ignite instance has been already stopped, this operation will be
      * a no-op.
      */
-    def close(shutdownIgniteOnWorkers: Boolean = false) = {
+    def close(shutdownIgniteOnWorkers: Boolean = false): Unit = {
         // additional check if called from driver
         if (sparkContext != null && shutdownIgniteOnWorkers) {
             // Get required number of executors with default equals to number of available executors.
@@ -161,7 +169,7 @@ class IgniteContext(
                 sparkContext.getExecutorStorageStatus.length)
 
             if (workers > 0) {
-                logInfo("Will stop Ignite nodes on " + workers + " workers")
+                Logging.log.info("Will stop Ignite nodes on " + workers + " workers")
 
                 // Start ignite server node on each worker in server mode.
                 sparkContext.parallelize(1 to workers, workers).foreachPartition(it ⇒ doClose())
@@ -174,7 +182,25 @@ class IgniteContext(
     private def doClose() = {
         val igniteCfg = cfgClo()
 
-        Ignition.stop(igniteCfg.getGridName, false)
+        if (Ignition.state(igniteCfg.getIgniteInstanceName) == IgniteState.STARTED)
+            Ignition.stop(igniteCfg.getIgniteInstanceName, false)
+    }
+}
+
+object IgniteContext {
+    def apply(sparkContext: SparkContext, cfgF: () ⇒ IgniteConfiguration, standalone: Boolean = true): IgniteContext =
+        new IgniteContext(sparkContext, cfgF, standalone)
+
+    def setIgniteHome(igniteHome: String): Unit = {
+        val home = IgniteUtils.getIgniteHome
+
+        if (home == null && igniteHome != null) {
+            Logging.log.info("Setting IGNITE_HOME from driver not as it is not available on this worker: " + igniteHome)
+
+            IgniteUtils.nullifyHomeDirectory()
+
+            System.setProperty(IgniteSystemProperties.IGNITE_HOME, igniteHome)
+        }
     }
 }
 
@@ -183,7 +209,7 @@ class IgniteContext(
  *
  * @param clo Closure to wrap.
  */
-private class Once(clo: () ⇒ IgniteConfiguration) extends Serializable {
+class Once(clo: () ⇒ IgniteConfiguration) extends Serializable {
     @transient @volatile var res: IgniteConfiguration = null
 
     def apply(): IgniteConfiguration = {
@@ -199,4 +225,13 @@ private class Once(clo: () ⇒ IgniteConfiguration) extends Serializable {
 
         res
     }
+}
+
+/**
+  * Spark uses log4j by default. Using this logger in IgniteContext as well.
+  *
+  * This object is used to avoid problems with log4j serialization.
+  */
+object Logging extends Serializable {
+    @transient lazy val log = Logger.getLogger(classOf[IgniteContext])
 }

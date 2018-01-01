@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
             var cacheNodeCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = @"Config\cache-local-node.xml",
-                GridName = "cacheGrid"
+                IgniteInstanceName = "cacheGrid"
             };
 
             using (var gridNoCache = Ignition.Start(TestUtils.GetTestConfiguration()))

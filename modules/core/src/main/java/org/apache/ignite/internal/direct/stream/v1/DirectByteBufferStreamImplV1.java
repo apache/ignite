@@ -37,7 +37,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemTy
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import sun.nio.ch.DirectBuffer;
 
 /**
  * Direct marshalling I/O stream (version 1).
@@ -275,7 +274,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
             this.buf = buf;
 
             heapArr = buf.isDirect() ? null : buf.array();
-            baseOff = buf.isDirect() ? ((DirectBuffer)buf).address() : GridUnsafe.BYTE_ARR_OFF;
+            baseOff = buf.isDirect() ? GridUnsafe.bufferAddress(buf) : GridUnsafe.BYTE_ARR_OFF;
         }
     }
 
@@ -506,7 +505,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
                 lastFinished = false;
         }
         else
-            writeByte(Byte.MIN_VALUE);
+            writeShort(Short.MIN_VALUE);
     }
 
     /** {@inheritDoc} */
@@ -808,15 +807,15 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     @SuppressWarnings("unchecked")
     @Override public <T extends Message> T readMessage(MessageReader reader) {
         if (!msgTypeDone) {
-            if (!buf.hasRemaining()) {
+            if (buf.remaining() < Message.DIRECT_TYPE_SIZE) {
                 lastFinished = false;
 
                 return null;
             }
 
-            byte type = readByte();
+            short type = readShort();
 
-            msg = type == Byte.MIN_VALUE ? null : msgFactory.create(type);
+            msg = type == Short.MIN_VALUE ? null : msgFactory.create(type);
 
             msgTypeDone = true;
         }

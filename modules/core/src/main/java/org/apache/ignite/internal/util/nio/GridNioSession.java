@@ -19,6 +19,8 @@ package org.apache.ignite.internal.util.nio;
 
 import java.net.InetSocketAddress;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -107,8 +109,11 @@ public interface GridNioSession {
 
     /**
      * @param msg Message to be sent.
+     * @param ackC Optional closure invoked when ack for message is received.
+     * @throws IgniteCheckedException If failed.
      */
-    public void sendNoFuture(Object msg) throws IgniteCheckedException;
+    public void sendNoFuture(Object msg, @Nullable IgniteInClosure<IgniteException> ackC)
+        throws IgniteCheckedException;
 
     /**
      * Gets metadata associated with specified key.

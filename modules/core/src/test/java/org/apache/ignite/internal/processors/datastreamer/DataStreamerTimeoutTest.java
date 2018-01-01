@@ -51,8 +51,8 @@ public class DataStreamerTimeoutTest extends GridCommonAbstractTest {
     private static volatile int failOn;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration());
 
@@ -94,7 +94,7 @@ public class DataStreamerTimeoutTest extends GridCommonAbstractTest {
             for (int i = 0; i < ENTRY_AMOUNT; i++)
                 ldr.addData(i, i);
         }
-        catch (CacheException | IgniteDataStreamerTimeoutException e) {
+        catch (CacheException | IgniteDataStreamerTimeoutException ignored) {
             thrown = true;
         }
         finally {
@@ -153,11 +153,11 @@ public class DataStreamerTimeoutTest extends GridCommonAbstractTest {
                         processed++;
                     }
                 }
-                catch (IllegalStateException e) {
+                catch (IllegalStateException ignored) {
                     // No-op.
                 }
             }
-            catch (CacheException | IgniteDataStreamerTimeoutException e) {
+            catch (CacheException | IgniteDataStreamerTimeoutException ignored) {
                 thrown = true;
             }
         }

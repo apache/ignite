@@ -60,22 +60,30 @@ public class IpcSharedMemoryNodeStartup {
 
         igfsCfg.setIpcEndpointConfiguration(endpointCfg);
 
-        igfsCfg.setDataCacheName("partitioned");
-        igfsCfg.setMetaCacheName("partitioned");
         igfsCfg.setName("igfs");
 
+        CacheConfiguration metaCacheCfg = new CacheConfiguration();
+
+        metaCacheCfg.setName("partitioned");
+        metaCacheCfg.setCacheMode(PARTITIONED);
+        metaCacheCfg.setNearConfiguration(null);
+        metaCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
+        metaCacheCfg.setEvictionPolicy(null);
+        metaCacheCfg.setBackups(0);
+
+        CacheConfiguration dataCacheCfg = new CacheConfiguration();
+
+        dataCacheCfg.setName("partitioned");
+        dataCacheCfg.setCacheMode(PARTITIONED);
+        dataCacheCfg.setNearConfiguration(null);
+        dataCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
+        dataCacheCfg.setEvictionPolicy(null);
+        dataCacheCfg.setBackups(0);
+
+        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
+        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+
         cfg.setFileSystemConfiguration(igfsCfg);
-
-        CacheConfiguration cacheCfg = new CacheConfiguration();
-
-        cacheCfg.setName("partitioned");
-        cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setNearConfiguration(null);
-        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setEvictionPolicy(null);
-        cacheCfg.setBackups(0);
-
-        cfg.setCacheConfiguration(cacheCfg);
 
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 

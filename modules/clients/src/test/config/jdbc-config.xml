@@ -29,13 +29,8 @@
         <!-- JDBC driver should force true value -->
         <property name="clientMode" value="false"/>
 
+        <property name="igniteInstanceName" value="sqlGrid"/>
         <property name="localHost" value="127.0.0.1"/>
-
-        <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
-                <property name="requireSerializable" value="false"/>
-            </bean>
-        </property>
 
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
@@ -43,7 +38,7 @@
                     <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
                         <property name="addresses">
                             <list>
-                                <value>127.0.0.1:47500..47549</value>
+                                <value>127.0.0.1:47500..47501</value>
                             </list>
                         </property>
                     </bean>

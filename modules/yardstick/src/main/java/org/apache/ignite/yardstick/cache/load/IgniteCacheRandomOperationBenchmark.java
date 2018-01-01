@@ -31,8 +31,12 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.cache.CacheException;
 import javax.cache.configuration.FactoryBuilder;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
@@ -46,9 +50,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -69,8 +71,10 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.apache.ignite.yardstick.IgniteBenchmarkUtils;
+import org.apache.ignite.yardstick.IgniteNode;
 import org.apache.ignite.yardstick.cache.load.model.ModelUtil;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.BeansException;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.yardstickframework.BenchmarkConfiguration;
@@ -135,14 +139,60 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
+        if (args.additionalCachesNumber() > 0)
+            createAdditionalCaches();
+
         searchCache();
 
         preLoading();
     }
 
+    /**
+     * Creates additional caches.
+     *
+     * @throws Exception If failed.
+     */
+    private void createAdditionalCaches() throws Exception {
+        Map<String, CacheConfiguration> cfgMap;
+
+        try {
+            // Loading spring application context and getting all of the caches configurations in the map.
+            cfgMap = IgniteNode.loadConfiguration(args.configuration()).get2().getBeansOfType(CacheConfiguration.class);
+        }
+        catch (BeansException e) {
+            throw new Exception("Failed to instantiate bean [type=" + CacheConfiguration.class + ", err=" +
+                e.getMessage() + ']', e);
+        }
+
+        if (cfgMap == null || cfgMap.isEmpty())
+            throw new Exception("Failed to find cache configurations in: " + args.configuration());
+
+        // Getting cache configuration from the map using name specified in property file.
+        CacheConfiguration<Object, Object> ccfg = cfgMap.get(args.additionalCachesName());
+
+        if (ccfg == null)
+            throw new Exception("Failed to find cache configuration [cache=" + args.additionalCachesName() +
+                ", cfg=" + args.configuration() + ']');
+
+        for (int i = 0; i < args.additionalCachesNumber(); i++) {
+            CacheConfiguration<Object, Object> newCfg = new CacheConfiguration<>(ccfg);
+
+            newCfg.setName("additional_" + args.additionalCachesName() + "_cache_" + i);
+
+            try {
+                ignite().createCache(newCfg);
+            }
+            catch (CacheException e) {
+                BenchmarkUtils.error("Failed to create additional cache [ name = " + args.additionalCachesName() +
+                    ", err" + e.getMessage() + ']', e);
+            }
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void onException(Throwable e) {
         BenchmarkUtils.error("The benchmark of random operation failed.", e);
+
         super.onException(e);
     }
 
@@ -205,12 +255,6 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
             CacheConfiguration configuration = cache.getConfiguration(CacheConfiguration.class);
 
             if (isClassDefinedInConfig(configuration)) {
-                if (configuration.getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED &&
-                    configuration.getQueryEntities().size() > 2) {
-                    throw new IgniteException("Off-heap mode is unsupported by the load test due to bugs IGNITE-2982" +
-                        " and IGNITE-2997");
-                }
-
                 ArrayList<Class> keys = new ArrayList<>();
                 ArrayList<Class> values = new ArrayList<>();
 
@@ -226,7 +270,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                                     keys.add(keyCls);
                                 else
                                     throw new IgniteException("Class is unknown for the load test. Make sure you " +
-                                        "specified its full name [clsName=" + queryEntity.getKeyType() + ']');
+                                        "specified its full name [cache=" + cacheName + ", clsName=" + queryEntity.getKeyType() + ']');
                             }
 
                             if (queryEntity.getValueType() != null) {
@@ -236,7 +280,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                                     values.add(valCls);
                                 else
                                     throw new IgniteException("Class is unknown for the load test. Make sure you " +
-                                        "specified its full name [clsName=" + queryEntity.getKeyType() + ']');
+                                        "specified its full name [cache=" + cacheName + ", clsName=" + queryEntity.getValueType() + ']');
 
                                 configureCacheSqlDescriptor(cacheName, queryEntity, valCls);
                             }
@@ -251,29 +295,29 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                     }
                 }
 
-                if (configuration.getTypeMetadata() != null) {
-                    Collection<CacheTypeMetadata> entries = configuration.getTypeMetadata();
+                if (configuration.getQueryEntities() != null) {
+                    Collection<QueryEntity> entities = configuration.getQueryEntities();
 
-                    for (CacheTypeMetadata cacheTypeMetadata : entries) {
+                    for (QueryEntity entity : entities) {
                         try {
-                            if (cacheTypeMetadata.getKeyType() != null) {
-                                Class keyCls = Class.forName(cacheTypeMetadata.getKeyType());
+                            if (entity.getKeyType() != null) {
+                                Class keyCls = Class.forName(entity.getKeyType());
 
                                 if (ModelUtil.canCreateInstance(keyCls))
                                     keys.add(keyCls);
                                 else
                                     throw new IgniteException("Class is unknown for the load test. Make sure you " +
-                                        "specified its full name [clsName=" + cacheTypeMetadata.getKeyType() + ']');
+                                        "specified its full name [clsName=" + entity.getKeyType() + ']');
                             }
 
-                            if (cacheTypeMetadata.getValueType() != null) {
-                                Class valCls = Class.forName(cacheTypeMetadata.getValueType());
+                            if (entity.getValueType() != null) {
+                                Class valCls = Class.forName(entity.getValueType());
 
                                 if (ModelUtil.canCreateInstance(valCls))
                                     values.add(valCls);
                                 else
                                     throw new IgniteException("Class is unknown for the load test. Make sure you " +
-                                        "specified its full name [clsName=" + cacheTypeMetadata.getKeyType() + ']');
+                                        "specified its full name [clsName=" + entity.getKeyType() + ']');
                             }
                         }
                         catch (ClassNotFoundException e) {
@@ -394,8 +438,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      */
     private boolean isClassDefinedInConfig(CacheConfiguration configuration) {
         return (configuration.getIndexedTypes() != null && configuration.getIndexedTypes().length > 0)
-            || !CollectionUtils.isEmpty(configuration.getQueryEntities())
-            || !CollectionUtils.isEmpty(configuration.getTypeMetadata());
+            || !CollectionUtils.isEmpty(configuration.getQueryEntities());
     }
 
     /**
@@ -408,25 +451,36 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
         startPreloadLogging(args.preloadLogsInterval());
 
-        Thread[] threads = new Thread[availableCaches.size()];
+        ExecutorService executor = Executors.newFixedThreadPool(10);
 
-        for (int i = 0; i < availableCaches.size(); i++) {
-            final String cacheName = availableCaches.get(i).getName();
+        try {
+            List<Future<?>> futs = new ArrayList<>();
 
-            threads[i] = new Thread() {
-                @Override public void run() {
-                    try (IgniteDataStreamer<Object, Object> dataLdr = ignite().dataStreamer(cacheName)) {
-                        for (int i = 0; i < args.preloadAmount() && !isInterrupted(); i++)
-                            dataLdr.addData(createRandomKey(i, cacheName), createRandomValue(i, cacheName));
+            final Thread thread = Thread.currentThread();
+
+            for (int i = 0; i < availableCaches.size(); i++) {
+                final String cacheName = availableCaches.get(i).getName();
+
+                futs.add(executor.submit(new Runnable() {
+                    @Override public void run() {
+                        try (IgniteDataStreamer<Object, Object> dataLdr = ignite().dataStreamer(cacheName)) {
+                            for (int i = 0; i < args.preloadAmount(); i++) {
+                                if (i % 100 == 0 && thread.isInterrupted())
+                                    break;
+
+                                dataLdr.addData(createRandomKey(i, cacheName), createRandomValue(i, cacheName));
+                            }
+                        }
                     }
-                }
-            };
+                }));
+            }
 
-            threads[i].start();
+            for (Future<?> fut : futs)
+                fut.get();
         }
-
-        for (Thread thread : threads)
-            thread.join();
+        finally {
+            executor.shutdown();
+        }
 
         stopPreloadLogging();
     }
@@ -929,7 +983,8 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     }
 
     /**
-     * @return SQL string.
+     * @param sql Base SQL.
+     * @return Randomized SQL string.
      */
     private String randomizeSql(String sql) {
         int cnt = StringUtils.countOccurrencesOf(sql, "%s");

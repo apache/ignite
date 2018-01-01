@@ -172,18 +172,18 @@ namespace ignite
             return false;
         }
 
-        TransactionState Transaction::GetState()
+        TransactionState::Type Transaction::GetState()
         {
             IgniteError err;
 
-            TransactionState res = GetState(err);
+            TransactionState::Type res = GetState(err);
 
             IgniteError::ThrowIfNeeded(err);
 
             return res;
         }
 
-        TransactionState Transaction::GetState(IgniteError& err)
+        TransactionState::Type Transaction::GetState(IgniteError& err)
         {
             err = IgniteError();
 
@@ -197,7 +197,7 @@ namespace ignite
                     "Instance is not usable (did you check for error?).");
             }
 
-            return IGNITE_TX_STATE_UNKNOWN;
+            return TransactionState::UNKNOWN;
         }
     }
 }

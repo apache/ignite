@@ -36,15 +36,20 @@ const VALID_PACKAGE = /^(([a-zA-Z_$][a-zA-Z0-9_$]*)\.)*([a-zA-Z_$][a-zA-Z0-9_$]*
 // Regular expression to check UUID string representation.
 const VALID_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/im;
 
+// Extended list of Java built-in class names.
+const JAVA_CLASS_STRINGS = JAVA_CLASSES.slice();
+
 /**
  * Utility service for various check on java types.
  */
 export default class JavaTypes {
-    static $inject = ['igniteClusterDefaults', 'igniteCacheDefaults', 'igniteIgfsDefaults'];
+    static $inject = ['IgniteClusterDefaults', 'IgniteCacheDefaults', 'IgniteIGFSDefaults'];
 
     constructor(clusterDflts, cacheDflts, igfsDflts) {
         this.enumClasses = _.uniq(this._enumClassesAcc(_.merge(clusterDflts, cacheDflts, igfsDflts), []));
         this.shortEnumClasses = _.map(this.enumClasses, (cls) => this.shortClassName(cls));
+
+        JAVA_CLASS_STRINGS.push({short: 'byte[]', full: 'byte[]', stringValue: '[B'});
     }
 
     /**
@@ -95,20 +100,25 @@ export default class JavaTypes {
     }
 
     /**
+     * @param clsName Class name to check.
+     * @returns {String} Full class name string presentation for java build-in types or source class otherwise.
+     */
+    stringClassName(clsName) {
+        const type = _.find(JAVA_CLASS_STRINGS, (clazz) => clsName === clazz.short);
+
+        return type ? type.stringValue || type.full : clsName;
+    }
+
+    /**
      * Extract class name from full class name.
      *
      * @param clsName full class name.
      * @return {String} Class name.
      */
     shortClassName(clsName) {
-        if (this.isJavaPrimitive(clsName))
-            return clsName;
+        const dotIdx = clsName.lastIndexOf('.');
 
-        const fullClsName = this.fullClassName(clsName);
-
-        const dotIdx = fullClsName.lastIndexOf('.');
-
-        return dotIdx > 0 ? fullClsName.substr(dotIdx + 1) : fullClsName;
+        return dotIdx > 0 ? clsName.substr(dotIdx + 1) : clsName;
     }
 
     /**
@@ -163,7 +173,7 @@ export default class JavaTypes {
      * @param {String} clsName Class name to check.
      * @returns {boolean} 'true' if given class name is java primitive.
      */
-    isJavaPrimitive(clsName) {
+    isPrimitive(clsName) {
         return _.includes(JAVA_PRIMITIVES, clsName);
     }
 

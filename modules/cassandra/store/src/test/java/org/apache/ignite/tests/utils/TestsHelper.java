@@ -21,10 +21,6 @@ package org.apache.ignite.tests.utils;
 import org.apache.ignite.cache.store.cassandra.common.SystemHelper;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.tests.load.Generator;
-import org.apache.ignite.tests.pojos.Person;
-import org.apache.ignite.tests.pojos.PersonId;
-import org.apache.ignite.tests.pojos.Product;
-import org.apache.ignite.tests.pojos.ProductOrder;
 import org.springframework.core.io.ClassPathResource;
 
 import java.util.Collection;
@@ -38,6 +34,13 @@ import java.util.Random;
 import java.util.ResourceBundle;
 import java.util.Calendar;
 import java.util.Date;
+
+import org.apache.ignite.tests.pojos.Product;
+import org.apache.ignite.tests.pojos.ProductOrder;
+import org.apache.ignite.tests.pojos.Person;
+import org.apache.ignite.tests.pojos.SimplePerson;
+import org.apache.ignite.tests.pojos.PersonId;
+import org.apache.ignite.tests.pojos.SimplePersonId;
 
 /**
  * Helper class for all tests
@@ -283,6 +286,24 @@ public class TestsHelper {
     }
 
     /** */
+    public static Map<SimplePersonId, SimplePerson> generateSimplePersonIdsPersonsMap() {
+        return generateSimplePersonIdsPersonsMap(BULK_OPERATION_SIZE);
+    }
+
+    /** */
+    public static Map<SimplePersonId, SimplePerson> generateSimplePersonIdsPersonsMap(int cnt) {
+        Map<SimplePersonId, SimplePerson> map = new HashMap<>();
+
+        for (int i = 0; i < cnt; i++) {
+            PersonId id = generateRandomPersonId();
+
+            map.put(new SimplePersonId(id), new SimplePerson(generateRandomPerson(id.getPersonNumber())));
+        }
+
+        return map;
+    }
+
+    /** */
     public static Map<PersonId, Person> generatePersonIdsPersonsMap() {
         return generatePersonIdsPersonsMap(BULK_OPERATION_SIZE);
     }
@@ -298,6 +319,24 @@ public class TestsHelper {
         }
 
         return map;
+    }
+
+    /** */
+    public static Collection<CacheEntryImpl<SimplePersonId, SimplePerson>> generateSimplePersonIdsPersonsEntries() {
+        return generateSimplePersonIdsPersonsEntries(BULK_OPERATION_SIZE);
+    }
+
+    /** */
+    public static Collection<CacheEntryImpl<SimplePersonId, SimplePerson>> generateSimplePersonIdsPersonsEntries(int cnt) {
+        Collection<CacheEntryImpl<SimplePersonId, SimplePerson>> entries = new LinkedList<>();
+
+        for (int i = 0; i < cnt; i++) {
+            PersonId id = generateRandomPersonId();
+
+            entries.add(new CacheEntryImpl<>(new SimplePersonId(id), new SimplePerson(generateRandomPerson(id.getPersonNumber()))));
+        }
+
+        return entries;
     }
 
     /** */
@@ -443,6 +482,24 @@ public class TestsHelper {
     }
 
     /** */
+    public static SimplePerson generateRandomSimplePerson(long personNum) {
+        int phonesCnt = RANDOM.nextInt(4);
+
+        List<String> phones = new LinkedList<>();
+
+        for (int i = 0; i < phonesCnt; i++)
+            phones.add(randomNumber(4));
+
+        return new SimplePerson(personNum, randomString(4), randomString(4), RANDOM.nextInt(100),
+                RANDOM.nextBoolean(), RANDOM.nextLong(), RANDOM.nextFloat(), new Date(), phones);
+    }
+
+    /** */
+    public static SimplePersonId generateRandomSimplePersonId() {
+        return new SimplePersonId(randomString(4), randomString(4), RANDOM.nextInt(100));
+    }
+
+    /** */
     public static Person generateRandomPerson(long personNum) {
         int phonesCnt = RANDOM.nextInt(4);
 
@@ -517,6 +574,26 @@ public class TestsHelper {
     }
 
     /** */
+    public static <K> boolean checkSimplePersonMapsEqual(Map<K, SimplePerson> map1, Map<K, SimplePerson> map2,
+                                                   boolean primitiveFieldsOnly) {
+        if (map1 == null || map2 == null || map1.size() != map2.size())
+            return false;
+
+        for (K key : map1.keySet()) {
+            SimplePerson person1 = map1.get(key);
+            SimplePerson person2 = map2.get(key);
+
+            boolean equals = person1 != null && person2 != null &&
+                    (primitiveFieldsOnly ? person1.equalsPrimitiveFields(person2) : person1.equals(person2));
+
+            if (!equals)
+                return false;
+        }
+
+        return true;
+    }
+
+    /** */
     public static <K> boolean checkPersonMapsEqual(Map<K, Person> map1, Map<K, Person> map2,
         boolean primitiveFieldsOnly) {
         if (map1 == null || map2 == null || map1.size() != map2.size())
@@ -528,6 +605,24 @@ public class TestsHelper {
 
             boolean equals = person1 != null && person2 != null &&
                 (primitiveFieldsOnly ? person1.equalsPrimitiveFields(person2) : person1.equals(person2));
+
+            if (!equals)
+                return false;
+        }
+
+        return true;
+    }
+
+    /** */
+    public static <K> boolean checkSimplePersonCollectionsEqual(Map<K, SimplePerson> map, Collection<CacheEntryImpl<K, SimplePerson>> col,
+                                                          boolean primitiveFieldsOnly) {
+        if (map == null || col == null || map.size() != col.size())
+            return false;
+
+        for (CacheEntryImpl<K, SimplePerson> entry : col) {
+            boolean equals = primitiveFieldsOnly ?
+                    entry.getValue().equalsPrimitiveFields(map.get(entry.getKey())) :
+                    entry.getValue().equals(map.get(entry.getKey()));
 
             if (!equals)
                 return false;

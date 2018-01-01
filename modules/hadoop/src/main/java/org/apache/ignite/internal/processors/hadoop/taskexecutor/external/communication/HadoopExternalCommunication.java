@@ -34,6 +34,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
@@ -63,6 +64,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
@@ -174,8 +176,8 @@ public class HadoopExternalCommunication {
     /** Message notification executor service. */
     private ExecutorService execSvc;
 
-    /** Grid name. */
-    private String gridName;
+    /** Ignite instance name. */
+    private String igniteInstanceName;
 
     /** Work directory. */
     private String workDir;
@@ -256,7 +258,7 @@ public class HadoopExternalCommunication {
      * @param marsh Marshaller to use.
      * @param log Logger.
      * @param execSvc Executor service for message notification.
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param workDir Work directory.
      */
     public HadoopExternalCommunication(
@@ -265,7 +267,7 @@ public class HadoopExternalCommunication {
         Marshaller marsh,
         IgniteLogger log,
         ExecutorService execSvc,
-        String gridName,
+        String igniteInstanceName,
         String workDir
     ) {
         locProcDesc = new HadoopProcessDescriptor(parentNodeId, procId);
@@ -273,7 +275,7 @@ public class HadoopExternalCommunication {
         this.marsh = marsh;
         this.log = log.getLogger(HadoopExternalCommunication.class);
         this.execSvc = execSvc;
-        this.gridName = gridName;
+        this.igniteInstanceName = igniteInstanceName;
         this.workDir = workDir;
     }
 
@@ -609,7 +611,7 @@ public class HadoopExternalCommunication {
      */
     private GridNioFilter[] filters() {
         return new GridNioFilter[] {
-            new GridNioAsyncNotifyFilter(gridName, execSvc, log),
+            new GridNioAsyncNotifyFilter(igniteInstanceName, execSvc, log),
             new HandshakeAndBackpressureFilter(),
             new HadoopMarshallerFilter(marsh),
             new GridNioCodecFilter(new GridBufferedParser(directBuf, ByteOrder.nativeOrder()), log, false)
@@ -638,7 +640,7 @@ public class HadoopExternalCommunication {
                         .listener(srvLsnr)
                         .logger(log.getLogger(GridNioServer.class))
                         .selectorCount(selectorsCnt)
-                        .gridName(gridName)
+                        .igniteInstanceName(igniteInstanceName)
                         .serverName("hadoop")
                         .tcpNoDelay(tcpNoDelay)
                         .directBuffer(directBuf)
@@ -692,7 +694,7 @@ public class HadoopExternalCommunication {
             try {
                 IpcSharedMemoryServerEndpoint srv = new IpcSharedMemoryServerEndpoint(
                     log.getLogger(IpcSharedMemoryServerEndpoint.class),
-                    locProcDesc.processId(), gridName, workDir);
+                    locProcDesc.processId(), igniteInstanceName, workDir);
 
                 srv.setPort(port);
 
@@ -1002,7 +1004,10 @@ public class HadoopExternalCommunication {
 
                 HandshakeFinish fin = new HandshakeFinish();
 
-                GridNioSession ses = nioSrvr.createSession(ch, F.asMap(HANDSHAKE_FINISH_META, fin)).get();
+                GridNioFuture<GridNioSession> sesFut =
+                    nioSrvr.createSession(ch, F.<Integer, Object>asMap(HANDSHAKE_FINISH_META, fin), false, null);
+
+                GridNioSession ses = sesFut.get();
 
                 client = new HadoopTcpNioCommunicationClient(ses);
 
@@ -1130,7 +1135,7 @@ public class HadoopExternalCommunication {
          * @param srv Server.
          */
         ShmemAcceptWorker(IpcSharedMemoryServerEndpoint srv) {
-            super(gridName, "shmem-communication-acceptor", HadoopExternalCommunication.this.log);
+            super(igniteInstanceName, "shmem-communication-acceptor", HadoopExternalCommunication.this.log);
 
             this.srv = srv;
         }
@@ -1177,7 +1182,7 @@ public class HadoopExternalCommunication {
          * @param endpoint Endpoint.
          */
         private ShmemWorker(IpcEndpoint endpoint, boolean accepted) {
-            super(gridName, "shmem-worker", HadoopExternalCommunication.this.log);
+            super(igniteInstanceName, "shmem-worker", HadoopExternalCommunication.this.log);
 
             this.endpoint = endpoint;
 
@@ -1306,11 +1311,14 @@ public class HadoopExternalCommunication {
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg, boolean fut) throws IgniteCheckedException {
+        @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses,
+            Object msg,
+            boolean fut,
+            IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
             if (ses.meta(PROCESS_META) == null && !(msg instanceof ProcessHandshakeMessage))
                 log.warning("Writing message before handshake has finished [ses=" + ses + ", msg=" + msg + ']');
 
-            return proceedSessionWrite(ses, msg, fut);
+            return proceedSessionWrite(ses, msg, fut, ackC);
         }
 
         /** {@inheritDoc} */

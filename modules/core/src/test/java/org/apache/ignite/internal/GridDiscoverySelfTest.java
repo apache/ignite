@@ -75,8 +75,8 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -96,7 +96,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        ignite = G.ignite(getTestGridName());
+        ignite = G.ignite(getTestIgniteInstanceName());
     }
 
     /**
@@ -118,36 +118,6 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
 
         assert nodes != null;
         assert !nodes.isEmpty();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGetTopologyHash() throws Exception {
-        int hashCnt = 5000;
-
-        Random rand = new Random();
-
-        Collection<Long> hashes = new HashSet<>(hashCnt, 1.0f);
-
-        for (int i = 0; i < hashCnt; i++) {
-            // Max topology of 10 nodes.
-            int size = rand.nextInt(10) + 1;
-
-            Collection<ClusterNode> nodes = new ArrayList<>(size);
-
-            for (int j = 0; j < size; j++)
-                nodes.add(new GridDiscoveryTestNode());
-
-            @SuppressWarnings("deprecation")
-            long hash = ((IgniteKernal) ignite).context().discovery().topologyHash(nodes);
-
-            boolean isHashed = hashes.add(hash);
-
-            assert isHashed : "Duplicate hash [hash=" + hash + ", topSize=" + size + ", iteration=" + i + ']';
-        }
-
-        info("No duplicates found among '" + hashCnt + "' hashes.");
     }
 
     /**
@@ -297,7 +267,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
                 // 6          +     +
                 // 7          +       - only local node
 
-                Collection<ClusterNode> cacheNodes = discoMgr.cacheNodes(null, new AffinityTopologyVersion(ver));
+                Collection<ClusterNode> cacheNodes = discoMgr.cacheNodes(DEFAULT_CACHE_NAME, new AffinityTopologyVersion(ver));
 
                 Collection<UUID> act = new ArrayList<>(F.viewReadOnly(cacheNodes, new C1<ClusterNode, UUID>() {
                     @Override public UUID apply(ClusterNode n) {

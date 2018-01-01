@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -97,25 +96,24 @@ public interface PlatformTargetProxy {
     Object outObject(int type) throws Exception;
 
     /**
-     * Start listening for the future.
+     * Asynchronous operation accepting memory stream.
      *
-     * @param futId Future ID.
-     * @param typ Result type.
-     * @throws IgniteCheckedException In case of failure.
+     * @param type Operation type.
+     * @param memPtr Memory pointer.
+     * @throws Exception If case of failure.
      */
-    @SuppressWarnings("UnusedDeclaration")
-    void listenFuture(final long futId, int typ) throws Exception;
+    void inStreamAsync(int type, long memPtr) throws Exception;
 
     /**
-     * Start listening for the future for specific operation type.
+     * Asynchronous operation accepting memory stream and returning PlatformListenableTarget.
+     * Supports cancellable async operations.
      *
-     * @param futId Future ID.
-     * @param typ Result type.
-     * @param opId Operation ID required to pick correct result writer.
-     * @throws IgniteCheckedException In case of failure.
+     * @param type Operation type.
+     * @param memPtr Memory pointer.
+     * @return Result.
+     * @throws Exception If case of failure.
      */
-    @SuppressWarnings("UnusedDeclaration")
-    void listenFutureForOperation(final long futId, int typ, int opId) throws Exception;
+    Object inStreamOutObjectAsync(int type, long memPtr) throws Exception;
 
     /**
      * Returns the underlying target.

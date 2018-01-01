@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -32,7 +31,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
@@ -50,13 +51,13 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
     public static final String CACHE_PARAMS = "PPRB_PARAMS";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setMarshaller(new BinaryMarshaller());
         cfg.setIncludeEventTypes(EventType.EVTS_CACHE);
 
-        if (getTestGridName(CLIENT_ID).equals(gridName))
+        if (getTestIgniteInstanceName(CLIENT_ID).equals(igniteInstanceName))
             cfg.setClientMode(true);
         else {
             CacheConfiguration ccfg = getCacheConfiguration();
@@ -76,7 +77,6 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
         ccfg.setName(CACHE_PARAMS);
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setCacheMode(CacheMode.PARTITIONED);
-        ccfg.setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED);
 
         List<QueryEntity> queryEntities = new ArrayList<>();
 
@@ -113,7 +113,7 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
     /** */
     public void testReconnectClient() throws Exception {
         try {
-            Ignite igniteSrv = startGrid(0);
+            startGrid(0);
 
             Ignite client = startGrid(1);
 
@@ -159,11 +159,19 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
 
             Thread.sleep(2_000);
 
-            igniteSrv = startGrid(0);
+            startGrid(0);
 
-            Thread.sleep(2_000);
+            assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    try {
+                        checkTopology(2);
 
-            checkTopology(2);
+                        return true;
+                    } catch (Exception ex) {
+                        return false;
+                    }
+                }
+            }, 30_000);
 
             info("Pre-insert");
 

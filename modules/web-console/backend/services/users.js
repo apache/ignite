@@ -17,39 +17,31 @@
 
 'use strict';
 
+const _ = require('lodash');
+
 // Fire me up!
 
 module.exports = {
     implements: 'services/users',
-    inject: ['require(lodash)', 'mongo', 'settings', 'services/spaces', 'services/mails', 'agent-manager', 'errors']
+    inject: ['errors', 'settings', 'mongo', 'services/spaces', 'services/mails', 'services/activities', 'services/utils', 'agents-handler']
 };
 
 /**
- * @param _
  * @param mongo
+ * @param errors
  * @param settings
  * @param {SpacesService} spacesService
  * @param {MailsService} mailsService
- * @param agentMgr
- * @param errors
+ * @param {ActivitiesService} activitiesService
+ * @param {UtilsService} utilsService
+ * @param {AgentsHandler} agentHnd
  * @returns {UsersService}
  */
-module.exports.factory = (_, mongo, settings, spacesService, mailsService, agentMgr, errors) => {
-    const _randomString = () => {
-        const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        const possibleLen = possible.length;
-
-        let res = '';
-
-        for (let i = 0; i < settings.tokenLength; i++)
-            res += possible.charAt(Math.floor(Math.random() * possibleLen));
-
-        return res;
-    };
-
+module.exports.factory = (errors, settings, mongo, spacesService, mailsService, activitiesService, utilsService, agentHnd) => {
     class UsersService {
         /**
          * Save profile information.
+         *
          * @param {String} host - The host
          * @param {Object} user - The user
          * @returns {Promise.<mongo.ObjectId>} that resolves account id of merge operation.
@@ -58,8 +50,8 @@ module.exports.factory = (_, mongo, settings, spacesService, mailsService, agent
             return mongo.Account.count().exec()
                 .then((cnt) => {
                     user.admin = cnt === 0;
-
-                    user.token = _randomString();
+                    user.registered = new Date();
+                    user.token = utilsService.randomString(settings.tokenLength);
 
                     return new mongo.Account(user);
                 })
@@ -77,7 +69,7 @@ module.exports.factory = (_, mongo, settings, spacesService, mailsService, agent
                     });
                 })
                 .then((registered) => {
-                    registered.resetPasswordToken = _randomString();
+                    registered.resetPasswordToken = utilsService.randomString(settings.tokenLength);
 
                     return registered.save()
                         .then(() => mongo.Space.create({name: 'Personal space', owner: registered._id}))
@@ -92,10 +84,13 @@ module.exports.factory = (_, mongo, settings, spacesService, mailsService, agent
 
         /**
          * Save user.
+         *
          * @param {Object} changed - The user
          * @returns {Promise.<mongo.ObjectId>} that resolves account id of merge operation.
          */
         static save(changed) {
+            delete changed.admin;
+
             return mongo.Account.findById(changed._id).exec()
                 .then((user) => {
                     if (!changed.password)
@@ -131,7 +126,7 @@ module.exports.factory = (_, mongo, settings, spacesService, mailsService, agent
                 })
                 .then((user) => {
                     if (changed.token && user.token !== changed.token)
-                        agentMgr.close(user._id, user.token);
+                        agentHnd.onTokenReset(user);
 
                     _.extend(user, changed);
 
@@ -143,31 +138,61 @@ module.exports.factory = (_, mongo, settings, spacesService, mailsService, agent
          * Get list of user accounts and summary information.
          * @returns {mongo.Account[]} - returns all accounts with counters object
          */
-        static list() {
+        static list(params) {
             return Promise.all([
-                mongo.Space.aggregate([
-                    {$match: {demo: false}},
-                    {$lookup: {from: 'clusters', localField: '_id', foreignField: 'space', as: 'clusters'}},
-                    {$lookup: {from: 'caches', localField: '_id', foreignField: 'space', as: 'caches'}},
-                    {$lookup: {from: 'domainmodels', localField: '_id', foreignField: 'space', as: 'domainmodels'}},
-                    {$lookup: {from: 'igfs', localField: '_id', foreignField: 'space', as: 'igfs'}},
-                    {
-                        $project: {
-                            owner: 1,
-                            clusters: {$size: '$clusters'},
-                            models: {$size: '$domainmodels'},
-                            caches: {$size: '$caches'},
-                            igfs: {$size: '$igfs'}
-                        }
-                    }
-                ]).exec(),
-                mongo.Account.find({}).sort('firstName lastName').lean().exec()
-            ])
-                .then(([counters, users]) => {
-                    const countersMap = _.keyBy(counters, 'owner');
+                Promise.all([
+                    mongo.Account.aggregate([
+                        {$lookup: {from: 'spaces', localField: '_id', foreignField: 'owner', as: 'spaces'}},
+                        {$project: {
+                            _id: 1,
+                            firstName: 1,
+                            lastName: 1,
+                            admin: 1,
+                            email: 1,
+                            company: 1,
+                            country: 1,
+                            lastLogin: 1,
+                            lastActivity: 1,
+                            spaces: {
+                                $filter: {
+                                    input: '$spaces',
+                                    as: 'space',
+                                    cond: {$eq: ['$$space.demo', false]}
+                                }
+                            }
+                        }},
+                        { $sort: {firstName: 1, lastName: 1}}
+                    ]).exec(),
+                    mongo.Cluster.aggregate([{$group: {_id: '$space', count: { $sum: 1 }}}]).exec(),
+                    mongo.Cache.aggregate([{$group: {_id: '$space', count: { $sum: 1 }}}]).exec(),
+                    mongo.DomainModel.aggregate([{$group: {_id: '$space', count: { $sum: 1 }}}]).exec(),
+                    mongo.Igfs.aggregate([{$group: {_id: '$space', count: { $sum: 1 }}}]).exec()
+                ]).then(([users, clusters, caches, models, igfs]) => {
+                    const clustersMap = _.mapValues(_.keyBy(clusters, '_id'), 'count');
+                    const cachesMap = _.mapValues(_.keyBy(caches, '_id'), 'count');
+                    const modelsMap = _.mapValues(_.keyBy(models, '_id'), 'count');
+                    const igfsMap = _.mapValues(_.keyBy(igfs, '_id'), 'count');
 
                     _.forEach(users, (user) => {
-                        user.counters = _.omit(countersMap[user._id], '_id', 'owner');
+                        const counters = user.counters = {};
+
+                        counters.clusters = _.sumBy(user.spaces, ({_id}) => clustersMap[_id]) || 0;
+                        counters.caches = _.sumBy(user.spaces, ({_id}) => cachesMap[_id]) || 0;
+                        counters.models = _.sumBy(user.spaces, ({_id}) => modelsMap[_id]) || 0;
+                        counters.igfs = _.sumBy(user.spaces, ({_id}) => igfsMap[_id]) || 0;
+
+                        delete user.spaces;
+                    });
+
+                    return users;
+                }),
+                activitiesService.total(params),
+                activitiesService.detail(params)
+            ])
+                .then(([users, activitiesTotal, activitiesDetail]) => {
+                    _.forEach(users, (user) => {
+                        user.activitiesTotal = activitiesTotal[user._id];
+                        user.activitiesDetail = activitiesDetail[user._id];
                     });
 
                     return users;
@@ -176,6 +201,7 @@ module.exports.factory = (_, mongo, settings, spacesService, mailsService, agent
 
         /**
          * Remove account.
+         *
          * @param {String} host.
          * @param {mongo.ObjectId|String} userId - The account id for remove.
          * @returns {Promise.<{rowsAffected}>} - The number of affected rows.
@@ -207,11 +233,8 @@ module.exports.factory = (_, mongo, settings, spacesService, mailsService, agent
 
             const becomeUsed = viewedUser && user.admin;
 
-            if (becomeUsed) {
-                user = viewedUser;
-
-                user.becomeUsed = true;
-            }
+            if (becomeUsed)
+                user = _.extend({}, viewedUser, {becomeUsed: true, becameToken: user.token});
             else
                 user = user.toJSON();
 

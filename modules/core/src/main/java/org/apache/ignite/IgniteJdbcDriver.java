@@ -29,6 +29,7 @@ import java.util.Properties;
 import java.util.logging.Logger;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.internal.jdbc.JdbcConnection;
+import org.apache.ignite.internal.jdbc.JdbcDriverPropertyInfo;
 import org.apache.ignite.logger.java.JavaLogger;
 
 /**
@@ -108,6 +109,22 @@ import org.apache.ignite.logger.java.JavaLogger;
  *         {@code distributedJoins} - enables support of distributed joins feature. This flag does not make sense in
  *         combination with {@code local} and/or {@code collocated} flags with {@code true} value or in case of querying
  *         of local cache. Default value is {@code false}.
+ *     </li>
+ *     <li>
+ *         {@code enforceJoinOrder} - Sets flag to enforce join order of tables in the query. If set to {@code true}
+ *          query optimizer will not reorder tables in join. By default is {@code false}.
+ *     </li>
+ *     <li>
+ *         {@code lazy} - Sets flag to enable lazy query execution.
+ *         By default Ignite attempts to fetch the whole query result set to memory and send it to the client.
+ *         For small and medium result sets this provides optimal performance and minimize duration of internal
+ *         database locks, thus increasing concurrency.
+ *
+ *         <p> If result set is too big to fit in available memory this could lead to excessive GC pauses and even
+ *         OutOfMemoryError. Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory
+ *         consumption at the cost of moderate performance hit.
+ *
+ *         <p> Defaults to {@code false}, meaning that the whole result set is fetched to memory eagerly.
  *     </li>
  * </ul>
  *
@@ -242,10 +259,7 @@ import org.apache.ignite.logger.java.JavaLogger;
  * </table>
  * <h1 class="header">Example</h1>
  * <pre name="code" class="java">
- * // Register JDBC driver.
- * Class.forName("org.apache.ignite.IgniteJdbcDriver");
- *
- * // Open JDBC connection.
+  * // Open JDBC connection.
  * Connection conn = DriverManager.getConnection("jdbc:ignite:cfg//cache=persons@file:///etc/configs/ignite-jdbc.xml");
  *
  * // Query persons' names
@@ -292,6 +306,36 @@ public class IgniteJdbcDriver implements Driver {
     /** Distributed joins parameter name. */
     private static final String PARAM_DISTRIBUTED_JOINS = "distributedJoins";
 
+    /** Transactions allowed parameter name. */
+    private static final String PARAM_TX_ALLOWED = "transactionsAllowed";
+
+    /** DML streaming parameter name. */
+    private static final String PARAM_STREAMING = "streaming";
+
+    /** DML streaming auto flush frequency. */
+    private static final String PARAM_STREAMING_FLUSH_FREQ = "streamingFlushFrequency";
+
+    /** DML streaming node buffer size. */
+    private static final String PARAM_STREAMING_PER_NODE_BUF_SIZE = "streamingPerNodeBufferSize";
+
+    /** DML streaming parallel operations per node. */
+    private static final String PARAM_STREAMING_PER_NODE_PAR_OPS = "streamingPerNodeParallelOperations";
+
+    /** Whether DML streaming will overwrite existing cache entries. */
+    private static final String PARAM_STREAMING_ALLOW_OVERWRITE = "streamingAllowOverwrite";
+
+    /** Allow queries with multiple statements. */
+    private static final String PARAM_MULTIPLE_STMTS = "multipleStatementsAllowed";
+
+    /** Skip reducer on update property name. */
+    private static final String PARAM_SKIP_REDUCER_ON_UPDATE = "skipReducerOnUpdate";
+
+    /** Parameter: enforce join order flag (SQL hint). */
+    public static final String PARAM_ENFORCE_JOIN_ORDER = "enforceJoinOrder";
+
+    /** Parameter: replicated only flag (SQL hint). */
+    public static final String PARAM_LAZY = "lazy";
+
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";
 
@@ -312,6 +356,36 @@ public class IgniteJdbcDriver implements Driver {
 
     /** Distributed joins property name. */
     public static final String PROP_DISTRIBUTED_JOINS = PROP_PREFIX + PARAM_DISTRIBUTED_JOINS;
+
+    /** Transactions allowed property name. */
+    public static final String PROP_TX_ALLOWED = PROP_PREFIX + PARAM_TX_ALLOWED;
+
+    /** DML streaming property name. */
+    public static final String PROP_STREAMING = PROP_PREFIX + PARAM_STREAMING;
+
+    /** DML stream auto flush frequency property name. */
+    public static final String PROP_STREAMING_FLUSH_FREQ = PROP_PREFIX + PARAM_STREAMING_FLUSH_FREQ;
+
+    /** DML stream node buffer size property name. */
+    public static final String PROP_STREAMING_PER_NODE_BUF_SIZE = PROP_PREFIX + PARAM_STREAMING_PER_NODE_BUF_SIZE;
+
+    /** DML stream parallel operations per node property name. */
+    public static final String PROP_STREAMING_PER_NODE_PAR_OPS = PROP_PREFIX + PARAM_STREAMING_PER_NODE_PAR_OPS;
+
+    /** Whether DML streaming will overwrite existing cache entries. */
+    public static final String PROP_STREAMING_ALLOW_OVERWRITE = PROP_PREFIX + PARAM_STREAMING_ALLOW_OVERWRITE;
+
+    /** Allow query with multiple statements. */
+    public static final String PROP_MULTIPLE_STMTS = PROP_PREFIX + PARAM_MULTIPLE_STMTS;
+
+    /** Skip reducer on update update property name. */
+    public static final String PROP_SKIP_REDUCER_ON_UPDATE = PROP_PREFIX + PARAM_SKIP_REDUCER_ON_UPDATE;
+
+    /** Transactions allowed property name. */
+    public static final String PROP_ENFORCE_JOIN_ORDER = PROP_PREFIX + PARAM_ENFORCE_JOIN_ORDER;
+
+    /** Lazy property name. */
+    public static final String PROP_LAZY = PROP_PREFIX + PARAM_LAZY;
 
     /** Cache name property name. */
     public static final String PROP_CFG = PROP_PREFIX + "cfg";
@@ -334,8 +408,8 @@ public class IgniteJdbcDriver implements Driver {
     /** Logger. */
     private static final IgniteLogger LOG = new JavaLogger();
 
-    /**
-     * Register driver.
+    /*
+     * Static initializer.
      */
     static {
         try {
@@ -348,6 +422,9 @@ public class IgniteJdbcDriver implements Driver {
 
     /** {@inheritDoc} */
     @Override public Connection connect(String url, Properties props) throws SQLException {
+        if (!acceptsURL(url))
+            return null;
+
         if (!parseUrl(url, props))
             throw new SQLException("URL is invalid: " + url);
 
@@ -372,66 +449,71 @@ public class IgniteJdbcDriver implements Driver {
             throw new SQLException("URL is invalid: " + url);
 
         List<DriverPropertyInfo> props = Arrays.<DriverPropertyInfo>asList(
-            new PropertyInfo("Hostname", info.getProperty(PROP_HOST), ""),
-            new PropertyInfo("Port number", info.getProperty(PROP_PORT), ""),
-            new PropertyInfo("Cache name", info.getProperty(PROP_CACHE), ""),
-            new PropertyInfo("Node ID", info.getProperty(PROP_NODE_ID), ""),
-            new PropertyInfo("Local", info.getProperty(PROP_LOCAL), ""),
-            new PropertyInfo("Collocated", info.getProperty(PROP_COLLOCATED), ""),
-            new PropertyInfo("Distributed Joins", info.getProperty(PROP_DISTRIBUTED_JOINS), "")
+            new JdbcDriverPropertyInfo("Hostname", info.getProperty(PROP_HOST), ""),
+            new JdbcDriverPropertyInfo("Port number", info.getProperty(PROP_PORT), ""),
+            new JdbcDriverPropertyInfo("Cache name", info.getProperty(PROP_CACHE), ""),
+            new JdbcDriverPropertyInfo("Node ID", info.getProperty(PROP_NODE_ID), ""),
+            new JdbcDriverPropertyInfo("Local", info.getProperty(PROP_LOCAL), ""),
+            new JdbcDriverPropertyInfo("Collocated", info.getProperty(PROP_COLLOCATED), ""),
+            new JdbcDriverPropertyInfo("Distributed Joins", info.getProperty(PROP_DISTRIBUTED_JOINS), ""),
+            new JdbcDriverPropertyInfo("Enforce Join Order", info.getProperty(PROP_ENFORCE_JOIN_ORDER), ""),
+            new JdbcDriverPropertyInfo("Lazy query execution", info.getProperty(PROP_LAZY), ""),
+            new JdbcDriverPropertyInfo("Transactions Allowed", info.getProperty(PROP_TX_ALLOWED), ""),
+            new JdbcDriverPropertyInfo("Queries with multiple statements allowed", info.getProperty(PROP_MULTIPLE_STMTS), ""),
+            new JdbcDriverPropertyInfo("Skip reducer on update", info.getProperty(PROP_SKIP_REDUCER_ON_UPDATE), "")
         );
 
         if (info.getProperty(PROP_CFG) != null)
-            props.add(new PropertyInfo("Configuration path", info.getProperty(PROP_CFG), ""));
+            props.add(new JdbcDriverPropertyInfo("Configuration path", info.getProperty(PROP_CFG), ""));
         else
             props.addAll(Arrays.<DriverPropertyInfo>asList(
-                new PropertyInfo("ignite.client.protocol",
+                new JdbcDriverPropertyInfo("ignite.client.protocol",
                     info.getProperty("ignite.client.protocol", "TCP"),
                     "Communication protocol (TCP or HTTP)."),
-                new PropertyInfo("ignite.client.connectTimeout",
+                new JdbcDriverPropertyInfo("ignite.client.connectTimeout",
                     info.getProperty("ignite.client.connectTimeout", "0"),
                     "Socket connection timeout."),
-                new PropertyInfo("ignite.client.tcp.noDelay",
+                new JdbcDriverPropertyInfo("ignite.client.tcp.noDelay",
                     info.getProperty("ignite.client.tcp.noDelay", "true"),
                     "Flag indicating whether TCP_NODELAY flag should be enabled for outgoing connections."),
-                new PropertyInfo("ignite.client.ssl.enabled",
+                new JdbcDriverPropertyInfo("ignite.client.ssl.enabled",
                     info.getProperty("ignite.client.ssl.enabled", "false"),
                     "Flag indicating that SSL is needed for connection."),
-                new PropertyInfo("ignite.client.ssl.protocol",
+                new JdbcDriverPropertyInfo("ignite.client.ssl.protocol",
                     info.getProperty("ignite.client.ssl.protocol", "TLS"),
                     "SSL protocol."),
-                new PropertyInfo("ignite.client.ssl.key.algorithm",
+                new JdbcDriverPropertyInfo("ignite.client.ssl.key.algorithm",
                     info.getProperty("ignite.client.ssl.key.algorithm", "SunX509"),
                     "Key manager algorithm."),
-                new PropertyInfo("ignite.client.ssl.keystore.location",
+                new JdbcDriverPropertyInfo("ignite.client.ssl.keystore.location",
                     info.getProperty("ignite.client.ssl.keystore.location", ""),
                     "Key store to be used by client to connect with Ignite topology."),
-                new PropertyInfo("ignite.client.ssl.keystore.password",
+                new JdbcDriverPropertyInfo("ignite.client.ssl.keystore.password",
                     info.getProperty("ignite.client.ssl.keystore.password", ""),
                     "Key store password."),
-                new PropertyInfo("ignite.client.ssl.keystore.type",
+                new JdbcDriverPropertyInfo("ignite.client.ssl.keystore.type",
                     info.getProperty("ignite.client.ssl.keystore.type", "jks"),
                     "Key store type."),
-                new PropertyInfo("ignite.client.ssl.truststore.location",
+                new JdbcDriverPropertyInfo("ignite.client.ssl.truststore.location",
                     info.getProperty("ignite.client.ssl.truststore.location", ""),
                     "Trust store to be used by client to connect with Ignite topology."),
-                new PropertyInfo("ignite.client.ssl.keystore.password",
+                new JdbcDriverPropertyInfo("ignite.client.ssl.keystore.password",
                     info.getProperty("ignite.client.ssl.truststore.password", ""),
                     "Trust store password."),
-                new PropertyInfo("ignite.client.ssl.truststore.type",
+                new JdbcDriverPropertyInfo("ignite.client.ssl.truststore.type",
                     info.getProperty("ignite.client.ssl.truststore.type", "jks"),
                     "Trust store type."),
-                new PropertyInfo("ignite.client.credentials",
+                new JdbcDriverPropertyInfo("ignite.client.credentials",
                     info.getProperty("ignite.client.credentials", ""),
                     "Client credentials used in authentication process."),
-                new PropertyInfo("ignite.client.cache.top",
+                new JdbcDriverPropertyInfo("ignite.client.cache.top",
                     info.getProperty("ignite.client.cache.top", "false"),
                     "Flag indicating that topology is cached internally. Cache will be refreshed in the " +
                         "background with interval defined by topologyRefreshFrequency property (see below)."),
-                new PropertyInfo("ignite.client.topology.refresh",
+                new JdbcDriverPropertyInfo("ignite.client.topology.refresh",
                     info.getProperty("ignite.client.topology.refresh", "2000"),
                     "Topology cache refresh frequency (ms)."),
-                new PropertyInfo("ignite.client.idleTimeout",
+                new JdbcDriverPropertyInfo("ignite.client.idleTimeout",
                     info.getProperty("ignite.client.idleTimeout", "30000"),
                     "Maximum amount of time that connection can be idle before it is closed (ms).")
                 )
@@ -569,23 +651,5 @@ public class IgniteJdbcDriver implements Driver {
         }
 
         return true;
-    }
-
-    /**
-     * Extension of {@link DriverPropertyInfo} that adds
-     * convenient constructors.
-     */
-    private static class PropertyInfo extends DriverPropertyInfo {
-
-        /**
-         * @param name Name.
-         * @param val Value.
-         * @param desc Description.
-         */
-        private PropertyInfo(String name, String val, String desc) {
-            super(name, val);
-
-            description = desc;
-        }
     }
 }

@@ -91,7 +91,7 @@ public class GridNioBenchmarkTest {
             .listener(lsnr)
             .logger(log)
             .selectorCount(selectorCnt)
-            .gridName("")
+            .igniteInstanceName("")
             .tcpNoDelay(false)
             .directBuffer(false)
             .byteOrder(ByteOrder.nativeOrder())

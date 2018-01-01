@@ -37,7 +37,7 @@ public class BasicIgniteTestActivator extends IgniteAbstractOsgiContextActivator
     @Override public IgniteConfiguration igniteConfiguration() {
         IgniteConfiguration config = new IgniteConfiguration();
 
-        config.setGridName("testGrid");
+        config.setIgniteInstanceName("testGrid");
 
         return config;
     }

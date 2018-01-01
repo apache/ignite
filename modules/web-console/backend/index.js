@@ -19,41 +19,52 @@
 
 const fs = require('fs');
 const path = require('path');
+
+require('app-module-path').addPath(path.join(__dirname, 'node_modules'));
+
+const _ = require('lodash');
+const getos = require('getos');
 const http = require('http');
 const https = require('https');
+const MigrateMongoose = require('migrate-mongoose');
 
-const igniteModules = process.env.IGNITE_MODULES || './ignite_modules';
+
+const packaged = __dirname.startsWith('/snapshot/') || __dirname.startsWith('C:\\snapshot\\');
+
+const igniteModules = !packaged && process.env.IGNITE_MODULES ?
+    path.join(path.normalize(process.env.IGNITE_MODULES), 'backend') : path.join(__dirname, 'ignite_modules');
 
 let injector;
 
 try {
-    const igniteModulesInjector = path.resolve(path.join(igniteModules, 'backend', 'injector.js'));
+    const igniteModulesInjector = path.resolve(path.join(igniteModules, 'injector.js'));
 
     fs.accessSync(igniteModulesInjector, fs.F_OK);
 
+    process.env.NODE_PATH = path.join(__dirname, 'node_modules');
+
     injector = require(igniteModulesInjector);
-} catch (ignore) {
-    injector = require(path.join(__dirname, './injector'));
+}
+catch (ignore) {
+    injector = require(path.join(__dirname, 'injector'));
 }
 
 /**
  * Event listener for HTTP server "error" event.
  */
-const _onError = (port, error) => {
+const _onError = (addr, error) => {
     if (error.syscall !== 'listen')
         throw error;
-
-    const bind = typeof port === 'string' ? 'Pipe ' + port : 'Port ' + port;
 
     // Handle specific listen errors with friendly messages.
     switch (error.code) {
         case 'EACCES':
-            console.error(bind + ' requires elevated privileges');
+            console.error(`Requires elevated privileges for bind to ${addr}`);
             process.exit(1);
 
             break;
         case 'EADDRINUSE':
-            console.error(bind + ' is already in use');
+            console.error(`${addr} is already in use`);
             process.exit(1);
 
             break;
@@ -63,43 +74,83 @@ const _onError = (port, error) => {
 };
 
 /**
- * Event listener for HTTP server "listening" event.
+ * @param settings
+ * @param {ApiServer} apiSrv
+ * @param {AgentsHandler} agentsHnd
+ * @param {BrowsersHandler} browsersHnd
  */
-const _onListening = (addr) => {
-    const bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port;
+const init = ([settings, apiSrv, agentsHnd, browsersHnd]) => {
+    // Start rest server.
+    const srv = settings.server.SSLOptions ? https.createServer(settings.server.SSLOptions) : http.createServer();
 
-    console.log('Start listening on ' + bind);
+    srv.listen(settings.server.port, settings.server.host);
+
+    const addr = `${settings.server.host}:${settings.server.port}`;
+
+    srv.on('error', _onError.bind(null, addr));
+    srv.on('listening', () => console.log(`Start listening on ${addr}`));
+
+    apiSrv.attach(srv);
+
+    agentsHnd.attach(srv, browsersHnd);
+    browsersHnd.attach(srv, agentsHnd);
+
+    // Used for automated test.
+    if (process.send)
+        process.send('running');
 };
 
-Promise.all([injector('settings'), injector('app'), injector('agent-manager'), injector('browser-manager')])
-    .then(([settings, app, agentMgr, browserMgr]) => {
-        // Start rest server.
-        const server = settings.server.SSLOptions
-            ? https.createServer(settings.server.SSLOptions) : http.createServer();
+/**
+ * Run mongo model migration.
+ *
+ * @param dbConnectionUri Mongo connection url.
+ * @param group Migrations group.
+ * @param migrationsPath Migrations path.
+ * @param collectionName Name of collection where migrations write info about applied scripts.
+ */
+const migrate = (dbConnectionUri, group, migrationsPath, collectionName) => {
+    const migrator = new MigrateMongoose({
+        migrationsPath,
+        dbConnectionUri,
+        collectionName,
+        autosync: true
+    });
 
-        server.listen(settings.server.port);
-        server.on('error', _onError.bind(null, settings.server.port));
-        server.on('listening', _onListening.bind(null, server.address()));
+    console.log(`Running ${group} migrations...`);
 
-        app.listen(server);
+    return migrator.run('up')
+        .then(() => console.log(`All ${group} migrations finished successfully.`))
+        .catch((err) => {
+            const msg = _.get(err, 'message');
 
-        agentMgr.attach(server);
-        browserMgr.attach(server);
+            if (_.startsWith(msg, 'There are no migrations to run') || _.startsWith(msg, 'There are no pending migrations.')) {
+                console.log(`There are no ${group} migrations to run.`);
 
-        // Start legacy agent server.
-        const agentServer = settings.agent.SSLOptions
-            ? https.createServer(settings.agent.SSLOptions) : http.createServer();
+                return;
+            }
 
-        agentServer.listen(settings.agent.port);
-        agentServer.on('error', _onError.bind(null, settings.agent.port));
-        agentServer.on('listening', _onListening.bind(null, agentServer.address()));
+            throw err;
+        });
+};
 
-        agentMgr.attachLegacy(agentServer);
+getos(function(e, os) {
+    if (e)
+        return console.log(e);
 
-        // Used for automated test.
-        if (process.send)
-            process.send('running');
-    }).catch((err) => {
+    console.log('Your OS is: ' + JSON.stringify(os));
+});
+
+injector.log.info = () => {};
+injector.log.debug = () => {};
+
+Promise.all([injector('settings'), injector('mongo')])
+    .then(([{mongoUrl}]) => {
+        return migrate(mongoUrl, 'Ignite', path.join(__dirname, 'migrations'))
+            .then(() => migrate(mongoUrl, 'Ignite Modules', path.join(igniteModules, 'migrations'), 'migrationsModules'));
+    })
+    .then(() => Promise.all([injector('settings'), injector('api-server'), injector('agents-handler'), injector('browsers-handler')]))
+    .then(init)
+    .catch((err) => {
         console.error(err);
 
         process.exit(1);

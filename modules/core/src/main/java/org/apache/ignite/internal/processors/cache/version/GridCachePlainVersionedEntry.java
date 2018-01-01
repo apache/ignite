@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.version;
 
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -80,7 +81,7 @@ public class GridCachePlainVersionedEntry<K, V> implements GridCacheVersionedEnt
     }
 
     /** {@inheritDoc} */
-    @Override public V value() {
+    @Override public V value(CacheObjectValueContext ctx) {
         return val;
     }
 
@@ -107,11 +108,6 @@ public class GridCachePlainVersionedEntry<K, V> implements GridCacheVersionedEnt
     /** {@inheritDoc} */
     @Override public long order() {
         return ver.order();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long globalTime() {
-        return isStartVer ? 0L : ver.globalTime();
     }
 
     /** {@inheritDoc} */

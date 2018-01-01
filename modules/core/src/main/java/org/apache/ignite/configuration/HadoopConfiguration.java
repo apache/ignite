@@ -18,7 +18,7 @@
 package org.apache.ignite.configuration;
 
 import org.apache.ignite.lifecycle.LifecycleBean;
-import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlanner;
+import org.apache.ignite.hadoop.HadoopMapReducePlanner;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -92,9 +92,12 @@ public class HadoopConfiguration {
      * Sets max number of local tasks that may be executed in parallel.
      *
      * @param maxParallelTasks Max number of local tasks that may be executed in parallel.
+     * @return {@code this} for chaining.
      */
-    public void setMaxParallelTasks(int maxParallelTasks) {
+    public HadoopConfiguration setMaxParallelTasks(int maxParallelTasks) {
         this.maxParallelTasks = maxParallelTasks;
+
+        return this;
     }
 
     /**
@@ -110,9 +113,12 @@ public class HadoopConfiguration {
      * Sets max task queue size.
      *
      * @param maxTaskQueueSize Max task queue size.
+     * @return {@code this} for chaining.
      */
-    public void setMaxTaskQueueSize(int maxTaskQueueSize) {
+    public HadoopConfiguration setMaxTaskQueueSize(int maxTaskQueueSize) {
         this.maxTaskQueueSize = maxTaskQueueSize;
+
+        return this;
     }
 
     /**
@@ -128,9 +134,12 @@ public class HadoopConfiguration {
      * Sets finished job info time-to-live.
      *
      * @param finishedJobInfoTtl Finished job info time-to-live.
+     * @return {@code this} for chaining.
      */
-    public void setFinishedJobInfoTtl(long finishedJobInfoTtl) {
+    public HadoopConfiguration setFinishedJobInfoTtl(long finishedJobInfoTtl) {
         this.finishedJobInfoTtl = finishedJobInfoTtl;
+
+        return this;
     }
 
     /**
@@ -149,10 +158,14 @@ public class HadoopConfiguration {
      *
      * @param extExecution {@code True} if tasks should be executed in an external process.
      * @see #isExternalExecution()
+     * @return {@code this} for chaining.
      */
     // TODO: IGNITE-404: Uncomment when fixed.
-//    public void setExternalExecution(boolean extExecution) {
+//
+//    public HadoopConfiguration setExternalExecution(boolean extExecution) {
 //        this.extExecution = extExecution;
+//
+//        return this;
 //    }
 
     /**
@@ -170,9 +183,12 @@ public class HadoopConfiguration {
      * configuration and current grid topology.
      *
      * @param planner Map-reduce planner.
+     * @return {@code this} for chaining.
      */
-    public void setMapReducePlanner(HadoopMapReducePlanner planner) {
+    public HadoopConfiguration setMapReducePlanner(HadoopMapReducePlanner planner) {
         this.planner = planner;
+
+        return this;
     }
 
     /**
@@ -199,9 +215,12 @@ public class HadoopConfiguration {
      * Set native library names. See {@link #getNativeLibraryNames()} for more information.
      *
      * @param libNames Native library names.
+     * @return {@code this} for chaining.
      */
-    public void setNativeLibraryNames(@Nullable String... libNames) {
+    public HadoopConfiguration setNativeLibraryNames(@Nullable String... libNames) {
         this.libNames = libNames;
+
+        return this;
     }
 
     /** {@inheritDoc} */

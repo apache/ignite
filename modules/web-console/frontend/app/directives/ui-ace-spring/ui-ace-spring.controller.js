@@ -15,74 +15,104 @@
  * limitations under the License.
  */
 
-export default ['$scope', 'SpringTransformer', function($scope, spring) {
+export default ['IgniteVersion', 'SpringTransformer', function(Version, spring) {
     const ctrl = this;
 
-    delete ctrl.data;
+    this.$onInit = () => {
+        delete ctrl.data;
 
-    // Setup generator.
-    switch (ctrl.generator) {
-        case 'igniteConfiguration':
-            ctrl.generate = (cluster) => spring.cluster(cluster, ctrl.client === 'true');
+        const available = Version.available.bind(Version);
 
-            break;
-        case 'clusterCaches':
-            ctrl.generate = (cluster, caches) => {
-                const clusterCaches = _.reduce(caches, (acc, cache) => {
-                    if (_.includes(cluster.caches, cache.value))
-                        acc.push(cache.cache);
+        // Setup generator.
+        switch (ctrl.generator) {
+            case 'igniteConfiguration':
+                ctrl.generate = (cluster) => spring.cluster(cluster, Version.currentSbj.getValue(), ctrl.client === 'true');
 
-                    return acc;
-                }, []);
+                break;
+            case 'clusterCaches':
+                ctrl.generate = (cluster, caches) => {
+                    const clusterCaches = _.reduce(caches, (acc, cache) => {
+                        if (_.includes(cluster.caches, cache.value))
+                            acc.push(cache.cache);
 
-                const cfg = spring.generator.clusterGeneral(cluster);
+                        return acc;
+                    }, []);
 
-                spring.generator.clusterCaches(cluster, clusterCaches, null, false, cfg);
+                    const cfg = spring.generator.clusterGeneral(cluster, available);
 
-                return spring.toSection(cfg);
-            };
+                    spring.generator.clusterCaches(cluster, clusterCaches, null, available, false, cfg);
 
-            break;
-        case 'cacheStore':
-        case 'cacheQuery':
-            ctrl.generate = (cache, domains) => {
-                const cacheDomains = _.reduce(domains, (acc, domain) => {
-                    if (_.includes(cache.domains, domain.value))
-                        acc.push(domain.meta);
+                    return spring.toSection(cfg);
+                };
 
-                    return acc;
-                }, []);
+                break;
+            case 'cacheStore':
+            case 'cacheQuery':
+                ctrl.generate = (cache, domains) => {
+                    const cacheDomains = _.reduce(domains, (acc, domain) => {
+                        if (_.includes(cache.domains, domain.value))
+                            acc.push(domain.meta);
 
-                return spring[ctrl.generator](cache, cacheDomains);
-            };
+                        return acc;
+                    }, []);
 
-            break;
-        case 'cacheNodeFilter':
-            ctrl.generate = (cache, igfss) => {
-                const cacheIgfss = _.reduce(igfss, (acc, igfs) => {
-                    acc.push(igfs.igfs);
+                    return spring[ctrl.generator](cache, cacheDomains, available);
+                };
 
-                    return acc;
-                }, []);
-
-                return spring.cacheNodeFilter(cache, cacheIgfss);
-            };
-
-            break;
-        case 'igfss':
-            ctrl.generate = (cluster, igfss) => {
-                const clusterIgfss = _.reduce(igfss, (acc, igfs) => {
-                    if (_.includes(cluster.igfss, igfs.value))
+                break;
+            case 'cacheNodeFilter':
+                ctrl.generate = (cache, igfss) => {
+                    const cacheIgfss = _.reduce(igfss, (acc, igfs) => {
                         acc.push(igfs.igfs);
 
-                    return acc;
-                }, []);
+                        return acc;
+                    }, []);
 
-                return spring.clusterIgfss(clusterIgfss);
-            };
+                    return spring.cacheNodeFilter(cache, cacheIgfss);
+                };
 
-            break;
-        default:
-            ctrl.generate = (master, detail) => spring[ctrl.generator](master, detail);
-    }
+                break;
+            case 'clusterServiceConfiguration':
+                ctrl.generate = (cluster, caches) => {
+                    const clusterCaches = _.reduce(caches, (acc, cache) => {
+                        if (_.includes(cluster.caches, cache.value))
+                            acc.push(cache.cache);
+
+                        return acc;
+                    }, []);
+
+                    return spring.clusterServiceConfiguration(cluster.serviceConfigurations, clusterCaches);
+                };
+
+                break;
+            case 'clusterCheckpoint':
+                ctrl.generate = (cluster, caches) => {
+                    const clusterCaches = _.reduce(caches, (acc, cache) => {
+                        if (_.includes(cluster.caches, cache.value))
+                            acc.push(cache.cache);
+
+                        return acc;
+                    }, []);
+
+                    return spring.clusterCheckpoint(cluster, clusterCaches);
+                };
+
+                break;
+            case 'igfss':
+                ctrl.generate = (cluster, igfss) => {
+                    const clusterIgfss = _.reduce(igfss, (acc, igfs) => {
+                        if (_.includes(cluster.igfss, igfs.value))
+                            acc.push(igfs.igfs);
+
+                        return acc;
+                    }, []);
+
+                    return spring.clusterIgfss(clusterIgfss, available);
+                };
+
+                break;
+            default:
+                ctrl.generate = (master) => spring[ctrl.generator](master, available);
+        }
+    };
 }];

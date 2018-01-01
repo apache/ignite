@@ -576,7 +576,7 @@ public class GridLongList implements Message, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 85;
     }
 

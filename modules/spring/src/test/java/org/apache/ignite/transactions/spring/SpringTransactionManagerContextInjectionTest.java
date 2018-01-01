@@ -99,7 +99,7 @@ public class SpringTransactionManagerContextInjectionTest extends GridCommonAbst
 
             cfg.setLocalHost("127.0.0.1");
 
-            cfg.setGridName("stmcit");
+            cfg.setIgniteInstanceName("stmcit");
 
             cfg.setLifecycleBeans(bean1(), bean2());
 

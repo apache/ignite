@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Abstract interop target.
  */
-public abstract class PlatformAbstractTarget implements PlatformTarget, PlatformAsyncTarget {
+public abstract class PlatformAbstractTarget implements PlatformTarget {
     /** Constant: TRUE.*/
     protected static final int TRUE = 1;
 
@@ -70,16 +70,6 @@ public abstract class PlatformAbstractTarget implements PlatformTarget, Platform
     /** {@inheritDoc} */
     @Override public Exception convertException(Exception e) {
         return e;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture currentFuture() throws IgniteCheckedException {
-        throw new IgniteCheckedException("Future listening is not supported in " + getClass());
-    }
-
-    /** {@inheritDoc} */
-    @Override @Nullable public PlatformFutureUtils.Writer futureWriter(int opId){
-        return null;
     }
 
     /** {@inheritDoc} */
@@ -125,6 +115,14 @@ public abstract class PlatformAbstractTarget implements PlatformTarget, Platform
         return throwUnsupported(type);
     }
 
+    /** {@inheritDoc} */
+    @Override public PlatformAsyncResult processInStreamAsync(int type, BinaryRawReaderEx reader)
+            throws IgniteCheckedException {
+        throwUnsupported(type);
+
+        return null;
+    }
+
     /**
      * Throw an exception rendering unsupported operation type.
      *
@@ -132,7 +130,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget, Platform
      * @return Dummy value which is never returned.
      * @throws IgniteCheckedException Exception to be thrown.
      */
-    private <T> T throwUnsupported(int type) throws IgniteCheckedException {
+    public static <T> T throwUnsupported(int type) throws IgniteCheckedException {
         throw new IgniteCheckedException("Unsupported operation type: " + type);
     }
 
@@ -144,8 +142,8 @@ public abstract class PlatformAbstractTarget implements PlatformTarget, Platform
      * @param writer Writer.
      * @throws IgniteCheckedException In case of error.
      */
-    protected PlatformListenable readAndListenFuture(BinaryRawReader reader, IgniteInternalFuture fut,
-                                                     PlatformFutureUtils.Writer writer)
+    private PlatformListenable readAndListenFuture(BinaryRawReader reader, IgniteInternalFuture fut,
+                                                   PlatformFutureUtils.Writer writer)
             throws IgniteCheckedException {
         long futId = reader.readLong();
         int futTyp = reader.readInt();
@@ -192,18 +190,6 @@ public abstract class PlatformAbstractTarget implements PlatformTarget, Platform
     protected PlatformListenable readAndListenFuture(BinaryRawReader reader, IgniteFuture fut)
         throws IgniteCheckedException {
         return readAndListenFuture(reader, fut, null);
-    }
-
-    /**
-     * Reads future information and listens.
-     *
-     * @param reader Reader.
-     * @throws IgniteCheckedException In case of error.
-     */
-    protected long readAndListenFuture(BinaryRawReader reader) throws IgniteCheckedException {
-        readAndListenFuture(reader, currentFuture(), null);
-
-        return TRUE;
     }
 
     /**

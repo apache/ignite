@@ -29,6 +29,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -37,21 +38,14 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  * Test for igfs with one node in client mode.
  */
 public class IgfsOneClientNodeTest extends GridCommonAbstractTest {
-    /** Meta-information cache name. */
-    private static final String META_CACHE_NAME = "meta";
-
-    /** Data cache name. */
-    private static final String DATA_CACHE_NAME = null;
-
     /** Regular cache name. */
     private static final String CACHE_NAME = "cache";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setCacheConfiguration(cacheConfiguration(META_CACHE_NAME), cacheConfiguration(DATA_CACHE_NAME),
-            cacheConfiguration(CACHE_NAME));
+        cfg.setCacheConfiguration(cacheConfiguration(CACHE_NAME));
 
         cfg.setClientMode(true);
 
@@ -61,9 +55,9 @@ public class IgfsOneClientNodeTest extends GridCommonAbstractTest {
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setMetaCacheName(META_CACHE_NAME);
-        igfsCfg.setDataCacheName(DATA_CACHE_NAME);
         igfsCfg.setName("igfs");
+        igfsCfg.setMetaCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME));
+        igfsCfg.setDataCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME));
 
         cfg.setFileSystemConfiguration(igfsCfg);
 
@@ -71,7 +65,7 @@ public class IgfsOneClientNodeTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    protected CacheConfiguration cacheConfiguration(String cacheName) {
+    protected CacheConfiguration cacheConfiguration(@NotNull String cacheName) {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName(cacheName);

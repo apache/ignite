@@ -60,8 +60,8 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
     private static final AtomicBoolean received = new AtomicBoolean();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDiscoverySpi(discoverySpi());
         cfg.setCacheConfiguration(cacheConfiguration());
@@ -90,8 +90,6 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
         cc.setBackups(1);
         cc.setRebalanceMode(SYNC);
         cc.setWriteSynchronizationMode(FULL_SYNC);
-        cc.setSwapEnabled(true);
-        cc.setEvictSynchronized(false);
         cc.setNearConfiguration(null);
 
         return cc;
@@ -118,9 +116,9 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
      */
     public void testGetFromPrimaryNode() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            IgniteCache<String, Integer> c = grid(i).cache(null);
+            IgniteCache<String, Integer> c = grid(i).cache(DEFAULT_CACHE_NAME);
 
-            if (grid(i).affinity(null).isPrimary(grid(i).localNode(), KEY)) {
+            if (grid(i).affinity(DEFAULT_CACHE_NAME).isPrimary(grid(i).localNode(), KEY)) {
                 info("Primary node: " + grid(i).localNode().id());
 
                 c.get(KEY);
@@ -137,9 +135,9 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
      */
     public void testGetFromBackupNode() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            IgniteCache<String, Integer> c = grid(i).cache(null);
+            IgniteCache<String, Integer> c = grid(i).cache(DEFAULT_CACHE_NAME);
 
-            if (grid(i).affinity(null).isBackup(grid(i).localNode(), KEY)) {
+            if (grid(i).affinity(DEFAULT_CACHE_NAME).isBackup(grid(i).localNode(), KEY)) {
                 info("Backup node: " + grid(i).localNode().id());
 
                 Integer val = c.get(KEY);
@@ -168,9 +166,9 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
      */
     public void testGetFromNearNode() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            IgniteCache<String, Integer> c = grid(i).cache(null);
+            IgniteCache<String, Integer> c = grid(i).cache(DEFAULT_CACHE_NAME);
 
-            if (!grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), KEY)) {
+            if (!grid(i).affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(grid(i).localNode(), KEY)) {
                 info("Near node: " + grid(i).localNode().id());
 
                 Integer val = c.get(KEY);
@@ -216,17 +214,17 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite g = grid(i);
 
-            if (grid(i).affinity(null).isPrimary(grid(i).localNode(), KEY)) {
+            if (grid(i).affinity(DEFAULT_CACHE_NAME).isPrimary(grid(i).localNode(), KEY)) {
                 info("Primary node: " + g.cluster().localNode().id());
 
                 // Put value.
-                g.cache(null).put(KEY, VAL);
+                g.cache(DEFAULT_CACHE_NAME).put(KEY, VAL);
 
                 // Register listener.
                 ((IgniteKernal)g).context().io().addMessageListener(
                     TOPIC_CACHE,
                     new GridMessageListener() {
-                        @Override public void onMessage(UUID nodeId, Object msg) {
+                        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                             info("Received message from node [nodeId=" + nodeId + ", msg=" + msg + ']');
 
                             if (msg instanceof GridNearSingleGetRequest) {

@@ -329,8 +329,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
      * @param nodeId Participating node ID.
      * @return Removed class loader ID.
      */
-    @Nullable
-    IgniteUuid unregister(UUID nodeId) {
+    @Nullable IgniteUuid unregister(UUID nodeId) {
         assert nodeId != null;
 
         synchronized (mux) {

@@ -32,6 +32,7 @@
     <componentDescriptors>
         <componentDescriptor>release-base.xml</componentDescriptor>
         <componentDescriptor>release-fabric-base.xml</componentDescriptor>
+        <componentDescriptor>release-yardstick.xml</componentDescriptor>
     </componentDescriptors>
 
     <files>

@@ -31,8 +31,8 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  */
 public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnmarshallingErrorTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (cfg.getCacheConfiguration().length > 0)
             cfg.getCacheConfiguration()[0].setIndexedTypes(TestKey.class, String.class);
@@ -54,7 +54,7 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
 
             fail("p2p marshalling failed, but error response was not sent");
         }
-        catch (CacheException e) {
+        catch (CacheException ignored) {
             // No-op.
         }
     }
@@ -82,7 +82,7 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
 
             fail();
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             // No-op.
         }
     }

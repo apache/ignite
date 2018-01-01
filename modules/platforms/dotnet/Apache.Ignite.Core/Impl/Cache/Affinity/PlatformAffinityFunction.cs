@@ -21,13 +21,11 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
     using System.Collections.Generic;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
     /// Affinity function that delegates to Java.
     /// </summary>
-    internal class PlatformAffinityFunction : PlatformTarget, IAffinityFunction
+    internal class PlatformAffinityFunction : PlatformTargetAdapter, IAffinityFunction
     {
         /** Opcodes. */
         private enum  Op
@@ -41,8 +39,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
         /// Initializes a new instance of the <see cref="PlatformAffinityFunction"/> class.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaller.</param>
-        public PlatformAffinityFunction(IUnmanagedTarget target, Marshaller marsh) : base(target, marsh)
+        public PlatformAffinityFunction(IPlatformTargetInternal target) : base(target)
         {
             // No-op.
         }

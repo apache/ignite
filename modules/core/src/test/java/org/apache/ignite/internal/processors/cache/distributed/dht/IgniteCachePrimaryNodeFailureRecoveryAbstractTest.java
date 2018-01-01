@@ -37,6 +37,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
@@ -55,6 +56,7 @@ import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.internal.processors.cache.ExchangeContext.IGNITE_EXCHANGE_COMPATIBILITY_VER_1;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -80,8 +82,8 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCommunicationSpi(new TestCommunicationSpi());
 
@@ -173,7 +175,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
         IgniteCache<Integer, Integer> cache0 = jcache(0);
         IgniteCache<Integer, Integer> cache2 = jcache(2);
 
-        Affinity<Integer> aff = ignite(0).affinity(null);
+        Affinity<Integer> aff = ignite(0).affinity(DEFAULT_CACHE_NAME);
 
         Integer key0 = null;
 
@@ -210,11 +212,11 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
 
             log.info("Start prepare.");
 
-            IgniteInternalTx txEx = ((TransactionProxyImpl)tx).tx();
+            GridNearTxLocal txEx = ((TransactionProxyImpl)tx).tx();
 
             commSpi.blockMessages(ignite(2).cluster().localNode().id()); // Do not allow to finish prepare for key2.
 
-            IgniteInternalFuture<?> prepFut = txEx.prepareAsync();
+            IgniteInternalFuture<?> prepFut = txEx.prepareNearTxLocal();
 
             waitPrepared(ignite(1));
 
@@ -327,91 +329,99 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
         boolean optimistic)
         throws Exception
     {
-        IgniteCache<Integer, Integer> cache0 = jcache(0);
-        IgniteCache<Integer, Integer> cache2 = jcache(2);
+        // TODO IGNITE-6174: when exchanges can be merged test fails because of IGNITE-6174.
+        System.setProperty(IGNITE_EXCHANGE_COMPATIBILITY_VER_1, "true");
 
-        Affinity<Integer> aff = ignite(0).affinity(null);
+        try {
+            IgniteCache<Integer, Integer> cache0 = jcache(0);
+            IgniteCache<Integer, Integer> cache2 = jcache(2);
 
-        Integer key0 = null;
+            Affinity<Integer> aff = ignite(0).affinity(DEFAULT_CACHE_NAME);
 
-        for (int key = 0; key < 10_000; key++) {
-            if (aff.isPrimary(ignite(1).cluster().localNode(), key)) {
-                if (locBackupKey == aff.isBackup(ignite(0).cluster().localNode(), key)) {
-                    key0 = key;
+            Integer key0 = null;
 
-                    break;
+            for (int key = 0; key < 10_000; key++) {
+                if (aff.isPrimary(ignite(1).cluster().localNode(), key)) {
+                    if (locBackupKey == aff.isBackup(ignite(0).cluster().localNode(), key)) {
+                        key0 = key;
+
+                        break;
+                    }
                 }
             }
-        }
 
-        assertNotNull(key0);
+            assertNotNull(key0);
 
-        final Integer key1 = key0;
-        final Integer key2 = primaryKey(cache2);
+            final Integer key1 = key0;
+            final Integer key2 = primaryKey(cache2);
 
-        int backups = cache0.getConfiguration(CacheConfiguration.class).getBackups();
+            int backups = cache0.getConfiguration(CacheConfiguration.class).getBackups();
 
-        final Collection<ClusterNode> key1Nodes =
-            (locBackupKey && backups < 2) ? null : aff.mapKeyToPrimaryAndBackups(key1);
-        final Collection<ClusterNode> key2Nodes = aff.mapKeyToPrimaryAndBackups(key2);
+            final Collection<ClusterNode> key1Nodes =
+                (locBackupKey && backups < 2) ? null : aff.mapKeyToPrimaryAndBackups(key1);
+            final Collection<ClusterNode> key2Nodes = aff.mapKeyToPrimaryAndBackups(key2);
 
-        TestCommunicationSpi commSpi = (TestCommunicationSpi)ignite(0).configuration().getCommunicationSpi();
+            TestCommunicationSpi commSpi = (TestCommunicationSpi)ignite(0).configuration().getCommunicationSpi();
 
-        IgniteTransactions txs = ignite(0).transactions();
+            IgniteTransactions txs = ignite(0).transactions();
 
-        Transaction tx = txs.txStart(optimistic ? OPTIMISTIC : PESSIMISTIC, REPEATABLE_READ);
+            Transaction tx = txs.txStart(optimistic ? OPTIMISTIC : PESSIMISTIC, REPEATABLE_READ);
 
-        log.info("Put key1: " + key1);
+            log.info("Put key1 [key1=" + key1 + ", nodes=" + U.nodeIds(aff.mapKeyToPrimaryAndBackups(key1)) + ']');
 
-        cache0.put(key1, key1);
+            cache0.put(key1, key1);
 
-        log.info("Put key2: " + key2);
+            log.info("Put key2 [key2=" + key2 + ", nodes=" + U.nodeIds(aff.mapKeyToPrimaryAndBackups(key2)) + ']');
 
-        cache0.put(key2, key2);
+            cache0.put(key2, key2);
 
-        log.info("Start prepare.");
+            log.info("Start prepare.");
 
-        IgniteInternalTx txEx = ((TransactionProxyImpl)tx).tx();
+            GridNearTxLocal txEx = ((TransactionProxyImpl)tx).tx();
 
-        commSpi.blockMessages(ignite(2).cluster().localNode().id()); // Do not allow to finish prepare for key2.
+            commSpi.blockMessages(ignite(2).cluster().localNode().id()); // Do not allow to finish prepare for key2.
 
-        IgniteInternalFuture<?> prepFut = txEx.prepareAsync();
+            IgniteInternalFuture<?> prepFut = txEx.prepareNearTxLocal();
 
-        waitPrepared(ignite(1));
+            waitPrepared(ignite(1));
 
-        log.info("Stop one primary node.");
+            log.info("Stop one primary node.");
 
-        stopGrid(1);
+            stopGrid(1);
 
-        U.sleep(1000); // Wait some time to catch possible issues in tx recovery.
+            U.sleep(1000); // Wait some time to catch possible issues in tx recovery.
 
-        if (!rollback) {
-            commSpi.stopBlock();
+            if (!rollback) {
+                commSpi.stopBlock();
 
-            prepFut.get(10_000);
-        }
-
-        log.info("Stop originating node.");
-
-        stopGrid(0);
-
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                try {
-                    checkKey(key1, rollback ? null : key1Nodes);
-                    checkKey(key2, rollback ? null : key2Nodes);
-
-                    return true;
-                } catch (AssertionError e) {
-                    log.info("Check failed: " + e);
-
-                    return false;
-                }
+                prepFut.get(10_000);
             }
-        }, 5000);
 
-        checkKey(key1, rollback ? null : key1Nodes);
-        checkKey(key2, rollback ? null : key2Nodes);
+            log.info("Stop originating node.");
+
+            stopGrid(0);
+
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    try {
+                        checkKey(key1, rollback ? null : key1Nodes);
+                        checkKey(key2, rollback ? null : key2Nodes);
+
+                        return true;
+                    } catch (AssertionError e) {
+                        log.info("Check failed: " + e);
+
+                        return false;
+                    }
+                }
+            }, 5000);
+
+            checkKey(key1, rollback ? null : key1Nodes);
+            checkKey(key2, rollback ? null : key2Nodes);
+        }
+        finally {
+            System.clearProperty(IGNITE_EXCHANGE_COMPATIBILITY_VER_1);
+        }
     }
 
     /**
@@ -421,13 +431,13 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
     private void checkKey(Integer key, Collection<ClusterNode> keyNodes) {
         if (keyNodes == null) {
             for (Ignite ignite : G.allGrids()) {
-                IgniteCache<Integer, Integer> cache = ignite.cache(null);
+                IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                 assertNull("Unexpected value for: " + ignite.name(), cache.localPeek(key));
             }
 
             for (Ignite ignite : G.allGrids()) {
-                IgniteCache<Integer, Integer> cache = ignite.cache(null);
+                IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                 assertNull("Unexpected value for: " + ignite.name(), cache.get(key));
             }
@@ -441,7 +451,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
 
                     found = true;
 
-                    IgniteCache<Integer, Integer> cache = ignite.cache(null);
+                    ignite.cache(DEFAULT_CACHE_NAME);
 
                     assertEquals("Unexpected value for: " + ignite.name(), key, key);
                 }
@@ -453,7 +463,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
             assertTrue("Failed to find key node.", found);
 
             for (Ignite ignite : G.allGrids()) {
-                IgniteCache<Integer, Integer> cache = ignite.cache(null);
+                IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                 assertEquals("Unexpected value for: " + ignite.name(), key, cache.get(key));
             }

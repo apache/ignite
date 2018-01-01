@@ -127,7 +127,7 @@ namespace Apache.Ignite.Examples.Datagrid
 
             // Compile cache query to eliminate LINQ overhead on multiple runs.
             Func<int, IQueryCursor<ICacheEntry<int, Employee>>> qry =
-                CompiledQuery2.Compile((int z) => cache0.Where(emp => emp.Value.Address.Zip == z));
+                CompiledQuery.Compile((int z) => cache0.Where(emp => emp.Value.Address.Zip == z));
 
             Console.WriteLine();
             Console.WriteLine(">>> Employees with zipcode {0} using compiled query:", zip);

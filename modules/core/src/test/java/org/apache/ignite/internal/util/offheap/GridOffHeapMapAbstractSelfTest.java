@@ -763,8 +763,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
         }
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Void>() {
-            @Override
-            public Void call() throws IgniteCheckedException {
+            @Override public Void call() throws IgniteCheckedException {
                 Random rnd = new Random();
 
                 while (!stop.get()) {

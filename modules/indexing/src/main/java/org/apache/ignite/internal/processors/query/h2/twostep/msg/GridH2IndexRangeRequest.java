@@ -38,6 +38,12 @@ public class GridH2IndexRangeRequest implements Message {
     private long qryId;
 
     /** */
+    private int originSegmentId;
+
+    /** */
+    private int segmentId;
+
+    /** */
     private int batchLookupId;
 
     /** */
@@ -84,6 +90,34 @@ public class GridH2IndexRangeRequest implements Message {
      */
     public void queryId(long qryId) {
         this.qryId = qryId;
+    }
+
+    /**
+     * @param segmentId Index segment ID.
+     */
+    public void segment(int segmentId) {
+        this.segmentId = segmentId;
+    }
+
+    /**
+     * @return Index segment ID.
+     */
+    public int segment() {
+        return segmentId;
+    }
+
+    /**
+     * @return Origin index segment ID.
+     */
+    public int originSegmentId() {
+        return originSegmentId;
+    }
+
+    /**
+     * @param segmentId Origin index segment ID.
+     */
+    public void originSegmentId(int segmentId) {
+        this.originSegmentId = segmentId;
     }
 
     /**
@@ -136,6 +170,17 @@ public class GridH2IndexRangeRequest implements Message {
 
                 writer.incrementState();
 
+            case 4:
+                if (!writer.writeInt("segmentId", segmentId))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
+                if (!writer.writeInt("originSegId", originSegmentId))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -181,19 +226,34 @@ public class GridH2IndexRangeRequest implements Message {
 
                 reader.incrementState();
 
+            case 4:
+                segmentId = reader.readInt("segmentId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
+                originSegmentId = reader.readInt("originSegId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridH2IndexRangeRequest.class);
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -30;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 4;
+        return 6;
     }
 
     /** {@inheritDoc} */

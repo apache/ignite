@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.affinity;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -39,6 +40,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridNodeOrderComparator;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -59,11 +61,11 @@ public class GridAffinityAssignmentCache {
     /** Cleanup history size. */
     private final int MAX_HIST_SIZE = getInteger(IGNITE_AFFINITY_HISTORY_SIZE, 500);
 
-    /** Cache name. */
-    private final String cacheName;
+    /** Group name if specified or cache name. */
+    private final String cacheOrGrpName;
 
-    /** */
-    private final Integer cacheId;
+    /** Group ID. */
+    private final int grpId;
 
     /** Number of backups. */
     private final int backups;
@@ -87,7 +89,7 @@ public class GridAffinityAssignmentCache {
     private final AtomicReference<GridAffinityAssignment> head;
 
     /** Ready futures. */
-    private final ConcurrentMap<AffinityTopologyVersion, AffinityReadyFuture> readyFuts = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<AffinityTopologyVersion, AffinityReadyFuture> readyFuts = new ConcurrentSkipListMap<>();
 
     /** Log. */
     private final IgniteLogger log;
@@ -114,7 +116,8 @@ public class GridAffinityAssignmentCache {
      * Constructs affinity cached calculations.
      *
      * @param ctx Kernal context.
-     * @param cacheName Cache name.
+     * @param cacheOrGrpName Cache or cache group name.
+     * @param grpId Group ID.
      * @param aff Affinity function.
      * @param nodeFilter Node filter.
      * @param backups Number of backups.
@@ -122,7 +125,8 @@ public class GridAffinityAssignmentCache {
      */
     @SuppressWarnings("unchecked")
     public GridAffinityAssignmentCache(GridKernalContext ctx,
-        String cacheName,
+        String cacheOrGrpName,
+        int grpId,
         AffinityFunction aff,
         IgnitePredicate<ClusterNode> nodeFilter,
         int backups,
@@ -131,15 +135,15 @@ public class GridAffinityAssignmentCache {
         assert ctx != null;
         assert aff != null;
         assert nodeFilter != null;
+        assert grpId != 0;
 
         this.ctx = ctx;
         this.aff = aff;
         this.nodeFilter = nodeFilter;
-        this.cacheName = cacheName;
+        this.cacheOrGrpName = cacheOrGrpName;
+        this.grpId = grpId;
         this.backups = backups;
         this.locCache = locCache;
-
-        cacheId = CU.cacheId(cacheName);
 
         log = ctx.log(GridAffinityAssignmentCache.class);
 
@@ -160,17 +164,17 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
-     * @return Cache name.
+     * @return Group name if it is specified, otherwise cache name.
      */
-    public String cacheName() {
-        return cacheName;
+    public String cacheOrGroupName() {
+        return cacheOrGrpName;
     }
 
     /**
-     * @return Cache ID.
+     * @return Cache group ID.
      */
-    public Integer cacheId() {
-        return cacheId;
+    public int groupId() {
+        return grpId;
     }
 
     /**
@@ -252,10 +256,12 @@ public class GridAffinityAssignmentCache {
      *
      * @param topVer Topology version to calculate affinity cache for.
      * @param discoEvt Discovery event that caused this topology version change.
+     * @param discoCache Discovery cache.
      * @return Affinity assignments.
      */
     @SuppressWarnings("IfMayBeConditional")
-    public List<List<ClusterNode>> calculate(AffinityTopologyVersion topVer, DiscoveryEvent discoEvt) {
+    public List<List<ClusterNode>> calculate(AffinityTopologyVersion topVer, DiscoveryEvent discoEvt,
+        DiscoCache discoCache) {
         if (log.isDebugEnabled())
             log.debug("Calculating affinity [topVer=" + topVer + ", locNodeId=" + ctx.localNodeId() +
                 ", discoEvt=" + discoEvt + ']');
@@ -266,7 +272,7 @@ public class GridAffinityAssignmentCache {
         List<ClusterNode> sorted;
 
         if (!locCache) {
-            sorted = new ArrayList<>(ctx.discovery().cacheAffinityNodes(cacheName, topVer));
+            sorted = new ArrayList<>(discoCache.cacheGroupAffinityNodes(groupId()));
 
             Collections.sort(sorted, GridNodeOrderComparator.INSTANCE);
         }
@@ -347,6 +353,17 @@ public class GridAffinityAssignmentCache {
 
         return aff.assignment();
     }
+    /**
+     * @param topVer Topology version.
+     * @return Affinity assignment.
+     */
+    public List<List<ClusterNode>> readyAssignments(AffinityTopologyVersion topVer) {
+        AffinityAssignment aff = readyAffinity(topVer);
+
+        assert aff != null : "No ready affinity [grp=" + cacheOrGrpName + ", ver=" + topVer + ']';
+
+        return aff.assignment();
+    }
 
     /**
      * Gets future that will be completed after topology with version {@code topVer} is calculated.
@@ -375,7 +392,7 @@ public class GridAffinityAssignmentCache {
                 log.debug("Completing topology ready future right away [head=" + aff.topologyVersion() +
                     ", topVer=" + topVer + ']');
 
-            fut.onDone(topVer);
+            fut.onDone(aff.topologyVersion());
         }
         else if (stopErr != null)
             fut.onDone(stopErr);
@@ -426,14 +443,52 @@ public class GridAffinityAssignmentCache {
 
     /**
      * Dumps debug information.
+     *
+     * @return {@code True} if there are pending futures.
      */
-    public void dumpDebugInfo() {
+    public boolean dumpDebugInfo() {
         if (!readyFuts.isEmpty()) {
-            U.warn(log, "Pending affinity ready futures [cache=" + cacheName + ", lastVer=" + lastVersion() + "]:");
+            U.warn(log, "First 3 pending affinity ready futures [grp=" + cacheOrGrpName +
+                ", total=" + readyFuts.size() +
+                ", lastVer=" + lastVersion() + "]:");
 
-            for (AffinityReadyFuture fut : readyFuts.values())
+            int cnt = 0;
+
+            for (AffinityReadyFuture fut : readyFuts.values()) {
                 U.warn(log, ">>> " + fut);
+
+                if (++cnt == 3)
+                    break;
+            }
+
+            return true;
         }
+
+        return false;
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @return Assignment.
+     */
+    public AffinityAssignment readyAffinity(AffinityTopologyVersion topVer) {
+        AffinityAssignment cache = head.get();
+
+        if (!cache.topologyVersion().equals(topVer)) {
+            cache = affCache.get(topVer);
+
+            if (cache == null) {
+                throw new IllegalStateException("Affinity for topology version is " +
+                    "not initialized [locNode=" + ctx.discovery().localNode().id() +
+                    ", grp=" + cacheOrGrpName +
+                    ", topVer=" + topVer +
+                    ", head=" + head.get().topologyVersion() +
+                    ", history=" + affCache.keySet() +
+                    ']');
+            }
+        }
+
+        return cache;
     }
 
     /**
@@ -458,7 +513,7 @@ public class GridAffinityAssignmentCache {
             if (cache == null) {
                 throw new IllegalStateException("Getting affinity for topology version earlier than affinity is " +
                     "calculated [locNode=" + ctx.discovery().localNode() +
-                    ", cache=" + cacheName +
+                    ", grp=" + cacheOrGrpName +
                     ", topVer=" + topVer +
                     ", head=" + head.get().topologyVersion() +
                     ", history=" + affCache.keySet() +
@@ -534,8 +589,20 @@ public class GridAffinityAssignmentCache {
 
             IgniteInternalFuture<AffinityTopologyVersion> fut = readyFuture(topVer);
 
-            if (fut != null)
-                fut.get();
+            if (fut != null) {
+                Thread curTh = Thread.currentThread();
+
+                String threadName = curTh.getName();
+
+                try {
+                    curTh.setName(threadName + " (waiting " + topVer + ")");
+
+                    fut.get();
+                }
+                finally {
+                    curTh.setName(threadName);
+                }
+            }
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to wait for affinity ready future for topology version: " + topVer,
@@ -581,14 +648,17 @@ public class GridAffinityAssignmentCache {
         }
     }
 
+    /**
+     * @return All initialized versions.
+     */
+    public Collection<AffinityTopologyVersion> cachedVersions() {
+        return affCache.keySet();
+    }
 
     /**
      * Affinity ready future. Will remove itself from ready futures map.
      */
     private class AffinityReadyFuture extends GridFutureAdapter<AffinityTopologyVersion> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** */
         private AffinityTopologyVersion reqTopVer;
 

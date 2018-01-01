@@ -25,8 +25,10 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -46,7 +48,7 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 /**
  * Query request.
  */
-public class GridCacheQueryRequest extends GridCacheMessage implements GridCacheDeployable {
+public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -63,6 +65,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     private boolean fields;
 
     /** */
+    @GridToStringInclude(sensitive = true)
     private String clause;
 
     /** */
@@ -112,7 +115,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     private boolean all;
 
     /** */
-    private boolean keepPortable;
+    private boolean keepBinary;
 
     /** */
     private UUID subjId;
@@ -193,7 +196,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         this.incBackups = incBackups;
         this.fields = fields;
         this.all = all;
-        this.keepPortable = keepBinary;
+        this.keepBinary = keepBinary;
         this.subjId = subjId;
         this.taskHash = taskHash;
         this.topVer = topVer;
@@ -263,7 +266,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         this.incBackups = incBackups;
         this.args = args;
         this.incMeta = incMeta;
-        this.keepPortable = keepBinary;
+        this.keepBinary = keepBinary;
         this.subjId = subjId;
         this.taskHash = taskHash;
         this.topVer = topVer;
@@ -458,7 +461,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
      * @return Whether to keep binary.
      */
     public boolean keepBinary() {
-        return keepPortable;
+        return keepBinary;
     }
 
     /**
@@ -478,7 +481,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     /**
      * @return partition.
      */
-    public int partition() {
+    @Override public int partition() {
         return part;
     }
 
@@ -558,7 +561,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeBoolean("keepPortable", keepPortable))
+                if (!writer.writeBoolean("keepBinary", keepBinary))
                     return false;
 
                 writer.incrementState();
@@ -714,7 +717,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
                 reader.incrementState();
 
             case 13:
-                keepPortable = reader.readBoolean("keepPortable");
+                keepBinary = reader.readBoolean("keepBinary");
 
                 if (!reader.isLastRead())
                     return false;
@@ -803,7 +806,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 58;
     }
 

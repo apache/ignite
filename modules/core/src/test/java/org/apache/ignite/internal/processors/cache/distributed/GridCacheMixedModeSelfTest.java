@@ -30,25 +30,25 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class GridCacheMixedModeSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
 
-        if (F.eq(gridName, getTestGridName(0)))
+        if (F.eq(igniteInstanceName, getTestIgniteInstanceName(0)))
             cfg.setClientMode(true);
 
         return cfg;
     }
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Cache configuration.
      */
-    private CacheConfiguration cacheConfiguration(String gridName) {
-        CacheConfiguration cfg = new CacheConfiguration();
+    private CacheConfiguration cacheConfiguration(String igniteInstanceName) {
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cfg.setCacheMode(CacheMode.PARTITIONED);
 
@@ -69,7 +69,7 @@ public class GridCacheMixedModeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBasicOps() throws Exception {
-        IgniteCache<Object, Object> cache = grid(0).cache(null);
+        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 1000; i++)
             cache.put(i, i);

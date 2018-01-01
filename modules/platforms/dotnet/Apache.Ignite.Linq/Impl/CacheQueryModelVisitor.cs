@@ -26,6 +26,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Linq;
     using System.Linq.Expressions;
     using System.Text;
+    using Apache.Ignite.Linq.Impl.Dml;
     using Remotion.Linq;
     using Remotion.Linq.Clauses;
     using Remotion.Linq.Clauses.Expressions;
@@ -43,10 +44,13 @@ namespace Apache.Ignite.Linq.Impl
         private readonly List<object> _parameters = new List<object>();
 
         /** */
-        private readonly List<Expression> _parameterExpressions = new List<Expression>();
+        private readonly AliasDictionary _aliases = new AliasDictionary();
 
         /** */
-        private readonly AliasDictionary _aliases = new AliasDictionary();
+        private static readonly Type DefaultIfEmptyEnumeratorType = new object[0]
+            .DefaultIfEmpty()
+            .GetType()
+            .GetGenericTypeDefinition();
 
         /// <summary>
         /// Generates the query.
@@ -63,7 +67,7 @@ namespace Apache.Ignite.Linq.Impl
 
             var qryText = _builder.ToString();
 
-            return new QueryData(qryText, _parameters, _parameterExpressions);
+            return new QueryData(qryText, _parameters);
         }
 
         /// <summary>
@@ -83,14 +87,6 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
-        /// Gets the parameters.
-        /// </summary>
-        public IList<Expression> ParameterExpressions
-        {
-            get { return _parameterExpressions; }
-        }
-
-        /// <summary>
         /// Gets the aliases.
         /// </summary>
         public AliasDictionary Aliases
@@ -107,36 +103,83 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Visits the query model.
         /// </summary>
-        private void VisitQueryModel(QueryModel queryModel, bool forceStar)
+        private void VisitQueryModel(QueryModel queryModel, bool includeAllFields)
         {
             _aliases.Push();
 
-            // SELECT
-            _builder.Append("select ");
+            var hasDelete = VisitRemoveOperator(queryModel);
 
-            // TOP 1 FLD1, FLD2
-            VisitSelectors(queryModel, forceStar);
+            if (!hasDelete)
+            {
+                // SELECT
+                _builder.Append("select ");
+
+                // TOP 1 FLD1, FLD2
+                VisitSelectors(queryModel, includeAllFields);
+            }
 
             // FROM ... WHERE ... JOIN ...
             base.VisitQueryModel(queryModel);
 
-            // UNION ...
-            ProcessResultOperatorsEnd(queryModel);
+            if (!hasDelete)
+            {
+                // UNION ...
+                ProcessResultOperatorsEnd(queryModel);
+            }
 
             _aliases.Pop();
         }
 
         /// <summary>
+        /// Visits the remove operator. Returns true if it is present.
+        /// </summary>
+        private bool VisitRemoveOperator(QueryModel queryModel)
+        {
+            var resultOps = queryModel.ResultOperators;
+
+            if (resultOps.LastOrDefault() is RemoveAllResultOperator)
+            {
+                _builder.Append("delete ");
+
+                if (resultOps.Count == 2)
+                {
+                    var resOp = resultOps[0] as TakeResultOperator;
+
+                    if (resOp == null)
+                    {
+                        throw new NotSupportedException(
+                            "RemoveAll can not be combined with result operators (other than Take): " +
+                            resultOps[0].GetType().Name);
+                    }
+
+                    _builder.Append("top ");
+                    BuildSqlExpression(resOp.Count);
+                    _builder.Append(" ");
+                }
+                else if (resultOps.Count > 2)
+                {
+                    throw new NotSupportedException(
+                        "RemoveAll can not be combined with result operators (other than Take): " +
+                        string.Join(", ", resultOps.Select(x => x.GetType().Name)));
+                }
+
+                return true;
+            }
+                
+            return false;
+        }
+
+        /// <summary>
         /// Visits the selectors.
         /// </summary>
-        public void VisitSelectors(QueryModel queryModel, bool forceStar)
+        public void VisitSelectors(QueryModel queryModel, bool includeAllFields)
         {
             var parenCount = ProcessResultOperatorsBegin(queryModel);
 
             if (parenCount >= 0)
             {
                 // FIELD1, FIELD2
-                BuildSqlExpression(queryModel.SelectClause.Selector, forceStar || parenCount > 0);
+                BuildSqlExpression(queryModel.SelectClause.Selector, parenCount > 0, includeAllFields);
                 _builder.Append(')', parenCount).Append(" ");
             }
         }
@@ -183,6 +226,9 @@ namespace Apache.Ignite.Linq.Impl
                 else if (op is UnionResultOperator || op is IntersectResultOperator || op is ExceptResultOperator
                          || op is DefaultIfEmptyResultOperator || op is SkipResultOperator || op is TakeResultOperator)
                     // Will be processed later
+                    break;
+                else if (op is ContainsResultOperator)
+                    // Should be processed already
                     break;
                 else
                     throw new NotSupportedException("Operator is not supported: " + op);
@@ -345,12 +391,29 @@ namespace Apache.Ignite.Linq.Impl
             base.VisitMainFromClause(fromClause, queryModel);
 
             _builder.AppendFormat("from ");
+            ValidateFromClause(fromClause);
             _aliases.AppendAsClause(_builder, fromClause).Append(" ");
 
+            var i = 0;
             foreach (var additionalFrom in queryModel.BodyClauses.OfType<AdditionalFromClause>())
             {
                 _builder.AppendFormat(", ");
-                _aliases.AppendAsClause(_builder, additionalFrom).Append(" ");
+                ValidateFromClause(additionalFrom);
+
+                VisitAdditionalFromClause(additionalFrom, queryModel, i++);
+            }
+        }
+
+        /// <summary>
+        /// Validates from clause.
+        /// </summary>
+        // ReSharper disable once UnusedParameter.Local
+        private static void ValidateFromClause(IFromClause clause)
+        {
+            // Only IQueryable can be used in FROM clause. IEnumerable is not supported.
+            if (!typeof(IQueryable).IsAssignableFrom(clause.FromExpression.Type))
+            {
+                throw new NotSupportedException("FROM clause must be IQueryable: " + clause);
             }
         }
 
@@ -411,31 +474,121 @@ namespace Apache.Ignite.Linq.Impl
         public override void VisitJoinClause(JoinClause joinClause, QueryModel queryModel, int index)
         {
             base.VisitJoinClause(joinClause, queryModel, index);
+            var queryable = ExpressionWalker.GetCacheQueryable(joinClause, false);
 
-            var subQuery = joinClause.InnerSequence as SubQueryExpression;
-
-            if (subQuery != null)
+            if (queryable != null)
             {
-                var isOuter = subQuery.QueryModel.ResultOperators.OfType<DefaultIfEmptyResultOperator>().Any();
+                var subQuery = joinClause.InnerSequence as SubQueryExpression;
 
-                _builder.AppendFormat("{0} join (", isOuter ? "left outer" : "inner");
+                if (subQuery != null)
+                {
+                    var isOuter = subQuery.QueryModel.ResultOperators.OfType<DefaultIfEmptyResultOperator>().Any();
 
-                VisitQueryModel(subQuery.QueryModel, true);
+                    _builder.AppendFormat("{0} join (", isOuter ? "left outer" : "inner");
 
-                var alias = _aliases.GetTableAlias(subQuery.QueryModel.MainFromClause);
-                _builder.AppendFormat(") as {0} on (", alias);
+                    VisitQueryModel(subQuery.QueryModel, true);
+
+                    var alias = _aliases.GetTableAlias(subQuery.QueryModel.MainFromClause);
+                    _builder.AppendFormat(") as {0} on (", alias);
+                }
+                else
+                {
+                    var tableName = ExpressionWalker.GetTableNameWithSchema(queryable);
+                    var alias = _aliases.GetTableAlias(joinClause);
+                    _builder.AppendFormat("inner join {0} as {1} on (", tableName, alias);
+                }
             }
             else
             {
-                var queryable = ExpressionWalker.GetCacheQueryable(joinClause);
-                var tableName = ExpressionWalker.GetTableNameWithSchema(queryable);
-                var alias = _aliases.GetTableAlias(joinClause);
-                _builder.AppendFormat("inner join {0} as {1} on (", tableName, alias);
+                VisitJoinWithLocalCollectionClause(joinClause);
             }
 
             BuildJoinCondition(joinClause.InnerKeySelector, joinClause.OuterKeySelector);
 
             _builder.Append(") ");
+        }
+
+        /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
+        public override void VisitAdditionalFromClause(AdditionalFromClause fromClause, QueryModel queryModel,
+            int index)
+        {
+            base.VisitAdditionalFromClause(fromClause, queryModel, index);
+
+            var subQuery = fromClause.FromExpression as SubQueryExpression;
+            if (subQuery != null)
+            {
+                _builder.Append("(");
+
+                VisitQueryModel(subQuery.QueryModel, true);
+
+                var alias = _aliases.GetTableAlias(subQuery.QueryModel.MainFromClause);
+                _builder.AppendFormat(") as {0} ", alias);
+            }
+            else
+            {
+                _aliases.AppendAsClause(_builder, fromClause).Append(" ");
+            }
+        }
+
+
+        /// <summary>
+        /// Visists Join clause in case of join with local collection
+        /// </summary>
+        private void VisitJoinWithLocalCollectionClause(JoinClause joinClause)
+        {
+            var type = joinClause.InnerSequence.Type;
+
+            var itemType = EnumerableHelper.GetIEnumerableItemType(type);
+
+            var sqlTypeName = SqlTypes.GetSqlTypeName(itemType);
+
+            if (string.IsNullOrWhiteSpace(sqlTypeName))
+            {
+                throw new NotSupportedException("Not supported item type for Join with local collection: " + type.Name);
+            }
+
+            var isOuter = false;
+            var sequenceExpression = joinClause.InnerSequence;
+            object values;
+
+            var subQuery = sequenceExpression as SubQueryExpression;
+            if (subQuery != null)
+            {
+                isOuter = subQuery.QueryModel.ResultOperators.OfType<DefaultIfEmptyResultOperator>().Any();
+                sequenceExpression = subQuery.QueryModel.MainFromClause.FromExpression;
+            }
+
+            switch (sequenceExpression.NodeType)
+            {
+                case ExpressionType.Constant:
+                    var constantValueType = ((ConstantExpression)sequenceExpression).Value.GetType();
+                    if (constantValueType.IsGenericType)
+                    {
+                        isOuter = DefaultIfEmptyEnumeratorType == constantValueType.GetGenericTypeDefinition();
+                    }
+                    values = ExpressionWalker.EvaluateEnumerableValues(sequenceExpression);
+                    break;
+
+                case ExpressionType.Parameter:
+                    values = ExpressionWalker.EvaluateExpression<object>(sequenceExpression);
+                    break;
+
+                default:
+                    throw new NotSupportedException("Expression not supported for Join with local collection: "
+                                                    + sequenceExpression);
+            }
+
+            var tableAlias = _aliases.GetTableAlias(joinClause);
+            var fieldAlias = _aliases.GetFieldAlias(joinClause.InnerKeySelector);
+
+            _builder.AppendFormat("{0} join table ({1} {2} = ?) {3} on (", 
+                isOuter ? "left outer" : "inner",
+                fieldAlias,
+                sqlTypeName, 
+                tableAlias);
+
+            Parameters.Add(values);
         }
 
         /// <summary>
@@ -494,9 +647,9 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Builds the SQL expression.
         /// </summary>
-        private void BuildSqlExpression(Expression expression, bool useStar = false)
+        private void BuildSqlExpression(Expression expression, bool useStar = false, bool includeAllFields = false)
         {
-            new CacheQueryExpressionVisitor(this, useStar).Visit(expression);
+            new CacheQueryExpressionVisitor(this, useStar, includeAllFields).Visit(expression);
         }
     }
 }

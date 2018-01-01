@@ -20,26 +20,21 @@ package org.apache.ignite.testsuites;
 import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.GridCacheIncrementTransformTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheTopologySafeGetSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheAtomicNodeJoinTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheSizeFailoverTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxFairAffinityNodeJoinTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxNearDisabledFairAffinityPutGetRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxNearDisabledPutGetRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxNodeJoinTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtAtomicRemoveFailureTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtClientRemoveFailureTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtRemoveFailureTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheTxNodeFailureSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridNearCacheTxNodeFailureSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteAtomicLongChangingTopologySelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.AtomicPutAllChangingTopologyTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicClientInvalidPartitionHandlingSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicClientRemoveFailureTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicInvalidPartitionHandlingSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicPrimaryWriteOrderRemoveFailureTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicRemoveFailureTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearRemoveFailureTest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicPrimaryWriteOrderNearRemoveFailureTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearRemoveFailureTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionDistributionTest;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -72,7 +67,6 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
 
         // Failure consistency tests.
         suite.addTestSuite(GridCacheAtomicRemoveFailureTest.class);
-        suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderRemoveFailureTest.class);
         suite.addTestSuite(GridCacheAtomicClientRemoveFailureTest.class);
 
         suite.addTestSuite(GridCacheDhtAtomicRemoveFailureTest.class);
@@ -80,22 +74,19 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheDhtClientRemoveFailureTest.class);
         suite.addTestSuite(GridCacheNearRemoveFailureTest.class);
         suite.addTestSuite(GridCacheAtomicNearRemoveFailureTest.class);
-        suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderNearRemoveFailureTest.class);
 
         suite.addTestSuite(IgniteCacheAtomicNodeJoinTest.class);
         suite.addTestSuite(IgniteCacheTxNodeJoinTest.class);
-        suite.addTestSuite(IgniteCacheTxFairAffinityNodeJoinTest.class);
 
         suite.addTestSuite(IgniteCacheTxNearDisabledPutGetRestartTest.class);
-        suite.addTestSuite(IgniteCacheTxNearDisabledFairAffinityPutGetRestartTest.class);
 
         suite.addTestSuite(IgniteCacheSizeFailoverTest.class);
 
-        suite.addTestSuite(IgniteCacheTopologySafeGetSelfTest.class);
         suite.addTestSuite(IgniteAtomicLongChangingTopologySelfTest.class);
 
         suite.addTestSuite(GridCacheTxNodeFailureSelfTest.class);
-        suite.addTestSuite(GridNearCacheTxNodeFailureSelfTest.class);
+
+        suite.addTestSuite(AtomicPutAllChangingTopologyTest.class);
 
         return suite;
     }

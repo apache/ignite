@@ -31,6 +31,7 @@
 /// 
 /// Requirements:
 /// * Java Runtime Environment (JRE): http://www.oracle.com/technetwork/java/javase/downloads/index.html (x86 for regular LINQPad, x64 for AnyCPU LINQPad)
+/// * Microsoft Visual C++ 2010 Redistributable Package: http://www.microsoft.com/en-us/download/details.aspx?id=14632 (x86 for regular LINQPad, x64 for AnyCPU LINQPad)
 /// </summary>
 
 void Main()
@@ -38,11 +39,8 @@ void Main()
 	// Force new LINQPad query process to reinit JVM
 	Util.NewProcess = true;
 	
-	// Configure cacheable types
-    var cfg = new IgniteConfiguration { BinaryConfiguration = new BinaryConfiguration(typeof(Organization), typeof(Person))	};
-
     // Start instance
-    using (var ignite = Ignition.Start(cfg))
+    using (var ignite = Ignition.Start())
     {
         // Create and populate organization cache
         var orgs = ignite.GetOrCreateCache<int, Organization>(new CacheConfiguration("orgs-sql", 
@@ -68,7 +66,7 @@ void Main()
 			.Dump("Persons working for " + orgName);
 
 		// Fields query
-		orgs.QueryFields(new SqlFieldsQuery("select name, size from Organization")).Dump("Fields query");
+		orgs.Query(new SqlFieldsQuery("select name, size from Organization")).Dump("Fields query");
 
 		// Full text query
 		persons.Query(new TextQuery(typeof(Person), "Chris*")).Dump("Persons starting with 'Chris'");

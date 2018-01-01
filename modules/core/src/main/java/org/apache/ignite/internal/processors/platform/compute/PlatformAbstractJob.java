@@ -37,7 +37,7 @@ public abstract class PlatformAbstractJob implements PlatformJob, Externalizable
     /** Marker object denoting the job execution result is stored in native platform. */
     static final Object LOC_JOB_RES = new Object();
 
-    /** Grid name. */
+    /** Ignite instance. */
     @IgniteInstanceResource
     protected transient Ignite ignite;
 

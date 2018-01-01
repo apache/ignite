@@ -24,16 +24,18 @@ namespace Apache.Ignite.Core.Tests
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Messaging;
     using Apache.Ignite.Core.Resource;
+    using Apache.Ignite.Core.Tests.Cache;
     using NUnit.Framework;
 
     /// <summary>
     /// <see cref="IMessaging"/> tests.
     /// </summary>
-    public class MessagingTest
+    public sealed class MessagingTest
     {
         /** */
         private IIgnite _grid1;
@@ -45,7 +47,26 @@ namespace Apache.Ignite.Core.Tests
         private IIgnite _grid3;
 
         /** */
-        public static int MessageId;
+        private static int _messageId;
+
+        /** Objects to test against. */
+        private static readonly object[] Objects = {
+            // Primitives.
+            null,
+            "string topic",
+            Guid.NewGuid(),
+            DateTime.Now,
+            byte.MinValue,
+            short.MaxValue,
+            
+            // Enums.
+            CacheMode.Local,
+            GCCollectionMode.Forced,
+
+            // Objects.
+            new CacheTestKey(25),
+            new IgniteGuid(Guid.NewGuid(), 123),
+        };
 
         /// <summary>
         /// Executes before each test.
@@ -53,16 +74,18 @@ namespace Apache.Ignite.Core.Tests
         [SetUp]
         public void SetUp()
         {
-            _grid1 = Ignition.Start(Configuration("config\\compute\\compute-grid1.xml"));
-            _grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
-            _grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
+            _grid1 = Ignition.Start(GetConfiguration("grid-1"));
+            _grid2 = Ignition.Start(GetConfiguration("grid-2"));
+            _grid3 = Ignition.Start(GetConfiguration("grid-3"));
+
+            Assert.AreEqual(3, _grid1.GetCluster().GetNodes().Count);
         }
 
         /// <summary>
         /// Executes after each test.
         /// </summary>
         [TearDown]
-        public virtual void TearDown()
+        public void TearDown()
         {
             try
             {
@@ -78,21 +101,56 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests that any data type can be used as a message.
+        /// </summary>
+        [Test]
+        public void TestMessageDataTypes()
+        {
+            var topic = "dataTypes";
+            object lastMsg = null;
+            var evt = new AutoResetEvent(false);
+
+            var messaging1 = _grid1.GetMessaging();
+            var messaging2 = _grid2.GetMessaging();
+
+            var listener = new MessageListener<object>((nodeId, msg) =>
+            {
+                lastMsg = msg;
+                evt.Set();
+                return true;
+            });
+
+            messaging1.LocalListen(listener, topic);
+
+            foreach (var msg in Objects.Where(x => x != null))
+            {
+                messaging2.Send(msg, topic);
+                evt.WaitOne(500);
+                Assert.AreEqual(msg, lastMsg);
+            }
+
+            messaging1.StopLocalListen(listener, topic);
+        }
+
+        /// <summary>
         /// Tests LocalListen.
         /// </summary>
         [Test]
         public void TestLocalListen()
         {
-            TestLocalListen(null);
-            TestLocalListen("string topic");
             TestLocalListen(NextId());
+
+            foreach (var topic in Objects)
+            {
+                TestLocalListen(topic);
+            }
         }
 
         /// <summary>
         /// Tests LocalListen.
         /// </summary>
         [SuppressMessage("ReSharper", "AccessToModifiedClosure")]
-        public void TestLocalListen(object topic)
+        private void TestLocalListen(object topic)
         {
             var messaging = _grid1.GetMessaging();
             var listener = MessagingTestHelper.GetListener();
@@ -143,9 +201,13 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestLocalListenProjection()
         {
-            TestLocalListenProjection(null);
-            TestLocalListenProjection("prj");
             TestLocalListenProjection(NextId());
+            TestLocalListenProjection("prj");
+
+            foreach (var topic in Objects)
+            {
+                TestLocalListenProjection(topic);
+            }
         }
 
         /// <summary>
@@ -254,7 +316,7 @@ namespace Apache.Ignite.Core.Tests
 
             messaging.Send(NextMessage());
 
-            Thread.Sleep(MessagingTestHelper.MessageTimeout);
+            Thread.Sleep(MessagingTestHelper.SleepTimeout);
 
             // Check that unsubscription worked properly
             Assert.AreEqual(sharedResult, Thread.VolatileRead(ref sharedReceived));
@@ -264,22 +326,14 @@ namespace Apache.Ignite.Core.Tests
         /// Tests RemoteListen.
         /// </summary>
         [Test]
-        public void TestRemoteListen()
+        public void TestRemoteListen([Values(true, false)] bool async)
         {
-            TestRemoteListen(null);
-            TestRemoteListen("string topic");
-            TestRemoteListen(NextId());
-        }
+            TestRemoteListen(NextId(), async);
 
-        /// <summary>
-        /// Tests RemoteListen with async mode enabled.
-        /// </summary>
-        [Test]
-        public void TestRemoteListenAsync()
-        {
-            TestRemoteListen(null, true);
-            TestRemoteListen("string topic", true);
-            TestRemoteListen(NextId(), true);
+            foreach (var topic in Objects)
+            {
+                TestRemoteListen(topic, async);
+            }
         }
 
         /// <summary>
@@ -333,9 +387,12 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestRemoteListenProjection()
         {
-            TestRemoteListenProjection(null);
-            TestRemoteListenProjection("string topic");
             TestRemoteListenProjection(NextId());
+
+            foreach (var topic in Objects)
+            {
+                TestRemoteListenProjection(topic);
+            }
         }
 
         /// <summary>
@@ -390,7 +447,7 @@ namespace Apache.Ignite.Core.Tests
 
             messaging.Send(NextMessage()); // send a message to make filters return false
 
-            Thread.Sleep(MessagingTestHelper.MessageTimeout); // wait for all to unsubscribe
+            Thread.Sleep(MessagingTestHelper.SleepTimeout); // wait for all to unsubscribe
 
             MessagingTestHelper.ListenResult = true;
 
@@ -401,7 +458,7 @@ namespace Apache.Ignite.Core.Tests
             var lastMsg = NextMessage();
             messaging.Send(lastMsg);
 
-            Thread.Sleep(MessagingTestHelper.MessageTimeout);
+            Thread.Sleep(MessagingTestHelper.SleepTimeout);
 
             // Check that unsubscription worked properly
             var sharedResult = MessagingTestHelper.ReceivedMessages.ToArray();
@@ -474,7 +531,7 @@ namespace Apache.Ignite.Core.Tests
 
             (grid ?? _grid1).GetMessaging().SendAll(NextMessage(), topic);
 
-            Thread.Sleep(MessagingTestHelper.MessageTimeout);
+            Thread.Sleep(MessagingTestHelper.SleepTimeout);
 
             MessagingTestHelper.AssertFailures();
         }
@@ -482,13 +539,11 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Gets the Ignite configuration.
         /// </summary>
-        private static IgniteConfiguration Configuration(string springConfigUrl)
+        private static IgniteConfiguration GetConfiguration(string name)
         {
-            return new IgniteConfiguration
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = springConfigUrl,
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions()
+                IgniteInstanceName = name
             };
         }
 
@@ -506,7 +561,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static int NextId()
         {
-            return Interlocked.Increment(ref MessageId);
+            return Interlocked.Increment(ref _messageId);
         }
     }
 
@@ -520,19 +575,22 @@ namespace Apache.Ignite.Core.Tests
         public static readonly ConcurrentStack<string> ReceivedMessages = new ConcurrentStack<string>();
         
         /** */
-        public static readonly ConcurrentStack<string> Failures = new ConcurrentStack<string>();
+        private static readonly ConcurrentStack<string> Failures = new ConcurrentStack<string>();
 
         /** */
-        public static readonly CountdownEvent ReceivedEvent = new CountdownEvent(0);
+        private static readonly CountdownEvent ReceivedEvent = new CountdownEvent(0);
 
         /** */
-        public static readonly ConcurrentStack<Guid> LastNodeIds = new ConcurrentStack<Guid>();
+        private static readonly ConcurrentStack<Guid> LastNodeIds = new ConcurrentStack<Guid>();
 
         /** */
         public static volatile bool ListenResult = true;
 
         /** */
-        public static readonly TimeSpan MessageTimeout = TimeSpan.FromMilliseconds(700);
+        public static readonly TimeSpan MessageTimeout = TimeSpan.FromMilliseconds(5000);
+
+        /** */
+        public static readonly TimeSpan SleepTimeout = TimeSpan.FromMilliseconds(50);
 
         /// <summary>
         /// Clears received message information.
@@ -556,7 +614,9 @@ namespace Apache.Ignite.Core.Tests
             Func<IEnumerable<string>, IEnumerable<string>> resultFunc, int expectedRepeat)
         {
             // check if expected message count has been received; Wait returns false if there were none.
-            Assert.IsTrue(ReceivedEvent.Wait(MessageTimeout));
+            Assert.IsTrue(ReceivedEvent.Wait(MessageTimeout),
+                string.Format("expectedMessages: {0}, expectedRepeat: {1}, remaining: {2}",
+                    expectedMessages, expectedRepeat, ReceivedEvent.CurrentCount));
 
             expectedMessages = expectedMessages.SelectMany(x => Enumerable.Repeat(x, expectedRepeat));
 
@@ -575,7 +635,7 @@ namespace Apache.Ignite.Core.Tests
         /// <returns>New instance of message listener.</returns>
         public static IMessageListener<string> GetListener()
         {
-            return new MessageListener<string>(Listen);
+            return new RemoteListener();
         }
 
         /// <summary>
@@ -591,27 +651,29 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Listen method.
+        /// Remote listener.
         /// </summary>
-        /// <param name="id">Originating node ID.</param>
-        /// <param name="msg">Message.</param>
-        private static bool Listen(Guid id, string msg)
+        private class RemoteListener : IMessageListener<string>
         {
-            try
+            /** <inheritdoc /> */
+            public bool Invoke(Guid nodeId, string message)
             {
-                LastNodeIds.Push(id);
-                ReceivedMessages.Push(msg);
+                try
+                {
+                    LastNodeIds.Push(nodeId);
+                    ReceivedMessages.Push(message);
 
-                ReceivedEvent.Signal();
+                    ReceivedEvent.Signal();
 
-                return ListenResult;
-            }
-            catch (Exception ex)
-            {
-                // When executed on remote nodes, these exceptions will not go to sender, 
-                // so we have to accumulate them.
-                Failures.Push(string.Format("Exception in Listen (msg: {0}, id: {1}): {2}", msg, id, ex));
-                throw;
+                    return ListenResult;
+                }
+                catch (Exception ex)
+                {
+                    // When executed on remote nodes, these exceptions will not go to sender, 
+                    // so we have to accumulate them.
+                    Failures.Push(string.Format("Exception in Listen (msg: {0}, id: {1}): {2}", message, nodeId, ex));
+                    throw;
+                }
             }
         }
     }

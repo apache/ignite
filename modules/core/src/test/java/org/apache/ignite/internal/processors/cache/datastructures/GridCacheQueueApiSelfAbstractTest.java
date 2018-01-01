@@ -25,9 +25,12 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -35,12 +38,15 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Queue basic tests.
@@ -640,19 +646,22 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
 
         CollectionConfiguration colCfg2 = collectionConfiguration();
 
-        colCfg2.setNodeFilter(CacheConfiguration.ALL_NODES);
+        colCfg2.setNodeFilter(new IgnitePredicate<ClusterNode>() {
+            @Override public boolean apply(ClusterNode node) {
+                return true;
+            }
+        });
 
-        IgniteQueue queue1 = grid(0).queue("Queue1", 0, colCfg1);
+        grid(0).queue("Queue1", 0, colCfg1);
 
-        IgniteQueue queue2 = grid(0).queue("Queue2", 0, colCfg2);
+        try {
+            grid(0).queue("Queue2", 0, colCfg2);
 
-        assertNotSame(getQueueCache(queue1), getQueueCache(queue2));
-
-        colCfg1.setNodeFilter(CacheConfiguration.ALL_NODES);
-
-        IgniteQueue queue3 = grid(0).queue("Queue3", 0, colCfg1);
-
-        assertEquals(getQueueCache(queue2), getQueueCache(queue3));
+            fail("Exception was expected.");
+        }
+        catch (Exception ex) {
+            // Expected
+        }
     }
 
     /**
@@ -682,6 +691,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         final CollectionConfiguration colCfg = collectionConfiguration();
 
         colCfg.setCollocated(false);
+        colCfg.setGroupName("testGroup");
         colCfg.setCacheMode(CacheMode.PARTITIONED);
 
         try (final IgniteQueue<Integer> queue1 = grid(0).queue("Queue1", 0, colCfg)) {
@@ -713,7 +723,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
                 private IgniteEx ignite;
 
                 @Override public void run() {
-                    assertTrue(ignite.cachex("datastructures_0").affinity().isPrimaryOrBackup(
+                    assertTrue(ignite.cachex(cctx(queue2).cache().name()).affinity().isPrimaryOrBackup(
                         ignite.cluster().localNode(), "Queue2"));
 
                     assertEquals(100, queue2.take().intValue());
@@ -729,6 +739,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         final CollectionConfiguration colCfg = collectionConfiguration();
 
         colCfg.setCollocated(false);
+        colCfg.setGroupName("testGroup");
         colCfg.setCacheMode(CacheMode.PARTITIONED);
 
         try (final IgniteQueue<Integer> queue1 = grid(0).queue("Queue1", 0, colCfg)) {
@@ -760,7 +771,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
                 private IgniteEx ignite;
 
                 @Override public Integer call() {
-                    assertTrue(ignite.cachex("datastructures_0").affinity().isPrimaryOrBackup(
+                    assertTrue(ignite.cachex(cctx(queue2).cache().name()).affinity().isPrimaryOrBackup(
                         ignite.cluster().localNode(), "Queue2"));
 
                     return queue2.take();
@@ -769,6 +780,163 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
 
             assertEquals(100, res.intValue());
         }
+    }
+
+    /**
+     * Implementation of ignite data structures internally uses special system caches, need make sure
+     * that transaction on these system caches do not intersect with transactions started by user.
+     *
+     * @throws Exception If failed.
+     */
+    public void testIsolation() throws Exception {
+        Ignite ignite = grid(0);
+
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+        cfg.setName("myCache");
+        cfg.setAtomicityMode(TRANSACTIONAL);
+        cfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cfg);
+
+        try {
+            String queueName = UUID.randomUUID().toString();
+
+            IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
+
+            try (Transaction tx = ignite.transactions().txStart()) {
+                cache.put(1, 1);
+
+                for (int i = 0; i < QUEUE_CAPACITY; i++)
+                    queue.put("Item-" + i);
+
+                tx.rollback();
+            }
+
+            assertEquals(0, cache.size());
+
+            assertEquals(QUEUE_CAPACITY, queue.size());
+
+            queue.remove("Item-1");
+
+            assertEquals(QUEUE_CAPACITY - 1, queue.size());
+
+            assertEquals("Item-0", queue.peek());
+            assertEquals("Item-0", queue.poll());
+            assertEquals("Item-2", queue.poll());
+
+            assertEquals(0, queue.size());
+
+            queue.clear();
+
+            assertTrue(queue.isEmpty());
+        }
+        finally {
+            ignite.destroyCache(cfg.getName());
+        }
+    }
+
+    /**
+     * Test that queues within the same group and compatible configurations are stored in the same cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCacheReuse() throws Exception {
+        Ignite ignite = grid(0);
+
+        CollectionConfiguration colCfg = collectionConfiguration();
+
+        colCfg.setAtomicityMode(ATOMIC);
+        colCfg.setGroupName("grp1");
+
+        IgniteQueue queue1 = ignite.queue("queue1", 100, colCfg);
+        IgniteQueue queue2 = ignite.queue("queue2", 100, colCfg);
+
+        assert cctx(queue1).cacheId() == cctx(queue2).cacheId();
+
+        colCfg.setAtomicityMode(TRANSACTIONAL);
+
+        IgniteQueue queue3 = ignite.queue("queue3", 100, colCfg);
+        IgniteQueue queue4 = ignite.queue("queue4", 100, colCfg);
+
+        assert cctx(queue3).cacheId() == cctx(queue4).cacheId();
+        assert cctx(queue1).cacheId() != cctx(queue3).cacheId();
+        assert cctx(queue1).groupId() == cctx(queue3).groupId();
+
+        colCfg.setGroupName("gtp2");
+
+        IgniteQueue queue5 = ignite.queue("queue5", 100, colCfg);
+        IgniteQueue queue6 = ignite.queue("queue6", 100, colCfg);
+
+        assert cctx(queue5).cacheId() == cctx(queue6).cacheId();
+        assert cctx(queue1).groupId() != cctx(queue5).groupId();
+    }
+
+    /**
+     * Tests that basic API works correctly when there are multiple structures in multiple groups.
+     *
+     * @throws Exception If failed.
+     */
+    public void testMultipleStructuresInDifferentGroups() throws Exception {
+        Ignite ignite = grid(0);
+
+        CollectionConfiguration cfg1 = collectionConfiguration();
+        CollectionConfiguration cfg2 = collectionConfiguration().setGroupName("grp2");
+
+        IgniteQueue<String> queue1 = ignite.queue("queue1", 100, cfg1);
+        IgniteQueue<String> queue2 = ignite.queue("queue2", 100, cfg1);
+        IgniteQueue<String> queue3 = ignite.queue("queue3", 100, cfg2);
+        IgniteQueue<String> queue4 = ignite.queue("queue4", 100, cfg2);
+
+        assertTrue(queue1.offer("a"));
+        assertTrue(queue2.offer("b"));
+        assertTrue(queue3.offer("c"));
+        assertTrue(queue4.offer("d"));
+
+        assertEquals("a", queue1.peek());
+        assertEquals("b", queue2.peek());
+        assertEquals("c", queue3.peek());
+        assertEquals("d", queue4.peek());
+
+        assertTrue(queue1.add("A"));
+        assertTrue(queue2.add("B"));
+        assertTrue(queue3.add("C"));
+        assertTrue(queue4.add("D"));
+
+        assertEquals(2, queue1.size());
+        assertEquals(2, queue2.size());
+        assertEquals(2, queue3.size());
+        assertEquals(2, queue4.size());
+
+        assertEquals("a", queue1.poll());
+        assertEquals("b", queue2.poll());
+        assertEquals("c", queue3.poll());
+        assertEquals("d", queue4.poll());
+
+        assertEquals("A", queue1.peek());
+        assertEquals("B", queue2.peek());
+        assertEquals("C", queue3.peek());
+        assertEquals("D", queue4.peek());
+
+        assertEquals(1, queue1.size());
+        assertEquals(1, queue2.size());
+        assertEquals(1, queue3.size());
+        assertEquals(1, queue4.size());
+
+        queue2.close();
+        queue4.close();
+
+        assertTrue(queue2.removed());
+        assertTrue(queue4.removed());
+
+        assertFalse(queue1.removed());
+        assertFalse(queue3.removed());
+
+        assertNotNull(ignite.queue("queue1", 100, null));
+        assertNull(ignite.queue("queue2", 100, null));
+
+        queue1.close();
+        queue3.close();
     }
 
     /**

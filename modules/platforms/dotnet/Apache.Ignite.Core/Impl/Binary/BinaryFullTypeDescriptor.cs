@@ -55,16 +55,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         private readonly string _affKeyFieldName;
 
         /** Type structure. */
-        private volatile BinaryStructure _writerTypeStruct = BinaryStructure.CreateEmpty();
+        private volatile BinaryStructure _writerTypeStruct;
 
         /** Type structure. */
         private volatile BinaryStructure _readerTypeStructure = BinaryStructure.CreateEmpty();
         
         /** Type schema. */
-        private readonly BinaryObjectSchema _schema = new BinaryObjectSchema();
+        private readonly BinaryObjectSchema _schema;
 
         /** Enum flag. */
         private readonly bool _isEnum;
+
+        /** Register flag. */
+        private readonly bool _isRegistered;
 
         /// <summary>
         /// Constructor.
@@ -79,6 +82,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="keepDeserialized">Whether to cache deserialized value in IBinaryObject</param>
         /// <param name="affKeyFieldName">Affinity field key name.</param>
         /// <param name="isEnum">Enum flag.</param>
+        /// <param name="isRegistered">Registered flag.</param>
         public BinaryFullTypeDescriptor(
             Type type, 
             int typeId, 
@@ -89,7 +93,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             IBinarySerializerInternal serializer, 
             bool keepDeserialized, 
             string affKeyFieldName,
-            bool isEnum)
+            bool isEnum,
+            bool isRegistered = true)
         {
             _type = type;
             _typeId = typeId;
@@ -101,6 +106,37 @@ namespace Apache.Ignite.Core.Impl.Binary
             _keepDeserialized = keepDeserialized;
             _affKeyFieldName = affKeyFieldName;
             _isEnum = isEnum;
+
+            _isRegistered = isRegistered;
+            _schema = new BinaryObjectSchema();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BinaryFullTypeDescriptor"/> class,
+        /// copying values from specified descriptor.
+        /// </summary>
+        /// <param name="desc">The descriptor to copy from.</param>
+        /// <param name="type">Type.</param>
+        /// <param name="serializer">Serializer.</param>
+        /// <param name="isRegistered">Registered flag.</param>
+        public BinaryFullTypeDescriptor(BinaryFullTypeDescriptor desc, Type type,
+            IBinarySerializerInternal serializer, bool isRegistered)
+        {
+            _type = type;
+            _typeId = desc._typeId;
+            _typeName = desc._typeName;
+            _userType = desc._userType;
+            _nameMapper = desc._nameMapper;
+            _idMapper = desc._idMapper;
+            _serializer = serializer;
+            _keepDeserialized = desc._keepDeserialized;
+            _affKeyFieldName = desc._affKeyFieldName;
+            _isEnum = desc._isEnum;
+            _isRegistered = isRegistered;
+
+            _schema = desc._schema;
+            _writerTypeStruct = desc._writerTypeStruct;
+            _readerTypeStructure = desc._readerTypeStructure;
         }
 
         /// <summary>
@@ -194,22 +230,27 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritDoc /> */
-        public void UpdateWriteStructure(BinaryStructure exp, int pathIdx, 
-            IList<BinaryStructureUpdate> updates)
+        public void UpdateWriteStructure(int pathIdx, IList<BinaryStructureUpdate> updates)
         {
             lock (this)
             {
-                _writerTypeStruct = _writerTypeStruct.Merge(exp, pathIdx, updates);
+                if (_writerTypeStruct == null)
+                {
+                    // Null struct serves as an indication of a binary type that has never been sent to the cluster,
+                    // which is important for types without any fields.
+                    _writerTypeStruct = BinaryStructure.CreateEmpty();
+                }
+
+                _writerTypeStruct = _writerTypeStruct.Merge(pathIdx, updates);
             }
         }
 
         /** <inheritDoc /> */
-        public void UpdateReadStructure(BinaryStructure exp, int pathIdx, 
-            IList<BinaryStructureUpdate> updates)
+        public void UpdateReadStructure(int pathIdx, IList<BinaryStructureUpdate> updates)
         {
             lock (this)
             {
-                _readerTypeStructure = _readerTypeStructure.Merge(exp, pathIdx, updates);
+                _readerTypeStructure = _readerTypeStructure.Merge(pathIdx, updates);
             }
         }
 
@@ -217,6 +258,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         public BinaryObjectSchema Schema
         {
             get { return _schema; }
+        }
+
+        /** <inheritDoc /> */
+        public bool IsRegistered
+        {
+            get { return _isRegistered; }
         }
     }
 }

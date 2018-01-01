@@ -22,11 +22,11 @@
 module.exports = {
     implements: 'routes',
     inject: ['routes/public', 'routes/admin', 'routes/profiles', 'routes/demo', 'routes/clusters', 'routes/domains',
-        'routes/caches', 'routes/igfss', 'routes/notebooks', 'routes/agents', 'routes/configurations']
+        'routes/caches', 'routes/igfss', 'routes/notebooks', 'routes/downloads', 'routes/configurations', 'routes/activities']
 };
 
 module.exports.factory = function(publicRoute, adminRoute, profilesRoute, demoRoute,
-    clustersRoute, domainsRoute, cachesRoute, igfssRoute, notebooksRoute, agentsRoute, configurationsRoute) {
+    clustersRoute, domainsRoute, cachesRoute, igfssRoute, notebooksRoute, downloadsRoute, configurationsRoute, activitiesRoute) {
     return {
         register: (app) => {
             const _mustAuthenticated = (req, res, next) => {
@@ -44,21 +44,22 @@ module.exports.factory = function(publicRoute, adminRoute, profilesRoute, demoRo
             };
 
             // Registering the standard routes
-            app.use('/', publicRoute);
-            app.use('/admin', _mustAuthenticated, _adminOnly, adminRoute);
-            app.use('/profile', _mustAuthenticated, profilesRoute);
-            app.use('/demo', _mustAuthenticated, demoRoute);
+            app.use('/api/v1/', publicRoute);
+            app.use('/api/v1/admin', _mustAuthenticated, _adminOnly, adminRoute);
+            app.use('/api/v1/profile', _mustAuthenticated, profilesRoute);
+            app.use('/api/v1/demo', _mustAuthenticated, demoRoute);
 
-            app.all('/configuration/*', _mustAuthenticated);
+            app.all('/api/v1/configuration/*', _mustAuthenticated);
 
-            app.use('/configuration', configurationsRoute);
-            app.use('/configuration/clusters', clustersRoute);
-            app.use('/configuration/domains', domainsRoute);
-            app.use('/configuration/caches', cachesRoute);
-            app.use('/configuration/igfs', igfssRoute);
+            app.use('/api/v1/configuration', configurationsRoute);
+            app.use('/api/v1/configuration/clusters', clustersRoute);
+            app.use('/api/v1/configuration/domains', domainsRoute);
+            app.use('/api/v1/configuration/caches', cachesRoute);
+            app.use('/api/v1/configuration/igfs', igfssRoute);
 
-            app.use('/notebooks', _mustAuthenticated, notebooksRoute);
-            app.use('/agent', _mustAuthenticated, agentsRoute);
+            app.use('/api/v1/notebooks', _mustAuthenticated, notebooksRoute);
+            app.use('/api/v1/downloads', _mustAuthenticated, downloadsRoute);
+            app.use('/api/v1/activities', _mustAuthenticated, activitiesRoute);
         }
     };
 };

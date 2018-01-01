@@ -160,6 +160,7 @@
     <ClCompile Include="..\..\os\win\src\system\ui\window.cpp" />
     <ClCompile Include="..\..\src\app\application_data_buffer.cpp" />
     <ClCompile Include="..\..\src\app\parameter.cpp" />
+    <ClCompile Include="..\..\src\app\parameter_set.cpp" />
     <ClCompile Include="..\..\src\column.cpp" />
     <ClCompile Include="..\..\src\common_types.cpp" />
     <ClCompile Include="..\..\src\config\configuration.cpp" />
@@ -172,10 +173,12 @@
     <ClCompile Include="..\..\src\dsn_config.cpp" />
     <ClCompile Include="..\..\src\entry_points.cpp" />
     <ClCompile Include="..\..\src\environment.cpp" />
+    <ClCompile Include="..\..\src\message.cpp" />
     <ClCompile Include="..\..\src\meta\column_meta.cpp" />
     <ClCompile Include="..\..\src\meta\table_meta.cpp" />
     <ClCompile Include="..\..\src\odbc.cpp" />
     <ClCompile Include="..\..\src\protocol_version.cpp" />
+    <ClCompile Include="..\..\src\query\batch_query.cpp" />
     <ClCompile Include="..\..\src\query\data_query.cpp" />
     <ClCompile Include="..\..\src\query\column_metadata_query.cpp" />
     <ClCompile Include="..\..\src\query\foreign_keys_query.cpp" />
@@ -188,6 +191,7 @@
     <ClCompile Include="..\..\src\statement.cpp" />
     <ClCompile Include="..\..\src\type_traits.cpp" />
     <ClCompile Include="..\..\src\utility.cpp" />
+    <ClCompile Include="..\..\src\log.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def" />
@@ -196,6 +200,7 @@
     <ClInclude Include="..\..\include\ignite\odbc.h" />
     <ClInclude Include="..\..\include\ignite\odbc\app\application_data_buffer.h" />
     <ClInclude Include="..\..\include\ignite\odbc\app\parameter.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\app\parameter_set.h" />
     <ClInclude Include="..\..\include\ignite\odbc\column.h" />
     <ClInclude Include="..\..\include\ignite\odbc\common_types.h" />
     <ClInclude Include="..\..\include\ignite\odbc\config\configuration.h" />
@@ -212,8 +217,10 @@
     <ClInclude Include="..\..\include\ignite\odbc\meta\column_meta.h" />
     <ClInclude Include="..\..\include\ignite\odbc\meta\primary_key_meta.h" />
     <ClInclude Include="..\..\include\ignite\odbc\meta\table_meta.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\odbc_error.h" />
     <ClInclude Include="..\..\include\ignite\odbc\parser.h" />
     <ClInclude Include="..\..\include\ignite\odbc\protocol_version.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\query\batch_query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\query\data_query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\query\column_metadata_query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\query\foreign_keys_query.h" />
@@ -230,6 +237,7 @@
     <ClInclude Include="..\..\include\ignite\odbc\system\ui\dsn_configuration_window.h" />
     <ClInclude Include="..\..\include\ignite\odbc\type_traits.h" />
     <ClInclude Include="..\..\include\ignite\odbc\utility.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\log.h" />
     <ClInclude Include="..\..\os\win\include\ignite\odbc\system\ui\custom_window.h" />
     <ClInclude Include="..\..\os\win\include\ignite\odbc\system\ui\window.h" />
   </ItemGroup>

@@ -28,7 +28,6 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -73,8 +72,8 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setIndexingSpi(new TestIndexingSpi());
 
@@ -84,8 +83,8 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setCacheStoreFactory(null);
         ccfg.setReadThrough(false);
@@ -117,7 +116,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         }
 
         for (int key = 0; key <= lastKey; key++)
-            grid(0).cache(null).remove(key);
+            grid(0).cache(DEFAULT_CACHE_NAME).remove(key);
 
         assertEquals(0, jcache(0).size(CachePeekMode.ALL));
     }
@@ -316,7 +315,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
         info("Test transaction [concurrency=" + concurrency + ", isolation=" + isolation + ']');
 
-        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         if (putBefore) {
             TestIndexingSpi.forceFail(false);
@@ -339,7 +338,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         // Execute get from all nodes to create readers for near cache.
         for (int i = 0; i < gridCount(); i++) {
             for (Integer key : keys)
-                grid(i).cache(null).get(key);
+                grid(i).cache(DEFAULT_CACHE_NAME).get(key);
         }
 
         TestIndexingSpi.forceFail(true);
@@ -369,7 +368,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
             checkUnlocked(key);
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals(0, ((IgniteKernal)ignite(0)).internalCache(null).context().tm().idMapSize());
+            assertEquals(0, ((IgniteKernal)ignite(0)).internalCache(DEFAULT_CACHE_NAME).context().tm().idMapSize());
     }
 
     /**
@@ -391,7 +390,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
                 @Override public boolean apply() {
                     IgniteKernal grid = (IgniteKernal)grid(idx);
 
-                    GridCacheAdapter cache = grid.internalCache(null);
+                    GridCacheAdapter cache = grid.internalCache(DEFAULT_CACHE_NAME);
 
                     GridCacheEntryEx entry = cache.peekEx(key);
 
@@ -450,12 +449,12 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
             info("Put key: " + key);
 
-            grid(0).cache(null).put(key, 1);
+            grid(0).cache(DEFAULT_CACHE_NAME).put(key, 1);
         }
 
         // Execute get from all nodes to create readers for near cache.
         for (int i = 0; i < gridCount(); i++)
-            grid(i).cache(null).get(key);
+            grid(i).cache(DEFAULT_CACHE_NAME).get(key);
 
         TestIndexingSpi.forceFail(true);
 
@@ -463,7 +462,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                grid(0).cache(null).put(key, 2);
+                grid(0).cache(DEFAULT_CACHE_NAME).put(key, 2);
 
                 return null;
             }
@@ -483,12 +482,12 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
             info("Put key: " + key);
 
-            grid(0).cache(null).put(key, 1);
+            grid(0).cache(DEFAULT_CACHE_NAME).put(key, 1);
         }
 
         // Execute get from all nodes to create readers for near cache.
         for (int i = 0; i < gridCount(); i++)
-            grid(i).cache(null).get(key);
+            grid(i).cache(DEFAULT_CACHE_NAME).get(key);
 
         TestIndexingSpi.forceFail(true);
 
@@ -496,7 +495,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
         Throwable e = GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                grid(0).<Integer, Integer>cache(null).invoke(key, new EntryProcessor<Integer, Integer, Void>() {
+                grid(0).<Integer, Integer>cache(DEFAULT_CACHE_NAME).invoke(key, new EntryProcessor<Integer, Integer, Void>() {
                     @Override public Void process(MutableEntry<Integer, Integer> e, Object... args) {
                         e.setValue(2);
 
@@ -531,13 +530,13 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
             info("Put data: " + m);
 
-            grid(0).cache(null).putAll(m);
+            grid(0).cache(DEFAULT_CACHE_NAME).putAll(m);
         }
 
         // Execute get from all nodes to create readers for near cache.
         for (int i = 0; i < gridCount(); i++) {
             for (Integer key : keys)
-                grid(i).cache(null).get(key);
+                grid(i).cache(DEFAULT_CACHE_NAME).get(key);
         }
 
         TestIndexingSpi.forceFail(true);
@@ -551,7 +550,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                grid(0).cache(null).putAll(m);
+                grid(0).cache(DEFAULT_CACHE_NAME).putAll(m);
 
                 return null;
             }
@@ -572,12 +571,12 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
             info("Put key: " + key);
 
-            grid(0).cache(null).put(key, 1);
+            grid(0).cache(DEFAULT_CACHE_NAME).put(key, 1);
         }
 
         // Execute get from all nodes to create readers for near cache.
         for (int i = 0; i < gridCount(); i++)
-            grid(i).cache(null).get(key);
+            grid(i).cache(DEFAULT_CACHE_NAME).get(key);
 
         TestIndexingSpi.forceFail(true);
 
@@ -585,7 +584,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                grid(0).cache(null).remove(key);
+                grid(0).cache(DEFAULT_CACHE_NAME).remove(key);
 
                 return null;
             }
@@ -602,7 +601,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      * @return Key.
      */
     private Integer keyForNode(ClusterNode node, int type) {
-        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         if (cache.getConfiguration(CacheConfiguration.class).getCacheMode() == LOCAL)
             return ++lastKey;
@@ -665,13 +664,13 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public Iterator<Cache.Entry<?, ?>> query(@Nullable String spaceName, Collection<Object> params,
+        @Override public Iterator<Cache.Entry<?, ?>> query(@Nullable String cacheName, Collection<Object> params,
             @Nullable IndexingQueryFilter filters) throws IgniteSpiException {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public void store(@Nullable String spaceName, Object key, Object val, long expirationTime)
+        @Override public void store(@Nullable String cacheName, Object key, Object val, long expirationTime)
             throws IgniteSpiException {
             if (fail) {
                 fail = false;
@@ -681,7 +680,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(@Nullable String spaceName, Object k)
+        @Override public void remove(@Nullable String cacheName, Object k)
             throws IgniteSpiException {
             if (fail) {
                 fail = false;
@@ -691,17 +690,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public void onSwap(@Nullable String spaceName, Object key) throws IgniteSpiException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onUnswap(@Nullable String spaceName, Object key, Object val) throws IgniteSpiException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+        @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
             // No-op.
         }
 

@@ -72,7 +72,7 @@ public class GridCacheContinuousQueryNodesFilteringTest extends GridCommonAbstra
             try (Ignite node2 = startGrid("node2", getConfiguration("node2", true, log))) {
                 fail();
             }
-            catch (IgniteException e) {
+            catch (IgniteException ignored) {
                 assertTrue(log.toString().contains("Class not found for continuous query remote filter " +
                     "[name=org.apache.ignite.tests.p2p.CacheDeploymentEntryEventFilter]"));
             }
@@ -88,7 +88,7 @@ public class GridCacheContinuousQueryNodesFilteringTest extends GridCommonAbstra
     private Ignite startNodeWithCache() throws Exception {
         Ignite node1 = startGrid("node1", getConfiguration("node1", true, null));
 
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         ccfg.setName("attrsTestCache");
         ccfg.setNodeFilter(new IgnitePredicate<ClusterNode>() {
             /** {@inheritDoc} */

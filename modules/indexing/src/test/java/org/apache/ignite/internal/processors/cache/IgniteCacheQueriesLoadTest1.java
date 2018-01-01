@@ -57,7 +57,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -144,8 +143,8 @@ public class IgniteCacheQueriesLoadTest1 extends GridCommonAbstractTest {
     private final int preloadAmount = 10_000;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setIncludeEventTypes();
 
@@ -156,11 +155,10 @@ public class IgniteCacheQueriesLoadTest1 extends GridCommonAbstractTest {
         RendezvousAffinityFunction aff = new RendezvousAffinityFunction();
         aff.setPartitions(3000);
 
-        CacheConfiguration<Object, Object> parentCfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> parentCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         parentCfg.setAffinity(aff);
         parentCfg.setAtomicityMode(TRANSACTIONAL);
         parentCfg.setCacheMode(PARTITIONED);
-        parentCfg.setMemoryMode(OFFHEAP_TIERED);
         parentCfg.setBackups(2);
         parentCfg.setWriteSynchronizationMode(FULL_SYNC);
 

@@ -56,13 +56,14 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
     private int selectors;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpCommunicationSpi commSpi = ((TcpCommunicationSpi)cfg.getCommunicationSpi());
 
         commSpi.setSharedMemoryPort(-1);
         commSpi.setConnectionsPerNode(connectionsPerNode());
+        commSpi.setUsePairedConnections(usePairedConnections());
 
         if (selectors > 0)
             commSpi.setSelectorsCount(selectors);
@@ -71,7 +72,24 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
 
         cfg.setClientMode(client);
 
+        if (sslEnabled())
+            cfg.setSslContextFactory(GridTestUtils.sslFactory());
+
         return cfg;
+    }
+
+    /**
+     * @return {@code True} to enable SSL.
+     */
+    protected boolean sslEnabled() {
+        return false;
+    }
+
+    /**
+     * @return Value for {@link TcpCommunicationSpi#setUsePairedConnections(boolean)}.
+     */
+    protected boolean usePairedConnections() {
+        return false;
     }
 
     /**
@@ -92,12 +110,15 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBalance1() throws Exception {
+        if (sslEnabled())
+            return;
+
         System.setProperty(IgniteSystemProperties.IGNITE_IO_BALANCE_PERIOD, "5000");
 
         try {
             selectors = 4;
 
-            final int SRVS = 4;
+            final int SRVS = 6;
 
             startGridsMultiThreaded(SRVS);
 
@@ -105,7 +126,7 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
 
             final Ignite client = startGrid(SRVS);
 
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < SRVS; i++) {
                 ClusterNode node = client.cluster().node(ignite(i).cluster().localNode().id());
 
                 client.compute(client.cluster().forNode(node)).call(new DummyCallable(null));
@@ -151,7 +172,10 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
                             }
                         }
 
-                        return srv.readerMoveCount() > readMoveCnt && srv.writerMoveCount() > writeMoveCnt;
+                        if (usePairedConnections())
+                            return srv.readerMoveCount() > readMoveCnt && srv.writerMoveCount() > writeMoveCnt;
+                        else
+                            return srv.readerMoveCount() > readMoveCnt || srv.writerMoveCount() > writeMoveCnt;
                     }
                 }, 30_000);
 
@@ -165,8 +189,12 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
                     ", rc2=" + readMoveCnt2 +
                     ", wc2=" + writeMoveCnt2 + ']');
 
-                assertTrue(readMoveCnt2 > readMoveCnt1);
-                assertTrue(writeMoveCnt2 > writeMoveCnt1);
+                if (usePairedConnections()) {
+                    assertTrue(readMoveCnt2 > readMoveCnt1);
+                    assertTrue(writeMoveCnt2 > writeMoveCnt1);
+                }
+                else
+                    assertTrue(readMoveCnt2 > readMoveCnt1 || writeMoveCnt2 > writeMoveCnt1);
 
                 readMoveCnt1 = readMoveCnt2;
                 writeMoveCnt1 = writeMoveCnt2;

@@ -81,6 +81,9 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
     @Override public GridRestRequest asRestRequest(GridRedisMessage msg) throws IgniteCheckedException {
         assert msg != null;
 
+        if (msg.messageSize() < 3)
+            throw new GridRedisGenericException("Wrong number of arguments");
+
         // check if an atomic long with the key exists (related to incr/decr).
         IgniteAtomicLong l = ctx.grid().atomicLong(msg.key(), 0, false);
 
@@ -88,8 +91,8 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
             try {
                 l.close();
             }
-            catch (IgniteException e) {
-                U.warn(log, "Failed to remove atomic long for key [" + msg.key() + "]");
+            catch (IgniteException ignored) {
+                U.warn(log, "Failed to remove atomic long for key: " + msg.key());
             }
         }
 
@@ -99,9 +102,7 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
         restReq.key(msg.key());
 
         restReq.command(CACHE_PUT);
-
-        if (msg.messageSize() < 3)
-            throw new GridRedisGenericException("Wrong number of arguments");
+        restReq.cacheName(msg.cacheName());
 
         restReq.value(msg.aux(VAL_POS));
 
@@ -111,37 +112,32 @@ public class GridRedisSetCommandHandler extends GridRedisRestCommandHandler {
             // get rid of SET value.
             params.remove(0);
 
-            if (isNx(params))
+            if (U.containsStringCollection(params, "nx", true))
                 restReq.command(CACHE_PUT_IF_ABSENT);
-            else if (isXx(params))
+            else if (U.containsStringCollection(params, "xx", true))
                 restReq.command(CACHE_REPLACE);
 
-            // TODO: IGNITE-4226: Need properly handle expiration parameter.
+            setExpire(restReq, params);
         }
 
         return restReq;
     }
 
     /**
+     * Attempts to set expiration when EX or PX parameters are specified.
+     *
+     * @param restReq {@link GridRestCacheRequest}.
      * @param params Command parameters.
-     * @return True if NX option is available, otherwise false.
+     * @throws GridRedisGenericException When parameters are not valid.
      */
-    private boolean isNx(List<String> params) {
-        if (params.size() >= 3)
-            return "nx".equalsIgnoreCase(params.get(0)) || "nx".equalsIgnoreCase(params.get(2));
+    private void setExpire(GridRestCacheRequest restReq, List<String> params) throws GridRedisGenericException {
+        Long px = longValue("px", params);
+        Long ex = longValue("ex", params);
 
-        return "nx".equalsIgnoreCase(params.get(0));
-    }
-
-    /**
-     * @param params Command parameters.
-     * @return True if XX option is available, otherwise false.
-     */
-    private boolean isXx(List<String> params) {
-        if (params.size() >= 3)
-            return "xx".equalsIgnoreCase(params.get(0)) || "xx".equalsIgnoreCase(params.get(2));
-
-        return "xx".equalsIgnoreCase(params.get(0));
+        if (px != null)
+            restReq.ttl(px);
+        else if (ex != null)
+            restReq.ttl(ex * 1000L);
     }
 
     /** {@inheritDoc} */

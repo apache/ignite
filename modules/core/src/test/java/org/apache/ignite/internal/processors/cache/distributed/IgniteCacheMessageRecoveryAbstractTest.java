@@ -39,7 +39,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -51,8 +50,8 @@ public abstract class IgniteCacheMessageRecoveryAbstractTest extends GridCommonA
     public static final int GRID_CNT = 3;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
@@ -67,7 +66,6 @@ public abstract class IgniteCacheMessageRecoveryAbstractTest extends GridCommonA
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(atomicityMode());
         ccfg.setBackups(1);
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
         ccfg.setNearConfiguration(null);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
@@ -103,9 +101,9 @@ public abstract class IgniteCacheMessageRecoveryAbstractTest extends GridCommonA
         for (int i = 0; i < GRID_CNT; i++) {
             final IgniteKernal grid = (IgniteKernal)grid(i);
 
-            GridTestUtils.retryAssert(log, 10, 100, new CA() {
+            GridTestUtils.retryAssert(log, 10, 500, new CA() {
                 @Override public void apply() {
-                    assertTrue(grid.internalCache().context().mvcc().atomicFutures().isEmpty());
+                    assertTrue(grid.internalCache(DEFAULT_CACHE_NAME).context().mvcc().atomicFutures().isEmpty());
                 }
             });
         }
@@ -117,7 +115,7 @@ public abstract class IgniteCacheMessageRecoveryAbstractTest extends GridCommonA
     public void testMessageRecovery() throws Exception {
         final Ignite ignite = grid(0);
 
-        final IgniteCache<Object, String> cache = ignite.cache(null);
+        final IgniteCache<Object, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         Map<Integer, String> map = new HashMap<>();
 

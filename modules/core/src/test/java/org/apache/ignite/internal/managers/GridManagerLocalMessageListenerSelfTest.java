@@ -50,7 +50,7 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final byte DIRECT_TYPE = (byte)210;
+    private static final short DIRECT_TYPE = 210;
 
     static {
         GridIoMessageFactory.registerCustom(DIRECT_TYPE, new CO<Message>() {
@@ -61,8 +61,8 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -128,7 +128,7 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
 
         mgr.start();
 
-        mgr.onKernalStart();
+        mgr.onKernalStart(true);
 
         assertTrue(mgr.enabled());
     }
@@ -143,7 +143,7 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
 
         assertTrue(mgr.enabled());
 
-        mgr.onKernalStart();
+        mgr.onKernalStart(true);
 
         mgr.onKernalStop(false);
 
@@ -191,7 +191,7 @@ public class GridManagerLocalMessageListenerSelfTest extends GridCommonAbstractT
         private String TEST_TOPIC = "test_topic";
 
         /** {@inheritDoc} */
-        @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+        @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
             // No-op.
         }
 

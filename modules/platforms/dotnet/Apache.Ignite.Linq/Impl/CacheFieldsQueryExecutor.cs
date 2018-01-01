@@ -38,41 +38,26 @@ namespace Apache.Ignite.Linq.Impl
     {
         /** */
         private readonly ICacheInternal _cache;
+        
+        /** */
+        private readonly QueryOptions _options;
 
         /** */
         private static readonly CopyOnWriteConcurrentDictionary<ConstructorInfo, object> CtorCache =
             new CopyOnWriteConcurrentDictionary<ConstructorInfo, object>();
 
-        /** */
-        private readonly bool _local;
-
-        /** */
-        private readonly int _pageSize;
-
-        /** */
-        private readonly bool _enableDistributedJoins;
-
-        /** */
-        private readonly bool _enforceJoinOrder;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheFieldsQueryExecutor" /> class.
         /// </summary>
         /// <param name="cache">The executor function.</param>
-        /// <param name="local">Local flag.</param>
-        /// <param name="pageSize">Size of the page.</param>
-        /// <param name="enableDistributedJoins">Distributed joins flag.</param>
-        /// <param name="enforceJoinOrder">Enforce join order flag.</param>
-        public CacheFieldsQueryExecutor(ICacheInternal cache, bool local, int pageSize, bool enableDistributedJoins,
-            bool enforceJoinOrder)
+        /// <param name="options">Query options.</param>
+        public CacheFieldsQueryExecutor(ICacheInternal cache, QueryOptions options)
         {
             Debug.Assert(cache != null);
+            Debug.Assert(options != null);
 
             _cache = cache;
-            _local = local;
-            _pageSize = pageSize;
-            _enableDistributedJoins = enableDistributedJoins;
-            _enforceJoinOrder = enforceJoinOrder;
+            _options = options;
         }
 
         /** <inheritdoc /> */
@@ -104,48 +89,9 @@ namespace Apache.Ignite.Linq.Impl
 
             var selector = GetResultSelector<T>(queryModel.SelectClause.Selector);
 
-            return _cache.QueryFields(qry, selector);
+            return _cache.Query(qry, selector);
         }
 
-        /// <summary>
-        /// Compiles the query (old method, does not support some scenarios).
-        /// </summary>
-        public Func<object[], IQueryCursor<T>> CompileQuery<T>(QueryModel queryModel, Delegate queryCaller)
-        {
-            Debug.Assert(queryModel != null);
-            Debug.Assert(queryCaller != null);
-
-            var qryData = GetQueryData(queryModel);
-
-            var qryText = qryData.QueryText;
-
-            var selector = GetResultSelector<T>(queryModel.SelectClause.Selector);
-
-            // Compiled query is a delegate with query parameters
-            // Delegate parameters order and query parameters order may differ
-
-            // These are in order of usage in query
-            var qryOrderParams = qryData.ParameterExpressions.OfType<MemberExpression>()
-                .Select(x => x.Member.Name).ToList();
-
-            // These are in order they come from user
-            var userOrderParams = queryCaller.Method.GetParameters().Select(x => x.Name).ToList();
-
-            if ((qryOrderParams.Count != qryData.Parameters.Count) ||
-                (qryOrderParams.Count != userOrderParams.Count))
-                throw new InvalidOperationException("Error compiling query: all compiled query arguments " +
-                    "should come from enclosing delegate parameters.");
-
-            var indices = qryOrderParams.Select(x => userOrderParams.IndexOf(x)).ToArray();
-
-            // Check if user param order is already correct
-            if (indices.SequenceEqual(Enumerable.Range(0, indices.Length)))
-                return args => _cache.QueryFields(GetFieldsQuery(qryText, args), selector);
-
-            // Return delegate with reorder
-            return args => _cache.QueryFields(GetFieldsQuery(qryText,
-                args.Select((x, i) => args[indices[i]]).ToArray()), selector);
-        }
         /// <summary>
         /// Compiles the query without regard to number or order of arguments.
         /// </summary>
@@ -156,7 +102,7 @@ namespace Apache.Ignite.Linq.Impl
             var qryText = GetQueryData(queryModel).QueryText;
             var selector = GetResultSelector<T>(queryModel.SelectClause.Selector);
 
-            return args => _cache.QueryFields(GetFieldsQuery(qryText, args), selector);
+            return args => _cache.Query(GetFieldsQuery(qryText, args), selector);
         }
 
         /// <summary>
@@ -198,7 +144,7 @@ namespace Apache.Ignite.Linq.Impl
             // Simple case: lambda with no parameters. Only embedded parameters are used.
             if (!queryLambda.Parameters.Any())
             {
-                return argsUnused => _cache.QueryFields(GetFieldsQuery(qryText, qryParams), selector);
+                return argsUnused => _cache.Query(GetFieldsQuery(qryText, qryParams), selector);
             }
 
             // These are in order of usage in query
@@ -211,7 +157,7 @@ namespace Apache.Ignite.Linq.Impl
             if (qryOrderArgs.Length == qryParams.Length
                 && qryOrderArgs.SequenceEqual(userOrderArgs))
             {
-                return args => _cache.QueryFields(GetFieldsQuery(qryText, args), selector);
+                return args => _cache.Query(GetFieldsQuery(qryText, args), selector);
             }
 
             // General case: embedded args and lambda args are mixed; same args can be used multiple times.
@@ -226,7 +172,7 @@ namespace Apache.Ignite.Linq.Impl
                 return -1;
             }).ToArray();
 
-            return args => _cache.QueryFields(
+            return args => _cache.Query(
                 GetFieldsQuery(qryText, MapQueryArgs(args, qryParams, mapping)), selector);
         }
 
@@ -252,11 +198,17 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         internal SqlFieldsQuery GetFieldsQuery(string text, object[] args)
         {
-            return new SqlFieldsQuery(text, _local, args)
+            return new SqlFieldsQuery(text)
             {
-                EnableDistributedJoins = _enableDistributedJoins,
-                PageSize = _pageSize,
-                EnforceJoinOrder = _enforceJoinOrder
+                EnableDistributedJoins = _options.EnableDistributedJoins,
+                PageSize = _options.PageSize,
+                EnforceJoinOrder = _options.EnforceJoinOrder,
+                Timeout = _options.Timeout,
+                ReplicatedOnly = _options.ReplicatedOnly,
+                Colocated = _options.Colocated,
+                Local = _options.Local,
+                Arguments = args,
+                Lazy = _options.Lazy
             };
         }
 

@@ -28,6 +28,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
@@ -465,9 +466,10 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
     }
 
     /**
-     * @return Store.
+     * @return Store
+     * @throws Exception In case of error
      */
-    protected abstract T store();
+    protected abstract T store() throws Exception;
 
     /**
      * Dummy transaction for test purposes.
@@ -547,6 +549,11 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         }
 
         /** {@inheritDoc} */
+        @Override public IgniteFuture<Void> commitAsync() throws IgniteException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public void close() {
             // No-op.
         }
@@ -569,6 +576,21 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         /** {@inheritDoc} */
         @Override public void rollback() {
             // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void suspend() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void resume() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteFuture<Void> rollbackAsync() throws IgniteException {
+            return null;
         }
     }
 }

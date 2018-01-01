@@ -21,9 +21,6 @@ namespace Apache.Ignite.Examples.DataStructures
     using System.Threading;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.DataStructures;
-    using Apache.Ignite.Core.DataStructures.Configuration;
-    using Apache.Ignite.Core.Discovery.Tcp;
-    using Apache.Ignite.Core.Discovery.Tcp.Multicast;
     using Apache.Ignite.ExamplesDll.DataStructures;
 
     /// <summary>
@@ -44,26 +41,11 @@ namespace Apache.Ignite.Examples.DataStructures
         [STAThread]
         public static void Main()
         {
-            var atomicCfg = new AtomicConfiguration
-            {
-                // Each node reserves 10 numbers to itself, so that 10 increments can be done locally, 
-                // without communicating to other nodes. After that, another 10 elements are reserved.
-                AtomicSequenceReserveSize = 10
-            };
+            // See app.config: <atomicConfiguration atomicSequenceReserveSize="10" />
+            // Each node reserves 10 numbers to itself, so that 10 increments can be done locally, 
+            // without communicating to other nodes. After that, another 10 elements are reserved.
 
-            var cfg = new IgniteConfiguration
-            {
-                DiscoverySpi = new TcpDiscoverySpi
-                {
-                    IpFinder = new TcpDiscoveryMulticastIpFinder
-                    {
-                        Endpoints = new[] { "127.0.0.1:47500" }
-                    }
-                },
-                AtomicConfiguration = atomicCfg
-            };
-
-            using (var ignite = Ignition.Start(cfg))
+            using (var ignite = Ignition.StartFromApplicationConfiguration())
             {
                 Console.WriteLine();
                 Console.WriteLine(">>> Atomic sequence example started.");

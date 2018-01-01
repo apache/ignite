@@ -24,8 +24,11 @@ import javax.cache.CacheException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
@@ -65,16 +68,13 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface Ignite extends AutoCloseable {
     /**
-     * Gets the name of the grid this grid instance (and correspondingly its local node) belongs to.
-     * Note that single Java VM can have multiple grid instances all belonging to different grids. Grid
-     * name allows to indicate to what grid this particular grid instance (i.e. grid runtime and its
-     * local node) belongs to.
+     * Gets the name of the Ignite instance.
+     * The name allows having multiple Ignite instances with different names within the same Java VM.
      * <p>
-     * If default grid instance is used, then
-     * {@code null} is returned. Refer to {@link Ignition} documentation
-     * for information on how to start named grids.
+     * If default Ignite instance is used, then {@code null} is returned.
+     * Refer to {@link Ignition} documentation for information on how to start named ignite Instances.
      *
-     * @return Name of the grid, or {@code null} for default grid.
+     * @return Name of the Ignite instance, or {@code null} for default Ignite instance.
      */
     public String name();
 
@@ -343,7 +343,7 @@ public interface Ignite extends AutoCloseable {
      * @return Cache instance.
      * @throws CacheException If error occurs.
      */
-    public <K, V> IgniteCache<K, V> createNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg)
+    public <K, V> IgniteCache<K, V> createNearCache(String cacheName, NearCacheConfiguration<K, V> nearCfg)
         throws CacheException;
 
     /**
@@ -354,7 +354,7 @@ public interface Ignite extends AutoCloseable {
      * @return {@code IgniteCache} instance.
      * @throws CacheException If error occurs.
      */
-    public <K, V> IgniteCache<K, V> getOrCreateNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg)
+    public <K, V> IgniteCache<K, V> getOrCreateNearCache(String cacheName, NearCacheConfiguration<K, V> nearCfg)
         throws CacheException;
 
     /**
@@ -381,7 +381,7 @@ public interface Ignite extends AutoCloseable {
      * @return Instance of the cache for the specified name.
      * @throws CacheException If error occurs.
      */
-    public <K, V> IgniteCache<K, V> cache(@Nullable String name) throws CacheException;
+    public <K, V> IgniteCache<K, V> cache(String name) throws CacheException;
 
     /**
      * Gets the collection of names of currently available caches.
@@ -405,11 +405,11 @@ public interface Ignite extends AutoCloseable {
      * is responsible for loading external data into in-memory data grid. For more information
      * refer to {@link IgniteDataStreamer} documentation.
      *
-     * @param cacheName Cache name ({@code null} for default cache).
+     * @param cacheName Cache name.
      * @return Data streamer.
      * @throws IllegalStateException If node is stopping.
      */
-    public <K, V> IgniteDataStreamer<K, V> dataStreamer(@Nullable String cacheName) throws IllegalStateException;
+    public <K, V> IgniteDataStreamer<K, V> dataStreamer(String cacheName) throws IllegalStateException;
 
     /**
      * Gets an instance of IGFS (Ignite In-Memory File System). If one is not
@@ -434,7 +434,7 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Will get an atomic sequence from cache and create one if it has not been created yet and {@code create} flag
-     * is {@code true}.
+     * is {@code true}. It will use configuration from {@link IgniteConfiguration#getAtomicConfiguration()}.
      *
      * @param name Sequence name.
      * @param initVal Initial value for sequence. Ignored if {@code create} flag is {@code false}.
@@ -443,6 +443,20 @@ public interface Ignite extends AutoCloseable {
      * @throws IgniteException If sequence could not be fetched or created.
      */
     public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create)
+        throws IgniteException;
+
+    /**
+     * Will get an atomic sequence from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     *
+     * @param name Sequence name.
+     * @param cfg Configuration.
+     * @param initVal Initial value for sequence. Ignored if {@code create} flag is {@code false}.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Sequence for the given name.
+     * @throws IgniteException If sequence could not be fetched or created.
+     */
+    public IgniteAtomicSequence atomicSequence(String name, AtomicConfiguration cfg, long initVal, boolean create)
         throws IgniteException;
 
     /**
@@ -458,8 +472,21 @@ public interface Ignite extends AutoCloseable {
     public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) throws IgniteException;
 
     /**
-     * Will get a atomic reference from cache and create one if it has not been created yet and {@code create} flag
+     * Will get a atomic long from cache and create one if it has not been created yet and {@code create} flag
      * is {@code true}.
+     *
+     * @param name Name of atomic long.
+     * @param cfg Configuration.
+     * @param initVal Initial value for atomic long. Ignored if {@code create} flag is {@code false}.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Atomic long.
+     * @throws IgniteException If atomic long could not be fetched or created.
+     */
+    public IgniteAtomicLong atomicLong(String name, AtomicConfiguration cfg, long initVal, boolean create) throws IgniteException;
+
+    /**
+     * Will get a atomic reference from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}. It will use configuration from {@link IgniteConfiguration#getAtomicConfiguration()}.
      *
      * @param name Atomic reference name.
      * @param initVal Initial value for atomic reference. Ignored if {@code create} flag is {@code false}.
@@ -468,6 +495,20 @@ public interface Ignite extends AutoCloseable {
      * @throws IgniteException If atomic reference could not be fetched or created.
      */
     public <T> IgniteAtomicReference<T> atomicReference(String name, @Nullable T initVal, boolean create)
+        throws IgniteException;
+
+    /**
+     * Will get a atomic reference from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     *
+     * @param name Atomic reference name.
+     * @param cfg Configuration.
+     * @param initVal Initial value for atomic reference. Ignored if {@code create} flag is {@code false}.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Atomic reference for the given name.
+     * @throws IgniteException If atomic reference could not be fetched or created.
+     */
+    public <T> IgniteAtomicReference<T> atomicReference(String name, AtomicConfiguration cfg, @Nullable T initVal, boolean create)
         throws IgniteException;
 
     /**
@@ -482,6 +523,21 @@ public interface Ignite extends AutoCloseable {
      * @throws IgniteException If atomic stamped could not be fetched or created.
      */
     public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, @Nullable T initVal,
+        @Nullable S initStamp, boolean create) throws IgniteException;
+
+    /**
+     * Will get a atomic stamped from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     *
+     * @param name Atomic stamped name.
+     * @param cfg Configuration.
+     * @param initVal Initial value for atomic stamped. Ignored if {@code create} flag is {@code false}.
+     * @param initStamp Initial stamp for atomic stamped. Ignored if {@code create} flag is {@code false}.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Atomic stamped for the given name.
+     * @throws IgniteException If atomic stamped could not be fetched or created.
+     */
+    public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, AtomicConfiguration cfg, @Nullable T initVal,
         @Nullable S initStamp, boolean create) throws IgniteException;
 
     /**
@@ -581,7 +637,7 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Closes {@code this} instance of grid. This method is identical to calling
-     * {@link G#stop(String, boolean) G.stop(gridName, true)}.
+     * {@link G#stop(String, boolean) G.stop(igniteInstanceName, true)}.
      * <p>
      * The method is invoked automatically on objects managed by the
      * {@code try-with-resources} statement.
@@ -591,11 +647,79 @@ public interface Ignite extends AutoCloseable {
     @Override public void close() throws IgniteException;
 
     /**
-     * Gets affinity service to provide information about data partitioning
-     * and distribution.
+     * Gets affinity service to provide information about data partitioning and distribution.
+     *
      * @param cacheName Cache name.
      * @param <K> Cache key type.
      * @return Affinity.
      */
     public <K> Affinity<K> affinity(String cacheName);
+
+    /**
+     * Checks Ignite grid is active or not active.
+     *
+     * @return {@code True} if grid is active. {@code False} If grid is not active.
+     */
+    public boolean active();
+
+    /**
+     * Changes Ignite grid state to active or inactive.
+     *
+     * @param active If {@code True} start activation process. If {@code False} start deactivation process.
+     * @throws IgniteException If there is an already started transaction or lock in the same thread.
+     */
+    public void active(boolean active);
+
+    /**
+     * Clears partition's lost state and moves caches to a normal mode.
+     */
+    public void resetLostPartitions(Collection<String> cacheNames);
+
+    /**
+     * @return Collection of {@link MemoryMetrics} snapshots.
+     * @deprecated Use {@link #dataRegionMetrics()} instead.
+     */
+    @Deprecated
+    public Collection<MemoryMetrics> memoryMetrics();
+
+    /**
+     * @return {@link MemoryMetrics} snapshot or {@code null} if no memory region is configured under specified name.
+     * @deprecated Use {@link #dataRegionMetrics(String)} instead.
+     */
+    @Deprecated
+    @Nullable public MemoryMetrics memoryMetrics(String memPlcName);
+
+    /**
+     * @return {@link PersistenceMetrics} snapshot.
+     * @deprecated Use {@link #dataStorageMetrics()} instead.
+     */
+    @Deprecated
+    public PersistenceMetrics persistentStoreMetrics();
+
+    /**
+     * Returns a collection of {@link DataRegionMetrics} that reflects page memory usage on this Apache Ignite node
+     * instance.
+     * Returns the collection that contains the latest snapshots for each memory region
+     * configured with {@link DataRegionConfiguration configuration} on this Ignite node instance.
+     *
+     * @return Collection of {@link DataRegionMetrics} snapshots.
+     */
+    public Collection<DataRegionMetrics> dataRegionMetrics();
+
+    /**
+     * Returns the latest {@link DataRegionMetrics} snapshot for the memory region of the given name.
+     *
+     * To get the metrics for the default memory region use
+     * {@link DataStorageConfiguration#DFLT_DATA_REG_DEFAULT_NAME} as the name
+     * or a custom name if the default memory region has been renamed.
+     *
+     * @param memPlcName Name of memory region configured with {@link DataRegionConfiguration config}.
+     * @return {@link DataRegionMetrics} snapshot or {@code null} if no memory region is configured under specified name.
+     */
+    @Nullable public DataRegionMetrics dataRegionMetrics(String memPlcName);
+
+    /**
+     * @return {@link DataStorageMetrics} snapshot.
+     */
+    public DataStorageMetrics dataStorageMetrics();
 }

@@ -403,7 +403,7 @@ public class IgfsFileAffinityRange implements Message, Externalizable, Binaryliz
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 68;
     }
 

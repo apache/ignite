@@ -41,7 +41,7 @@ public class NoopCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
     private IgniteLogger log;
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+    @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         U.warn(log, "Checkpoints are disabled (to enable configure any GridCheckpointSpi implementation)");
     }
 
@@ -68,6 +68,13 @@ public class NoopCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
     /** {@inheritDoc} */
     @Override public void setCheckpointListener(CheckpointListener lsnr) {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public NoopCheckpointSpi setName(String name) {
+        super.setName(name);
+
+        return this;
     }
 
     /** {@inheritDoc} */

@@ -34,14 +34,14 @@ public class GridH2Geometry extends GridH2ValueMessage {
     /** */
     private static final Method GEOMETRY_FROM_BYTES;
 
-    /**
+    /*
      * Initialize field.
      */
     static {
         try {
             GEOMETRY_FROM_BYTES = Class.forName("org.h2.value.ValueGeometry").getMethod("get", byte[].class);
         }
-        catch (NoSuchMethodException | ClassNotFoundException e) {
+        catch (NoSuchMethodException | ClassNotFoundException ignored) {
             throw new IllegalStateException("Check H2 version in classpath.");
         }
     }
@@ -126,7 +126,7 @@ public class GridH2Geometry extends GridH2ValueMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -21;
     }
 

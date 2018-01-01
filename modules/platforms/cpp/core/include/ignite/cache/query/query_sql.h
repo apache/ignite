@@ -27,8 +27,8 @@
 #include <string>
 #include <vector>
 
-#include "ignite/cache/query/query_argument.h"
-#include "ignite/binary/binary_raw_writer.h"
+#include <ignite/impl/cache/query/query_argument.h>
+#include <ignite/binary/binary_raw_writer.h>
 
 namespace ignite
 {
@@ -74,7 +74,7 @@ namespace ignite
                 {
                     args.reserve(other.args.size());
 
-                    typedef std::vector<QueryArgumentBase*>::const_iterator Iter;
+                    typedef std::vector<impl::cache::query::QueryArgumentBase*>::const_iterator Iter;
 
                     for (Iter i = other.args.begin(); i != other.args.end(); ++i)
                         args.push_back((*i)->Copy());
@@ -102,7 +102,7 @@ namespace ignite
                  */
                 ~SqlQuery()
                 {
-                    typedef std::vector<QueryArgumentBase*>::const_iterator Iter;
+                    typedef std::vector<impl::cache::query::QueryArgumentBase*>::const_iterator Iter;
 
                     for (Iter it = args.begin(); it != args.end(); ++it)
                         delete *it;
@@ -241,7 +241,19 @@ namespace ignite
                 template<typename T>
                 void AddArgument(const T& arg)
                 {
-                    args.push_back(new QueryArgument<T>(arg));
+                    args.push_back(new impl::cache::query::QueryArgument<T>(arg));
+                }
+
+                /**
+                 * Remove all added arguments.
+                 */
+                void ClearArguments()
+                {
+                    std::vector<impl::cache::query::QueryArgumentBase*>::iterator iter;
+                    for (iter = args.begin(); iter != args.end(); ++iter)
+                        delete *iter;
+
+                    args.clear();
                 }
 
                 /**
@@ -258,10 +270,14 @@ namespace ignite
 
                     writer.WriteInt32(static_cast<int32_t>(args.size()));
 
-                    for (std::vector<QueryArgumentBase*>::const_iterator it = args.begin(); it != args.end(); ++it)
+                    std::vector<impl::cache::query::QueryArgumentBase*>::const_iterator it;
+
+                    for (it = args.begin(); it != args.end(); ++it)
                         (*it)->Write(writer);
 
                     writer.WriteBool(distributedJoins);
+                    writer.WriteInt32(0);  // Timeout, ms
+                    writer.WriteBool(false);  // ReplicatedOnly
                 }
 
             private:
@@ -281,7 +297,7 @@ namespace ignite
                 bool distributedJoins;
 
                 /** Arguments. */
-                std::vector<QueryArgumentBase*> args;
+                std::vector<impl::cache::query::QueryArgumentBase*> args;
             };
         }
     }    

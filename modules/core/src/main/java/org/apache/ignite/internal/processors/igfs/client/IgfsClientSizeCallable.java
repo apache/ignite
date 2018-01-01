@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.igfs.client;
 
-import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -41,10 +40,11 @@ public class IgfsClientSizeCallable extends IgfsClientAbstractCallable<Long> {
      * Constructor.
      *
      * @param igfsName IGFS name.
+     * @param user IGFS user name.
      * @param path Path.
      */
-    public IgfsClientSizeCallable(@Nullable String igfsName, IgfsPath path) {
-        super(igfsName, path);
+    public IgfsClientSizeCallable(@Nullable String igfsName, @Nullable String user, IgfsPath path) {
+        super(igfsName, user, path);
     }
 
     /** {@inheritDoc} */

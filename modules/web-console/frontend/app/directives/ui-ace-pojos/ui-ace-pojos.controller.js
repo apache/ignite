@@ -18,78 +18,80 @@
 export default ['$scope', 'JavaTypes', 'JavaTransformer', function($scope, JavaTypes, generator) {
     const ctrl = this;
 
-    // Watchers definition.
-    // Watcher clean instance data if instance to cluster caches was change
-    const cleanPojos = () => {
-        delete ctrl.class;
-        delete ctrl.pojos;
-        delete ctrl.classes;
+    this.$onInit = () => {
+        // Watchers definition.
+        // Watcher clean instance data if instance to cluster caches was change
+        const cleanPojos = () => {
+            delete ctrl.class;
+            delete ctrl.pojos;
+            delete ctrl.classes;
+        };
+
+        // Watcher update pojos when changes caches and checkers useConstructor and includeKeyFields
+        const updatePojos = () => {
+            delete ctrl.pojos;
+
+            if (_.isNil(ctrl.cluster) || _.isEmpty(ctrl.cluster.caches))
+                return;
+
+            ctrl.pojos = generator.pojos(ctrl.cluster.caches, ctrl.useConstructor, ctrl.includeKeyFields);
+        };
+
+        // Watcher update classes after
+        const updateClasses = (value) => {
+            delete ctrl.classes;
+
+            if (!value)
+                return;
+
+            const classes = ctrl.classes = [];
+
+            _.forEach(ctrl.pojos, (pojo) => {
+                if (_.nonNil(pojo.keyClass))
+                    classes.push(pojo.keyType);
+
+                classes.push(pojo.valueType);
+            });
+        };
+
+        // Update pojos class.
+        const updateClass = (value) => {
+            if (_.isEmpty(value))
+                return;
+
+            const pojo = value[0];
+
+            ctrl.class = ctrl.class || (pojo.keyClass ? pojo.keyType : pojo.valueType);
+        };
+
+        // Update pojos data.
+        const updatePojosData = (value) => {
+            if (_.isNil(value))
+                return;
+
+            _.forEach(ctrl.pojos, (pojo) => {
+                if (pojo.keyType === ctrl.class) {
+                    ctrl.data = pojo.keyClass;
+
+                    return false;
+                }
+
+                if (pojo.valueType === ctrl.class) {
+                    ctrl.data = pojo.valueClass;
+
+                    return false;
+                }
+            });
+        };
+
+        // Setup watchers. Watchers order is important.
+        $scope.$watch('ctrl.cluster.caches', cleanPojos);
+        $scope.$watch('ctrl.cluster.caches', updatePojos);
+        $scope.$watch('ctrl.cluster.caches', updateClasses);
+        $scope.$watch('ctrl.useConstructor', updatePojos);
+        $scope.$watch('ctrl.includeKeyFields', updatePojos);
+        $scope.$watch('ctrl.pojos', updateClass);
+        $scope.$watch('ctrl.pojos', updatePojosData);
+        $scope.$watch('ctrl.class', updatePojosData);
     };
-
-    // Watcher update pojos when changes caches and checkers useConstructor and includeKeyFields
-    const updatePojos = () => {
-        delete ctrl.pojos;
-
-        if (!ctrl.cluster || !ctrl.cluster.caches)
-            return;
-
-        ctrl.pojos = generator.pojos(ctrl.cluster.caches, ctrl.useConstructor, ctrl.includeKeyFields);
-    };
-
-    // Watcher update classes after
-    const updateClasses = (value) => {
-        delete ctrl.classes;
-
-        if (!value)
-            return;
-
-        const classes = ctrl.classes = [];
-
-        _.forEach(ctrl.pojos, (pojo) => {
-            if (pojo.keyType && JavaTypes.nonBuiltInClass(pojo.keyType))
-                classes.push(pojo.keyType);
-
-            classes.push(pojo.valueType);
-        });
-    };
-
-    // Update pojos class.
-    const updateClass = (value) => {
-        if (!value || !ctrl.pojos.length)
-            return;
-
-        const keyType = ctrl.pojos[0].keyType;
-
-        ctrl.class = ctrl.class || (JavaTypes.nonBuiltInClass(keyType) ? keyType : null) || ctrl.pojos[0].valueType;
-    };
-
-    // Update pojos data.
-    const updatePojosData = (value) => {
-        if (!value)
-            return;
-
-        _.forEach(ctrl.pojos, (pojo) => {
-            if (pojo.keyType === ctrl.class) {
-                ctrl.data = pojo.keyClass;
-
-                return false;
-            }
-
-            if (pojo.valueType === ctrl.class) {
-                ctrl.data = pojo.valueClass;
-
-                return false;
-            }
-        });
-    };
-
-    // Setup watchers. Watchers order is important.
-    $scope.$watch('ctrl.cluster.caches', cleanPojos);
-    $scope.$watch('ctrl.cluster.caches', updatePojos);
-    $scope.$watch('ctrl.cluster.caches', updateClasses);
-    $scope.$watch('ctrl.useConstructor', updatePojos);
-    $scope.$watch('ctrl.includeKeyFields', updatePojos);
-    $scope.$watch('ctrl.pojos', updateClass);
-    $scope.$watch('ctrl.pojos', updatePojosData);
-    $scope.$watch('ctrl.class', updatePojosData);
 }];

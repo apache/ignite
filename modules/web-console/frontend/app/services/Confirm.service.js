@@ -15,11 +15,13 @@
  * limitations under the License.
  */
 
+import templateUrl from 'views/templates/confirm.tpl.pug';
+
 // Confirm popup service.
 export default ['IgniteConfirm', ['$rootScope', '$q', '$modal', '$animate', ($root, $q, $modal, $animate) => {
     const scope = $root.$new();
 
-    const modal = $modal({templateUrl: '/templates/confirm.html', scope, placement: 'center', show: false, backdrop: true});
+    const modal = $modal({templateUrl, scope, show: false, backdrop: true});
 
     const _hide = () => {
         $animate.enabled(modal.$element, false);
@@ -44,7 +46,7 @@ export default ['IgniteConfirm', ['$rootScope', '$q', '$modal', '$animate', ($ro
     scope.confirmCancel = () => {
         _hide();
 
-        deferred.reject('cancelled');
+        deferred.reject({cancelled: true});
     };
 
     /**

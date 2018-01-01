@@ -37,23 +37,30 @@ namespace ignite
                     /**
                      * Children windows ids.
                      */
-                    enum ChildId
+                    struct ChildId
                     {
-                        ID_CONNECTION_SETTINGS_GROUP_BOX,
-                        ID_NAME_EDIT,
-                        ID_NAME_LABEL,
-                        ID_ADDRESS_EDIT,
-                        ID_ADDRESS_LABEL,
-                        ID_CACHE_EDIT,
-                        ID_CACHE_LABEL,
-                        ID_PAGE_SIZE_EDIT,
-                        ID_PAGE_SIZE_LABEL,
-                        ID_DISTRIBUTED_JOINS_CHECK_BOX,
-                        ID_ENFORCE_JOIN_ORDER_CHECK_BOX,
-                        ID_PROTOCOL_VERSION_LABEL,
-                        ID_PROTOCOL_VERSION_COMBO_BOX,
-                        ID_OK_BUTTON,
-                        ID_CANCEL_BUTTON
+                        enum Type
+                        {
+                            CONNECTION_SETTINGS_GROUP_BOX,
+                            NAME_EDIT,
+                            NAME_LABEL,
+                            ADDRESS_EDIT,
+                            ADDRESS_LABEL,
+                            SCHEMA_EDIT,
+                            SCHEMA_LABEL,
+                            PAGE_SIZE_EDIT,
+                            PAGE_SIZE_LABEL,
+                            DISTRIBUTED_JOINS_CHECK_BOX,
+                            ENFORCE_JOIN_ORDER_CHECK_BOX,
+                            REPLICATED_ONLY_CHECK_BOX,
+                            COLLOCATED_CHECK_BOX,
+                            LAZY_CHECK_BOX,
+                            SKIP_REDUCER_ON_UPDATE_CHECK_BOX,
+                            PROTOCOL_VERSION_LABEL,
+                            PROTOCOL_VERSION_COMBO_BOX,
+                            OK_BUTTON,
+                            CANCEL_BUTTON
+                        };
                     };
 
                 public:
@@ -116,11 +123,11 @@ namespace ignite
                     /** DSN address edit field. */
                     std::auto_ptr<Window> addressEdit;
 
-                    /** DSN cache edit field label. */
-                    std::auto_ptr<Window> cacheLabel;
+                    /** DSN schema edit field label. */
+                    std::auto_ptr<Window> schemaLabel;
 
-                    /** DSN cache edit field. */
-                    std::auto_ptr<Window> cacheEdit;
+                    /** DSN schema edit field. */
+                    std::auto_ptr<Window> schemaEdit;
 
                     /** DSN fetch page size edit field label. */
                     std::auto_ptr<Window> pageSizeLabel;
@@ -133,6 +140,18 @@ namespace ignite
 
                     /** Enforce join order CheckBox. */
                     std::auto_ptr<Window> enforceJoinOrderCheckBox;
+
+                    /** Replicated only CheckBox. */
+                    std::auto_ptr<Window> replicatedOnlyCheckBox;
+
+                    /** Collocated CheckBox. */
+                    std::auto_ptr<Window> collocatedCheckBox;
+
+                    /** Lazy CheckBox. */
+                    std::auto_ptr<Window> lazyCheckBox;
+
+                    /** Update on server CheckBox. */
+                    std::auto_ptr<Window> skipReducerOnUpdateCheckBox;
 
                     /** Protocol version edit field. */
                     std::auto_ptr<Window> protocolVersionLabel;

@@ -17,6 +17,11 @@
 
 import _ from 'lodash';
 
+_.mixin({
+    nonNil: _.negate(_.isNil),
+    nonEmpty: _.negate(_.isEmpty)
+});
+
 export class EmptyBean {
     /**
      * @param {String} clsName
@@ -109,6 +114,10 @@ export class Bean extends EmptyBean {
 
     intConstructorArgument(model) {
         return this._property(this.arguments, 'int', model, null, _.nonNil);
+    }
+
+    boolConstructorArgument(model) {
+        return this._property(this.arguments, 'boolean', model, null, _.nonNil);
     }
 
     classConstructorArgument(model) {
@@ -205,8 +214,16 @@ export class Bean extends EmptyBean {
         return this._property(this.properties, 'int', model, name, _.nonNil);
     }
 
+    longProperty(model, name = model) {
+        return this._property(this.properties, 'long', model, name, _.nonNil);
+    }
+
     floatProperty(model, name = model) {
         return this._property(this.properties, 'float', model, name, _.nonNil);
+    }
+
+    doubleProperty(model, name = model) {
+        return this._property(this.properties, 'double', model, name, _.nonNil);
     }
 
     property(name, value, hint) {

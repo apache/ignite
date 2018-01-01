@@ -37,7 +37,7 @@ public class VisorNodeConfigurationCollectorJob extends VisorJob<Void, VisorGrid
 
     /** {@inheritDoc} */
     @Override protected VisorGridConfiguration run(Void arg) {
-        return new VisorGridConfiguration().from(ignite);
+        return new VisorGridConfiguration(ignite);
     }
 
     /** {@inheritDoc} */

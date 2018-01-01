@@ -36,7 +36,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate.Mask.DHT_LOCAL;
@@ -665,10 +664,10 @@ public class GridCacheMvccCandidate implements Externalizable,
         GridCacheMvccCandidate next = next();
 
         return S.toString(GridCacheMvccCandidate.class, this,
-            "key", parent == null ? null : parent.key(),
-            "masks", Mask.toString(flags()),
-            "prevVer", (prev == null ? null : prev.version()),
-            "nextVer", (next == null ? null : next.version()));
+            "key", parent == null ? null : parent.key(), true,
+            "masks", Mask.toString(flags()), false,
+            "prevVer", prev == null ? null : prev.version(), false,
+            "nextVer", next == null ? null : next.version(), false);
     }
 
     /**

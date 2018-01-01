@@ -32,12 +32,13 @@ namespace Apache.Ignite.Core.Tests
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests for executable.
+    /// Tests for Apache.Ignite.exe.
     /// </summary>
+    [Category(TestUtils.CategoryIntensive)]
     public class ExecutableTest
     {
         /** Spring configuration path. */
-        private static readonly string SpringCfgPath = "config\\compute\\compute-standalone.xml";
+        private const string SpringCfgPath = "config\\compute\\compute-standalone.xml";
 
         /** Min memory Java task. */
         private const string MinMemTask = "org.apache.ignite.platform.PlatformMinMemoryTask";
@@ -49,34 +50,25 @@ namespace Apache.Ignite.Core.Tests
         private IIgnite _grid;
 
         /// <summary>
-        /// Test fixture set-up routine.
-        /// </summary>
-        [TestFixtureSetUp]
-        public void TestFixtureSetUp()
-        {
-            TestUtils.KillProcesses();
-
-            _grid = Ignition.Start(Configuration(SpringCfgPath));
-        }
-
-        /// <summary>
-        /// Test fixture tear-down routine.
-        /// </summary>
-        [TestFixtureTearDown]
-        public void TestFixtureTearDown()
-        {
-            Ignition.StopAll(true);
-
-            TestUtils.KillProcesses();
-        }
-
-        /// <summary>
         /// Set-up routine.
         /// </summary>
         [SetUp]
         public void SetUp()
         {
             TestUtils.KillProcesses();
+
+            _grid = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    TypeConfigurations = new List<BinaryTypeConfiguration>
+                    {
+                        new BinaryTypeConfiguration(typeof(RemoteConfiguration)),
+                        new BinaryTypeConfiguration(typeof(RemoteConfigurationClosure))
+                    }
+                },
+                SpringConfigUrl = SpringCfgPath
+            });
 
             Assert.IsTrue(_grid.WaitTopology(1));
 
@@ -89,6 +81,10 @@ namespace Apache.Ignite.Core.Tests
         [TearDown]
         public void TearDown()
         {
+            Ignition.StopAll(true);
+
+            TestUtils.KillProcesses();
+
             IgniteProcess.RestoreConfigurationBackup();
         }
 
@@ -324,10 +320,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.IsTrue(proc.Join(30000, out exitCode));
                 Assert.AreEqual(-1, exitCode);
 
-                lock (reader.List)
-                {
-                    Assert.AreEqual(err, reader.List.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)));
-                }
+                Assert.AreEqual(err, reader.GetOutput().FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)));
             };
 
             checkError("blabla", "ERROR: Apache.Ignite.Core.Common.IgniteException: Missing argument value: " +
@@ -339,8 +332,9 @@ namespace Apache.Ignite.Core.Tests
             checkError("assembly=", "ERROR: Apache.Ignite.Core.Common.IgniteException: Missing argument value: " +
                                  "'assembly'. See 'Apache.Ignite.exe /help'");
 
-            checkError("assembly=x.dll", "ERROR: Apache.Ignite.Core.Common.IgniteException: " +
-                                         "Failed to load assembly: x.dll");
+            checkError("assembly=x.dll", "ERROR: Apache.Ignite.Core.Common.IgniteException: Failed to start " +
+                                         "Ignite.NET, check inner exception for details ---> Apache.Ignite.Core." +
+                                         "Common.IgniteException: Failed to load assembly: x.dll");
 
             checkError("configFileName=wrong.config", "ERROR: System.Configuration.ConfigurationErrorsException: " +
                                                       "Specified config file does not exist: wrong.config");
@@ -365,48 +359,6 @@ namespace Apache.Ignite.Core.Tests
         private RemoteConfiguration RemoteConfig()
         {
             return _grid.GetCluster().ForRemotes().GetCompute().Call(new RemoteConfigurationClosure());
-        }
-
-        /// <summary>
-        /// Configuration for node.
-        /// </summary>
-        /// <param name="path">Path to Java XML configuration.</param>
-        /// <returns>Node configuration.</returns>
-        private static IgniteConfiguration Configuration(string path)
-        {
-            var cfg = new IgniteConfiguration();
-
-
-            var portCfg = new BinaryConfiguration();
-
-            ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
-
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof (RemoteConfiguration)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof (RemoteConfigurationClosure)));
-
-            portCfg.TypeConfigurations = portTypeCfgs;
-
-            cfg.BinaryConfiguration = portCfg;
-
-            cfg.JvmClasspath = TestUtils.CreateTestClasspath();
-
-            cfg.JvmOptions = new List<string>
-            {
-                "-ea",
-                "-Xcheck:jni",
-                "-Xms4g",
-                "-Xmx4g",
-                "-DIGNITE_QUIET=false",
-                "-Xnoagent",
-                "-Djava.compiler=NONE",
-                "-Xdebug",
-                "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005",
-                "-XX:+HeapDumpOnOutOfMemoryError"
-            };
-
-            cfg.SpringConfigUrl = path;
-
-            return cfg;
         }
 
         /// <summary>
@@ -455,7 +407,7 @@ namespace Apache.Ignite.Core.Tests
 
             public RemoteConfiguration Invoke()
             {
-                var grid0 = ((IgniteProxy) _grid).Target;
+                var grid0 = (Ignite) _grid;
 
                 var cfg = grid0.Configuration;
 
@@ -521,19 +473,6 @@ namespace Apache.Ignite.Core.Tests
             /// Maximum JVM memory (Xms).
             /// </summary>
             public int JvmMaxMemoryMb { get; set; }
-        }
-
-        private class ListDataReader : IIgniteProcessOutputReader
-        {
-            public readonly List<string> List = new List<string>();
-
-            public void OnOutput(System.Diagnostics.Process proc, string data, bool err)
-            {
-                lock (List)
-                {
-                    List.Add(data);
-                }
-            }
         }
     }
 }

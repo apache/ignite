@@ -17,18 +17,19 @@
 
 import angular from 'angular';
 
+import templateUrl from 'views/settings/profile.tpl.pug';
+
 angular
 .module('ignite-console.states.profile', [
     'ui.router'
 ])
-.config(['$stateProvider', 'AclRouteProvider', function($stateProvider, AclRoute) {
+.config(['$stateProvider', function($stateProvider) {
     // set up the states
-    $stateProvider
-    .state('settings.profile', {
+    $stateProvider.state('base.settings.profile', {
         url: '/profile',
-        templateUrl: '/settings/profile.html',
-        onEnter: AclRoute.checkAccess('profile'),
-        metaTags: {
+        templateUrl,
+        permission: 'profile',
+        tfMetaTags: {
             title: 'User profile'
         }
     });

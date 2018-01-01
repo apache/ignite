@@ -33,7 +33,6 @@ namespace Apache.Ignite.Linq.Impl
             {typeof (sbyte), "tinyint"},
             {typeof (short), "smallint"},
             {typeof (ushort), "int"},
-            {typeof (char), "nvarchar(1)"},
             {typeof (int), "int"},
             {typeof (uint), "bigint"},
             {typeof (long), "bigint"},
@@ -44,8 +43,13 @@ namespace Apache.Ignite.Linq.Impl
             {typeof (decimal), "decimal"},
             {typeof (Guid), "uuid"},
             {typeof (DateTime), "timestamp"},
-            {typeof (DateTime?), "timestamp"},
         };
+
+        /** */
+        private static readonly HashSet<Type> NotSupportedTypes = new HashSet<Type>(new []
+        {
+            typeof(char)
+        }); 
 
         /// <summary>
         /// Gets the corresponding Java type name.
@@ -55,9 +59,16 @@ namespace Apache.Ignite.Linq.Impl
             if (type == null)
                 return null;
 
+            type = Nullable.GetUnderlyingType(type) ?? type;
+
+            if (NotSupportedTypes.Contains(type))
+            {
+                throw new NotSupportedException("Type is not supported for SQL mapping: " + type);
+            }
+
             string res;
 
-            return !NetToSql.TryGetValue(type, out res) ? null : res;
+            return NetToSql.TryGetValue(type, out res) ? res : null;
         }
     }
 }

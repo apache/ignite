@@ -65,9 +65,12 @@ public class GridClientDataConfiguration {
      * Sets grid cache name for this configuration.
      *
      * @param name Cache name.
+     * @return {@code this} for chaining.
      */
-    public void setName(String name) {
+    public GridClientDataConfiguration setName(String name) {
         this.name = name;
+
+        return this;
     }
 
     /**
@@ -93,9 +96,12 @@ public class GridClientDataConfiguration {
      * work with remote partitioned caches.
      *
      * @param affinity Client data affinity.
+     * @return {@code this} for chaining.
      */
-    public void setAffinity(GridClientDataAffinity affinity) {
+    public GridClientDataConfiguration setAffinity(GridClientDataAffinity affinity) {
         this.affinity = affinity;
+
+        return this;
     }
 
     /**
@@ -112,8 +118,11 @@ public class GridClientDataConfiguration {
      * Sets balancer for pinned mode for this configuration.
      *
      * @param balancer Balancer that will be used in pinned mode.
+     * @return {@code this} for chaining.
      */
-    public void setBalancer(GridClientLoadBalancer balancer) {
+    public GridClientDataConfiguration setBalancer(GridClientLoadBalancer balancer) {
         this.balancer = balancer;
+
+        return this;
     }
 }

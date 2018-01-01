@@ -24,7 +24,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import sun.misc.BASE64Encoder;
+
+import static org.apache.ignite.internal.util.GridUnsafe.encodeBase64;
 
 /**
  *
@@ -34,8 +35,8 @@ public class JettyRestProcessorSignedSelfTest extends JettyRestProcessorAbstract
     protected static final String REST_SECRET_KEY = "secret-key";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         assert cfg.getConnectorConfiguration() != null;
 
@@ -53,7 +54,7 @@ public class JettyRestProcessorSignedSelfTest extends JettyRestProcessorAbstract
      * @throws Exception If failed.
      */
     public void testUnauthorized() throws Exception {
-        String addr = "http://" + LOC_HOST + ":" + restPort() + "/ignite?cmd=top";
+        String addr = "http://" + LOC_HOST + ":" + restPort() + "/ignite?cacheName=default&cmd=top";
 
         URL url = new URL(addr);
 
@@ -65,7 +66,7 @@ public class JettyRestProcessorSignedSelfTest extends JettyRestProcessorAbstract
         assert ((HttpURLConnection)conn).getResponseCode() == 401;
 
         // Request with authentication info.
-        addr = "http://" + LOC_HOST + ":" + restPort() + "/ignite?cmd=top";
+        addr = "http://" + LOC_HOST + ":" + restPort() + "/ignite?cacheName=default&cmd=top";
 
         url = new URL(addr);
 
@@ -87,11 +88,9 @@ public class JettyRestProcessorSignedSelfTest extends JettyRestProcessorAbstract
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-1");
 
-            BASE64Encoder enc = new BASE64Encoder();
-
             md.update(s.getBytes());
 
-            String hash = enc.encode(md.digest());
+            String hash = encodeBase64(md.digest());
 
             return ts + ":" + hash;
         }

@@ -22,12 +22,14 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobSibling;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -69,6 +71,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
      * @param dep Deployment.
      * @param taskClsName Task class name.
      * @param top Topology.
+     * @param topPred Topology predicate.
      * @param startTime Execution start time.
      * @param endTime Execution end time.
      * @param siblings Collection of siblings.
@@ -76,6 +79,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
      * @param fullSup {@code True} to enable distributed session attributes and checkpoints.
      * @param internal {@code True} in case of internal task.
      * @param subjId Subject ID.
+     * @param execName Custom executor name.
      * @return New session if one did not exist, or existing one.
      */
     public GridTaskSessionImpl createTaskSession(
@@ -85,13 +89,15 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
         @Nullable GridDeployment dep,
         String taskClsName,
         @Nullable Collection<UUID> top,
+        @Nullable IgnitePredicate<ClusterNode> topPred,
         long startTime,
         long endTime,
         Collection<ComputeJobSibling> siblings,
         Map<Object, Object> attrs,
         boolean fullSup,
         boolean internal,
-        UUID subjId) {
+        UUID subjId,
+        @Nullable String execName) {
         if (!fullSup) {
             return new GridTaskSessionImpl(
                 taskNodeId,
@@ -100,6 +106,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
                 taskClsName,
                 sesId,
                 top,
+                topPred,
                 startTime,
                 endTime,
                 siblings,
@@ -107,7 +114,8 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
                 ctx,
                 false,
                 internal,
-                subjId);
+                subjId,
+                execName);
         }
 
         while (true) {
@@ -123,6 +131,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
                         taskClsName,
                         sesId,
                         top,
+                        topPred,
                         startTime,
                         endTime,
                         siblings,
@@ -130,7 +139,8 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
                         ctx,
                         true,
                         internal,
-                        subjId));
+                        subjId,
+                        execName));
 
                 if (old != null)
                     ses = old;
@@ -177,7 +187,7 @@ public class GridTaskSessionProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Task session processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Task session processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>  sesMapSize: " + sesMap.size());
     }
 }

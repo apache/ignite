@@ -54,8 +54,8 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setCacheStoreFactory(null);
         ccfg.setReadThrough(false);
@@ -75,7 +75,7 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
      * @throws Exception If failed.
      */
     public void testInvoke() throws Exception {
-        IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         final Integer key = primaryKey(cache);
 
@@ -95,7 +95,7 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
                 @Override public Void call() throws Exception {
                     int idx = gridIdx.incrementAndGet() - 1;
 
-                    final IgniteCache<Integer, Integer> cache = grid(idx).cache(null);
+                    final IgniteCache<Integer, Integer> cache = grid(idx).cache(DEFAULT_CACHE_NAME);
 
                     for (int i = 0; i < ITERATIONS_PER_THREAD && !failed; i++)
                         cache.invoke(key, new IncProcessor());
@@ -109,7 +109,7 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
             expVal += ITERATIONS_PER_THREAD * THREADS;
 
             for (int j = 0; j < gridCount(); j++) {
-                Integer val = (Integer)grid(j).cache(null).get(key);
+                Integer val = (Integer)grid(j).cache(DEFAULT_CACHE_NAME).get(key);
 
                 assertEquals("Unexpected value for grid " + j, expVal, val);
             }

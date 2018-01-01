@@ -28,16 +28,16 @@ namespace Apache.Ignite.Linq.Impl
     /// <summary>
     /// Base class for cache queryables.
     /// </summary>
-    internal class CacheQueryableBase<T> : QueryableBase<T>, ICacheQueryableInternal
+    internal abstract class CacheQueryableBase<T> : QueryableBase<T>, ICacheQueryableInternal
     {
         /** <inheritdoc /> */
-        public CacheQueryableBase(IQueryProvider provider) : base(provider)
+        protected CacheQueryableBase(IQueryProvider provider) : base(provider)
         {
             // No-op.
         }
 
         /** <inheritdoc /> */
-        public CacheQueryableBase(IQueryProvider provider, Expression expression) : base(provider, expression)
+        protected CacheQueryableBase(IQueryProvider provider, Expression expression) : base(provider, expression)
         {
             // No-op.
         }
@@ -55,6 +55,7 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+        [Obsolete("Deprecated, null for thin client.")]
         public IIgnite Ignite
         {
             get { return CacheQueryProvider.Ignite; }
@@ -79,14 +80,6 @@ namespace Apache.Ignite.Linq.Impl
         public string TableName
         {
             get { return CacheQueryProvider.TableName; }
-        }
-
-        /** <inheritdoc /> */
-        public Func<object[], IQueryCursor<TQ>> CompileQuery<TQ>(Delegate queryCaller)
-        {
-            var executor = CacheQueryProvider.Executor;
-
-            return executor.CompileQuery<TQ>(GetQueryModel(), queryCaller);
         }
 
         /** <inheritdoc /> */

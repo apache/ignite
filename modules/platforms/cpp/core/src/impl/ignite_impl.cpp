@@ -19,25 +19,23 @@
 
 using namespace ignite::common::concurrent;
 using namespace ignite::jni::java;
+using namespace ignite::impl::interop;
+using namespace ignite::impl::binary;
+
+using namespace ignite::binary;
 
 namespace ignite
-{    
+{
     namespace impl
     {
-        IgniteImpl::IgniteImpl(SharedPointer<IgniteEnvironment> env, jobject javaRef) :
+        IgniteImpl::IgniteImpl(SharedPointer<IgniteEnvironment> env) :
+            InteropTarget(env, static_cast<jobject>(env.Get()->GetProcessor()), true),
             env(env),
-            javaRef(javaRef)
+            txImpl(),
+            prjImpl()
         {
-            IgniteError err;
-
-            txImpl = InternalGetTransactions(err);
-
-            IgniteError::ThrowIfNeeded(err);
-        }
-
-        IgniteImpl::~IgniteImpl()
-        {
-            JniContext::Release(javaRef);
+            txImpl.Init(common::Bind(this, &IgniteImpl::InternalGetTransactions));
+            prjImpl.Init(common::Bind(this, &IgniteImpl::InternalGetProjection));
         }
 
         const char* IgniteImpl::GetName() const
@@ -45,25 +43,78 @@ namespace ignite
             return env.Get()->InstanceName();
         }
 
+        const IgniteConfiguration& IgniteImpl::GetConfiguration() const
+        {
+            return env.Get()->GetConfiguration();
+        }
+
         JniContext* IgniteImpl::GetContext()
         {
             return env.Get()->Context();
         }
 
-        IgniteImpl::SP_TransactionsImpl IgniteImpl::InternalGetTransactions(IgniteError &err)
+        IgniteImpl::SP_IgniteBindingImpl IgniteImpl::GetBinding()
         {
-            IgniteImpl::SP_TransactionsImpl res;
+            return env.Get()->GetBinding();
+        }
 
-            ignite::jni::java::JniErrorInfo jniErr;
+        IgniteImpl::SP_ComputeImpl IgniteImpl::GetCompute()
+        {
+            cluster::SP_ClusterGroupImpl serversCluster = prjImpl.Get().Get()->ForServers();
 
-            jobject txJavaRef = env.Get()->Context()->ProcessorTransactions(javaRef, &jniErr);
+            return serversCluster.Get()->GetCompute();
+        }
 
-            if (txJavaRef)
-                res = SP_TransactionsImpl(new transactions::TransactionsImpl(env, txJavaRef));
-            else
-                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+        transactions::TransactionsImpl* IgniteImpl::InternalGetTransactions()
+        {
+            IgniteError err;
 
-            return res;
+            jobject txJavaRef = InOpObject(ProcessorOp::GET_TRANSACTIONS, err);
+
+            IgniteError::ThrowIfNeeded(err);
+
+            if (!txJavaRef)
+                throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not get Transactions instance.");
+
+            return new transactions::TransactionsImpl(env, txJavaRef);
+        }
+
+        cluster::ClusterGroupImpl* IgniteImpl::InternalGetProjection()
+        {
+            IgniteError err;
+
+            jobject clusterGroupJavaRef = InOpObject(ProcessorOp::GET_CLUSTER_GROUP, err);
+
+            IgniteError::ThrowIfNeeded(err);
+
+            if (!clusterGroupJavaRef)
+                throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not get ClusterGroup instance.");
+
+            return new cluster::ClusterGroupImpl(env, clusterGroupJavaRef);
+        }
+
+        cache::CacheImpl* IgniteImpl::GetOrCreateCache(const char* name, IgniteError& err, int32_t op)
+        {
+            SharedPointer<InteropMemory> mem = env.Get()->AllocateMemory();
+            InteropMemory* mem0 = mem.Get();
+            InteropOutputStream out(mem0);
+            BinaryWriterImpl writer(&out, env.Get()->GetTypeManager());
+            BinaryRawWriter rawWriter(&writer);
+
+            rawWriter.WriteString(name);
+
+            out.Synchronize();
+
+            jobject cacheJavaRef = InStreamOutObject(op, *mem0, err);
+
+            if (!cacheJavaRef)
+            {
+                return NULL;
+            }
+
+            char* name0 = common::CopyChars(name);
+
+            return new cache::CacheImpl(name0, env, cacheJavaRef);
         }
     }
 }

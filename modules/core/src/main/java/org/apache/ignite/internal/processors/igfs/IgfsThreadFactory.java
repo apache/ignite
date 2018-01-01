@@ -31,11 +31,11 @@ public class IgfsThreadFactory extends IgniteThreadFactory {
     /**
      * Constructor.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param threadName Thread name.
      */
-    public IgfsThreadFactory(String gridName, String threadName) {
-        super(gridName, threadName);
+    public IgfsThreadFactory(String igniteInstanceName, String threadName) {
+        super(igniteInstanceName, threadName);
     }
 
     /** {@inheritDoc} */

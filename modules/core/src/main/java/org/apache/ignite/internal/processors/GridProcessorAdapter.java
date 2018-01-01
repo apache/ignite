@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors;
 
-import java.io.Serializable;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -28,12 +27,18 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Advanced parent adapter for all processor.
  */
 public abstract class GridProcessorAdapter implements GridProcessor {
+    /** */
+    private static final String DIAGNOSTIC_LOG_CATEGORY = "org.apache.ignite.internal.diagnostic";
+
     /** Kernal context. */
     @GridToStringExclude
     protected final GridKernalContext ctx;
@@ -41,6 +46,10 @@ public abstract class GridProcessorAdapter implements GridProcessor {
     /** Grid logger. */
     @GridToStringExclude
     protected final IgniteLogger log;
+
+    /** Diagnostic logger. */
+    @GridToStringExclude
+    protected final IgniteLogger diagnosticLog;
 
     /**
      * @param ctx Kernal context.
@@ -51,10 +60,12 @@ public abstract class GridProcessorAdapter implements GridProcessor {
         this.ctx = ctx;
 
         log = ctx.log(getClass());
+
+        diagnosticLog = ctx.log(DIAGNOSTIC_LOG_CATEGORY);
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -79,12 +90,22 @@ public abstract class GridProcessorAdapter implements GridProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public Serializable collectDiscoveryData(UUID nodeId) {
-        return null;
+    @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
+        // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Serializable data) {
+    @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onGridDataReceived(GridDiscoveryData data) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onJoiningNodeDataReceived(JoiningNodeDiscoveryData data) {
         // No-op.
     }
 

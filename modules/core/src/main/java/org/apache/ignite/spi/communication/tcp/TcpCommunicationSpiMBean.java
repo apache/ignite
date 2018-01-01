@@ -17,7 +17,8 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import org.apache.ignite.internal.util.nio.GridNioServer;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.mxbean.MXBeanDescription;
 import org.apache.ignite.spi.IgniteSpiManagementMBean;
 
@@ -51,10 +52,9 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      * is {@link #getConnectionsPerNode()} * 2.
      * <p>
      * Returns {@code false} if each connection of {@link #getConnectionsPerNode()}
-     * should be used for outgoing and incoming messages. In this case load NIO selectors load
-     * balancing of {@link GridNioServer} will be disabled.
+     * should be used for outgoing and incoming messages.
      * <p>
-     * Default is {@code true}.
+     * Default is {@code false}.
      *
      * @return {@code true} to use paired connections and {@code false} otherwise.
      * @see #getConnectionsPerNode()
@@ -149,6 +149,38 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
     public long getReceivedBytesCount();
 
     /**
+     * Gets received messages counts (grouped by type).
+     *
+     * @return Map containing message types and respective counts.
+     */
+    @MXBeanDescription("Received messages count grouped by message type.")
+    public Map<String, Long> getReceivedMessagesByType();
+
+    /**
+     * Gets received messages counts (grouped by node).
+     *
+     * @return Map containing sender nodes and respective counts.
+     */
+    @MXBeanDescription("Received messages count grouped by sender node.")
+    public Map<UUID, Long> getReceivedMessagesByNode();
+
+    /**
+     * Gets sent messages counts (grouped by type).
+     *
+     * @return Map containing message types and respective counts.
+     */
+    @MXBeanDescription("Sent messages count grouped by message type.")
+    public Map<String, Long> getSentMessagesByType();
+
+    /**
+     * Gets sent messages counts (grouped by node).
+     *
+     * @return Map containing receiver nodes and respective counts.
+     */
+    @MXBeanDescription("Sent messages count grouped by receiver node.")
+    public Map<UUID, Long> getSentMessagesByNode();
+
+    /**
      * Gets outbound messages queue size.
      *
      * @return Outbound messages queue size.
@@ -201,49 +233,6 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
     public boolean isTcpNoDelay();
 
     /**
-     * Gets connection buffer flush frequency.
-     * <p>
-     * Client connections to other nodes in topology use buffered output.
-     * This frequency defines how often system will advice to flush
-     * connection buffer.
-     *
-     * @return Flush frequency.
-     * @deprecated Not used anymore.
-     */
-    @Deprecated
-    @MXBeanDescription("Connection buffer flush frequency.")
-    public long getConnectionBufferFlushFrequency();
-
-    /**
-     * Sets connection buffer flush frequency.
-     * <p>
-     * Client connections to other nodes in topology use buffered output.
-     * This frequency defines how often system will advice to flush
-     * connection buffer.
-     * <p>
-     * This property is used only if {@link #getConnectionBufferSize()} is greater than {@code 0}.
-     *
-     * @param connBufFlushFreq Flush frequency.
-     * @see #getConnectionBufferSize()
-     * @deprecated Not used anymore.
-     */
-    @Deprecated
-    @MXBeanDescription("Sets connection buffer flush frequency.")
-    public void setConnectionBufferFlushFrequency(long connBufFlushFreq);
-
-    /**
-     * Gets connection buffer size.
-     * <p>
-     * If set to {@code 0} connection buffer is disabled.
-     *
-     * @return Connection buffer size.
-     * @deprecated Not used anymore.
-     */
-    @Deprecated
-    @MXBeanDescription("Connection buffer size.")
-    public int getConnectionBufferSize();
-
-    /**
      * Gets flag defining whether direct send buffer should be used.
      *
      * @return {@code True} if direct buffers should be used.
@@ -278,17 +267,6 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      */
     @MXBeanDescription("Message queue size limit.")
     public int getMessageQueueLimit();
-
-    /**
-     * Gets the minimum number of messages for this SPI, that are buffered
-     * prior to sending.
-     *
-     * @return Minimum buffered message count.
-     * @deprecated Not used anymore.
-     */
-    @Deprecated
-    @MXBeanDescription("Minimum buffered message count.")
-    public int getMinimumBufferedMessageCount();
 
     /**
      * Gets socket write timeout for TCP connections. If message can not be written to

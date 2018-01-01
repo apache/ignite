@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#include <cstdlib>
 #include <ignite/ignite_error.h>
 
 #include "ignite/impl/interop/interop_memory.h"

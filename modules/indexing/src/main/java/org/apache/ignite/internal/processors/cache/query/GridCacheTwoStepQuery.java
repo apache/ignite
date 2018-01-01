@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -46,13 +45,10 @@ public class GridCacheTwoStepQuery {
     private boolean explain;
 
     /** */
-    private Collection<String> spaces;
+    private String originalSql;
 
     /** */
-    private Set<String> schemas;
-
-    /** */
-    private Set<String> tbls;
+    private Set<QueryTable> tbls;
 
     /** */
     private boolean distributedJoins;
@@ -61,17 +57,20 @@ public class GridCacheTwoStepQuery {
     private boolean skipMergeTbl;
 
     /** */
-    private List<Integer> caches;
+    private List<Integer> cacheIds;
 
     /** */
-    private List<Integer> extraCaches;
+    private boolean local;
+
+    /** */
+    private CacheQueryPartitionInfo[] derivedPartitions;
 
     /**
-     * @param schemas Schema names in query.
+     * @param originalSql Original query SQL.
      * @param tbls Tables in query.
      */
-    public GridCacheTwoStepQuery(Set<String> schemas, Set<String> tbls) {
-        this.schemas = schemas;
+    public GridCacheTwoStepQuery(String originalSql, Set<QueryTable> tbls) {
+        this.originalSql = originalSql;
         this.tbls = tbls;
     }
 
@@ -87,7 +86,7 @@ public class GridCacheTwoStepQuery {
     /**
      * Check if distributed joins are enabled for this query.
      *
-     * @return {@code true} If distributed joind enabled.
+     * @return {@code true} If distributed joins enabled.
      */
     public boolean distributedJoins() {
         return distributedJoins;
@@ -138,12 +137,23 @@ public class GridCacheTwoStepQuery {
 
     /**
      * @param qry SQL Query.
-     * @return {@code this}.
      */
-    public GridCacheTwoStepQuery addMapQuery(GridCacheSqlQuery qry) {
+    public void addMapQuery(GridCacheSqlQuery qry) {
         mapQrys.add(qry);
+    }
 
-        return this;
+    /**
+     * @return {@code true} If all the map queries contain only replicated tables.
+     */
+    public boolean isReplicatedOnly() {
+        assert !mapQrys.isEmpty();
+
+        for (GridCacheSqlQuery mapQry : mapQrys) {
+            if (mapQry.isPartitioned())
+                return false;
+        }
+
+        return true;
     }
 
     /**
@@ -168,81 +178,87 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
-     * @return Caches.
+     * @return Cache IDs.
      */
-    public List<Integer> caches() {
-        return caches;
+    public List<Integer> cacheIds() {
+        return cacheIds;
     }
 
     /**
-     * @param caches Caches.
+     * @param cacheIds Cache IDs.
      */
-    public void caches(List<Integer> caches) {
-        this.caches = caches;
+    public void cacheIds(List<Integer> cacheIds) {
+        this.cacheIds = cacheIds;
     }
 
     /**
-     * @return Caches.
+     * @return Original query SQL.
      */
-    public List<Integer> extraCaches() {
-        return extraCaches;
+    public String originalSql() {
+        return originalSql;
     }
 
     /**
-     * @param extraCaches Caches.
+     * @return {@code True} If query is local.
      */
-    public void extraCaches(List<Integer> extraCaches) {
-        this.extraCaches = extraCaches;
+    public boolean isLocal() {
+        return local;
     }
 
     /**
-     * @return Spaces.
+     * @param local Local query flag.
      */
-    public Collection<String> spaces() {
-        return spaces;
+    public void local(boolean local) {
+        this.local = local;
     }
 
     /**
-     * @param spaces Spaces.
+     * @return Query derived partitions info.
      */
-    public void spaces(Collection<String> spaces) {
-        this.spaces = spaces;
+    public CacheQueryPartitionInfo[] derivedPartitions() {
+        return this.derivedPartitions;
     }
 
     /**
-     * @return Schemas.
+     * @param derivedPartitions Query derived partitions info.
      */
-    public Set<String> schemas() {
-        return schemas;
+    public void derivedPartitions(CacheQueryPartitionInfo[] derivedPartitions) {
+        this.derivedPartitions = derivedPartitions;
     }
 
     /**
-     * @param args New arguments to copy with.
      * @return Copy.
      */
-    public GridCacheTwoStepQuery copy(Object[] args) {
+    public GridCacheTwoStepQuery copy() {
         assert !explain;
 
-        GridCacheTwoStepQuery cp = new GridCacheTwoStepQuery(schemas, tbls);
+        GridCacheTwoStepQuery cp = new GridCacheTwoStepQuery(originalSql, tbls);
 
-        cp.caches = caches;
-        cp.extraCaches = extraCaches;
-        cp.spaces = spaces;
-        cp.rdc = rdc.copy(args);
+        cp.cacheIds = cacheIds;
+        cp.rdc = rdc.copy();
         cp.skipMergeTbl = skipMergeTbl;
         cp.pageSize = pageSize;
         cp.distributedJoins = distributedJoins;
+        cp.derivedPartitions = derivedPartitions;
+        cp.local = local;
 
         for (int i = 0; i < mapQrys.size(); i++)
-            cp.mapQrys.add(mapQrys.get(i).copy(args));
+            cp.mapQrys.add(mapQrys.get(i).copy());
 
         return cp;
     }
 
     /**
+     * @return Nuumber of tables.
+     */
+    public int tablesCount() {
+        return tbls.size();
+    }
+
+    /**
      * @return Tables.
      */
-    public Set<String> tables() {
+    public Set<QueryTable> tables() {
         return tbls;
     }
 

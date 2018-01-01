@@ -15,10 +15,43 @@
  * limitations under the License.
  */
 
+import infoMessageTemplateUrl from 'views/templates/message.tpl.pug';
+
 // Controller for Caches screen.
-export default ['cachesController', [
-    '$scope', '$http', '$state', '$filter', '$timeout', '$modal', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils', 'IgniteLegacyTable',
-    function($scope, $http, $state, $filter, $timeout, $modal, LegacyUtils, Messages, Confirm, Clone, Loading, ModelNormalizer, UnsavedChangesGuard, Resource, ErrorPopover, FormUtils, LegacyTable) {
+export default ['$scope', '$http', '$state', '$filter', '$timeout', '$modal', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteInput', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils', 'IgniteLegacyTable', 'IgniteVersion',
+    function($scope, $http, $state, $filter, $timeout, $modal, LegacyUtils, Messages, Confirm, Input, Loading, ModelNormalizer, UnsavedChangesGuard, Resource, ErrorPopover, FormUtils, LegacyTable, Version) {
+        this.available = Version.available.bind(Version);
+
+        const rebuildDropdowns = () => {
+            $scope.affinityFunction = [
+                {value: 'Rendezvous', label: 'Rendezvous'},
+                {value: 'Custom', label: 'Custom'},
+                {value: null, label: 'Default'}
+            ];
+
+            if (this.available(['1.0.0', '2.0.0']))
+                $scope.affinityFunction.splice(1, 0, {value: 'Fair', label: 'Fair'});
+        };
+
+        rebuildDropdowns();
+
+        const filterModel = () => {
+            if ($scope.backupItem) {
+                if (this.available('2.0.0')) {
+                    if (_.get($scope.backupItem, 'affinity.kind') === 'Fair')
+                        $scope.backupItem.affinity.kind = null;
+                }
+            }
+        };
+
+        Version.currentSbj.subscribe({
+            next: () => {
+                rebuildDropdowns();
+
+                filterModel();
+            }
+        });
+
         UnsavedChangesGuard.install($scope);
 
         const emptyCache = {empty: true};
@@ -32,6 +65,7 @@ export default ['cachesController', [
                     hibernateProperties: []
                 }
             },
+            writeBehindCoalescing: true,
             nearConfiguration: {},
             sqlFunctionClasses: []
         };
@@ -283,8 +317,10 @@ export default ['cachesController', [
 
                 __original_value = ModelNormalizer.normalize($scope.backupItem);
 
+                filterModel();
+
                 if (LegacyUtils.getQueryVariable('new'))
-                    $state.go('base.configuration.caches');
+                    $state.go('base.configuration.tabs.advanced.caches');
             }
 
             FormUtils.confirmUnsavedChanges($scope.backupItem && $scope.ui.inputForm && $scope.ui.inputForm.$dirty, selectItem);
@@ -467,14 +503,14 @@ export default ['cachesController', [
         // Save cache in database.
         function save(item) {
             $http.post('/api/v1/configuration/caches/save', item)
-                .success(function(_id) {
+                .then(({data}) => {
+                    const _id = data;
+
                     item.label = _cacheLbl(item);
 
                     $scope.ui.inputForm.$setPristine();
 
-                    const idx = _.findIndex($scope.caches, function(cache) {
-                        return cache._id === _id;
-                    });
+                    const idx = _.findIndex($scope.caches, {_id});
 
                     if (idx >= 0)
                         _.assign($scope.caches[idx], item);
@@ -487,21 +523,21 @@ export default ['cachesController', [
                         if (_.includes(item.clusters, cluster.value))
                             cluster.caches = _.union(cluster.caches, [_id]);
                         else
-                            _.remove(cluster.caches, (id) => id === _id);
+                            _.pull(cluster.caches, _id);
                     });
 
                     _.forEach($scope.domains, (domain) => {
                         if (_.includes(item.domains, domain.value))
                             domain.meta.caches = _.union(domain.meta.caches, [_id]);
                         else
-                            _.remove(domain.meta.caches, (id) => id === _id);
+                            _.pull(domain.meta.caches, _id);
                     });
 
                     $scope.selectItem(item);
 
                     Messages.showInfo('Cache "' + item.name + '" saved.');
                 })
-                .error(Messages.showError);
+                .catch(Messages.showError);
         }
 
         // Save cache.
@@ -515,15 +551,13 @@ export default ['cachesController', [
         };
 
         function _cacheNames() {
-            return _.map($scope.caches, function(cache) {
-                return cache.name;
-            });
+            return _.map($scope.caches, (cache) => cache.name);
         }
 
         // Clone cache with new name.
         $scope.cloneItem = function() {
             if (validate($scope.backupItem)) {
-                Clone.confirm($scope.backupItem.name, _cacheNames()).then(function(newName) {
+                Input.clone($scope.backupItem.name, _cacheNames()).then((newName) => {
                     const item = angular.copy($scope.backupItem);
 
                     delete item._id;
@@ -542,7 +576,7 @@ export default ['cachesController', [
                         ];
 
                         // Show a basic modal from a controller
-                        $modal({scope, template: '/templates/message.html', placement: 'center', show: true});
+                        $modal({scope, templateUrl: infoMessageTemplateUrl, show: true});
                     }
 
                     save(item);
@@ -559,7 +593,7 @@ export default ['cachesController', [
                     const _id = selectedItem._id;
 
                     $http.post('/api/v1/configuration/caches/remove', {_id})
-                        .success(function() {
+                        .then(() => {
                             Messages.showInfo('Cache has been removed: ' + selectedItem.name);
 
                             const caches = $scope.caches;
@@ -582,7 +616,7 @@ export default ['cachesController', [
                                 _.forEach($scope.domains, (domain) => _.remove(domain.meta.caches, (id) => id === _id));
                             }
                         })
-                        .error(Messages.showError);
+                        .catch(Messages.showError);
                 });
         };
 
@@ -591,7 +625,7 @@ export default ['cachesController', [
             Confirm.confirm('Are you sure you want to remove all caches?')
                 .then(function() {
                     $http.post('/api/v1/configuration/caches/remove/all')
-                        .success(function() {
+                        .then(() => {
                             Messages.showInfo('All caches have been removed');
 
                             $scope.caches = [];
@@ -603,7 +637,7 @@ export default ['cachesController', [
                             $scope.ui.inputForm.$error = {};
                             $scope.ui.inputForm.$setPristine();
                         })
-                        .error(Messages.showError);
+                        .catch(Messages.showError);
                 });
         };
 
@@ -616,4 +650,4 @@ export default ['cachesController', [
                 });
         };
     }
-]];
+];

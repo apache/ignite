@@ -18,11 +18,16 @@
 #ifndef _IGNITE_COMMON_CONCURRENT_OS
 #define _IGNITE_COMMON_CONCURRENT_OS
 
-#include <map>
-#include <stdint.h>
 #include <pthread.h>
+#include <time.h>
+#include <errno.h>
 
-#include "ignite/common/common.h"
+#include <stdint.h>
+
+#include <cassert>
+#include <map>
+
+#include <ignite/common/common.h>
 
 namespace ignite
 {
@@ -44,7 +49,9 @@ namespace ignite
             /**
              * Critical section.
              */
-            class IGNITE_IMPORT_EXPORT CriticalSection {
+            class IGNITE_IMPORT_EXPORT CriticalSection
+            {
+                friend class ConditionVariable;
             public:
                 /**
                  * Constructor.
@@ -386,6 +393,225 @@ namespace ignite
             private:
                 /** Index. */
                 int32_t idx;
+            };
+
+            /**
+             * Cross-platform wrapper for Condition Variable synchronization
+             * primitive concept.
+             */
+            class ConditionVariable
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                ConditionVariable()
+                {
+                    pthread_condattr_t attr;
+                    int err = pthread_condattr_init(&attr);
+                    assert(!err);
+
+                    err = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
+                    assert(!err);
+
+                    err = pthread_cond_init(&cond, &attr);
+                    assert(!err);
+                }
+
+                /**
+                 * Destructor.
+                 */
+                ~ConditionVariable()
+                {
+                    pthread_cond_destroy(&cond);
+                }
+
+                /**
+                 * Wait for Condition Variable to be notified.
+                 *
+                 * @param cs Critical section in which to wait.
+                 */
+                void Wait(CriticalSection& cs)
+                {
+                    pthread_cond_wait(&cond, &cs.mux);
+                }
+
+                /**
+                 * Wait for Condition Variable to be notified for specified time.
+                 *
+                 * @param cs Critical section in which to wait.
+                 * @param msTimeout Timeout in milliseconds.
+                 * @return True if the object has been notified and false in case of timeout.
+                 */
+                bool WaitFor(CriticalSection& cs, int32_t msTimeout)
+                {
+                    timespec ts;
+                    int err = clock_gettime(CLOCK_MONOTONIC, &ts);
+                    assert(!err);
+
+                    ts.tv_sec += msTimeout / 1000 + (ts.tv_nsec + (msTimeout % 1000) * 1000000) / 1000000000;
+                    ts.tv_nsec = (ts.tv_nsec + (msTimeout % 1000) * 1000000) % 1000000000;
+
+                    int res = pthread_cond_timedwait(&cond, &cs.mux, &ts);
+
+                    return res == 0;
+                }
+
+                /**
+                 * Notify single thread waiting for the condition variable.
+                 */
+                void NotifyOne()
+                {
+                    int err = pthread_cond_signal(&cond);
+                    assert(!err);
+                }
+
+                /**
+                 * Notify all threads that are waiting on the variable.
+                 */
+                void NotifyAll()
+                {
+                    int err = pthread_cond_broadcast(&cond);
+                    assert(!err);
+                }
+
+            private:
+                IGNITE_NO_COPY_ASSIGNMENT(ConditionVariable);
+
+                /** OS-specific type. */
+                pthread_cond_t cond;
+            };
+
+            /**
+             * Manually triggered event.
+             * Once triggered it stays in passing state until manually reset.
+             */
+            class ManualEvent
+            {
+            public:
+                /**
+                 * Constructs manual event.
+                 * Initial state is untriggered.
+                 */
+                ManualEvent() :
+                    cond(),
+                    mutex(),
+                    state(false)
+                {
+                    pthread_condattr_t attr;
+                    int err = pthread_condattr_init(&attr);
+                    assert(!err);
+
+                    err = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
+                    assert(!err);
+
+                    err = pthread_cond_init(&cond, &attr);
+                    assert(!err);
+
+                    err = pthread_mutex_init(&mutex, NULL);
+                    assert(!err);
+                }
+
+                /**
+                 * Destructor.
+                 */
+                ~ManualEvent()
+                {
+                    pthread_mutex_destroy(&mutex);
+                    pthread_cond_destroy(&cond);
+                }
+
+                /**
+                 * Sets event into triggered state.
+                 */
+                void Set()
+                {
+                    int err = pthread_mutex_lock(&mutex);
+                    assert(!err);
+
+                    state = true;
+
+                    err = pthread_cond_broadcast(&cond);
+                    assert(!err);
+
+                    err = pthread_mutex_unlock(&mutex);
+                    assert(!err);
+                }
+
+                /**
+                 * Resets event into non-triggered state.
+                 */
+                void Reset()
+                {
+                    int err = pthread_mutex_lock(&mutex);
+                    assert(!err);
+
+                    state = false;
+
+                    err = pthread_mutex_unlock(&mutex);
+                    assert(!err);
+                }
+
+                /**
+                 * Wait for event to be triggered.
+                 */
+                void Wait()
+                {
+                    int err = pthread_mutex_lock(&mutex);
+                    assert(!err);
+
+                    while (!state)
+                    {
+                        err = pthread_cond_wait(&cond, &mutex);
+                        assert(!err);
+                    }
+
+                    err = pthread_mutex_unlock(&mutex);
+                    assert(!err);
+                }
+
+                /**
+                 * Wait for event to be triggered for specified time.
+                 *
+                 * @param msTimeout Timeout in milliseconds.
+                 * @return True if the object has been triggered and false in case of timeout.
+                 */
+                bool WaitFor(int32_t msTimeout)
+                {
+                    int res = 0;
+                    int err = pthread_mutex_lock(&mutex);
+                    assert(!err);
+
+                    if (!state)
+                    {
+                        timespec ts;
+                        err = clock_gettime(CLOCK_MONOTONIC, &ts);
+                        assert(!err);
+
+                        ts.tv_sec += msTimeout / 1000 + (ts.tv_nsec + (msTimeout % 1000) * 1000000) / 1000000000;
+                        ts.tv_nsec = (ts.tv_nsec + (msTimeout % 1000) * 1000000) % 1000000000;
+
+                        res = pthread_cond_timedwait(&cond, &mutex, &ts);
+                        assert(res == 0 || res == ETIMEDOUT);
+                    }
+
+                    err = pthread_mutex_unlock(&mutex);
+                    assert(!err);
+
+                    return res == 0;
+                }
+
+            private:
+                IGNITE_NO_COPY_ASSIGNMENT(ManualEvent);
+
+                /** Condition variable. */
+                pthread_cond_t cond;
+
+                /** Mutex. */
+                pthread_mutex_t mutex;
+
+                /** State. */
+                bool state;
             };
         }
     }

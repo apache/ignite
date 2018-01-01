@@ -1,25 +1,24 @@
 /*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- *  * Licensed to the Apache Software Foundation (ASF) under one or more
- *  * contributor license agreements.  See the NOTICE file distributed with
- *  * this work for additional information regarding copyright ownership.
- *  * The ASF licenses this file to You under the Apache License, Version 2.0
- *  * (the "License"); you may not use this file except in compliance with
- *  * the License.  You may obtain a copy of the License at
- *  *
- *  *      http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  * See the License for the specific language governing permissions and
- *  * limitations under the License.
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.visor.commands.common
 
 import org.apache.ignite.visor.visor.NA
+import org.apache.ignite.visor.visor
 
 import scala.collection.JavaConversions._
 
@@ -41,8 +40,8 @@ trait VisorConsoleCommand {
         assert(warnMsgs != null)
 
         warnMsgs.foreach{
-            case ex: Throwable => println(s"(wrn) <visor>: ${ex.getMessage}")
-            case line => println(s"(wrn) <visor>: $line")
+            case ex: Throwable => visor.warn(ex.getMessage)
+            case line => visor.warn(line)
         }
     }
 
@@ -54,6 +53,21 @@ trait VisorConsoleCommand {
             "Visor is disconnected.",
             "Type 'open' to connect Visor console or 'help open' to get help."
         )
+    }
+
+    /**
+     * Check cluster active state and show inform message when cluster has inactive state.
+     *
+     * @return `True` when cluster is active.
+     */
+    protected def checkActiveState(): Boolean = {
+        visor.isActive || {
+            warn("Can not perform the operation because the cluster is inactive.",
+                "Note, that the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes join the cluster.",
+                "To activate the cluster execute following command: top -activate.")
+
+            false
+        }
     }
 
     /**
@@ -74,14 +88,14 @@ trait VisorConsoleCommand {
      * @param lines Lines to join together.
      * @return Joined line.
      */
-    protected def join(lines: java.lang.Iterable[_ <: Any]) = {
+    protected def join(lines: java.lang.Iterable[_ <: Any]): String = {
         if (lines == null || lines.isEmpty)
             NA
         else
             lines.mkString("[", ", ", "]")
     }
 
-    protected def join(lines: Array[_ <: Any]) = {
+    protected def join(lines: Array[_ <: Any]): String = {
         if (lines == null || lines.isEmpty)
             NA
         else

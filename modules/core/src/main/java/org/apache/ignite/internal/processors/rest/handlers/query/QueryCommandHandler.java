@@ -219,11 +219,11 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
         assert req instanceof RestQueryRequest : "Invalid type of query request.";
 
         if (req.command() != CLOSE_SQL_QUERY) {
-            Integer pageSize = ((RestQueryRequest) req).pageSize();
+            Integer pageSize = ((RestQueryRequest)req).pageSize();
 
             if (pageSize == null)
                 return new GridFinishedFuture<>(
-                        new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("pageSize"))
+                    new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("pageSize"))
                 );
         }
 
@@ -232,17 +232,17 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
             case EXECUTE_SQL_FIELDS_QUERY:
             case EXECUTE_SCAN_QUERY: {
                 return ctx.closure().callLocalSafe(
-                        new ExecuteQueryCallable(ctx, (RestQueryRequest) req, qryCurs), false);
+                    new ExecuteQueryCallable(ctx, (RestQueryRequest)req, qryCurs), false);
             }
 
             case FETCH_SQL_QUERY: {
                 return ctx.closure().callLocalSafe(
-                        new FetchQueryCallable((RestQueryRequest) req, qryCurs), false);
+                    new FetchQueryCallable((RestQueryRequest)req, qryCurs), false);
             }
 
             case CLOSE_SQL_QUERY: {
                 return ctx.closure().callLocalSafe(
-                        new CloseQueryCallable((RestQueryRequest) req, qryCurs), false);
+                    new CloseQueryCallable((RestQueryRequest)req, qryCurs), false);
             }
         }
 
@@ -315,11 +315,13 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
                         throw new IgniteException("Incorrect query type [type=" + req.queryType() + "]");
                 }
 
-                IgniteCache<Object, Object> cache = ctx.grid().cache(req.cacheName());
+                String cacheName = req.cacheName() == null ? DFLT_CACHE_NAME : req.cacheName();
+
+                IgniteCache<Object, Object> cache = ctx.grid().cache(cacheName);
 
                 if (cache == null)
                     return new GridRestResponse(GridRestResponse.STATUS_FAILED,
-                        "Failed to find cache with name: " + req.cacheName());
+                        "Failed to find cache with name: " + cacheName);
 
                 final QueryCursor qryCur = cache.query(qry);
 

@@ -17,7 +17,22 @@
 
 import StringBuilder from './StringBuilder';
 
+import IgniteConfigurationGenerator from './ConfigurationGenerator';
+
+import IgniteClusterDefaults from './defaults/Cluster.service';
+import IgniteCacheDefaults from './defaults/Cache.service';
+import IgniteIGFSDefaults from './defaults/IGFS.service';
+
+import JavaTypes from '../../../services/JavaTypes.service';
+
+const clusterDflts = new IgniteClusterDefaults();
+const cacheDflts = new IgniteCacheDefaults();
+const igfsDflts = new IgniteIGFSDefaults();
+
 export default class AbstractTransformer {
+    static generator = IgniteConfigurationGenerator;
+    static javaTypes = new JavaTypes(clusterDflts, cacheDflts, igfsDflts);
+
     // Append comment with time stamp.
     static mainComment(sb, ...lines) {
         lines.push(sb.generatedBy());
@@ -44,13 +59,13 @@ export default class AbstractTransformer {
     }
 
     // Generate general section.
-    static clusterGeneral(cluster) {
-        return this.toSection(this.generator.clusterGeneral(cluster));
+    static clusterGeneral(cluster, available) {
+        return this.toSection(this.generator.clusterGeneral(cluster, available));
     }
 
     // Generate atomics group.
-    static clusterAtomics(atomics) {
-        return this.toSection(this.generator.clusterAtomics(atomics));
+    static clusterAtomics(atomics, available) {
+        return this.toSection(this.generator.clusterAtomics(atomics, available));
     }
 
     // Generate binary group.
@@ -61,6 +76,11 @@ export default class AbstractTransformer {
     // Generate cache key configurations.
     static clusterCacheKeyConfiguration(keyCfgs) {
         return this.toSection(this.generator.clusterCacheKeyConfiguration(keyCfgs));
+    }
+
+    // Generate client connector configuration.
+    static clusterClientConnector(cluster, available) {
+        return this.toSection(this.generator.clusterClientConnector(cluster, available));
     }
 
     // Generate collision group.
@@ -79,28 +99,33 @@ export default class AbstractTransformer {
     }
 
     // Generate deployment group.
-    static clusterDeployment(cluster) {
-        return this.toSection(this.generator.clusterDeployment(cluster));
+    static clusterDeployment(cluster, available) {
+        return this.toSection(this.generator.clusterDeployment(cluster, available));
     }
 
     // Generate discovery group.
-    static clusterDiscovery(disco) {
-        return this.toSection(this.generator.clusterDiscovery(disco));
+    static clusterDiscovery(disco, available) {
+        return this.toSection(this.generator.clusterDiscovery(disco, available));
     }
 
     // Generate events group.
-    static clusterEvents(cluster) {
-        return this.toSection(this.generator.clusterEvents(cluster));
+    static clusterEvents(cluster, available) {
+        return this.toSection(this.generator.clusterEvents(cluster, available));
     }
 
     // Generate failover group.
-    static clusterFailover(cluster) {
-        return this.toSection(this.generator.clusterFailover(cluster));
+    static clusterFailover(cluster, available) {
+        return this.toSection(this.generator.clusterFailover(cluster, available));
+    }
+
+    // Generate hadoop group.
+    static clusterHadoop(hadoop) {
+        return this.toSection(this.generator.clusterHadoop(hadoop));
     }
 
     // Generate cluster IGFSs group.
-    static clusterIgfss(igfss) {
-        return this.toSection(this.generator.clusterIgfss(igfss));
+    static clusterIgfss(igfss, available) {
+        return this.toSection(this.generator.clusterIgfss(igfss, available));
     }
 
     // Generate load balancing SPI group.
@@ -113,19 +138,49 @@ export default class AbstractTransformer {
         return this.toSection(this.generator.clusterLogger(cluster));
     }
 
+    // Generate memory configuration group.
+    static clusterMemory(memoryConfiguration, available) {
+        return this.toSection(this.generator.clusterMemory(memoryConfiguration, available));
+    }
+
+    // Generate memory configuration group.
+    static clusterDataStorageConfiguration(dataStorageCfg, available) {
+        return this.toSection(this.generator.clusterDataStorageConfiguration(dataStorageCfg, available));
+    }
+
     // Generate marshaller group.
-    static clusterMarshaller(cluster) {
-        return this.toSection(this.generator.clusterMarshaller(cluster));
+    static clusterMisc(cluster, available) {
+        return this.toSection(this.generator.clusterMisc(cluster, available));
+    }
+
+    // Generate marshaller group.
+    static clusterMarshaller(cluster, available) {
+        return this.toSection(this.generator.clusterMarshaller(cluster, available));
     }
 
     // Generate metrics group.
-    static clusterMetrics(cluster) {
-        return this.toSection(this.generator.clusterMetrics(cluster));
+    static clusterMetrics(cluster, available) {
+        return this.toSection(this.generator.clusterMetrics(cluster, available));
     }
 
     // Generate ODBC group.
-    static clusterODBC(odbc) {
-        return this.toSection(this.generator.clusterODBC(odbc));
+    static clusterODBC(odbc, available) {
+        return this.toSection(this.generator.clusterODBC(odbc, available));
+    }
+
+    // Generate cluster persistence store group.
+    static clusterPersistence(persistence, available) {
+        return this.toSection(this.generator.clusterPersistence(persistence, available));
+    }
+
+    // Generate cluster query group.
+    static clusterQuery(cluster, available) {
+        return this.toSection(this.generator.clusterQuery(cluster, available));
+    }
+
+    // Generate cache node filter group.
+    static clusterServiceConfiguration(srvs, caches) {
+        return this.toSection(this.generator.clusterServiceConfiguration(srvs, caches));
     }
 
     // Generate ssl group.
@@ -139,13 +194,13 @@ export default class AbstractTransformer {
     }
 
     // Generate time group.
-    static clusterTime(cluster) {
-        return this.toSection(this.generator.clusterTime(cluster));
+    static clusterTime(cluster, available) {
+        return this.toSection(this.generator.clusterTime(cluster, available));
     }
 
     // Generate thread pools group.
-    static clusterPools(cluster) {
-        return this.toSection(this.generator.clusterPools(cluster));
+    static clusterPools(cluster, available) {
+        return this.toSection(this.generator.clusterPools(cluster, available));
     }
 
     // Generate transactions group.
@@ -159,8 +214,8 @@ export default class AbstractTransformer {
     }
 
     // Generate IGFS general group.
-    static igfsGeneral(igfs) {
-        return this.toSection(this.generator.igfsGeneral(igfs));
+    static igfsGeneral(igfs, available) {
+        return this.toSection(this.generator.igfsGeneral(igfs, available));
     }
 
     // Generate IGFS secondary file system group.
@@ -184,33 +239,38 @@ export default class AbstractTransformer {
     }
 
     // Generate IGFS miscellaneous group.
-    static igfsMisc(igfs) {
-        return this.toSection(this.generator.igfsMisc(igfs));
+    static igfsMisc(igfs, available) {
+        return this.toSection(this.generator.igfsMisc(igfs, available));
     }
 
     // Generate cache general group.
-    static cacheGeneral(cache) {
-        return this.toSection(this.generator.cacheGeneral(cache));
+    static cacheGeneral(cache, available) {
+        return this.toSection(this.generator.cacheGeneral(cache, available));
     }
 
     // Generate cache memory group.
-    static cacheMemory(cache) {
-        return this.toSection(this.generator.cacheMemory(cache));
+    static cacheAffinity(cache, available) {
+        return this.toSection(this.generator.cacheAffinity(cache, available));
+    }
+
+    // Generate cache memory group.
+    static cacheMemory(cache, available) {
+        return this.toSection(this.generator.cacheMemory(cache, available));
     }
 
     // Generate cache queries & Indexing group.
-    static cacheQuery(cache, domains) {
-        return this.toSection(this.generator.cacheQuery(cache, domains));
+    static cacheQuery(cache, domains, available) {
+        return this.toSection(this.generator.cacheQuery(cache, domains, available));
     }
 
     // Generate cache store group.
-    static cacheStore(cache, domains) {
-        return this.toSection(this.generator.cacheStore(cache, domains));
+    static cacheStore(cache, domains, available) {
+        return this.toSection(this.generator.cacheStore(cache, domains, available));
     }
 
     // Generate cache concurrency control group.
-    static cacheConcurrency(cache) {
-        return this.toSection(this.generator.cacheConcurrency(cache));
+    static cacheConcurrency(cache, available) {
+        return this.toSection(this.generator.cacheConcurrency(cache, available));
     }
 
     // Generate cache node filter group.
@@ -224,13 +284,13 @@ export default class AbstractTransformer {
     }
 
     // Generate server near cache group.
-    static cacheNearServer(cache) {
-        return this.toSection(this.generator.cacheNearServer(cache));
+    static cacheNearServer(cache, available) {
+        return this.toSection(this.generator.cacheNearServer(cache, available));
     }
 
     // Generate client near cache group.
-    static cacheNearClient(cache) {
-        return this.toSection(this.generator.cacheNearClient(cache));
+    static cacheNearClient(cache, available) {
+        return this.toSection(this.generator.cacheNearClient(cache, available));
     }
 
     // Generate cache statistics group.
@@ -239,8 +299,8 @@ export default class AbstractTransformer {
     }
 
     // Generate caches configs.
-    static clusterCaches(cluster, caches, igfss, client) {
-        return this.toSection(this.generator.clusterCaches(cluster, caches, igfss, client));
+    static clusterCaches(cluster, available, caches, igfss, client) {
+        return this.toSection(this.generator.clusterCaches(cluster, caches, igfss, available, client));
     }
 
     // Generate caches configs.
@@ -254,8 +314,8 @@ export default class AbstractTransformer {
     }
 
     // Generate domain model for query group.
-    static domainModelQuery(domain) {
-        return this.toSection(this.generator.domainModelQuery(domain));
+    static domainModelQuery(domain, available) {
+        return this.toSection(this.generator.domainModelQuery(domain, available));
     }
 
     // Generate domain model for store group.

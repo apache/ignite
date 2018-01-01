@@ -86,7 +86,7 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
     protected static final int SEQ_READS_BEFORE_PREFETCH = 2;
 
     /** Secondary file system URI. */
-    protected static final String SECONDARY_URI = "igfs://igfs-secondary:grid-secondary@127.0.0.1:11500/";
+    protected static final String SECONDARY_URI = "igfs://igfs-secondary@127.0.0.1:11500/";
 
     /** Secondary file system configuration path. */
     protected static final String SECONDARY_CFG = "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml";
@@ -172,6 +172,8 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
      */
     protected final void doTest(IgfsPath inFile, boolean useNewMapper, boolean useNewCombiner, boolean useNewReducer)
         throws Exception {
+        log.info("useNewMapper=" + useNewMapper + ", useNewCombiner=" + useNewCombiner + ", useNewReducer=" + useNewReducer);
+
         igfs.delete(new IgfsPath(PATH_OUTPUT), true);
 
         JobConf jobConf = new JobConf();
@@ -205,7 +207,7 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
 
         HadoopJobId jobId = new HadoopJobId(UUID.randomUUID(), 1);
 
-        IgniteInternalFuture<?> fut = grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration()));
+        IgniteInternalFuture<?> fut = grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration(), null));
 
         fut.get();
 
@@ -345,7 +347,7 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
     /**
      * Start grid with IGFS.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param igfsName IGFS name
      * @param mode IGFS mode.
      * @param secondaryFs Secondary file system (optional).
@@ -353,12 +355,10 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
      * @return Started grid instance.
      * @throws Exception If failed.
      */
-    protected Ignite startGridWithIgfs(String gridName, String igfsName, IgfsMode mode,
+    protected Ignite startGridWithIgfs(String igniteInstanceName, String igfsName, IgfsMode mode,
         @Nullable IgfsSecondaryFileSystem secondaryFs, @Nullable IgfsIpcEndpointConfiguration restCfg) throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("dataCache");
-        igfsCfg.setMetaCacheName("metaCache");
         igfsCfg.setName(igfsName);
         igfsCfg.setBlockSize(IGFS_BLOCK_SIZE);
         igfsCfg.setDefaultMode(mode);
@@ -376,7 +376,6 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
         dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(2));
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
-        dataCacheCfg.setOffHeapMaxMemory(0);
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
@@ -385,16 +384,18 @@ public class HadoopAbstractMapReduceTest extends HadoopAbstractWordCountTest {
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
+        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
+
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName(gridName);
+        cfg.setIgniteInstanceName(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");

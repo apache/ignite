@@ -296,10 +296,10 @@ public final class CommandLineStartup {
         }
 
         // Name of the grid loaded from the command line (unique in JVM).
-        final String gridName;
+        final String igniteInstanceName;
 
         try {
-            gridName = G.start(cfg).name();
+            igniteInstanceName = G.start(cfg).name();
         }
         catch (Throwable e) {
             e.printStackTrace();
@@ -323,7 +323,7 @@ public final class CommandLineStartup {
         G.addListener(new IgnitionListener() {
             @Override public void onStateChange(String name, IgniteState state) {
                 // Skip all grids except loaded from the command line.
-                if (!F.eq(gridName, name))
+                if (!F.eq(igniteInstanceName, name))
                     return;
 
                 if (state == STOPPED || state == STOPPED_ON_SEGMENTATION)

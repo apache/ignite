@@ -21,7 +21,11 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * ODBC configuration.
+ * <p>
+ * Deprecated as of Apache Ignite 2.1. Please use {@link ClientConnectorConfiguration} and
+ * {@link IgniteConfiguration#setClientConnectorConfiguration(ClientConnectorConfiguration)} instead.
  */
+@Deprecated
 public class OdbcConfiguration {
     /** Default TCP host. */
     public static final String DFLT_TCP_HOST = "0.0.0.0";

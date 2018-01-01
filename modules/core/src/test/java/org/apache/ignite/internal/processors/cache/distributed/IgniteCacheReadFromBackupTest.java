@@ -33,16 +33,16 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
-import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -64,8 +64,8 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
     private static final int NODES = 4;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
 
@@ -195,14 +195,14 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
                     TestRecordingCommunicationSpi spi =
                         (TestRecordingCommunicationSpi)ignite.configuration().getCommunicationSpi();
 
-                    spi.blockMessages(new IgnitePredicate<GridIoMessage>() {
-                        @Override public boolean apply(GridIoMessage ioMsg) {
-                            if (!ioMsg.message().getClass().equals(GridDhtPartitionSupplyMessageV2.class))
+                    final int grpId = groupIdForCache(ignite, ccfg.getName());
+
+                    spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                        @Override public boolean apply(ClusterNode node, Message msg) {
+                            if (!msg.getClass().equals(GridDhtPartitionSupplyMessage.class))
                                 return false;
 
-                            GridDhtPartitionSupplyMessageV2 msg = (GridDhtPartitionSupplyMessageV2)ioMsg.message();
-
-                            return msg.cacheId() == CU.cacheId(ccfg.getName());
+                            return ((GridDhtPartitionSupplyMessage)msg).groupId() == grpId;
                         }
                     });
                 }
@@ -387,7 +387,7 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
         CacheAtomicityMode atomicityMode,
         int backups,
         boolean nearEnabled) {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(cacheMode);
         ccfg.setAtomicityMode(atomicityMode);

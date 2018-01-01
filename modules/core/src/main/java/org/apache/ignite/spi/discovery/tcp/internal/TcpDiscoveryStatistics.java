@@ -309,12 +309,10 @@ public class TcpDiscoveryStatistics {
 
     /**
      * Called by coordinator when ring message is sent.
-     *
-     * @param msg Sent message.
+     *  @param msg Sent message.
      * @param time Time taken to serialize message.
-     * @param ackTime Time taken to receive message acknowledge.
      */
-    public synchronized void onMessageSent(TcpDiscoveryAbstractMessage msg, long time, long ackTime) {
+    public synchronized void onMessageSent(TcpDiscoveryAbstractMessage msg, long time) {
         assert msg != null;
         assert time >= 0 : time;
 
@@ -435,7 +433,8 @@ public class TcpDiscoveryStatistics {
      * @param initTime Time socket was initialized in.
      */
     public synchronized void onServerSocketInitialized(long initTime) {
-        assert initTime >= 0;
+        if (initTime < 0)
+            initTime = 0;
 
         if (maxSrvSockInitTime < initTime)
             maxSrvSockInitTime = initTime;
@@ -447,7 +446,8 @@ public class TcpDiscoveryStatistics {
      * @param initTime Time socket was initialized in.
      */
     public synchronized void onClientSocketInitialized(long initTime) {
-        assert initTime >= 0;
+        if (initTime < 0)
+            initTime = 0;
 
         clientSockCreatedCnt++;
 
