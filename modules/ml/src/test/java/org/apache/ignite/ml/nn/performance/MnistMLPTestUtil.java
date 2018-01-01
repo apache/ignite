@@ -26,17 +26,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trees.performance.ColumnDecisionTreeTrainerBenchmark;
 import org.apache.ignite.ml.util.MnistUtils;
 
 import static org.apache.ignite.ml.math.VectorUtils.num2Vec;
 
-public class MnistMLPTestUtil {
+/** */
+class MnistMLPTestUtil {
     /** Name of the property specifying path to training set images. */
     private static final String PROP_TRAINING_IMAGES = "mnist.training.images";
 
@@ -49,7 +47,8 @@ public class MnistMLPTestUtil {
     /** Name of property specifying path to test set labels. */
     private static final String PROP_TEST_LABELS = "mnist.test.labels";
 
-    public static IgniteBiTuple<Stream<DenseLocalOnHeapVector>, Stream<DenseLocalOnHeapVector>> loadMnist(int samplesCnt) throws IOException {
+    /** */
+    static IgniteBiTuple<Stream<DenseLocalOnHeapVector>, Stream<DenseLocalOnHeapVector>> loadMnist(int samplesCnt) throws IOException {
         Properties props = loadMNISTProperties();
 
         Stream<DenseLocalOnHeapVector> trainingMnistStream = MnistUtils.mnist(props.getProperty(PROP_TRAINING_IMAGES),
@@ -62,7 +61,7 @@ public class MnistMLPTestUtil {
     }
 
     /** Load properties for MNIST tests. */
-    public static Properties loadMNISTProperties() throws IOException {
+    private static Properties loadMNISTProperties() throws IOException {
         Properties res = new Properties();
 
         InputStream is = ColumnDecisionTreeTrainerBenchmark.class.getClassLoader().getResourceAsStream("manualrun/trees/columntrees.manualrun.properties");
@@ -73,7 +72,7 @@ public class MnistMLPTestUtil {
     }
 
     /** */
-    public static IgniteBiTuple<Matrix, Matrix> createDataset(Stream<DenseLocalOnHeapVector> s, int samplesCnt, int featCnt) {
+    static IgniteBiTuple<Matrix, Matrix> createDataset(Stream<DenseLocalOnHeapVector> s, int samplesCnt, int featCnt) {
         Matrix vectors = new DenseLocalOnHeapMatrix(featCnt, samplesCnt);
         Matrix labels = new DenseLocalOnHeapMatrix(10, samplesCnt);
         List<DenseLocalOnHeapVector> sc = s.collect(Collectors.toList());

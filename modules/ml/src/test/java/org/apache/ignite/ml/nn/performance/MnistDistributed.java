@@ -41,7 +41,6 @@ import org.apache.ignite.ml.nn.updaters.RPropParameterUpdate;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.MnistUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
 
 import static org.apache.ignite.ml.nn.performance.MnistMLPTestUtil.createDataset;
 import static org.apache.ignite.ml.nn.performance.MnistMLPTestUtil.loadMnist;
@@ -77,7 +76,7 @@ public class MnistDistributed extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    @Test
+    /** */
     public void testMNISTDistributed() throws IOException {
         int samplesCnt = 60_000;
         int hiddenNeuronsCnt = 100;
@@ -142,7 +141,7 @@ public class MnistDistributed extends GridCommonAbstractTest {
      * @param featsCnt Count of features.
      * @return Vector created by {@link MnistUtils} transformed to {@link LabeledVector}.
      */
-    public static LabeledVector<Vector, Vector> asLabeledVector(Vector v, int featsCnt) {
+    private static LabeledVector<Vector, Vector> asLabeledVector(Vector v, int featsCnt) {
         Vector features = VectorUtils.copyPart(v, 0, featsCnt);
         Vector lb = VectorUtils.num2Vec((int)v.get(featsCnt), 10);
 

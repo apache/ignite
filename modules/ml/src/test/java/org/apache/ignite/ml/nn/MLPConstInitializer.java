@@ -24,7 +24,7 @@ import org.apache.ignite.ml.nn.initializers.MLPInitializer;
 /**
  * Initialize weights and biases with specified constant.
  */
-public class MLPConstInitializer implements MLPInitializer {
+class MLPConstInitializer implements MLPInitializer {
     /**
      * Constant to be used as bias for all layers.
      */
@@ -41,7 +41,7 @@ public class MLPConstInitializer implements MLPInitializer {
      * @param weight Constant to be used as weight from any neuron to any neuron in next layer.
      * @param bias Constant to be used as bias for all layers.
      */
-    public MLPConstInitializer(double weight, double bias) {
+    MLPConstInitializer(double weight, double bias) {
         this.bias = bias;
         this.weight = weight;
     }
@@ -51,7 +51,7 @@ public class MLPConstInitializer implements MLPInitializer {
      *
      * @param weight Constant to be used as weight from any neuron to any neuron in next layer.
      */
-    public MLPConstInitializer(double weight) {
+    MLPConstInitializer(double weight) {
         this(weight, 0.0);
     }
 
