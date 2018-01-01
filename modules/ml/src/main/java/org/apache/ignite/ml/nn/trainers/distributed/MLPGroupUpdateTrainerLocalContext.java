@@ -36,7 +36,7 @@ public class MLPGroupUpdateTrainerLocalContext<U> implements HasTrainingUUID {
     /**
      * Maximal number of global steps.
      */
-    private final int globalStepsMaxCount;
+    private final int globalStepsMaxCnt;
 
     /**
      * Reducer used to reduce updates resulted from each parallel training.
@@ -53,9 +53,10 @@ public class MLPGroupUpdateTrainerLocalContext<U> implements HasTrainingUUID {
      */
     private int curStep;
 
-    public MLPGroupUpdateTrainerLocalContext(UUID trainingUUID, int globalStepsMaxCount, IgniteFunction<List<U>, U> allUpdatesReducer, int parallelTrainingsCnt) {
+    /** Create multilayer perceptron group update trainer local context. */
+    public MLPGroupUpdateTrainerLocalContext(UUID trainingUUID, int globalStepsMaxCnt, IgniteFunction<List<U>, U> allUpdatesReducer, int parallelTrainingsCnt) {
         this.trainingUUID = trainingUUID;
-        this.globalStepsMaxCount = globalStepsMaxCount;
+        this.globalStepsMaxCnt = globalStepsMaxCnt;
         this.allUpdatesReducer = allUpdatesReducer;
         this.parallelTrainingsCnt = parallelTrainingsCnt;
         curStep = 0;
@@ -72,7 +73,7 @@ public class MLPGroupUpdateTrainerLocalContext<U> implements HasTrainingUUID {
      * @return Dlobal steps max count.
      */
     public int globalStepsMaxCount() {
-        return globalStepsMaxCount;
+        return globalStepsMaxCnt;
     }
 
     /**

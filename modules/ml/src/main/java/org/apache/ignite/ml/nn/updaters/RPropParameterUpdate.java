@@ -20,7 +20,6 @@ package org.apache.ignite.ml.nn.updaters;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorUtils;
@@ -104,7 +103,7 @@ public class RPropParameterUpdate implements Serializable {
      * @param updates New parameters updates value.
      * @return This object.
      */
-    RPropParameterUpdate setPrevIterationUpdates(Vector updates) {
+    private RPropParameterUpdate setPrevIterationUpdates(Vector updates) {
         prevIterationUpdates = updates;
 
         return this;
@@ -124,7 +123,7 @@ public class RPropParameterUpdate implements Serializable {
      *
      * @return This object.
      */
-    RPropParameterUpdate setPrevIterationGradient(Vector gradient) {
+    private RPropParameterUpdate setPrevIterationGradient(Vector gradient) {
         prevIterationGradient = gradient;
         return this;
     }
@@ -193,7 +192,7 @@ public class RPropParameterUpdate implements Serializable {
         Vector totalGradient = updates.stream().filter(Objects::nonNull).map(RPropParameterUpdate::prevIterationGradient).reduce(Vector::plus).orElse(null);
 
         if (totalUpdate != null)
-            return new RPropParameterUpdate(totalUpdate, totalGradient, totalDelta, new DenseLocalOnHeapVector(totalDelta.size()).assign(1.0));
+            return new RPropParameterUpdate(totalUpdate, totalGradient, totalDelta, new DenseLocalOnHeapVector(Objects.requireNonNull(totalDelta).size()).assign(1.0));
 
         return null;
     }

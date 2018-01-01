@@ -27,14 +27,22 @@ import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.updaters.ParameterUpdateCalculator;
 
+/** Multilayer perceptron group update training data. */
 public class MLPGroupUpdateTrainingData<U> {
+    /** */
     private final ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator;
+    /** */
     private final int stepsCnt;
+    /** */
     private final IgniteFunction<List<U>, U> updateReducer;
+    /** */
     private final IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier;
+    /** */
     private final IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
+    /** */
     private final double tolerance;
 
+    /** Construct multilayer perceptron group update training data with all parameters provided. */
     public MLPGroupUpdateTrainingData(
         ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator, int stepsCnt,
         IgniteFunction<List<U>, U> updateReducer,
@@ -48,26 +56,32 @@ public class MLPGroupUpdateTrainingData<U> {
         this.tolerance = tolerance;
     }
 
+    /** Get update calculator. */
     public ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator() {
         return updateCalculator;
     }
 
+    /** Get count of steps. */
     public int stepsCnt() {
         return stepsCnt;
     }
 
+    /** Get update reducer. */
     public IgniteFunction<List<U>, U> updateReducer() {
         return updateReducer;
     }
 
+    /** Get batch supplier. */
     public IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier() {
         return batchSupplier;
     }
 
+    /** Get loss function. */
     public IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss() {
         return loss;
     }
 
+    /** Get tolerance. */
     public double tolerance() {
         return tolerance;
     }

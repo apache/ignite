@@ -18,15 +18,18 @@
 package org.apache.ignite.ml.nn.trainers.distributed;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.trainers.group.Metaoptimizer;
 
-public class MLPMetaoptimizer<P> implements Metaoptimizer<MLPGroupUpdateTrainerLocalContext, MLPGroupUpdateTrainingLoopData<P>, P, P, P, ArrayList<P>> {
+/** Meta-optimizer for multilayer perceptron. */
+public class MLPMetaoptimizer<P> implements Metaoptimizer<MLPGroupUpdateTrainerLocalContext,
+    MLPGroupUpdateTrainingLoopData<P>, P, P, P, ArrayList<P>> {
+    /** */
     private final IgniteFunction<List<P>, P> allUpdatesReducer;
 
+    /** Construct metaoptimizer. */
     public MLPMetaoptimizer(IgniteFunction<List<P>, P> allUpdatesReducer) {
         this.allUpdatesReducer = allUpdatesReducer;
     }
@@ -64,9 +67,7 @@ public class MLPMetaoptimizer<P> implements Metaoptimizer<MLPGroupUpdateTrainerL
 
         System.out.println("Global step: " + locCtx.currentStep());
 
-        P totalUpdate = allUpdatesReducer.apply(input);
-
-        return totalUpdate;
+        return allUpdatesReducer.apply(input);
     }
 
     /** {@inheritDoc} */

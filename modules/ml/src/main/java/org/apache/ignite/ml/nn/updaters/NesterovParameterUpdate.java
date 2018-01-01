@@ -20,7 +20,6 @@ package org.apache.ignite.ml.nn.updaters;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
@@ -54,6 +53,11 @@ public class NesterovParameterUpdate implements Serializable {
 //        this.momentum = momentum;
     }
 
+    /**
+     * Construct NesterovParameterUpdate.
+     *
+     * @param prevIterationUpdates Previous iteration updates.
+     */
     public NesterovParameterUpdate(Vector prevIterationUpdates) {
         this.prevIterationUpdates = prevIterationUpdates;
     }
@@ -86,10 +90,23 @@ public class NesterovParameterUpdate implements Serializable {
 //        return momentum;
 //    }
 
+    /**
+     * Get sum of parameters updates.
+     *
+     * @param parameters Parameters to sum.
+     * @return Sum of parameters updates.
+     */
     public static NesterovParameterUpdate sum(List<NesterovParameterUpdate> parameters) {
         return parameters.stream().filter(Objects::nonNull).map(NesterovParameterUpdate::prevIterationUpdates).reduce(Vector::plus).map(NesterovParameterUpdate::new).orElse(null);
     }
 
+
+    /**
+     * Get average of parameters updates.
+     *
+     * @param parameters Parameters to average.
+     * @return Average of parameters updates.
+     */
     public static NesterovParameterUpdate avg(List<NesterovParameterUpdate> parameters) {
         NesterovParameterUpdate sum = sum(parameters);
         return sum != null ? sum.setPreviousUpdates(sum.prevIterationUpdates().divide(parameters.size())) : null;
