@@ -83,15 +83,18 @@ abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends Seriali
 
         GroupTrainingContext<K, V, LC> ctx = new GroupTrainingContext<>(locCtx, cache, ignite);
         ComputationsChain<LC, K, V, T, T> chain = (i, c) -> i;
-        IgniteFunction<GroupTrainerCacheKey<K>, ResultAndUpdates<IN>> distributedInitializer = distributedInitializer(data);
+        IgniteFunction<GroupTrainerCacheKey<K>, ResultAndUpdates<IN>> distributedInitializer
+            = distributedInitializer(data);
 
         init(data, trainingUUID);
 
         M res = chain.
-            thenDistributedForKeys(distributedInitializer, (t, lc) -> data.initialKeys(trainingUUID), reduceDistributedInitData()).
+            thenDistributedForKeys(distributedInitializer, (t, lc) -> data.initialKeys(trainingUUID),
+                reduceDistributedInitData()).
             thenLocally(this::locallyProcessInitData).
             thenWhile(this::shouldContinue, trainingLoopStep()).
-            thenDistributedForEntries(this::extractContextForFinalResultCreation, finalResultsExtractor(), this::finalResultKeys, finalResultsReducer()).
+            thenDistributedForEntries(this::extractContextForFinalResultCreation, finalResultsExtractor(),
+                this::finalResultKeys, finalResultsReducer()).
             thenLocally(this::mapFinalResult).
             process(data, ctx);
 
@@ -109,8 +112,8 @@ abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends Seriali
      */
     protected abstract LC initialLocalContext(T data, UUID trainingUUID);
 
+    /** Override in subclasses if needed. */
     protected void init(T data, UUID trainingUUID) {
-
     }
 
     /**

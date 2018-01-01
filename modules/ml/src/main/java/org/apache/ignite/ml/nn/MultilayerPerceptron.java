@@ -386,7 +386,7 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
             if (hasBiases(layer))
                 db = dz.foldRows(Vector::sum).times(invBatchSize);
 
-            // Because we go from last layer, add each layer to the begining.
+            // Because we go from last layer, add each layer to the beginning.
             layersParameters.add(0, new MLPLayer(dw, db));
         }
 

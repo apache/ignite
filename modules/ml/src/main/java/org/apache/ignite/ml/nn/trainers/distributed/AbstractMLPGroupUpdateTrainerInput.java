@@ -32,7 +32,7 @@ public abstract class AbstractMLPGroupUpdateTrainerInput implements GroupTrainer
     /**
      * Count of networks to be trained in parallel.
      */
-    private final int networksCount;
+    private final int networksCnt;
 
     /**
      * Construct instance of this class with given parameters.
@@ -40,21 +40,21 @@ public abstract class AbstractMLPGroupUpdateTrainerInput implements GroupTrainer
      * @param networksCnt Count of networks to be trained in parallel.
      */
     public AbstractMLPGroupUpdateTrainerInput(int networksCnt) {
-        this.networksCount = networksCnt;
+        this.networksCnt = networksCnt;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteSupplier<Stream<GroupTrainerCacheKey<Void>>> initialKeys(UUID trainingUUID) {
-        int nt = networksCount;
+        final int nt = networksCnt; // IMPL NOTE intermediate variable is intended to have smaller lambda
         return () -> MLPCache.allKeys(nt, trainingUUID);
     }
 
     /**
      * Get count of networks to be trained in parallel.
      *
-     * @return
+     * @return Count of networks.
      */
     public int trainingsCount() {
-        return networksCount;
+        return networksCnt;
     }
 }

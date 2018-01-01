@@ -20,7 +20,6 @@ package org.apache.ignite.ml.trainers.group.chain;
 import java.io.Serializable;
 import java.util.List;
 import java.util.stream.Stream;
-import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
@@ -47,7 +46,7 @@ public interface DistributedStep<T, L, K, C, I, O extends Serializable> {
     IgniteSupplier<C> remoteContextSupplier(I input, L locCtx);
 
     /**
-     * Get function applied to each cache elment specified by keys.
+     * Get function applied to each cache element specified by keys.
      *
      * @return Function applied to each cache entry specified by keys..
      */

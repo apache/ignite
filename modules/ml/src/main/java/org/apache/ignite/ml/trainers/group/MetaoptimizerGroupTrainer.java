@@ -59,7 +59,7 @@ public abstract class MetaoptimizerGroupTrainer<LC extends HasTrainingUUID, K, V
     /**
      * Metaoptimizer.
      */
-    Metaoptimizer<LC, X, Y, I, IN, O> metaoptimizer;
+    private Metaoptimizer<LC, X, Y, I, IN, O> metaoptimizer;
 
     /**
      * Construct instance of this class.
@@ -98,8 +98,8 @@ public abstract class MetaoptimizerGroupTrainer<LC extends HasTrainingUUID, K, V
      */
     protected abstract IgniteSupplier<G> remoteContextExtractor(I input, LC ctx);
 
+    /** {@inheritDoc} */
     @Override protected void init(T data, UUID trainingUUID) {
-
     }
 
     /**

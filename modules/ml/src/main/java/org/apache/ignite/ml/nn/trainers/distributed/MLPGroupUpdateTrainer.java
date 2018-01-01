@@ -91,7 +91,7 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
      * Function used to reduce updates in one training (for example, sum all sequential gradient updates to get one
      * gradient update).
      */
-    private final IgniteFunction<List<U>, U> localStepUpdatesReducer;
+    private final IgniteFunction<List<U>, U> locStepUpdatesReducer;
 
     /**
      * Updates calculator.
@@ -111,25 +111,29 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
     /**
      * Default all updates reducer.
      */
-    private static final IgniteFunction<List<RPropParameterUpdate>, RPropParameterUpdate> DEFAULT_ALL_UPDATES_REDUCER = RPropParameterUpdate::avg;
+    private static final IgniteFunction<List<RPropParameterUpdate>, RPropParameterUpdate>
+        DEFAULT_ALL_UPDATES_REDUCER = RPropParameterUpdate::avg;
 
     /**
      * Default local steps updates reducer.
      */
-    private static final IgniteFunction<List<RPropParameterUpdate>, RPropParameterUpdate> DEFAULT_LOCAL_STEP_UPDATES_REDUCER = RPropParameterUpdate::sumLocal;
+    private static final IgniteFunction<List<RPropParameterUpdate>, RPropParameterUpdate>
+        DEFAULT_LOCAL_STEP_UPDATES_REDUCER = RPropParameterUpdate::sumLocal;
 
     /**
      * Default update calculator.
      */
-    private static final ParameterUpdateCalculator<MultilayerPerceptron, RPropParameterUpdate> DEFAULT_UPDATE_CALCULATOR = new RPropUpdateCalculator<>();
+    private static final ParameterUpdateCalculator<MultilayerPerceptron, RPropParameterUpdate>
+        DEFAULT_UPDATE_CALCULATOR = new RPropUpdateCalculator<>();
 
     /**
      * Default loss function.
      */
-    private static final IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> DEFAULT_LOSS = LossFunctions.MSE;
+    private static final IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> DEFAULT_LOSS
+        = LossFunctions.MSE;
 
     /**
-     * Construct instance of this class with given parametres.
+     * Construct instance of this class with given parameters.
      *
      * @param loss Loss function.
      * @param ignite Ignite instance.
@@ -138,7 +142,7 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
     public MLPGroupUpdateTrainer(int maxGlobalSteps,
         int syncRate,
         IgniteFunction<List<U>, U> allUpdatesReducer,
-        IgniteFunction<List<U>, U> localStepUpdatesReducer,
+        IgniteFunction<List<U>, U> locStepUpdatesReducer,
         ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator,
         IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
         Ignite ignite, double tolerance) {
@@ -147,7 +151,7 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
         this.maxGlobalSteps = maxGlobalSteps;
         this.syncRate = syncRate;
         this.allUpdatesReducer = allUpdatesReducer;
-        this.localStepUpdatesReducer = localStepUpdatesReducer;
+        this.locStepUpdatesReducer = locStepUpdatesReducer;
         this.updateCalculator = updateCalculator;
         this.loss = loss;
         this.tolerance = tolerance;
@@ -160,7 +164,8 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
      * @return Default {@link MLPGroupUpdateTrainer}.
      */
     public static MLPGroupUpdateTrainer<RPropParameterUpdate> getDefault(Ignite ignite) {
-        return new MLPGroupUpdateTrainer<>(DEFAULT_MAX_GLOBAL_STEPS, DEFAULT_SYNC_RATE, DEFAULT_ALL_UPDATES_REDUCER, DEFAULT_LOCAL_STEP_UPDATES_REDUCER, DEFAULT_UPDATE_CALCULATOR, DEFAULT_LOSS, ignite, 0.01);
+        return new MLPGroupUpdateTrainer<>(DEFAULT_MAX_GLOBAL_STEPS, DEFAULT_SYNC_RATE, DEFAULT_ALL_UPDATES_REDUCER,
+            DEFAULT_LOCAL_STEP_UPDATES_REDUCER, DEFAULT_UPDATE_CALCULATOR, DEFAULT_LOSS, ignite, 0.01);
     }
 
     /** {@inheritDoc} */
@@ -170,7 +175,7 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
         MLPGroupUpdateTrainerDataCache.getOrCreate(ignite).put(trainingUUID, new MLPGroupUpdateTrainingData<>(
             updateCalculator,
             syncRate,
-            localStepUpdatesReducer,
+            locStepUpdatesReducer,
             data.batchSupplier(),
             loss, // TODO: Check how it is serialized.
             tolerance
@@ -181,28 +186,29 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
     @Override protected IgniteFunction<GroupTrainerCacheKey<Void>, ResultAndUpdates<U>> distributedInitializer(
         AbstractMLPGroupUpdateTrainerInput data) {
         MultilayerPerceptron initPerceptron = data.mdl();
-        ParameterUpdateCalculator<MultilayerPerceptron, U> calculator = updateCalculator;
 
         // For each key put initial network into the cache.
         return key -> {
             Ignite ignite = Ignition.localIgnite();
 
-            U initUpdate = calculator.init(initPerceptron, loss);// TODO: Check how it is serialized.
+            U initUpdate = updateCalculator.init(initPerceptron, loss);// TODO: Check how it is serialized.
 
-            return ResultAndUpdates.of(initUpdate).updateCache(MLPCache.getOrCreate(ignite), key, new MLPGroupTrainingCacheValue(initPerceptron));
+            return ResultAndUpdates.of(initUpdate).updateCache(MLPCache.getOrCreate(ignite), key,
+                new MLPGroupTrainingCacheValue(initPerceptron));
         };
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected IgniteFunction<EntryAndContext<Void, MLPGroupTrainingCacheValue, MLPGroupUpdateTrainingContext<U>>, MLPGroupUpdateTrainingLoopData<U>> trainingLoopStepDataExtractor() {
+    @Override protected IgniteFunction<EntryAndContext<Void, MLPGroupTrainingCacheValue,
+        MLPGroupUpdateTrainingContext<U>>, MLPGroupUpdateTrainingLoopData<U>> trainingLoopStepDataExtractor() {
         return entryAndContext -> {
             MLPGroupUpdateTrainingContext<U> ctx = entryAndContext.context();
             Map.Entry<GroupTrainerCacheKey<Void>, MLPGroupTrainingCacheValue> entry = entryAndContext.entry();
             MLPGroupUpdateTrainingData<U> data = ctx.data();
 
             return new MLPGroupUpdateTrainingLoopData<>(entry.getValue().perceptron(),
-                data.updateCalculator(), data.stepsCnt(), data.updateReducer(), ctx.previousUpdate(), entry.getKey(), data.batchSupplier(), data.loss(), data.tolerance());
+                data.updateCalculator(), data.stepsCnt(), data.updateReducer(), ctx.previousUpdate(), entry.getKey(),
+                data.batchSupplier(), data.loss(), data.tolerance());
         };
     }
 
@@ -221,7 +227,8 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
         UUID uuid = ctx.trainingUUID();
 
         return () -> {
-            MLPGroupUpdateTrainingData<U> data = MLPGroupUpdateTrainerDataCache.getOrCreate(Ignition.localIgnite()).get(uuid);
+            MLPGroupUpdateTrainingData<U> data = MLPGroupUpdateTrainerDataCache
+                .getOrCreate(Ignition.localIgnite()).get(uuid);
             return new MLPGroupUpdateTrainingContext<>(data, prevUpdate);
         };
     }
@@ -235,8 +242,8 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
             ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator = data.updateCalculator();
             IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss = data.loss();
 
-            // TODO: This is done just to set loss, and ignore initial update, maybe we should change ParameterUpdateCalculator API to
-            // have proper way to setting loss.
+            // TODO: This is done just to set loss, and ignore initial update, maybe we should change
+            // ParameterUpdateCalculator API to have proper way to setting loss.
             updateCalculator.init(mlpCp, loss);
 
             U curUpdate = data.previousUpdate();
@@ -273,15 +280,16 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
             MultilayerPerceptron newMlp = updateCalculator.update(mlp, data.previousUpdate());
 
             return new ResultAndUpdates<>(update).
-                updateCache(MLPCache.getOrCreate(Ignition.localIgnite()), data.key(), new MLPGroupTrainingCacheValue(newMlp));
+                updateCache(MLPCache.getOrCreate(Ignition.localIgnite()), data.key(),
+                    new MLPGroupTrainingCacheValue(newMlp));
         };
     }
 
     /** {@inheritDoc} */
     @Override protected MLPGroupUpdateTrainerLocalContext<U> initialLocalContext(
-        AbstractMLPGroupUpdateTrainerInput data,
-        UUID trainingUUID) {
-        return new MLPGroupUpdateTrainerLocalContext<>(trainingUUID, maxGlobalSteps, allUpdatesReducer, data.trainingsCount());
+        AbstractMLPGroupUpdateTrainerInput data, UUID trainingUUID) {
+        return new MLPGroupUpdateTrainerLocalContext<>(trainingUUID, maxGlobalSteps, allUpdatesReducer,
+            data.trainingsCount());
     }
 
     /** {@inheritDoc} */
@@ -300,8 +308,8 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected IgniteFunction<EntryAndContext<Void, MLPGroupTrainingCacheValue, MLPGroupUpdateTrainingContext<U>>, ResultAndUpdates<MultilayerPerceptron>> finalResultsExtractor() {
+    @Override protected IgniteFunction<EntryAndContext<Void, MLPGroupTrainingCacheValue,
+        MLPGroupUpdateTrainingContext<U>>, ResultAndUpdates<MultilayerPerceptron>> finalResultsExtractor() {
         return context -> ResultAndUpdates.of(context.entry().getValue().perceptron());
     }
 
@@ -329,7 +337,8 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
      * @return New {@link MLPGroupUpdateTrainer} with new maxGlobalSteps value.
      */
     public MLPGroupUpdateTrainer<U> withMaxGlobalSteps(int maxGlobalSteps) {
-        return new MLPGroupUpdateTrainer<>(maxGlobalSteps, syncRate, allUpdatesReducer, localStepUpdatesReducer, updateCalculator, loss, ignite, tolerance);
+        return new MLPGroupUpdateTrainer<>(maxGlobalSteps, syncRate, allUpdatesReducer, locStepUpdatesReducer,
+            updateCalculator, loss, ignite, tolerance);
     }
 
     /**
@@ -340,7 +349,7 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
      */
     public MLPGroupUpdateTrainer<U> withSyncRate(int syncRate) {
         return new MLPGroupUpdateTrainer<>(maxGlobalSteps, syncRate
-            , allUpdatesReducer, localStepUpdatesReducer, updateCalculator, loss, ignite, tolerance);
+            , allUpdatesReducer, locStepUpdatesReducer, updateCalculator, loss, ignite, tolerance);
     }
 
     /**
@@ -350,7 +359,7 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
      * @return New {@link MLPGroupUpdateTrainer} with new tolerance value.
      */
     public MLPGroupUpdateTrainer<U> withTolerance(double tolerance) {
-        return new MLPGroupUpdateTrainer<>(maxGlobalSteps, syncRate
-            , allUpdatesReducer, localStepUpdatesReducer, updateCalculator, loss, ignite, tolerance);
+        return new MLPGroupUpdateTrainer<>(maxGlobalSteps, syncRate, allUpdatesReducer, locStepUpdatesReducer,
+            updateCalculator, loss, ignite, tolerance);
     }
 }

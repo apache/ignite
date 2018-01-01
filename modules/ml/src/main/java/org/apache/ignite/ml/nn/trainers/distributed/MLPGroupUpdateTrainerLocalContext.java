@@ -71,7 +71,7 @@ public class MLPGroupUpdateTrainerLocalContext<U> implements HasTrainingUUID {
     /**
      * Get global steps max count.
      *
-     * @return Dlobal steps max count.
+     * @return Global steps max count.
      */
     public int globalStepsMaxCount() {
         return globalStepsMaxCnt;

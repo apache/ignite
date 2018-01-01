@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
@@ -35,7 +34,8 @@ import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
  * @param <C> Type of context (common part of data needed for computation).
  * @param <R> Type of computation result.
  */
-public class GroupTrainerEntriesProcessorTask<K, V, C, R extends Serializable> extends GroupTrainerBaseProcessorTask<K, V, C, EntryAndContext<K, V, C>, R> {
+public class GroupTrainerEntriesProcessorTask<K, V, C, R extends Serializable>
+    extends GroupTrainerBaseProcessorTask<K, V, C, EntryAndContext<K, V, C>, R> {
     /**
      * Construct instance of this class with given parameters.
      *
