@@ -43,7 +43,7 @@ public class SimpleMLPLocalBatchTrainerInput implements LocalBatchTrainerInput<M
     /**
      * Inputs stored as columns.
      */
-    private Matrix inputs;
+    private final Matrix inputs;
 
     /**
      * Ground truths stored as columns.
@@ -53,7 +53,7 @@ public class SimpleMLPLocalBatchTrainerInput implements LocalBatchTrainerInput<M
     /**
      * Size of batch returned on each step.
      */
-    private int batchSize;
+    private final int batchSize;
 
     /**
      * Construct instance of this class.

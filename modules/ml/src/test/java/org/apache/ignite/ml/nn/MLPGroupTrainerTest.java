@@ -43,7 +43,7 @@ public class MLPGroupTrainerTest extends GridCommonAbstractTest {
     private static final int NODE_COUNT = 3;
 
     /** Grid instance. */
-    protected Ignite ignite;
+    private Ignite ignite;
 
     /**
      * {@inheritDoc}
@@ -95,7 +95,7 @@ public class MLPGroupTrainerTest extends GridCommonAbstractTest {
 
         int totalCnt = 100;
         int failCnt = 0;
-        double maxFailRatio = 0.2;
+        double maxFailRatio = 0.3;
         MLPGroupUpdateTrainer<RPropParameterUpdate> trainer = MLPGroupUpdateTrainer.getDefault(ignite).
             withSyncRate(3).
             withTolerance(0.001).

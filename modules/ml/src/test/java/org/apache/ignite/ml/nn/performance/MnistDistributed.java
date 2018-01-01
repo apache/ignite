@@ -56,7 +56,7 @@ public class MnistDistributed extends GridCommonAbstractTest {
     private static final int FEATURES_CNT = 28 * 28;
 
     /** Grid instance. */
-    protected Ignite ignite;
+    private Ignite ignite;
 
     /**
      * {@inheritDoc}

@@ -28,12 +28,12 @@ class MLPConstInitializer implements MLPInitializer {
     /**
      * Constant to be used as bias for all layers.
      */
-    private double bias;
+    private final double bias;
 
     /**
      * Constant to be used as weight from any neuron to any neuron in next layer.
      */
-    private double weight;
+    private final double weight;
 
     /**
      * Construct MLPConstInitializer.
