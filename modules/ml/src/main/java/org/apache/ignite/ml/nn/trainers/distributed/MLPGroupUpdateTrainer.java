@@ -264,8 +264,6 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
                 double err = MatrixUtil.zipFoldByColumns(predicted, truth, (predCol, truthCol) ->
                     loss.apply(truthCol).apply(predCol)).sum() / batchSize;
 
-                System.out.println(err + " loc iter: " + i);
-
                 if (err < data.tolerance())
                     break;
 

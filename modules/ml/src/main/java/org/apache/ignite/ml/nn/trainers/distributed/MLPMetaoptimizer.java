@@ -65,8 +65,6 @@ public class MLPMetaoptimizer<P> implements Metaoptimizer<MLPGroupUpdateTrainerL
     @Override public P localProcessor(ArrayList<P> input, MLPGroupUpdateTrainerLocalContext locCtx) {
         locCtx.incrementCurrentStep();
 
-        System.out.println("Global step: " + locCtx.currentStep());
-
         return allUpdatesReducer.apply(input);
     }
 
