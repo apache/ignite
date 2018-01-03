@@ -116,7 +116,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             HashSet<String> grpCaches = new HashSet<>(grpDesc.caches().keySet());
 
-            grpCaches.retainAll(cacheNames);
+            grpCaches.removeAll(cacheNames);
 
             if (!grpCaches.isEmpty()) {
                 return errorFuture("Cannot change WAL mode because not all cache names belonging to the group are " +
@@ -218,7 +218,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             // Are there any new caches in the group?
             HashSet<String> grpCacheNames = new HashSet<>(grpDesc.caches().keySet());
 
-            grpCacheNames.retainAll(msg.caches().keySet());
+            grpCacheNames.removeAll(msg.caches().keySet());
 
             if (!grpCacheNames.isEmpty()) {
                 completeWithError(userFut, "Cannot change WAL mode because not all cache names belonging to the " +

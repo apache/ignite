@@ -180,6 +180,21 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean enableWal2(String cacheName) throws IgniteException {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean disableWal2(String cacheName) throws IgniteException {
+        return false;
+    }
+    
+    /** {@inheritDoc} */
+    @Override public boolean isWalEnabled2(String cacheName) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isAsync() {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
