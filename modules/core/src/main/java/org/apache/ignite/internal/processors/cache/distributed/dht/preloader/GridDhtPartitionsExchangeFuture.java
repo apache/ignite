@@ -592,11 +592,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 else if (msg instanceof SnapshotDiscoveryMessage) {
                     exchange = onCustomMessageNoAffinityChange(crdNode);
                 }
-                else if (msg instanceof WalStateAbstractMessage) {
+                else if (msg instanceof WalStateAbstractMessage)
                     exchange = onCustomMessageNoAffinityChange(crdNode);
-                }
-                else if (msg instanceof WalModeDynamicChangeMessage)
-                    exchange = onWalModeChangeRequest(crdNode, (WalModeDynamicChangeMessage)msg);
                 else {
                     assert affChangeMsg != null : this;
 
@@ -903,20 +900,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     private ExchangeType onCustomMessageNoAffinityChange(boolean crd) {
         cctx.affinity().onCustomMessageNoAffinityChange(this, crd, exchActions);
-
-        return cctx.kernalContext().clientNode() ? ExchangeType.CLIENT : ExchangeType.ALL;
-    }
-
-    /**
-     * @param crd Coordinator flag.
-     * @return Exchange type.
-     * @throws IgniteCheckedException If failed.
-     */
-    private ExchangeType onWalModeChangeRequest(boolean crd, final WalModeDynamicChangeMessage msg)
-        throws IgniteCheckedException {
-        cctx.cache().onWalModeDynamicChangeMessageExchange(msg);
-
-        cctx.affinity().onWalModeChangeRequest(this, crd);
 
         return cctx.kernalContext().clientNode() ? ExchangeType.CLIENT : ExchangeType.ALL;
     }

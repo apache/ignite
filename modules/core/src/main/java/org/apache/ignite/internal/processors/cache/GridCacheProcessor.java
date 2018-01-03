@@ -17,24 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.IdentityHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CountDownLatch;
-import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -56,8 +38,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -68,9 +48,7 @@ import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -128,7 +106,6 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -155,6 +132,25 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.management.MBeanServer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
+
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
@@ -169,13 +165,10 @@ import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
-import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
-import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CACHE_PROC;
 import static org.apache.ignite.internal.IgniteComponentType.JTA;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 
 /**
@@ -210,9 +203,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** Pending cache starts. */
     private ConcurrentMap<UUID, IgniteInternalFuture> pendingFuts = new ConcurrentHashMap<>();
-
-    /** Wal mode change futures. */
-    private ConcurrentMap<UUID, WalModeChangeFuture> walModeChangeFuts = new ConcurrentHashMap<>();
 
     /** Template configuration add futures. */
     private ConcurrentMap<String, IgniteInternalFuture> pendingTemplateFuts = new ConcurrentHashMap<>();
@@ -1011,9 +1001,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         for (IgniteInternalFuture fut : pendingTemplateFuts.values())
             ((GridFutureAdapter)fut).onDone(err);
-
-        for (IgniteInternalFuture fut : walModeChangeFuts.values())
-            ((WalModeChangeFuture)fut).onDone(err);
 
         for (EnableStatisticsFuture fut : enableStatisticsFuts.values())
             fut.onDone(err);
@@ -2043,25 +2030,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param cacheName Cache name.
-     */
-    public void disableGateway(String cacheName) {
-       IgniteCacheProxyImpl<?, ?> proxy = jCacheProxies.get(cacheName);
-
-       proxy.disableProxy();
-    }
-
-
-    /**
-     * @param cacheName Cache name.
-     */
-    public void enableGateway(String cacheName) {
-        IgniteCacheProxyImpl<?, ?> proxy = jCacheProxies.get(cacheName);
-
-        proxy.enableProxy();
-    }
-
-    /**
      * @param req Request.
      */
     private void stopGateway(DynamicCacheChangeRequest req) {
@@ -2334,195 +2302,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (fut != null)
                 fut.onDone(success, err);
         }
-    }
-
-    /**
-     * @param msg Message.
-     */
-    private boolean onWalModeDynamicChangeMessage(WalModeDynamicChangeMessage msg) {
-        boolean disable = msg.disable();
-        boolean prepare = msg.prepare();
-
-        int grpId = msg.grpId();
-
-        CacheGroupDescriptor desc = ctx.cache().cacheGroupDescriptors().get(grpId);
-
-        final WalModeChangeFuture fut = walModeChangeFuts.get(msg.uid());
-
-        if (prepare) {
-            if (desc.walMode() == (disable ? CacheGroupWalMode.DISABLED : CacheGroupWalMode.ENABLED)) {
-                if (fut != null)
-                    fut.onDone(false);
-
-                return false;
-            }
-
-            if (desc.walMode() == (disable ? CacheGroupWalMode.DISABLING : CacheGroupWalMode.ENABLING)) {
-                if (fut != null) {
-                    boolean found = false;
-
-                    for (final WalModeChangeFuture fut0 : walModeChangeFuts.values()) {
-                        if (fut0.grpId == grpId && fut0.disable == disable && fut0.active) {
-                            fut0.listen(
-                                new CI1() {
-                                    @Override public void apply(Object o) {
-                                        fut.onDone(false);
-                                    }
-                                }
-                            );
-
-                            found = true;
-
-                            break;
-                        }
-                    }
-
-                    assert found;
-                }
-
-                return false;
-            }
-
-            if (desc.walMode() == (disable ? CacheGroupWalMode.ENABLING : CacheGroupWalMode.DISABLING)) {
-                if (fut != null) {
-                    fut.onDone(false, new IgniteCheckedException("Another thread is trying to " +
-                        (disable ? "enable" : "disable") + " WAL for same cache."));
-
-                    return false;
-                }
-            }
-        }
-
-        desc.walMode(CacheGroupWalMode.resolve(disable, prepare));
-
-        if (!disable)
-            for (GridCacheContext cctx : ctx.cache().cacheGroup(grpId).caches()) {
-                if (prepare)
-                    ctx.cache().disableGateway(cctx.name());
-                else
-                    ctx.cache().enableGateway(cctx.name());
-            }
-
-        if (prepare) {
-            if (fut == null) {
-                WalModeChangeFuture old = walModeChangeFuts.putIfAbsent(msg.uid(),
-                    new WalModeChangeFuture(msg.uid(), msg.initiatingNodeId(), msg.grpId(), msg.disable()));
-
-                assert old == null;
-            }
-
-            walModeChangeFuts.get(msg.uid()).init();
-
-            return true;
-        }
-        else {
-            if (fut != null) {
-                fut.onDone(true);
-
-                return fut.active;
-            }
-            else
-                return false;
-        }
-    }
-
-    /**
-     * @param msg Message.
-     */
-    boolean onWalModeDynamicChangeMessageEvent(WalModeDynamicChangeMessage msg) {
-        boolean disable = msg.disable();
-        boolean prepare = msg.prepare();
-
-        if (prepare) {
-            WalModeChangeFuture fut = walModeChangeFuts.get(msg.uid());
-
-            if (fut != null && fut.active) {
-                if (disable && !ctx.clientNode()) {
-                    sharedCtx.cache().cacheGroup(msg.grpId()).walDisabled(true);
-
-                    ackWalModeDynamicChangeMessage(msg.initiatingNodeId(), msg.uid());
-
-                    fut.prepFut.onDone();
-                }
-
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * @param msg Message.
-     */
-    public void onWalModeDynamicChangeMessageExchange(final WalModeDynamicChangeMessage msg)
-        throws IgniteCheckedException {
-        boolean disable = msg.disable();
-        boolean prepare = msg.prepare();
-
-        assert !disable && prepare;
-
-        if (sharedCtx.wal() != null) {
-            final WalModeChangeFuture fut = walModeChangeFuts.get(msg.uid());
-
-            if (fut != null) {
-                assert fut.active;
-
-                IgniteInternalFuture cpFut = sharedCtx.cache().context().database().doCheckpoint("wal-mode-change");
-
-                cpFut.listen(new CI1<Object>() {
-                    @Override public void apply(Object o) {
-                        sharedCtx.cache().cacheGroup(msg.grpId()).walDisabled(false);
-
-                        ackWalModeDynamicChangeMessage(msg.initiatingNodeId(), msg.uid());
-
-                        fut.prepFut.onDone();
-                    }
-                });
-            }
-        }
-    }
-
-    /**
-     * @param nodeId Node id.
-     * @param uid Uid.
-     */
-    private void ackWalModeDynamicChangeMessage(final UUID nodeId, final UUID uid) {
-        if (!sharedCtx.localNodeId().equals(nodeId)) {
-            ctx.closure().runLocalSafe(new Runnable() {
-                @Override public void run() {
-                    try {
-                        sharedCtx.io().send(nodeId,
-                            new WalModeDynamicChangeAckMessage(uid), SYSTEM_POOL);
-                    }
-                    catch (ClusterTopologyCheckedException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to send message, node failed: " + nodeId);
-                    }
-                    catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to send message [node=" + nodeId + ']', e);
-                    }
-                }
-            }, SYSTEM_POOL);
-        }
-        else {
-            WalModeChangeFuture fut = walModeChangeFuts.get(uid);
-
-            if (fut != null)
-                fut.onNodeAck(sharedCtx.localNode());
-            else
-                assert ctx.isStopping();
-        }
-    }
-
-    /**
-     * @param node Node.
-     * @param msg Message.
-     */
-    void onWalModeDynamicChangeAckMessage(ClusterNode node, WalModeDynamicChangeAckMessage msg) {
-        WalModeChangeFuture fut = walModeChangeFuts.get(msg.uid());
-
-        fut.onNodeAck(node);
     }
 
     /**
@@ -3203,56 +2982,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param cacheName Cache name.
-     * @param disable Disable.
-     * @param explicit Explicit.
-     */
-    public IgniteInternalFuture<Boolean> changeWalMode(
-        String cacheName,
-        boolean disable,
-        boolean explicit) throws IgniteException {
-        CacheGroupDescriptor desc = ctx.cache().cacheDescriptor(cacheName).groupDescriptor();
-
-        if (desc.caches().size() > 1 && explicit)
-            throw new IgniteException("Cache group contains more than one cache.");
-
-        int grpId = desc.groupId();
-
-        UUID uid = UUID.randomUUID();
-
-        final WalModeChangeFuture fut = new WalModeChangeFuture(uid, ctx.localNodeId(), grpId, disable);
-
-        if (desc.walMode() == (disable ? CacheGroupWalMode.DISABLED : CacheGroupWalMode.ENABLED)) {
-            fut.onDone(false);
-
-            return fut;
-        }
-
-        // Checking same fut already registered
-        for (WalModeChangeFuture fut0 : walModeChangeFuts.values()) {
-            if (fut0.grpId == grpId && fut0.disable == disable) {
-                fut0.listen(
-                    new CI1() {
-                        @Override public void apply(Object o) {
-                            fut.onDone(false);
-                        }
-                    }
-                );
-
-                return fut;
-            }
-        }
-
-        WalModeChangeFuture old = walModeChangeFuts.put(uid, fut);
-
-        assert old == null : old;
-
-        fut.prepare();
-
-        return fut;
-    }
-
-    /**
      * @param cacheName Cache name to close.
      * @return Future that will be completed when cache is closed.
      */
@@ -3487,11 +3216,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (msg instanceof SnapshotDiscoveryMessage &&
             ((SnapshotDiscoveryMessage)msg).needExchange())
             return true;
-
-        if (msg instanceof WalModeDynamicChangeMessage) {
-            return onWalModeDynamicChangeMessage((WalModeDynamicChangeMessage)msg) &&
-                ((WalModeDynamicChangeMessage)msg).needExchange();
-        }
 
         if (msg instanceof WalStateAbstractMessage) {
             WalStateAbstractMessage msg0 = (WalStateAbstractMessage)msg;
@@ -4061,9 +3785,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (IgniteInternalFuture fut : pendingTemplateFuts.values())
             ((GridFutureAdapter)fut).onDone(err);
 
-        for (IgniteInternalFuture fut : walModeChangeFuts.values())
-            ((GridFutureAdapter)fut).onDone(err);
-
         for (EnableStatisticsFuture fut : enableStatisticsFuts.values())
             fut.onDone(err);
     }
@@ -4502,226 +4223,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 return U.unmarshal(marsh, U.marshal(marsh, obj), U.resolveClassLoader(ctx.config()));
             }
         });
-    }
-
-    /**
-     *
-     */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    private class WalModeChangeFuture extends GridFutureAdapter<Boolean> {
-        /** */
-        private final UUID uid;
-
-        /** Node id. */
-        private volatile UUID initiatingNodeId;
-
-        /** Group ids. */
-        private final int grpId;
-
-        /** Disabling. */
-        private final boolean disable;
-
-        /** Nodes where checkpoint started. */
-        private final List<ClusterNode> nodes = new LinkedList<>();
-
-        /** Initialize future. */
-        private final GridFutureAdapter<?> initFut = new GridFutureAdapter();
-
-        /** Prepare future. */
-        private final GridFutureAdapter<?> prepFut = new GridFutureAdapter();
-
-        /** Disco listener. */
-        private volatile GridLocalEventListener discoLsnr;
-
-        /** Active. */
-        private volatile boolean active;
-
-        /**
-         * @param uid Uid.
-         * @param initiatingNodeId Node Id.
-         * @param grpId Group Id.
-         * @param disable Disable.
-         */
-        private WalModeChangeFuture(UUID uid,
-            final UUID initiatingNodeId,
-            final int grpId,
-            final boolean disable) {
-            this.uid = uid;
-            this.initiatingNodeId = initiatingNodeId;
-            this.grpId = grpId;
-            this.disable = disable;
-        }
-
-        /**
-         * Should be inited at each node.
-         */
-        private void init() {
-            active = true;
-
-            initIfNeeded();
-
-            synchronized (nodes) {
-                nodes.addAll(sharedCtx.discovery().serverNodes(AffinityTopologyVersion.NONE));
-            }
-
-            initFut.onDone();
-        }
-
-        /**
-         *
-         */
-        public void prepare() {
-            initIfNeeded();
-
-            sendMessage(true);
-        }
-
-        /**
-         *
-         */
-        private void initIfNeeded() {
-            if (this.discoLsnr == null) {
-                log.info("Cluster wide WAL mode change operation started " +
-                    "[cacheGrps=" + grpId +
-                    ", action=" + (disable ? "disabling" : "enabling") +
-                    ", initiatingNodeId=" + initiatingNodeId + ", phase=prepare]");
-
-                this.discoLsnr = new GridLocalEventListener() {
-                    @Override public void onEvent(Event evt) {
-                        DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
-
-                        final ClusterNode evtNode = discoEvt.eventNode();
-
-                        if (!evtNode.id().equals(ctx.localNodeId())) { // Not current node failing.
-                            if (!evtNode.isClient())
-                                ackNode(evtNode);
-
-                            final ClusterNode crd = ctx.discovery().oldestAliveServerNode(AffinityTopologyVersion.NONE);
-
-                            assert crd != null;
-
-                            if (evtNode.id().equals(initiatingNodeId)) {
-                                initiatingNodeId(crd.id());
-
-                                log.info("Cluster wide WAL mode change operation restarted due to initiating node fail " +
-                                    "[node=" + evtNode.id() +
-                                    ", cacheGrps=" + grpId +
-                                    ", action=" + (disable ? "disabling" : "enabling") + "]. ");
-
-                                prepFut.listen(new CI1() {
-                                    @Override public void apply(Object o) {
-                                        ackWalModeDynamicChangeMessage(crd.id(), uid);
-                                    }
-                                });
-                            }
-                        }
-                    }
-                };
-
-                ctx.event().addLocalEventListener(discoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
-            }
-        }
-
-        /**
-         * @param initiatingNodeId Node id.
-         */
-        private void initiatingNodeId(UUID initiatingNodeId) {
-            if (this.initiatingNodeId != initiatingNodeId) {
-                log.info("Cluster wide WAL mode change operation restarted locally " +
-                    "[cacheGrps=" + grpId +
-                    ", action=" + (disable ? "disabling" : "enabling") +
-                    ", initiatingNodeId=" + initiatingNodeId + ", phase=prepare]");
-
-                this.initiatingNodeId = initiatingNodeId;
-            }
-        }
-
-        /**
-         * @param node Node.
-         */
-        private void onNodeAck(final ClusterNode node) {
-            assert !node.isClient() : node;
-
-            log.info("Cluster wide WAL mode change operation prepare phase finished by node " +
-                "[nodeId=" + node.id() +
-                ", cacheGrps=" + grpId +
-                ", action=" + (disable ? "disabling" : "enabling") +
-                ", initiatingNodeId=" + initiatingNodeId + "]");
-
-            initFut.listen(
-                new CI1() {
-                    @Override public void apply(Object o) {
-                        boolean done = ackNode(node);
-
-                        if (done && ctx.localNodeId().equals(initiatingNodeId)) {
-                            log.info("Cluster wide WAL mode change operation prepared on whole cluster " +
-                                "[cacheGrps=" + grpId +
-                                ", action=" + (disable ? "disabling" : "enabling") +
-                                ", initiatingNodeId=" + initiatingNodeId + ", phase=finish]");
-
-                            sendMessage(false);
-                        }
-                    }
-                });
-        }
-
-        /**
-         * @param node Node.
-         * @return empty
-         */
-        private boolean ackNode(ClusterNode node) {
-            synchronized (nodes) {
-                nodes.remove(node);
-
-                return nodes.isEmpty();
-            }
-        }
-
-        /**
-         * @param prepare Prepare.
-         */
-        private void sendMessage(boolean prepare) {
-            assert initiatingNodeId.equals(ctx.localNodeId());
-
-            WalModeDynamicChangeMessage msg = new WalModeDynamicChangeMessage(
-                uid,
-                disable,
-                prepare,
-                grpId,
-                initiatingNodeId);
-
-            Exception err;
-
-            try {
-                ctx.discovery().sendCustomEvent(msg);
-
-                err = checkNodeState();
-            }
-            catch (IgniteCheckedException e) {
-                err = e;
-            }
-
-            if (err != null)
-                onDone(err);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
-            if (discoLsnr != null) {
-                ctx.event().removeLocalEventListener(discoLsnr);
-
-                log.info("Cluster wide WAL mode change operation " + (err != null ? "failed " : "completed ") +
-                    "[cacheGrps=" + grpId +
-                    ", newState=" + (disable ? "disabled" : "enabled") +
-                    ", initiatingNodeId=" + initiatingNodeId +
-                    ", err=" + err + "]");
-            }
-
-            // Make sure to remove future before completion.
-            walModeChangeFuts.remove(uid, this);
-
-            return super.onDone(res, err);
-        }
     }
 
     /**

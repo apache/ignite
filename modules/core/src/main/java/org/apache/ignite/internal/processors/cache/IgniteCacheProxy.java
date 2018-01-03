@@ -86,24 +86,9 @@ public interface IgniteCacheProxy<K, V> extends IgniteCache<K, V>, Externalizabl
     public boolean isProxyClosed();
 
     /**
-     * @return {@code True} if proxy was disabled.
-     */
-    public boolean isProxyDisabled();
-
-    /**
      * Closes this proxy instance.
      */
     public void closeProxy();
-
-    /**
-     * Disables this proxy instance.
-     */
-    public void disableProxy();
-
-    /**
-     * Enables this proxy instance.
-     */
-    public void enableProxy();
 
     /**
      * @return Future that contains cache destroy operation.

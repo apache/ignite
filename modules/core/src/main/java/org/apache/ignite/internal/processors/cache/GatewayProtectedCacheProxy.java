@@ -1652,9 +1652,6 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         if (isProxyClosed())
             throw new IllegalStateException("Cache has been closed: " + context().name());
 
-        if (isProxyDisabled())
-            throw new IllegalStateException("Cache has been disabled: " + context().name());
-
         if (delegate instanceof IgniteCacheProxyImpl)
             ((IgniteCacheProxyImpl) delegate).checkRestart();
 
@@ -1715,23 +1712,8 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isProxyDisabled() {
-        return delegate.isProxyDisabled();
-    }
-
-    /** {@inheritDoc} */
     @Override public void closeProxy() {
         delegate.closeProxy();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void disableProxy() {
-        delegate.disableProxy();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void enableProxy() {
-        delegate.enableProxy();
     }
 
     /** {@inheritDoc} */
