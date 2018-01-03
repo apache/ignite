@@ -44,6 +44,9 @@ public class WalStateProposeMessage extends WalStateAbstractMessage {
     /** Whether message is being handled on cache affintiy node. */
     private transient boolean affNode;
 
+    /** Non affinity node result. */
+    private transient boolean nonAffNodeRes;
+
     /**
      * Constructor.
      *
@@ -97,6 +100,20 @@ public class WalStateProposeMessage extends WalStateAbstractMessage {
      */
     public void affinityNode(boolean affNode) {
         this.affNode = affNode;
+    }
+
+    /**
+     * @return Non affinity node result.
+     */
+    public boolean nonAffinityNodeResult() {
+        return nonAffNodeRes;
+    }
+
+    /**
+     * @param nonAffNodeRes Non affinity node result.
+     */
+    public void nonAffinityNodeResult(boolean nonAffNodeRes) {
+        this.nonAffNodeRes = nonAffNodeRes;
     }
 
 

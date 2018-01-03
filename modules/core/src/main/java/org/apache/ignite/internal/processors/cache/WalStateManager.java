@@ -337,8 +337,13 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
                 msg.affinityNode(affNode);
 
-                if (grpDesc.addWalChangeRequest(msg))
+                if (grpDesc.addWalChangeRequest(msg)) {
                     msg.exchangeMessage(msg);
+
+                    // Group context will not be available for non-affinity node, calculate outcome in advance.
+                    if (!affNode)
+                        msg.nonAffinityNodeResult(F.eq(grpDesc.walEnabled(), msg.enable()));
+                }
             }
         }
     }
@@ -353,15 +358,27 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      */
     public void onProposeExchange(WalStateProposeMessage msg) {
         synchronized (mux) {
-            CacheGroupContext grpCtx = cacheProcessor().cacheGroup(msg.groupId());
+            if (msg.affinityNode()) {
+                CacheGroupContext grpCtx = cacheProcessor().cacheGroup(msg.groupId());
 
-            if (grpCtx == null) {
-                // TODO: Wrong! Use cache affinity instead!
-                addResult(new WalStateResult(msg, "Failed to change WAL mode because some caches no longer exist: " +
-                    msg.caches().keySet(), true));
+                if (grpCtx == null) {
+                    addResult(new WalStateResult(msg, "Failed to change WAL mode because some caches no longer " +
+                        "exist: " + msg.caches().keySet(), true));
+                }
+                else {
+                    if (F.eq(msg.enable(), !grpCtx.walDisabled()))
+                        addResult(new WalStateResult(msg, false, true));
+                    else {
+                        WalStateChangeWorker worker = new WalStateChangeWorker(msg);
+
+                        new IgniteThread(worker).start();
+                    }
+                }
             }
             else {
-                if (F.eq(msg.enable(), !grpCtx.walDisabled()))
+                boolean res = msg.nonAffinityNodeResult();
+
+                if (!res)
                     addResult(new WalStateResult(msg, false, true));
                 else {
                     WalStateChangeWorker worker = new WalStateChangeWorker(msg);
@@ -467,8 +484,13 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 // Unwind next message.
                 WalStateProposeMessage nextProposeMsg = grpDesc.nextWalChangeRequest();
 
-                if (nextProposeMsg != null)
+                if (nextProposeMsg != null) {
                     msg.exchangeMessage(nextProposeMsg);
+
+                    // Group context will not be available for non-affinity node, calculate outcome in advance.
+                    if (!nextProposeMsg.affinityNode())
+                        nextProposeMsg.nonAffinityNodeResult(F.eq(grpDesc.walEnabled(), nextProposeMsg.enable()));
+                }
             }
 
             // Remember operation ID to handle duplicates.
@@ -767,21 +789,27 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             WalStateResult res;
 
             try {
-                // Flush checkpoint.
-                IgniteInternalFuture cpFut = cacheProcessor().context().database().doCheckpoint("wal-state-change");
+                if (msg.affinityNode()) {
+                    // Flush checkpoint.
+                    IgniteInternalFuture cpFut = cacheProcessor().context().database().doCheckpoint("wal-state-change");
 
-                cpFut.get();
+                    cpFut.get();
 
-                // Change logging state.
-                CacheGroupContext grpCtx = cacheProcessor().cacheGroup(msg.groupId());
+                    // Change logging state.
+                    CacheGroupContext grpCtx = cacheProcessor().cacheGroup(msg.groupId());
 
-                if (grpCtx == null) {
-                    // TODO: Wrong, use cache affinity instead.
-                    res = new WalStateResult(msg, "Failed to change WAL mode because some caches no longer exist: " +
-                        msg.caches().keySet(), false);
+                    if (grpCtx == null) {
+                        res = new WalStateResult(msg, "Failed to change WAL mode because some caches no longer " +
+                            "exist: " + msg.caches().keySet(), false);
+                    }
+                    else {
+                        grpCtx.walDisabled(!msg.enable());
+
+                        res = new WalStateResult(msg, true, false);
+                    }
                 }
                 else {
-                    grpCtx.walDisabled(!msg.enable());
+                    assert msg.nonAffinityNodeResult();
 
                     res = new WalStateResult(msg, true, false);
                 }
