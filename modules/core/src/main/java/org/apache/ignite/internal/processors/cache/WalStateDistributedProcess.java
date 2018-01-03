@@ -1,0 +1,75 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.cache;
+
+import java.util.Collection;
+import java.util.UUID;
+
+/**
+ * Distributed process governing WAL state change.
+ */
+public class WalStateDistributedProcess {
+    /** Local result. */
+    private final WalStateResult res;
+
+    /** Remote nodes. */
+    private final Collection<UUID> rmtNodes;
+
+    /**
+     * Constructor.
+     *
+     * @param res Local result.
+     * @param rmtNodes Remote nodes.
+     */
+    public WalStateDistributedProcess(WalStateResult res, Collection<UUID> rmtNodes) {
+        this.res = res;
+        this.rmtNodes = rmtNodes;
+    }
+
+    /**
+     * Handle node finish.
+     *
+     * @param nodeId Node ID.
+     */
+    public void onNodeFinished(UUID nodeId) {
+        rmtNodes.remove(nodeId);
+    }
+
+    /**
+     * Handle node leave.
+     *
+     * @param nodeId Node ID.
+     */
+    public void onNodeLeft(UUID nodeId) {
+        rmtNodes.remove(nodeId);
+    }
+
+    /**
+     * @return {@code True} if process is completed.
+     */
+    public boolean completed() {
+        return rmtNodes.isEmpty();
+    }
+
+    /**
+     * @return LOcal result.
+     */
+    public WalStateResult result() {
+        return res;
+    }
+}

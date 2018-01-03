@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.UUID;
@@ -65,6 +66,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
     /** Finished results awaiting discovery finish message. */
     private final Map<UUID, WalStateResult> ress = new HashMap<>();
+
+    /** Active distributed processes. */
+    private final Map<UUID, WalStateDistributedProcess> procs = new HashMap<>();
 
     /** Pending results created on cache processor start based on available discovery data. */
     private final Collection<WalStateResult> initialRess = new LinkedList<>();
@@ -203,8 +207,24 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @param node Node that has left the grid.
      */
     public void onNodeLeft(ClusterNode node) {
-        // TODO
+        synchronized (mux) {
+            if (!isServerNode())
+                return;
+
+            // If coordinator is not initialized, then no local result was processed so far, safe to exit.
+            if (crdNode == null)
+                return;
+
+            if (F.eq(crdNode.id(), node.id())) {
+                crdNode = null;
+
+                for (WalStateResult res : ress.values())
+                    onCompletedLocally(res);
+            }
+        }
     }
+
+    // TODO: Non-affinity nodes handling.
 
     /**
      * Initiate WAL mode change operation.
@@ -364,6 +384,16 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Send finish message for the given distributed process if needed.
+     *
+     * @param proc Process.
+     */
+    private void sendFinishMessageIfNeeded(WalStateDistributedProcess proc) {
+        if (proc.completed())
+            sendFinishMessage(proc.result());
+    }
+
+    /**
      * Send finish message.
      *
      * @param res Result.
@@ -458,7 +488,24 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             else {
                 // Handle distributed completion.
                 if (crdNode.isLocal()) {
-                    // TODO: Start distributed completer.
+                    Collection<ClusterNode> srvNodes = cctx.discovery().aliveServerNodes();
+
+                    Collection<UUID> rmtNodeIds = new ArrayList<>(srvNodes.size());
+
+                    for (ClusterNode srvNode : srvNodes) {
+                        if (F.eq(crdNode.id(), srvNode.id()))
+                            continue;
+
+                        rmtNodeIds.add(srvNode.id());
+                    }
+
+                    WalStateDistributedProcess proc = new WalStateDistributedProcess(res, rmtNodeIds);
+
+                    procs.put(res.message().operationId(), proc);
+
+                    unwindPendingAcks(proc);
+
+                    sendFinishMessageIfNeeded(proc);
                 }
                 else {
                     // Just send message to coordinator.
@@ -479,12 +526,49 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Unwind pending ack messages for the given distributed process.
+     *
+     * @param proc Process.
+     */
+    private void unwindPendingAcks(WalStateDistributedProcess proc) {
+        assert Thread.holdsLock(mux);
+
+        Iterator<WalStateAckMessage> iter = pendingAcks.iterator();
+
+        while (iter.hasNext()) {
+            WalStateAckMessage ackMsg = iter.next();
+
+            if (F.eq(proc.result().message().operationId(), ackMsg.operationId())) {
+                proc.onNodeFinished(ackMsg.senderNodeId());
+
+                iter.remove();
+            }
+        }
+    }
+
+    /**
      * Handle ack message.
      *
      * @param msg Ack message.
      */
     public void onAck(WalStateAckMessage msg) {
-        // TODO
+        synchronized (this) {
+            if (completedOpIds.contains(msg.operationId()))
+                // Skip stale messages.
+                return;
+
+            WalStateDistributedProcess proc = procs.get(msg.operationId());
+
+            if (proc == null)
+                // If process if not initialized yet, add to pending set.
+                pendingAcks.add(msg);
+            else {
+                // Notify process on node completion.
+                proc.onNodeFinished(msg.senderNodeId());
+
+                sendFinishMessageIfNeeded(proc);
+            }
+        }
     }
 
     /**
@@ -566,6 +650,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @param errMsg Error message.
      * @return Future.
      */
+    @SuppressWarnings("Convert2Diamond")
     private static IgniteInternalFuture<Boolean> errorFuture(String errMsg) {
         return new GridFinishedFuture<Boolean>(new IgniteCheckedException(errMsg));
     }
@@ -638,13 +723,6 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             return res;
         }
-    }
-
-    /**
-     * @return {@code True} if current node is coordinator.
-     */
-    private boolean isCoordinator() {
-        return coordinator().isLocal();
     }
 
     /**
