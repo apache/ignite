@@ -69,17 +69,20 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     /** Pending results created on cache processor start based on available discovery data. */
     private final Collection<WalStateResult> initialRess = new LinkedList<>();
 
+    /** Pending acknowledge messages (i.e. received before node completed it's local part). */
+    private final Collection<WalStateAckMessage> pendingAcks = new HashSet<>();
+
     /** IO message listener. */
     private final GridMessageListener ioLsnr;
 
     /** Operation mutex. */
     private final Object mux = new Object();
 
+    /** Current coordinator node. */
+    private ClusterNode crdNode;
+
     /** Disconnected flag. */
     private boolean disconnected;
-
-    /** Pending acknowledge messages (i.e. received before node completed it's local part). */
-    private final Collection<WalStateAckMessage> pendingAcks = new HashSet<>();
 
     /**
      * Constructor.
@@ -447,16 +450,14 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         synchronized (mux) {
             ClusterNode crdNode = coordinator();
 
-            boolean crd = crdNode.isLocal();
-
             if (res.noOp()) {
                 // No-op message should be completed from coordinator right away.
-                if (crd)
+                if (crdNode.isLocal())
                     sendFinishMessage(res);
             }
             else {
                 // Handle distributed completion.
-                if (crd) {
+                if (crdNode.isLocal()) {
                     // TODO: Start distributed completer.
                 }
                 else {
@@ -619,16 +620,24 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @return Coordinator node.
      */
     private ClusterNode coordinator() {
-        ClusterNode res = null;
+        assert Thread.holdsLock(mux);
 
-        for (ClusterNode node : cctx.discovery().aliveServerNodes()) {
-            if (res == null || res.order() > node.order())
-                res = node;
+        if (crdNode != null)
+            return crdNode;
+        else {
+            ClusterNode res = null;
+
+            for (ClusterNode node : cctx.discovery().aliveServerNodes()) {
+                if (res == null || res.order() > node.order())
+                    res = node;
+            }
+
+            assert res != null;
+
+            crdNode = res;
+
+            return res;
         }
-
-        assert res != null;
-
-        return res;
     }
 
     /**
