@@ -63,8 +63,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     /** Client futures. */
     private final Map<UUID, GridFutureAdapter<Boolean>> userFuts = new HashMap<>();
 
-    /** Map with no-op results which are finished without regular completion process. */
-    private final Map<UUID, WalStateResult> noOpRess = new HashMap<>();
+    /** Finished results awaiting discovery finish message. */
+    private final Map<UUID, WalStateResult> ress = new HashMap<>();
 
     /** Pending results created on cache processor start based on available discovery data. */
     private final Collection<WalStateResult> initialRess = new LinkedList<>();
@@ -122,18 +122,22 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             if (msg != null) {
                 boolean enabled = grpDesc.walEnabled();
 
+                WalStateResult res;
+
                 if (F.eq(msg.enable(), enabled)) {
-                    WalStateResult res = new WalStateResult(msg, false, true);
+                    res = new WalStateResult(msg, false, true);
 
                     initialRess.add(res);
-
-                    noOpRess.put(msg.operationId(), res);
                 }
                 else {
-                    grpDesc.walEnabled(enabled);
+                    res = new WalStateResult(msg, true, false);
 
-                    initialRess.add(new WalStateResult(msg, true, false));
+                    grpDesc.walEnabled(enabled);
                 }
+
+                initialRess.add(res);
+
+                addResult(res);
             }
         }
     }
@@ -154,16 +158,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             if (!isServerNode())
                 return;
 
-            boolean crd = isCoordinator();
-
-            for (WalStateResult res : initialRess) {
-                if (res.noOp()) {
-                    if (crd)
-                        sendFinishMessage(res);
-                }
-                else
-                    onCompletedLocally(res);
-            }
+            for (WalStateResult res : initialRess)
+                onCompletedLocally(res);
 
             initialRess.clear();
         }
@@ -300,7 +296,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @param msg Message.
      */
     public void onProposeDiscovery(WalStateProposeMessage msg) {
-        if (duplicate(msg))
+        if (isDuplicate(msg))
             return;
 
         synchronized (mux) {
@@ -334,12 +330,12 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             CacheGroupContext grpCtx = cctx.cache().cacheGroup(msg.groupId());
 
             if (grpCtx == null) {
-                noOpRess.put(msg.operationId(), new WalStateResult(msg,
-                    "Failed to change WAL mode because some caches no longer exist: " + msg.caches().keySet(), true));
+                addResult(new WalStateResult(msg, "Failed to change WAL mode because some caches no longer exist: " +
+                    msg.caches().keySet(), true));
             }
             else {
                 if (F.eq(msg.enable(), !grpCtx.walDisabled()))
-                    noOpRess.put(msg.operationId(), new WalStateResult(msg, false, true));
+                    addResult(new WalStateResult(msg, false, true));
                 else {
                     WalStateChangeWorker worker = new WalStateChangeWorker(msg);
 
@@ -351,16 +347,16 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
     /**
      * Handle coordinator exchange finish. If message processing during exchange init stage was reduced to no-op,
-     * then it is possible to send finish message over the wire.
+     * then it is possible to send finish message.
      *
      * @param msg Message.
      */
     public void onProposeExchangeCoordinatorFinished(WalStateProposeMessage msg) {
         synchronized (mux) {
-            WalStateResult res = noOpRess.get(msg.operationId());
+            WalStateResult res = ress.get(msg.operationId());
 
-            if (res != null)
-                sendFinishMessage(res);
+            if (res != null && res.noOp())
+                onCompletedLocally(res);
         }
     }
 
@@ -389,7 +385,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @param msg Message.
      */
     public void onFinishDiscovery(WalStateFinishMessage msg) {
-        if (duplicate(msg))
+        if (isDuplicate(msg))
             return;
 
         synchronized (mux) {
@@ -406,18 +402,21 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                     complete(userFut, msg.result());
             }
 
-            // Clear no-op stuff.
-            noOpRess.remove(msg.operationId());
+            // Get result.
+            WalStateResult res = ress.remove(msg.operationId());
 
-            // Clear regular stuff.
-            // TODO
+            if (res == null)
+                U.warn(log, "Received finish message for unknown operation (will ignore): " + msg.operationId());
 
             // Unwind next messages.
             CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
 
             if (grpDesc != null && F.eq(grpDesc.deploymentId(), msg.groupDeploymentId())) {
-                // TODO: Set disabled flag to descriptor.
+                // Update descriptor with latest WAL state.
+                if (res != null && !res.noOp() && res.result())
+                    grpDesc.walEnabled(res.message().enable());
 
+                // Remove now-outdated message from the queue.
                 WalStateProposeMessage oldProposeMsg = grpDesc.nextWalChangeRequest();
 
                 assert oldProposeMsg != null;
@@ -425,10 +424,11 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
                 grpDesc.removeWalChangeRequest();
 
-                WalStateProposeMessage nextPropose = grpDesc.nextWalChangeRequest();
+                // Unwind next message.
+                WalStateProposeMessage nextProposeMsg = grpDesc.nextWalChangeRequest();
 
-                if (nextPropose != null)
-                    msg.exchangeMessage(nextPropose);
+                if (nextProposeMsg != null)
+                    msg.exchangeMessage(nextProposeMsg);
             }
         }
     }
@@ -439,11 +439,19 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @param res Result.
      */
     private void onCompletedLocally(WalStateResult res) {
+        assert res != null;
+
         synchronized (mux) {
-
+            //
+            if (res.noOp()) {
+                // No-op message should be completed from coordinator right away.
+                if (isCoordinator())
+                    sendFinishMessage(res);
+            }
+            else {
+                // TODO
+            }
         }
-
-        // TODO
     }
 
     /**
@@ -613,7 +621,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @param msg Message.
      * @return {@code True} if this is a duplicate.
      */
-    private boolean duplicate(WalStateAbstractMessage msg) {
+    private boolean isDuplicate(WalStateAbstractMessage msg) {
         if (!discoMsgIdHist.add(msg.id())) {
             U.warn(log, "Received duplicate WAL mode change discovery message (will ignore): " + msg);
 
@@ -621,6 +629,15 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         }
 
         return false;
+    }
+
+    /**
+     * Add locally result to pending map.
+     *
+     * @param res Result.
+     */
+    private void addResult(WalStateResult res) {
+        ress.put(res.message().operationId(), res);
     }
 
     /**
@@ -670,6 +687,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 res = new WalStateResult(msg, "Failed to change WAL mode due to unexpected exception " +
                     "(see server logs for more information).", false);
             }
+
+            addResult(res);
 
             onCompletedLocally(res);
         }
