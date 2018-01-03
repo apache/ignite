@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.util.Date;
 import java.util.UUID;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteFuture;
 
 public interface IgniteCacheProxy<K, V> extends IgniteCache<K, V>, Externalizable {
