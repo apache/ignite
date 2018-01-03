@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
 import org.apache.ignite.internal.processors.cache.WalModeDynamicChangeMessage;
+import org.apache.ignite.internal.processors.cache.WalStateAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
@@ -591,6 +592,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 else if (msg instanceof SnapshotDiscoveryMessage) {
                     exchange = onCustomMessageNoAffinityChange(crdNode);
                 }
+                else if (msg instanceof WalStateAbstractMessage) {
+                    exchange = onCustomMessageNoAffinityChange(crdNode);
+                }
                 else if (msg instanceof WalModeDynamicChangeMessage)
                     exchange = onWalModeChangeRequest(crdNode, (WalModeDynamicChangeMessage)msg);
                 else {
@@ -1086,6 +1090,23 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * Try to start WAL mode change operation if needed by this discovery event.
+     */
+    private void tryToPerformWalModeChangeOperation() {
+        if (firstDiscoEvt != null && firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
+            DiscoveryCustomMessage customMsg = ((DiscoveryCustomEvent)firstDiscoEvt).customMessage();
+
+            if (customMsg instanceof WalStateAbstractMessage) {
+                WalStateAbstractMessage msg0 = (WalStateAbstractMessage)customMsg;
+
+                assert msg0.needExchange();
+
+                cctx.walState().onPropose(msg0.exchangeMessage());
+            }
+        }
+    }
+
+    /**
      * The main purpose of this method is to wait for all ongoing updates (transactional and atomic), initiated on
      * the previous topology version, to finish to prevent inconsistencies during rebalancing and to prevent two
      * different simultaneous owners of the same lock.
@@ -1491,8 +1512,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             grpValidRes = m;
         }
 
-        if (!cctx.localNode().isClient())
+        if (!cctx.localNode().isClient()) {
             tryToPerformLocalSnapshotOperation();
+            tryToPerformWalModeChangeOperation();
+        }
 
         cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
 

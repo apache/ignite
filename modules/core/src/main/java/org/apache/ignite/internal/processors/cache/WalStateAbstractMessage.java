@@ -63,6 +63,13 @@ public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage 
     }
 
     /**
+     * @return {@code True} if exchange is needed.
+     */
+    public boolean needExchange() {
+        return exchangeMsg != null;
+    }
+
+    /**
      * Get exchange message.
      *
      * @return Massage or {@code null} if no processing is required.
@@ -98,6 +105,6 @@ public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage 
     /** {@inheritDoc} */
     @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
         DiscoCache discoCache) {
-        return null;
+        return discoCache.copy(topVer, null);
     }
 }

@@ -480,6 +480,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 exchFut = exchangeFuture(exchId, evt, null, null, null);
             }
+            else if (customMsg instanceof WalStateAbstractMessage
+                && ((WalStateAbstractMessage)customMsg).needExchange()) {
+                exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt);
+
+                exchFut = exchangeFuture(exchId, evt, null, null, null);
+            }
             else {
                 // Process event as custom discovery task if needed.
                 CachePartitionExchangeWorkerTask task =

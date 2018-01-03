@@ -330,14 +330,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (msg0.initial())
                 return new CacheStatisticsModeChangeTask(msg0);
         }
-        else if (msg instanceof WalStateAbstractMessage) {
-            WalStateAbstractMessage msg0 = (WalStateAbstractMessage)msg;
-
-            WalStateProposeMessage exchangeMsg = msg0.exchangeMessage();
-
-            if (exchangeMsg != null)
-                return new WalStateExchangeTask(exchangeMsg);
-        }
 
         return null;
     }
@@ -3502,10 +3494,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ((WalModeDynamicChangeMessage)msg).needExchange();
         }
 
-        if (msg instanceof WalStateProposeMessage)
-            sharedCtx.walState().onProposeDiscovery((WalStateProposeMessage)msg);
-        else if (msg instanceof WalStateFinishMessage)
-            sharedCtx.walState().onFinishDiscovery((WalStateFinishMessage)msg);
+        if (msg instanceof WalStateAbstractMessage) {
+            WalStateAbstractMessage msg0 = (WalStateAbstractMessage)msg;
+
+            if (msg0 instanceof WalStateProposeMessage)
+                sharedCtx.walState().onProposeDiscovery((WalStateProposeMessage)msg);
+            else if (msg0 instanceof WalStateFinishMessage)
+                sharedCtx.walState().onFinishDiscovery((WalStateFinishMessage)msg);
+
+            return msg0.needExchange();
+        }
 
         if (msg instanceof DynamicCacheChangeBatch)
             return cachesInfo.onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);

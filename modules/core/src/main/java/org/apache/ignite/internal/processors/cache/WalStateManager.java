@@ -169,12 +169,11 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * Handle propose message in discovery thread.
      *
      * @param msg Message.
-     * @return Message to be processed in exchange thread in response to this discovery message.
      */
-    @Nullable public WalStateProposeMessage onProposeDiscovery(WalStateProposeMessage msg) {
+    public void onProposeDiscovery(WalStateProposeMessage msg) {
         synchronized (mux) {
             if (cliDisconnected)
-                return null;
+                return;
 
             // Validate current caches state before deciding whether to process message further.
             if (validatePropose(msg)) {
@@ -184,11 +183,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                     assert grpDesc != null;
 
                     if (grpDesc.addWalChangeRequest(msg))
-                        return msg;
+                        msg.exchangeMessage(msg);
                 }
             }
-
-            return null;
         }
     }
 
@@ -258,6 +255,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @param msg Message.
      */
     public void onPropose(WalStateProposeMessage msg) {
+        System.out.println("PROPOSE: " + msg);
+
         // TODO
     }
 
@@ -265,12 +264,11 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * Handle finish message in discovery thread.
      *
      * @param msg Message.
-     * @return Message to be processed in exchange thread in response to this discovery message.     *
      */
-    public WalStateProposeMessage onFinishDiscovery(WalStateFinishMessage msg) {
+    public void onFinishDiscovery(WalStateFinishMessage msg) {
         synchronized (mux) {
             if (cliDisconnected)
-                return null;
+                return;
 
             // Complete user future, if any.
             GridFutureAdapter<Boolean> userFut = userFuts.get(msg.operationId());
@@ -293,10 +291,11 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
                 grpDesc.removeWalChangeRequest();
 
-                return grpDesc.nextWalChangeRequest();
+                WalStateProposeMessage nextPropose = grpDesc.nextWalChangeRequest();
+
+                if (nextPropose != null)
+                    msg.exchangeMessage(nextPropose);
             }
-            else
-                return null;
         }
     }
 
