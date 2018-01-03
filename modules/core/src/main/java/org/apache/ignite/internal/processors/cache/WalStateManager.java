@@ -111,11 +111,18 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        cctx.kernalContext().io().addMessageListener(TOPIC_WAL, ioLsnr);
+        if (isServerNode())
+            cctx.kernalContext().io().addMessageListener(TOPIC_WAL, ioLsnr);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void stop0(boolean cancel) {
+        if (isServerNode())
+            cctx.kernalContext().io().removeMessageListener(TOPIC_WAL, ioLsnr);
     }
 
     /**
-     * Callback invoked when caches info is collection inside cache processor start routine. Discovery is not
+     * Callback invoked when caches info is collected inside cache processor start routine. Discovery is not
      * active at this point.
      *
      * @throws IgniteCheckedException If failed.
@@ -138,7 +145,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                         res = new WalStateResult(msg, false, true);
 
                         initialRess.add(res);
-                    } else {
+                    }
+                    else {
                         res = new WalStateResult(msg, true, false);
 
                         grpDesc.walEnabled(enabled);
@@ -168,11 +176,6 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             initialRess.clear();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void stop0(boolean cancel) {
-        cctx.kernalContext().io().removeMessageListener(TOPIC_WAL, ioLsnr);
     }
 
     /** {@inheritDoc} */
