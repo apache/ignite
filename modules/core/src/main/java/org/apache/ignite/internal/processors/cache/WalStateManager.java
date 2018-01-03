@@ -430,6 +430,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 if (nextProposeMsg != null)
                     msg.exchangeMessage(nextProposeMsg);
             }
+
+            // Remember operation ID to handle duplicates.
+            completedOpIds.add(msg.operationId());
         }
     }
 
