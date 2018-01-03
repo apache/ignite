@@ -20,12 +20,17 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
@@ -38,8 +43,14 @@ import java.util.UUID;
  * Write-ahead log state manager. Manages WAL enable and disable.
  */
 public class WalStateManager extends GridCacheSharedManagerAdapter {
+
+    // TODO: Duplicate message processing.
+
     /** Client futures. */
     private final Map<UUID, GridFutureAdapter<Boolean>> userFuts = new HashMap<>();
+
+    /** Map with no-op results which are finished without regular completion process. */
+    private final Map<UUID, WalStateResult> noOpRess = new HashMap<>();
 
     /** Operation mutex. */
     private final Object mux = new Object();
@@ -176,7 +187,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 return;
 
             // Validate current caches state before deciding whether to process message further.
-            if (validatePropose(msg)) {
+            if (validateProposeDiscovery(msg)) {
                 if (hasWal()) {
                     CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
 
@@ -190,75 +201,81 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Validate propose message.
-     *
-     * @param msg Message.
-     * @return {@code True} if message should be processed further, {@code false} if no further processing is needed.
+     * WAL state change worker.
      */
-    private boolean validatePropose(WalStateProposeMessage msg) {
-        GridFutureAdapter<Boolean> userFut = userFuts.get(msg.operationId());
+    private class WalStateChangeWorker extends GridWorker {
+        /** Message. */
+        private final WalStateProposeMessage msg;
 
-        if (hasWal() || userFut != null) {
-            // Is group still there?
-            CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
+        private WalStateChangeWorker(WalStateProposeMessage msg) {
+            super(cctx.igniteInstanceName(), "wal-state-change-worker-" + msg.groupId(), WalStateManager.this.log);
 
-            if (grpDesc == null) {
-                completeWithError(userFut, "Failed to change WAL mode because some caches no longer exist: " +
-                    msg.caches().keySet());
+            this.msg = msg;
+        }
 
-                return false;
-            }
+        /** {@inheritDoc} */
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+            WalStateResult res;
 
-            // Are specified caches still there?
-            for (Map.Entry<String, IgniteUuid> cache : msg.caches().entrySet()) {
-                String cacheName = cache.getKey();
+            try {
+                // Flush checkpoint.
+                IgniteInternalFuture cpFut = cctx.cache().context().database().doCheckpoint("wal-state-change");
 
-                DynamicCacheDescriptor cacheDesc = cacheProcessor().cacheDescriptor(cacheName);
+                cpFut.get();
 
-                if (cacheDesc == null || !F.eq(cacheDesc.deploymentId(), cache.getValue())) {
-                    completeWithError(userFut, "Cache doesn't exist: " + cacheName);
+                // Change logging state.
+                CacheGroupContext grpCtx = cctx.cache().cacheGroup(msg.groupId());
 
-                    return false;
+                if (grpCtx == null) {
+                    res = new WalStateResult(msg, "Failed to change WAL mode because some caches no longer exist: " +
+                        msg.caches().keySet());
+                }
+                else {
+                    grpCtx.walDisabled(!msg.enable());
+
+                    res = new WalStateResult(msg, true);
                 }
             }
+            catch (Exception e) {
+                U.warn(log, "Failed to change WAL mode due to unexpected exception [msg=" + msg + ']', e);
 
-            // Are there any new caches in the group?
-            HashSet<String> grpCacheNames = new HashSet<>(grpDesc.caches().keySet());
-
-            grpCacheNames.removeAll(msg.caches().keySet());
-
-            if (!grpCacheNames.isEmpty()) {
-                completeWithError(userFut, "Cannot change WAL mode because not all cache names belonging to the " +
-                    "group are provided [group=" + grpDesc.groupName() + ", missingCaches=" + grpCacheNames + ']');
-
-                return false;
+                res = new WalStateResult(msg, "Failed to change WAL mode due to unexpected exception " +
+                    "(see server logs for more information).");
             }
 
-            // If there are no pending WAL change requests and mode matches, then ignore and complete.
-            if (!grpDesc.hasWalChangeRequests() && grpDesc.walEnabled() == msg.enable()) {
-                complete(userFut, false);
-
-                return false;
-            }
-
-            // Everything is OK.
-            return true;
+            // TODO: Reply to coordinator.
         }
-        else
-            // Node without WAL, do not care.
-            return false;
     }
 
     /**
      * Handle propose message which is synchronized with other cache state actions through exchange thread.
+     * If operation is no-op (i.e. state is not changed), then no additional processing is needed, and coordinator will
+     * trigger finish request right away. Otherwise all nodes atart asynchronous checkpoint flush, and send responses
+     * to coordinator. Once all responses are received, coordinator node will trigger finish message.
      *
      * @param msg Message.
      */
-    public void onPropose(WalStateProposeMessage msg) {
-        System.out.println("PROPOSE: " + msg);
+    public void onProposeExchange(WalStateProposeMessage msg) {
+        synchronized (mux) {
+            CacheGroupContext grpCtx = cctx.cache().cacheGroup(msg.groupId());
 
-        // TODO
+            if (grpCtx == null) {
+                noOpRess.put(msg.operationId(), new WalStateResult(msg,
+                    "Failed to change WAL mode because some caches no longer exist: " + msg.caches().keySet()));
+            }
+            else {
+                if (F.eq(msg.enable(), !grpCtx.walDisabled()))
+                    noOpRess.put(msg.operationId(), new WalStateResult(msg, false));
+                else {
+                    WalStateChangeWorker worker = new WalStateChangeWorker(msg);
+
+                    new IgniteThread(worker).start();
+                }
+            }
+        }
     }
+
+    // TODO: onCoordinatorFinished()
 
     /**
      * Handle finish message in discovery thread.
@@ -284,6 +301,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
 
             if (grpDesc != null && F.eq(grpDesc.deploymentId(), msg.groupDeploymentId())) {
+                // TODO: Set disabled flag to descriptor.
+
                 WalStateProposeMessage oldProposeMsg = grpDesc.nextWalChangeRequest();
 
                 assert oldProposeMsg != null;
@@ -306,6 +325,79 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      */
     public void onAck(WalStateAckMessage msg) {
         // TODO
+    }
+
+    /**
+     * Validate propose message.
+     *
+     * @param msg Message.
+     * @return {@code True} if message should be processed further, {@code false} if no further processing is needed.
+     */
+    private boolean validateProposeDiscovery(WalStateProposeMessage msg) {
+        GridFutureAdapter<Boolean> userFut = userFuts.get(msg.operationId());
+
+        if (hasWal() || userFut != null) {
+            String errMsg = validate(msg);
+
+            if (errMsg != null) {
+                completeWithError(userFut, errMsg);
+
+                return false;
+            }
+
+            CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
+
+            assert grpDesc != null;
+
+            // If there are no pending WAL change requests and mode matches, then ignore and complete.
+            if (!grpDesc.hasWalChangeRequests() && grpDesc.walEnabled() == msg.enable()) {
+                complete(userFut, false);
+
+                return false;
+            }
+
+            // Everything is OK.
+            return true;
+        }
+        else
+            // Node without WAL, do not care.
+            return false;
+    }
+
+    /**
+     * Validate propose message.
+     *
+     * @param msg Message.
+     * @return Error message or {@code null} if everything is OK.
+     */
+    @Nullable private String validate(WalStateProposeMessage msg) {
+        // Is group still there?
+        CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
+
+        if (grpDesc == null)
+            return "Failed to change WAL mode because some caches no longer exist: " + msg.caches().keySet();
+
+        // Are specified caches still there?
+        for (Map.Entry<String, IgniteUuid> cache : msg.caches().entrySet()) {
+            String cacheName = cache.getKey();
+
+            DynamicCacheDescriptor cacheDesc = cacheProcessor().cacheDescriptor(cacheName);
+
+            if (cacheDesc == null || !F.eq(cacheDesc.deploymentId(), cache.getValue()))
+                return "Cache doesn't exist: " + cacheName;
+        }
+
+        // Are there any new caches in the group?
+        HashSet<String> grpCacheNames = new HashSet<>(grpDesc.caches().keySet());
+
+        grpCacheNames.removeAll(msg.caches().keySet());
+
+        if (!grpCacheNames.isEmpty()) {
+            return "Cannot change WAL mode because not all cache names belonging to the " +
+                "group are provided [group=" + grpDesc.groupName() + ", missingCaches=" + grpCacheNames + ']';
+        }
+
+        return null;
     }
 
     /**

@@ -1053,6 +1053,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
+        changeWalModeIfNeeded();
+
         cctx.database().beforeExchange(this);
 
         if (crd.isLocal()) {
@@ -1090,9 +1092,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * Try to start WAL mode change operation if needed by this discovery event.
+     * Change WAL mode if needed.
      */
-    private void tryToPerformWalModeChangeOperation() {
+    private void changeWalModeIfNeeded() {
         if (firstDiscoEvt != null && firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
             DiscoveryCustomMessage customMsg = ((DiscoveryCustomEvent)firstDiscoEvt).customMessage();
 
@@ -1101,7 +1103,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 assert msg0.needExchange();
 
-                cctx.walState().onPropose(msg0.exchangeMessage());
+                cctx.walState().onProposeExchange(msg0.exchangeMessage());
             }
         }
     }
@@ -1512,10 +1514,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             grpValidRes = m;
         }
 
-        if (!cctx.localNode().isClient()) {
+        if (!cctx.localNode().isClient())
             tryToPerformLocalSnapshotOperation();
-            tryToPerformWalModeChangeOperation();
-        }
 
         cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
 

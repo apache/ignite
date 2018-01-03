@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -64,7 +65,11 @@ public class WalModeChangeSelfTest extends GridCommonAbstractTest {
 
         node.active(true);
 
-        IgniteCache cache = node.createCache(new CacheConfiguration<>().setName("CACHE"));
+        IgniteCache cache = node.createCache(new CacheConfiguration<>()
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL).setName("CACHE"));
+
+//        node.transactions().txStart();
+//        cache.put(1, 1);
 
         node.cluster().disableWal2("CACHE");
     }
