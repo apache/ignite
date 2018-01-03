@@ -356,6 +356,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             CacheGroupContext grpCtx = cacheProcessor().cacheGroup(msg.groupId());
 
             if (grpCtx == null) {
+                // TODO: Wrong! Use cache affinity instead!
                 addResult(new WalStateResult(msg, "Failed to change WAL mode because some caches no longer exist: " +
                     msg.caches().keySet(), true));
             }
