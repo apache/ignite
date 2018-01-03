@@ -406,7 +406,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         WalStateProposeMessage proposeMsg = res.message();
 
         WalStateFinishMessage msg = new WalStateFinishMessage(proposeMsg.operationId(), proposeMsg.groupId(),
-            proposeMsg.groupDeploymentId(), res.result(), res.errorMessage());
+            proposeMsg.groupDeploymentId(), res.changed(), res.errorMessage());
 
         try {
             cctx.discovery().sendCustomEvent(msg);
@@ -453,7 +453,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             if (grpDesc != null && F.eq(grpDesc.deploymentId(), msg.groupDeploymentId())) {
                 // Update descriptor with latest WAL state.
-                if (res != null && !res.noOp() && res.result())
+                if (res != null && res.changed())
                     grpDesc.walEnabled(res.message().enable());
 
                 // Remove now-outdated message from the queue.

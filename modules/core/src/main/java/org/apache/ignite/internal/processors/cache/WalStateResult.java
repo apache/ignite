@@ -27,7 +27,7 @@ public class WalStateResult {
     private final WalStateProposeMessage msg;
 
     /** Whether mode was changed. */
-    private final boolean res;
+    private final boolean changed;
 
     /** Error message (if any). */
     private final String errMsg;
@@ -39,11 +39,11 @@ public class WalStateResult {
      * Constructor.
      *
      * @param msg Original message.
-     * @param res Whether mode was changed.
+     * @param changed Whether mode was changed.
      * @param noOp Whether this is no-op result which bypasses distributed completion.
      */
-    public WalStateResult(WalStateProposeMessage msg, boolean res, boolean noOp) {
-        this(msg, res, null, noOp);
+    public WalStateResult(WalStateProposeMessage msg, boolean changed, boolean noOp) {
+        this(msg, changed, null, noOp);
     }
 
     /**
@@ -61,13 +61,13 @@ public class WalStateResult {
      * Constructor.
      *
      * @param msg Original message.
-     * @param res Whether mode was changed.
+     * @param changed Whether mode was changed.
      * @param errMsg Error message (if any).
      * @param noOp Whether this is no-op result which bypasses distributed completion.
      */
-    private WalStateResult(WalStateProposeMessage msg, boolean res, String errMsg, boolean noOp) {
+    private WalStateResult(WalStateProposeMessage msg, boolean changed, String errMsg, boolean noOp) {
         this.msg = msg;
-        this.res = res;
+        this.changed = changed;
         this.errMsg = errMsg;
         this.noOp = noOp;
     }
@@ -82,8 +82,8 @@ public class WalStateResult {
     /**
      * @return Whether mode was changed.
      */
-    public boolean result() {
-        return res;
+    public boolean changed() {
+        return changed;
     }
 
     /**
