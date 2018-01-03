@@ -94,19 +94,23 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * Constructor.
      */
     public WalStateManager() {
-        ioLsnr = new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-                if (msg instanceof WalStateAckMessage) {
-                    WalStateAckMessage msg0 = (WalStateAckMessage)msg;
+        if (isServerNode()) {
+            ioLsnr = new GridMessageListener() {
+                @Override
+                public void onMessage(UUID nodeId, Object msg, byte plc) {
+                    if (msg instanceof WalStateAckMessage) {
+                        WalStateAckMessage msg0 = (WalStateAckMessage) msg;
 
-                    msg0.senderNodeId(nodeId);
+                        msg0.senderNodeId(nodeId);
 
-                    onAck(msg0);
+                        onAck(msg0);
+                    } else
+                        U.warn(log, "Unexpected IO message (will ignore): " + msg);
                 }
-                else
-                    U.warn(log, "Unexpected IO message (will ignore): " + msg);
-            }
-        };
+            };
+        }
+        else
+            ioLsnr = null;
     }
 
     /** {@inheritDoc} */
@@ -141,11 +145,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
                     WalStateResult res;
 
-                    if (F.eq(msg.enable(), enabled)) {
+                    if (F.eq(msg.enable(), enabled))
                         res = new WalStateResult(msg, false, true);
-
-                        initialRess.add(res);
-                    }
                     else {
                         res = new WalStateResult(msg, true, false);
 
@@ -167,10 +168,10 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * so checkpoint is not needed.
      */
     public void onKernalStart() {
-        synchronized (mux) {
-            if (!isServerNode())
-                return;
+        if (!isServerNode())
+            return;
 
+        synchronized (mux) {
             for (WalStateResult res : initialRess)
                 onCompletedLocally(res);
 
@@ -202,31 +203,6 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             assert disconnected;
 
             disconnected = false;
-
-            onKernalStart();
-        }
-    }
-
-    /**
-     * Handle node leave event.
-     *
-     * @param node Node that has left the grid.
-     */
-    public void onNodeLeft(ClusterNode node) {
-        synchronized (mux) {
-            if (!isServerNode())
-                return;
-
-            // If coordinator is not initialized, then no local result was processed so far, safe to exit.
-            if (crdNode == null)
-                return;
-
-            if (F.eq(crdNode.id(), node.id())) {
-                crdNode = null;
-
-                for (WalStateResult res : ress.values())
-                    onCompletedLocally(res);
-            }
         }
     }
 
@@ -332,6 +308,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             // Validate current caches state before deciding whether to process message further.
             if (validateProposeDiscovery(msg)) {
+                if (!isServerNode())
+                    return;
+
                 CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
 
                 assert grpDesc != null;
@@ -354,6 +333,73 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Validate propose message.
+     *
+     * @param msg Message.
+     * @return {@code True} if message should be processed further, {@code false} if no further processing is needed.
+     */
+    private boolean validateProposeDiscovery(WalStateProposeMessage msg) {
+        GridFutureAdapter<Boolean> userFut = userFuts.get(msg.operationId());
+
+        String errMsg = validate(msg);
+
+        if (errMsg != null) {
+            completeWithError(userFut, errMsg);
+
+            return false;
+        }
+
+        CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
+
+        assert grpDesc != null;
+
+        // If there are no pending WAL change requests and mode matches, then ignore and complete.
+        if (!grpDesc.hasWalChangeRequests() && grpDesc.walEnabled() == msg.enable()) {
+            complete(userFut, false);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Validate propose message.
+     *
+     * @param msg Message.
+     * @return Error message or {@code null} if everything is OK.
+     */
+    @Nullable private String validate(WalStateProposeMessage msg) {
+        // Is group still there?
+        CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
+
+        if (grpDesc == null)
+            return "Failed to change WAL mode because some caches no longer exist: " + msg.caches().keySet();
+
+        // Are specified caches still there?
+        for (Map.Entry<String, IgniteUuid> cache : msg.caches().entrySet()) {
+            String cacheName = cache.getKey();
+
+            DynamicCacheDescriptor cacheDesc = cacheProcessor().cacheDescriptor(cacheName);
+
+            if (cacheDesc == null || !F.eq(cacheDesc.deploymentId(), cache.getValue()))
+                return "Cache doesn't exist: " + cacheName;
+        }
+
+        // Are there any new caches in the group?
+        HashSet<String> grpCacheNames = new HashSet<>(grpDesc.caches().keySet());
+
+        grpCacheNames.removeAll(msg.caches().keySet());
+
+        if (!grpCacheNames.isEmpty()) {
+            return "Cannot change WAL mode because not all cache names belonging to the " +
+                "group are provided [group=" + grpDesc.groupName() + ", missingCaches=" + grpCacheNames + ']';
+        }
+
+        return null;
+    }
+
+    /**
      * Handle propose message which is synchronized with other cache state actions through exchange thread.
      * If operation is no-op (i.e. state is not changed), then no additional processing is needed, and coordinator will
      * trigger finish request right away. Otherwise all nodes atart asynchronous checkpoint flush, and send responses
@@ -362,6 +408,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @param msg Message.
      */
     public void onProposeExchange(WalStateProposeMessage msg) {
+        if (!isServerNode())
+            return;
+
         synchronized (mux) {
             if (msg.affinityNode()) {
                 CacheGroupContext grpCtx = cacheProcessor().cacheGroup(msg.groupId());
@@ -401,105 +450,14 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @param msg Message.
      */
     public void onProposeExchangeCoordinatorFinished(WalStateProposeMessage msg) {
+        if (!isServerNode())
+            return;
+
         synchronized (mux) {
             WalStateResult res = ress.get(msg.operationId());
 
             if (res != null && res.noOp())
                 onCompletedLocally(res);
-        }
-    }
-
-    /**
-     * Send finish message for the given distributed process if needed.
-     *
-     * @param proc Process.
-     */
-    private void sendFinishMessageIfNeeded(WalStateDistributedProcess proc) {
-        if (proc.completed())
-            sendFinishMessage(proc.result());
-    }
-
-    /**
-     * Send finish message.
-     *
-     * @param res Result.
-     */
-    private void sendFinishMessage(WalStateResult res) {
-        WalStateProposeMessage proposeMsg = res.message();
-
-        WalStateFinishMessage msg = new WalStateFinishMessage(proposeMsg.operationId(), proposeMsg.groupId(),
-            proposeMsg.groupDeploymentId(), res.changed(), res.errorMessage());
-
-        try {
-            cctx.discovery().sendCustomEvent(msg);
-        }
-        catch (Exception e) {
-            U.error(log, "Failed to send WAL mode change finish message due to unexpected exception: " + msg, e);
-        }
-    }
-
-    /**
-     * Handle finish message in discovery thread.
-     *
-     * @param msg Message.
-     */
-    public void onFinishDiscovery(WalStateFinishMessage msg) {
-        if (isDuplicate(msg))
-            return;
-
-        synchronized (mux) {
-            if (disconnected)
-                return;
-
-            // Complete user future, if any.
-            GridFutureAdapter<Boolean> userFut = userFuts.get(msg.operationId());
-
-            if (userFut != null) {
-                if (msg.errorMessage() != null)
-                    completeWithError(userFut, msg.errorMessage());
-                else
-                    complete(userFut, msg.result());
-            }
-
-            // Get result.
-            WalStateResult res = ress.remove(msg.operationId());
-
-            if (res == null)
-                U.warn(log, "Received finish message for unknown operation (will ignore): " + msg.operationId());
-
-            // Clear distributed process (if any).
-            procs.remove(msg.operationId());
-
-            // Unwind next messages.
-            CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
-
-            if (grpDesc != null && F.eq(grpDesc.deploymentId(), msg.groupDeploymentId())) {
-                // Update descriptor with latest WAL state.
-                if (res != null && res.changed())
-                    grpDesc.walEnabled(res.message().enable());
-
-                // Remove now-outdated message from the queue.
-                WalStateProposeMessage oldProposeMsg = grpDesc.nextWalChangeRequest();
-
-                assert oldProposeMsg != null;
-                assert F.eq(oldProposeMsg.operationId(), msg.operationId());
-
-                grpDesc.removeWalChangeRequest();
-
-                // Unwind next message.
-                WalStateProposeMessage nextProposeMsg = grpDesc.nextWalChangeRequest();
-
-                if (nextProposeMsg != null) {
-                    msg.exchangeMessage(nextProposeMsg);
-
-                    // Group context will not be available for non-affinity node, calculate outcome in advance.
-                    if (!nextProposeMsg.affinityNode())
-                        nextProposeMsg.nonAffinityNodeResult(F.eq(grpDesc.walEnabled(), nextProposeMsg.enable()));
-                }
-            }
-
-            // Remember operation ID to handle duplicates.
-            completedOpIds.add(msg.operationId());
         }
     }
 
@@ -606,70 +564,133 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Validate propose message.
+     * Send finish message for the given distributed process if needed.
      *
-     * @param msg Message.
-     * @return {@code True} if message should be processed further, {@code false} if no further processing is needed.
+     * @param proc Process.
      */
-    private boolean validateProposeDiscovery(WalStateProposeMessage msg) {
-        GridFutureAdapter<Boolean> userFut = userFuts.get(msg.operationId());
-
-        String errMsg = validate(msg);
-
-        if (errMsg != null) {
-            completeWithError(userFut, errMsg);
-
-            return false;
-        }
-
-        CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
-
-        assert grpDesc != null;
-
-        // If there are no pending WAL change requests and mode matches, then ignore and complete.
-        if (!grpDesc.hasWalChangeRequests() && grpDesc.walEnabled() == msg.enable()) {
-            complete(userFut, false);
-
-            return false;
-        }
-
-        return true;
+    private void sendFinishMessageIfNeeded(WalStateDistributedProcess proc) {
+        if (proc.completed())
+            sendFinishMessage(proc.result());
     }
 
     /**
-     * Validate propose message.
+     * Send finish message.
+     *
+     * @param res Result.
+     */
+    private void sendFinishMessage(WalStateResult res) {
+        WalStateProposeMessage proposeMsg = res.message();
+
+        WalStateFinishMessage msg = new WalStateFinishMessage(proposeMsg.operationId(), proposeMsg.groupId(),
+            proposeMsg.groupDeploymentId(), res.changed(), res.errorMessage());
+
+        try {
+            cctx.discovery().sendCustomEvent(msg);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to send WAL mode change finish message due to unexpected exception: " + msg, e);
+        }
+    }
+
+    /**
+     * Handle finish message in discovery thread.
      *
      * @param msg Message.
-     * @return Error message or {@code null} if everything is OK.
      */
-    @Nullable private String validate(WalStateProposeMessage msg) {
-        // Is group still there?
-        CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
+    public void onFinishDiscovery(WalStateFinishMessage msg) {
+        if (isDuplicate(msg))
+            return;
 
-        if (grpDesc == null)
-            return "Failed to change WAL mode because some caches no longer exist: " + msg.caches().keySet();
+        synchronized (mux) {
+            if (disconnected)
+                return;
 
-        // Are specified caches still there?
-        for (Map.Entry<String, IgniteUuid> cache : msg.caches().entrySet()) {
-            String cacheName = cache.getKey();
+            // Complete user future, if any.
+            GridFutureAdapter<Boolean> userFut = userFuts.get(msg.operationId());
 
-            DynamicCacheDescriptor cacheDesc = cacheProcessor().cacheDescriptor(cacheName);
+            if (userFut != null) {
+                if (msg.errorMessage() != null)
+                    completeWithError(userFut, msg.errorMessage());
+                else
+                    complete(userFut, msg.result());
+            }
 
-            if (cacheDesc == null || !F.eq(cacheDesc.deploymentId(), cache.getValue()))
-                return "Cache doesn't exist: " + cacheName;
+            if (!isServerNode())
+                return;
+
+            // Get result.
+            WalStateResult res = ress.remove(msg.operationId());
+
+            if (res == null)
+                U.warn(log, "Received finish message for unknown operation (will ignore): " + msg.operationId());
+
+            // Clear distributed process (if any).
+            procs.remove(msg.operationId());
+
+            // Unwind next messages.
+            CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
+
+            if (grpDesc != null && F.eq(grpDesc.deploymentId(), msg.groupDeploymentId())) {
+                // Update descriptor with latest WAL state.
+                if (res != null && res.changed())
+                    grpDesc.walEnabled(res.message().enable());
+
+                // Remove now-outdated message from the queue.
+                WalStateProposeMessage oldProposeMsg = grpDesc.nextWalChangeRequest();
+
+                assert oldProposeMsg != null;
+                assert F.eq(oldProposeMsg.operationId(), msg.operationId());
+
+                grpDesc.removeWalChangeRequest();
+
+                // Unwind next message.
+                WalStateProposeMessage nextProposeMsg = grpDesc.nextWalChangeRequest();
+
+                if (nextProposeMsg != null) {
+                    msg.exchangeMessage(nextProposeMsg);
+
+                    // Group context will not be available for non-affinity node, calculate outcome in advance.
+                    if (!nextProposeMsg.affinityNode())
+                        nextProposeMsg.nonAffinityNodeResult(F.eq(grpDesc.walEnabled(), nextProposeMsg.enable()));
+                }
+            }
+
+            // Remember operation ID to handle duplicates.
+            completedOpIds.add(msg.operationId());
+
+            // Remove possible stale messages.
+            Iterator<WalStateAckMessage> ackIter = pendingAcks.iterator();
+
+            while (ackIter.hasNext()) {
+                WalStateAckMessage ackMsg = ackIter.next();
+
+                if (F.eq(ackMsg.operationId(), msg.operationId()))
+                    ackIter.remove();
+            }
         }
+    }
 
-        // Are there any new caches in the group?
-        HashSet<String> grpCacheNames = new HashSet<>(grpDesc.caches().keySet());
+    /**
+     * Handle node leave event.
+     *
+     * @param node Node that has left the grid.
+     */
+    public void onNodeLeft(ClusterNode node) {
+        if (!isServerNode())
+            return;
 
-        grpCacheNames.removeAll(msg.caches().keySet());
+        synchronized (mux) {
+            // If coordinator is not initialized, then no local result was processed so far, safe to exit.
+            if (crdNode == null)
+                return;
 
-        if (!grpCacheNames.isEmpty()) {
-            return "Cannot change WAL mode because not all cache names belonging to the " +
-                "group are provided [group=" + grpDesc.groupName() + ", missingCaches=" + grpCacheNames + ']';
+            if (F.eq(crdNode.id(), node.id())) {
+                crdNode = null;
+
+                for (WalStateResult res : ress.values())
+                    onCompletedLocally(res);
+            }
         }
-
-        return null;
     }
 
     /**
