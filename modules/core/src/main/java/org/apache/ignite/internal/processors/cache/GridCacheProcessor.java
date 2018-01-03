@@ -330,6 +330,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (msg0.initial())
                 return new CacheStatisticsModeChangeTask(msg0);
         }
+        else if (msg instanceof WalStateAbstractMessage) {
+            WalStateAbstractMessage msg0 = (WalStateAbstractMessage)msg;
+
+            WalStateProposeMessage exchangeMsg = msg0.exchangeMessage();
+
+            if (exchangeMsg != null)
+                return new WalStateExchangeTask(exchangeMsg);
+        }
 
         return null;
     }
@@ -370,6 +378,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             CacheStatisticsModeChangeTask task0 = (CacheStatisticsModeChangeTask)task;
 
             processStatisticsModeChange(task0.message());
+        }
+        else if (task instanceof WalStateExchangeTask) {
+            WalStateExchangeTask task0 = (WalStateExchangeTask)task;
+
+            sharedCtx.walState().onPropose(task0.message());
+        }
+        else if (task instanceof WalStateNodeLeaveExchangeTask) {
+            WalStateNodeLeaveExchangeTask task0 = (WalStateNodeLeaveExchangeTask)task;
+
+            sharedCtx.walState().onNodeLeft(task0.node());
         }
         else
             U.warn(log, "Unsupported custom exchange task: " + task);

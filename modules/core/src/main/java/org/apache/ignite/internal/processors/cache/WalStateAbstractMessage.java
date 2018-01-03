@@ -25,6 +25,9 @@ public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage 
     /** Group deployment ID. */
     private IgniteUuid grpDepId;
 
+    /** Message that should be processed through exchange thread. */
+    private transient WalStateProposeMessage exchangeMsg;
+
     /**
      * Constructor.
      *
@@ -57,6 +60,24 @@ public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage 
      */
     public IgniteUuid groupDeploymentId() {
         return grpDepId;
+    }
+
+    /**
+     * Get exchange message.
+     *
+     * @return Massage or {@code null} if no processing is required.
+     */
+    @Nullable public WalStateProposeMessage exchangeMessage() {
+        return exchangeMsg;
+    }
+
+    /**
+     * Set message that will be processed through exchange thread later on.
+     *
+     * @param exchangeMsg Message.
+     */
+    public void exchangeMessage(WalStateProposeMessage exchangeMsg) {
+        this.exchangeMsg = exchangeMsg;
     }
 
     /** {@inheritDoc} */
