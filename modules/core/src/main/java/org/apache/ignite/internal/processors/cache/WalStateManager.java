@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -47,8 +48,16 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_WAL;
  * Write-ahead log state manager. Manages WAL enable and disable.
  */
 public class WalStateManager extends GridCacheSharedManagerAdapter {
+    /** History size for to track stale messages. */
+    private static final int HIST_SIZE = 1000;
 
-    // TODO: Duplicate message processing.
+    /** ID history for discovery messages. */
+    private final GridBoundedConcurrentLinkedHashSet<IgniteUuid> discoMsgIdHist =
+        new GridBoundedConcurrentLinkedHashSet<>(HIST_SIZE);
+
+    /** History of already completed operations. */
+    private final GridBoundedConcurrentLinkedHashSet<UUID> completedOpIds =
+        new GridBoundedConcurrentLinkedHashSet<>(HIST_SIZE);
 
     /** Client futures. */
     private final Map<UUID, GridFutureAdapter<Boolean>> userFuts = new HashMap<>();
@@ -240,6 +249,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @param msg Message.
      */
     public void onProposeDiscovery(WalStateProposeMessage msg) {
+        if (duplicate(msg))
+            return;
+
         synchronized (mux) {
             if (disconnected)
                 return;
@@ -326,6 +338,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @param msg Message.
      */
     public void onFinishDiscovery(WalStateFinishMessage msg) {
+        if (duplicate(msg))
+            return;
+
         synchronized (mux) {
             if (disconnected)
                 return;
@@ -504,12 +519,33 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Check if discovery message has already been received.
+     *
+     * @param msg Message.
+     * @return {@code True} if this is a duplicate.
+     */
+    private boolean duplicate(WalStateAbstractMessage msg) {
+        if (!discoMsgIdHist.add(msg.id())) {
+            U.warn(log, "Received duplicate WAL mode change discovery message (will ignore): " + msg);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * WAL state change worker.
      */
     private class WalStateChangeWorker extends GridWorker {
         /** Message. */
         private final WalStateProposeMessage msg;
 
+        /**
+         * Constructor.
+         *
+         * @param msg Propose message.
+         */
         private WalStateChangeWorker(WalStateProposeMessage msg) {
             super(cctx.igniteInstanceName(), "wal-state-change-worker-" + msg.groupId(), WalStateManager.this.log);
 
