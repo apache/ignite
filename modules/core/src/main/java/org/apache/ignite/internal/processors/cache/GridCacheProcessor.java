@@ -3185,7 +3185,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return {@code True} if WAL mode was changed by this call.
      */
     public boolean changeWalMode2(Collection<String> cacheNames, boolean enabled) throws IgniteCheckedException {
-        return sharedCtx.walState().initiate(cacheNames, enabled).get();
+        return sharedCtx.walState().init(cacheNames, enabled).get();
     }
 
     /**

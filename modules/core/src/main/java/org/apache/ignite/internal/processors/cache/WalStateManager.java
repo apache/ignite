@@ -154,7 +154,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @param enabled Enabled flag.
      * @return Future completed when operation finished.
      */
-    public IgniteInternalFuture<Boolean> initiate(Collection<String> cacheNames, boolean enabled) {
+    public IgniteInternalFuture<Boolean> init(Collection<String> cacheNames, boolean enabled) {
         if (F.isEmpty(cacheNames))
             return errorFuture("Cache names cannot be empty.");
 
@@ -286,7 +286,39 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         }
     }
 
-    // TODO: onCoordinatorFinished()
+    /**
+     * Handle coordinator exchange finish. If message processing during exchange init stage was reduced to no-op,
+     * then it is possible to send finish message over the wire.
+     *
+     * @param msg Message.
+     */
+    public void onProposeExchangeCoordinatorFinished(WalStateProposeMessage msg) {
+        synchronized (mux) {
+            WalStateResult res = noOpRess.get(msg.operationId());
+
+            if (res != null)
+                sendFinishMessage(res);
+        }
+    }
+
+    /**
+     * Send finish message.
+     *
+     * @param res Result.
+     */
+    private void sendFinishMessage(WalStateResult res) {
+        WalStateProposeMessage proposeMsg = res.message();
+
+        WalStateFinishMessage msg = new WalStateFinishMessage(proposeMsg.operationId(), proposeMsg.groupId(),
+            proposeMsg.groupDeploymentId(), res.result(), res.errorMessage());
+
+        try {
+            cctx.discovery().sendCustomEvent(msg);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to send WAL mode change finish message due to unexpected exception: " + msg, e);
+        }
+    }
 
     /**
      * Handle finish message in discovery thread.
@@ -307,6 +339,12 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 else
                     complete(userFut, msg.result());
             }
+
+            // Clear no-op stuff.
+            noOpRess.remove(msg.operationId());
+
+            // Clear regular stuff.
+            // TODO
 
             // Unwind next messages.
             CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
