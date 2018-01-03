@@ -371,7 +371,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                         "exist: " + msg.caches().keySet(), true));
                 }
                 else {
-                    if (F.eq(msg.enable(), !grpCtx.walDisabled()))
+                    if (F.eq(msg.enable(), grpCtx.walEnabled()))
                         addResult(new WalStateResult(msg, false, true));
                     else {
                         WalStateChangeWorker worker = new WalStateChangeWorker(msg);
@@ -808,7 +808,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                             "exist: " + msg.caches().keySet(), false);
                     }
                     else {
-                        grpCtx.walDisabled(!msg.enable());
+                        grpCtx.walEnabled(msg.enable());
 
                         res = new WalStateResult(msg, true, false);
                     }

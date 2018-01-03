@@ -148,7 +148,7 @@ public class CacheGroupContext {
     private CacheGroupMetricsMXBean mxBean;
 
     /** */
-    private volatile boolean walDisabled;
+    private volatile boolean walEnabled;
 
     /**
      * @param grpId Group ID.
@@ -162,7 +162,7 @@ public class CacheGroupContext {
      * @param freeList Free list.
      * @param reuseList Reuse list.
      * @param locStartVer Topology version when group was started on local node.
-     * @param walDisabled Wal disabled.
+     * @param walEnabled Wal enabled flag.
      */
     CacheGroupContext(
         GridCacheSharedContext ctx,
@@ -176,7 +176,7 @@ public class CacheGroupContext {
         FreeList freeList,
         ReuseList reuseList,
         AffinityTopologyVersion locStartVer,
-        boolean walDisabled) {
+        boolean walEnabled) {
         assert ccfg != null;
         assert dataRegion != null || !affNode;
         assert grpId != 0 : "Invalid group ID [cache=" + ccfg.getName() + ", grpName=" + ccfg.getGroupName() + ']';
@@ -192,9 +192,7 @@ public class CacheGroupContext {
         this.reuseList = reuseList;
         this.locStartVer = locStartVer;
         this.cacheType = cacheType;
-        this.walDisabled = walDisabled;
-
-        persistWalDisabled(walDisabled);
+        this.walEnabled = walEnabled;
 
         ioPlc = cacheType.ioPolicy();
 
@@ -1002,28 +1000,16 @@ public class CacheGroupContext {
     }
 
     /**
-     *
+     * WAL enabled flag.
      */
-    public boolean walDisabled() {
-        return walDisabled;
+    public boolean walEnabled() {
+        return walEnabled;
     }
 
     /**
-     * @param disabled Disabled.
+     * @param walEnabled WAL enabled flag.
      */
-    public void walDisabled(boolean disabled) {
-        assert this.walDisabled != disabled;
-
-        persistWalDisabled(disabled);
-
-        this.walDisabled = disabled;
-    }
-
-    /**
-     * @param disabled Disabled.
-     */
-    private void persistWalDisabled(boolean disabled) {
-        if (shared().pageStore() != null)
-            shared().pageStore().walDisabled(grpId, disabled);
+    public void walEnabled(boolean walEnabled) {
+        this.walEnabled = walEnabled;
     }
 }

@@ -921,7 +921,6 @@ class ClusterCachesInfo {
                 grpDesc.caches(),
                 0,
                 grpDesc.persistenceEnabled(),
-                grpDesc.walMode(),
                 grpDesc.walEnabled(),
                 grpDesc.walChangeRequests());
 
@@ -1003,7 +1002,6 @@ class ClusterCachesInfo {
                 grpData.deploymentId(),
                 grpData.caches(),
                 grpData.persistenceEnabled(),
-                grpData.walMode(),
                 grpData.walEnabled(),
                 grpData.walChangeRequests());
 
@@ -1529,7 +1527,6 @@ class ClusterCachesInfo {
             deploymentId,
             caches,
             persistent,
-            CacheGroupWalMode.ENABLED,
             persistent,
             null);
 

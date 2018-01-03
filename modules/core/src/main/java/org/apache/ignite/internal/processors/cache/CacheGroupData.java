@@ -64,9 +64,6 @@ public class CacheGroupData implements Serializable {
     /** Persistence enabled flag. */
     private final boolean persistenceEnabled;
 
-    /** Wal mode */
-    private final CacheGroupWalMode walMode;
-
     /** WAL state. */
     private final boolean walEnabled;
 
@@ -82,7 +79,6 @@ public class CacheGroupData implements Serializable {
      * @param deploymentId Deployment ID.
      * @param caches Cache group caches.
      * @param persistenceEnabled Persistence enabled flag.
-     * @param walMode WAL mode
      * @param walEnabled WAL state.
      * @param walChangeReqs WAL change requests.
      */
@@ -96,7 +92,6 @@ public class CacheGroupData implements Serializable {
         Map<String, Integer> caches,
         long flags,
         boolean persistenceEnabled,
-        CacheGroupWalMode walMode,
         boolean walEnabled,
         List<WalStateProposeMessage> walChangeReqs) {
         assert cacheCfg != null;
@@ -112,7 +107,6 @@ public class CacheGroupData implements Serializable {
         this.caches = caches;
         this.flags = flags;
         this.persistenceEnabled = persistenceEnabled;
-        this.walMode = walMode;
         this.walEnabled = walEnabled;
         this.walChangeReqs = walChangeReqs;
     }
@@ -171,13 +165,6 @@ public class CacheGroupData implements Serializable {
      */
     public boolean persistenceEnabled() {
         return persistenceEnabled;
-    }
-
-    /**
-     *
-     */
-    public CacheGroupWalMode walMode() {
-        return walMode;
     }
 
     /**

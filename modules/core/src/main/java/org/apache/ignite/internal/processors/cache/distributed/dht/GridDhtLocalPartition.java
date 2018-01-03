@@ -504,7 +504,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             synchronized (this) {
                 boolean update = this.state.compareAndSet(state, setPartState(state, toState));
 
-                if (update && !grp.walDisabled())
+                if (update && grp.walEnabled())
                     try {
                         ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState, updateCounter()));
                     }

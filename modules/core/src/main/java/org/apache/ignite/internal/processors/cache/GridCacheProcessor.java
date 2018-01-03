@@ -1960,9 +1960,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         FreeList freeList = sharedCtx.database().freeList(memPlcName);
         ReuseList reuseList = sharedCtx.database().reuseList(memPlcName);
 
-        boolean walDisabled = desc.walMode() == CacheGroupWalMode.DISABLED ||
-            desc.walMode() == CacheGroupWalMode.DISABLING;
-
         CacheGroupContext grp = new CacheGroupContext(sharedCtx,
             desc.groupId(),
             desc.receivedFrom(),
@@ -1974,7 +1971,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             freeList,
             reuseList,
             exchTopVer,
-            walDisabled);
+            desc.walEnabled()
+        );
 
         for (Object obj : grp.configuredUserObjects())
             prepare(cfg, obj, false);
@@ -2947,15 +2945,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         compoundFut.markInitialized();
 
         return compoundFut;
-    }
-
-    /**
-     * @param cacheName Cache name.
-     */
-    public boolean walEnabled(String cacheName) {
-        DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cacheName);
-
-        return desc.groupDescriptor().walMode() == CacheGroupWalMode.ENABLED;
     }
 
     /**

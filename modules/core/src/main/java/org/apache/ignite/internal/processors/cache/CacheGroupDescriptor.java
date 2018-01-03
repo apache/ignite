@@ -65,10 +65,6 @@ public class CacheGroupDescriptor {
     /** Persistence enabled flag. */
     private final boolean persistenceEnabled;
 
-    /** Wal mode */
-    // TODO: Remove.
-    private volatile CacheGroupWalMode walMode;
-
     /** WAL enabled state. */
     private volatile boolean walEnabled;
 
@@ -97,7 +93,6 @@ public class CacheGroupDescriptor {
         IgniteUuid deploymentId,
         Map<String, Integer> caches,
         boolean persistenceEnabled,
-        CacheGroupWalMode walMode,
         boolean walEnabled,
         @Nullable Collection<WalStateProposeMessage> walChangeReqs) {
         assert cacheCfg != null;
@@ -111,9 +106,7 @@ public class CacheGroupDescriptor {
         this.cacheCfg = new CacheConfiguration<>(cacheCfg);
         this.caches = caches;
         this.persistenceEnabled = persistenceEnabled;
-        this.walMode = walMode;
         this.walEnabled = walEnabled;
-
         this.walChangeReqs = walChangeReqs == null ? new LinkedList<>() : new LinkedList<>(walChangeReqs);
     }
 
@@ -129,26 +122,6 @@ public class CacheGroupDescriptor {
      */
     public IgniteUuid deploymentId() {
         return deploymentId;
-    }
-
-    /**
-     *
-     */
-    public CacheGroupWalMode walMode() {
-        return walMode;
-    }
-
-    /**
-     *
-     */
-    public void walMode(CacheGroupWalMode walMode) {
-        assert (this.walMode == CacheGroupWalMode.ENABLING && walMode == CacheGroupWalMode.ENABLED) ||
-            (this.walMode == CacheGroupWalMode.ENABLED && walMode == CacheGroupWalMode.DISABLING) ||
-            (this.walMode == CacheGroupWalMode.DISABLING && walMode == CacheGroupWalMode.DISABLED) ||
-            (this.walMode == CacheGroupWalMode.DISABLED && walMode == CacheGroupWalMode.ENABLING) :
-            "Unexpected modification [current=" + this.walMode + ", new=" + walMode + "]";
-
-        this.walMode = walMode;
     }
 
     /**

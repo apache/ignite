@@ -812,7 +812,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     @Override public boolean disabled(int grpId) {
         CacheGroupContext ctx = cctx.cache().cacheGroup(grpId);
 
-        return ctx != null && ctx.walDisabled();
+        return ctx != null && !ctx.walEnabled();
     }
 
     /**
