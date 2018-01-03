@@ -46,7 +46,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
-import org.apache.ignite.internal.processors.cache.WalModeDynamicChangeAckMessage;
 import org.apache.ignite.internal.processors.cache.WalStateAckMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRequestMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessage;
@@ -882,11 +881,6 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 129:
-                msg = new WalModeDynamicChangeAckMessage();
-
-                break;
-
-            case 130:
                 msg = new WalStateAckMessage();
 
                 break;

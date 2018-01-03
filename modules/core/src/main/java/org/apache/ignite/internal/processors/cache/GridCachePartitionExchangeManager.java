@@ -666,7 +666,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         cctx.io().removeHandler(false, 0, GridDhtPartitionsSingleMessage.class);
         cctx.io().removeHandler(false, 0, GridDhtPartitionsFullMessage.class);
         cctx.io().removeHandler(false, 0, GridDhtPartitionsSingleRequest.class);
-        cctx.io().removeHandler(false, 0, WalModeDynamicChangeAckMessage.class);
 
         stopErr = cctx.kernalContext().clientDisconnected() ?
             new IgniteClientDisconnectedCheckedException(cctx.kernalContext().cluster().clientReconnectFuture(),
