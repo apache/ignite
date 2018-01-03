@@ -41,6 +41,9 @@ public class WalStateProposeMessage extends WalStateAbstractMessage {
     /** Whether WAL should be enabled or disabled. */
     private final boolean enable;
 
+    /** Whether message is being handled on cache affintiy node. */
+    private transient boolean affNode;
+
     /**
      * Constructor.
      *
@@ -81,6 +84,21 @@ public class WalStateProposeMessage extends WalStateAbstractMessage {
     public boolean enable() {
         return enable;
     }
+
+    /**
+     * @return Whether message is being handled on cache affintiy node.
+     */
+    public boolean affinityNode() {
+        return affNode;
+    }
+
+    /**
+     * @param affNode Whether message is being handled on cache affintiy node.
+     */
+    public void affinityNode(boolean affNode) {
+        this.affNode = affNode;
+    }
+
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -335,7 +335,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
                 boolean affNode = nodeFilter == null || nodeFilter.apply(cctx.localNode());
 
-                // TODO: How to handle aff node?
+                msg.affinityNode(affNode);
 
                 if (grpDesc.addWalChangeRequest(msg))
                     msg.exchangeMessage(msg);
