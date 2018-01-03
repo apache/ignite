@@ -17,15 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Serializable;
-import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.Serializable;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  *
@@ -65,6 +67,12 @@ public class CacheGroupData implements Serializable {
     /** Wal mode */
     private final CacheGroupWalMode walMode;
 
+    /** WAL state. */
+    private final boolean walEnabled;
+
+    /** WAL change requests. */
+    private final List<WalStateProposeMessage> walChangeReqs;
+
     /**
      * @param cacheCfg Cache configuration.
      * @param grpName Group name.
@@ -75,6 +83,8 @@ public class CacheGroupData implements Serializable {
      * @param caches Cache group caches.
      * @param persistenceEnabled Persistence enabled flag.
      * @param walMode WAL mode
+     * @param walEnabled WAL state.
+     * @param walChangeReqs WAL change requests.
      */
     CacheGroupData(
         CacheConfiguration cacheCfg,
@@ -86,7 +96,9 @@ public class CacheGroupData implements Serializable {
         Map<String, Integer> caches,
         long flags,
         boolean persistenceEnabled,
-        CacheGroupWalMode walMode) {
+        CacheGroupWalMode walMode,
+        boolean walEnabled,
+        List<WalStateProposeMessage> walChangeReqs) {
         assert cacheCfg != null;
         assert grpId != 0 : cacheCfg.getName();
         assert deploymentId != null : cacheCfg.getName();
@@ -101,6 +113,8 @@ public class CacheGroupData implements Serializable {
         this.flags = flags;
         this.persistenceEnabled = persistenceEnabled;
         this.walMode = walMode;
+        this.walEnabled = walEnabled;
+        this.walChangeReqs = walChangeReqs;
     }
 
     /**
@@ -164,6 +178,20 @@ public class CacheGroupData implements Serializable {
      */
     public CacheGroupWalMode walMode() {
         return walMode;
+    }
+
+    /**
+     * @return {@code True} if WAL is enabled.
+     */
+    public boolean walEnabled() {
+        return walEnabled;
+    }
+
+    /**
+     * @return WAL mode change requests.
+     */
+    public List<WalStateProposeMessage> walChangeRequests() {
+        return walChangeReqs;
     }
 
     /** {@inheritDoc} */

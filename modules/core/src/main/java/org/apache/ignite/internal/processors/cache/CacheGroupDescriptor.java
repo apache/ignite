@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -67,12 +70,10 @@ public class CacheGroupDescriptor {
     private volatile CacheGroupWalMode walMode;
 
     /** WAL enabled state. */
-    // TODO: Proper management.
     private volatile boolean walEnabled;
 
     /** Pending WAL change requests. */
-    // TODO: Add to disco data.
-    private LinkedList<WalStateProposeMessage> pendingWalChangeReqs = new LinkedList<>();
+    private final LinkedList<WalStateProposeMessage> walChangeReqs;
 
     /**
      * @param cacheCfg Cache configuration.
@@ -83,7 +84,10 @@ public class CacheGroupDescriptor {
      * @param deploymentId Deployment ID.
      * @param caches Cache group caches.
      * @param persistenceEnabled Persistence enabled flag.
+     * @param walEnabled Whether WAL is enabled.
+     * @param walChangeReqs Pending WAL change requests.
      */
+    @SuppressWarnings("unchecked")
     CacheGroupDescriptor(
         CacheConfiguration cacheCfg,
         @Nullable String grpName,
@@ -93,7 +97,9 @@ public class CacheGroupDescriptor {
         IgniteUuid deploymentId,
         Map<String, Integer> caches,
         boolean persistenceEnabled,
-        CacheGroupWalMode walMode) {
+        CacheGroupWalMode walMode,
+        boolean walEnabled,
+        @Nullable Collection<WalStateProposeMessage> walChangeReqs) {
         assert cacheCfg != null;
         assert grpId != 0;
 
@@ -106,6 +112,9 @@ public class CacheGroupDescriptor {
         this.caches = caches;
         this.persistenceEnabled = persistenceEnabled;
         this.walMode = walMode;
+        this.walEnabled = walEnabled;
+
+        this.walChangeReqs = walChangeReqs == null ? new LinkedList<>() : new LinkedList<>(walChangeReqs);
     }
 
     /**
@@ -150,17 +159,24 @@ public class CacheGroupDescriptor {
     }
 
     /**
+     * @return Pending WAL change requests.
+     */
+    public List<WalStateProposeMessage> walChangeRequests() {
+        return new ArrayList<>(walChangeReqs);
+    }
+
+    /**
      * @return {@code True} whether there are pending WAL change requests.
      */
-    public boolean hasPendingWalChangeRequests() {
-        return !pendingWalChangeReqs.isEmpty();
+    public boolean hasWalChangeRequests() {
+        return !walChangeReqs.isEmpty();
     }
 
     /**
      * @return Next pending WAL change request or {@code null} if none available.
      */
-    @Nullable public WalStateProposeMessage nextPendingWalChangeRequest() {
-        return pendingWalChangeReqs.getFirst();
+    @Nullable public WalStateProposeMessage nextWalChangeRequest() {
+        return walChangeReqs.getFirst();
     }
 
     /**
@@ -169,10 +185,10 @@ public class CacheGroupDescriptor {
      * @param msg Message.
      * @return {@code True} if this is the very first enlisted message.
      */
-    public boolean addPendingWalChangeRequest(WalStateProposeMessage msg) {
-        boolean first = !hasPendingWalChangeRequests();
+    public boolean addWalChangeRequest(WalStateProposeMessage msg) {
+        boolean first = !hasWalChangeRequests();
 
-        pendingWalChangeReqs.add(msg);
+        walChangeReqs.add(msg);
 
         return first;
     }
@@ -180,8 +196,8 @@ public class CacheGroupDescriptor {
     /**
      * Remove pending WAL change request.
      */
-    public void removePendingWalChangeRequest() {
-        pendingWalChangeReqs.removeFirst();
+    public void removeWalChangeRequest() {
+        walChangeReqs.removeFirst();
     }
 
     /**

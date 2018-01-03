@@ -123,6 +123,11 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                     "provided [group=" + grpDesc.groupName() + ", missingCaches=" + grpCaches + ']');
             }
 
+            // WAL mode change makes sense only for persistent groups.
+            if (!grpDesc.persistenceEnabled())
+                return errorFuture("Cannot change WAL mode because persistence is not enabled for cache(s) [" +
+                    "caches=" + cacheNames + ", dataRegion=" + grpDesc.config().getDataRegionName() + ']');
+
             // Send request.
             final UUID opId = UUID.randomUUID();
 
@@ -173,7 +178,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
                     assert grpDesc != null;
 
-                    if (grpDesc.addPendingWalChangeRequest(msg))
+                    if (grpDesc.addWalChangeRequest(msg))
                         return msg;
                 }
             }
@@ -228,7 +233,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             }
 
             // If there are no pending WAL change requests and mode matches, then ignore and complete.
-            if (!grpDesc.hasPendingWalChangeRequests() && grpDesc.walEnabled() == msg.enable()) {
+            if (!grpDesc.hasWalChangeRequests() && grpDesc.walEnabled() == msg.enable()) {
                 complete(userFut, false);
 
                 return false;
@@ -276,14 +281,14 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
 
             if (grpDesc != null && F.eq(grpDesc.deploymentId(), msg.groupDeploymentId())) {
-                WalStateProposeMessage oldProposeMsg = grpDesc.nextPendingWalChangeRequest();
+                WalStateProposeMessage oldProposeMsg = grpDesc.nextWalChangeRequest();
 
                 assert oldProposeMsg != null;
                 assert F.eq(oldProposeMsg.operationId(), msg.operationId());
 
-                grpDesc.removePendingWalChangeRequest();
+                grpDesc.removeWalChangeRequest();
 
-                return grpDesc.nextPendingWalChangeRequest();
+                return grpDesc.nextWalChangeRequest();
             }
             else
                 return null;

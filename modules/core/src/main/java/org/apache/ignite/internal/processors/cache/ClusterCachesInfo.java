@@ -921,7 +921,9 @@ class ClusterCachesInfo {
                 grpDesc.caches(),
                 0,
                 grpDesc.persistenceEnabled(),
-                grpDesc.walMode());
+                grpDesc.walMode(),
+                grpDesc.walEnabled(),
+                grpDesc.walChangeRequests());
 
             cacheGrps.put(grpDesc.groupId(), grpData);
         }
@@ -1001,7 +1003,9 @@ class ClusterCachesInfo {
                 grpData.deploymentId(),
                 grpData.caches(),
                 grpData.persistenceEnabled(),
-                grpData.walMode());
+                grpData.walMode(),
+                grpData.walEnabled(),
+                grpData.walChangeRequests());
 
             if (locCacheGrps.containsKey(grpDesc.groupId())) {
                 CacheGroupDescriptor locGrpCfg = locCacheGrps.get(grpDesc.groupId());
@@ -1514,6 +1518,8 @@ class ClusterCachesInfo {
 
         Map<String, Integer> caches = Collections.singletonMap(startedCacheCfg.getName(), cacheId);
 
+        boolean persistent = CU.isPersistentCache(startedCacheCfg, ctx.config().getDataStorageConfiguration());
+
         CacheGroupDescriptor grpDesc = new CacheGroupDescriptor(
             startedCacheCfg,
             startedCacheCfg.getGroupName(),
@@ -1522,8 +1528,10 @@ class ClusterCachesInfo {
             curTopVer != null ? curTopVer.nextMinorVersion() : null,
             deploymentId,
             caches,
-            CU.isPersistentCache(startedCacheCfg, ctx.config().getDataStorageConfiguration()),
-            CacheGroupWalMode.ENABLED);
+            persistent,
+            CacheGroupWalMode.ENABLED,
+            persistent,
+            null);
 
         if (ctx.cache().context().pageStore() != null)
             ctx.cache().context().pageStore().beforeCacheGroupStart(grpDesc);
