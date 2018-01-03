@@ -439,7 +439,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * @return Whether WAL enabled by this call.
      * @throws IgniteException If error occurs.
      */
-    public boolean enableWal2(String cacheName) throws IgniteException;
+    public boolean walEnable(String cacheName) throws IgniteException;
 
     /**
      * // TODO: Better descr.
@@ -449,7 +449,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * @return Whether WAL disabled by this call.
      * @throws IgniteException If error occurs.
      */
-    public boolean disableWal2(String cacheName) throws IgniteException;
+    public boolean walDisable(String cacheName) throws IgniteException;
 
     /**
      * // TODO: Better descr.
@@ -457,5 +457,5 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *
      * @param cacheName Cache name.
      */
-    public boolean isWalEnabled2(String cacheName);
+    public boolean isWalEnabled(String cacheName);
 }

@@ -68,16 +68,16 @@ public class WalModeChangeSelfTest extends GridCommonAbstractTest {
         IgniteCache cache = node.createCache(new CacheConfiguration<>()
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL).setName("CACHE"));
 
-        assert grid(0).cluster().isWalEnabled2("CACHE");
-        assert grid(1).cluster().isWalEnabled2("CACHE");
+        assert grid(0).cluster().isWalEnabled("CACHE");
+        assert grid(1).cluster().isWalEnabled("CACHE");
 
-        assert node.cluster().disableWal2("CACHE");
+        assert node.cluster().walDisable("CACHE");
 
-        assert !grid(0).cluster().isWalEnabled2("CACHE");
+        assert !grid(0).cluster().isWalEnabled("CACHE");
 
         Thread.sleep(1000L);
 
-        assert !grid(1).cluster().isWalEnabled2("CACHE");
+        assert !grid(1).cluster().isWalEnabled("CACHE");
     }
 
     /**

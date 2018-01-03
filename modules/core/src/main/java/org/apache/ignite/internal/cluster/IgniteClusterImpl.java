@@ -304,12 +304,12 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
-    @Override public boolean enableWal2(String cacheName) throws IgniteException {
+    @Override public boolean walEnable(String cacheName) throws IgniteException {
         return changeWalMode2(cacheName, true);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean disableWal2(String cacheName) throws IgniteException {
+    @Override public boolean walDisable(String cacheName) throws IgniteException {
         return changeWalMode2(cacheName, false);
     }
 
@@ -330,7 +330,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isWalEnabled2(String cacheName) {
+    @Override public boolean isWalEnabled(String cacheName) {
         guard();
 
         try {
