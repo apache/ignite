@@ -3171,6 +3171,29 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Change WAL mode.
+     *
+     * @param cacheNames Cache names.
+     * @param enabled Enabled flag.
+     * @return {@code True} if WAL mode was changed by this call.
+     */
+    public boolean changeWalMode2(Collection<String> cacheNames, boolean enabled) throws IgniteCheckedException {
+        return sharedCtx.walState().initiate(cacheNames, enabled).get();
+    }
+
+    /**
+     * @param cacheName Cache name.
+     */
+    public boolean walEnabled2(String cacheName) {
+        DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cacheName);
+
+        if (desc == null)
+            throw new IgniteException("Cache not found: " + cacheName);
+
+        return desc.groupDescriptor().walEnabled();
+    }
+
+    /**
      * @param cacheName Cache name.
      * @param disable Disable.
      * @param explicit Explicit.

@@ -346,6 +346,44 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
+    @Override public boolean enableWal2(String cacheName) throws IgniteException {
+        return changeWalMode2(cacheName, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean disableWal2(String cacheName) throws IgniteException {
+        return changeWalMode2(cacheName, false);
+    }
+
+    private boolean changeWalMode2(String cacheName, boolean enabled) {
+        A.notNull(cacheName, "cacheName");
+
+        guard();
+
+        try {
+            return ctx.cache().changeWalMode2(Collections.singleton(cacheName), enabled);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isWalEnabled2(String cacheName) {
+        guard();
+
+        try {
+            return ctx.cache().walEnabled2(cacheName);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isAsync() {
         return false;
     }
