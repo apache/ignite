@@ -183,7 +183,7 @@ public class CacheGroupDescriptor {
      * @return Next pending WAL change request or {@code null} if none available.
      */
     @Nullable public WalStateProposeMessage nextWalChangeRequest() {
-        return walChangeReqs.getFirst();
+        return walChangeReqs.isEmpty() ? null : walChangeReqs.getFirst();
     }
 
     /**

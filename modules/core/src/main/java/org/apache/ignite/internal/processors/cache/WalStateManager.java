@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -123,29 +124,30 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         if (!isServerNode())
             return;
 
-        // Process top pending requests.
-        for (CacheGroupDescriptor grpDesc : cacheProcessor().cacheGroupDescriptors().values()) {
-            WalStateProposeMessage msg = grpDesc.nextWalChangeRequest();
+        synchronized (mux) {
+            // Process top pending requests.
+            for (CacheGroupDescriptor grpDesc : cacheProcessor().cacheGroupDescriptors().values()) {
+                WalStateProposeMessage msg = grpDesc.nextWalChangeRequest();
 
-            if (msg != null) {
-                boolean enabled = grpDesc.walEnabled();
+                if (msg != null) {
+                    boolean enabled = grpDesc.walEnabled();
 
-                WalStateResult res;
+                    WalStateResult res;
 
-                if (F.eq(msg.enable(), enabled)) {
-                    res = new WalStateResult(msg, false, true);
+                    if (F.eq(msg.enable(), enabled)) {
+                        res = new WalStateResult(msg, false, true);
+
+                        initialRess.add(res);
+                    } else {
+                        res = new WalStateResult(msg, true, false);
+
+                        grpDesc.walEnabled(enabled);
+                    }
 
                     initialRess.add(res);
+
+                    addResult(res);
                 }
-                else {
-                    res = new WalStateResult(msg, true, false);
-
-                    grpDesc.walEnabled(enabled);
-                }
-
-                initialRess.add(res);
-
-                addResult(res);
             }
         }
     }
@@ -710,9 +712,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @return {@code True} if this is a server node (i.e. neither client, nor daemon).
      */
     private boolean isServerNode() {
-        ClusterNode locNode = cctx.localNode();
+        IgniteConfiguration cfg = cctx.kernalContext().config();
 
-        return !locNode.isClient() || !locNode.isDaemon();
+        return !cfg.isClientMode() && !cfg.isDaemon();
     }
 
     /**
