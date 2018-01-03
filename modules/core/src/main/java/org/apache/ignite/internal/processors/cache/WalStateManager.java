@@ -21,7 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -33,11 +33,15 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
+
+import static org.apache.ignite.internal.GridTopic.TOPIC_SCHEMA;
+import static org.apache.ignite.internal.GridTopic.TOPIC_WAL;
 
 /**
  * Write-ahead log state manager. Manages WAL enable and disable.
@@ -52,32 +56,86 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     /** Map with no-op results which are finished without regular completion process. */
     private final Map<UUID, WalStateResult> noOpRess = new HashMap<>();
 
+    /** IO message listener. */
+    private final GridMessageListener ioLsnr;
+
     /** Operation mutex. */
     private final Object mux = new Object();
 
     /** Disconnected flag. */
-    private boolean cliDisconnected;
+    private boolean disconnected;
+
+    /**
+     * Constructor.
+     */
+    public WalStateManager() {
+        ioLsnr = new GridMessageListener() {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
+                if (msg instanceof WalStateAckMessage) {
+                    WalStateAckMessage msg0 = (WalStateAckMessage)msg;
+
+                    msg0.senderNodeId(nodeId);
+
+                    onAck(msg0);
+                }
+                else
+                    U.warn(log, "Unexpected IO message (will ignore): " + msg);
+            }
+        };
+    }
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        super.start0();
-
-        // TODO: Register IO listener for acks
+        cctx.kernalContext().io().addMessageListener(TOPIC_WAL, ioLsnr);
     }
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
-        // TODO: Node stop.
+        cctx.kernalContext().io().removeMessageListener(TOPIC_SCHEMA, ioLsnr);
     }
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture reconnectFut) {
-        // TODO: Handle disconnect.
+        Collection<GridFutureAdapter<Boolean>> userFuts0;
+
+        synchronized (mux) {
+            assert !disconnected;
+
+            disconnected = true;
+
+            userFuts0 = new ArrayList<>(userFuts.values());
+
+            userFuts.clear();
+        }
+
+        for (GridFutureAdapter<Boolean> userFut : userFuts0)
+            completeWithError(userFut, "Client was disconnected from topology (operation result is unknown).");
     }
 
     /** {@inheritDoc} */
     @Override public void onReconnected(boolean active) {
-        // TODO: Handle reconnect.
+        synchronized (mux) {
+            assert disconnected;
+
+            disconnected = false;
+
+            onKernalStart();
+        }
+    }
+
+    /**
+     * Handle cache processor kernal start. At this point we already collected discovery data from other nodes
+     * (discovery already active), but exchange worker is not active yet. We need to iterate over available group
+     * descriptors and perform top operations, taking in count that no cache operations are possible at this point,
+     * so checkpoint is not needed.
+     */
+    public void onKernalStart() {
+        synchronized (mux) {
+            if (!isServerNode())
+                return;
+
+            // TODO
+        }
     }
 
     /**
@@ -101,7 +159,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             return errorFuture("Cache names cannot be empty.");
 
         synchronized (mux) {
-            if (cliDisconnected)
+            if (disconnected)
                 return errorFuture("Failed to initiate WAL mode change because client node is disconnected.");
 
             // Prepare cache and group infos.
@@ -183,7 +241,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      */
     public void onProposeDiscovery(WalStateProposeMessage msg) {
         synchronized (mux) {
-            if (cliDisconnected)
+            if (disconnected)
                 return;
 
             // Validate current caches state before deciding whether to process message further.
@@ -197,53 +255,6 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                         msg.exchangeMessage(msg);
                 }
             }
-        }
-    }
-
-    /**
-     * WAL state change worker.
-     */
-    private class WalStateChangeWorker extends GridWorker {
-        /** Message. */
-        private final WalStateProposeMessage msg;
-
-        private WalStateChangeWorker(WalStateProposeMessage msg) {
-            super(cctx.igniteInstanceName(), "wal-state-change-worker-" + msg.groupId(), WalStateManager.this.log);
-
-            this.msg = msg;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-            WalStateResult res;
-
-            try {
-                // Flush checkpoint.
-                IgniteInternalFuture cpFut = cctx.cache().context().database().doCheckpoint("wal-state-change");
-
-                cpFut.get();
-
-                // Change logging state.
-                CacheGroupContext grpCtx = cctx.cache().cacheGroup(msg.groupId());
-
-                if (grpCtx == null) {
-                    res = new WalStateResult(msg, "Failed to change WAL mode because some caches no longer exist: " +
-                        msg.caches().keySet());
-                }
-                else {
-                    grpCtx.walDisabled(!msg.enable());
-
-                    res = new WalStateResult(msg, true);
-                }
-            }
-            catch (Exception e) {
-                U.warn(log, "Failed to change WAL mode due to unexpected exception [msg=" + msg + ']', e);
-
-                res = new WalStateResult(msg, "Failed to change WAL mode due to unexpected exception " +
-                    "(see server logs for more information).");
-            }
-
-            // TODO: Reply to coordinator.
         }
     }
 
@@ -284,7 +295,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      */
     public void onFinishDiscovery(WalStateFinishMessage msg) {
         synchronized (mux) {
-            if (cliDisconnected)
+            if (disconnected)
                 return;
 
             // Complete user future, if any.
@@ -443,5 +454,61 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      */
     private boolean hasWal() {
         return cctx.wal() != null;
+    }
+
+    /**
+     * @return {@code True} if this is a server node (i.e. neither client, nor daemon).
+     */
+    private boolean isServerNode() {
+        ClusterNode locNode = cctx.localNode();
+
+        return !locNode.isClient() || !locNode.isDaemon();
+    }
+
+    /**
+     * WAL state change worker.
+     */
+    private class WalStateChangeWorker extends GridWorker {
+        /** Message. */
+        private final WalStateProposeMessage msg;
+
+        private WalStateChangeWorker(WalStateProposeMessage msg) {
+            super(cctx.igniteInstanceName(), "wal-state-change-worker-" + msg.groupId(), WalStateManager.this.log);
+
+            this.msg = msg;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+            WalStateResult res;
+
+            try {
+                // Flush checkpoint.
+                IgniteInternalFuture cpFut = cctx.cache().context().database().doCheckpoint("wal-state-change");
+
+                cpFut.get();
+
+                // Change logging state.
+                CacheGroupContext grpCtx = cctx.cache().cacheGroup(msg.groupId());
+
+                if (grpCtx == null) {
+                    res = new WalStateResult(msg, "Failed to change WAL mode because some caches no longer exist: " +
+                        msg.caches().keySet());
+                }
+                else {
+                    grpCtx.walDisabled(!msg.enable());
+
+                    res = new WalStateResult(msg, true);
+                }
+            }
+            catch (Exception e) {
+                U.warn(log, "Failed to change WAL mode due to unexpected exception [msg=" + msg + ']', e);
+
+                res = new WalStateResult(msg, "Failed to change WAL mode due to unexpected exception " +
+                    "(see server logs for more information).");
+            }
+
+            // TODO: Reply to coordinator.
+        }
     }
 }

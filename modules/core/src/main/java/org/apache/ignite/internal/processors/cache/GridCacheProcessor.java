@@ -814,6 +814,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             cachesInfo.onKernalStart(checkConsistency);
 
+            sharedCtx.walState().onKernalStart();
+
             ctx.query().onCacheKernalStart();
 
             sharedCtx.exchange().onKernalStart(active, false);
