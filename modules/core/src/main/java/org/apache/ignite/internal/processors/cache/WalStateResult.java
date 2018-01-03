@@ -32,14 +32,18 @@ public class WalStateResult {
     /** Error message (if any). */
     private final String errMsg;
 
+    /** Whether this is no-op result which bypasses distributed completion. */
+    private final boolean noOp;
+
     /**
      * Constructor.
      *
      * @param msg Original message.
      * @param res Whether mode was changed.
+     * @param noOp Whether this is no-op result which bypasses distributed completion.
      */
-    public WalStateResult(WalStateProposeMessage msg, boolean res) {
-        this(msg, res, null);
+    public WalStateResult(WalStateProposeMessage msg, boolean res, boolean noOp) {
+        this(msg, res, null, noOp);
     }
 
     /**
@@ -47,9 +51,10 @@ public class WalStateResult {
      *
      * @param msg Original message.
      * @param errMsg Error message (if any).
+     * @param noOp Whether this is no-op result which bypasses distributed completion.
      */
-    public WalStateResult(WalStateProposeMessage msg, String errMsg) {
-        this(msg, false, errMsg);
+    public WalStateResult(WalStateProposeMessage msg, String errMsg, boolean noOp) {
+        this(msg, false, errMsg, noOp);
     }
 
     /**
@@ -58,11 +63,13 @@ public class WalStateResult {
      * @param msg Original message.
      * @param res Whether mode was changed.
      * @param errMsg Error message (if any).
+     * @param noOp Whether this is no-op result which bypasses distributed completion.
      */
-    private WalStateResult(WalStateProposeMessage msg, boolean res, String errMsg) {
+    private WalStateResult(WalStateProposeMessage msg, boolean res, String errMsg, boolean noOp) {
         this.msg = msg;
         this.res = res;
         this.errMsg = errMsg;
+        this.noOp = noOp;
     }
 
     /**
@@ -84,5 +91,12 @@ public class WalStateResult {
      */
     @Nullable public String errorMessage() {
         return errMsg;
+    }
+
+    /**
+     * @return Whether this is no-op result which bypasses distributed completion.
+     */
+    public boolean noOp() {
+        return noOp;
     }
 }

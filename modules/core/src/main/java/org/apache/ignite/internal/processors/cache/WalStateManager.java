@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.UUID;
 
@@ -65,6 +66,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     /** Map with no-op results which are finished without regular completion process. */
     private final Map<UUID, WalStateResult> noOpRess = new HashMap<>();
 
+    /** Pending results created on cache processor start based on available discovery data. */
+    private final Collection<WalStateResult> pendingRess = new LinkedList<>();
+
     /** IO message listener. */
     private final GridMessageListener ioLsnr;
 
@@ -73,6 +77,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
     /** Disconnected flag. */
     private boolean disconnected;
+
+    /** Pending acknowledge messages (i.e. received before node completed it's local part). */
+    private final Collection<WalStateAckMessage> pendingAcks = new HashSet<>();
 
     /**
      * Constructor.
@@ -98,9 +105,52 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         cctx.kernalContext().io().addMessageListener(TOPIC_WAL, ioLsnr);
     }
 
+    /**
+     * Callback invoked when caches info is collection inside cache processor start routine. Discovery is not
+     * active at this point.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onCachesInfoCollected() throws IgniteCheckedException {
+        if (!isServerNode())
+            return;
+
+        // Process top pending requests.
+        for (CacheGroupDescriptor grpDesc : cctx.cache().cacheGroupDescriptors().values()) {
+            WalStateProposeMessage msg = grpDesc.nextWalChangeRequest();
+
+            if (msg != null) {
+                boolean enabled = grpDesc.walEnabled();
+
+                if (F.eq(msg.enable(), enabled))
+                    pendingRess.add(new WalStateResult(msg, false, true));
+                else {
+                    grpDesc.walEnabled(enabled);
+
+                    pendingRess.add(new WalStateResult(msg, true, false));
+                }
+            }
+        }
+    }
+
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
         cctx.kernalContext().io().removeMessageListener(TOPIC_SCHEMA, ioLsnr);
+    }
+
+    /**
+     * Handle cache processor kernal start. At this point we already collected discovery data from other nodes
+     * (discovery already active), but exchange worker is not active yet. We need to iterate over available group
+     * descriptors and perform top operations, taking in count that no cache operations are possible at this point,
+     * so checkpoint is not needed.
+     */
+    public void onKernalStart() {
+        synchronized (mux) {
+            if (!isServerNode())
+                return;
+
+            // TODO: Process pending results and pending IO messages.
+        }
     }
 
     /** {@inheritDoc} */
@@ -118,7 +168,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         }
 
         for (GridFutureAdapter<Boolean> userFut : userFuts0)
-            completeWithError(userFut, "Client was disconnected from topology (operation result is unknown).");
+            completeWithError(userFut, "Client node was disconnected from topology (operation result is unknown).");
     }
 
     /** {@inheritDoc} */
@@ -129,21 +179,6 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             disconnected = false;
 
             onKernalStart();
-        }
-    }
-
-    /**
-     * Handle cache processor kernal start. At this point we already collected discovery data from other nodes
-     * (discovery already active), but exchange worker is not active yet. We need to iterate over available group
-     * descriptors and perform top operations, taking in count that no cache operations are possible at this point,
-     * so checkpoint is not needed.
-     */
-    public void onKernalStart() {
-        synchronized (mux) {
-            if (!isServerNode())
-                return;
-
-            // TODO
         }
     }
 
@@ -284,11 +319,11 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             if (grpCtx == null) {
                 noOpRess.put(msg.operationId(), new WalStateResult(msg,
-                    "Failed to change WAL mode because some caches no longer exist: " + msg.caches().keySet()));
+                    "Failed to change WAL mode because some caches no longer exist: " + msg.caches().keySet(), true));
             }
             else {
                 if (F.eq(msg.enable(), !grpCtx.walDisabled()))
-                    noOpRess.put(msg.operationId(), new WalStateResult(msg, false));
+                    noOpRess.put(msg.operationId(), new WalStateResult(msg, false, true));
                 else {
                     WalStateChangeWorker worker = new WalStateChangeWorker(msg);
 
@@ -567,19 +602,19 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
                 if (grpCtx == null) {
                     res = new WalStateResult(msg, "Failed to change WAL mode because some caches no longer exist: " +
-                        msg.caches().keySet());
+                        msg.caches().keySet(), false);
                 }
                 else {
                     grpCtx.walDisabled(!msg.enable());
 
-                    res = new WalStateResult(msg, true);
+                    res = new WalStateResult(msg, true, false);
                 }
             }
             catch (Exception e) {
                 U.warn(log, "Failed to change WAL mode due to unexpected exception [msg=" + msg + ']', e);
 
                 res = new WalStateResult(msg, "Failed to change WAL mode due to unexpected exception " +
-                    "(see server logs for more information).");
+                    "(see server logs for more information).", false);
             }
 
             // TODO: Reply to coordinator.

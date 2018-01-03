@@ -159,6 +159,13 @@ public class CacheGroupDescriptor {
     }
 
     /**
+     * @param walEnabled {@code True} if WAL is enabled for cache group.
+     */
+    public void walEnabled(boolean walEnabled) {
+        this.walEnabled = walEnabled;
+    }
+
+    /**
      * @return Pending WAL change requests.
      */
     public List<WalStateProposeMessage> walChangeRequests() {

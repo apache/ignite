@@ -689,6 +689,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             cachesInfo.onStart(discoData);
 
+            sharedCtx.walState().onCachesInfoCollected();
+
             if (log.isDebugEnabled())
                 log.debug("Started cache processor.");
         }
