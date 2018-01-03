@@ -67,7 +67,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     private final Map<UUID, WalStateResult> noOpRess = new HashMap<>();
 
     /** Pending results created on cache processor start based on available discovery data. */
-    private final Collection<WalStateResult> pendingRess = new LinkedList<>();
+    private final Collection<WalStateResult> initialRess = new LinkedList<>();
 
     /** IO message listener. */
     private final GridMessageListener ioLsnr;
@@ -122,12 +122,17 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             if (msg != null) {
                 boolean enabled = grpDesc.walEnabled();
 
-                if (F.eq(msg.enable(), enabled))
-                    pendingRess.add(new WalStateResult(msg, false, true));
+                if (F.eq(msg.enable(), enabled)) {
+                    WalStateResult res = new WalStateResult(msg, false, true);
+
+                    initialRess.add(res);
+
+                    noOpRess.put(msg.operationId(), res);
+                }
                 else {
                     grpDesc.walEnabled(enabled);
 
-                    pendingRess.add(new WalStateResult(msg, true, false));
+                    initialRess.add(new WalStateResult(msg, true, false));
                 }
             }
         }
@@ -149,7 +154,18 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             if (!isServerNode())
                 return;
 
-            // TODO: Process pending results and pending IO messages.
+            boolean crd = isCoordinator();
+
+            for (WalStateResult res : initialRess) {
+                if (res.noOp()) {
+                    if (crd)
+                        sendFinishMessage(res);
+                }
+                else
+                    onCompletedLocally(res);
+            }
+
+            initialRess.clear();
         }
     }
 
@@ -418,6 +434,19 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Handle local operation completion.
+     *
+     * @param res Result.
+     */
+    private void onCompletedLocally(WalStateResult res) {
+        synchronized (mux) {
+
+        }
+
+        // TODO
+    }
+
+    /**
      * Handle ack message.
      *
      * @param msg Ack message.
@@ -554,6 +583,31 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Get current coordinator node.
+     *
+     * @return Coordinator node.
+     */
+    private ClusterNode coordinator() {
+        ClusterNode res = null;
+
+        for (ClusterNode node : cctx.discovery().aliveServerNodes()) {
+            if (res == null || res.order() > node.order())
+                res = node;
+        }
+
+        assert res != null;
+
+        return res;
+    }
+
+    /**
+     * @return {@code True} if current node is coordinator.
+     */
+    private boolean isCoordinator() {
+        return coordinator().isLocal();
+    }
+
+    /**
      * Check if discovery message has already been received.
      *
      * @param msg Message.
@@ -617,7 +671,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                     "(see server logs for more information).", false);
             }
 
-            // TODO: Reply to coordinator.
+            onCompletedLocally(res);
         }
     }
 }
