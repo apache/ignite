@@ -42,8 +42,8 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.apache.ignite.internal.GridTopic.TOPIC_SCHEMA;
 import static org.apache.ignite.internal.GridTopic.TOPIC_WAL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 
 /**
  * Write-ahead log state manager. Manages WAL enable and disable.
@@ -144,7 +144,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
-        cctx.kernalContext().io().removeMessageListener(TOPIC_SCHEMA, ioLsnr);
+        cctx.kernalContext().io().removeMessageListener(TOPIC_WAL, ioLsnr);
     }
 
     /**
@@ -445,14 +445,34 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         assert res != null;
 
         synchronized (mux) {
-            //
+            ClusterNode crdNode = coordinator();
+
+            boolean crd = crdNode.isLocal();
+
             if (res.noOp()) {
                 // No-op message should be completed from coordinator right away.
-                if (isCoordinator())
+                if (crd)
                     sendFinishMessage(res);
             }
             else {
-                // TODO
+                // Handle distributed completion.
+                if (crd) {
+                    // TODO: Start distributed completer.
+                }
+                else {
+                    // Just send message to coordinator.
+                    UUID opId = res.message().operationId();
+
+                    try {
+                        WalStateAckMessage msg = new WalStateAckMessage(opId);
+
+                        cctx.kernalContext().io().sendToGridTopic(crdNode, TOPIC_WAL, msg, SYSTEM_POOL);
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.warn(log, "Failed to send ack message to coordinator node [opId=" + opId +
+                            ", node=" + crdNode.id() + ']');
+                    }
+                }
             }
         }
     }
