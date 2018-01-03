@@ -69,6 +69,11 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         // TODO: Handle reconnect.
     }
 
+    /**
+     * Handle node leave event.
+     *
+     * @param node Node that has left the grid.
+     */
     public void onNodeLeft(ClusterNode node) {
         // TODO
     }
