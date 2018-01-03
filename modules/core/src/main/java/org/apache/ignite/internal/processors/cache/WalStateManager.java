@@ -30,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
@@ -123,7 +124,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             return;
 
         // Process top pending requests.
-        for (CacheGroupDescriptor grpDesc : cctx.cache().cacheGroupDescriptors().values()) {
+        for (CacheGroupDescriptor grpDesc : cacheProcessor().cacheGroupDescriptors().values()) {
             WalStateProposeMessage msg = grpDesc.nextWalChangeRequest();
 
             if (msg != null) {
@@ -149,11 +150,6 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void stop0(boolean cancel) {
-        cctx.kernalContext().io().removeMessageListener(TOPIC_WAL, ioLsnr);
-    }
-
     /**
      * Handle cache processor kernal start. At this point we already collected discovery data from other nodes
      * (discovery already active), but exchange worker is not active yet. We need to iterate over available group
@@ -170,6 +166,11 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             initialRess.clear();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void stop0(boolean cancel) {
+        cctx.kernalContext().io().removeMessageListener(TOPIC_WAL, ioLsnr);
     }
 
     /** {@inheritDoc} */
@@ -326,14 +327,18 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             // Validate current caches state before deciding whether to process message further.
             if (validateProposeDiscovery(msg)) {
-                if (hasWal()) {
-                    CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
+                CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
 
-                    assert grpDesc != null;
+                assert grpDesc != null;
 
-                    if (grpDesc.addWalChangeRequest(msg))
-                        msg.exchangeMessage(msg);
-                }
+                IgnitePredicate<ClusterNode> nodeFilter = grpDesc.config().getNodeFilter();
+
+                boolean affNode = nodeFilter == null || nodeFilter.apply(cctx.localNode());
+
+                // TODO: How to handle aff node?
+
+                if (grpDesc.addWalChangeRequest(msg))
+                    msg.exchangeMessage(msg);
             }
         }
     }
@@ -348,7 +353,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      */
     public void onProposeExchange(WalStateProposeMessage msg) {
         synchronized (mux) {
-            CacheGroupContext grpCtx = cctx.cache().cacheGroup(msg.groupId());
+            CacheGroupContext grpCtx = cacheProcessor().cacheGroup(msg.groupId());
 
             if (grpCtx == null) {
                 addResult(new WalStateResult(msg, "Failed to change WAL mode because some caches no longer exist: " +
@@ -581,32 +586,26 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     private boolean validateProposeDiscovery(WalStateProposeMessage msg) {
         GridFutureAdapter<Boolean> userFut = userFuts.get(msg.operationId());
 
-        if (hasWal() || userFut != null) {
-            String errMsg = validate(msg);
+        String errMsg = validate(msg);
 
-            if (errMsg != null) {
-                completeWithError(userFut, errMsg);
+        if (errMsg != null) {
+            completeWithError(userFut, errMsg);
 
-                return false;
-            }
-
-            CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
-
-            assert grpDesc != null;
-
-            // If there are no pending WAL change requests and mode matches, then ignore and complete.
-            if (!grpDesc.hasWalChangeRequests() && grpDesc.walEnabled() == msg.enable()) {
-                complete(userFut, false);
-
-                return false;
-            }
-
-            // Everything is OK.
-            return true;
-        }
-        else
-            // Node without WAL, do not care.
             return false;
+        }
+
+        CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
+
+        assert grpDesc != null;
+
+        // If there are no pending WAL change requests and mode matches, then ignore and complete.
+        if (!grpDesc.hasWalChangeRequests() && grpDesc.walEnabled() == msg.enable()) {
+            complete(userFut, false);
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -682,13 +681,6 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      */
     private GridCacheProcessor cacheProcessor() {
         return cctx.cache();
-    }
-
-    /**
-     * @return {@code True} if WAL exists.
-     */
-    private boolean hasWal() {
-        return cctx.wal() != null;
     }
 
     /**
@@ -775,14 +767,15 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             try {
                 // Flush checkpoint.
-                IgniteInternalFuture cpFut = cctx.cache().context().database().doCheckpoint("wal-state-change");
+                IgniteInternalFuture cpFut = cacheProcessor().context().database().doCheckpoint("wal-state-change");
 
                 cpFut.get();
 
                 // Change logging state.
-                CacheGroupContext grpCtx = cctx.cache().cacheGroup(msg.groupId());
+                CacheGroupContext grpCtx = cacheProcessor().cacheGroup(msg.groupId());
 
                 if (grpCtx == null) {
+                    // TODO: Wrong, use cache affinity instead.
                     res = new WalStateResult(msg, "Failed to change WAL mode because some caches no longer exist: " +
                         msg.caches().keySet(), false);
                 }
