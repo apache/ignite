@@ -371,11 +371,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             processStatisticsModeChange(task0.message());
         }
-        else if (task instanceof WalStateExchangeTask) {
-            WalStateExchangeTask task0 = (WalStateExchangeTask)task;
-
-            sharedCtx.walState().onProposeExchange(task0.message());
-        }
         else if (task instanceof WalStateNodeLeaveExchangeTask) {
             WalStateNodeLeaveExchangeTask task0 = (WalStateNodeLeaveExchangeTask)task;
 
