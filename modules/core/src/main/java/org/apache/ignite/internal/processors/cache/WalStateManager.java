@@ -224,8 +224,6 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         }
     }
 
-    // TODO: Non-affinity nodes handling.
-
     /**
      * Initiate WAL mode change operation.
      *
@@ -440,6 +438,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             if (res == null)
                 U.warn(log, "Received finish message for unknown operation (will ignore): " + msg.operationId());
+
+            // Clear distributed process (if any).
+            procs.remove(msg.operationId());
 
             // Unwind next messages.
             CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
