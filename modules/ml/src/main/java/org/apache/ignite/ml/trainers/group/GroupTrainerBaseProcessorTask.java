@@ -21,8 +21,8 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
@@ -31,7 +31,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
-import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.jetbrains.annotations.Nullable;
@@ -64,12 +63,7 @@ public abstract class GroupTrainerBaseProcessorTask<K, V, C, T, R extends Serial
     /**
      * Reducer used for reducing of computations on specified keys.
      */
-    protected final IgniteBinaryOperator<R> reducer;
-
-    /**
-     * Identity for reducer.
-     */
-    protected final R identity;
+    protected final IgniteFunction<List<R>, R> reducer;
 
     /**
      * Name of cache on which training is done.
@@ -94,7 +88,6 @@ public abstract class GroupTrainerBaseProcessorTask<K, V, C, T, R extends Serial
      * @param worker Function calculated on each of specified keys.
      * @param keysSupplier Supplier of keys on which training is done.
      * @param reducer Reducer used for reducing results of computation performed on each of specified keys.
-     * @param identity Identity for reducer.
      * @param cacheName Name of cache on which training is done.
      * @param ignite Ignite instance.
      */
@@ -102,14 +95,13 @@ public abstract class GroupTrainerBaseProcessorTask<K, V, C, T, R extends Serial
         IgniteSupplier<C> ctxSupplier,
         IgniteFunction<T, ResultAndUpdates<R>> worker,
         IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keysSupplier,
-        IgniteBinaryOperator<R> reducer, R identity,
+        IgniteFunction<List<R>, R> reducer,
         String cacheName,
         Ignite ignite) {
         this.trainingUUID = trainingUUID;
         this.ctxSupplier = ctxSupplier;
         this.worker = worker;
         this.keysSupplier = keysSupplier;
-        this.identity = identity;
         this.reducer = reducer;
         this.cacheName = cacheName;
         this.ignite = ignite;
@@ -130,7 +122,7 @@ public abstract class GroupTrainerBaseProcessorTask<K, V, C, T, R extends Serial
 
     /** {@inheritDoc} */
     @Nullable @Override public R reduce(List<ComputeJobResult> results) throws IgniteException {
-        return results.stream().map(res -> (R)res.getData()).filter(Objects::nonNull).reduce(reducer).orElse(identity);
+        return reducer.apply(results.stream().map(res -> (R)res.getData()).collect(Collectors.toList()));
     }
 
     /**

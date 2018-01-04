@@ -21,25 +21,26 @@ import java.util.UUID;
 import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 
 /** */
-class TestLocalContext implements HasTrainingUUID {
+public class TestLocalContext implements HasTrainingUUID {
     /** */
     private final UUID trainingUUID;
+
     /** */
     private int data;
 
     /** */
-    TestLocalContext(int data, UUID trainingUUID) {
+    public TestLocalContext(int data, UUID trainingUUID) {
         this.data = data;
         this.trainingUUID = trainingUUID;
     }
 
     /** */
-    int data() {
+    public int data() {
         return data;
     }
 
     /** */
-    void setData(int data) {
+    public void setData(int data) {
         this.data = data;
     }
 
