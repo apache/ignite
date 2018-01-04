@@ -15,26 +15,44 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.trainers.group;
+package org.apache.ignite.ml.nn.trainers.distributed;
 
-import java.util.Arrays;
 import java.util.UUID;
-import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
 
-/** */
-public class TestGroupTrainingCache {
-    /** */
-    public static String CACHE_NAME = "TEST_GROUP_TRAINING_CACHE";
+/**
+ * Cache used for storing data for {@link MLPGroupUpdateTrainer}.
+ */
+public class MLPGroupUpdateTrainerDataCache {
+    /**
+     * Cache name.
+     */
+    public static String CACHE_NAME = "MLP_GRP_TRN_DATA_CACHE";
 
-    /** */
-    public static IgniteCache<GroupTrainerCacheKey<Double>, Integer> getOrCreate(Ignite ignite) {
-        CacheConfiguration<GroupTrainerCacheKey<Double>, Integer> cfg = new CacheConfiguration<>();
+    /**
+     * Affinity service for region projections cache.
+     *
+     * @return Affinity service for region projections cache.
+     */
+    public static Affinity<UUID> affinity() {
+        return Ignition.localIgnite().affinity(CACHE_NAME);
+    }
+
+    /**
+     * Get or create region projections cache.
+     *
+     * @param ignite Ignite instance.
+     * @return Region projections cache.
+     */
+    public static IgniteCache<UUID, MLPGroupUpdateTrainingData> getOrCreate(Ignite ignite) {
+        CacheConfiguration<UUID, MLPGroupUpdateTrainingData> cfg = new CacheConfiguration<>();
 
         // Write to primary.
         cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
@@ -46,7 +64,7 @@ public class TestGroupTrainingCache {
         cfg.setCopyOnRead(false);
 
         // Cache is partitioned.
-        cfg.setCacheMode(CacheMode.PARTITIONED);
+        cfg.setCacheMode(CacheMode.REPLICATED);
 
         cfg.setBackups(0);
 
@@ -55,16 +73,5 @@ public class TestGroupTrainingCache {
         cfg.setName(CACHE_NAME);
 
         return ignite.getOrCreateCache(cfg);
-    }
-
-    /** */
-    public static Stream<GroupTrainerCacheKey<Double>> allKeys(int limit, int eachNumberCnt, UUID trainingUUID) {
-        GroupTrainerCacheKey<Double>[] a =new GroupTrainerCacheKey[limit * eachNumberCnt];
-
-        for (int num = 0; num < limit; num++)
-            for (int i = 0; i < eachNumberCnt; i++)
-                a[num * eachNumberCnt + i] = new GroupTrainerCacheKey<>(num, (double)i, trainingUUID);
-
-        return Arrays.stream(a);
     }
 }

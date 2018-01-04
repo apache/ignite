@@ -15,18 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.nn.updaters;
+package org.apache.ignite.ml.trainers;
 
-/**
- * A common interface for parameter updaters.
- *
- * @param <T> Type of object to be updated with this params.
- */
-public interface UpdaterParams<T> {
-    /**
-     * Update given obj with this parameters.
+import org.apache.ignite.ml.Model;
+
+/** Trainer interface. */
+public interface Trainer<M extends Model, T> {
+    /** Train the model based on provided data.
      *
-     * @param obj Object to be updated.
+     * @param data Data for training.
+     * @return Trained model.
      */
-    <M extends T> M update(M obj);
+    public M train(T data);
 }
