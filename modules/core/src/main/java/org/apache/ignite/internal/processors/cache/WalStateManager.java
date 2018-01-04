@@ -431,6 +431,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         // TODO: enable/disable, which could be frustrating user experience. On the other hand, WAL disable for a
         // TODO: single cache may slowdown operations on other caches.
 
+        // TODO: We can mark dirty pages synchronously right here. It would guarantee that all subsequent operations
+        // TODO: will hit another checkpoint and will not corrupt state of pages which are currently being flushed.
+
         synchronized (mux) {
             WalStateResult res = null;
 
