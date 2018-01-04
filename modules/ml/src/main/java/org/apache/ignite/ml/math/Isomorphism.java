@@ -19,23 +19,50 @@ package org.apache.ignite.ml.math;
 
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
+/**
+ *  Function from {@code K} to {@code V} with defined inverse.
+ *
+ * @param <K>
+ * @param <V>
+ */
 public class Isomorphism<K, V> {
+    /** */
     private IgniteFunction<K, V> forward;
+    /** */
     private IgniteFunction<V, K> back;
 
+    /**
+     * Identity isomorphism.
+     */
     public static <K> Isomorphism<K, K> id() {
         return new Isomorphism<>(a -> a, a -> a);
     }
 
+    /**
+     * Build isomorphism with forward and backward functions.
+     *
+     * @param forward Forward.
+     * @param back Back.
+     */
     public Isomorphism(IgniteFunction<K, V> forward, IgniteFunction<V, K> back) {
         this.forward = forward;
         this.back = back;
     }
 
+    /**
+     * Forward function.
+     *
+     * @param k K.
+     */
     public V forward(K k) {
         return forward.apply(k);
     }
 
+    /**
+     * Backward function.
+     *
+     * @param v V.
+     */
     public K back(V v) {
         return back.apply(v);
     }
