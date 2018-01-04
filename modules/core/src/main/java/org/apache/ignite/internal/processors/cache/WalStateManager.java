@@ -118,7 +118,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                         msg0.senderNodeId(nodeId);
 
                         onAck(msg0);
-                    } else
+                    }
+                    else
                         U.warn(log, "Unexpected IO message (will ignore): " + msg);
                 }
             };
@@ -489,8 +490,14 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             if (res.message().noOp()) {
                 // No-op message could be completed from coordinator right away.
-                if (crdNode.isLocal())
-                    sendFinishMessage(res);
+                assert !res.changed();
+
+                if (crdNode.isLocal()) {
+                    WalStateFinishMessage finishMsg = new WalStateFinishMessage(res.message().operationId(),
+                        res.message().groupId(), res.message().groupDeploymentId(), res.changed(), res.errorMessage());
+
+                    sendFinishMessage(finishMsg);
+                }
             }
             else {
                 UUID opId = res.message().operationId();
@@ -507,7 +514,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                     for (ClusterNode srvNode : srvNodes)
                         srvNodeIds.add(srvNode.id());
 
-                    WalStateDistributedProcess proc = new WalStateDistributedProcess(res, srvNodeIds);
+                    WalStateDistributedProcess proc = new WalStateDistributedProcess(res.message(), srvNodeIds);
 
                     procs.put(res.message().operationId(), proc);
 
@@ -544,7 +551,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         while (iter.hasNext()) {
             WalStateAckMessage ackMsg = iter.next();
 
-            if (F.eq(proc.result().message().operationId(), ackMsg.operationId())) {
+            if (F.eq(proc.operationId(), ackMsg.operationId())) {
                 proc.onNodeFinished(ackMsg.senderNodeId(), ackMsg);
 
                 iter.remove();
@@ -584,25 +591,20 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      */
     private void sendFinishMessageIfNeeded(WalStateDistributedProcess proc) {
         if (proc.completed())
-            sendFinishMessage(proc.result());
+            sendFinishMessage(proc.prepareFinishMessage());
     }
 
     /**
      * Send finish message.
      *
-     * @param res Result.
+     * @param finishMsg Finish message.
      */
-    private void sendFinishMessage(WalStateResult res) {
-        WalStateProposeMessage proposeMsg = res.message();
-
-        WalStateFinishMessage msg = new WalStateFinishMessage(proposeMsg.operationId(), proposeMsg.groupId(),
-            proposeMsg.groupDeploymentId(), res.changed(), res.errorMessage());
-
+    private void sendFinishMessage(WalStateFinishMessage finishMsg) {
         try {
-            cctx.discovery().sendCustomEvent(msg);
+            cctx.discovery().sendCustomEvent(finishMsg);
         }
         catch (Exception e) {
-            U.error(log, "Failed to send WAL mode change finish message due to unexpected exception: " + msg, e);
+            U.error(log, "Failed to send WAL mode change finish message due to unexpected exception: " + finishMsg, e);
         }
     }
 
@@ -626,7 +628,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 if (msg.errorMessage() != null)
                     completeWithError(userFut, msg.errorMessage());
                 else
-                    complete(userFut, msg.result());
+                    complete(userFut, msg.changed());
             }
 
             if (!srv)
@@ -645,9 +647,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
 
             if (grpDesc != null && F.eq(grpDesc.deploymentId(), msg.groupDeploymentId())) {
-                // Update descriptor with latest WAL state.
-                if (res != null && res.changed())
-                    grpDesc.walEnabled(res.message().enable());
+                // Toggle WAL mode in descriptor.
+                if (msg.changed())
+                    grpDesc.walEnabled(!grpDesc.walEnabled());
 
                 // Remove now-outdated message from the queue.
                 WalStateProposeMessage oldProposeMsg = grpDesc.nextWalChangeRequest();

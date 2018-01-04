@@ -30,8 +30,8 @@ public class WalStateFinishMessage extends WalStateAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Result. */
-    private final boolean res;
+    /** Whether WAL state was changed as a result of this call. */
+    private final boolean changed;
 
     /** Error message. */
     private final String errMsg;
@@ -42,21 +42,21 @@ public class WalStateFinishMessage extends WalStateAbstractMessage {
      * @param opId Unique operation ID.
      * @param grpId Group ID.
      * @param grpDepId Group deployment ID.
-     * @param res Result.
+     * @param changed Result.
      * @param errMsg Error message.
      */
-    public WalStateFinishMessage(UUID opId, int grpId, IgniteUuid grpDepId, boolean res, @Nullable String errMsg) {
+    public WalStateFinishMessage(UUID opId, int grpId, IgniteUuid grpDepId, boolean changed, @Nullable String errMsg) {
         super(opId, grpId, grpDepId);
 
-        this.res = res;
+        this.changed = changed;
         this.errMsg = errMsg;
     }
 
     /**
      * @return Result.
      */
-    public boolean result() {
-        return res;
+    public boolean changed() {
+        return changed;
     }
 
     /**

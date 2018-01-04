@@ -17,40 +17,55 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
  * Distributed process governing WAL state change.
  */
 public class WalStateDistributedProcess {
-    /** Local result. */
-    private final WalStateResult res;
+    /** Original propose message. */
+    private final WalStateProposeMessage msg;
 
-    /** Remote nodes. */
-    private final Collection<UUID> rmtNodes;
+    /** Remaining nodes. */
+    private final Collection<UUID> remainingNodes;
+
+    /** Acks. */
+    private final Map<UUID, WalStateAckMessage> acks;
 
     /**
      * Constructor.
      *
-     * @param res Local result.
-     * @param rmtNodes Remote nodes.
+     * @param msg Original propose message.
+     * @param remainingNodes Remaining nodes.
      */
-    public WalStateDistributedProcess(WalStateResult res, Collection<UUID> rmtNodes) {
-        this.res = res;
-        this.rmtNodes = rmtNodes;
+    public WalStateDistributedProcess(WalStateProposeMessage msg, Collection<UUID> remainingNodes) {
+        assert !F.isEmpty(remainingNodes);
+
+        this.msg = msg;
+        this.remainingNodes = remainingNodes;
+
+        acks = new HashMap<>(remainingNodes.size());
     }
 
     /**
      * Handle node finish.
      *
      * @param nodeId Node ID.
-     * @param ackMsg Ack message.
+     * @param ack Ack message.
      */
-    public void onNodeFinished(UUID nodeId, WalStateAckMessage ackMsg) {
-        rmtNodes.remove(nodeId);
+    public void onNodeFinished(UUID nodeId, WalStateAckMessage ack) {
+        remainingNodes.remove(nodeId);
 
-        // TODO: Ack message processing
+        // Log only messages from affinity nodes. Non-affinity nodes are of no interest for us since they do not have
+        // group context in general case and hence we cannot tell fo sure whether anything was changed or not.
+        if (ack.affNode())
+            acks.put(nodeId, ack);
     }
 
     /**
@@ -59,20 +74,91 @@ public class WalStateDistributedProcess {
      * @param nodeId Node ID.
      */
     public void onNodeLeft(UUID nodeId) {
-        rmtNodes.remove(nodeId);
+        remainingNodes.remove(nodeId);
     }
 
     /**
      * @return {@code True} if process is completed.
      */
     public boolean completed() {
-        return rmtNodes.isEmpty();
+        return remainingNodes.isEmpty();
     }
 
     /**
-     * @return LOcal result.
+     * @return Operation ID.
      */
-    public WalStateResult result() {
-        return res;
+    public UUID operationId() {
+        return msg.operationId();
+    }
+
+    /**
+     * Prepare finish message based on obtained results.
+     *
+     * @return Message.
+     */
+    public WalStateFinishMessage prepareFinishMessage() {
+        assert completed();
+
+        if (acks.isEmpty()) {
+            // We haven't received any response from affinity nodes. Result is unknown, so throw an exception.
+            return new WalStateFinishMessage(msg.operationId(), msg.groupId(), msg.groupDeploymentId(), false,
+                "Operation result is unknown because all affinity nodes have left the grid.");
+        }
+
+        Map<UUID, String> errs = new HashMap<>();
+
+        // Look for errors first.
+        for (Map.Entry<UUID, WalStateAckMessage> ackEntry : acks.entrySet()) {
+            UUID nodeId = ackEntry.getKey();
+            WalStateAckMessage ackMsg = ackEntry.getValue();
+
+            assert ackMsg.affNode();
+
+            if (ackMsg.errorMessage() != null)
+                errs.put(nodeId, ackMsg.errorMessage());
+        }
+
+        if (!errs.isEmpty()) {
+            SB errMsg =
+                new SB("Operation failed on some nodes (please consult to node logs for more information) [");
+
+            boolean first = true;
+
+            for (Map.Entry<UUID, String> err : errs.entrySet()) {
+                if (first)
+                    first = false;
+                else
+                    errMsg.a(", ");
+
+                errMsg.a("[nodeId=" + err.getKey() + ", err=" + err.getValue() + ']');
+            }
+
+            errMsg.a(']');
+
+            return new WalStateFinishMessage(msg.operationId(), msg.groupId(), msg.groupDeploymentId(), false,
+                errMsg.toString());
+        }
+
+        // Verify results consistency. Note that non-affinity node are not present at this stage.
+        Boolean changed = null;
+
+        for (WalStateAckMessage ackMsg : acks.values()) {
+            boolean curChanged = ackMsg.changed();
+
+            if (changed == null)
+                changed = curChanged;
+            else {
+                if (!F.eq(curChanged, changed)) {
+                    return new WalStateFinishMessage(msg.operationId(), msg.groupId(), msg.groupDeploymentId(),
+                        false, "Operation result is unknown because nodes reported different result (please " +
+                        "re-try operation).");
+                }
+            }
+        }
+
+        // All nodes completed operation with the same result, complete with success.
+        assert changed != null;
+
+        return new WalStateFinishMessage(msg.operationId(), msg.groupId(), msg.groupDeploymentId(), changed, null);
     }
 }
