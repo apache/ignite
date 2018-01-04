@@ -23,6 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
@@ -36,6 +37,15 @@ public class WalStateAckMessage implements Message {
 
     /** Operation ID. */
     private UUID opId;
+
+    /** Affinity node flag. */
+    private boolean affNode;
+
+    /** Operation result. */
+    private boolean changed;
+
+    /** Error message. */
+    private String errMsg;
 
     /** Sender node ID. */
     @GridDirectTransient
@@ -52,9 +62,15 @@ public class WalStateAckMessage implements Message {
      * Constructor.
      *
      * @param opId Operation ID.
+     * @param affNode Affinity node.
+     * @param changed Operation result.
+     * @param errMsg Error message.
      */
-    public WalStateAckMessage(UUID opId) {
+    public WalStateAckMessage(UUID opId, boolean affNode, boolean changed, @Nullable String errMsg) {
         this.opId = opId;
+        this.affNode = affNode;
+        this.changed = changed;
+        this.errMsg = errMsg;
     }
 
     /**
@@ -62,6 +78,27 @@ public class WalStateAckMessage implements Message {
      */
     public UUID operationId() {
         return opId;
+    }
+
+    /**
+     * @return Affinity node flag.
+     */
+    public boolean affNode() {
+        return affNode;
+    }
+
+    /**
+     * @return Result.
+     */
+    public boolean changed() {
+        return changed;
+    }
+
+    /**
+     * @return Error message.
+     */
+    @Nullable public String errorMessage() {
+        return errMsg;
     }
 
     /**
@@ -95,6 +132,24 @@ public class WalStateAckMessage implements Message {
                     return false;
 
                 writer.incrementState();
+
+            case 1:
+                if (!writer.writeBoolean("affNode", affNode))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
+                if (!writer.writeBoolean("changed", changed))
+                    return false;
+
+                writer.incrementState();
+
+            case 3:
+                if (!writer.writeString("errMsg", errMsg))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -115,6 +170,30 @@ public class WalStateAckMessage implements Message {
                     return false;
 
                 reader.incrementState();
+
+            case 1:
+                affNode = reader.readBoolean("affNode");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
+                changed = reader.readBoolean("changed");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 3:
+                errMsg = reader.readString("errMsg");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(SchemaOperationStatusMessage.class);
@@ -127,7 +206,7 @@ public class WalStateAckMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 1;
+        return 4;
     }
 
     /** {@inheritDoc} */

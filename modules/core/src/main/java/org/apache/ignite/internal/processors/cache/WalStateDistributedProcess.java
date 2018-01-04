@@ -45,9 +45,12 @@ public class WalStateDistributedProcess {
      * Handle node finish.
      *
      * @param nodeId Node ID.
+     * @param ackMsg Ack message.
      */
-    public void onNodeFinished(UUID nodeId) {
+    public void onNodeFinished(UUID nodeId, WalStateAckMessage ackMsg) {
         rmtNodes.remove(nodeId);
+
+        // TODO: Ack message processing
     }
 
     /**

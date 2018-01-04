@@ -1084,16 +1084,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * Notify WAL manager on coordinator exchange finish if needed.
-     */
-    private void notifyWalManagerIfNeeded() {
-        WalStateAbstractMessage msg = firstWalMessage();
-
-        if (msg != null)
-            cctx.walState().onProposeExchangeCoordinatorFinished(msg.exchangeMessage());
-    }
-
-    /**
      * Get first message if and only if this is WAL message.
      *
      * @return WAL message or {@code null}.
@@ -2378,8 +2368,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             updateLastVersion(cctx.versions().last());
 
             cctx.versions().onExchange(lastVer.get().order());
-
-            notifyWalManagerIfNeeded();
 
             IgniteProductVersion minVer = exchCtx.events().discoveryCache().minimumNodeVersion();
 

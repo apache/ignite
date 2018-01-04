@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -32,18 +33,14 @@ public class WalStateResult {
     /** Error message (if any). */
     private final String errMsg;
 
-    /** Whether this is no-op result which bypasses distributed completion. */
-    private final boolean noOp;
-
     /**
      * Constructor.
      *
      * @param msg Original message.
      * @param changed Whether mode was changed.
-     * @param noOp Whether this is no-op result which bypasses distributed completion.
      */
-    public WalStateResult(WalStateProposeMessage msg, boolean changed, boolean noOp) {
-        this(msg, changed, null, noOp);
+    public WalStateResult(WalStateProposeMessage msg, boolean changed) {
+        this(msg, changed, null);
     }
 
     /**
@@ -51,10 +48,9 @@ public class WalStateResult {
      *
      * @param msg Original message.
      * @param errMsg Error message (if any).
-     * @param noOp Whether this is no-op result which bypasses distributed completion.
      */
-    public WalStateResult(WalStateProposeMessage msg, String errMsg, boolean noOp) {
-        this(msg, false, errMsg, noOp);
+    public WalStateResult(WalStateProposeMessage msg, String errMsg) {
+        this(msg, false, errMsg);
     }
 
     /**
@@ -63,13 +59,11 @@ public class WalStateResult {
      * @param msg Original message.
      * @param changed Whether mode was changed.
      * @param errMsg Error message (if any).
-     * @param noOp Whether this is no-op result which bypasses distributed completion.
      */
-    private WalStateResult(WalStateProposeMessage msg, boolean changed, String errMsg, boolean noOp) {
+    private WalStateResult(WalStateProposeMessage msg, boolean changed, String errMsg) {
         this.msg = msg;
         this.changed = changed;
         this.errMsg = errMsg;
-        this.noOp = noOp;
     }
 
     /**
@@ -93,10 +87,8 @@ public class WalStateResult {
         return errMsg;
     }
 
-    /**
-     * @return Whether this is no-op result which bypasses distributed completion.
-     */
-    public boolean noOp() {
-        return noOp;
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(WalStateResult.class, this);
     }
 }

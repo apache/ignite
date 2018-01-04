@@ -2349,7 +2349,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else
             dbMgr = new IgniteCacheDatabaseSharedManager();
 
-        WalStateManager walStateMgr = new WalStateManager();
+        WalStateManager walStateMgr = new WalStateManager(ctx);
 
         IgniteCacheSnapshotManager snpMgr = ctx.plugins().createComponent(IgniteCacheSnapshotManager.class);
 

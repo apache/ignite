@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -78,6 +79,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     /** Pending acknowledge messages (i.e. received before node completed it's local part). */
     private final Collection<WalStateAckMessage> pendingAcks = new HashSet<>();
 
+    /** Whether this is a server node. */
+    private final boolean srv;
+
     /** IO message listener. */
     private final GridMessageListener ioLsnr;
 
@@ -92,9 +96,19 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
     /**
      * Constructor.
+     *
+     * @param kernalCtx Kernal context.
      */
-    public WalStateManager() {
-        if (isServerNode()) {
+    public WalStateManager(GridKernalContext kernalCtx) {
+        if (kernalCtx != null) {
+            IgniteConfiguration cfg = kernalCtx.config();
+
+            srv = !cfg.isClientMode() && !cfg.isDaemon();
+        }
+        else
+            srv = false;
+
+        if (srv) {
             ioLsnr = new GridMessageListener() {
                 @Override
                 public void onMessage(UUID nodeId, Object msg, byte plc) {
@@ -115,13 +129,13 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        if (isServerNode())
+        if (srv)
             cctx.kernalContext().io().addMessageListener(TOPIC_WAL, ioLsnr);
     }
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
-        if (isServerNode())
+        if (srv)
             cctx.kernalContext().io().removeMessageListener(TOPIC_WAL, ioLsnr);
     }
 
@@ -132,7 +146,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public void onCachesInfoCollected() throws IgniteCheckedException {
-        if (!isServerNode())
+        if (!srv)
             return;
 
         synchronized (mux) {
@@ -145,12 +159,17 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
                     WalStateResult res;
 
-                    if (F.eq(msg.enable(), enabled))
-                        res = new WalStateResult(msg, false, true);
-                    else {
-                        res = new WalStateResult(msg, true, false);
+                    if (msg.noOp()) {
+                        assert F.eq(msg.enable(), enabled);
 
-                        grpDesc.walEnabled(enabled);
+                        res = new WalStateResult(msg, false);
+                    }
+                    else {
+                        assert !F.eq(msg.enable(), enabled);
+
+                        res = new WalStateResult(msg, true);
+
+                        grpDesc.walEnabled(!enabled);
                     }
 
                     initialRess.add(res);
@@ -168,7 +187,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * so checkpoint is not needed.
      */
     public void onKernalStart() {
-        if (!isServerNode())
+        if (!srv)
             return;
 
         synchronized (mux) {
@@ -308,7 +327,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             // Validate current caches state before deciding whether to process message further.
             if (validateProposeDiscovery(msg)) {
-                if (!isServerNode())
+                if (!srv)
                     return;
 
                 CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
@@ -320,14 +339,10 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 boolean affNode = nodeFilter == null || nodeFilter.apply(cctx.localNode());
 
                 msg.affinityNode(affNode);
+                msg.noOp(F.eq(grpDesc.walEnabled(), msg.enable()));
 
-                if (grpDesc.addWalChangeRequest(msg)) {
+                if (grpDesc.addWalChangeRequest(msg))
                     msg.exchangeMessage(msg);
-
-                    // Group context will not be available for non-affinity node, calculate outcome in advance.
-                    if (!affNode)
-                        msg.nonAffinityNodeResult(F.eq(grpDesc.walEnabled(), msg.enable()));
-                }
             }
         }
     }
@@ -408,56 +423,56 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @param msg Message.
      */
     public void onProposeExchange(WalStateProposeMessage msg) {
-        if (!isServerNode())
+        if (!srv)
             return;
 
         synchronized (mux) {
-            if (msg.affinityNode()) {
-                CacheGroupContext grpCtx = cacheProcessor().cacheGroup(msg.groupId());
+            WalStateResult res = null;
 
-                if (grpCtx == null) {
-                    addResult(new WalStateResult(msg, "Failed to change WAL mode because some caches no longer " +
-                        "exist: " + msg.caches().keySet(), true));
-                }
-                else {
-                    if (F.eq(msg.enable(), grpCtx.walEnabled()))
-                        addResult(new WalStateResult(msg, false, true));
-                    else {
-                        WalStateChangeWorker worker = new WalStateChangeWorker(msg);
+            if (msg.noOp()) {
+                // Fast-path no-op case, just add result.
+                res = new WalStateResult(msg, false);
 
-                        new IgniteThread(worker).start();
-                    }
-                }
+                addResult(res);
+                onCompletedLocally(res);
             }
             else {
-                boolean res = msg.nonAffinityNodeResult();
+                if (msg.affinityNode()) {
+                    // Affinity node, normal processing.
+                    CacheGroupContext grpCtx = cacheProcessor().cacheGroup(msg.groupId());
 
-                if (!res)
-                    addResult(new WalStateResult(msg, false, true));
+                    if (grpCtx == null) {
+                        // Related caches were destroyed concurrently.
+                        res = new WalStateResult(msg, "Failed to change WAL mode because some caches " +
+                            "no longer exist: " + msg.caches().keySet());
+                    }
+                    else {
+                        if (F.eq(msg.enable(), grpCtx.walEnabled())) {
+                            // Even though current and proposed WAL modes are the same, we complete operation with
+                            // "true" flag, because at this point we already determined operation as no-op in discovery
+                            // thread. Therefore, WAL modes equality at this point means that we are recovering from
+                            // partial enable/disable.
+                            res = new WalStateResult(msg, true);
+                        }
+                        else {
+                            WalStateChangeWorker worker = new WalStateChangeWorker(msg);
+
+                            new IgniteThread(worker).start();
+                        }
+                    }
+                }
                 else {
-                    WalStateChangeWorker worker = new WalStateChangeWorker(msg);
-
-                    new IgniteThread(worker).start();
+                    // We cannot know result on non-affinity server node, so just complete operation with "false" flag,
+                    // which will be ignored anyway.
+                    res = new WalStateResult(msg, false);
                 }
             }
-        }
-    }
 
-    /**
-     * Handle coordinator exchange finish. If message processing during exchange init stage was reduced to no-op,
-     * then it is possible to send finish message.
-     *
-     * @param msg Message.
-     */
-    public void onProposeExchangeCoordinatorFinished(WalStateProposeMessage msg) {
-        if (!isServerNode())
-            return;
+            if (res != null) {
+                addResult(res);
 
-        synchronized (mux) {
-            WalStateResult res = ress.get(msg.operationId());
-
-            if (res != null && res.noOp())
                 onCompletedLocally(res);
+            }
         }
     }
 
@@ -472,40 +487,39 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         synchronized (mux) {
             ClusterNode crdNode = coordinator();
 
-            if (res.noOp()) {
-                // No-op message should be completed from coordinator right away.
+            if (res.message().noOp()) {
+                // No-op message could be completed from coordinator right away.
                 if (crdNode.isLocal())
                     sendFinishMessage(res);
             }
             else {
+                UUID opId = res.message().operationId();
+
+                WalStateAckMessage msg = new WalStateAckMessage(opId, res.message().affinityNode(),
+                    res.changed(), res.errorMessage());
+
                 // Handle distributed completion.
                 if (crdNode.isLocal()) {
                     Collection<ClusterNode> srvNodes = cctx.discovery().aliveServerNodes();
 
-                    Collection<UUID> rmtNodeIds = new ArrayList<>(srvNodes.size());
+                    Collection<UUID> srvNodeIds = new ArrayList<>(srvNodes.size());
 
-                    for (ClusterNode srvNode : srvNodes) {
-                        if (F.eq(crdNode.id(), srvNode.id()))
-                            continue;
+                    for (ClusterNode srvNode : srvNodes)
+                        srvNodeIds.add(srvNode.id());
 
-                        rmtNodeIds.add(srvNode.id());
-                    }
-
-                    WalStateDistributedProcess proc = new WalStateDistributedProcess(res, rmtNodeIds);
+                    WalStateDistributedProcess proc = new WalStateDistributedProcess(res, srvNodeIds);
 
                     procs.put(res.message().operationId(), proc);
 
                     unwindPendingAcks(proc);
 
+                    proc.onNodeFinished(cctx.localNodeId(), msg);
+
                     sendFinishMessageIfNeeded(proc);
                 }
                 else {
                     // Just send message to coordinator.
-                    UUID opId = res.message().operationId();
-
                     try {
-                        WalStateAckMessage msg = new WalStateAckMessage(opId);
-
                         cctx.kernalContext().io().sendToGridTopic(crdNode, TOPIC_WAL, msg, SYSTEM_POOL);
                     }
                     catch (IgniteCheckedException e) {
@@ -531,7 +545,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             WalStateAckMessage ackMsg = iter.next();
 
             if (F.eq(proc.result().message().operationId(), ackMsg.operationId())) {
-                proc.onNodeFinished(ackMsg.senderNodeId());
+                proc.onNodeFinished(ackMsg.senderNodeId(), ackMsg);
 
                 iter.remove();
             }
@@ -556,7 +570,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 pendingAcks.add(msg);
             else {
                 // Notify process on node completion.
-                proc.onNodeFinished(msg.senderNodeId());
+                proc.onNodeFinished(msg.senderNodeId(), msg);
 
                 sendFinishMessageIfNeeded(proc);
             }
@@ -615,7 +629,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                     complete(userFut, msg.result());
             }
 
-            if (!isServerNode())
+            if (!srv)
                 return;
 
             // Get result.
@@ -647,11 +661,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 WalStateProposeMessage nextProposeMsg = grpDesc.nextWalChangeRequest();
 
                 if (nextProposeMsg != null) {
-                    msg.exchangeMessage(nextProposeMsg);
+                    nextProposeMsg.noOp(F.eq(grpDesc.walEnabled(), nextProposeMsg.enable()));
 
-                    // Group context will not be available for non-affinity node, calculate outcome in advance.
-                    if (!nextProposeMsg.affinityNode())
-                        nextProposeMsg.nonAffinityNodeResult(F.eq(grpDesc.walEnabled(), nextProposeMsg.enable()));
+                    msg.exchangeMessage(nextProposeMsg);
                 }
             }
 
@@ -676,7 +688,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @param node Node that has left the grid.
      */
     public void onNodeLeft(ClusterNode node) {
-        if (!isServerNode())
+        if (!srv)
             return;
 
         synchronized (mux) {
@@ -730,15 +742,6 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      */
     private GridCacheProcessor cacheProcessor() {
         return cctx.cache();
-    }
-
-    /**
-     * @return {@code True} if this is a server node (i.e. neither client, nor daemon).
-     */
-    private boolean isServerNode() {
-        IgniteConfiguration cfg = cctx.kernalContext().config();
-
-        return !cfg.isClientMode() && !cfg.isDaemon();
     }
 
     /**
@@ -815,36 +818,32 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             WalStateResult res;
 
             try {
-                if (msg.affinityNode()) {
-                    // Flush checkpoint.
-                    IgniteInternalFuture cpFut = cacheProcessor().context().database().doCheckpoint("wal-state-change");
+                assert !msg.noOp();
+                assert msg.affinityNode();
 
-                    cpFut.get();
+                // Flush checkpoint.
+                IgniteInternalFuture cpFut = cacheProcessor().context().database().doCheckpoint("wal-state-change");
 
-                    // Change logging state.
-                    CacheGroupContext grpCtx = cacheProcessor().cacheGroup(msg.groupId());
+                cpFut.get();
 
-                    if (grpCtx == null) {
-                        res = new WalStateResult(msg, "Failed to change WAL mode because some caches no longer " +
-                            "exist: " + msg.caches().keySet(), false);
-                    }
-                    else {
-                        grpCtx.walEnabled(msg.enable());
+                // Change logging state.
+                CacheGroupContext grpCtx = cacheProcessor().cacheGroup(msg.groupId());
 
-                        res = new WalStateResult(msg, true, false);
-                    }
+                if (grpCtx == null) {
+                    res = new WalStateResult(msg, "Failed to change WAL mode because some caches no longer " +
+                        "exist: " + msg.caches().keySet());
                 }
                 else {
-                    assert msg.nonAffinityNodeResult();
+                    grpCtx.walEnabled(msg.enable());
 
-                    res = new WalStateResult(msg, true, false);
+                    res = new WalStateResult(msg, true);
                 }
             }
             catch (Exception e) {
                 U.warn(log, "Failed to change WAL mode due to unexpected exception [msg=" + msg + ']', e);
 
                 res = new WalStateResult(msg, "Failed to change WAL mode due to unexpected exception " +
-                    "(see server logs for more information).", false);
+                    "(see server logs for more information): " + e.getMessage());
             }
 
             addResult(res);
