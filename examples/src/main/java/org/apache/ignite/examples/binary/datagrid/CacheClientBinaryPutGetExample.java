@@ -25,13 +25,13 @@ import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.model.Address;
 import org.apache.ignite.examples.model.Organization;
 import org.apache.ignite.examples.model.OrganizationType;
-import org.apache.ignite.binary.BinaryObject;
 
 /**
  * This example demonstrates use of binary objects with Ignite cache.
@@ -104,7 +104,7 @@ public class CacheClientBinaryPutGetExample {
             "Microsoft", // Name.
             new Address("1096 Eddy Street, San Francisco, CA", 94109), // Address.
             OrganizationType.PRIVATE, // Type.
-            new Timestamp(System.currentTimeMillis())); // Last updateCache time.
+            new Timestamp(System.currentTimeMillis())); // Last update time.
 
         // Put created data entry to cache.
         cache.put(1, org);
@@ -127,7 +127,7 @@ public class CacheClientBinaryPutGetExample {
             "Microsoft", // Name.
             new Address("1096 Eddy Street, San Francisco, CA", 94109), // Address.
             OrganizationType.PRIVATE, // Type.
-            new Timestamp(System.currentTimeMillis())); // Last updateCache time.
+            new Timestamp(System.currentTimeMillis())); // Last update time.
 
         // Put created data entry to cache.
         cache.put(1, org);
@@ -157,13 +157,13 @@ public class CacheClientBinaryPutGetExample {
             "Microsoft", // Name.
             new Address("1096 Eddy Street, San Francisco, CA", 94109), // Address.
             OrganizationType.PRIVATE, // Type.
-            new Timestamp(System.currentTimeMillis())); // Last updateCache time.
+            new Timestamp(System.currentTimeMillis())); // Last update time.
 
         Organization org2 = new Organization(
             "Red Cross", // Name.
             new Address("184 Fidler Drive, San Antonio, TX", 78205), // Address.
             OrganizationType.NON_PROFIT, // Type.
-            new Timestamp(System.currentTimeMillis())); // Last updateCache time.
+            new Timestamp(System.currentTimeMillis())); // Last update time.
 
         Map<Integer, Organization> map = new HashMap<>();
 
@@ -195,13 +195,13 @@ public class CacheClientBinaryPutGetExample {
             "Microsoft", // Name.
             new Address("1096 Eddy Street, San Francisco, CA", 94109), // Address.
             OrganizationType.PRIVATE, // Type.
-            new Timestamp(System.currentTimeMillis())); // Last updateCache time.
+            new Timestamp(System.currentTimeMillis())); // Last update time.
 
         Organization org2 = new Organization(
             "Red Cross", // Name.
             new Address("184 Fidler Drive, San Antonio, TX", 78205), // Address.
             OrganizationType.NON_PROFIT, // Type.
-            new Timestamp(System.currentTimeMillis())); // Last updateCache time.
+            new Timestamp(System.currentTimeMillis())); // Last update time.
 
         Map<Integer, Organization> map = new HashMap<>();
 

@@ -68,7 +68,7 @@ public class IgfsMapReduceExample {
         else {
             try (Ignite ignite = Ignition.start("examples/config/filesystem/example-igfs.xml")) {
                 System.out.println();
-                System.out.println(">>> IGFS map reducer example started.");
+                System.out.println(">>> IGFS map reduce example started.");
 
                 // Prepare arguments.
                 String fileName = args[0];

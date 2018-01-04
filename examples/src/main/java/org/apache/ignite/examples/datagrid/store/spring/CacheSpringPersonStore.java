@@ -78,7 +78,7 @@ public class CacheSpringPersonStore extends CacheStoreAdapter<Long, Person> {
 
         System.out.println(">>> Store write [key=" + key + ", val=" + val + ']');
 
-        int updated = jdbcTemplate.update("updateCache PERSON set first_name = ?, last_name = ? where id = ?",
+        int updated = jdbcTemplate.update("update PERSON set first_name = ?, last_name = ? where id = ?",
             val.firstName, val.lastName, val.id);
 
         if (updated == 0) {
