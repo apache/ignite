@@ -177,7 +177,7 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
             syncRate,
             locStepUpdatesReducer,
             data.batchSupplier(),
-            loss, // TODO: Check how it is serialized.
+            loss,
             tolerance
         ));
     }
@@ -191,7 +191,7 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
         return key -> {
             Ignite ignite = Ignition.localIgnite();
 
-            U initUpdate = updateCalculator.init(initPerceptron, loss);// TODO: Check how it is serialized.
+            U initUpdate = updateCalculator.init(initPerceptron, loss);
 
             return ResultAndUpdates.of(initUpdate).updateCache(MLPCache.getOrCreate(ignite), key,
                 new MLPGroupTrainingCacheValue(initPerceptron));
@@ -242,7 +242,6 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
             ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator = data.updateCalculator();
             IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss = data.loss();
 
-            // TODO: This is done just to set loss, and ignore initial update, maybe we should change
             // ParameterUpdateCalculator API to have proper way to setting loss.
             updateCalculator.init(mlpCp, loss);
 

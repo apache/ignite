@@ -28,7 +28,7 @@ import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 
 /**
  * Distributed step
- * TODO: IGNITE-7322: add full description.
+ * TODO: IGNITE-7350: add full description.
  */
 class MetaoptimizerDistributedStep<L extends HasTrainingUUID, K, V, G, I extends Serializable, O extends Serializable,
     X, Y, D extends Serializable> implements DistributedEntryProcessingStep<L, K, V, G, I, O> {

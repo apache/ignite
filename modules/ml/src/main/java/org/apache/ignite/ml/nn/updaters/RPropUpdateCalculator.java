@@ -31,7 +31,7 @@ import org.apache.ignite.ml.math.util.MatrixUtil;
  */
 public class RPropUpdateCalculator<M extends SmoothParametrized> implements ParameterUpdateCalculator<M, RPropParameterUpdate> {
     /**
-     * Default initial updateCache.
+     * Default initial update.
      */
     private static double DFLT_INIT_UPDATE = 0.1;
 
@@ -46,7 +46,7 @@ public class RPropUpdateCalculator<M extends SmoothParametrized> implements Para
     private static double DFLT_DEACCELERATION_RATE = 0.5;
 
     /**
-     * Initial updateCache.
+     * Initial update.
      */
     private final double initUpdate;
 
@@ -61,12 +61,12 @@ public class RPropUpdateCalculator<M extends SmoothParametrized> implements Para
     private final double deaccelerationRate;
 
     /**
-     * Maximal value for updateCache.
+     * Maximal value for update.
      */
     private final static double UPDATE_MAX = 50.0;
 
     /**
-     * Minimal value for updateCache.
+     * Minimal value for update.
      */
     private final static double UPDATE_MIN = 1E-6;
 
@@ -78,7 +78,7 @@ public class RPropUpdateCalculator<M extends SmoothParametrized> implements Para
     /**
      * Construct RPropUpdateCalculator.
      *
-     * @param initUpdate Initial updateCache.
+     * @param initUpdate Initial update.
      * @param accelerationRate Acceleration rate.
      * @param deaccelerationRate Deacceleration rate.
      */

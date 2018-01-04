@@ -31,7 +31,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
 
 /**
- * Cache name.
+ * Cache for distributed MLP.
  */
 public class MLPCache {
     /**

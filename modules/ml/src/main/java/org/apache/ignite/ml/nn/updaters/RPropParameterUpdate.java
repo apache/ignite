@@ -223,7 +223,6 @@ public class RPropParameterUpdate implements Serializable {
                 setPrevIterationUpdates(sum.prevIterationUpdates().divide(size)).
                 setDeltas(sum.deltas().divide(size));
 
-        // TODO: check if distributed training crashes if null is returned.
         return null;
     }
 }
