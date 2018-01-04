@@ -41,7 +41,7 @@ public class MnistUtils {
      * @param rnd Random numbers generator.
      * @param cnt Count of samples to read.
      * @return Stream of MNIST samples.
-     * @throws IOException In case of exception.
+     * @throws IgniteException In case of exception.
      */
     public static Stream<DenseLocalOnHeapVector> mnist(String imagesPath, String labelsPath, Random rnd, int cnt)
         throws IOException {

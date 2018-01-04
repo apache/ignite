@@ -15,13 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.nn.updaters;
+package org.apache.ignite.ml.nn.trainers.distributed;
 
-import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.nn.MultilayerPerceptron;
 
 /**
- * Interface for models which are smooth functions of their parameters.
+ * Value of cache used for group training by {@link MLPGroupUpdateTrainer}.
  */
-public interface SmoothParametrized<M extends SmoothParametrized<M>> extends BaseSmoothParametrized<M>, Model<Matrix, Matrix> {
+public class MLPGroupTrainingCacheValue {
+    /**
+     * Multilayer perceptron.
+     */
+    private MultilayerPerceptron mlp;
+
+    /**
+     * Construct instance of this class with given parameters.
+     *
+     * @param mlp Multilayer perceptron.
+     */
+    public MLPGroupTrainingCacheValue(MultilayerPerceptron mlp) {
+        this.mlp = mlp;
+    }
+
+    /**
+     * Get multilayer perceptron.
+     *
+     * @return Multilayer perceptron.
+     */
+    public MultilayerPerceptron perceptron() {
+        return mlp;
+    }
 }
