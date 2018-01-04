@@ -418,7 +418,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     /**
      * Handle propose message which is synchronized with other cache state actions through exchange thread.
      * If operation is no-op (i.e. state is not changed), then no additional processing is needed, and coordinator will
-     * trigger finish request right away. Otherwise all nodes atart asynchronous checkpoint flush, and send responses
+     * trigger finish request right away. Otherwise all nodes start asynchronous checkpoint flush, and send responses
      * to coordinator. Once all responses are received, coordinator node will trigger finish message.
      *
      * @param msg Message.
@@ -426,6 +426,10 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     public void onProposeExchange(WalStateProposeMessage msg) {
         if (!srv)
             return;
+
+        // TODO: What if we trigger checkpoint synchronously here? In this case there will be no need for proxy
+        // TODO: enable/disable, which could be frustrating user experience. On the other hand, WAL disable for a
+        // TODO: single cache may slowdown operations on other caches.
 
         synchronized (mux) {
             WalStateResult res = null;
