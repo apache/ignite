@@ -305,15 +305,22 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** {@inheritDoc} */
     @Override public boolean walEnable(String cacheName) throws IgniteException {
-        return changeWalMode2(cacheName, true);
+        return changeWalMode(cacheName, true);
     }
 
     /** {@inheritDoc} */
     @Override public boolean walDisable(String cacheName) throws IgniteException {
-        return changeWalMode2(cacheName, false);
+        return changeWalMode(cacheName, false);
     }
 
-    private boolean changeWalMode2(String cacheName, boolean enabled) {
+    /**
+     * Change WAL mode.
+     *
+     * @param cacheName Cache name.
+     * @param enabled Enabled flag.
+     * @return {@code True} if WAL mode was changed as a result of this call.
+     */
+    private boolean changeWalMode(String cacheName, boolean enabled) {
         A.notNull(cacheName, "cacheName");
 
         guard();

@@ -24,6 +24,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.LOGGING;
 import static org.apache.ignite.internal.sql.SqlKeyword.NOLOGGING;
+import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
 import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdentifier;
 
@@ -73,6 +74,9 @@ public class SqlAlterTableCommand implements SqlCommand  {
 
         parseLogging(lex);
 
+        if (!hasCommands())
+            throw errorUnexpectedToken(lex, LOGGING, NOLOGGING);
+
         return this;
     }
 
@@ -92,6 +96,15 @@ public class SqlAlterTableCommand implements SqlCommand  {
 
             logging = false;
         }
+    }
+
+    /**
+     * Check if statemtnt contain any commands.
+     *
+     * @return {@code True} if statement is not dummy and contains at least one command.
+     */
+    private boolean hasCommands() {
+        return logging != null;
     }
 
     /** {@inheritDoc} */

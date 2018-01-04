@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -52,6 +53,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
@@ -157,6 +159,35 @@ public class DdlStatementsProcessor {
                         throw new SchemaOperationException(SchemaOperationException.CODE_INDEX_NOT_FOUND,
                             cmd0.indexName());
                 }
+            }
+            else if (cmd instanceof SqlAlterTableCommand) {
+                SqlAlterTableCommand cmd0 = (SqlAlterTableCommand)cmd;
+
+                GridH2Table tbl = idx.dataTable(cmd0.schemaName(), cmd0.tableName());
+
+                if (tbl == null) {
+                    ctx.cache().createMissingQueryCaches();
+
+                    tbl = idx.dataTable(cmd0.schemaName(), cmd0.tableName());
+                }
+
+                if (tbl == null) {
+                    throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
+                        cmd0.tableName());
+                }
+
+                Boolean logging = cmd0.logging();
+
+                assert logging != null : "Only LOGGING/NOLOGGING are supported at the moment.";
+
+                IgniteCluster cluster = ctx.grid().cluster();
+
+                if (logging)
+                    cluster.walEnable(tbl.cacheName());
+                else
+                    cluster.walDisable(tbl.cacheName());
+
+                fut = new GridFinishedFuture();
             }
             else
                 throw new IgniteSQLException("Unsupported DDL operation: " + sql,
