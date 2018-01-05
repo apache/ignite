@@ -250,7 +250,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 DynamicCacheDescriptor cacheDesc = cacheProcessor().cacheDescriptor(cacheName);
 
                 if (cacheDesc == null)
-                    return errorFuture("Cache doesn't exits: " + cacheName);
+                    return errorFuture("Cache doesn't exist: " + cacheName);
 
                 caches.put(cacheName, cacheDesc.deploymentId());
 

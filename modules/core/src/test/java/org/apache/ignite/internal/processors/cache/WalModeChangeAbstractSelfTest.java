@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -38,13 +39,14 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.concurrent.Callable;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Test dynamic WAL mode change.
  */
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked", "ThrowableNotThrown"})
 public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTest {
     /** Shared IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -103,6 +105,44 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
         stopAllGrids();
 
         deleteWorkFiles();
+    }
+
+    /**
+     * Negative case: cache name is null.
+     *
+     * @throws Exception If failed.
+     */
+    public void testNullCacheName() throws Exception {
+        forAllNodes(new IgniteInClosureX<Ignite>() {
+            @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
+                GridTestUtils.assertThrows(log, new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        ignite.cluster().walEnable(null);
+
+                        return null;
+                    }
+                }, NullPointerException.class, null);
+            }
+        });
+    }
+
+    /**
+     * Negative case: no cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testNoCache() throws Exception {
+        forAllNodes(new IgniteInClosureX<Ignite>() {
+            @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
+                GridTestUtils.assertThrows(log, new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        ignite.cluster().walEnable(CACHE_NAME);
+
+                        return null;
+                    }
+                }, IgniteException.class, "Cache doesn't exist");
+            }
+        });
     }
 
     /**

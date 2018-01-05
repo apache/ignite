@@ -326,7 +326,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            return ctx.cache().changeWalMode2(Collections.singleton(cacheName), enabled);
+            return ctx.cache().changeWalMode(Collections.singleton(cacheName), enabled);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -341,7 +341,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            return ctx.cache().walEnabled2(cacheName);
+            return ctx.cache().walEnabled(cacheName);
         }
         finally {
             unguard();
