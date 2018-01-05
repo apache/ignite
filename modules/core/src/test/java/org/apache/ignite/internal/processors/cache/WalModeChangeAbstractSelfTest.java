@@ -1,0 +1,257 @@
+/*
+ *  Licensed to the Apache Software Foundation (ASF) under one or more
+ *  contributor license agreements.  See the NOTICE file distributed with
+ *  this work for additional information regarding copyright ownership.
+ *  The ASF licenses this file to You under the Apache License, Version 2.0
+ *  (the "License"); you may not use this file except in compliance with
+ *  the License.  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.cache;
+
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.lang.IgniteInClosureX;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import java.util.Collection;
+import java.util.Collections;
+
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+
+/**
+ * Test dynamic WAL mode change.
+ */
+@SuppressWarnings("unchecked")
+public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTest {
+    /** Shared IP finder. */
+    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** Node filter. */
+    private static final IgnitePredicate<ClusterNode> FILTER = new CacheNodeFilter();
+
+    /** Cache name. */
+    private static final String CACHE_NAME = "cache";
+
+    /** Cache name 2. */
+    private static final String CACHE_NAME_2 = "cache_2";
+
+    /** Server 1. */
+    private static final String SRV_1 = "srv_1";
+
+    /** Server 2. */
+    private static final String SRV_2 = "srv_2";
+
+    /** Server 3. */
+    private static final String SRV_3 = "srv_3";
+
+    /** Client. */
+    private static final String CLI = "cli";
+
+    /** Node attribute for filtering. */
+    private static final String FILTER_ATTR = "FILTER";
+
+    /** Whether coordinator node should be filtered out. */
+    private final boolean filterOnCrd;
+
+    /**
+     * Constructor.
+     *
+     * @param filterOnCrd Whether coordinator node should be filtered out.
+     */
+    protected WalModeChangeAbstractSelfTest(boolean filterOnCrd) {
+        this.filterOnCrd = filterOnCrd;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        deleteWorkFiles();
+
+        startGrid(config(SRV_1, false, filterOnCrd));
+        startGrid(config(SRV_2, false, false));
+        startGrid(config(SRV_3, false, !filterOnCrd));
+
+        Ignite cli = startGrid(config(CLI, true, false));
+
+        cli.active(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        deleteWorkFiles();
+    }
+
+    /**
+     * Test normal disable-enable flow.
+     *
+     * @throws Exception If failed.
+     */
+    public void testNormalEnableDisable() throws Exception {
+        forAllNodes(new IgniteInClosureX<Ignite>() {
+            @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
+                ignite.createCache(cacheConfig(CacheMode.PARTITIONED));
+
+                assertForAllNodes(CACHE_NAME, true);
+
+                assert ignite.cluster().walDisable(CACHE_NAME);
+
+                assertForAllNodes(CACHE_NAME, false);
+            }
+        });
+    }
+
+    /**
+     * Assert WAL state on all nodes.
+     *
+     * @param cacheName Cache name.
+     * @param expState Expected state.
+     * @throws IgniteCheckedException If fialed.
+     */
+    private void assertForAllNodes(String cacheName, boolean expState) throws IgniteCheckedException {
+        info("");
+
+        for (final Ignite node : Ignition.allGrids()) {
+            // TODO: Client doesn't work
+            if (node.configuration().isClientMode())
+                continue;
+
+            info(">>> Checking WAL state on node: " + node.name());
+
+            assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return node.cluster().isWalEnabled(cacheName) == expState;
+                }
+            }, 1000L);
+        }
+    }
+
+    /**
+     * Execute certain logic for all nodes.
+     *
+     * @param task Task.
+     * @throws Exception If failed.
+     */
+    private void forAllNodes(IgniteInClosureX<Ignite> task) throws Exception {
+        for (Ignite node : Ignition.allGrids()) {
+            // TODO: Client doesn't work
+            if (node.configuration().isClientMode())
+                continue;
+
+            try {
+                info("");
+                info(">>> Executing test on node: " + node.name());
+
+                task.applyx(node);
+            }
+            finally {
+                for (Ignite node0 : Ignition.allGrids()) {
+                    Collection<String> cacheNames = node0.cacheNames();
+
+                    for (String cacheName : cacheNames)
+                        node0.destroyCache(cacheName);
+                }
+            }
+        }
+    }
+
+    /**
+     * Create node configuration.
+     *
+     * @param name Name.
+     * @param cli Client flag.
+     * @param filter Whether node should be filtered out.
+     * @return Node configuration.
+     */
+    private IgniteConfiguration config(String name, boolean cli, boolean filter) {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setIgniteInstanceName(name);
+        cfg.setClientMode(cli);
+        cfg.setLocalHost("127.0.0.1");
+
+        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
+
+        DataRegionConfiguration dataRegionCfg = new DataRegionConfiguration().setPersistenceEnabled(true);
+
+        DataStorageConfiguration dataStorageCfg =
+            new DataStorageConfiguration().setDefaultDataRegionConfiguration(dataRegionCfg);
+
+        cfg.setDataStorageConfiguration(dataStorageCfg);
+
+        if (filter)
+            cfg.setUserAttributes(Collections.singletonMap(FILTER_ATTR, true));
+
+        return cfg;
+    }
+
+    /**
+     * Create common cache configuration (default name, transactional).
+     *
+     * @param mode Mode.
+     * @return Cache configuration.
+     */
+    private CacheConfiguration cacheConfig(CacheMode mode) {
+        return cacheConfig(CACHE_NAME, mode, CacheAtomicityMode.TRANSACTIONAL);
+    }
+
+    /**
+     * Create cache configuration.
+     *
+     * @param name Name.
+     * @param mode Mode.
+     * @param atomicityMode Atomicity mode.
+     * @return Cache configuration.
+     */
+    private CacheConfiguration cacheConfig(String name, CacheMode mode, CacheAtomicityMode atomicityMode) {
+        CacheConfiguration ccfg = new CacheConfiguration();
+
+        ccfg.setName(name);
+        ccfg.setCacheMode(mode);
+        ccfg.setAtomicityMode(atomicityMode);
+
+        ccfg.setNodeFilter(FILTER);
+
+        return ccfg;
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void deleteWorkFiles() throws IgniteCheckedException {
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+    }
+
+    /**
+     * Cache node filter.
+     */
+    private static class CacheNodeFilter implements IgnitePredicate<ClusterNode> {
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode node) {
+            return node.attribute(FILTER_ATTR) != null;
+        }
+    }
+}

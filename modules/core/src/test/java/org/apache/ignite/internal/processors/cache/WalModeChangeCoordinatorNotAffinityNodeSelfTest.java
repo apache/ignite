@@ -18,13 +18,13 @@
 package org.apache.ignite.internal.processors.cache;
 
 /**
- * Tests for WAL mode change feature when coordinator node is ordinary cache node.
+ * Tests for WAL mode change feature when coordinator node is not affinity node for cache.
  */
-public class WalModeChangeSelfTest extends WalModeChangeAbstractSelfTest {
+public class WalModeChangeCoordinatorNotAffinityNodeSelfTest extends WalModeChangeAbstractSelfTest {
     /**
      * Constructor.
      */
-    public WalModeChangeSelfTest() {
-        super(false);
+    public WalModeChangeCoordinatorNotAffinityNodeSelfTest() {
+        super(true);
     }
 }
