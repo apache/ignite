@@ -210,7 +210,7 @@ public class DdlStatementsProcessor {
             throw e;
         }
         catch (Exception e) {
-            throw new IgniteSQLException("Unexpected DDL operation failure: " + e.getMessage(), e);
+            throw new IgniteSQLException(e.getMessage(), e);
         }
     }
 
@@ -471,7 +471,7 @@ public class DdlStatementsProcessor {
             throw e;
         }
         catch (Exception e) {
-            throw new IgniteSQLException("Unexpected DDL operation failure: " + e.getMessage(), e);
+            throw new IgniteSQLException(e.getMessage(), e);
         }
     }
 

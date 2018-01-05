@@ -20,7 +20,6 @@ package org.apache.ignite.jdbc.thin;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.WalModeChangeAbstractSelfTest;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -48,21 +47,18 @@ public class JdbcThinWalModeChangeSelfTest extends WalModeChangeAbstractSelfTest
         String cmd = "CREATE TABLE " + ccfg.getName() + " (k BIGINT PRIMARY KEY, v BIGINT) WITH \"" +
             "TEMPLATE=" + template + ", " +
             "CACHE_NAME=" + ccfg.getName() + ", " +
-            "ATOMICITY=" + ccfg.getAtomicityMode() + ", " +
-            (ccfg.getGroupName() != null ? "CACHE_GROUP=" + ccfg.getGroupName() + ", " : "") +
-            (ccfg.getDataRegionName() != null ? "DATA_REGION=" + ccfg.getDataRegionName() + ", " : "") +
+            "ATOMICITY=" + ccfg.getAtomicityMode() +
+            (ccfg.getGroupName() != null ? ", CACHE_GROUP=" + ccfg.getGroupName() : "") +
+            (ccfg.getDataRegionName() != null ? ", DATA_REGION=" + ccfg.getDataRegionName() : "") +
             "\"";
 
         execute(node, cmd);
+    }
 
-        try (Connection conn = connect(node)) {
-            try (Statement stmt = conn.createStatement()) {
-                stmt.execute(cmd);
-            }
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    @Override protected void destroyCache(Ignite node, String cacheName) {
+        String cmd = "DROP TABLE IF EXISTS " + cacheName;
+
+        execute(node, cmd);
     }
 
     /** {@inheritDoc} */
@@ -81,31 +77,6 @@ public class JdbcThinWalModeChangeSelfTest extends WalModeChangeAbstractSelfTest
         execute(node, cmd);
 
         return false;
-    }
-
-    /**
-     * Test WAL mode change.
-     *
-     * @throws Exception If failed.
-     */
-    public void testWalModeChange() throws Exception {
-        IgniteEx node = grid();
-
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
-            try (Statement stmt = conn.createStatement()) {
-                stmt.executeUpdate("CREATE TABLE test (id BIGINT PRIMARY KEY, val VARCHAR) WITH \"CACHE_NAME=cache\"");
-
-                assert node.cluster().isWalEnabled("cache");
-
-                stmt.executeUpdate("ALTER TABLE test NOLOGGING");
-
-                assert !node.cluster().isWalEnabled("cache");
-
-                stmt.executeUpdate("ALTER TABLE test LOGGING");
-
-                assert node.cluster().isWalEnabled("cache");
-            }
-        }
     }
 
     /**

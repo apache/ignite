@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -37,6 +38,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.Callable;
@@ -51,7 +53,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 /**
  * Test dynamic WAL mode change.
  */
-@SuppressWarnings({"unchecked", "ThrowableNotThrown"})
+
 public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTest {
 
     // TODO: Test concurrent cache destroy (one thread send messages, another thread creates/destroys cache)
@@ -143,7 +145,7 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
     public void testNullCacheName() throws Exception {
         forAllNodes(new IgniteInClosureX<Ignite>() {
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
-                GridTestUtils.assertThrows(log, new Callable<Void>() {
+                assertThrows(new Callable<Void>() {
                     @Override public Void call() throws Exception {
                         walEnable(ignite, null);
 
@@ -162,16 +164,17 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
     public void testNoCache() throws Exception {
         forAllNodes(new IgniteInClosureX<Ignite>() {
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
-                GridTestUtils.assertThrows(log, new Callable<Void>() {
+                assertThrows(new Callable<Void>() {
                     @Override public Void call() throws Exception {
                         walEnable(ignite, CACHE_NAME);
 
                         return null;
                     }
-                }, IgniteException.class, "Cache doesn't exist");
+                }, IgniteException.class, (jdbc ? "Table doesn't exist" : "Cache doesn't exist"));
             }
         });
     }
+
 
     /**
      * Negative case: trying to disable WAL for cache in a shared cache group.
@@ -184,7 +187,7 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
                 createCache(ignite, cacheConfig(CACHE_NAME, PARTITIONED, TRANSACTIONAL).setGroupName("grp"));
                 createCache(ignite, cacheConfig(CACHE_NAME_2, PARTITIONED, TRANSACTIONAL).setGroupName("grp"));
 
-                GridTestUtils.assertThrows(log, new Callable<Void>() {
+                assertThrows(new Callable<Void>() {
                     @Override public Void call() throws Exception {
                         walDisable(ignite, CACHE_NAME);
 
@@ -193,7 +196,7 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
                 }, IgniteException.class, "Cannot change WAL mode because not all cache names belonging to the " +
                     "group are provided");
 
-                GridTestUtils.assertThrows(log, new Callable<Void>() {
+                assertThrows(new Callable<Void>() {
                     @Override public Void call() throws Exception {
                         walEnable(ignite, CACHE_NAME);
 
@@ -218,7 +221,7 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
                 createCache(ignite, cacheConfig(PARTITIONED).setDataRegionName(REGION_VOLATILE));
 
-                GridTestUtils.assertThrows(log, new Callable<Void>() {
+                assertThrows(new Callable<Void>() {
                     @Override public Void call() throws Exception {
                         walDisable(ignite, CACHE_NAME);
 
@@ -226,7 +229,7 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
                     }
                 }, IgniteException.class, "Cannot change WAL mode because persistence is not enabled for cache(s)");
 
-                GridTestUtils.assertThrows(log, new Callable<Void>() {
+                assertThrows(new Callable<Void>() {
                     @Override public Void call() throws Exception {
                         walEnable(ignite, CACHE_NAME);
 
@@ -253,7 +256,7 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
                 createCache(ignite, cacheConfig(LOCAL).setDataRegionName(REGION_VOLATILE));
 
-                GridTestUtils.assertThrows(log, new Callable<Void>() {
+                assertThrows(new Callable<Void>() {
                     @Override public Void call() throws Exception {
                         walDisable(ignite, CACHE_NAME);
 
@@ -261,7 +264,7 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
                     }
                 }, IgniteException.class, "WAL mode cannot be changed for LOCAL cache(s)");
 
-                GridTestUtils.assertThrows(log, new Callable<Void>() {
+                assertThrows(new Callable<Void>() {
                     @Override public Void call() throws Exception {
                         walEnable(ignite, CACHE_NAME);
 
@@ -341,8 +344,19 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
      * @param node Node.
      * @param ccfg Cache configuration.
      */
+    @SuppressWarnings("unchecked")
     protected void createCache(Ignite node, CacheConfiguration ccfg) {
         node.createCache(ccfg);
+    }
+
+    /**
+     * Destroy cache.
+     *
+     * @param node Node.
+     * @param cacheName Cache name.
+     */
+    protected void destroyCache(Ignite node, String cacheName) {
+        node.destroyCache(cacheName);
     }
 
     /**
@@ -417,6 +431,35 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
     }
 
     /**
+     * Ensure exception is thrown.
+     *
+     * @param cmd Command.
+     * @param errCls Expected error class.
+     * @param errMsg Expected error message.
+     */
+    private void assertThrows(Callable<Void> cmd, Class errCls, String errMsg) {
+        try {
+            cmd.call();
+
+            fail("Exception is not thrown");
+        }
+        catch (Exception e) {
+            if (jdbc) {
+                e = (Exception) e.getCause();
+
+                assert e instanceof SQLException : e.getClass().getName();
+            }
+            else
+                assert F.eq(errCls, e.getClass());
+
+            if (errMsg != null) {
+                assert e.getMessage() != null;
+                assert e.getMessage().startsWith(errMsg) : e.getMessage();
+            }
+        }
+    }
+
+    /**
      * Execute certain logic for all nodes.
      *
      * @param task Task.
@@ -435,7 +478,7 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
                     Collection<String> cacheNames = node0.cacheNames();
 
                     for (String cacheName : cacheNames)
-                        node0.destroyCache(cacheName);
+                        destroyCache(node0, cacheName);
                 }
             }
         }
