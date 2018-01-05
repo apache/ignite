@@ -110,7 +110,7 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
-    public void testNormalEnableDisable() throws Exception {
+    public void testEnableDisable() throws Exception {
         forAllNodes(new IgniteInClosureX<Ignite>() {
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
                 ignite.createCache(cacheConfig(CacheMode.PARTITIONED));
