@@ -90,8 +90,10 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
         deleteWorkFiles();
 
         startGrid(config(SRV_1, false, filterOnCrd));
-        startGrid(config(SRV_2, false, false));
-        startGrid(config(SRV_3, false, !filterOnCrd));
+
+        // TODO: ENABLE
+//        startGrid(config(SRV_2, false, false));
+//        startGrid(config(SRV_3, false, !filterOnCrd));
 
         Ignite cli = startGrid(config(CLI, true, false));
 
@@ -135,10 +137,6 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
         info("");
 
         for (final Ignite node : Ignition.allGrids()) {
-            // TODO: Client doesn't work
-            if (node.configuration().isClientMode())
-                continue;
-
             info(">>> Checking WAL state on node: " + node.name());
 
             assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
@@ -157,10 +155,6 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
      */
     private void forAllNodes(IgniteInClosureX<Ignite> task) throws Exception {
         for (Ignite node : Ignition.allGrids()) {
-            // TODO: Client doesn't work
-            if (node.configuration().isClientMode())
-                continue;
-
             try {
                 info("");
                 info(">>> Executing test on node: " + node.name());
@@ -251,7 +245,9 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
     private static class CacheNodeFilter implements IgnitePredicate<ClusterNode> {
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
-            return node.attribute(FILTER_ATTR) != null;
+            Object filterAttr = node.attribute(FILTER_ATTR);
+
+            return filterAttr == null;
         }
     }
 }
