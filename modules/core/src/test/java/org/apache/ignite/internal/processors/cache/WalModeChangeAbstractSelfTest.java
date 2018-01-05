@@ -41,6 +41,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.Callable;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
@@ -59,6 +61,9 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
 
     /** Cache name 2. */
     private static final String CACHE_NAME_2 = "cache_2";
+
+    /** Volatile data region. */
+    private static final String REGION_VOLATILE = "volatile";
 
     /** Server 1. */
     private static final String SRV_1 = "srv_1";
@@ -146,6 +151,72 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
     }
 
     /**
+     * Negative case: trying to disable WAL for cache in a shared cache group.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSharedCacheGroup() throws Exception {
+        forAllNodes(new IgniteInClosureX<Ignite>() {
+            @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
+                ignite.createCache(cacheConfig(CACHE_NAME, PARTITIONED, TRANSACTIONAL).setGroupName("grp"));
+                ignite.createCache(cacheConfig(CACHE_NAME_2, PARTITIONED, TRANSACTIONAL).setGroupName("grp"));
+
+                GridTestUtils.assertThrows(log, new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        ignite.cluster().walDisable(CACHE_NAME);
+
+                        return null;
+                    }
+                }, IgniteException.class, "Cannot change WAL mode because not all cache names belonging to the " +
+                    "group are provided");
+
+                GridTestUtils.assertThrows(log, new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        ignite.cluster().walEnable(CACHE_NAME);
+
+                        return null;
+                    }
+                }, IgniteException.class, "Cannot change WAL mode because not all cache names belonging to the " +
+                    "group are provided");
+
+                assert ignite.cluster().isWalEnabled(CACHE_NAME);
+                assert ignite.cluster().isWalEnabled(CACHE_NAME_2);
+            }
+        });
+    }
+
+    /**
+     * Negative test case: disabled persistence.
+     *
+     * @throws Exception If failed.
+     */
+    public void testPersistenceDisabled() throws Exception {
+        forAllNodes(new IgniteInClosureX<Ignite>() {
+            @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
+                ignite.createCache(cacheConfig(PARTITIONED).setDataRegionName(REGION_VOLATILE));
+
+                GridTestUtils.assertThrows(log, new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        ignite.cluster().walDisable(CACHE_NAME);
+
+                        return null;
+                    }
+                }, IgniteException.class, "Cannot change WAL mode because persistence is not enabled for cache(s)");
+
+                GridTestUtils.assertThrows(log, new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        ignite.cluster().walEnable(CACHE_NAME);
+
+                        return null;
+                    }
+                }, IgniteException.class, "Cannot change WAL mode because persistence is not enabled for cache(s)");
+
+                assert !ignite.cluster().isWalEnabled(CACHE_NAME);
+            }
+        });
+    }
+
+    /**
      * Test normal disable-enable flow.
      *
      * @throws Exception If failed.
@@ -153,7 +224,7 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
     public void testEnableDisable() throws Exception {
         forAllNodes(new IgniteInClosureX<Ignite>() {
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
-                ignite.createCache(cacheConfig(CacheMode.PARTITIONED));
+                ignite.createCache(cacheConfig(PARTITIONED));
 
                 for (int i = 0; i < 2; i++) {
                     assertForAllNodes(CACHE_NAME, true);
@@ -233,12 +304,17 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
-        DataRegionConfiguration dataRegionCfg = new DataRegionConfiguration().setPersistenceEnabled(true);
+        DataRegionConfiguration regionCfg = new DataRegionConfiguration().setPersistenceEnabled(true);
 
-        DataStorageConfiguration dataStorageCfg =
-            new DataStorageConfiguration().setDefaultDataRegionConfiguration(dataRegionCfg);
+        DataRegionConfiguration volatileRegionCfg = new DataRegionConfiguration().setName(REGION_VOLATILE)
+            .setPersistenceEnabled(false);
 
-        cfg.setDataStorageConfiguration(dataStorageCfg);
+        DataStorageConfiguration storageCfg = new DataStorageConfiguration();
+
+        storageCfg.setDefaultDataRegionConfiguration(regionCfg);
+        storageCfg.setDataRegionConfigurations(volatileRegionCfg);
+
+        cfg.setDataStorageConfiguration(storageCfg);
 
         if (filter)
             cfg.setUserAttributes(Collections.singletonMap(FILTER_ATTR, true));
@@ -253,7 +329,7 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
      * @return Cache configuration.
      */
     private CacheConfiguration cacheConfig(CacheMode mode) {
-        return cacheConfig(CACHE_NAME, mode, CacheAtomicityMode.TRANSACTIONAL);
+        return cacheConfig(CACHE_NAME, mode, TRANSACTIONAL);
     }
 
     /**
