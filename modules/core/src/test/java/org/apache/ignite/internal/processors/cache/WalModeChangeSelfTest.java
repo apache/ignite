@@ -25,6 +25,6 @@ public class WalModeChangeSelfTest extends WalModeChangeAbstractSelfTest {
      * Constructor.
      */
     public WalModeChangeSelfTest() {
-        super(false);
+        super(false, false);
     }
 }

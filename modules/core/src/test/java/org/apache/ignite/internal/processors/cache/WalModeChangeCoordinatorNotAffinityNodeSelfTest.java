@@ -25,6 +25,6 @@ public class WalModeChangeCoordinatorNotAffinityNodeSelfTest extends WalModeChan
      * Constructor.
      */
     public WalModeChangeCoordinatorNotAffinityNodeSelfTest() {
-        super(true);
+        super(true, false);
     }
 }

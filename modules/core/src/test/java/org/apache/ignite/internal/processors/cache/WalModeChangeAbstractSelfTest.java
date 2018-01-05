@@ -101,13 +101,18 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
     /** Whether coordinator node should be filtered out. */
     private final boolean filterOnCrd;
 
+    /** Whether this is JDBC test. */
+    private final boolean jdbc;
+
     /**
      * Constructor.
      *
      * @param filterOnCrd Whether coordinator node should be filtered out.
+     * @param jdbc Whether this is JDBC test.
      */
-    protected WalModeChangeAbstractSelfTest(boolean filterOnCrd) {
+    protected WalModeChangeAbstractSelfTest(boolean filterOnCrd, boolean jdbc) {
         this.filterOnCrd = filterOnCrd;
+        this.jdbc = jdbc;
     }
 
     /** {@inheritDoc} */
@@ -302,6 +307,31 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
     }
 
     /**
+     * Check normal disable-enable flow.
+     *
+     * @throws Exception If failed.
+     */
+    private void checkEnableDisable(CacheMode mode, CacheAtomicityMode atomicityMode) throws Exception {
+        forAllNodes(new IgniteInClosureX<Ignite>() {
+            @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
+                ignite.createCache(cacheConfig(CACHE_NAME, mode, atomicityMode));
+
+                for (int i = 0; i < 2; i++) {
+                    assertForAllNodes(CACHE_NAME, true);
+
+                    assertWalEnable(ignite, CACHE_NAME, false);
+                    assertWalDisable(ignite, CACHE_NAME, true);
+
+                    assertForAllNodes(CACHE_NAME, false);
+
+                    assertWalDisable(ignite, CACHE_NAME, false);
+                    assertWalEnable(ignite, CACHE_NAME, true);
+                }
+            }
+        });
+    }
+
+    /**
      * Enable WAL.
      *
      * @param node Node.
@@ -324,28 +354,31 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
     }
 
     /**
-     * Check normal disable-enable flow.
+     * Enable WAL.
      *
-     * @throws Exception If failed.
+     * @param node Node.
+     * @param cacheName Cache name.
+     * @param expRes Expected result.
      */
-    private void checkEnableDisable(CacheMode mode, CacheAtomicityMode atomicityMode) throws Exception {
-        forAllNodes(new IgniteInClosureX<Ignite>() {
-            @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
-                ignite.createCache(cacheConfig(CACHE_NAME, mode, atomicityMode));
+    private void assertWalEnable(Ignite node, String cacheName, boolean expRes) {
+        boolean res = node.cluster().walEnable(cacheName);
 
-                for (int i = 0; i < 2; i++) {
-                    assertForAllNodes(CACHE_NAME, true);
+        if (!jdbc)
+            assertEquals(expRes, res);
+    }
 
-                    assert !walEnable(ignite, CACHE_NAME);
-                    assert walDisable(ignite, CACHE_NAME);
+    /**
+     * Disable WAL.
+     *
+     * @param node Node.
+     * @param cacheName Cache name.
+     * @param expRes Expected result.
+     */
+    private void assertWalDisable(Ignite node, String cacheName, boolean expRes) {
+        boolean res = node.cluster().walDisable(cacheName);
 
-                    assertForAllNodes(CACHE_NAME, false);
-
-                    assert !walDisable(ignite, CACHE_NAME);
-                    assert walEnable(ignite, CACHE_NAME);
-                }
-            }
-        });
+        if (!jdbc)
+            assertEquals(expRes, res);
     }
 
     /**
