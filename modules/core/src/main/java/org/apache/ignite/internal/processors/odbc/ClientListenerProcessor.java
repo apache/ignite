@@ -195,6 +195,13 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @return Server port.
+     */
+    public int port() {
+        return srv.port();
+    }
+
+    /**
      * Prepare connector configuration.
      *
      * @param cfg Ignote configuration.

@@ -17,8 +17,13 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.WalModeChangeAbstractSelfTest;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -33,6 +38,49 @@ public class JdbcThinWalModeChangeSelfTest extends WalModeChangeAbstractSelfTest
      */
     public JdbcThinWalModeChangeSelfTest() {
         super(false, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void createCache(Ignite node, CacheConfiguration ccfg) {
+        String template = ccfg.getCacheMode() == CacheMode.PARTITIONED ?
+            QueryUtils.TEMPLATE_PARTITIONED : QueryUtils.TEMPLATE_REPLICATED;
+
+        String cmd = "CREATE TABLE " + ccfg.getName() + " (k BIGINT PRIMARY KEY, v BIGINT) WITH \"" +
+            "TEMPLATE=" + template + ", " +
+            "CACHE_NAME=" + ccfg.getName() + ", " +
+            "ATOMICITY=" + ccfg.getAtomicityMode() + ", " +
+            (ccfg.getGroupName() != null ? "CACHE_GROUP=" + ccfg.getGroupName() + ", " : "") +
+            (ccfg.getDataRegionName() != null ? "DATA_REGION=" + ccfg.getDataRegionName() + ", " : "") +
+            "\"";
+
+        execute(node, cmd);
+
+        try (Connection conn = connect(node)) {
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute(cmd);
+            }
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean walEnable(Ignite node, String cacheName) {
+        String cmd = "ALTER TABLE " + cacheName + " LOGGING";
+
+        execute(node, cmd);
+
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean walDisable(Ignite node, String cacheName) {
+        String cmd = "ALTER TABLE " + cacheName + " NOLOGGING";
+
+        execute(node, cmd);
+
+        return false;
     }
 
     /**
@@ -58,5 +106,36 @@ public class JdbcThinWalModeChangeSelfTest extends WalModeChangeAbstractSelfTest
                 assert node.cluster().isWalEnabled("cache");
             }
         }
+    }
+
+    /**
+     * Execute single command.
+     *
+     * @param node Node.
+     * @param cmd Command.
+     */
+    private static void execute(Ignite node, String cmd) {
+        try (Connection conn = connect(node)) {
+            try (Statement stmt = conn.createStatement()) {
+                stmt.executeUpdate(cmd);
+            }
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Get connection for node.
+     *
+     * @param node Node.
+     * @return Connection.
+     */
+    private static Connection connect(Ignite node) throws Exception {
+        IgniteKernal node0 = (IgniteKernal)node;
+
+        int port = node0.context().sqlListener().port();
+
+        return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + port);
     }
 }

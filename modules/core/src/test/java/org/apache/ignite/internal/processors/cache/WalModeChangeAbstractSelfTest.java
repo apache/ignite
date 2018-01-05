@@ -30,7 +30,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -68,9 +67,6 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
     // TODO: Test with concurrent cache operations.
 
     // TODO: Duplicate tests from within JDBC.
-
-    /** Cache template name. */
-    protected static final String TEMPLATE_CACHE_NAME = "template_cache";
 
     /** Shared IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -130,8 +126,6 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
         Ignite cli = startGrid(config(CLI, true, false));
 
         cli.active(true);
-
-        cli.createCache(cacheConfig(TEMPLATE_CACHE_NAME, PARTITIONED, TRANSACTIONAL));
     }
 
     /** {@inheritDoc} */
@@ -251,6 +245,10 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     public void testLocalCache() throws Exception {
+        if (jdbc)
+            // Doesn't make sense for JDBC.
+            return;
+
         forAllNodes(new IgniteInClosureX<Ignite>() {
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
                 createCache(ignite, cacheConfig(LOCAL).setDataRegionName(REGION_VOLATILE));
@@ -377,7 +375,7 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
      * @param expRes Expected result.
      */
     private void assertWalEnable(Ignite node, String cacheName, boolean expRes) {
-        boolean res = node.cluster().walEnable(cacheName);
+        boolean res = walEnable(node, cacheName);
 
         if (!jdbc)
             assertEquals(expRes, res);
@@ -391,7 +389,7 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
      * @param expRes Expected result.
      */
     private void assertWalDisable(Ignite node, String cacheName, boolean expRes) {
-        boolean res = node.cluster().walDisable(cacheName);
+        boolean res = walDisable(node, cacheName);
 
         if (!jdbc)
             assertEquals(expRes, res);
@@ -436,12 +434,8 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
                 for (Ignite node0 : Ignition.allGrids()) {
                     Collection<String> cacheNames = node0.cacheNames();
 
-                    for (String cacheName : cacheNames) {
-                        if (F.eq(TEMPLATE_CACHE_NAME, cacheName))
-                            continue;
-
+                    for (String cacheName : cacheNames)
                         node0.destroyCache(cacheName);
-                    }
                 }
             }
         }
