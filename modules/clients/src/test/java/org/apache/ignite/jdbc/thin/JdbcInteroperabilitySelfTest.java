@@ -59,7 +59,7 @@ public class JdbcInteroperabilitySelfTest extends GridCommonAbstractTest {
      */
     public void testInteroperability() throws Exception {
         // Start a node.
-        Ignite ignite = startGrid(config("srv", false));
+        Ignite srv = startGrid(config("srv", false));
 
         // Create table through SQL.
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
@@ -95,9 +95,12 @@ public class JdbcInteroperabilitySelfTest extends GridCommonAbstractTest {
             }
         }
 
-        read(ignite);
+        read(srv);
 
-        migrateBinary(ignite);
+        Ignite cli = startGrid(config("client", true));
+
+        migrateBinary(cli);
+        migrateBinary(cli);
     }
 
     /**
@@ -262,9 +265,9 @@ public class JdbcInteroperabilitySelfTest extends GridCommonAbstractTest {
             this.delta = delta;
         }
 
-        @Override public Object process(MutableEntry<BinaryObject, BinaryObject> entry,
-            Object... arguments) throws EntryProcessorException {
-
+        /** {@inheritDoc} */
+        @Override public Object process(MutableEntry<BinaryObject, BinaryObject> entry, Object... arguments)
+            throws EntryProcessorException {
             BinaryObject val = entry.getValue();
 
             System.out.println(">> Before update:");
