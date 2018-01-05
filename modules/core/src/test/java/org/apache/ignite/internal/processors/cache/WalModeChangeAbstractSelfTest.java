@@ -68,8 +68,6 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
 
     // TODO: Test with concurrent cache operations.
 
-    // TODO: Duplicate tests from within JDBC.
-
     /** Shared IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
