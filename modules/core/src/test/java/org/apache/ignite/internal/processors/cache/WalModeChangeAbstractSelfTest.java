@@ -62,11 +62,11 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
 
     // TODO: Test node failures (one thread spans messages, another kills oldest node and create another one)
 
-    // TODO: Test LOCAL cache
-
     // TODO: Test concurrent requests from different nodes, count success/error rates
 
     // TODO: Test with concurrent cache operations.
+
+    // TODO: Duplicate tests from within JDBC.
 
     /** Shared IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -140,7 +140,7 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
                 GridTestUtils.assertThrows(log, new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        ignite.cluster().walEnable(null);
+                        walEnable(ignite, null);
 
                         return null;
                     }
@@ -159,7 +159,7 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
                 GridTestUtils.assertThrows(log, new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        ignite.cluster().walEnable(CACHE_NAME);
+                        walEnable(ignite, CACHE_NAME);
 
                         return null;
                     }
@@ -181,7 +181,7 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
 
                 GridTestUtils.assertThrows(log, new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        ignite.cluster().walDisable(CACHE_NAME);
+                        walDisable(ignite, CACHE_NAME);
 
                         return null;
                     }
@@ -190,7 +190,7 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
 
                 GridTestUtils.assertThrows(log, new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        ignite.cluster().walEnable(CACHE_NAME);
+                        walEnable(ignite, CACHE_NAME);
 
                         return null;
                     }
@@ -215,7 +215,7 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
 
                 GridTestUtils.assertThrows(log, new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        ignite.cluster().walDisable(CACHE_NAME);
+                        walDisable(ignite, CACHE_NAME);
 
                         return null;
                     }
@@ -223,7 +223,7 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
 
                 GridTestUtils.assertThrows(log, new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        ignite.cluster().walEnable(CACHE_NAME);
+                        walEnable(ignite, CACHE_NAME);
 
                         return null;
                     }
@@ -246,7 +246,7 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
 
                 GridTestUtils.assertThrows(log, new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        ignite.cluster().walDisable(CACHE_NAME);
+                        walDisable(ignite, CACHE_NAME);
 
                         return null;
                     }
@@ -254,7 +254,7 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
 
                 GridTestUtils.assertThrows(log, new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        ignite.cluster().walEnable(CACHE_NAME);
+                        walEnable(ignite, CACHE_NAME);
 
                         return null;
                     }
@@ -302,6 +302,28 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
     }
 
     /**
+     * Enable WAL.
+     *
+     * @param node Node.
+     * @param cacheName Cache name.
+     * @return Result.
+     */
+    protected boolean walEnable(Ignite node, String cacheName) {
+        return node.cluster().walEnable(cacheName);
+    }
+
+    /**
+     * Disable WAL.
+     *
+     * @param node Node.
+     * @param cacheName Cache name.
+     * @return Result.
+     */
+    protected boolean walDisable(Ignite node, String cacheName) {
+        return node.cluster().walDisable(cacheName);
+    }
+
+    /**
      * Check normal disable-enable flow.
      *
      * @throws Exception If failed.
@@ -314,13 +336,13 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
                 for (int i = 0; i < 2; i++) {
                     assertForAllNodes(CACHE_NAME, true);
 
-                    assert !ignite.cluster().walEnable(CACHE_NAME);
-                    assert ignite.cluster().walDisable(CACHE_NAME);
+                    assert !walEnable(ignite, CACHE_NAME);
+                    assert walDisable(ignite, CACHE_NAME);
 
                     assertForAllNodes(CACHE_NAME, false);
 
-                    assert !ignite.cluster().walDisable(CACHE_NAME);
-                    assert ignite.cluster().walEnable(CACHE_NAME);
+                    assert !walDisable(ignite, CACHE_NAME);
+                    assert walEnable(ignite, CACHE_NAME);
                 }
             }
         });
