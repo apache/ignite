@@ -41,8 +41,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.Callable;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
@@ -50,6 +53,21 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
  */
 @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
 public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTest {
+
+    // TODO: Test concurrent cache destroy (one thread send messages, another thread creates/destroys cache)
+
+    // TODO: Test node join (info should be shared)
+
+    // TODO: Test client disconnect/reconnect
+
+    // TODO: Test node failures (one thread spans messages, another kills oldest node and create another one)
+
+    // TODO: Test LOCAL cache
+
+    // TODO: Test concurrent requests from different nodes, count success/error rates
+
+    // TODO: Test with concurrent cache operations.
+
     /** Shared IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -217,14 +235,81 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
     }
 
     /**
-     * Test normal disable-enable flow.
+     * Negative case: LOCAL cache.
      *
      * @throws Exception If failed.
      */
-    public void testEnableDisable() throws Exception {
+    public void testLocalCache() throws Exception {
         forAllNodes(new IgniteInClosureX<Ignite>() {
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
-                ignite.createCache(cacheConfig(PARTITIONED));
+                ignite.createCache(cacheConfig(LOCAL).setDataRegionName(REGION_VOLATILE));
+
+                GridTestUtils.assertThrows(log, new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        ignite.cluster().walDisable(CACHE_NAME);
+
+                        return null;
+                    }
+                }, IgniteException.class, "WAL mode cannot be changed for LOCAL cache(s)");
+
+                GridTestUtils.assertThrows(log, new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        ignite.cluster().walEnable(CACHE_NAME);
+
+                        return null;
+                    }
+                }, IgniteException.class, "WAL mode cannot be changed for LOCAL cache(s)");
+
+                assert !ignite.cluster().isWalEnabled(CACHE_NAME);
+            }
+        });
+    }
+
+    /**
+     * Test enable/disable for PARTITIONED ATOMIC cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testEnableDisablePartitionedAtomic() throws Exception {
+        checkEnableDisable(PARTITIONED, ATOMIC);
+    }
+
+    /**
+     * Test enable/disable for PARTITIONED TRANSACTIONAL cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testEnableDisablePartitionedTransactional() throws Exception {
+        checkEnableDisable(PARTITIONED, TRANSACTIONAL);
+    }
+
+    /**
+     * Test enable/disable for REPLICATED ATOMIC cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testEnableDisableReplicatedAtomic() throws Exception {
+        checkEnableDisable(REPLICATED, ATOMIC);
+    }
+
+    /**
+     * Test enable/disable for REPLICATED TRANSACTIONAL cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testEnableDisableReplicatedTransactional() throws Exception {
+        checkEnableDisable(REPLICATED, TRANSACTIONAL);
+    }
+
+    /**
+     * Check normal disable-enable flow.
+     *
+     * @throws Exception If failed.
+     */
+    private void checkEnableDisable(CacheMode mode, CacheAtomicityMode atomicityMode) throws Exception {
+        forAllNodes(new IgniteInClosureX<Ignite>() {
+            @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
+                ignite.createCache(cacheConfig(CACHE_NAME, mode, atomicityMode));
 
                 for (int i = 0; i < 2; i++) {
                     assertForAllNodes(CACHE_NAME, true);

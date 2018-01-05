@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -275,6 +276,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 return errorFuture("Cannot change WAL mode because not all cache names belonging to the group are " +
                     "provided [group=" + grpDesc.groupName() + ", missingCaches=" + grpCaches + ']');
             }
+
+            if (grpDesc.config().getCacheMode() == CacheMode.LOCAL)
+                return errorFuture("WAL mode cannot be changed for LOCAL cache(s): " + cacheNames);
 
             // WAL mode change makes sense only for persistent groups.
             if (!grpDesc.persistenceEnabled())
