@@ -17,53 +17,22 @@
 
 package org.apache.ignite.jdbc.thin;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.internal.processors.cache.WalModeChangeAbstractSelfTest;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
-
 /**
  * Tests for WAL mode change from within JDBC driver.
  */
-public class JdbcThinWalModeChangeSelfTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        deleteWorkFiles();
-
-        Ignite node = startGrid();
-
-        node.active(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        stopAllGrids();
-
-        deleteWorkFiles();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        DataRegionConfiguration dataRegionCfg = new DataRegionConfiguration().setPersistenceEnabled(true);
-
-        DataStorageConfiguration dataStorageCfg =
-            new DataStorageConfiguration().setDefaultDataRegionConfiguration(dataRegionCfg);
-
-        cfg.setDataStorageConfiguration(dataStorageCfg);
-
-        return cfg;
+public class JdbcThinWalModeChangeSelfTest extends WalModeChangeAbstractSelfTest {
+    /**
+     * Constructor.
+     */
+    public JdbcThinWalModeChangeSelfTest() {
+        super(false, true);
     }
 
     /**
@@ -89,12 +58,5 @@ public class JdbcThinWalModeChangeSelfTest extends GridCommonAbstractTest {
                 assert node.cluster().isWalEnabled("cache");
             }
         }
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 }

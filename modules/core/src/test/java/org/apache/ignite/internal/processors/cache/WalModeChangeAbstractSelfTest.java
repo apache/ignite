@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -67,6 +68,9 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
     // TODO: Test with concurrent cache operations.
 
     // TODO: Duplicate tests from within JDBC.
+
+    /** Cache template name. */
+    protected static final String TEMPLATE_CACHE_NAME = "template_cache";
 
     /** Shared IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -126,6 +130,8 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
         Ignite cli = startGrid(config(CLI, true, false));
 
         cli.active(true);
+
+        cli.createCache(cacheConfig(TEMPLATE_CACHE_NAME, PARTITIONED, TRANSACTIONAL));
     }
 
     /** {@inheritDoc} */
@@ -181,8 +187,8 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
     public void testSharedCacheGroup() throws Exception {
         forAllNodes(new IgniteInClosureX<Ignite>() {
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
-                ignite.createCache(cacheConfig(CACHE_NAME, PARTITIONED, TRANSACTIONAL).setGroupName("grp"));
-                ignite.createCache(cacheConfig(CACHE_NAME_2, PARTITIONED, TRANSACTIONAL).setGroupName("grp"));
+                createCache(ignite, cacheConfig(CACHE_NAME, PARTITIONED, TRANSACTIONAL).setGroupName("grp"));
+                createCache(ignite, cacheConfig(CACHE_NAME_2, PARTITIONED, TRANSACTIONAL).setGroupName("grp"));
 
                 GridTestUtils.assertThrows(log, new Callable<Void>() {
                     @Override public Void call() throws Exception {
@@ -216,7 +222,7 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
     public void testPersistenceDisabled() throws Exception {
         forAllNodes(new IgniteInClosureX<Ignite>() {
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
-                ignite.createCache(cacheConfig(PARTITIONED).setDataRegionName(REGION_VOLATILE));
+                createCache(ignite, cacheConfig(PARTITIONED).setDataRegionName(REGION_VOLATILE));
 
                 GridTestUtils.assertThrows(log, new Callable<Void>() {
                     @Override public Void call() throws Exception {
@@ -247,7 +253,7 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
     public void testLocalCache() throws Exception {
         forAllNodes(new IgniteInClosureX<Ignite>() {
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
-                ignite.createCache(cacheConfig(LOCAL).setDataRegionName(REGION_VOLATILE));
+                createCache(ignite, cacheConfig(LOCAL).setDataRegionName(REGION_VOLATILE));
 
                 GridTestUtils.assertThrows(log, new Callable<Void>() {
                     @Override public Void call() throws Exception {
@@ -314,7 +320,7 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
     private void checkEnableDisable(CacheMode mode, CacheAtomicityMode atomicityMode) throws Exception {
         forAllNodes(new IgniteInClosureX<Ignite>() {
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
-                ignite.createCache(cacheConfig(CACHE_NAME, mode, atomicityMode));
+                createCache(ignite, cacheConfig(CACHE_NAME, mode, atomicityMode));
 
                 for (int i = 0; i < 2; i++) {
                     assertForAllNodes(CACHE_NAME, true);
@@ -329,6 +335,16 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
                 }
             }
         });
+    }
+
+    /**
+     * Create cache.
+     *
+     * @param node Node.
+     * @param ccfg Cache configuration.
+     */
+    protected void createCache(Ignite node, CacheConfiguration ccfg) {
+        node.createCache(ccfg);
     }
 
     /**
@@ -420,8 +436,12 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
                 for (Ignite node0 : Ignition.allGrids()) {
                     Collection<String> cacheNames = node0.cacheNames();
 
-                    for (String cacheName : cacheNames)
+                    for (String cacheName : cacheNames) {
+                        if (F.eq(TEMPLATE_CACHE_NAME, cacheName))
+                            continue;
+
                         node0.destroyCache(cacheName);
+                    }
                 }
             }
         }
