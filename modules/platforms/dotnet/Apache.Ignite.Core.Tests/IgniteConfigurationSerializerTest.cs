@@ -120,6 +120,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(typeof(int), queryEntity.Fields.Single().FieldType);
             Assert.IsTrue(queryEntity.Fields.Single().IsKeyField);
             Assert.IsTrue(queryEntity.Fields.Single().NotNull);
+            Assert.AreEqual(3.456d, (double)queryEntity.Fields.Single().DefaultValue);
             Assert.AreEqual("somefield.field", queryEntity.Aliases.Single().FullName);
             Assert.AreEqual("shortField", queryEntity.Aliases.Single().Alias);
 
@@ -656,7 +657,8 @@ namespace Apache.Ignite.Core.Tests
                                     new QueryField("field", typeof(int))
                                     {
                                         IsKeyField = true,
-                                        NotNull = true
+                                        NotNull = true,
+                                        DefaultValue = "foo"
                                     }
                                 },
                                 Indexes = new[]
