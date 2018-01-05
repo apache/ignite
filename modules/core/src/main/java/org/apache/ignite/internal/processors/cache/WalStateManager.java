@@ -328,16 +328,13 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             // Validate current caches state before deciding whether to process message further.
             if (validateProposeDiscovery(msg)) {
-                if (!srv)
-                    return;
-
                 CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
 
                 assert grpDesc != null;
 
                 IgnitePredicate<ClusterNode> nodeFilter = grpDesc.config().getNodeFilter();
 
-                boolean affNode = nodeFilter == null || nodeFilter.apply(cctx.localNode());
+                boolean affNode = srv && (nodeFilter == null || nodeFilter.apply(cctx.localNode()));
 
                 msg.affinityNode(affNode);
                 msg.noOp(F.eq(grpDesc.walEnabled(), msg.enable()));
@@ -638,19 +635,14 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                     complete(userFut, msg.changed());
             }
 
-            if (!srv)
-                return;
-
-            // Get result.
+            // Clear pending data.
             WalStateResult res = ress.remove(msg.operationId());
 
-            if (res == null)
+            if (res == null && srv)
                 U.warn(log, "Received finish message for unknown operation (will ignore): " + msg.operationId());
 
-            // Clear distributed process (if any).
             procs.remove(msg.operationId());
 
-            // Unwind next messages.
             CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
 
             if (grpDesc != null && F.eq(grpDesc.deploymentId(), msg.groupDeploymentId())) {
@@ -666,7 +658,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
                 grpDesc.removeWalChangeRequest();
 
-                // Unwind next message.
+                // Move next message to exchange thread.
                 WalStateProposeMessage nextProposeMsg = grpDesc.nextWalChangeRequest();
 
                 if (nextProposeMsg != null) {
@@ -676,17 +668,19 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 }
             }
 
-            // Remember operation ID to handle duplicates.
-            completedOpIds.add(msg.operationId());
+            if (srv) {
+                // Remember operation ID to handle duplicates.
+                completedOpIds.add(msg.operationId());
 
-            // Remove possible stale messages.
-            Iterator<WalStateAckMessage> ackIter = pendingAcks.iterator();
+                // Remove possible stale messages.
+                Iterator<WalStateAckMessage> ackIter = pendingAcks.iterator();
 
-            while (ackIter.hasNext()) {
-                WalStateAckMessage ackMsg = ackIter.next();
+                while (ackIter.hasNext()) {
+                    WalStateAckMessage ackMsg = ackIter.next();
 
-                if (F.eq(ackMsg.operationId(), msg.operationId()))
-                    ackIter.remove();
+                    if (F.eq(ackMsg.operationId(), msg.operationId()))
+                        ackIter.remove();
+                }
             }
         }
     }

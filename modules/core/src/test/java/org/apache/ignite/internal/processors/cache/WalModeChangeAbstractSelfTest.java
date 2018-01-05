@@ -90,10 +90,8 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
         deleteWorkFiles();
 
         startGrid(config(SRV_1, false, filterOnCrd));
-
-        // TODO: ENABLE
-//        startGrid(config(SRV_2, false, false));
-//        startGrid(config(SRV_3, false, !filterOnCrd));
+        startGrid(config(SRV_2, false, false));
+        startGrid(config(SRV_3, false, !filterOnCrd));
 
         Ignite cli = startGrid(config(CLI, true, false));
 
@@ -117,11 +115,17 @@ public abstract class WalModeChangeAbstractSelfTest extends GridCommonAbstractTe
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
                 ignite.createCache(cacheConfig(CacheMode.PARTITIONED));
 
-                assertForAllNodes(CACHE_NAME, true);
+                for (int i = 0; i < 2; i++) {
+                    assertForAllNodes(CACHE_NAME, true);
 
-                assert ignite.cluster().walDisable(CACHE_NAME);
+                    assert !ignite.cluster().walEnable(CACHE_NAME);
+                    assert ignite.cluster().walDisable(CACHE_NAME);
 
-                assertForAllNodes(CACHE_NAME, false);
+                    assertForAllNodes(CACHE_NAME, false);
+
+                    assert !ignite.cluster().walDisable(CACHE_NAME);
+                    assert ignite.cluster().walEnable(CACHE_NAME);
+                }
             }
         });
     }
