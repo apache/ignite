@@ -489,6 +489,7 @@ public class PlatformConfigurationUtils {
         int cnt = in.readInt();
         Set<String> keyFields = new HashSet<>(cnt);
         Set<String> notNullFields = new HashSet<>(cnt);
+        Map<String, Object> defVals = new HashMap<>(cnt);
 
         if (cnt > 0) {
             LinkedHashMap<String, String> fields = new LinkedHashMap<>(cnt);
@@ -504,6 +505,10 @@ public class PlatformConfigurationUtils {
 
                 if (in.readBoolean())
                     notNullFields.add(fieldName);
+
+                Object defVal = in.readObject();
+                if (defVal != null)
+                    defVals.put(fieldName, defVal);
             }
 
             res.setFields(fields);
@@ -513,6 +518,9 @@ public class PlatformConfigurationUtils {
 
             if (!notNullFields.isEmpty())
                 res.setNotNullFields(notNullFields);
+
+            if (!defVals.isEmpty())
+                res.setDefaultFieldValues(defVals);
         }
 
         // Aliases
@@ -996,6 +1004,7 @@ public class PlatformConfigurationUtils {
         if (fields != null) {
             Set<String> keyFields = qryEntity.getKeyFields();
             Set<String> notNullFields = qryEntity.getNotNullFields();
+            Map<String, Object> defVals = qryEntity.getDefaultFieldValues();
 
             writer.writeInt(fields.size());
 
@@ -1004,6 +1013,7 @@ public class PlatformConfigurationUtils {
                 writer.writeString(field.getValue());
                 writer.writeBoolean(keyFields != null && keyFields.contains(field.getKey()));
                 writer.writeBoolean(notNullFields != null && notNullFields.contains(field.getKey()));
+                writer.writeObject(defVals != null ? defVals.get(field.getKey()) : null);
             }
         }
         else
