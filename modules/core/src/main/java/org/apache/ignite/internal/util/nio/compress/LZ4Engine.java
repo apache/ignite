@@ -55,6 +55,8 @@ public class LZ4Engine implements CompressionEngine {
 
         int compressedLen = getInt(src);
 
+        assert compressedLen >= 0;
+
         if (src.remaining() < compressedLen) {
             src.position(initPos);
 

@@ -231,15 +231,6 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
             filterArrayList.add(new GridNioCodecFilter(parser, log, false));
 
-            if (ctx.config().isNetworkCompressingEnabled()){
-                GridNioCompressionFilter compressFilter = new GridNioCompressionFilter(
-                    cfg.isDirectBuffer(), ByteOrder.nativeOrder(), log);
-
-                compressFilter.directMode(false);
-
-                filterArrayList.add(compressFilter);
-            }
-
             if (sslCtx != null) {
                 GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx,
                     cfg.isDirectBuffer(), ByteOrder.nativeOrder(), log);
