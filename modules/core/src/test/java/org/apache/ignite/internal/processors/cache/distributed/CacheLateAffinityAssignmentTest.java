@@ -104,6 +104,8 @@ import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.ExchangeContext.IGNITE_EXCHANGE_COMPATIBILITY_VER_1;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  *
@@ -2469,11 +2471,15 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
                         cache.put(key, val);
 
-                        assertEquals(val, cache.get(key));
+                        try(Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            assertEquals(val, cache.get(key));
+                        }
 
                         cache.remove(key);
 
-                        assertNull(cache.get(key));
+                        try(Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            assertNull(cache.get(key));
+                        }
                     }
                 }
                 catch (Exception e) {

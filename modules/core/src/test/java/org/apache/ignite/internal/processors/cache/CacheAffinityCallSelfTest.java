@@ -104,6 +104,8 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAffinityCallFromClientRestartNode() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-6965");
+
         startGridsMultiThreaded(SRVS + 1);
 
         Ignite client = grid(SRVS);

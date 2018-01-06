@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.spi;
 
+import java.io.EOFException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import org.apache.ignite.internal.util.typedef.X;
@@ -98,7 +99,8 @@ public class IgniteSpiOperationTimeoutHelper {
         if (!failureDetectionTimeoutEnabled)
             return false;
 
-        if (X.hasCause(e, IgniteSpiOperationTimeoutException.class, SocketTimeoutException.class, SocketException.class))
+        if (X.hasCause(e, IgniteSpiOperationTimeoutException.class, EOFException.class,
+            SocketTimeoutException.class, SocketException.class))
             return true;
 
         return (timeout - (U.currentTimeMillis() - lastOperStartTs) <= 0);

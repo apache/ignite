@@ -56,7 +56,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.transactions.TransactionException;
+import org.apache.ignite.transactions.Transaction;
 import org.apache.log4j.Appender;
 import org.apache.log4j.Logger;
 import org.apache.log4j.SimpleLayout;
@@ -64,6 +64,8 @@ import org.apache.log4j.WriterAppender;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Tests for {@code IgniteDataStreamerImpl}.
@@ -271,7 +273,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     public void testAllOperationFinishedBeforeFutureCompletion() throws Exception {
         cnt = 0;
 
-        Ignite ignite = startGrids(MAX_CACHE_COUNT);
+        final Ignite ignite = startGrids(MAX_CACHE_COUNT);
 
         final IgniteCache cache = ignite.cache(DEFAULT_CACHE_NAME);
         final CountDownLatch latch = new CountDownLatch(1);
@@ -289,8 +291,15 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
                 try {
                     future.get();
 
-                    for (int i = 0; i < 100; i++)
-                        assertEquals("" + i, cache.get(i));
+                    for (int i = 0; i < 100; i++) {
+                        Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
+                        try {
+                            assertEquals("" + i, cache.get(i));
+                        }
+                        finally {
+                            tx.close();
+                        }
+                    }
                 }
                 catch (Throwable e) {
                     ex.set(e);
