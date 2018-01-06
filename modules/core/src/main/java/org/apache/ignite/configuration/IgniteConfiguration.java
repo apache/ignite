@@ -124,7 +124,7 @@ public class IgniteConfiguration {
     public static final int DFLT_SEND_RETRY_CNT = 3;
 
     /** Default message send retries count. */
-    public static final boolean DFLT_NET_COMPRESSION = false;
+    public static final boolean DFLT_NET_COMPRESSION = true;
 
     /** Default discovery startup delay in milliseconds (value is {@code 60,000ms}). */
     public static final long DFLT_DISCOVERY_STARTUP_DELAY = 60000;
