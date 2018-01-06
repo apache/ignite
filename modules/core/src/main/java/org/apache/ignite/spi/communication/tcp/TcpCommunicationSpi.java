@@ -94,7 +94,7 @@ import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
 import org.apache.ignite.internal.util.nio.compress.BlockingCompressionHandler;
 import org.apache.ignite.internal.util.nio.compress.GridCompressionMeta;
 import org.apache.ignite.internal.util.nio.compress.GridNioCompressionFilter;
-import org.apache.ignite.internal.util.nio.compress.LZ4CompressionEngine;
+import org.apache.ignite.internal.util.nio.compress.LZ4Engine;
 import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
@@ -3182,7 +3182,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         if (isNetworkCompressingEnabled()) {
                             meta.put(COMPRESS_META.ordinal(), compressMeta = new GridCompressionMeta());
 
-                            compressMeta.compressEngine(new LZ4CompressionEngine());
+                            compressMeta.compressEngine(new LZ4Engine());
                         }
 
                         Integer handshakeConnIdx = connIdx;

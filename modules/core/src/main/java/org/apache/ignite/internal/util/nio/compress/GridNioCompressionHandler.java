@@ -101,11 +101,9 @@ class GridNioCompressionHandler extends ReentrantLock {
         compressEngine = engine;
 
         outNetBuf = directBuf ? ByteBuffer.allocateDirect(netBufSize) : ByteBuffer.allocate(netBufSize);
-
         outNetBuf.order(order);
 
         inNetBuf = directBuf ? ByteBuffer.allocateDirect(netBufSize) : ByteBuffer.allocate(netBufSize);
-
         inNetBuf.order(order);
 
         if (encBuf != null) {
@@ -121,7 +119,6 @@ class GridNioCompressionHandler extends ReentrantLock {
         int appBufSize = netBufSize * 2;
 
         appBuf = directBuf ? ByteBuffer.allocateDirect(appBufSize) : ByteBuffer.allocate(appBufSize);
-
         appBuf.order(order);
 
         if (log.isDebugEnabled())

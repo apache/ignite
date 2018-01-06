@@ -60,7 +60,8 @@ public class BlockingCompressionHandler {
         inNetBuf = directBuf ? ByteBuffer.allocateDirect(netBufSize) : ByteBuffer.allocate(netBufSize);
         inNetBuf.order(order);
 
-        appBuf = allocateAppBuff();
+        appBuf = ByteBuffer.allocate(netBufSize * 2);
+        appBuf.order(order);
 
         if (log.isDebugEnabled())
             log.debug("Started compression session [netBufSize=" + netBufSize + ", appBufSize=" + appBuf.capacity() + ']');
@@ -161,19 +162,6 @@ public class BlockingCompressionHandler {
 
         // prepare to be written again
         inNetBuf.compact();
-    }
-
-    /**
-     * Allocate application buffer.
-     */
-    private ByteBuffer allocateAppBuff() {
-        int appBufSize = netBufSize * 2;
-
-        ByteBuffer buf = ByteBuffer.allocate(appBufSize);
-
-        buf.order(order);
-
-        return buf;
     }
 
     /**
