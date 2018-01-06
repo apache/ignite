@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Services
     using System;
     using System.Diagnostics;
     using System.Linq.Expressions;
+    using System.Reflection;
     using ProxyAction = System.Func<System.Reflection.MethodBase, object[], object>;
 
     /// <summary>
@@ -43,13 +44,14 @@ namespace Apache.Ignite.Core.Impl.Services
         private static Func<ProxyAction, T> GenerateFactory()
         {
             //generate proxy class
-            var proxyType = ServiceProxyTypeGenerator.Generate(typeof(T));
-            var typeCtr = proxyType.GetConstructor(new[] {typeof(Action)});
+            var result = ServiceProxyTypeGenerator.Generate(typeof(T));
+            var typeCtr = result.Type.GetConstructor(new[] { typeof(ProxyAction), typeof(MethodInfo[]) });
             Debug.Assert(typeCtr != null);
             //generate method that creates proxy class instance.
-            //single parameters
+            //single parameter of method
             var action = Expression.Parameter(typeof(ProxyAction));
-            var ctr = Expression.New(typeCtr, action);
+            //call constructor and pass action parameter and array of methods
+            var ctr = Expression.New(typeCtr, action, Expression.Constant(result.Methods));
             var lambda = Expression.Lambda<Func<ProxyAction, T>>(ctr, action);
             return lambda.Compile();
         }

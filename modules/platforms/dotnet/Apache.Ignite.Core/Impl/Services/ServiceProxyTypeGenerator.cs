@@ -27,17 +27,11 @@ namespace Apache.Ignite.Core.Impl.Services
     {
         private static readonly Type ActionType = typeof(ProxyAction);
 
-        private static readonly MethodInfo GetVirtualMethodsMethod =
-            typeof(ServiceMethodHelper).GetMethod("GetVirtualMethods", new[] {typeof(Type)});
-
         private static readonly MethodInfo InvokeMethod = ActionType.GetMethod("Invoke");
-
-        private static readonly MethodInfo TypeFromHandleMethod =
-            typeof(Type).GetMethod("GetTypeFromHandle", new[] {typeof(RuntimeTypeHandle)});
 
         private static readonly ModuleBuilder ModuleBuilder = CreateModuleBuilder();
 
-        public static Type Generate(Type serviceType)
+        public static ProxyTypeGenerationResult Generate(Type serviceType)
         {
             var isClass = serviceType.IsClass;
             var proxyType = ModuleBuilder.DefineType(
@@ -54,7 +48,9 @@ namespace Apache.Ignite.Core.Impl.Services
             buildContext.Methods = ServiceMethodHelper.GetVirtualMethods(buildContext.ServiceType);
             for (var i = 0; i < buildContext.Methods.Length; i++)
                 GenerateMethod(buildContext, i);
-            return proxyType.CreateType();
+
+            var type = proxyType.CreateType();
+            return new ProxyTypeGenerationResult(type, buildContext.Methods);
         }
 
         private static ModuleBuilder CreateModuleBuilder()
@@ -66,21 +62,22 @@ namespace Apache.Ignite.Core.Impl.Services
                     AssemblyBuilderAccess.RunAndCollect);
 #else
             var assemblyBuilder =
-                AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(name), AssemblyBuilderAccess.RunAndCollect);
+                AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(name),
+                    AssemblyBuilderAccess.RunAndCollect);
 #endif
             return assemblyBuilder.DefineDynamicModule(name);
         }
 
         private static void GenerateFields(ProxyBuildContext buildContext)
         {
-            //static field - array with methods of service's type
-            buildContext.MethodsField = buildContext.ProxyType.DefineField("_methods", typeof(MethodInfo[]),
-                FieldAttributes.Static | FieldAttributes.Private | FieldAttributes.InitOnly);
             //static field - empty object array to optimize calls without parameters
             buildContext.EmptyParametersField = buildContext.ProxyType.DefineField("_emptyParameters", typeof(object[]),
                 FieldAttributes.Static | FieldAttributes.Private | FieldAttributes.InitOnly);
             //instance field for function to invoke
             buildContext.ActionField = buildContext.ProxyType.DefineField("_action", ActionType,
+                FieldAttributes.Private | FieldAttributes.InitOnly);
+            //field - array with methods of service's type
+            buildContext.MethodsField = buildContext.ProxyType.DefineField("_methods", typeof(MethodInfo[]),
                 FieldAttributes.Private | FieldAttributes.InitOnly);
         }
 
@@ -90,12 +87,6 @@ namespace Apache.Ignite.Core.Impl.Services
                 MethodAttributes.Static | MethodAttributes.Private | MethodAttributes.HideBySig,
                 CallingConventions.Standard, new Type[0]);
             var gen = cb.GetILGenerator();
-            //fill _methods field
-            gen.Emit(OpCodes.Ldtoken, buildContext.ServiceType);
-            gen.Emit(OpCodes.Call, TypeFromHandleMethod);
-            gen.Emit(OpCodes.Call, GetVirtualMethodsMethod);
-            gen.Emit(OpCodes.Stsfld, buildContext.MethodsField);
-
             //fill _emptyParameters field
             gen.Emit(OpCodes.Ldc_I4_0);
             gen.Emit(OpCodes.Newarr, typeof(object));
@@ -115,10 +106,12 @@ namespace Apache.Ignite.Core.Impl.Services
                 baseCtr = baseType.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public,
                     null, new Type[0], null);
                 if (baseCtr == null)
-                    throw new NotSupportedException("Service proxy does not support base types without parameterless constructor: " + baseType.FullName);
+                    throw new NotSupportedException(
+                        "Service proxy does not support base types without parameterless constructor: " +
+                        baseType.FullName);
             }
             var cb = buildContext.ProxyType.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis,
-                new[] {ActionType});
+                new[] {ActionType, typeof(MethodInfo[])});
             var gen = cb.GetILGenerator();
 
             if (isClass)
@@ -129,10 +122,14 @@ namespace Apache.Ignite.Core.Impl.Services
                 gen.Emit(OpCodes.Call, baseCtr);
             }
 
-            //assign parameter to field
+            //assign parameters to fields
             gen.Emit(OpCodes.Ldarg_0);
             gen.Emit(OpCodes.Ldarg_1);
             gen.Emit(OpCodes.Stfld, buildContext.ActionField);
+
+            gen.Emit(OpCodes.Ldarg_0);
+            gen.Emit(OpCodes.Ldarg_2);
+            gen.Emit(OpCodes.Stfld, buildContext.MethodsField);
 
             gen.Emit(OpCodes.Ret);
         }
@@ -161,8 +158,9 @@ namespace Apache.Ignite.Core.Impl.Services
             gen.Emit(OpCodes.Ldarg_0);
             gen.Emit(OpCodes.Ldfld, buildContext.ActionField);
 
-            //load methods array static field
-            gen.Emit(OpCodes.Ldsfld, buildContext.MethodsField);
+            //load methods array field
+            gen.Emit(OpCodes.Ldarg_0);
+            gen.Emit(OpCodes.Ldfld, buildContext.MethodsField);
             //load index of method
             gen.Emit(OpCodes.Ldc_I4, methodIndex);
             //load element
@@ -195,7 +193,7 @@ namespace Apache.Ignite.Core.Impl.Services
                 gen.Emit(OpCodes.Ldsfld, buildContext.EmptyParametersField);
             }
 
-            //puth action method onto stack
+            //call action method
             gen.Emit(OpCodes.Callvirt, InvokeMethod);
 
             //load result

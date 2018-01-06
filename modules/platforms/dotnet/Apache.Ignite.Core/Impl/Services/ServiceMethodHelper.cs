@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.Services
     /// Provides reflection information about types.
     /// This class used by ServiceProxyTypeGenerator and by generated proxy (to initialize static field).
     /// </summary>
-    public static class ServiceMethodHelper
+    internal static class ServiceMethodHelper
     {
         /// <summary>
         /// Provides information about virtual methods of the type
@@ -37,12 +37,14 @@ namespace Apache.Ignite.Core.Impl.Services
             var methods = new List<MethodInfo>();
             foreach (var method in type.GetMethods(BindingFlags.Instance | BindingFlags.Public |
                                                    BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
-                if (method.IsVirtual) methods.Add(method);
+                if (method.IsVirtual)
+                    methods.Add(method);
 
             if (type.IsInterface)
                 foreach (var method in typeof(object).GetMethods(
                     BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
-                    if (method.IsVirtual) methods.Add(method);
+                    if (method.IsVirtual)
+                        methods.Add(method);
 
             return methods.ToArray();
         }
