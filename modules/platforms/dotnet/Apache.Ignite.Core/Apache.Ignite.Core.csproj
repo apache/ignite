@@ -142,6 +142,9 @@
     <Compile Include="Impl\IPlatformTargetInternal.cs" />
     <Compile Include="Impl\DataRegionMetrics.cs" />
     <Compile Include="Impl\PersistentStore\PersistentStoreMetrics.cs" />
+    <Compile Include="Impl\Services\ServiceMethodHelper.cs" />
+    <Compile Include="Impl\Services\ServiceProxyFactory.cs" />
+    <Compile Include="Impl\Services\ServiceProxyTypeGenerator.cs" />
     <Compile Include="Impl\Shell.cs" />
     <Compile Include="Impl\Unmanaged\Jni\DllLoader.cs" />
     <Compile Include="Impl\Unmanaged\Jni\AppDomains.cs" />
@@ -519,7 +522,6 @@
     <Compile Include="Impl\Resource\ResourceTypeDescriptor.cs" />
     <Compile Include="Impl\Services\ServiceContext.cs" />
     <Compile Include="Impl\Services\ServiceDescriptor.cs" />
-    <Compile Include="Impl\Services\ServiceProxy.cs" />
     <Compile Include="Impl\Services\ServiceProxyInvoker.cs" />
     <Compile Include="Impl\Services\ServiceProxySerializer.cs" />
     <Compile Include="Impl\Services\Services.cs" />

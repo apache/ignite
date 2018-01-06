@@ -190,6 +190,7 @@ namespace Apache.Ignite.Core.Tests.Services
                             "can't resolve ambiguity.", ex.Message);
         }
 
+#if !NETCOREAPP2_0
         [Test]
         public void TestException()
         {
@@ -210,6 +211,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Assert.Throws<ServiceInvocationException>(() => prx.CustomExceptionMethod());
         }
+#endif
 
         [Test]
         public void TestBinarizableMarshallingException()
@@ -261,7 +263,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             _svc = new TestIgniteService(Binary);
 
-            var prx = new ServiceProxy<T>(InvokeProxyMethod).GetTransparentProxy();
+            var prx = new ServiceProxyFactory<T>().CreateProxy(InvokeProxyMethod);
 
             Assert.IsFalse(ReferenceEquals(_svc, prx));
 
@@ -315,7 +317,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Test service interface.
         /// </summary>
-        protected interface ITestIgniteServiceProperties
+        public interface ITestIgniteServiceProperties
         {
             /** */
             int IntProp { get; set; }
@@ -330,7 +332,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Test service interface to check ambiguity handling.
         /// </summary>
-        protected interface ITestIgniteServiceAmbiguity
+        public interface ITestIgniteServiceAmbiguity
         {
             /** */
             int AmbiguousMethod(int arg);
@@ -339,7 +341,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Test service interface.
         /// </summary>
-        protected interface ITestIgniteService : ITestIgniteServiceProperties
+        public interface ITestIgniteService : ITestIgniteServiceProperties
         {
             /** */
             void VoidMethod();
@@ -390,7 +392,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Test service interface. Does not derive from actual interface, but has all the same method signatures.
         /// </summary>
-        protected interface ITestIgniteServiceProxyInterface
+        public interface ITestIgniteServiceProxyInterface
         {
             /** */
             int IntProp { get; set; }
@@ -653,7 +655,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Binarizable object for method argument/result.
         /// </summary>
-        protected class TestBinarizableClass : IBinarizable
+        public class TestBinarizableClass : IBinarizable
         {
             /** */
             public string Prop { get; set; }
