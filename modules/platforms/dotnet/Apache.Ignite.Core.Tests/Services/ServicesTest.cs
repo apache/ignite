@@ -952,7 +952,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Test service interface for proxying.
         /// </summary>
-        private interface ITestIgniteService
+        public interface ITestIgniteService
         {
             int TestProperty { get; set; }
 
@@ -982,7 +982,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Test service interface for proxy usage.
         /// Has some of the original interface members with different signatures.
         /// </summary>
-        private interface ITestIgniteServiceProxyInterface
+        public interface ITestIgniteServiceProxyInterface
         {
             /** */
             Guid NodeId { get; }
@@ -1199,7 +1199,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Java service proxy interface.
         /// </summary>
         [SuppressMessage("ReSharper", "InconsistentNaming")]
-        private interface IJavaService
+        public interface IJavaService
         {
             /** */
             bool isCancelled();
@@ -1315,7 +1315,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Interop class.
         /// </summary>
-        private class PlatformComputeBinarizable
+        public class PlatformComputeBinarizable
         {
             /** */
             public int Field { get; set; }
