@@ -65,7 +65,7 @@ public class GridClientConfiguration {
     public static final boolean DFLT_TCP_NODELAY = true;
 
     /** Default flag setting for NET_COMPRESSION option. */
-    public static final boolean DFLT_NET_COMPRESSION = false;
+    public static final boolean DFLT_NET_COMPRESSION = true;
 
     /** List of servers to connect to. */
     private Collection<String> srvs = Collections.emptySet();
