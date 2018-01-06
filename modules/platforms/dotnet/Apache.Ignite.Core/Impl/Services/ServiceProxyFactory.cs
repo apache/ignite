@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Services
 {
     using System;
+    using System.Diagnostics;
     using System.Linq.Expressions;
     using ProxyAction = System.Func<System.Reflection.MethodBase, object[], object>;
 
@@ -43,11 +44,12 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             //generate proxy class
             var proxyType = ServiceProxyTypeGenerator.Generate(typeof(T));
-
+            var typeCtr = proxyType.GetConstructor(new[] {typeof(Action)});
+            Debug.Assert(typeCtr != null);
             //generate method that creates proxy class instance.
             //single parameters
             var action = Expression.Parameter(typeof(ProxyAction));
-            var ctr = Expression.New(proxyType.GetConstructor(new[] {action.Type}), action);
+            var ctr = Expression.New(typeCtr, action);
             var lambda = Expression.Lambda<Func<ProxyAction, T>>(ctr, action);
             return lambda.Compile();
         }

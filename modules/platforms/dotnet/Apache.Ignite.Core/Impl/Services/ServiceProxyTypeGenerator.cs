@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Services
 {
     using System;
+    using System.Diagnostics;
     using System.Reflection;
     using System.Reflection.Emit;
     using ProxyAction = System.Func<System.Reflection.MethodBase, object[], object>;
@@ -139,6 +140,7 @@ namespace Apache.Ignite.Core.Impl.Services
         private static void GenerateMethod(ProxyBuildContext buildContext, int methodIndex)
         {
             var method = buildContext.Methods[methodIndex];
+            Debug.Assert(method.DeclaringType != null);
             var parameters = method.GetParameters();
             var parameterTypes = new Type[parameters.Length];
             for (var i = 0; i < parameters.Length; i++)
