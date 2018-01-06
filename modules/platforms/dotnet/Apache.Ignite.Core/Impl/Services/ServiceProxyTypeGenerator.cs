@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Impl.Services
                 baseCtr = baseType.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public,
                     null, new Type[0], null);
                 if (baseCtr == null)
-                    throw new Exception("No parameterless constructor found in " + baseType.FullName);
+                    throw new NotSupportedException("Service proxy does not support base types without parameterless constructor: " + baseType.FullName);
             }
             var cb = buildContext.ProxyType.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis,
                 new[] {_actionType});

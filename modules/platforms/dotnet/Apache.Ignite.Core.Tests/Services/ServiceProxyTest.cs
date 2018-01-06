@@ -263,7 +263,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             _svc = new TestIgniteService(Binary);
 
-            var prx = new ServiceProxyFactory<T>().CreateProxy(InvokeProxyMethod);
+            var prx = ServiceProxyFactory<T>.CreateProxy(InvokeProxyMethod);
 
             Assert.IsFalse(ReferenceEquals(_svc, prx));
 
