@@ -219,8 +219,8 @@ namespace Apache.Ignite.Core.Impl.Services
                 ServiceType = serviceType;
             }
 
-            public TypeBuilder ProxyType { get; }
-            public Type ServiceType { get; }
+            public TypeBuilder ProxyType { get; private set; }
+            public Type ServiceType { get; private set; }
 
             public FieldBuilder MethodsField { get; set; }
             public FieldBuilder EmptyParametersField { get; set; }
