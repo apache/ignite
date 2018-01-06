@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Services
     /// <typeparam name="T">User type to be proxied.</typeparam>
     internal static class ServiceProxyFactory<T>
     {
-        private static readonly Func<ProxyAction, T> _factory = GenerateFactory();
+        private static readonly Func<ProxyAction, T> Factory = GenerateFactory();
 
         /// <summary>
         /// Creates proxy which methods call provided function.
@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <returns>Proxy.</returns>
         public static T CreateProxy(ProxyAction action)
         {
-            return _factory(action);
+            return Factory(action);
         }
 
         private static Func<ProxyAction, T> GenerateFactory()
