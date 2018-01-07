@@ -133,22 +133,6 @@ class GridNioCompressionHandler extends ReentrantLock {
     }
 
     /**
-     * Shuts down the handler.
-     */
-    void shutdown() {
-        try {
-            compressEngine.closeInbound();
-        }
-        catch (IOException e) {
-            // According to javadoc, the only case when exception is thrown is when no close_notify
-            // message was received before TCP connection get closed.
-            if (log.isDebugEnabled())
-                log.debug("Unable to correctly close inbound data stream (will ignore) [msg=" + e.getMessage() +
-                    ", ses=" + ses + ']');
-        }
-    }
-
-    /**
      * Called by compress filter when new message was received.
      *
      * @param buf Received message.

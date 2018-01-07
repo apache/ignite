@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.util.nio.compress;
 
 import com.github.luben.zstd.Zstd;
@@ -8,13 +25,23 @@ import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResu
 import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResult.BUFFER_UNDERFLOW;
 import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResult.OK;
 
+/**
+ * Implementation of Zstd algorithm.
+ */
 public class ZstdEngine implements CompressionEngine{
+    /** */
     private final static long DEST_BUFFER_OVERFLOW_ERR = -70;
+
+    /** */
     private final static String DEST_BUFFER_OVERFLOW_ERR_MSG = "Destination buffer is too small";
 
+    /** */
     private byte[] compressArr = new byte[32768];
+
+    /** */
     private byte[] decompressArr = new byte[32768];
 
+    /** {@inheritDoc} */
     @Override public CompressionEngineResult wrap(ByteBuffer src, ByteBuffer buf) throws IOException {
         byte[] inputWrapArray = new byte[src.remaining()];
 
@@ -44,6 +71,7 @@ public class ZstdEngine implements CompressionEngine{
         return OK;
     }
 
+    /** {@inheritDoc} */
     @Override public CompressionEngineResult unwrap(ByteBuffer src, ByteBuffer buf) throws IOException {
         int frameSize = readFrameSize(src); /* TODO We can get decompressed data len */
 
@@ -101,10 +129,7 @@ public class ZstdEngine implements CompressionEngine{
         }
     }
 
-    @Override public void closeInbound() throws IOException {
-        System.out.println("MY Zstd v1");
-    }
-
+    /** */
     private static int readFrameSize(ByteBuffer buf) throws IOException {
         int initPos = buf.position();
         int limit = buf.limit();

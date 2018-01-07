@@ -20,9 +20,6 @@ public class BlockingCompressionHandler {
     /** Logger. */
     private IgniteLogger log;
 
-    /** Order. */
-    private final ByteOrder order;
-
     /** Compress engine. */
     private final CompressionEngine compressionEngine;
 
@@ -48,7 +45,6 @@ public class BlockingCompressionHandler {
         throws IOException {
         this.log = log;
         this.compressionEngine = compressionEngine;
-        this.order = order;
 
         outNetBuf = directBuf ? ByteBuffer.allocateDirect(netBufSize) : ByteBuffer.allocate(netBufSize);
         outNetBuf.order(order);

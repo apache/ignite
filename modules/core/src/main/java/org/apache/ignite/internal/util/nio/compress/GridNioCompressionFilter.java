@@ -63,7 +63,6 @@ public class GridNioCompressionFilter extends GridNioFilterAdapter {
     }
 
     /**
-     *
      * @param directMode Flag indicating whether direct mode is used.
      */
     public void directMode(boolean directMode) {
@@ -119,14 +118,7 @@ public class GridNioCompressionFilter extends GridNioFilterAdapter {
 
     /** {@inheritDoc} */
     @Override public void onSessionClosed(GridNioSession ses) throws IgniteCheckedException {
-        GridNioCompressionHandler hnd = compressionHandler(ses);
-
-        try {
-            hnd.shutdown();
-        }
-        finally {
-            proceedSessionClosed(ses);
-        }
+        proceedSessionClosed(ses);
     }
 
     /** {@inheritDoc} */

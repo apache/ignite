@@ -39,7 +39,4 @@ public interface CompressionEngine {
      * @return Result of decompression.
      */
     CompressionEngineResult unwrap(ByteBuffer src, ByteBuffer buf) throws IOException;
-
-    /** for debug tests.*/
-    void closeInbound() throws IOException;
 }
