@@ -34,25 +34,19 @@ public class DeflaterEngine implements CompressionEngine {
     private final Deflater deflater = new Deflater();
 
     /** */
-    private final byte[] deflateArray = new byte[1024];
+    private byte[] inputDeflaterArr = new byte[32768];
 
     /** */
-    private byte[] inputWrapArray = new byte[1024];
-
-    /** */
-    private final ExtendedByteArrayOutputStream deflateBaos = new ExtendedByteArrayOutputStream(1024);
+    private final ExtendedByteArrayOutputStream deflateBaos = new ExtendedByteArrayOutputStream(32768);
 
     /** */
     private final Inflater inflater = new Inflater();
 
     /** */
-    private final byte[] inflateArray = new byte[1024];
+    private byte[] inputInflaterArr = new byte[32768];
 
     /** */
-    private byte[] inputUnwapArray = new byte[1024];
-
-    /** */
-    private final ExtendedByteArrayOutputStream inflateBaos = new ExtendedByteArrayOutputStream(1024);
+    private final ExtendedByteArrayOutputStream inflateBaos = new ExtendedByteArrayOutputStream(32768);
 
     /** */
     private int inputUnwrapPos = 0;
@@ -69,21 +63,23 @@ public class DeflaterEngine implements CompressionEngine {
     public CompressionEngineResult wrap(ByteBuffer src, ByteBuffer buf) throws IOException {
         int len = src.remaining();
 
-        while (inputWrapArray.length < len)
-            inputWrapArray = new byte[inputWrapArray.length * 2];
+        while (inputDeflaterArr.length < len)
+            inputDeflaterArr = new byte[inputDeflaterArr.length * 2];
 
-        src.get(inputWrapArray, 0, len);
+        src.get(inputDeflaterArr, 0, len);
 
         deflater.reset();
-        deflater.setInput(inputWrapArray, 0, len);
+        deflater.setInput(inputDeflaterArr, 0, len);
         deflater.finish();
 
         deflateBaos.reset();
 
-        while (!deflater.finished()) {
-            int count = deflater.deflate(deflateArray);
+        byte[] arr = new byte[1024];
 
-            deflateBaos.write(deflateArray, 0, count);
+        while (!deflater.finished()) {
+            int count = deflater.deflate(arr);
+
+            deflateBaos.write(arr, 0, count);
         }
 
         if (deflateBaos.size() > buf.remaining()) {
@@ -110,12 +106,12 @@ public class DeflaterEngine implements CompressionEngine {
 
         int len = src.remaining();
 
-        while (inputUnwapArray.length < src.remaining())
-            inputUnwapArray = new byte[inputUnwapArray.length * 2];
+        while (inputInflaterArr.length < src.remaining())
+            inputInflaterArr = new byte[inputInflaterArr.length * 2];
 
         if (inputUnwrapPos >= inputUnwapLen) {
             if (len > 0) {
-                src.get(inputUnwapArray, 0, len);
+                src.get(inputInflaterArr, 0, len);
 
                 inputUnwapLen = len;
                 inputUnwrapPos = 0;
@@ -124,12 +120,14 @@ public class DeflaterEngine implements CompressionEngine {
                 return BUFFER_UNDERFLOW;
         }
 
-        inflater.setInput(inputUnwapArray, inputUnwrapPos, inputUnwapLen - inputUnwrapPos);
+        inflater.setInput(inputInflaterArr, inputUnwrapPos, inputUnwapLen - inputUnwrapPos);
+
+        byte[] arr = new byte[1024];
 
         while (!inflater.finished() && !inflater.needsInput()) {
             try {
-                int count = inflater.inflate(inflateArray);
-                inflateBaos.write(inflateArray, 0, count);
+                int count = inflater.inflate(arr);
+                inflateBaos.write(arr, 0, count);
             } catch (DataFormatException e) {
                 throw new IOException("DataFormatException: ", e);
             }

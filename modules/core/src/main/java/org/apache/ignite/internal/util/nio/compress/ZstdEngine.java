@@ -28,7 +28,9 @@ import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResu
 /**
  * Implementation of Zstd algorithm.
  */
-public class ZstdEngine implements CompressionEngine{
+public class ZstdEngine implements CompressionEngine {
+    /** */
+    private final static int COMPRESS_LEVEL = 1;
     /** */
     private final static long DEST_BUFFER_OVERFLOW_ERR = -70;
 
@@ -43,43 +45,56 @@ public class ZstdEngine implements CompressionEngine{
 
     /** {@inheritDoc} */
     @Override public CompressionEngineResult wrap(ByteBuffer src, ByteBuffer buf) throws IOException {
-        byte[] inputWrapArray = new byte[src.remaining()];
-
-        src.get(inputWrapArray);
-
-        long res;
-
-        do {
-            res = Zstd.compress(compressArr, inputWrapArray, 1);
-
-            if (Zstd.isError(res)) {
-                if (res == DEST_BUFFER_OVERFLOW_ERR)
-                    compressArr = new byte[compressArr.length * 2];
+        if (src.isDirect() && buf.isDirect()) {
+            try {
+                Zstd.compress(buf, src, COMPRESS_LEVEL);
+            } catch (RuntimeException e) {
+                if (e.getMessage().contains(DEST_BUFFER_OVERFLOW_ERR_MSG))
+                    return BUFFER_OVERFLOW;
                 else
-                    throw new IOException("Failed to compress data: " + Zstd.getErrorName(res));
+                    throw new IOException("Failed to compress data", e);
             }
-        } while (res == DEST_BUFFER_OVERFLOW_ERR);
 
-        if (res > buf.remaining()) {
-            src.rewind();
+            return OK;
+        } else {
+            byte[] inputArr = new byte[src.remaining()];
 
-            return BUFFER_OVERFLOW;
+            src.get(inputArr);
+
+            long res;
+
+            do {
+                res = Zstd.compress(compressArr, inputArr, COMPRESS_LEVEL);
+
+                if (Zstd.isError(res)) {
+                    if (res == DEST_BUFFER_OVERFLOW_ERR)
+                        compressArr = new byte[compressArr.length * 2];
+                    else
+                        throw new IOException("Failed to compress data: " + Zstd.getErrorName(res));
+                }
+            }
+            while (res == DEST_BUFFER_OVERFLOW_ERR);
+
+            if (res > buf.remaining()) {
+                src.rewind();
+
+                return BUFFER_OVERFLOW;
+            }
+
+            buf.put(compressArr, 0, (int)res);
+
+            return OK;
         }
-
-        buf.put(compressArr, 0, (int)res);
-
-        return OK;
     }
 
     /** {@inheritDoc} */
     @Override public CompressionEngineResult unwrap(ByteBuffer src, ByteBuffer buf) throws IOException {
-        int frameSize = readFrameSize(src); /* TODO We can get decompressed data len */
+        int frameSize = readFrameSize(src);
 
         if (frameSize == -1)
             return BUFFER_UNDERFLOW;
 
         if (src.isDirect() && buf.isDirect()) {
-            /* direct buffers decompressing more faster */
             int oldLimit = src.limit();
 
             src.limit(src.position() + frameSize);
@@ -91,6 +106,8 @@ public class ZstdEngine implements CompressionEngine{
 
                 if (e.getMessage().contains(DEST_BUFFER_OVERFLOW_ERR_MSG))
                     return BUFFER_OVERFLOW;
+                else
+                    throw new IOException("Failed to compress data", e);
             }
 
             src.limit(oldLimit);
@@ -129,7 +146,12 @@ public class ZstdEngine implements CompressionEngine{
         }
     }
 
-    /** */
+    /**
+     * Read size of compressed frame.
+     *
+     * @param buf ByteBuffer.
+     * @return size of compressed frame, -1 otherwise if not enough data.
+     */
     private static int readFrameSize(ByteBuffer buf) throws IOException {
         int initPos = buf.position();
         int limit = buf.limit();
@@ -165,6 +187,7 @@ public class ZstdEngine implements CompressionEngine{
         offset += headerSize;
 
         boolean lastBlock;
+
         do {
             if (offset + 3 > limit)
                 return -1;
