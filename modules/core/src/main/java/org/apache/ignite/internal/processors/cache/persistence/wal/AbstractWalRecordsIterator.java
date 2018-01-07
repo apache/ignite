@@ -302,7 +302,7 @@ public abstract class AbstractWalRecordsIterator
                 }
 
                 return new FileWriteAheadLogManager.ReadFileHandle(
-                    fileIO, desc.idx, sharedCtx.igniteInstanceName(), serializerFactory.createSerializer(serVer), in);
+                    fileIO, desc.idx, sharedCtx.kernalContext(), serializerFactory.createSerializer(serVer), in);
             }
             catch (SegmentEofException | EOFException ignore) {
                 try {

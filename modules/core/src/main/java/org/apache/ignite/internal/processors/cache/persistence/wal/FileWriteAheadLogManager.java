@@ -62,10 +62,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
+import org.apache.ignite.failure.IgniteFailureProcessor;
+import org.apache.ignite.failure.IgniteFailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
@@ -992,7 +993,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 FileWriteHandle hnd = new FileWriteHandle(
                     fileIO,
                     absIdx,
-                    cctx.igniteInstanceName(),
+                    cctx.kernalContext(),
                     off + len,
                     true,
                     ser,
@@ -1049,7 +1050,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             FileWriteHandle hnd = new FileWriteHandle(
                 fileIO,
                 cur.idx + 1,
-                cctx.igniteInstanceName(),
+                cctx.kernalContext(),
                 0,
                 false,
                 serializer,
@@ -2086,17 +2087,17 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** Absolute WAL segment file index (incremental counter) */
         protected final long idx;
 
-        /** */
-        protected String gridName;
+        /** Kernal context. */
+        protected final GridKernalContext ctx;
 
         /**
          * @param fileIO I/O interface for read/write operations of FileHandle.
          * @param idx Absolute WAL segment file index (incremental counter).
          */
-        private FileHandle(FileIO fileIO, long idx, String gridName) {
+        private FileHandle(FileIO fileIO, long idx, GridKernalContext ctx) {
             this.fileIO = fileIO;
             this.idx = idx;
-            this.gridName = gridName;
+            this.ctx = ctx;
         }
     }
 
@@ -2125,11 +2126,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         ReadFileHandle(
             FileIO fileIO,
             long idx,
-            String gridName,
+            GridKernalContext ctx,
             RecordSerializer ser,
             FileInput in
         ) {
-            super(fileIO, idx, gridName);
+            super(fileIO, idx, ctx);
 
             this.ser = ser;
             this.in = in;
@@ -2201,13 +2202,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private FileWriteHandle(
             FileIO fileIO,
             long idx,
-            String gridName,
+            GridKernalContext ctx,
             long pos,
             boolean resume,
             RecordSerializer serializer,
             SegmentedRingByteBuffer buf
         ) throws IOException {
-            super(fileIO, idx, gridName);
+            super(fileIO, idx, ctx);
 
             assert serializer != null;
 
@@ -2611,11 +2612,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 U.error(log, "IO error encountered while running WAL flush. All further operations " +
                     " will be failed and local node will be stopped.", e);
 
-                new Thread() {
-                    @Override public void run() {
-                        IgnitionEx.stop(gridName, true, true);
-                    }
-                }.start();
+                IgniteFailureProcessor.INSTANCE.processFailure(ctx, IgniteFailureType.PERSISTENCE_ERROR, e);
             }
         }
 

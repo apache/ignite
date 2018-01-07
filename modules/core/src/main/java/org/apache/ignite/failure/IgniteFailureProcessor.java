@@ -19,6 +19,7 @@ package org.apache.ignite.failure;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -94,7 +95,7 @@ public class IgniteFailureProcessor {
                 @Override public void run() {
                     ctx.failure(type);
 
-                    G.stop(ctx.igniteInstanceName(), true);
+                    IgnitionEx.stop(ctx.igniteInstanceName(), true, true);
                 }
             }
         ).start();

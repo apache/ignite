@@ -26,4 +26,7 @@ public enum IgniteFailureType {
 
     /** Exchange worker stop. */
     EXCHANGE_WORKER_STOP,
+
+    /** Persistence error. */
+    PERSISTENCE_ERROR,
 }
