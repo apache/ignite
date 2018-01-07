@@ -69,13 +69,29 @@
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ApiParity\BinaryParityTest.cs" />
+    <Compile Include="ApiParity\CacheAffinityParityTest.cs" />
+    <Compile Include="ApiParity\CacheMetricsParityTest.cs" />
+    <Compile Include="ApiParity\CacheParityTest.cs" />
     <Compile Include="ApiParity\ClientConnectorConfigurationParityTest.cs" />
+    <Compile Include="ApiParity\ClusterMetricsParityTest.cs" />
+    <Compile Include="ApiParity\ClusterParityTest.cs" />
+    <Compile Include="ApiParity\ComputeParityTest.cs" />
     <Compile Include="ApiParity\DataRegionConfigurationParityTest.cs" />
+    <Compile Include="ApiParity\DataRegionMetricsParityTest.cs" />
     <Compile Include="ApiParity\DataStorageConfigurationParityTest.cs" />
+    <Compile Include="ApiParity\DataStorageMetricsParityTest.cs" />
+    <Compile Include="ApiParity\EventsParityTest.cs" />
     <Compile Include="ApiParity\IgniteConfigurationParityTest.cs" />
+    <Compile Include="ApiParity\IgniteParityTest.cs" />
+    <Compile Include="ApiParity\MessagingParityTest.cs" />
     <Compile Include="ApiParity\ParityTest.cs" />
     <Compile Include="ApiParity\CacheConfigurationParityTest.cs" />
     <Compile Include="ApiParity\QueryEntityConfigurationParityTest.cs" />
+    <Compile Include="ApiParity\ServicesParityTest.cs" />
+    <Compile Include="ApiParity\StreamerParityTest.cs" />
+    <Compile Include="ApiParity\TransactionMetricsParityTest.cs" />
+    <Compile Include="ApiParity\TransactionsParityTest.cs" />
     <Compile Include="AssertExtensions.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTestSimpleName.cs" />
     <Compile Include="Binary\BinaryDateTimeTest.cs" />
@@ -106,14 +122,20 @@
     <Compile Include="Cache\Query\Linq\CacheLinqTest.Contains.cs" />
     <Compile Include="Cache\Store\CacheStoreSessionTestCodeConfig.cs" />
     <Compile Include="Cache\Store\CacheStoreSessionTestSharedFactory.cs" />
+    <Compile Include="Client\Cache\BinaryBuilderTest.cs" />
+    <Compile Include="Client\Cache\CacheClientAsyncWrapper.cs" />
     <Compile Include="Client\Cache\CacheTest.cs" />
+    <Compile Include="Client\Cache\CacheTestAsync.cs" />
+    <Compile Include="Client\Cache\CacheTestKeepBinary.cs" />
     <Compile Include="Client\Cache\CacheTestNoMeta.cs" />
     <Compile Include="Client\Cache\ClientCacheConfigurationTest.cs" />
     <Compile Include="Client\Cache\EmptyObject.cs" />
     <Compile Include="Client\Cache\CreateCacheTest.cs" />
+    <Compile Include="Client\Cache\LinqTest.cs" />
     <Compile Include="Client\Cache\ScanQueryTest.cs" />
     <Compile Include="Client\Cache\Person.cs" />
     <Compile Include="Client\Cache\SqlQueryTest.cs" />
+    <Compile Include="Client\Cache\SqlQueryTestBase.cs" />
     <Compile Include="Client\ClientTestBase.cs" />
     <Compile Include="Client\RawSocketTest.cs" />
     <Compile Include="Client\ClientConnectionTest.cs" />
@@ -179,6 +201,7 @@
     <Compile Include="Plugin\TestIgnitePluginConfiguration.cs" />
     <Compile Include="Plugin\TestIgnitePluginException.cs" />
     <Compile Include="Plugin\TestIgnitePluginProvider.cs" />
+    <Compile Include="TaskExtensions.cs" />
     <Compile Include="TestAppConfig.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTestFullFooter.cs" />
     <Compile Include="Binary\BinaryCompactFooterInteropTest.cs" />
@@ -355,6 +378,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Config\Cache\Store\cache-store-session.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\Client\IgniteClientConfiguration.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Config\Compute\compute-grid1.xml">

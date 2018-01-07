@@ -17,6 +17,13 @@
 
 package org.apache.ignite.visor
 
+import java.io._
+import java.lang.{Boolean => JavaBoolean, Byte => JavaByte, Character => JavaCharacter, Double => JavaDouble, Float => JavaFloat, Integer => JavaInteger, Long => JavaLong, Short => JavaShort}
+import java.text._
+import java.util.concurrent._
+import java.util.{Collection => JavaCollection, HashSet => JavaHashSet, _}
+
+import jline.console.ConsoleReader
 import org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER
 import org.apache.ignite._
 import org.apache.ignite.cluster.{ClusterGroup, ClusterGroupEmptyException, ClusterMetrics, ClusterNode}
@@ -28,24 +35,15 @@ import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef._
 import org.apache.ignite.internal.util.{GridConfigurationFinder, IgniteUtils => U}
-import org.apache.ignite.lang._
-import org.apache.ignite.thread.{IgniteThreadFactory, IgniteThreadPoolExecutor}
-import org.apache.ignite.visor.commands.common.VisorTextTable
-import jline.console.ConsoleReader
-import org.jetbrains.annotations.Nullable
-import java.io._
-import java.lang.{Boolean => JavaBoolean}
-import java.net._
-import java.text._
-import java.util.concurrent._
-import java.util.{Collection => JavaCollection, HashSet => JavaHashSet, _}
-
 import org.apache.ignite.internal.visor.cache._
-import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTaskArg
-import org.apache.ignite.internal.visor.node._
+import org.apache.ignite.internal.visor.node.{VisorNodeEventsCollectorTaskArg, _}
 import org.apache.ignite.internal.visor.util.VisorEventMapper
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 import org.apache.ignite.internal.visor.{VisorMultiNodeTask, VisorTaskArgument}
+import org.apache.ignite.lang._
+import org.apache.ignite.thread.{IgniteThreadFactory, IgniteThreadPoolExecutor}
+import org.apache.ignite.visor.commands.common.VisorTextTable
+import org.jetbrains.annotations.Nullable
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable
@@ -134,6 +132,32 @@ object visor extends VisorTag {
     /** Type alias for general event filter. */
     type EventFilter = Event => Boolean
 
+    private final val LOC = Locale.US
+
+    /** Date format. */
+    private final val dateFmt = new SimpleDateFormat("yyyy-MM-dd", LOC)
+
+    /** Date time format. */
+    private final val timeFmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", LOC)
+
+    final val INPUT_TYPES: Seq[(String, (String => Object), Class[_])] = Seq(
+        ("java.lang.String", (value: String) => value, classOf[String]),
+        ("java.lang.Character", (value: String) => JavaCharacter.valueOf(value.head), classOf[JavaCharacter]),
+        ("java.lang.Integer", (value: String) => JavaInteger.valueOf(value), classOf[JavaInteger]),
+        ("java.lang.Long", (value: String) => JavaLong.valueOf(value), classOf[JavaLong]),
+        ("java.lang.Short", (value: String) => JavaShort.valueOf(value), classOf[JavaShort]),
+        ("java.lang.Byte", (value: String) => JavaByte.valueOf(value), classOf[JavaByte]),
+        ("java.lang.Float", (value: String) => JavaFloat.valueOf(value), classOf[JavaFloat]),
+        ("java.lang.Double", (value: String) => JavaDouble.valueOf(value), classOf[JavaDouble]),
+        ("java.lang.Boolean", (value: String) => JavaBoolean.valueOf(value), classOf[JavaBoolean]),
+        ("java.util.Date - Value in format yyyy-MM-dd {HH:mm:ss}",
+            (value: String) => try
+                timeFmt.parse(value)
+            catch {
+                case e: ParseException => dateFmt.parse(value)
+            }, classOf[Date]),
+        ("java.util.UUID - Value like this: CC03C3B0-C03D-4B02-82AF-3E0F85414BA6", (value: String) => UUID.fromString(value), classOf[UUID]))
+
     /** `Nil` is for empty list, `Til` is for empty tuple. */
     val Til: Arg = (null, null)
 
@@ -172,14 +196,6 @@ object visor extends VisorTag {
 
     /** */
     @volatile private var conTs: Long = 0
-
-    private final val LOC = Locale.US
-
-    /** Date time format. */
-    private final val dtFmt = new SimpleDateFormat("MM/dd/yy, HH:mm:ss", LOC)
-
-    /** Date format. */
-    private final val dFmt = new SimpleDateFormat("dd MMMM yyyy", LOC)
 
     private final val DEC_FMT_SYMS = new DecimalFormatSymbols(LOC)
 
@@ -220,8 +236,8 @@ object visor extends VisorTag {
 
     /** Internal thread pool. */
     @volatile var pool: ExecutorService = new IgniteThreadPoolExecutor(
-        Runtime.getRuntime().availableProcessors(),
-        Runtime.getRuntime().availableProcessors(),
+        Runtime.getRuntime.availableProcessors(),
+        Runtime.getRuntime.availableProcessors(),
         0L,
         new LinkedBlockingQueue[Runnable](),
         new IgniteThreadFactory("visorInstance", "visor")
@@ -239,6 +255,9 @@ object visor extends VisorTag {
     private var reader: ConsoleReader = _
 
     var batchMode: Boolean = false
+
+    /** Quiet mode to disable internal node log and information messages output. */
+    var quiet: Boolean = false
 
     def reader(reader: ConsoleReader) {
         assert(reader != null)
@@ -273,7 +292,7 @@ object visor extends VisorTag {
      * @param cacheName Cache name to take cluster group for.
      * @return Cluster group with data nodes for specified cache or cluster group for specified node.
      */
-    def groupForDataNode(node: Option[ClusterNode], cacheName: String) = {
+    def groupForDataNode(node: Option[ClusterNode], cacheName: String): ClusterGroup = {
         val grp = node match {
             case Some(n) => ignite.cluster.forNode(n)
             case None => ignite.cluster.forNodeIds(executeRandom(classOf[VisorCacheNodesTask],
@@ -291,7 +310,7 @@ object visor extends VisorTag {
      * @param cacheName Cache name.
      * @return Message about why node was not found.
      */
-    def messageNodeNotFound(nodeOpt: Option[ClusterNode], cacheName: String) = nodeOpt match {
+    def messageNodeNotFound(nodeOpt: Option[ClusterNode], cacheName: String): String = nodeOpt match {
         case Some(node) => "Can't find node with specified id: " + node.id()
         case None => "Can't find nodes for cache: " + escapeName(cacheName)
     }
@@ -306,7 +325,7 @@ object visor extends VisorTag {
                     close() // This will stop the grid too if Visor is connection owner.
                 }
             catch {
-                case ignore: Throwable => // ignore
+                case _: Throwable => // ignore
             }
         }
     })
@@ -649,7 +668,7 @@ object visor extends VisorTag {
     private def clearNamespace(namespace: String) {
         assert(namespace != null)
 
-        mem.keySet.foreach(k => {
+        mem.keys().foreach(k => {
             if (k.matches(s"$namespace\\d+"))
                 mem.remove(k)
         })
@@ -667,14 +686,15 @@ object visor extends VisorTag {
      *
      * @param v Value to find by.
      */
-    def mfind(@Nullable v: String) = mem.filter(t => t._2 == v).toSeq
+    def mfind(@Nullable v: String): Seq[(String, String)] = mem.filter(t => t._2 == v).toSeq
 
     /**
       * Finds variable by its value.
       *
       * @param v Value to find by.
       */
-    def mfindHead(@Nullable v: String) = mfind(v).filterNot(entry => Seq("nl", "nr").contains(entry._1)).headOption
+    def mfindHead(@Nullable v: String): Option[(String, String)] =
+        mfind(v).filterNot(entry => Seq("nl", "nr").contains(entry._1)).headOption
 
     /**
      * Sets Visor console memory variable. Note that this method '''does not'''
@@ -867,7 +887,7 @@ object visor extends VisorTag {
      * @param argLst Command arguments.
      * @return Error message or node ref.
      */
-    def parseNode(argLst: ArgList) = {
+    def parseNode(argLst: ArgList): Either[String, Option[ClusterNode]] = {
         val id8 = argValue("id8", argLst)
         val id = argValue("id", argLst)
 
@@ -890,7 +910,7 @@ object visor extends VisorTag {
                     Left("'id' does not match any node: " + id.get)
             }
             catch {
-                case e: IllegalArgumentException => Left("Invalid node 'id': " + id.get)
+                case _: IllegalArgumentException => Left("Invalid node 'id': " + id.get)
             }
         }
         else
@@ -1023,7 +1043,7 @@ object visor extends VisorTag {
      * @param a Parameter.
      * @param dflt Value to return if `a` is `null`.
      */
-    def safe(@Nullable a: Any, dflt: Any = NA) = {
+    def safe(@Nullable a: Any, dflt: Any = NA): String = {
         assert(dflt != null)
 
         if (a != null) a.toString else dflt.toString
@@ -1036,7 +1056,7 @@ object visor extends VisorTag {
      * @param dflt Value to return if `arr` is `null` or empty.
      * @return String.
      */
-    def arr2Str[T](arr: Array[T], dflt: Any = NA) =
+    def arr2Str[T](arr: Array[T], dflt: Any = NA): String =
         if (arr != null && arr.length > 0) U.compact(arr.mkString(", ")) else dflt.toString
 
     /**
@@ -1045,7 +1065,7 @@ object visor extends VisorTag {
      * @param bool Boolean value.
      * @return String.
      */
-    def bool2Str(bool: Boolean) = if (bool) "on" else "off"
+    def bool2Str(bool: Boolean): String = if (bool) "on" else "off"
 
     /**
      * Converts `java.lang.Boolean` to 'on'/'off' string.
@@ -1054,7 +1074,7 @@ object visor extends VisorTag {
      * @param ifNull Default value in case if `bool` is `null`.
      * @return String.
      */
-    def javaBoolToStr(bool: JavaBoolean, ifNull: Boolean = false) =
+    def javaBoolToStr(bool: JavaBoolean, ifNull: Boolean = false): String =
         bool2Str(if (bool == null) ifNull else bool.booleanValue())
 
     /**
@@ -1129,7 +1149,7 @@ object visor extends VisorTag {
                     null
             )
         catch {
-            case e: Throwable => None
+            case _: Throwable => None
         }
     }
 
@@ -1162,7 +1182,7 @@ object visor extends VisorTag {
      * @param ts Timestamp.
      */
     def formatDateTime(ts: Long): String =
-        dtFmt.format(ts)
+        timeFmt.format(ts)
 
     /**
      * Returns string representation of the date provided. Result formatted using
@@ -1171,7 +1191,7 @@ object visor extends VisorTag {
      * @param date Date.
      */
     def formatDateTime(date: Date): String =
-        dtFmt.format(date)
+        timeFmt.format(date)
 
     /**
      * Returns string representation of the timestamp provided. Result formatted
@@ -1180,7 +1200,7 @@ object visor extends VisorTag {
      * @param ts Timestamp.
      */
     def formatDate(ts: Long): String =
-        dFmt.format(ts)
+        dateFmt.format(ts)
 
     /**
      * Returns string representation of the date provided. Result formatted using
@@ -1189,7 +1209,7 @@ object visor extends VisorTag {
      * @param date Date.
      */
     def formatDate(date: Date): String =
-        dFmt.format(date)
+        dateFmt.format(date)
 
     /**
      * Base class for memory units.
@@ -1214,7 +1234,7 @@ object visor extends VisorTag {
          */
         def has(m: Long): Boolean = toUnits(m) >= 1
 
-        override def toString = name
+        override def toString: String = name
     }
 
     private[this] case object BYTES extends VisorMemoryUnit("b", 1)
@@ -1282,39 +1302,62 @@ object visor extends VisorTag {
      *
      * @return `True` if Visor console is connected.
      */
-    def isConnected =
-        isCon
+    def isConnected: Boolean = isCon
+
+    /**
+      * Check cluster is active.
+      *
+      * @return `True` when cluster is active.
+      */
+    def isActive: Boolean = ignite.active
 
     /**
      * Gets timestamp of Visor console connection. Returns `0` if Visor console is not connected.
      *
      * @return Timestamp of Visor console connection.
      */
-    def connectTimestamp =
-        conTs
+    def connectTimestamp: Long = conTs
 
     /**
      * Prints properly formatted error message like:
-     * {{{
-     * (wrn) <visor>: warning message
-     * }}}
+     * {{{ [WARN]: warning message }}}
      *
-     * @param warnMsgs Error messages to print. If `null` - this function is no-op.
+     * @param warnMsgs Warning messages to print
      */
     def warn(warnMsgs: Any*) {
-        assert(warnMsgs != null)
-
-        warnMsgs.foreach(line => println(s"(wrn) <visor>: $line"))
+        if (warnMsgs != null)
+            warnMsgs.foreach(line => println(s"[WARN ] $line"))
+        else
+            println("[ERROR] Warning message is missing")
     }
 
     /**
-     * Prints standard 'not connected' error message.
+     * Prints properly formatted info message like:
+     * {{{ [INFO]: info message }}}
+     *
+     * @param infoMsgs Info messages to print.
      */
-    def adviseToConnect() {
-        warn(
-            "Visor is disconnected.",
-            "Type 'open' to connect Visor console or 'help open' to get help."
-        )
+    def info(infoMsgs: Any*) {
+        if (infoMsgs != null)
+            infoMsgs.foreach(line => println(s"[INFO ] $line"))
+        else
+            println("[ERROR] Info message is missing")
+    }
+
+    /**
+     * Check connection state and show inform message when Visor console is not connected to cluster.
+     *
+     * @return `True` when Visor console is connected to cluster.
+     */
+    def checkConnected(): Boolean = {
+        isCon || {
+            warn(
+                "Visor is disconnected.",
+                "Type 'open' to connect Visor console or 'help open' to get help."
+            )
+
+            false
+        }
     }
 
     /**
@@ -1640,20 +1683,22 @@ object visor extends VisorTag {
 
         nl()
 
-        val t = VisorTextTable()
+        if (!visor.quiet) {
+            val t = VisorTextTable()
 
-        // Print advise.
-        println("Some useful commands:")
+            // Print advise.
+            println("Some useful commands:")
 
-        t += ("Type 'top'", "to see full topology.")
-        t += ("Type 'node'", "to see node statistics.")
-        t += ("Type 'cache'", "to see cache statistics.")
-        t += ("Type 'tasks'", "to see tasks statistics.")
-        t += ("Type 'config'", "to see node configuration.")
+            t += ("Type 'top'", "to see full topology.")
+            t += ("Type 'node'", "to see node statistics.")
+            t += ("Type 'cache'", "to see cache statistics.")
+            t += ("Type 'tasks'", "to see tasks statistics.")
+            t += ("Type 'config'", "to see node configuration.")
 
-        t.render()
+            t.render()
 
-        println("\nType 'help' to get help.\n")
+            println("\nType 'help' to get help.\n")
+        }
 
         status()
     }
@@ -1897,7 +1942,7 @@ object visor extends VisorTag {
                 try
                     Some(nodes(a.toInt).id)
                 catch {
-                    case e: Throwable =>
+                    case _: Throwable =>
                         warn("Invalid selection: " + a)
 
                         None
@@ -1980,7 +2025,7 @@ object visor extends VisorTag {
                 try
                     Some(ignite.cluster.forNodes(neighborhood(a.toInt)))
                 catch {
-                    case e: Throwable =>
+                    case _: Throwable =>
                         warn("Invalid selection: " + a)
 
                         None
@@ -2021,7 +2066,7 @@ object visor extends VisorTag {
                 try
                     Some(files(a.toInt).get3.getPath)
                 catch {
-                    case e: Throwable =>
+                    case _: Throwable =>
                         nl()
 
                         warn("Invalid selection: " + a)
@@ -2053,6 +2098,50 @@ object visor extends VisorTag {
         }
     }
 
+    def askTypedValue(name: String): Option[Object] = {
+        val t = VisorTextTable()
+
+        t #= ("#", "Type description")
+
+        INPUT_TYPES.indices.foreach(i => t += (i, INPUT_TYPES(i)._1))
+
+        println("Available " + name + " types:")
+
+        t.render()
+
+        val a = ask("\nChoose " + name + " type ('c' to cancel) [0]: ", "0")
+
+        if (a.toLowerCase == "c")
+            None
+        else {
+            try {
+                val parser = INPUT_TYPES(a.toInt)._2
+
+                try {
+                    val input = readLineOpt("Input " + name + ": ")
+
+                    input.map(parser)
+                }
+                catch {
+                    case e: Throwable =>
+                        nl()
+
+                        warn("Failed to parse value to specified type")
+
+                        None
+                }
+            }
+            catch {
+                case e: Throwable =>
+                    nl()
+
+                    warn("Invalid selection: " + a)
+
+                    None
+            }
+        }
+    }
+
     /**
      * Safe `readLine` version.
      *
@@ -2067,41 +2156,6 @@ object visor extends VisorTag {
         }
         catch {
             case _: Throwable => None
-        }
-    }
-
-    /**
-     * Asks user to choose node id8.
-     *
-     * @return `Option` for node id8.
-     */
-    def askNodeId(): Option[String] = {
-        assert(isConnected)
-
-        val ids = ignite.cluster.forRemotes().nodes().map(nid8).toList
-
-        ids.indices.foreach(i => println((i + 1) + ": " + ids(i)))
-
-        nl()
-
-        println("C: Cancel")
-
-        nl()
-
-        readLineOpt("Choose node: ") match {
-            case Some("c") | Some("C") | None => None
-            case Some(idx) =>
-                try
-                    Some(ids(idx.toInt - 1))
-                catch {
-                    case e: Throwable =>
-                        if (idx.isEmpty)
-                            warn("Index can't be empty.")
-                        else
-                            warn("Invalid index: " + idx + ".")
-
-                        None
-                }
         }
     }
 
@@ -2150,7 +2204,7 @@ object visor extends VisorTag {
     /**
      * Gets visor uptime.
      */
-    def uptime = if (isCon) System.currentTimeMillis() - conTs else -1L
+    def uptime: Long = if (isCon) System.currentTimeMillis() - conTs else -1L
 
     /**
      * ==Command==
@@ -2161,9 +2215,7 @@ object visor extends VisorTag {
      * Disconnects from the grid.
      */
     def close() {
-        if (!isConnected)
-            adviseToConnect()
-        else {
+        if (checkConnected()) {
             if (pool != null) {
                 pool.shutdown()
 
@@ -2171,15 +2223,15 @@ object visor extends VisorTag {
                     if (!pool.awaitTermination(5, TimeUnit.SECONDS))
                         pool.shutdownNow
                 catch {
-                    case e: InterruptedException =>
+                    case _: InterruptedException =>
                         pool.shutdownNow
 
                         Thread.currentThread.interrupt()
                 }
 
                 pool = new IgniteThreadPoolExecutor(
-                    Runtime.getRuntime().availableProcessors(),
-                    Runtime.getRuntime().availableProcessors(),
+                    Runtime.getRuntime.availableProcessors(),
+                    Runtime.getRuntime.availableProcessors(),
                     0L,
                     new LinkedBlockingQueue[Runnable](),
                     new IgniteThreadFactory("visorInstance", "visor")
@@ -2298,9 +2350,7 @@ object visor extends VisorTag {
     def log(args: String) {
         assert(args != null)
 
-        if (!isConnected)
-            adviseToConnect()
-        else {
+        if (checkConnected()) {
             def scold(errMsgs: Any*) {
                 assert(errMsgs != null)
 
@@ -2354,7 +2404,7 @@ object visor extends VisorTag {
 
         logStarted = false
 
-        println("<visor>: Log stopped: " + logFile.getAbsolutePath)
+        info("Log stopped: " + logFile.getAbsolutePath)
     }
 
     /** Unique Visor key to get events last order. */
@@ -2399,7 +2449,7 @@ object visor extends VisorTag {
         try
             freq = freqOpt.getOrElse("10").toLong * 1000L
         catch {
-            case e: NumberFormatException =>
+            case _: NumberFormatException =>
                 throw new IllegalArgumentException("Invalid frequency: " + freqOpt.get)
         }
 
@@ -2414,7 +2464,7 @@ object visor extends VisorTag {
         try
             topFreq = topFreqOpt.getOrElse("20").toLong * 1000L
         catch {
-            case e: NumberFormatException =>
+            case _: NumberFormatException =>
                 throw new IllegalArgumentException("Invalid topology frequency: " + topFreqOpt.get)
         }
 
@@ -2484,7 +2534,7 @@ object visor extends VisorTag {
                     }
                     catch {
                         case _: ClusterGroupEmptyCheckedException => // Ignore.
-                        case e: Exception => logText("Failed to collect log.")
+                        case _: Exception => logText("Failed to collect log.")
                     }
                 }
             }
@@ -2502,7 +2552,7 @@ object visor extends VisorTag {
 
         logText("Log started.")
 
-        println("<visor>: Log started: " + logFile.getAbsolutePath)
+        info("Log started: " + logFile.getAbsolutePath)
     }
 
     /**
@@ -2515,8 +2565,8 @@ object visor extends VisorTag {
             try
                 drawBar(g.cluster.metrics())
             catch {
-                case e: ClusterGroupEmptyCheckedException => logText("Topology is empty.")
-                case e: Exception => ()
+                case _: ClusterGroupEmptyCheckedException => logText("Topology is empty.")
+                case _: Exception => ()
             }
     }
 
@@ -2572,7 +2622,7 @@ object visor extends VisorTag {
                 )
             }
             catch {
-                case e: IOException => ()
+                case _: IOException => ()
             }
             finally {
                 U.close(out, null)
@@ -2615,9 +2665,10 @@ object visor extends VisorTag {
         help()
     }
 
-    lazy val commands = cmdLst.map(_.name) ++ cmdLst.flatMap(_.aliases)
+    lazy val commands: Seq[String] = cmdLst.map(_.name) ++ cmdLst.flatMap(_.aliases)
 
-    def searchCmd(cmd: String) = cmdLst.find(c => c.name.equals(cmd) || (c.aliases != null && c.aliases.contains(cmd)))
+    def searchCmd(cmd: String): Option[VisorCommandHolder] =
+        cmdLst.find(c => c.name.equals(cmd) || (c.aliases != null && c.aliases.contains(cmd)))
 
     /**
      * Transform node ID to ID8 string.
@@ -2645,9 +2696,7 @@ object visor extends VisorTag {
      * @param id8 Node ID in ID8 format.
      * @return Collection of nodes that has specified ID8.
      */
-    def nodeById8(id8: String) = {
-        ignite.cluster.nodes().filter(n => id8.equalsIgnoreCase(nid8(n)))
-    }
+    def nodeById8(id8: String): Iterable[ClusterNode] = ignite.cluster.nodes().filter(n => id8.equalsIgnoreCase(nid8(n)))
 
     /**
      * Introduction of `^^` operator for `Any` type that will call `break`.
@@ -2693,54 +2742,5 @@ object visor extends VisorTag {
         }
         else
             Long.MaxValue
-    }
-
-    /**
-     * Sort addresses to properly display in Visor.
-     *
-     * @param addrs Addresses to sort.
-     * @return Sorted list.
-     */
-    def sortAddresses(addrs: Iterable[String]) = {
-        def ipToLong(ip: String) = {
-            try {
-                val octets = if (ip.contains(".")) ip.split('.') else ip.split(':')
-
-                var dec = BigDecimal.valueOf(0L)
-
-                for (i <- octets.indices) dec += octets(i).toLong * math.pow(256, octets.length - 1 - i).toLong
-
-                dec
-            }
-            catch {
-                case _: Exception => BigDecimal.valueOf(0L)
-            }
-        }
-
-        /**
-         * Sort addresses to properly display in Visor.
-         *
-         * @param addr Address to detect type for.
-         * @return IP class type for sorting in order: public addresses IPv4 + private IPv4 + localhost + IPv6.
-         */
-        def addrType(addr: String) = {
-            if (addr.contains(':'))
-                4 // IPv6
-            else {
-                try {
-                    InetAddress.getByName(addr) match {
-                        case ip if ip.isLoopbackAddress => 3 // localhost
-                        case ip if ip.isSiteLocalAddress => 2 // private IPv4
-                        case _ => 1 // other IPv4
-                    }
-                }
-                catch {
-                    case ignore: UnknownHostException => 5
-                }
-            }
-        }
-
-        addrs.map(addr => (addrType(addr), ipToLong(addr), addr)).toSeq.
-            sortWith((l, r) => if (l._1 == r._1) l._2.compare(r._2) < 0 else l._1 < r._1).map(_._3)
     }
 }

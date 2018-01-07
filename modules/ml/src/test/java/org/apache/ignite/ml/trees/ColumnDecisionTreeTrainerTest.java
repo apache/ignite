@@ -26,6 +26,7 @@ import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Tracer;
@@ -182,9 +183,9 @@ public class ColumnDecisionTreeTrainerTest extends BaseDecisionTreeTest {
 
         byRegion.keySet().forEach(k -> {
             LabeledVectorDouble sp = byRegion.get(k).get(0);
-            Tracer.showAscii(sp.vector());
-            System.out.println("Act: " + sp.label() + " " + " pred: " + mdl.predict(sp.vector()));
-            assert mdl.predict(sp.vector()) == sp.doubleLabel();
+            Tracer.showAscii(sp.features());
+            X.println("Actual and predicted vectors [act=" + sp.label() + " " + ", pred=" + mdl.apply(sp.features()) + "]");
+            assert mdl.apply(sp.features()) == sp.doubleLabel();
         });
     }
 }

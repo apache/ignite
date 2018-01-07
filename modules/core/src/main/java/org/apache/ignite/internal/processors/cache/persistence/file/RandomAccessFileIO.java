@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.OpenOption;
 
@@ -53,33 +54,33 @@ public class RandomAccessFileIO implements FileIO {
     }
 
     /** {@inheritDoc} */
-    @Override public int read(ByteBuffer destinationBuffer) throws IOException {
-        return ch.read(destinationBuffer);
+    @Override public int read(ByteBuffer destBuf) throws IOException {
+        return ch.read(destBuf);
     }
 
     /** {@inheritDoc} */
-    @Override public int read(ByteBuffer destinationBuffer, long position) throws IOException {
-        return ch.read(destinationBuffer, position);
+    @Override public int read(ByteBuffer destBuf, long position) throws IOException {
+        return ch.read(destBuf, position);
     }
 
     /** {@inheritDoc} */
-    @Override public int read(byte[] buffer, int offset, int length) throws IOException {
-        return ch.read(ByteBuffer.wrap(buffer, offset, length));
+    @Override public int read(byte[] buf, int off, int len) throws IOException {
+        return ch.read(ByteBuffer.wrap(buf, off, len));
     }
 
     /** {@inheritDoc} */
-    @Override public int write(ByteBuffer sourceBuffer) throws IOException {
-        return ch.write(sourceBuffer);
+    @Override public int write(ByteBuffer srcBuf) throws IOException {
+        return ch.write(srcBuf);
     }
 
     /** {@inheritDoc} */
-    @Override public int write(ByteBuffer sourceBuffer, long position) throws IOException {
-        return ch.write(sourceBuffer, position);
+    @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
+        return ch.write(srcBuf, position);
     }
 
     /** {@inheritDoc} */
-    @Override public void write(byte[] buffer, int offset, int length) throws IOException {
-        ch.write(ByteBuffer.wrap(buffer, offset, length));
+    @Override public void write(byte[] buf, int off, int len) throws IOException {
+        ch.write(ByteBuffer.wrap(buf, off, len));
     }
 
     /** {@inheritDoc} */
@@ -100,5 +101,10 @@ public class RandomAccessFileIO implements FileIO {
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
         ch.close();
+    }
+
+    /** {@inheritDoc} */
+    @Override public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
+        return ch.map(FileChannel.MapMode.READ_WRITE, 0, maxWalSegmentSize);
     }
 }

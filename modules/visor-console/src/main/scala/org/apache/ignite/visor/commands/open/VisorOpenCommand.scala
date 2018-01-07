@@ -1,25 +1,24 @@
 /*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- *  * Licensed to the Apache Software Foundation (ASF) under one or more
- *  * contributor license agreements.  See the NOTICE file distributed with
- *  * this work for additional information regarding copyright ownership.
- *  * The ASF licenses this file to You under the Apache License, Version 2.0
- *  * (the "License"); you may not use this file except in compliance with
- *  * the License.  You may obtain a copy of the License at
- *  *
- *  *      http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  * See the License for the specific language governing permissions and
- *  * limitations under the License.
- *  
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.visor.commands.open
 
-import java.util.logging.{ConsoleHandler, Logger}
+import java.net.URL
+import java.util.logging.{ConsoleHandler, Level, Logger}
 
 import org.apache.ignite.IgniteSystemProperties._
 import org.apache.ignite.configuration.IgniteConfiguration
@@ -28,13 +27,12 @@ import org.apache.ignite.internal.IgniteEx
 import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper
 import org.apache.ignite.internal.util.{IgniteUtils => U}
+import org.apache.ignite.logger.NullLogger
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi
 import org.apache.ignite.visor.commands.common.{VisorConsoleCommand, VisorTextTable}
 import org.apache.ignite.visor.visor._
 import org.apache.ignite.visor.{VisorTag, visor}
 import org.apache.ignite.{IgniteException, IgniteSystemProperties, Ignition}
-
-import java.net.URL
 
 import scala.language.{implicitConversions, reflectiveCalls}
 
@@ -134,7 +132,15 @@ class VisorOpenCommand extends VisorConsoleCommand {
 
                 // Add no-op logger to remove no-appender warning.
                 val log4jTup =
-                    if (classOf[Ignition].getClassLoader.getResource("org/apache/log4j/Appender.class") != null)
+                    if (visor.quiet) {
+                        val springLog = Logger.getLogger("org.springframework")
+
+                        if (springLog != null)
+                            springLog.setLevel(Level.WARNING)
+
+                        null
+                    }
+                    else if (classOf[Ignition].getClassLoader.getResource("org/apache/log4j/Appender.class") != null)
                         U.addLog4jNoOpLogger()
                     else
                         null
@@ -147,7 +153,7 @@ class VisorOpenCommand extends VisorConsoleCommand {
                         spring.loadConfigurations(url, "cacheConfiguration", "fileSystemConfiguration",
                             "lifecycleBeans", "indexingSpi").get1()
                     finally {
-                        if (log4jTup != null)
+                        if (log4jTup != null && !visor.quiet)
                             U.removeLog4jNoOpLogger(log4jTup)
                     }
 
@@ -159,12 +165,16 @@ class VisorOpenCommand extends VisorConsoleCommand {
 
                 val cfg = cfgs.iterator().next()
 
-                if (log4jTup != null)
-                    System.setProperty(IgniteSystemProperties.IGNITE_CONSOLE_APPENDER, "false")
-                else
-                    Logger.getGlobal.getHandlers.foreach({
-                        case handler: ConsoleHandler => Logger.getGlobal.removeHandler(handler)
-                    })
+                if (visor.quiet)
+                    cfg.setGridLogger(new NullLogger)
+                else {
+                    if (log4jTup != null)
+                        System.setProperty(IgniteSystemProperties.IGNITE_CONSOLE_APPENDER, "false")
+                    else
+                        Logger.getGlobal.getHandlers.foreach({
+                            case handler: ConsoleHandler => Logger.getGlobal.removeHandler(handler)
+                        })
+                }
 
                 // Setting up 'Config URL' for properly print in console.
                 System.setProperty(IgniteSystemProperties.IGNITE_CONFIG_URL, url.getPath)

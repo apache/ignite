@@ -113,9 +113,7 @@ class VisorPingCommand extends VisorConsoleCommand {
      * @param args List of node ID8s. If empty or null - pings all nodes in the topology.
      */
     def ping(args: String) = breakable {
-        if (!isConnected)
-            adviseToConnect()
-        else {
+        if (checkConnected()) {
             val argLst = parseArgs(args)
 
             val res = new Result()

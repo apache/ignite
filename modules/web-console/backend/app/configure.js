@@ -17,6 +17,15 @@
 
 'use strict';
 
+const _ = require('lodash');
+const logger = require('morgan');
+const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
+const session = require('express-session');
+const connectMongo = require('connect-mongo');
+const passport = require('passport');
+const passportSocketIo = require('passport.socketio');
+
 // Fire me up!
 
 /**
@@ -24,11 +33,10 @@
  */
 module.exports = {
     implements: 'configure',
-    inject: ['require(lodash)', 'require(morgan)', 'require(cookie-parser)', 'require(body-parser)',
-        'require(express-session)', 'require(connect-mongo)', 'require(passport)', 'require(passport.socketio)', 'settings', 'mongo', 'middlewares:*']
+    inject: ['settings', 'mongo', 'middlewares:*']
 };
 
-module.exports.factory = function(_, logger, cookieParser, bodyParser, session, connectMongo, passport, passportSocketIo, settings, mongo, apis) {
+module.exports.factory = function(settings, mongo, apis) {
     const _sessionStore = new (connectMongo(session))({mongooseConnection: mongo.connection});
 
     return {

@@ -47,7 +47,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Cache count down latch implementation.
  */
-public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatchEx, IgniteChangeGlobalStateSupport, Externalizable {
+public final class GridCacheCountDownLatchImpl extends AtomicDataStructureProxy<GridCacheCountDownLatchValue>
+    implements GridCacheCountDownLatchEx, IgniteChangeGlobalStateSupport, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -67,24 +68,6 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
                 return new IgniteBiTuple<>();
             }
         };
-
-    /** Logger. */
-    private IgniteLogger log;
-
-    /** Latch name. */
-    private String name;
-
-    /** Removed flag.*/
-    private volatile boolean rmvd;
-
-    /** Latch key. */
-    private GridCacheInternalKey key;
-
-    /** Latch projection. */
-    private IgniteInternalCache<GridCacheInternalKey, GridCacheCountDownLatchValue> latchView;
-
-    /** Cache context. */
-    private GridCacheContext<GridCacheInternalKey, GridCacheCountDownLatchValue> ctx;
 
     /** Initial count. */
     private int initCnt;
@@ -126,30 +109,20 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
         GridCacheInternalKey key,
         IgniteInternalCache<GridCacheInternalKey, GridCacheCountDownLatchValue> latchView)
     {
+        super(name, key, latchView);
+
         assert name != null;
-        assert initCnt >= 0;
         assert key != null;
         assert latchView != null;
 
-        this.name = name;
         this.initCnt = initCnt;
         this.autoDel = autoDel;
-        this.key = key;
-        this.latchView = latchView;
-        this.ctx = latchView.context();
-
-        log = ctx.logger(getClass());
-    }
-
-    /** {@inheritDoc} */
-    @Override public String name() {
-        return name;
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
         try {
-            GridCacheCountDownLatchValue latchVal = latchView.get(key);
+            GridCacheCountDownLatchValue latchVal = cacheView.get(key);
 
             return latchVal == null ? 0 : latchVal.get();
         }
@@ -225,23 +198,8 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onRemoved() {
-        return rmvd = true;
-    }
-
-    /** {@inheritDoc} */
     @Override public void needCheckNotRemoved() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheInternalKey key() {
-        return key;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean removed() {
-        return rmvd;
     }
 
     /** {@inheritDoc} */
@@ -280,8 +238,8 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
             try {
                 internalLatch = retryTopologySafe(new Callable<CountDownLatch>() {
                     @Override public CountDownLatch call() throws Exception {
-                        try (GridNearTxLocal tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ)) {
-                            GridCacheCountDownLatchValue val = latchView.get(key);
+                        try (GridNearTxLocal tx = CU.txStartInternal(ctx, cacheView, PESSIMISTIC, REPEATABLE_READ)) {
+                            GridCacheCountDownLatchValue val = cacheView.get(key);
 
                             if (val == null) {
                                 if (log.isDebugEnabled())
@@ -331,17 +289,6 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
                 throw U.convertException(e);
             }
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        this.ctx = kctx.cache().<GridCacheInternalKey, GridCacheCountDownLatchValue>context().cacheContext(ctx.cacheId());
-        this.latchView = ctx.cache();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onDeActivate(GridKernalContext kctx) {
-        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -402,8 +349,8 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
 
         /** {@inheritDoc} */
         @Override public Integer call() throws Exception {
-            try (GridNearTxLocal tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ)) {
-                GridCacheCountDownLatchValue latchVal = latchView.get(key);
+            try (GridNearTxLocal tx = CU.txStartInternal(ctx, cacheView, PESSIMISTIC, REPEATABLE_READ)) {
+                GridCacheCountDownLatchValue latchVal = cacheView.get(key);
 
                 if (latchVal == null) {
                     if (log.isDebugEnabled())
@@ -425,7 +372,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
 
                 latchVal.set(retVal);
 
-                latchView.put(key, latchVal);
+                cacheView.put(key, latchVal);
 
                 tx.commit();
 

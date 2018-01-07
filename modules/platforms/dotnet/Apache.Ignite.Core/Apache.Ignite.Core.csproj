@@ -97,6 +97,7 @@
     <Compile Include="Cache\Configuration\CacheKeyConfiguration.cs" />
     <Compile Include="Cache\Configuration\DataPageEvictionMode.cs" />
     <Compile Include="Client\Cache\CacheClientConfiguration.cs" />
+    <Compile Include="Client\IgniteClientConfigurationSection.cs" />
     <Compile Include="Configuration\CheckpointWriteOrder.cs" />
     <Compile Include="Configuration\DataPageEvictionMode.cs" />
     <Compile Include="Configuration\DataRegionConfiguration.cs" />
@@ -129,7 +130,7 @@
     <Compile Include="Impl\Binary\IBinaryProcessor.cs" />
     <Compile Include="Impl\Client\Cache\Query\ClientQueryCursorBase.cs" />
     <Compile Include="Impl\Client\Cache\Query\StatementType.cs" />
-    <Compile Include="Impl\Client\ClientStatus.cs" />
+    <Compile Include="Client\ClientStatusCode.cs" />
     <Compile Include="Events\LocalEventListener.cs" />
     <Compile Include="Impl\DataStorageMetrics.cs" />
     <Compile Include="Impl\IIgniteInternal.cs" />
@@ -142,7 +143,7 @@
     <Compile Include="Impl\DataRegionMetrics.cs" />
     <Compile Include="Impl\PersistentStore\PersistentStoreMetrics.cs" />
     <Compile Include="Impl\Shell.cs" />
-    <Compile Include="Impl\Unmanaged\DllLoader.cs" />
+    <Compile Include="Impl\Unmanaged\Jni\DllLoader.cs" />
     <Compile Include="Impl\Unmanaged\Jni\AppDomains.cs" />
     <Compile Include="Impl\Unmanaged\Jni\CallbackDelegates.cs" />
     <Compile Include="Impl\Unmanaged\Jni\Callbacks.cs" />
@@ -150,10 +151,13 @@
     <Compile Include="Impl\Unmanaged\Jni\EnvDelegates.cs" />
     <Compile Include="Impl\Unmanaged\Jni\Env.cs" />
     <Compile Include="Impl\Unmanaged\Jni\EnvInterface.cs" />
+    <Compile Include="Impl\Unmanaged\Jni\JvmDll.cs" />
+    <Compile Include="Impl\Unmanaged\Jni\JvmInitArgs.cs" />
     <Compile Include="Impl\Unmanaged\Jni\JvmInterface.cs" />
     <Compile Include="Impl\PlatformDisposableTargetAdapter.cs" />
     <Compile Include="Impl\PlatformJniTarget.cs" />
     <Compile Include="Impl\Unmanaged\Jni\GlobalRef.cs" />
+    <Compile Include="Impl\Unmanaged\Jni\JvmOption.cs" />
     <Compile Include="Impl\Unmanaged\Jni\MethodId.cs" />
     <Compile Include="Impl\Unmanaged\Jni\NativeMethod.cs" />
     <Compile Include="Impl\Unmanaged\Jni\JniResult.cs" />
@@ -595,6 +599,10 @@
     <None Include="Apache.Ignite.Core.ruleset" />
     <None Include="Apache.Ignite.Core.nuspec" />
     <None Include="Apache.Ignite.Core.Schema.nuspec" />
+    <None Include="IgniteClientConfigurationSection.xsd">
+      <SubType>Designer</SubType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="NuGet\Uninstall.ps1" />
     <None Include="NuGet\PostBuild.ps1" />
     <None Include="NuGet\Install.ps1" />

@@ -54,6 +54,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_3_0;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_4_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_COLUMNS;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_INDEXES;
@@ -592,7 +593,13 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                         JdbcColumnMeta columnMeta;
 
-                        if (protocolVer.compareTo(VER_2_3_0) >= 0) {
+                        if (protocolVer.compareTo(VER_2_4_0) >= 0) {
+                            GridQueryProperty prop = table.property(colName);
+
+                            columnMeta = new JdbcColumnMetaV3(table.schemaName(), table.tableName(),
+                                field.getKey(), field.getValue(), !prop.notNull(), prop.defaultValue());
+                        }
+                        else if (protocolVer.compareTo(VER_2_3_0) >= 0) {
                             GridQueryProperty prop = table.property(colName);
 
                             columnMeta = new JdbcColumnMetaV2(table.schemaName(), table.tableName(),
@@ -610,7 +617,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             JdbcMetaColumnsResult res;
 
-            if (protocolVer.compareTo(VER_2_3_0) >= 0)
+            if (protocolVer.compareTo(VER_2_4_0) >= 0)
+                res = new JdbcMetaColumnsResultV3(meta);
+            else if (protocolVer.compareTo(VER_2_3_0) >= 0)
                 res = new JdbcMetaColumnsResultV2(meta);
             else
                 res = new JdbcMetaColumnsResult(meta);

@@ -22,7 +22,6 @@ import './app.config';
 
 import './modules/form/form.module';
 import './modules/agent/agent.module';
-import './modules/sql/sql.module';
 import './modules/nodes/nodes.module';
 import './modules/demo/Demo.module';
 
@@ -113,7 +112,6 @@ import resetPassword from './controllers/reset-password.controller';
 // Components
 import igniteListOfRegisteredUsers from './components/list-of-registered-users';
 import IgniteActivitiesUserDialog from './components/activities-user-dialog';
-import clusterSelect from './components/cluster-select';
 import './components/input-dialog';
 import webConsoleHeader from './components/web-console-header';
 import webConsoleFooter from './components/web-console-footer';
@@ -123,12 +121,18 @@ import userNotifications from './components/user-notifications';
 import pageConfigure from './components/page-configure';
 import pageConfigureBasic from './components/page-configure-basic';
 import pageConfigureAdvanced from './components/page-configure-advanced';
+import pageQueries from './components/page-queries';
 import gridColumnSelector from './components/grid-column-selector';
 import gridItemSelected from './components/grid-item-selected';
+import gridNoData from './components/grid-no-data';
+import gridExport from './components/grid-export';
 import bsSelectMenu from './components/bs-select-menu';
 import protectFromBsSelectRender from './components/protect-from-bs-select-render';
 import uiGridHovering from './components/ui-grid-hovering';
+import uiGridFilters from './components/ui-grid-filters';
 import listEditable from './components/list-editable';
+import clusterSelector from './components/cluster-selector';
+import connectedClusters from './components/connected-clusters';
 
 import igniteServices from './services';
 
@@ -136,6 +140,7 @@ import igniteServices from './services';
 import IgniteModules from 'IgniteModules/index';
 
 import baseTemplate from 'views/base.pug';
+import * as icons from '../public/images/icons';
 
 angular.module('ignite-console', [
     // Optional AngularJS modules.
@@ -168,7 +173,6 @@ angular.module('ignite-console', [
     'ignite-console.branding',
     'ignite-console.socket',
     'ignite-console.agent',
-    'ignite-console.sql',
     'ignite-console.nodes',
     'ignite-console.demo',
     // States.
@@ -197,14 +201,20 @@ angular.module('ignite-console', [
     pageConfigure.name,
     pageConfigureBasic.name,
     pageConfigureAdvanced.name,
+    pageQueries.name,
     gridColumnSelector.name,
     gridItemSelected.name,
+    gridNoData.name,
+    gridExport.name,
     bsSelectMenu.name,
     uiGridHovering.name,
+    uiGridFilters.name,
     protectFromBsSelectRender.name,
     AngularStrapTooltip.name,
     AngularStrapSelect.name,
     listEditable.name,
+    clusterSelector.name,
+    connectedClusters.name,
     // Ignite modules.
     IgniteModules.name
 ])
@@ -231,7 +241,6 @@ angular.module('ignite-console', [
 .directive('igniteOnFocusOut', igniteOnFocusOut)
 .directive('igniteRestoreInputFocus', igniteRestoreInputFocus)
 .directive('igniteListOfRegisteredUsers', igniteListOfRegisteredUsers)
-.directive('igniteClusterSelect', clusterSelect)
 .directive('btnIgniteLinkDashedSuccess', btnIgniteLink)
 .directive('btnIgniteLinkDashedSecondary', btnIgniteLink)
 // Services.
@@ -291,7 +300,16 @@ angular.module('ignite-console', [
     $root.gettingStarted = gettingStarted;
 }])
 .run(['$rootScope', 'AgentManager', ($root, agentMgr) => {
-    $root.$on('user', () => agentMgr.connect());
+    let lastUser;
+
+    $root.$on('user', (e, user) => {
+        if (lastUser)
+            return;
+
+        lastUser = user;
+
+        agentMgr.connect();
+    });
 }])
 .run(['$transitions', ($transitions) => {
     $transitions.onSuccess({ }, (trans) => {
@@ -323,4 +341,5 @@ angular.module('ignite-console', [
                 .catch(Messages.showError);
         };
     }
-]);
+])
+.run(['IgniteIcon', (IgniteIcon) => IgniteIcon.registerIcons(icons)]);

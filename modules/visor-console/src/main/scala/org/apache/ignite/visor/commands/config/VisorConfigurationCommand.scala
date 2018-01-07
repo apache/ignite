@@ -83,13 +83,12 @@ class VisorConfigurationCommand extends VisorConsoleCommand {
       * Starts command in interactive mode.
      */
     def config() {
-        if (isConnected)
+        if (checkConnected()) {
             askForNode("Select node from:") match {
                 case Some(id) => config("-id=" + id)
                 case None => ()
             }
-        else
-            adviseToConnect()
+        }
     }
 
     /**
@@ -103,44 +102,40 @@ class VisorConfigurationCommand extends VisorConsoleCommand {
      * @param args Command arguments.
      */
     def config(args: String) {
-        if (!isConnected) {
-            adviseToConnect()
+        if (checkConnected()) {
+            val argLst = parseArgs(args)
 
-            return
-        }
+            val nid = parseNode(argLst) match {
+                case Left(msg) =>
+                    scold(msg)
 
-        val argLst = parseArgs(args)
+                    return
 
-        val nid = parseNode(argLst) match {
-            case Left(msg) =>
-                scold(msg)
+                case Right(None) =>
+                    scold("One of -id8 or -id is required.")
 
-                return
+                    return
 
-            case Right(None) =>
-                scold("One of -id8 or -id is required.")
+                case Right(Some(n)) =>
+                    assert(n != null)
 
-                return
+                    n.id()
+            }
 
-            case Right(Some(n)) =>
-                assert(n != null)
+            try {
+                val cfg = collectConfiguration(nid)
 
-                n.id()
-        }
+                printConfiguration(cfg)
 
-        try {
-            val cfg = collectConfiguration(nid)
+                cacheConfigurations(nid).foreach(ccfg => {
+                    println()
 
-            printConfiguration(cfg)
-
-            cacheConfigurations(nid).foreach(ccfg => {
-                println()
-
-                printCacheConfiguration(s"Cache '${escapeName(ccfg.getName)}':", ccfg)
-            })
-        }
-        catch {
-            case e: Throwable => scold(e)
+                    printCacheConfiguration(s"Cache '${escapeName(ccfg.getName)}':", ccfg)
+                })
+            }
+            catch {
+                case e: Throwable => scold(e)
+            }
         }
     }
 
@@ -290,7 +285,7 @@ class VisorConfigurationCommand extends VisorConsoleCommand {
         execSvcT += ("Peer-to-Peer thread pool size", safe(execCfg.getPeerClassLoadingThreadPoolSize))
         execSvcT += ("Rebalance Thread Pool size", execCfg.getRebalanceThreadPoolSize)
         execSvcT += ("REST thread pool size", safe(execCfg.getRestThreadPoolSize))
-        execSvcT += ("SQL processor thread pool size", safe(execCfg.getSqlConnectorConfigurationThreadPoolSize))
+        execSvcT += ("Client connector thread pool size", safe(execCfg.getClientConnectorConfigurationThreadPoolSize))
 
         execSvcT.render()
 

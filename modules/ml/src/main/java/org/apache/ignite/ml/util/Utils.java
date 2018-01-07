@@ -22,6 +22,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.Random;
+import org.apache.ignite.IgniteException;
 
 /**
  * Class with various utility methods.
@@ -34,8 +36,9 @@ public class Utils {
      * @param <T> Class of original object;
      * @return Deep copy of original object.
      */
+    @SuppressWarnings({"unchecked"})
     public static <T> T copy(T orig) {
-        Object obj = null;
+        Object obj;
 
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -50,9 +53,35 @@ public class Utils {
             obj = in.readObject();
         }
         catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+            throw new IgniteException("Couldn't copy the object.");
         }
 
         return (T)obj;
+    }
+
+    /**
+     * Select k distinct integers from range [0, n) with reservoir sampling: https://en.wikipedia.org/wiki/Reservoir_sampling.
+     *
+     * @param n Number specifying left end of range of integers to pick values from.
+     * @param k Count specifying how many integers should be picked.
+     * @return Array containing k distinct integers from range [0, n);
+     */
+    public static int[] selectKDistinct(int n, int k) {
+        int i;
+
+        int res[] = new int[k];
+        for (i = 0; i < k; i++)
+            res[i] = i;
+
+        Random r = new Random();
+
+        for (; i < n; i++) {
+            int j = r.nextInt(i + 1);
+
+            if (j < k)
+                res[j] = i;
+        }
+
+        return res;
     }
 }

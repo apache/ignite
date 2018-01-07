@@ -19,11 +19,16 @@ namespace Apache.Ignite.Core.Client
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client.Cache;
 
     /// <summary>
     /// Main entry point for Ignite Thin Client APIs.
-    /// You can obtain an instance of <see cref="IIgniteClient"/> through <see cref="Ignition.StartClient"/>.
+    /// You can obtain an instance of <see cref="IIgniteClient"/> through one of the
+    /// <see cref="Ignition.StartClient()"/> overloads.
+    /// <para />
+    /// Instances of this class and all nested APIs are thread safe.
     /// </summary>
     public interface IIgniteClient : IDisposable
     {
@@ -90,5 +95,18 @@ namespace Apache.Ignite.Core.Client
         /// </summary>
         /// <param name="name">The name of the cache to stop.</param>
         void DestroyCache(string name);
+
+        /// <summary>
+        /// Gets Ignite binary services.
+        /// </summary>
+        /// <returns>Instance of <see cref="IBinary"/> interface</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
+        IBinary GetBinary();
+
+        /// <summary>
+        /// Gets the configuration.
+        /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
+        IgniteClientConfiguration GetConfiguration();
     }
 }
