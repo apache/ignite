@@ -579,7 +579,7 @@ public class IgniteConfiguration {
         segResolvers = cfg.getSegmentationResolvers();
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
-        netCompression = cfg.isNetworkCompressingEnabled();
+        netCompression = cfg.isNetworkCompressionEnabled();
         sqlConnCfg = cfg.getSqlConnectorConfiguration();
         sslCtxFactory = cfg.getSslContextFactory();
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
@@ -1487,7 +1487,7 @@ public class IgniteConfiguration {
      * @return Network compression flag.
      * @see #DFLT_NET_COMPRESSION
      */
-    public boolean isNetworkCompressingEnabled() {
+    public boolean isNetworkCompressionEnabled() {
         return netCompression;
     }
 
@@ -1497,11 +1497,11 @@ public class IgniteConfiguration {
      * If not provided, then default value
      * {@link #DFLT_NET_COMPRESSION} is used.
      *
-     * @param netCompressEnabled {@code true} if network compressing is enabled, {@code false} otherwise.
+     * @param netCompressionEnabled {@code true} if network compressing is enabled, {@code false} otherwise.
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setNetworkCompressingEnabled(boolean netCompressEnabled) {
-        this.netCompression = netCompressEnabled;
+    public IgniteConfiguration setNetworkCompressionEnabled(boolean netCompressionEnabled) {
+        this.netCompression = netCompressionEnabled;
 
         return this;
     }

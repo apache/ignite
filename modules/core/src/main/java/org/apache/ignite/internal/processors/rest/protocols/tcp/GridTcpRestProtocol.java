@@ -45,7 +45,6 @@ import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioServerListener;
 import org.apache.ignite.internal.util.nio.GridNioSession;
-import org.apache.ignite.internal.util.nio.compress.GridNioCompressionFilter;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -227,9 +226,9 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     private boolean startTcpServer(InetAddress hostAddr, int port, GridNioServerListener<GridClientMessage> lsnr,
         GridNioParser parser, @Nullable SSLContext sslCtx, ConnectorConfiguration cfg) {
         try {
-            ArrayList<GridNioFilter> filterArrayList = new ArrayList<>();
+            GridNioFilter codec = new GridNioCodecFilter(parser, log, false);
 
-            filterArrayList.add(new GridNioCodecFilter(parser, log, false));
+            GridNioFilter[] filters;
 
             if (sslCtx != null) {
                 GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx,
@@ -243,12 +242,13 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
                 sslFilter.needClientAuth(auth);
 
-                filterArrayList.add(sslFilter);
+                filters = new GridNioFilter[] {
+                    codec,
+                    sslFilter
+                };
             }
-
-            GridNioFilter[] filters = new GridNioFilter[filterArrayList.size()];
-
-            filterArrayList.toArray(filters);
+            else
+                filters = new GridNioFilter[] { codec };
 
             srv = GridNioServer.<GridClientMessage>builder()
                 .address(hostAddr)

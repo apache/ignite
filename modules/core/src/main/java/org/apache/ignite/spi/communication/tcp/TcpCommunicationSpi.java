@@ -1150,7 +1150,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * @return {@code True} if network compressing enabled.
      */
     private boolean isNetworkCompressingEnabled() {
-        return ignite.configuration().isNetworkCompressingEnabled();
+        return ignite.configuration().isNetworkCompressionEnabled();
     }
 
     /**

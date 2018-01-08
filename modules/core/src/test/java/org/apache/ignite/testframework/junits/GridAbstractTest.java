@@ -1404,9 +1404,6 @@ public abstract class GridAbstractTest extends TestCase {
         if (isMultiJvm())
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(LOCAL_IP_FINDER);
 
-        /* Set ssl factory for test*/
-//        cfg.setSslContextFactory(GridTestUtils.sslFactory());
-
         return cfg;
     }
 

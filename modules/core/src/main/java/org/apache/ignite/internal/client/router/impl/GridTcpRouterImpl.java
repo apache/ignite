@@ -244,6 +244,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
      * @param lsnr Server message listener.
      * @param parser Server message parser.
      * @param tcpNoDelay Flag indicating whether TCP_NODELAY flag should be set for accepted connections.
+     * @param netCompression Flag indicating whether network compression enabled.
      * @param sslCtx SSL context in case if SSL is enabled.
      * @param wantClientAuth Whether client will be requested for authentication.
      * @param needClientAuth Whether client is required to be authenticated.
@@ -251,7 +252,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
      *      server was unable to start.
      */
     private boolean startTcpServer(InetAddress hostAddr, int port, GridNioServerListener<GridClientMessage> lsnr,
-        GridNioParser parser, boolean tcpNoDelay, boolean netCompress, @Nullable SSLContext sslCtx, boolean wantClientAuth,
+        GridNioParser parser, boolean tcpNoDelay, boolean netCompression, @Nullable SSLContext sslCtx, boolean wantClientAuth,
         boolean needClientAuth) {
         try {
             // This name is required to be unique in order to avoid collisions with
@@ -262,7 +263,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
 
             filterArrayList.add(new GridNioCodecFilter(parser, log, false));
 
-            if (netCompress) {
+            if (netCompression) {
                 GridNioCompressionFilter compressFilter = new GridNioCompressionFilter(false, ByteOrder.nativeOrder(), log);
 
                 filterArrayList.add(compressFilter);
