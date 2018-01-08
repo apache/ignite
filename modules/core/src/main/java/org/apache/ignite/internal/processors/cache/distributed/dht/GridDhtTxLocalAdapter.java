@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -75,11 +76,13 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
  * Replicated user transaction.
  */
 public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
+    public static final AtomicInteger lockAllCnt = new AtomicInteger();
+
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    protected static final IgniteInternalFuture<Boolean> ROLLBACK_FUT = new GridFutureAdapter<>();
+    public static final IgniteInternalFuture<Boolean> ROLLBACK_FUT = new GridFutureAdapter<>();
 
     /** Lock future updater. */
     private static final AtomicReferenceFieldUpdater<GridDhtTxLocalAdapter, IgniteInternalFuture> LOCK_FUT_UPD =
@@ -724,6 +727,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             skipStore,
             keepBinary);
 
+        lockAllCnt.incrementAndGet();
+
         return new GridEmbeddedFuture<>(
             fut,
             new PLC1<GridCacheReturn>(ret) {
@@ -844,6 +849,14 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      */
     public final boolean commitOnPrepare() {
         return onePhaseCommit() && !near() && !nearOnOriginatingNode;
+    }
+
+    /**
+     * Returns current  lock future.
+     * @return Future.
+     */
+    public IgniteInternalFuture<Boolean> lockFuture() {
+        return lockFut;
     }
 
     /**

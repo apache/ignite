@@ -152,8 +152,6 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
         if (tx != null && tx instanceof GridNearTxLocal && !((GridNearTxLocal)tx).updateLockFuture(null, this)) {
             onError(new IgniteTxRollbackCheckedException("Failed to acquire lock because transaction " +
                 "has started to roll back [tx=" + CU.txString(tx) + ']'));
-
-            onComplete(false);
         }
     }
 

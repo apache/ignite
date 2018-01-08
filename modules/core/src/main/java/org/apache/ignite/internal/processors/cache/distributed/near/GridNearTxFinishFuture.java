@@ -42,6 +42,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedLockFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -55,12 +57,14 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionRollbackException;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
+import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 
 /**
@@ -401,7 +405,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      * @param clearThreadMap If {@code true} removes {@link GridNearTxLocal} from thread map.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    public void finish(boolean commit, boolean clearThreadMap) {
+    public void finish(final boolean commit, final boolean clearThreadMap, final boolean onTimeout) {
         if (tx.onNeedCheckBackup()) {
             assert tx.onePhaseCommit();
 
@@ -414,6 +418,57 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             return;
         }
 
+        // Handle race with concurrent locking in case of async rollback.
+        if (!commit && !clearThreadMap) {
+            // TODO remove copy paste.
+            IgniteInternalFuture<Boolean> fut;
+
+            while(true) {
+                fut = tx.lockFuture();
+
+                if (fut != null)
+                    break;
+
+                if (tx.updateLockFuture(null, GridDhtTxLocalAdapter.ROLLBACK_FUT)) {
+                    fut = GridDhtTxLocalAdapter.ROLLBACK_FUT;
+
+                    break;
+                }
+            }
+
+            assert fut != null;
+
+            if (fut != GridDhtTxLocalAdapter.ROLLBACK_FUT) {
+                if (onTimeout) {
+                    // Wait for lock future completion.
+                    fut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
+                        @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                            doFinish(false, false);
+                        }
+                    });
+
+                    return;
+                }
+                else {
+                    // Force finish.
+                    if (fut instanceof GridDhtColocatedLockFuture)
+                        ((GridDhtColocatedLockFuture)fut).onRollback(tx.rollbackException());
+                    else if (fut instanceof GridNearLockFuture)
+                        ((GridNearLockFuture)fut).onRollback(tx.rollbackException());
+                }
+            }
+        }
+
+        doFinish(commit, clearThreadMap);
+    }
+
+    /**
+     * Do tx finish
+     *
+     * @param commit Commit.
+     * @param clearThreadMap Clear thread map.
+     */
+    private void doFinish(boolean commit, boolean clearThreadMap) {
         try {
             if (tx.localFinish(commit, clearThreadMap) || (!commit && tx.state() == UNKNOWN)) {
                 if ((tx.onePhaseCommit() && needFinishOnePhase(commit)) || (!tx.onePhaseCommit() && mappings != null)) {

@@ -435,8 +435,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      * @param dist If {@code true}, then remove locks from remote nodes as well.
      */
     private void undoLocks(boolean dist) {
-        undoCounter.incrementAndGet();
-
         // Transactions will undo during rollback.
         Collection<GridDhtCacheEntry> entriesCp = entriesCopy();
 
@@ -760,6 +758,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         if (super.onDone(success, err)) {
             if (log.isDebugEnabled())
                 log.debug("Completing future: " + this);
+
+            undoCounter.incrementAndGet();
 
             // Clean up.
             cctx.mvcc().removeVersionedFuture(this);

@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -43,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheLockTimeoutException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
+import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
@@ -75,6 +77,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
@@ -90,6 +93,10 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTING;
  */
 @SuppressWarnings("unchecked")
 public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCacheAdapter<K, V> {
+    public static final AtomicInteger lockReplyCntr = new AtomicInteger();
+
+    public static final AtomicInteger lockReplyCntr2 = new AtomicInteger();
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -824,7 +831,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             filter,
             skipStore,
             keepBinary);
-
         for (KeyCacheObject key : keys) {
             try {
                 while (true) {
@@ -860,9 +866,22 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             }
         }
 
-        ctx.mvcc().addFuture(fut);
+        if (!fut.isDone()) {
+            lockReplyCntr.incrementAndGet();
 
-        fut.map();
+            ctx.mvcc().addFuture(fut);
+
+            // Handle race with async rollback.
+            fut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
+                @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                    ctx.mvcc().removeVersionedFuture((GridCacheVersionedFuture<?>)fut);
+                }
+            });
+
+            fut.map();
+        }
+        else
+            lockReplyCntr2.incrementAndGet();
 
         return fut;
     }

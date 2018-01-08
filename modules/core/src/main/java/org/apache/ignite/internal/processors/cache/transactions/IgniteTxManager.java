@@ -1255,11 +1255,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             if (tx instanceof GridCacheMappedVersion) {
                 GridCacheVersion mapped = ((GridCacheMappedVersion)tx).mappedVersion();
 
-                if (mapped != null) {
-                    log.info("Removing mapped 1 ver=" + mapped);
-
+                if (mapped != null)
                     mappedVers.remove(mapped);
-                }
             }
 
             // 11. Clear context.
