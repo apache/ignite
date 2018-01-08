@@ -3182,7 +3182,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         if (isNetworkCompressingEnabled()) {
                             meta.put(COMPRESS_META.ordinal(), compressMeta = new GridCompressionMeta());
 
-                            compressMeta.compressEngine(new LZ4Engine());
+                            compressMeta.compressionEngine(new LZ4Engine());
                         }
 
                         Integer handshakeConnIdx = connIdx;
