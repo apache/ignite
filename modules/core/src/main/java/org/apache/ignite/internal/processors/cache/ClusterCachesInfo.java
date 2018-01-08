@@ -888,7 +888,7 @@ class ClusterCachesInfo {
                 if (gridData == null) { // First node starts.
                     assert joinDiscoData != null;
 
-                    initStartCachesForLocalJoin(true, false);
+                    initStartCachesForLocalJoin(true);
                 }
             }
         }
@@ -1090,7 +1090,10 @@ class ClusterCachesInfo {
 
         gridData = new GridData(joinDiscoData, cachesData, conflictErr);
 
-        initStartCachesForLocalJoin(false, disconnectedState());
+        if (!disconnectedState())
+            initStartCachesForLocalJoin(false);
+        else
+            locJoinCachesCtx = null;
     }
 
     /**
@@ -1099,7 +1102,7 @@ class ClusterCachesInfo {
      *
      * @param firstNode {@code True} if first node in cluster starts.
      */
-    private void initStartCachesForLocalJoin(boolean firstNode, boolean reconnect) {
+    private void initStartCachesForLocalJoin(boolean firstNode) {
         assert locJoinCachesCtx == null : locJoinCachesCtx;
 
         if (ctx.state().clusterState().transition()) {
@@ -1119,9 +1122,6 @@ class ClusterCachesInfo {
                     continue;
 
                 CacheConfiguration<?, ?> cfg = desc.cacheConfiguration();
-
-                if (reconnect && surviveReconnect(cfg.getName()))
-                    continue;
 
                 CacheJoinNodeDiscoveryData.CacheInfo locCfg = joinDiscoData.caches().get(cfg.getName());
 
@@ -1172,7 +1172,7 @@ class ClusterCachesInfo {
      */
     public void onStateChangeFinish(ChangeGlobalStateFinishMessage msg) {
         if (joinOnTransition) {
-            initStartCachesForLocalJoin(false, false);
+            initStartCachesForLocalJoin(false);
 
             joinOnTransition = false;
         }
@@ -1730,7 +1730,7 @@ class ClusterCachesInfo {
             }
 
             if (!cachesOnDisconnect.clusterActive())
-                initStartCachesForLocalJoin(false, true);
+                initStartCachesForLocalJoin(false);
         }
 
         if (clientReconnectReqs != null) {
