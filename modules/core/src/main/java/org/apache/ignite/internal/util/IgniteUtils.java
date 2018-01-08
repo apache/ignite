@@ -257,6 +257,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_DATE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CACHE;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_REGIONS_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JVM_PID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.util.GridUnsafe.objectFieldOffset;
@@ -1232,6 +1233,23 @@ public abstract class IgniteUtils {
         }
 
         return roundedHeapSize(heap, precision);
+    }
+
+    /**
+     * Gets total offheap size in GB rounded to specified precision.
+     *
+     * @param nodes Nodes.
+     * @param precision Precision.
+     * @return Total offheap size in GB.
+     */
+    public static double offheapSize(Iterable<ClusterNode> nodes, int precision) {
+        // In bytes.
+        double totalOffheap = 0.0;
+
+        for (ClusterNode n : nodesPerJvm(nodes))
+            totalOffheap += n.<Long>attribute(ATTR_DATA_REGIONS_OFFHEAP_SIZE);
+
+        return roundedHeapSize(totalOffheap, precision);
     }
 
     /**
