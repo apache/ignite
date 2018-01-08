@@ -79,7 +79,7 @@ public class GridNioCompressionFilter extends GridNioFilterAdapter {
     /** {@inheritDoc} */
     @Override public void onSessionOpened(GridNioSession ses) throws IgniteCheckedException {
         if (log.isDebugEnabled())
-            log.debug("Remote client connected, creating compress handler: " + ses);
+            log.debug("Remote client connected, creating compression handler: " + ses);
 
         CompressionEngine engine;
 
@@ -93,7 +93,7 @@ public class GridNioCompressionFilter extends GridNioFilterAdapter {
             ses.addMeta(COMPRESS_META.ordinal(), compressMeta);
         }
         else {
-            engine = compressMeta.compressEngine();
+            engine = compressMeta.compressionEngine();
 
             assert engine != null;
         }

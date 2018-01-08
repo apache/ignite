@@ -28,7 +28,9 @@ import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResu
 import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResult.BUFFER_UNDERFLOW;
 import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResult.OK;
 
-/** */
+/**
+ * Implementation of Deflater algorithm.
+ */
 public class DeflaterEngine implements CompressionEngine {
     /** */
     private final Deflater deflater = new Deflater();

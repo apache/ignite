@@ -3492,7 +3492,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 if (isNetworkCompressingEnabled()) {
                     assert compressMeta != null;
 
-                    compressHnd = new BlockingCompressionHandler(compressMeta.compressEngine(), directBuf, ByteOrder.nativeOrder(), log);
+                    compressHnd = new BlockingCompressionHandler(compressMeta.compressionEngine(), directBuf, ByteOrder.nativeOrder(), log);
 
                     assert compressHnd.applicationBuffer().remaining() == 0;
                 }

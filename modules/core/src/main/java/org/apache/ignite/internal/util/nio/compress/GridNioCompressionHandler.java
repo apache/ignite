@@ -109,7 +109,7 @@ class GridNioCompressionHandler extends ReentrantLock {
         if (encBuf != null) {
             encBuf.flip();
 
-            inNetBuf.put(encBuf); // Buffer contains bytes read but not handled by compressEngine at BlockingCompressionHandler.
+            inNetBuf.put(encBuf); // Buffer contains bytes read but not handled by compressionEngine at BlockingCompressionHandler.
         }
 
         // Initially buffer is empty.

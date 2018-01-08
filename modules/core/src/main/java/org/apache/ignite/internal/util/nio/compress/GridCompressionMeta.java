@@ -31,18 +31,18 @@ public class GridCompressionMeta {
     private ByteBuffer encodedBuf;
 
     /** Compress engine. */
-    private CompressionEngine compressEngine;
+    private CompressionEngine compressionEngine;
 
     /** */
-    public CompressionEngine compressEngine() {
-        return compressEngine;
+    public CompressionEngine compressionEngine() {
+        return compressionEngine;
     }
 
     /**
-     * @param compressEngine Compress engine.
+     * @param compressionEngine Compress engine.
      */
-    public void compressEngine(CompressionEngine compressEngine) {
-        this.compressEngine = compressEngine;
+    public void compressionEngine(CompressionEngine compressionEngine) {
+        this.compressionEngine = compressionEngine;
     }
 
     /** */
