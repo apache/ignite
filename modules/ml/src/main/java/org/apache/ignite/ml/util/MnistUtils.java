@@ -38,7 +38,7 @@ public class MnistUtils {
      *
      * @param imagesPath Path to the file with images.
      * @param labelsPath Path to the file with labels.
-     * @param rnd Random numbers generator.
+     * @param rnd Random numbers generatror.
      * @param cnt Count of samples to read.
      * @return Stream of MNIST samples.
      * @throws IOException In case of exception.
@@ -85,7 +85,7 @@ public class MnistUtils {
      * @param outPath Path to output path.
      * @param rnd Random numbers generator.
      * @param cnt Count of samples to read.
-     * @throws IgniteException In case of exception.
+     * @throws IOException In case of exception.
      */
     public static void asLIBSVM(String imagesPath, String labelsPath, String outPath, Random rnd, int cnt)
         throws IOException {
