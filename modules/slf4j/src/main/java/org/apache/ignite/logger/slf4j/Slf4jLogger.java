@@ -22,6 +22,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
 
@@ -81,7 +83,7 @@ public class Slf4jLogger implements IgniteLogger {
         if (!impl.isTraceEnabled())
             warning("Logging at TRACE level without checking if TRACE level is enabled: " + msg);
 
-        impl.trace(msg);
+        impl.trace(getMarkerOrNull(marker), msg);
     }
 
     /** {@inheritDoc} */
@@ -89,7 +91,7 @@ public class Slf4jLogger implements IgniteLogger {
         if (!impl.isDebugEnabled())
             warning("Logging at DEBUG level without checking if DEBUG level is enabled: " + msg);
 
-        impl.debug(msg);
+        impl.debug(getMarkerOrNull(marker), msg);
     }
 
     /** {@inheritDoc} */
@@ -97,17 +99,22 @@ public class Slf4jLogger implements IgniteLogger {
         if (!impl.isInfoEnabled())
             warning("Logging at INFO level without checking if INFO level is enabled: " + msg);
 
-        impl.info(msg);
+        impl.info(getMarkerOrNull(marker), msg);
     }
 
     /** {@inheritDoc} */
     @Override public void warning(String marker, String msg, @Nullable Throwable e) {
-        impl.warn(msg, e);
+        impl.warn(getMarkerOrNull(marker), msg, e);
     }
 
     /** {@inheritDoc} */
     @Override public void error(String marker, String msg, @Nullable Throwable e) {
-        impl.error(msg, e);
+        impl.error(getMarkerOrNull(marker), msg, e);
+    }
+
+    /** Returns Marker object for the specified name, or null if the name is null */
+    private Marker getMarkerOrNull(String marker) {
+        return marker != null ? MarkerFactory.getMarker(marker) : null;
     }
 
     /** {@inheritDoc} */
