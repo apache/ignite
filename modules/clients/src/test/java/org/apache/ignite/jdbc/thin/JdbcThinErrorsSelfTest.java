@@ -25,6 +25,8 @@ import java.sql.Statement;
 import org.apache.ignite.jdbc.JdbcErrorsAbstractSelfTest;
 import org.apache.ignite.lang.IgniteCallable;
 
+import static org.junit.Assert.assertArrayEquals;
+
 /**
  * Test SQLSTATE codes propagation with thin client driver.
  */
@@ -96,10 +98,9 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
                 fail("BatchUpdateException is expected");
             }
             catch (BatchUpdateException e) {
-                assertEquals(2, e.getUpdateCounts().length);
+                assertEquals(3, e.getUpdateCounts().length);
 
-                for (int updCnt : e.getUpdateCounts())
-                    assertEquals(1, updCnt);
+                assertArrayEquals("", new int[] {1, 1, Statement.EXECUTE_FAILED}, e.getUpdateCounts());
 
                 assertEquals("42000", e.getSQLState());
             }
