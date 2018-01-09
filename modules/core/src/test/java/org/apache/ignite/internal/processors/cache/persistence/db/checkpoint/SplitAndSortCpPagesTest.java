@@ -72,7 +72,7 @@ public class SplitAndSortCpPagesTest {
 
         int sz = 0;
 
-        List<FullPageId[]> res = new ArrayList<>();
+        Collection<FullPageId[]> res = new ArrayList<>();
 
         for (FullPageIdsBuffer next : ids) {
             sz += next.remaining();
@@ -148,7 +148,8 @@ public class SplitAndSortCpPagesTest {
     }
 
     /**
-     * @param ids sorted IDs
+     * Checks if order of element is correct.
+     * @param ids sorted IDs.
      */
     private static void validateOrder(Iterable<FullPageId[]> ids) {
         FullPageId prevId = null;
@@ -172,11 +173,11 @@ public class SplitAndSortCpPagesTest {
     /**
      * @return test configuration
      */
-    @NotNull private IgniteConfiguration config() {
-        final IgniteConfiguration cfg = new IgniteConfiguration();
-        final DataStorageConfiguration dsCfg = new DataStorageConfiguration();
-        cfg.setDataStorageConfiguration(dsCfg);
-        return cfg;
+    private IgniteConfiguration config() {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration();
+
+        return cfg.setDataStorageConfiguration(dsCfg);
     }
 
     /**
@@ -185,12 +186,12 @@ public class SplitAndSortCpPagesTest {
      */
     @Test
     public void testAsyncAllPagesArePresent() throws Exception {
-        final CheckpointScope scope = getTestCollection();
+        CheckpointScope scope = getTestCollection();
         final ConcurrentHashMap<FullPageId, FullPageId> map = createCopyAsMap(scope);
 
-        final AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(16, getClass().getSimpleName(), log);
+        AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(16, getClass().getSimpleName(), log);
 
-        final IgniteClosure<FullPageId[], Callable<Void>> taskFactory = new IgniteClosure<FullPageId[], Callable<Void>>() {
+        IgniteClosure<FullPageId[], Callable<Void>> taskFactory = new IgniteClosure<FullPageId[], Callable<Void>>() {
             @Override public Callable<Void> apply(final FullPageId[] ids) {
                 return new Callable<Void>() {
                     @Override public Void call() throws Exception {
@@ -212,11 +213,11 @@ public class SplitAndSortCpPagesTest {
     }
 
     /**
-     * @param scope
-     * @return
+     * @param scope Checkpoint scope.
+     * @return map with scope pages.
      */
     private ConcurrentHashMap<FullPageId, FullPageId> createCopyAsMap(CheckpointScope scope) {
-        final ConcurrentHashMap<FullPageId, FullPageId> map = new ConcurrentHashMap<>();
+        ConcurrentHashMap<FullPageId, FullPageId> map = new ConcurrentHashMap<>();
         List<FullPageIdsBuffer> ids = scope.toBuffers();
 
         for (FullPageIdsBuffer next : ids) {
@@ -224,6 +225,7 @@ public class SplitAndSortCpPagesTest {
                 map.put(id, id);
             }
         }
+
         return map;
     }
 
@@ -233,9 +235,9 @@ public class SplitAndSortCpPagesTest {
      */
     @Test
     public void testIndexGrowing() throws Exception {
-        final CheckpointScope scope = getTestCollection(1024);
+        CheckpointScope scope = getTestCollection(1024);
 
-        final AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(16, getClass().getSimpleName(), log);
+        AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(16, getClass().getSimpleName(), log);
 
         final IgniteClosure<FullPageId[], Callable<Void>> taskFactory = new IgniteClosure<FullPageId[], Callable<Void>>() {
             @Override public Callable<Void> apply(final FullPageId[] ids) {
@@ -277,7 +279,7 @@ public class SplitAndSortCpPagesTest {
     @Test
     public void testWithEviction() throws Exception {
         final CheckpointScope scope = getTestCollection();
-        final ConcurrentHashMap<FullPageId, FullPageId> controlMap = createCopyAsMap(scope);
+        final ConcurrentHashMap<FullPageId, FullPageId> ctrlMap = createCopyAsMap(scope);
 
         final CountDownLatch evictingThreadStarted = new CountDownLatch(1);
         final Random random = new Random();
@@ -286,29 +288,26 @@ public class SplitAndSortCpPagesTest {
                 while(!Thread.currentThread().isInterrupted()) {
                     evictingThreadStarted.countDown();
 
-                    //todo fix eviction to be running
-                    final List<GridMultiCollectionWrapper<FullPageId>> pages = U.field(scope, "pages");
+                    List<GridMultiCollectionWrapper<FullPageId>> pages = U.field(scope, "pages");
                     try {
-                        final int i = random.nextInt(pages.size());
-                        final GridMultiCollectionWrapper<FullPageId> ids = pages.get(i);
-                        final int i1 = ids.collectionsSize();
+                        int i = random.nextInt(pages.size());
+                        GridMultiCollectionWrapper<FullPageId> ids = pages.get(i);
+                        int i1 = ids.collectionsSize();
 
-                        final int i2 = random.nextInt(i1);
-                        final Collection<FullPageId> destCollection = ids.innerCollection(i2);
-                        final Set<FullPageId> cpPages = (GridConcurrentHashSet<FullPageId>)destCollection;
+                        int i2 = random.nextInt(i1);
+                        Collection<FullPageId> cpPages = ids.innerCollection(i2);
 
-                        final int size = cpPages.size();
-                        if(size==0)
+                        int size = cpPages.size();
+                        if (size == 0)
                             continue;
-                        final int i3 = random.nextInt(size);
 
-                        final FullPageId page = cpPages.iterator().next();
-                        final boolean remove = cpPages.remove(page);
+                        FullPageId page = cpPages.iterator().next();
 
-                        controlMap.remove(page);
+                        cpPages.remove(page);
+                        ctrlMap.remove(page);
                     }
-                    catch (Exception ignored) {
-                        ignored.printStackTrace();
+                    catch (Exception e) {
+                        e.printStackTrace();
                     }
                 }
             }
@@ -324,7 +323,7 @@ public class SplitAndSortCpPagesTest {
                 return new Callable<Void>() {
                     @Override public Void call() throws Exception {
                         for (FullPageId id : ids) {
-                            controlMap.remove(id);
+                            ctrlMap.remove(id);
                         }
 
                         return null;
@@ -336,10 +335,10 @@ public class SplitAndSortCpPagesTest {
         asyncCheckpointer.quickSortAndWritePages(scope, taskFactory).get();
         thread.interrupt();
 
-        boolean empty = controlMap.isEmpty();
+        boolean empty = ctrlMap.isEmpty();
 
         if (!empty)
-            assertTrue("Control map should be empty: " + controlMap.toString(), empty);
+            assertTrue("Control map should be empty: " + ctrlMap.toString(), empty);
     }
 
     /**
@@ -347,19 +346,20 @@ public class SplitAndSortCpPagesTest {
      */
     @NotNull static CheckpointScope getTestCollection() {
         int pow = (int)Math.pow(10, 7);
-        return getTestCollection(pow / CheckpointScope.EXPECTED_SEGMENTS_AND_SUB_SETS );
+
+        return getTestCollection(pow / CheckpointScope.EXPECTED_SEGMENTS_COUNT);
     }
 
     /**
      * @return test pages set
      */
-    @NotNull private static CheckpointScope getTestCollection(int pagesPerSegment) {
-        final int regions = 1;
-        final CheckpointScope scope = new CheckpointScope(regions);
-        final Random random = new Random();
+    private static CheckpointScope getTestCollection(int pagesPerSegment) {
+        int regions = 1;
+        CheckpointScope scope = new CheckpointScope(regions);
+        Random random = new Random();
 
         for (int r = 0; r < regions; r++) {
-            int segments = CheckpointScope.EXPECTED_SEGMENTS_AND_SUB_SETS;
+            int segments = CheckpointScope.EXPECTED_SEGMENTS_COUNT;
 
             PagesConcurrentHashSet[] arrFromRegion = new PagesConcurrentHashSet[segments];
 
@@ -375,6 +375,7 @@ public class SplitAndSortCpPagesTest {
 
             scope.addDataRegionCpPages(arrFromRegion);
         }
+
         return scope;
     }
 

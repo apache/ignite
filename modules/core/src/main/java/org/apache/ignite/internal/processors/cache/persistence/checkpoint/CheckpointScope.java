@@ -35,13 +35,17 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesConc
  * Checkpoint scope is the unsorted sets of all dirty pages collections from all regions
  */
 public class CheckpointScope {
-    public static final int EXPECTED_SEGMENTS_AND_SUB_SETS = Runtime.getRuntime().availableProcessors() * 4 + 1;
+    /** Expected segments count, sub sets added to each collector would be the same. Based on default segments count. */
+    public static final int EXPECTED_SEGMENTS_COUNT = Runtime.getRuntime().availableProcessors() * 4 + 1;
+
     /** Dirty Pages number from all regions. */
     private int pagesNum = -1;
 
+    /** All dirty pages from all regions. Usually contain 1 element. */
     private List<BucketEnabledCollector> regionsPages;
 
     /**
+     * Creates scope.
      * @param regions Regions count.
      */
     public CheckpointScope(int regions) {
@@ -49,38 +53,36 @@ public class CheckpointScope {
     }
 
     /**
-     * @return buffers wiht arrays with all checkpoint pages, may be processed independently
+     * @return buffers with arrays with all checkpoint pages, may be processed independently.
      */
     public List<FullPageIdsBuffer> toBuffers() {
         List<FullPageIdsBuffer> buffers = new ArrayList<>();
-
         int globalIdx = 0;
+
         for (BucketEnabledCollector regions : regionsPages) {
             for (Map.Entry<Integer, MultiSetCollector> next : regions.pagesByBucket.entrySet()) {
-                Integer bucket = next.getKey();
-
-                MultiSetCollector val = next.getValue();
+                Integer bucketIdx = next.getKey();
+                MultiSetCollector collector = next.getValue();
 
                 int locIdx = 0;
-                FullPageId[] independentPageId = new FullPageId[val.size()];
+                FullPageId[] independentPageId = new FullPageId[collector.size()];
 
-                for (Set<FullPageId> set : val.unmergedSets) {
+                for (Set<FullPageId> set : collector.unmergedSets) {
                     if(set instanceof SortedSet) {
                         final SortedSet sortedSet = (SortedSet)set;
 
                         if(sortedSet.comparator() == GridCacheDatabaseSharedManager.SEQUENTIAL_CP_PAGE_COMPARATOR) {
                             //this set is already sorted.
-                            //System.err.println(""); //todo remove
+                            //System.err.print(""); //todo remove
                         }
                     }
-                    //here may check if set is navigatable
-                    for (FullPageId id : set) {
-                        independentPageId[locIdx] = id;
-                        locIdx++;
 
+                    for (FullPageId pageId : set) {
+                        independentPageId[locIdx] = pageId;
+                        locIdx++;
                         globalIdx++;
 
-                        assert bucket.equals(PagesConcurrentHashSet.getBucketIndex(id));
+                        assert bucketIdx.equals(PagesConcurrentHashSet.getBucketIndex(pageId));
                     }
                 }
 
@@ -96,7 +98,8 @@ public class CheckpointScope {
     }
 
     /**
-     * @param sets next dirty pages collections from region (array from all segments)
+     * Adds several striped sets of pages from data region.
+     * @param sets dirty pages collections from region (array with sets from all segments).
      */
     public void addDataRegionCpPages(PagesConcurrentHashSet[] sets) {
         BucketEnabledCollector pagesByBucket = new BucketEnabledCollector();
@@ -112,35 +115,6 @@ public class CheckpointScope {
 
         regionsPages.add(pagesByBucket);
     }
-
-    /**
-     * Splits pages to {@code pagesSubLists} subtasks. If any thread will be faster, it will help slower threads.
-     *
-     * @param pageIds full pages collection.
-     * @param pagesSubArrays required subArraysCount.
-     * @return full page arrays to be processed as standalone tasks.
-     */
-    public static Collection<FullPageId[]> split(FullPageId[] pageIds, int pagesSubArrays) {
-        final Collection<FullPageId[]> res = new ArrayList<>();
-
-        if (pagesSubArrays == 1) {
-            res.add(pageIds);
-
-            return res;
-        }
-
-        final int totalSize = pageIds.length;
-
-        for (int i = 0; i < pagesSubArrays; i++) {
-            int from = totalSize * i / (pagesSubArrays);
-
-            int to = totalSize * (i + 1) / (pagesSubArrays);
-
-            res.add(Arrays.copyOfRange(pageIds, from, to));
-        }
-        return res;
-    }
-
 
     /**
      * @return {@code true} if there is checkpoint pages available
@@ -219,7 +193,7 @@ public class CheckpointScope {
          * @param idx Bucket index.
          * @return collector of sets for bucket.
          */
-        public MultiSetCollector getOrCreateBucket(int idx) {
+        MultiSetCollector getOrCreateBucket(int idx) {
             MultiSetCollector collector = pagesByBucket.get(idx);
 
             if (collector == null) {
@@ -238,7 +212,7 @@ public class CheckpointScope {
         /**
          * Not merged sets for same bucket, but from different segments.
          */
-        private List<Set<FullPageId>> unmergedSets = new ArrayList<>(EXPECTED_SEGMENTS_AND_SUB_SETS);
+        private Collection<Set<FullPageId>> unmergedSets = new ArrayList<>(EXPECTED_SEGMENTS_COUNT);
 
         /**
          * @return overall size of contained sets.
@@ -261,5 +235,4 @@ public class CheckpointScope {
             unmergedSets.add(set);
         }
     }
-
 }

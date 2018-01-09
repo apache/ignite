@@ -30,10 +30,10 @@ class QuickSortRecursiveTask implements Callable<Void> {
     /** One chunk threshold. Determines when to start apply single threaded sort and write. */
     private static final int ONE_CHUNK_THRESHOLD = 1024 * 16;
 
-    /** One write chunk threshold. */
+    /** One write chunk threshold. Determines if it reasonable to submit one page saving task. */
     private static final int ONE_WRITE_CHUNK_THRESHOLD = 1024;
 
-    /** Source array to sort. Shared between threads */
+    /** Source array to sort. Shared between threads. */
     private final FullPageIdsBuffer buf;
 
     /** This task global settings. */
@@ -56,7 +56,7 @@ class QuickSortRecursiveTask implements Callable<Void> {
     }
 
     /**
-     * @param buf Buffer.
+     * @param buf Buffer, source array to sort.
      * @param settings Settings.
      */
     private QuickSortRecursiveTask(FullPageIdsBuffer buf, CpSettings settings) {
@@ -81,9 +81,6 @@ class QuickSortRecursiveTask implements Callable<Void> {
 
         if (isUnderThreshold(remaining)) {
             buf.sort(settings.comp);
-
-            //todo remove
-            //System.out.print("Sort " + remaining + "; ");
 
             int subArrays = (remaining / ONE_WRITE_CHUNK_THRESHOLD) + 1;
 

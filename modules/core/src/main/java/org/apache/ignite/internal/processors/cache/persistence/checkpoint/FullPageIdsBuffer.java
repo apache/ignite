@@ -101,7 +101,7 @@ public class FullPageIdsBuffer {
      * not be greater that current buffer {@link #limit}.
      * @return buffer created. Shares array with initial buffer.
      */
-    public FullPageIdsBuffer bufferOfRange(int position, int limit) {
+    FullPageIdsBuffer bufferOfRange(int position, int limit) {
         assert position >= this.position;
         assert limit <= this.limit;
 
@@ -109,9 +109,10 @@ public class FullPageIdsBuffer {
     }
 
     /**
-     * Splits pages to {@code pagesSubArrays} sub-buffer. If any thread will be faster, it will help slower threads.
+     * Splits pages to {@code pagesSubArrays} sub-buffer. This buffer is to be used as one or several tasks in executor
+     * service. If any thread will be faster, it will help slower threads.
      *
-     * @param pagesSubArrays required subArraysCount.
+     * @param pagesSubArrays required sub arrays count.
      * @return full page arrays to be processed as standalone tasks.
      */
     public Collection<FullPageIdsBuffer> split(int pagesSubArrays) {
@@ -120,9 +121,9 @@ public class FullPageIdsBuffer {
         if (pagesSubArrays == 1)
             return Collections.singletonList(this);
 
-        final Collection<FullPageIdsBuffer> res = new ArrayList<>();
+        Collection<FullPageIdsBuffer> res = new ArrayList<>(pagesSubArrays);
 
-        final int totalSize = remaining();
+        int totalSize = remaining();
 
         for (int i = 0; i < pagesSubArrays; i++) {
             int from = totalSize * i / (pagesSubArrays);

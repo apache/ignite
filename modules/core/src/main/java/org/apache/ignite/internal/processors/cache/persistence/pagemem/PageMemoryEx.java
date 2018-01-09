@@ -99,7 +99,7 @@ public interface PageMemoryEx extends PageMemory {
      * be flushed to the main memory after the checkpointing finished. This method must be called when no
      * concurrent operations on pages are performed.
      *
-     * @return Arrays of collections of dirty page IDs.
+     * @return Arrays of collections of dirty page IDs, number of elements is the same with segments count.
      * @throws IgniteException If checkpoint has been already started and was not finished.
      */
     public PagesConcurrentHashSet[] beginCheckpoint() throws IgniteException;

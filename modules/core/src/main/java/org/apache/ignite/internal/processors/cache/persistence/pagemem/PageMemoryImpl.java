@@ -233,6 +233,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /**
      * @param directMemoryProvider Memory allocator to use.
+     * @param sizes
      * @param ctx Cache shared context.
      * @param pageSize Page size.
      * @param flushDirtyPage Callback invoked when a dirty page is evicted.
@@ -828,10 +829,11 @@ public class PageMemoryImpl implements PageMemoryEx {
      */
     double getDirtyPagesRatio() {
         double res = 0;
+
         for (Segment segment : segments) {
-            double ratio = segment.getDirtyPagesRatio();
-            res = Math.max(res, ratio);
+            res = Math.max(res, segment.getDirtyPagesRatio());
         }
+
         return res;
     }
 

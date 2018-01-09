@@ -181,6 +181,7 @@ public class PagesConcurrentHashSet implements Iterable<Set<FullPageId>> {
                 size += innerSet.size();
             }
         }
+
         return size;
     }
 
@@ -195,14 +196,14 @@ public class PagesConcurrentHashSet implements Iterable<Set<FullPageId>> {
         private Set<FullPageId> nextSet;
 
         /**
-         * Constructor
+         * Creates iterator.
          */
         private FullPageIdsIterator() {
             advance();
         }
 
         /**
-         * Try to advance to next partition.
+         * Try to advance to next bucket.
          */
         private void advance() {
             while (nextIdx < buckets.length()) {

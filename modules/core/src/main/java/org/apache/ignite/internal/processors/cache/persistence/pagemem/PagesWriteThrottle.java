@@ -43,11 +43,14 @@ public class PagesWriteThrottle {
     /** Exponential backoff counter. */
     private final AtomicInteger exponentialBackoffCntr = new AtomicInteger(0);
 
-    /** */
+    /** Counter of written pages from checkpoint. Value is saved here for detecting checkpoint start. */
     private final AtomicInteger lastObservedWritten = new AtomicInteger(0);
 
-    /**  */
-    private volatile double initialDirtyRatioAtCpBegin = MIN_RATIO_NO_THROTTLE;
+    /**
+     * Dirty pages ratio was observed at checkpoint start (here start is moment when first page was actually saved to
+     * store). This ratio is excluded from throttling.
+     */
+    private volatile double initDirtyRatioAtCpBegin = MIN_RATIO_NO_THROTTLE;
 
     /**
      * @param pageMemory Page memory.
@@ -70,7 +73,7 @@ public class PagesWriteThrottle {
         if (writtenPagesCntr == null)
             return; // Don't throttle if checkpoint is not running.
 
-        boolean shouldThrottle = false; //should apply delay current modification
+        boolean shouldThrottle = false; //should apply delay (throttling) for current page modification
 
         if (isInCheckpoint) {
             int checkpointBufLimit = pageMemory.checkpointBufferPagesSize() * 2 / 3;
@@ -85,7 +88,7 @@ public class PagesWriteThrottle {
 
             if (cpWrittenPages == 0 || cpTotalPages == 0) {
                 //probably slow start is running now, drop previous dirty page percent
-                initialDirtyRatioAtCpBegin = MIN_RATIO_NO_THROTTLE;
+                initDirtyRatioAtCpBegin = MIN_RATIO_NO_THROTTLE;
                 lastObservedWritten.set(cpWrittenPages);
             }
             else if (cpWrittenPages == cpTotalPages) {
@@ -106,14 +109,14 @@ public class PagesWriteThrottle {
                     if (newMinRatio > 1)
                         newMinRatio = 1;
 
-                    initialDirtyRatioAtCpBegin = newMinRatio;
+                    initDirtyRatioAtCpBegin = newMinRatio;
                 }
 
-                double throttleWeight = 1.0 - initialDirtyRatioAtCpBegin;
+                double throttleWeight = 1.0 - initDirtyRatioAtCpBegin;
 
                 // Starting with initialDirtyRatioAtCpBegin to avoid throttle right after checkpoint start
                 // 7/12 is maximum ratio of dirty pages
-                dirtyRatioThreshold = (dirtyRatioThreshold * throttleWeight + initialDirtyRatioAtCpBegin) * 7 / 12;
+                dirtyRatioThreshold = (dirtyRatioThreshold * throttleWeight + initDirtyRatioAtCpBegin) * 7 / 12;
 
                 shouldThrottle = pageMemory.shouldThrottle(dirtyRatioThreshold);
             }
