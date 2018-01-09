@@ -308,6 +308,13 @@
                                                                         <xs:sequence>
                                                                             <xs:element name="queryField" maxOccurs="unbounded">
                                                                                 <xs:complexType>
+                                                                                    <xs:all>
+                                                                                        <xs:element name="defaultValue" minOccurs="0">
+                                                                                            <xs:annotation>
+                                                                                                <xs:documentation>Default field value.</xs:documentation>
+                                                                                            </xs:annotation>
+                                                                                        </xs:element>
+                                                                                    </xs:all>
                                                                                     <xs:attribute name="name" type="xs:string" use="required">
                                                                                         <xs:annotation>
                                                                                             <xs:documentation>Cache name.</xs:documentation>

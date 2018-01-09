@@ -22,6 +22,8 @@ import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
+import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 
 /**
  * Contains event type constants. The decision to use class and not enumeration
@@ -946,7 +948,8 @@ public interface EventType {
     /**
      * All cache query events. This array can be directly passed into
      * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
-     * subscribe to all cache query events.
+     * subscribe to all cache query events and requires to set {@link MemoryEventStorageSpi}
+     * or other implementation different from {@link NoopEventStorageSpi}.
      */
     public static final int[] EVTS_CACHE_QUERY = {
         EVT_CACHE_QUERY_EXECUTED,

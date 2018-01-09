@@ -138,7 +138,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(URL)) {
             Statement stmt = conn.createStatement();
 
-            stmt.execute("CREATE TABLE TEST (ID INT, NAME VARCHAR(50), VAL VARCHAR(50), PRIMARY KEY (ID, NAME))");
+            stmt.execute("CREATE TABLE TEST (ID INT, NAME VARCHAR(50) default 'default name', " +
+                "age int default 21, VAL VARCHAR(50), PRIMARY KEY (ID, NAME))");
             stmt.execute("CREATE TABLE \"Quoted\" (\"Id\" INT primary key, \"Name\" VARCHAR(50)) WITH WRAP_KEY");
             stmt.execute("CREATE INDEX \"MyTestIndex quoted\" on \"Quoted\" (\"Id\" DESC)");
             stmt.execute("CREATE INDEX IDX ON TEST (ID ASC)");
@@ -371,23 +372,25 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             ResultSet rs = meta.getColumns(null, null, null, null);
 
             Set<String> expectedCols = new HashSet<>(Arrays.asList(
-                "org.ORGANIZATION.ID",
-                "org.ORGANIZATION.NAME",
-                "pers.PERSON.ORGID",
-                "pers.PERSON.AGE",
-                "pers.PERSON.NAME",
-                "PUBLIC.TEST.ID",
-                "PUBLIC.TEST.NAME",
-                "PUBLIC.TEST.VAL",
-                "PUBLIC.Quoted.Id",
-                "PUBLIC.Quoted.Name"));
+                "org.ORGANIZATION.ID.null",
+                "org.ORGANIZATION.NAME.null",
+                "pers.PERSON.ORGID.null",
+                "pers.PERSON.AGE.null",
+                "pers.PERSON.NAME.null",
+                "PUBLIC.TEST.ID.null",
+                "PUBLIC.TEST.NAME.'default name'",
+                "PUBLIC.TEST.VAL.null",
+                "PUBLIC.TEST.AGE.21",
+                "PUBLIC.Quoted.Id.null",
+                "PUBLIC.Quoted.Name.null"));
 
             Set<String> actualCols = new HashSet<>(expectedCols.size());
 
             while(rs.next()) {
                 actualCols.add(rs.getString("TABLE_SCHEM") + '.'
                     + rs.getString("TABLE_NAME") + "."
-                    + rs.getString("COLUMN_NAME"));
+                    + rs.getString("COLUMN_NAME") + "."
+                    + rs.getString("COLUMN_DEF"));
             }
 
             assert expectedCols.equals(actualCols) : "expectedCols=" + expectedCols +
