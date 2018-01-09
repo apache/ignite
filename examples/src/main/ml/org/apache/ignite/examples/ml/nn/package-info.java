@@ -15,18 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.nn.updaters;
-
 /**
- * A common interface for parameter updaters.
- *
- * @param <T> Type of object to be updated with this params.
+ * <!-- Package description. -->
+ * ML neural network examples.
  */
-public interface UpdaterParams<T> {
-    /**
-     * Update given obj with this parameters.
-     *
-     * @param obj Object to be updated.
-     */
-    <M extends T> M update(M obj);
-}
+package org.apache.ignite.examples.ml.nn;

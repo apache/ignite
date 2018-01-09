@@ -15,26 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.trainers.group;
+package org.apache.ignite.ml.nn;
 
-import java.util.Arrays;
 import java.util.UUID;
-import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.structures.LabeledVector;
 
-/** */
-public class TestGroupTrainingCache {
-    /** */
-    public static String CACHE_NAME = "TEST_GROUP_TRAINING_CACHE";
-
-    /** */
-    public static IgniteCache<GroupTrainerCacheKey<Double>, Integer> getOrCreate(Ignite ignite) {
-        CacheConfiguration<GroupTrainerCacheKey<Double>, Integer> cfg = new CacheConfiguration<>();
+/**
+ * Class for working with labeled vectors cache.
+ */
+public class LabeledVectorsCache {
+    /**
+     * Create new labeled vectors cache.
+     *
+     * @param ignite Ignite instance.
+     * @return new labeled vectors cache.
+     */
+    public static IgniteCache<Integer, LabeledVector<Vector, Vector>> createNew(Ignite ignite) {
+        CacheConfiguration<Integer, LabeledVector<Vector, Vector>> cfg = new CacheConfiguration<>();
 
         // Write to primary.
         cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
@@ -52,19 +56,8 @@ public class TestGroupTrainingCache {
 
         cfg.setOnheapCacheEnabled(true);
 
-        cfg.setName(CACHE_NAME);
+        cfg.setName("LBLD_VECS_" + UUID.randomUUID().toString());
 
         return ignite.getOrCreateCache(cfg);
-    }
-
-    /** */
-    public static Stream<GroupTrainerCacheKey<Double>> allKeys(int limit, int eachNumberCnt, UUID trainingUUID) {
-        GroupTrainerCacheKey<Double>[] a =new GroupTrainerCacheKey[limit * eachNumberCnt];
-
-        for (int num = 0; num < limit; num++)
-            for (int i = 0; i < eachNumberCnt; i++)
-                a[num * eachNumberCnt + i] = new GroupTrainerCacheKey<>(num, (double)i, trainingUUID);
-
-        return Arrays.stream(a);
     }
 }

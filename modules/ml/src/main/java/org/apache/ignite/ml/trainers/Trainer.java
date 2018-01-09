@@ -15,13 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.nn.updaters;
+package org.apache.ignite.ml.trainers;
 
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.Matrix;
 
-/**
- * Interface for models which are smooth functions of their parameters.
- */
-public interface SmoothParametrized<M extends SmoothParametrized<M>> extends BaseSmoothParametrized<M>, Model<Matrix, Matrix> {
+/** Trainer interface. */
+public interface Trainer<M extends Model, T> {
+    /** Train the model based on provided data.
+     *
+     * @param data Data for training.
+     * @return Trained model.
+     */
+    public M train(T data);
 }

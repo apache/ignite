@@ -15,26 +15,47 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.trainers.group;
+package org.apache.ignite.ml.nn.trainers.distributed;
 
-import java.util.Arrays;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
 
-/** */
-public class TestGroupTrainingCache {
-    /** */
-    public static String CACHE_NAME = "TEST_GROUP_TRAINING_CACHE";
+/**
+ * Cache for distributed MLP.
+ */
+public class MLPCache {
+    /**
+     * Cache name.
+     */
+    public static String CACHE_NAME = "MLP_CACHE";
 
-    /** */
-    public static IgniteCache<GroupTrainerCacheKey<Double>, Integer> getOrCreate(Ignite ignite) {
-        CacheConfiguration<GroupTrainerCacheKey<Double>, Integer> cfg = new CacheConfiguration<>();
+    /**
+     * Affinity service for region projections cache.
+     *
+     * @return Affinity service for region projections cache.
+     */
+    public static Affinity<GroupTrainerCacheKey<Void>> affinity() {
+        return Ignition.localIgnite().affinity(CACHE_NAME);
+    }
+
+    /**
+     * Get or create region projections cache.
+     *
+     * @param ignite Ignite instance.
+     * @return Region projections cache.
+     */
+    public static IgniteCache<GroupTrainerCacheKey<Void>, MLPGroupTrainingCacheValue> getOrCreate(Ignite ignite) {
+        CacheConfiguration<GroupTrainerCacheKey<Void>, MLPGroupTrainingCacheValue> cfg = new CacheConfiguration<>();
 
         // Write to primary.
         cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
@@ -57,14 +78,14 @@ public class TestGroupTrainingCache {
         return ignite.getOrCreateCache(cfg);
     }
 
-    /** */
-    public static Stream<GroupTrainerCacheKey<Double>> allKeys(int limit, int eachNumberCnt, UUID trainingUUID) {
-        GroupTrainerCacheKey<Double>[] a =new GroupTrainerCacheKey[limit * eachNumberCnt];
-
-        for (int num = 0; num < limit; num++)
-            for (int i = 0; i < eachNumberCnt; i++)
-                a[num * eachNumberCnt + i] = new GroupTrainerCacheKey<>(num, (double)i, trainingUUID);
-
-        return Arrays.stream(a);
+    /**
+     * Get all keys of this cache for given parameters.
+     *
+     * @param trainingsCnt Parallel trainings count.
+     * @param uuid Training UUID.
+     * @return All keys of this cache for given parameters.
+     */
+    public static Stream<GroupTrainerCacheKey<Void>> allKeys(int trainingsCnt, UUID uuid) {
+        return IntStream.range(0, trainingsCnt).mapToObj(i -> new GroupTrainerCacheKey<Void>(i, null, uuid));
     }
 }
