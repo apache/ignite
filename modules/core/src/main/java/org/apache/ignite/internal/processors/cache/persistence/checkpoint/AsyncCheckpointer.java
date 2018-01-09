@@ -142,7 +142,8 @@ public class AsyncCheckpointer {
     }
 
     /**
-     * @param pageIds Checkpoint scope, contains unsorted collections. Elements may be processed separately.
+     * @param pageIds Checkpoint scope, contains unsorted collections. Element's (each FullPageIdsBuffer) data may be
+     * processed separately.
      * @param taskFactory write pages task factory. Should provide callable to write given pages array.
      * @return future will be completed when background writing is done.
      */

@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
 import org.apache.ignite.configuration.CheckpointWriteOrder;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -40,54 +41,6 @@ public class CheckpointScope {
 
     private List<BucketEnabledCollector> regionsPages;
 
-    static class BucketEnabledCollector {
-        /**
-         * Map bucket -> multiset in this bucket
-         */
-        private Map<Integer, MultiSetCollector> pagesByBucket = new HashMap<>(PagesConcurrentHashSet.BUCKETS_COUNT);
-
-        public int size() {
-            int size = 0;
-
-            for (MultiSetCollector next : pagesByBucket.values()) {
-                size += next.size();
-            }
-
-            return size;
-        }
-
-        public MultiSetCollector bucket(int idx) {
-            MultiSetCollector collector = pagesByBucket.get(idx);
-
-            if (collector == null) {
-                collector = new MultiSetCollector();
-
-                pagesByBucket.put(idx, collector);
-            }
-            return collector;
-        }
-    }
-
-    static class MultiSetCollector {
-        /**
-         * Not merged sets for same bucket, but from different segments.
-         */
-        List<Set<FullPageId>> unmergedSets = new ArrayList<>(EXPECTED_SEGMENTS_AND_SUB_SETS);
-
-        public int size() {
-            int size = 0;
-            for (Set<FullPageId> next : unmergedSets) {
-                size += next.size();
-            }
-            return size;
-        }
-
-        public void add(Set<FullPageId> bucket) {
-            // dont merge sets here for performance reasons
-            unmergedSets.add(bucket);
-        }
-    }
-
     /**
      * @param regions Regions count.
      */
@@ -103,20 +56,27 @@ public class CheckpointScope {
 
         int globalIdx = 0;
         for (BucketEnabledCollector regions : regionsPages) {
-            Set<Map.Entry<Integer, MultiSetCollector>> entries = regions.pagesByBucket.entrySet();
-            for (Map.Entry<Integer, MultiSetCollector> next : entries) {
+            for (Map.Entry<Integer, MultiSetCollector> next : regions.pagesByBucket.entrySet()) {
                 Integer bucket = next.getKey();
 
-                MultiSetCollector value = next.getValue();
+                MultiSetCollector val = next.getValue();
 
-                int localIdx = 0;
-                FullPageId[] independentPageId = new FullPageId[value.size()];
+                int locIdx = 0;
+                FullPageId[] independentPageId = new FullPageId[val.size()];
 
-                for (Set<FullPageId> set : value.unmergedSets) {
+                for (Set<FullPageId> set : val.unmergedSets) {
+                    if(set instanceof SortedSet) {
+                        final SortedSet sortedSet = (SortedSet)set;
+
+                        if(sortedSet.comparator() == GridCacheDatabaseSharedManager.SEQUENTIAL_CP_PAGE_COMPARATOR) {
+                            //this set is already sorted.
+                            //System.err.println(""); //todo remove
+                        }
+                    }
                     //here may check if set is navigatable
                     for (FullPageId id : set) {
-                        independentPageId[localIdx] = id;
-                        localIdx++;
+                        independentPageId[locIdx] = id;
+                        locIdx++;
 
                         globalIdx++;
 
@@ -125,7 +85,7 @@ public class CheckpointScope {
                 }
 
                 //actual number of pages may be less
-                buffers.add(new FullPageIdsBuffer(independentPageId, 0, localIdx));
+                buffers.add(new FullPageIdsBuffer(independentPageId, 0, locIdx));
 
             }
         }
@@ -143,10 +103,10 @@ public class CheckpointScope {
 
         for (PagesConcurrentHashSet setToAdd : sets) {
             for (int idx = 0; idx < PagesConcurrentHashSet.BUCKETS_COUNT; idx++) {
-
                 Set<FullPageId> setForBucket = setToAdd.getOptionalSetForBucket(idx);
+
                 if (setForBucket != null)
-                    pagesByBucket.bucket(idx).add(setForBucket);
+                    pagesByBucket.getOrCreateBucket(idx).add(setForBucket);
             }
         }
 
@@ -231,6 +191,75 @@ public class CheckpointScope {
         }
 
         return allBuffers;
+    }
+
+    /**
+     * Class for separate collection pages from corresponding bucket. Class is not thread safe.
+     */
+    private static class BucketEnabledCollector {
+        /**
+         * Maps bucket index -> multi set collector for this bucket.
+         */
+        private Map<Integer, MultiSetCollector> pagesByBucket = new HashMap<>(PagesConcurrentHashSet.BUCKETS_COUNT);
+
+        /**
+         * @return overall size of contained sets for all buckets.
+         */
+        public int size() {
+            int size = 0;
+
+            for (MultiSetCollector next : pagesByBucket.values()) {
+                size += next.size();
+            }
+
+            return size;
+        }
+
+        /**
+         * @param idx Bucket index.
+         * @return collector of sets for bucket.
+         */
+        public MultiSetCollector getOrCreateBucket(int idx) {
+            MultiSetCollector collector = pagesByBucket.get(idx);
+
+            if (collector == null) {
+                collector = new MultiSetCollector();
+
+                pagesByBucket.put(idx, collector);
+            }
+            return collector;
+        }
+    }
+
+    /**
+     * Class to collect several sets for same bucket, avoiding collection data copy. Class is not thread safe.
+     */
+    private static class MultiSetCollector {
+        /**
+         * Not merged sets for same bucket, but from different segments.
+         */
+        private List<Set<FullPageId>> unmergedSets = new ArrayList<>(EXPECTED_SEGMENTS_AND_SUB_SETS);
+
+        /**
+         * @return overall size of contained sets.
+         */
+        public int size() {
+            int size = 0;
+
+            for (Set<FullPageId> next : unmergedSets) {
+                size += next.size();
+            }
+
+            return size;
+        }
+
+        /**
+         * Appends next set to this collector, this method does not merge sets for performance reasons.
+         * @param set data to add
+         */
+        public void add(Set<FullPageId> set) {
+            unmergedSets.add(set);
+        }
     }
 
 }

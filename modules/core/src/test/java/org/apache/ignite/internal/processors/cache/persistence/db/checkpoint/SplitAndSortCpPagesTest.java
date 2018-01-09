@@ -337,6 +337,7 @@ public class SplitAndSortCpPagesTest {
         thread.interrupt();
 
         boolean empty = controlMap.isEmpty();
+
         if (!empty)
             assertTrue("Control map should be empty: " + controlMap.toString(), empty);
     }
@@ -359,10 +360,11 @@ public class SplitAndSortCpPagesTest {
 
         for (int r = 0; r < regions; r++) {
             int segments = CheckpointScope.EXPECTED_SEGMENTS_AND_SUB_SETS;
-            PagesConcurrentHashSet[] arrayFromRegion = new PagesConcurrentHashSet[segments];
+
+            PagesConcurrentHashSet[] arrFromRegion = new PagesConcurrentHashSet[segments];
 
             for (int s = 0; s < segments; s++) {
-                PagesConcurrentHashSet set = arrayFromRegion[s] = new PagesConcurrentHashSet();
+                PagesConcurrentHashSet set = arrFromRegion[s] = new PagesConcurrentHashSet();
                  
                 for (int p = 0; p < pagesPerSegment; p++) {
                     long pageId = randomPageId(random);
@@ -371,8 +373,7 @@ public class SplitAndSortCpPagesTest {
                 }
             }
 
-
-            scope.addDataRegionCpPages(arrayFromRegion);
+            scope.addDataRegionCpPages(arrFromRegion);
         }
         return scope;
     }
@@ -384,6 +385,7 @@ public class SplitAndSortCpPagesTest {
     private static long randomPageId(Random random) {
         int partId = random.nextInt(1024);
         int pageIdx = random.nextInt(1000000);
+
         return PageIdUtils.pageId(
             partId,
             (byte)0,
