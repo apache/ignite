@@ -381,7 +381,7 @@ public class CacheGroupContext {
      * @return {@code True} if given event type should be recorded.
      */
     public boolean eventRecordable(int type) {
-        return cacheType.userCache() && ctx.gridEvents().isRecordable(type);
+        return cacheType.userCache() && ctx.gridEvents().isRecordable(type) && ccfg.isEventsEnabled();
     }
 
     /**
