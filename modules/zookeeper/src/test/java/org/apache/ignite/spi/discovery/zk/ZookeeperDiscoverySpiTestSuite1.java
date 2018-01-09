@@ -18,22 +18,22 @@
 package org.apache.ignite.spi.discovery.zk;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperClientTest;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiTest;
 
 /**
  *
  */
-public class ZookeeperDiscoveryTestSuite extends TestSuite {
+public class ZookeeperDiscoverySpiTestSuite1 extends TestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        // TODO ZK
         TestSuite suite = new TestSuite("ZookeeperDiscoverySpi Test Suite");
 
-        // Regular tests executed with ZookeeperDiscoverySpi.
-        suite.addTestSuite(GridEventConsumeSelfTest.class);
+        suite.addTestSuite(ZookeeperClientTest.class);
+        suite.addTestSuite(ZookeeperDiscoverySpiTest.class);
 
         return suite;
     }

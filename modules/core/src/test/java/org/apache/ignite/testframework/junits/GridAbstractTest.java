@@ -125,6 +125,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
+import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_CFG_PREPROCESSOR_CLS;
 
 /**
  * Common abstract test for Ignite tests.
@@ -855,6 +856,26 @@ public abstract class GridAbstractTest extends TestCase {
             startingIgniteInstanceName.set(igniteInstanceName);
 
             try {
+                String cfgProcClsName = System.getProperty(IGNITE_CFG_PREPROCESSOR_CLS);
+
+                if (cfgProcClsName != null) {
+                    try {
+                        Class<?> cfgProc = Class.forName(cfgProcClsName);
+
+                        Method method = cfgProc.getMethod("preprocessConfiguration", IgniteConfiguration.class);
+
+                        if (!Modifier.isStatic(method.getModifiers()))
+                            throw new Exception("Non-static pre-processor method in pre-processor class: " + cfgProcClsName);
+
+                        method.invoke(null, cfg);
+                    }
+                    catch (Exception e) {
+                        log.error("Failed to pre-process IgniteConfiguration using pre-processor class: " + cfgProcClsName);
+
+                        throw new IgniteException(e);
+                    }
+                }
+
                 Ignite node = IgnitionEx.start(cfg, ctx);
 
                 IgniteConfiguration nodeCfg = node.configuration();

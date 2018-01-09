@@ -843,10 +843,18 @@ public class ZookeeperDiscoveryImpl {
      * @param zkClient Client.
      * @param basePath Base path.
      * @param partCnt Parts count.
+     * @param checkExists If {@code true} checks path exists before calling delete (this check added to avoid errors
+     *      in ZooKeeper log).
+     * @throws Exception If failed.
      */
-    private void deleteMultiplePartsAsync(ZookeeperClient zkClient, String basePath, int partCnt) {
+    private void deleteMultiplePartsAsync(ZookeeperClient zkClient, String basePath, int partCnt, boolean checkExists)
+        throws Exception
+    {
         for (int i = 0; i < partCnt; i++) {
             String path = multipartPathName(basePath, i);
+
+            if (checkExists && !zkClient.exists(path))
+                continue;
 
             zkClient.deleteIfExistsAsync(path);
         }
@@ -3540,8 +3548,9 @@ public class ZookeeperDiscoveryImpl {
 
     /**
      * @param evtData Event data.
+     * @throws Exception If failed.
      */
-    private void handleProcessedJoinEventAsync(ZkDiscoveryNodeJoinEventData evtData) {
+    private void handleProcessedJoinEventAsync(ZkDiscoveryNodeJoinEventData evtData) throws Exception {
         if (log.isDebugEnabled())
             log.debug("All nodes processed node join [evtData=" + evtData + ']');
 
@@ -3552,7 +3561,8 @@ public class ZookeeperDiscoveryImpl {
         if (evtData.secSubjPartCnt > 0) {
             deleteMultiplePartsAsync(rtState.zkClient,
                 zkPaths.joinEventSecuritySubjectPath(evtData.eventId()),
-                evtData.secSubjPartCnt);
+                evtData.secSubjPartCnt,
+                false);
         }
     }
 
@@ -3560,8 +3570,9 @@ public class ZookeeperDiscoveryImpl {
      * @param nodeId Node ID.
      * @param joinDataPrefixId Path prefix.
      * @param partCnt Parts count.
+     * @throws Exception If failed.
      */
-    private void deleteJoiningNodeData(UUID nodeId, UUID joinDataPrefixId, int partCnt) {
+    private void deleteJoiningNodeData(UUID nodeId, UUID joinDataPrefixId, int partCnt) throws Exception {
         String evtDataPath = zkPaths.joiningNodeDataPath(nodeId, joinDataPrefixId);
 
         if (log.isDebugEnabled())
@@ -3570,19 +3581,20 @@ public class ZookeeperDiscoveryImpl {
         rtState.zkClient.deleteIfExistsAsync(evtDataPath);
 
         if (partCnt > 1)
-            deleteMultiplePartsAsync(rtState.zkClient, evtDataPath + ":", partCnt);
+            deleteMultiplePartsAsync(rtState.zkClient, evtDataPath + ":", partCnt, true);
     }
 
     /**
      * @param evtData Event data.
+     * @throws Exception If failed.
      */
-    private void deleteDataForJoinedAsync(ZkDiscoveryNodeJoinEventData evtData) {
+    private void deleteDataForJoinedAsync(ZkDiscoveryNodeJoinEventData evtData) throws Exception {
         String dataForJoinedPath = zkPaths.joinEventDataPathForJoined(evtData.eventId());
 
         if (log.isDebugEnabled())
             log.debug("Delete data for joined node [path=" + dataForJoinedPath + ']');
 
-        deleteMultiplePartsAsync(rtState.zkClient, dataForJoinedPath, evtData.dataForJoinedPartCnt);
+        deleteMultiplePartsAsync(rtState.zkClient, dataForJoinedPath, evtData.dataForJoinedPartCnt, true);
     }
 
     /**
