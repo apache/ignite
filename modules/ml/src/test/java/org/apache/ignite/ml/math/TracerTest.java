@@ -108,28 +108,28 @@ public class TracerTest {
      *
      */
     @Test
-    public void testHtmlVectorTracer() throws IOException {
+    public void testHtmlVectorTracerWithAsciiFallback() throws IOException {
         Vector vec1 = makeRandomVector(1000);
 
         // Default color mapping.
-        Tracer.showHtml(vec1);
+        Tracer.showHtml(vec1, true);
 
         // Custom color mapping.
-        Tracer.showHtmlWithAsciiFallback(vec1, COLOR_MAPPER);
+        Tracer.showHtml(vec1, COLOR_MAPPER, true);
 
         // Default color mapping with sorted vector.
-        Tracer.showHtml(vec1.sort());
+        Tracer.showHtml(vec1.sort(), true);
     }
 
     /**
      *
      */
     @Test
-    public void testHtmlMatrixTracer() throws IOException {
+    public void testHtmlMatrixTracerWithAsciiFallback() throws IOException {
         Matrix mtx1 = makeRandomMatrix(100, 100);
 
         // Custom color mapping.
-        Tracer.showHtmlWithAsciiFallback(mtx1, COLOR_MAPPER);
+        Tracer.showHtml(mtx1, COLOR_MAPPER, true);
 
         Matrix mtx2 = new DenseLocalOnHeapMatrix(100, 100);
 
@@ -137,7 +137,7 @@ public class TracerTest {
 
         mtx2.assign((x, y) -> (double)(x * y) / MAX);
 
-        Tracer.showHtml(mtx2);
+        Tracer.showHtml(mtx2, true);
     }
 
     /** */
