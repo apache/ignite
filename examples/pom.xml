@@ -98,6 +98,7 @@
         <lgpl.test.folder>src/test/java</lgpl.test.folder>
         <java8.test.folder>src/test/java</java8.test.folder>
         <ml.folder>src/main/java</ml.folder>
+        <ml.test.folder>src/test/java</ml.test.folder>
     </properties>
 
     <profiles>
