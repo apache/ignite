@@ -53,8 +53,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Sql\LinqExample.cs" />
-    <Compile Include="Sql\QueryDmlExample.cs" />
-    <Compile Include="Sql\QueryExample.cs" />
+    <Compile Include="Sql\SqlDmlExample.cs" />
+    <Compile Include="Sql\SqlExample.cs" />
     <Compile Include="ThinClient\ThinClientPutGetExample.cs" />
     <Compile Include="ThinClient\ThinClientQueryExample.cs" />
     <Compile Include="Compute\ClosureExample.cs" />

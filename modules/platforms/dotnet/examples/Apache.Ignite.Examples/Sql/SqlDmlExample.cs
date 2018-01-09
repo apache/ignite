@@ -38,7 +38,7 @@ namespace Apache.Ignite.Examples.Sql
     /// Apache.Ignite.exe -configFileName=platforms\dotnet\examples\apache.ignite.examples\app.config -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 2) Start example.
     /// </summary>
-    public class QueryDmlExample
+    public class SqlDmlExample
     {
         /// <summary>Organization cache name.</summary>
         private const string OrganizationCacheName = "dotnet_cache_query_dml_organization";

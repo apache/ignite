@@ -24,24 +24,21 @@ namespace Apache.Ignite.Examples.Sql
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.ExamplesDll.Binary;
-    using Apache.Ignite.ExamplesDll.Datagrid;
 
     /// <summary>
-    /// This example populates cache with sample data and runs several SQL and
-    /// full text queries over this data.
+    /// This example populates cache with sample data and runs SQL queries.
     /// <para />
     /// 1) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build).
-    ///    Apache.Ignite.ExamplesDll.dll must appear in %IGNITE_HOME%/platforms/dotnet/examples/Apache.Ignite.ExamplesDll/bin/${Platform]/${Configuration} folder.
     /// 2) Set this class as startup object (Apache.Ignite.Examples project -> right-click -> Properties ->
     ///     Application -> Startup object);
     /// 3) Start example (F5 or Ctrl+F5).
     /// <para />
     /// This example can be run with standalone Apache Ignite.NET node:
     /// 1) Run %IGNITE_HOME%/platforms/dotnet/bin/Apache.Ignite.exe:
-    /// Apache.Ignite.exe -configFileName=platforms\dotnet\examples\apache.ignite.examples\app.config -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
+    /// Apache.Ignite.exe -configFileName=platforms\dotnet\examples\apache.ignite.examples\app.config
     /// 2) Start example.
     /// </summary>
-    public class QueryExample
+    public class SqlExample
     {
         /// <summary>Organization cache name.</summary>
         private const string OrganizationCacheName = "dotnet_cache_query_organization";
@@ -74,9 +71,6 @@ namespace Apache.Ignite.Examples.Sql
                 PopulateCache(employeeCacheColocated);
                 PopulateCache(organizationCache);
 
-                // Run scan query example.
-                ScanQueryExample(employeeCache);
-
                 // Run SQL query example.
                 SqlQueryExample(employeeCache);
 
@@ -89,32 +83,12 @@ namespace Apache.Ignite.Examples.Sql
                 // Run SQL fields query example.
                 SqlFieldsQueryExample(employeeCache);
 
-                // Run full text query example.
-                FullTextQueryExample(employeeCache);
-
                 Console.WriteLine();
             }
 
             Console.WriteLine();
             Console.WriteLine(">>> Example finished, press any key to exit ...");
             Console.ReadKey();
-        }
-
-        /// <summary>
-        /// Queries employees that have provided ZIP code in address.
-        /// </summary>
-        /// <param name="cache">Cache.</param>
-        private static void ScanQueryExample(ICache<int, Employee> cache)
-        {
-            const int zip = 94109;
-
-            var qry = cache.Query(new ScanQuery<int, Employee>(new ScanQueryFilter(zip)));
-
-            Console.WriteLine();
-            Console.WriteLine(">>> Employees with zipcode {0} (scan):", zip);
-
-            foreach (var entry in qry)
-                Console.WriteLine(">>>    " + entry.Value);
         }
 
         /// <summary>
@@ -188,21 +162,6 @@ namespace Apache.Ignite.Examples.Sql
 
             foreach (var row in qry)
                 Console.WriteLine(">>>     [Name=" + row[0] + ", salary=" + row[1] + ']');
-        }
-
-        /// <summary>
-        /// Queries employees that live in Texas using full-text query API.
-        /// </summary>
-        /// <param name="cache">Cache.</param>
-        private static void FullTextQueryExample(ICache<int, Employee> cache)
-        {
-            var qry = cache.Query(new TextQuery("Employee", "TX"));
-
-            Console.WriteLine();
-            Console.WriteLine(">>> Employees living in Texas:");
-
-            foreach (var entry in qry)
-                Console.WriteLine(">>> " + entry.Value);
         }
 
         /// <summary>
