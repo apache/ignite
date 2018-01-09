@@ -15,34 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml;
+package org.apache.ignite.ml.genetic;
 
-import org.apache.ignite.ml.clustering.ClusteringTestSuite;
-import org.apache.ignite.ml.genetic.GAGridTestSuite;
-import org.apache.ignite.ml.knn.KNNTestSuite;
-import org.apache.ignite.ml.math.MathImplMainTestSuite;
-import org.apache.ignite.ml.nn.MLPTestSuite;
-import org.apache.ignite.ml.regressions.RegressionsTestSuite;
-import org.apache.ignite.ml.trainers.group.TrainersGroupTestSuite;
-import org.apache.ignite.ml.trees.DecisionTreesTestSuite;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Test suite for all module tests.
+ * Test suite for all tests located in org.apache.ignite.ml.genetic package.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    MathImplMainTestSuite.class,
-    RegressionsTestSuite.class,
-    ClusteringTestSuite.class,
-    DecisionTreesTestSuite.class,
-    KNNTestSuite.class,
-    LocalModelsTest.class,
-    MLPTestSuite.class,
-    TrainersGroupTestSuite.class,
-    GAGridTestSuite.class
+    GAGridInitializePopulationTest.class,
+    GAGridCalculateFitnessTest.class
 })
-public class IgniteMLTestSuite {
-    // No-op.
+
+public class GAGridTestSuite {
 }
