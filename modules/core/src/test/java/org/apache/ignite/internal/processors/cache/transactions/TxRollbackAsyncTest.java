@@ -614,12 +614,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         log.info("All transactions are rolled back");
 
-        int fc = GridDhtTxLocal.finishCntr.get();
-        int ffc = GridNearTxLocal.fastFinishCnt.get();
-        int undoC = GridDhtLockFuture.undoCounter.get();
-        int lc = GridDhtLockFuture.createCounter.get();
-        int fastFailCntr = GridDhtLockFuture.lockFastFailCountr.get();
-
 //        assertEquals("finCntr=" + fc + ", fastFinCntr=" + ffc + ", dhtLockRemoteFuts=" + undoC + ", dhtLockCreateCntr=" + lc +
 //            ", addFutsCnt=" + GridDhtTransactionalCacheAdapter.lockReplyCntr.get() +
 //            ", dhtLockSkipCntr=" + GridDhtTransactionalCacheAdapter.lockReplyCntr2.get() +
