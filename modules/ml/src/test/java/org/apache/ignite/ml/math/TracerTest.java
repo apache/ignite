@@ -26,6 +26,7 @@ import java.util.Optional;
 import org.apache.ignite.ml.math.impls.MathTestConstants;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.nio.file.Files.createTempFile;
@@ -80,9 +81,7 @@ public class TracerTest {
         return mtx;
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testAsciiVectorTracer() {
         Vector vec = makeRandomVector(20);
@@ -92,9 +91,7 @@ public class TracerTest {
         Tracer.showAscii(vec, "%.3g");
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testAsciiMatrixTracer() {
         Matrix mtx = makeRandomMatrix(10, 10);
@@ -104,9 +101,41 @@ public class TracerTest {
         Tracer.showAscii(mtx, "%.3g");
     }
 
-    /**
-     *
-     */
+    /** */
+    @Test
+    @Ignore("Can not run on TeamCity yet, see IGNITE-5725")
+    public void testHtmlVectorTracer() throws IOException {
+        Vector vec1 = makeRandomVector(1000);
+
+        // Default color mapping.
+        Tracer.showHtml(vec1);
+
+        // Custom color mapping.
+        Tracer.showHtml(vec1, COLOR_MAPPER);
+
+        // Default color mapping with sorted vector.
+        Tracer.showHtml(vec1.sort());
+    }
+
+    /** */
+    @Test
+    @Ignore("Can not run on TeamCity yet, see IGNITE-5725")
+    public void testHtmlMatrixTracer() throws IOException {
+        Matrix mtx1 = makeRandomMatrix(100, 100);
+
+        // Custom color mapping.
+        Tracer.showHtml(mtx1, COLOR_MAPPER);
+
+        Matrix mtx2 = new DenseLocalOnHeapMatrix(100, 100);
+
+        double MAX = (double)(mtx2.rowSize() * mtx2.columnSize());
+
+        mtx2.assign((x, y) -> (double)(x * y) / MAX);
+
+        Tracer.showHtml(mtx2);
+    }
+
+    /** */
     @Test
     public void testHtmlVectorTracerWithAsciiFallback() throws IOException {
         Vector vec1 = makeRandomVector(1000);
@@ -121,9 +150,7 @@ public class TracerTest {
         Tracer.showHtml(vec1.sort(), true);
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testHtmlMatrixTracerWithAsciiFallback() throws IOException {
         Matrix mtx1 = makeRandomMatrix(100, 100);
