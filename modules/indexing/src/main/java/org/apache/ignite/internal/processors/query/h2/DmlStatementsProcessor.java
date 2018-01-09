@@ -844,7 +844,13 @@ public class DmlStatementsProcessor {
             rowNum++;
         }
 
-        snd.flush();
+        try {
+            snd.flush();
+        }
+        catch (Exception e) {
+            resEx = chainException(resEx, new SQLException(e.getMessage(), SqlStateCode.INTERNAL_ERROR,
+                IgniteQueryErrorCode.UNKNOWN, e));
+        }
 
         resEx = chainException(resEx, snd.error());
 
