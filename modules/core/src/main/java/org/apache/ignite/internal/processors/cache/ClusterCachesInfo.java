@@ -1090,7 +1090,8 @@ class ClusterCachesInfo {
 
         gridData = new GridData(joinDiscoData, cachesData, conflictErr);
 
-        initStartCachesForLocalJoin(false, disconnectedState());
+        if (!disconnectedState())
+            initStartCachesForLocalJoin(false, disconnectedState());
     }
 
     /**
@@ -1120,7 +1121,7 @@ class ClusterCachesInfo {
 
                 CacheConfiguration<?, ?> cfg = desc.cacheConfiguration();
 
-                if (reconnect && surviveReconnect(cfg.getName()))
+                if (reconnect && surviveReconnect(cfg.getName()) && cachesOnDisconnect.state.active())
                     continue;
 
                 CacheJoinNodeDiscoveryData.CacheInfo locCfg = joinDiscoData.caches().get(cfg.getName());

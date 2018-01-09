@@ -255,7 +255,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 if (cache.state().transition()) {
                     if (log.isDebugEnabled())
-                        log.debug("Add pending event: " + evt);
+                        log.debug("Adding pending event: " + evt);
 
                     pendingEvts.add(new PendingDiscoveryEvent(evt, cache));
                 }
@@ -291,6 +291,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param cache Discovery data cache.
      */
     private void processEventInactive(DiscoveryEvent evt, DiscoCache cache) {
+        // Clean local join caches context.
+        cctx.cache().localJoinCachesContext();
+
         if (log.isDebugEnabled())
             log.debug("Ignore event, cluster is inactive: " + evt);
    }
@@ -418,7 +421,19 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt);
 
-            exchFut = exchangeFuture(exchId, evt, cache, null, null);
+            ExchangeActions exchActs = null;
+
+            if (evt.type() == EVT_NODE_JOINED && evt.eventNode().isLocal()) {
+                LocalJoinCachesContext locJoinCtx = cctx.cache().localJoinCachesContext();
+
+                if (locJoinCtx != null) {
+                    exchActs = new ExchangeActions();
+
+                    exchActs.localJoinContext(locJoinCtx);
+                }
+            }
+
+            exchFut = exchangeFuture(exchId, evt, cache, exchActs, null);
         }
         else {
             DiscoveryCustomMessage customMsg = ((DiscoveryCustomEvent)evt).customMessage();
@@ -556,7 +571,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             GridDhtPartitionExchangeId exchId = initialExchangeId();
 
-            fut = exchangeFuture(exchId, discoEvt, discoCache, null, null);
+            fut = exchangeFuture(
+                exchId,
+                reconnect ? null : discoEvt,
+                reconnect ? null : discoCache,
+                null,
+                null);
         }
         else if (reconnect)
             reconnectExchangeFut.onDone();

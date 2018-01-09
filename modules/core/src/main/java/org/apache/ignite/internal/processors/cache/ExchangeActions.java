@@ -50,6 +50,9 @@ public class ExchangeActions {
     private Map<String, CacheActionData> cachesToResetLostParts;
 
     /** */
+    private LocalJoinCachesContext locJoinCtx;
+
+    /** */
     private StateChangeRequest stateChangeReq;
 
     /**
@@ -348,7 +351,22 @@ public class ExchangeActions {
             F.isEmpty(cacheGrpsToStart) &&
             F.isEmpty(cacheGrpsToStop) &&
             F.isEmpty(cachesToResetLostParts) &&
-            stateChangeReq == null;
+            stateChangeReq == null &&
+            locJoinCtx == null;
+    }
+
+    /**
+     * @param locJoinCtx Caches local join context.
+     */
+    public void localJoinContext(LocalJoinCachesContext locJoinCtx) {
+        this.locJoinCtx = locJoinCtx;
+    }
+
+    /**
+     * @return Caches local join context.
+     */
+    public LocalJoinCachesContext localJoinContext() {
+        return locJoinCtx;
     }
 
     /**
