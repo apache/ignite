@@ -1580,12 +1580,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return Configured data regions offheap memory in bytes.
      */
     private long configuredOffheap() {
-        if(ctx.config().isClientMode())
-            return 0;
-
         DataStorageConfiguration memCfg = ctx.config().getDataStorageConfiguration();
 
-        assert memCfg != null;
+        if (memCfg == null)
+            return 0;
 
         long res = memCfg.getDefaultDataRegionConfiguration().getMaxSize();
 
@@ -1612,7 +1610,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         m.a("  ^-- ").a(regCfg.getName()).a(" [");
         m.a("initSize=").a(U.readableSize(regCfg.getInitialSize(), false));
         m.a(", maxSize=").a(U.readableSize(regCfg.getMaxSize(), false));
-        m.a(", persistenceEnabled=" + regCfg.isPersistenceEnabled()).a("]");
+        m.a(", persistenceEnabled=" + regCfg.isPersistenceEnabled()).a(']');
 
         return m.toString();
     }
