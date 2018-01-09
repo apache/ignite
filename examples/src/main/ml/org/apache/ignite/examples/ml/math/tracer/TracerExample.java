@@ -30,9 +30,9 @@ public class TracerExample {
      * Double to color mapper example.
      */
     private static final Tracer.ColorMapper COLOR_MAPPER = d -> {
-        if (d <= 0.33)
+        if (d <= 1.5)
             return Color.RED;
-        else if (d <= 0.66)
+        else if (d <= 2.5)
             return Color.GREEN;
         else
             return Color.BLUE;
