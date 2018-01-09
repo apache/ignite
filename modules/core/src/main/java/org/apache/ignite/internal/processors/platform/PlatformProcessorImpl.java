@@ -416,6 +416,8 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
             case OP_SET_BASELINE_TOPOLOGY_VER: {
                 ctx.grid().cluster().setBaselineTopology(val);
+
+                return 0;
             }
         }
 
