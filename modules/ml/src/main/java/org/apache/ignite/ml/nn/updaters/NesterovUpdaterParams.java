@@ -17,37 +17,25 @@
 
 package org.apache.ignite.ml.nn.updaters;
 
-import java.io.Serializable;
-import java.util.List;
-import java.util.Objects;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
  * Data needed for Nesterov parameters updater.
  */
-public class NesterovParameterUpdate implements Serializable {
+public class NesterovUpdaterParams implements UpdaterParams<SmoothParametrized> {
     /**
      * Previous step weights updates.
      */
     protected Vector prevIterationUpdates;
 
     /**
-     * Construct NesterovParameterUpdate.
+     * Construct NesterovUpdaterParams.
      *
-     * @param paramsCnt Count of parameters on which updateCache happens.
+     * @param paramsCnt Count of parameters on which update happens.
      */
-    public NesterovParameterUpdate(int paramsCnt) {
+    public NesterovUpdaterParams(int paramsCnt) {
         prevIterationUpdates = new DenseLocalOnHeapVector(paramsCnt).assign(0);
-    }
-
-    /**
-     * Construct NesterovParameterUpdate.
-     *
-     * @param prevIterationUpdates Previous iteration updates.
-     */
-    public NesterovParameterUpdate(Vector prevIterationUpdates) {
-        this.prevIterationUpdates = prevIterationUpdates;
     }
 
     /**
@@ -56,7 +44,7 @@ public class NesterovParameterUpdate implements Serializable {
      * @param updates Parameters updates.
      * @return This object with updated parameters updates.
      */
-    public NesterovParameterUpdate setPreviousUpdates(Vector updates) {
+    public NesterovUpdaterParams setPreviousUpdates(Vector updates) {
         prevIterationUpdates = updates;
         return this;
     }
@@ -70,25 +58,10 @@ public class NesterovParameterUpdate implements Serializable {
         return prevIterationUpdates;
     }
 
-    /**
-     * Get sum of parameters updates.
-     *
-     * @param parameters Parameters to sum.
-     * @return Sum of parameters updates.
-     */
-    public static NesterovParameterUpdate sum(List<NesterovParameterUpdate> parameters) {
-        return parameters.stream().filter(Objects::nonNull).map(NesterovParameterUpdate::prevIterationUpdates)
-            .reduce(Vector::plus).map(NesterovParameterUpdate::new).orElse(null);
-    }
-
-    /**
-     * Get average of parameters updates.
-     *
-     * @param parameters Parameters to average.
-     * @return Average of parameters updates.
-     */
-    public static NesterovParameterUpdate avg(List<NesterovParameterUpdate> parameters) {
-        NesterovParameterUpdate sum = sum(parameters);
-        return sum != null ? sum.setPreviousUpdates(sum.prevIterationUpdates().divide(parameters.size())) : null;
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public <M extends SmoothParametrized> M update(M obj) {
+        Vector parameters = obj.parameters();
+        return (M)obj.setParameters(parameters.minus(prevIterationUpdates));
     }
 }

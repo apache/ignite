@@ -15,18 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.trainers.group;
-
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+package org.apache.ignite.ml.nn.updaters;
 
 /**
- * Test suite for group trainer tests.
+ * A common interface for parameter updaters.
+ *
+ * @param <T> Type of object to be updated with this params.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    DistributedWorkersChainTest.class,
-    GroupTrainerTest.class
-})
-public class TrainersGroupTestSuite {
+public interface UpdaterParams<T> {
+    /**
+     * Update given obj with this parameters.
+     *
+     * @param obj Object to be updated.
+     */
+    <M extends T> M update(M obj);
 }

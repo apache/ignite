@@ -23,36 +23,38 @@ import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFun
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
- * Interface for classes encapsulating parameters updateCache logic.
- *
- * @param <M> Type of model to be updated.
- * @param <P> Type of parameters needed for this updater.
+ * Simple gradient descent parameters updater.
  */
-public interface ParameterUpdateCalculator<M, P> {
+public class SimpleGDUpdater implements ParameterUpdater<SmoothParametrized, SimpleGDParams> {
     /**
-     * Initializes the updater.
-     *
-     * @param mdl Model to be trained.
-     * @param loss Loss function.
+     * Learning rate.
      */
-    P init(M mdl, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss);
+    private double learningRate;
 
     /**
-     * Calculate new updateCache.
-     *
-     * @param mdl Model to be updated.
-     * @param updaterParameters Updater parameters to updateCache.
-     * @param iteration Current trainer iteration.
-     * @param inputs Inputs.
-     * @param groundTruth True values.
-     * @return Updated parameters.
+     * Loss function.
      */
-    P calculateNewUpdate(M mdl, P updaterParameters, int iteration, Matrix inputs, Matrix groundTruth);
+    protected IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
 
     /**
-     * Update given obj with this parameters.
+     * Construct SimpleGDUpdater.
      *
-     * @param obj Object to be updated.
+     * @param learningRate Learning rate.
      */
-    <M1 extends M> M1 update(M1 obj, P update);
+    public SimpleGDUpdater(double learningRate) {
+        this.learningRate = learningRate;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SimpleGDParams init(SmoothParametrized mlp,
+        IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
+        this.loss = loss;
+        return new SimpleGDParams(mlp.parametersCount(), learningRate);
+    }
+
+    /** {@inheritDoc} */
+    @Override public SimpleGDParams updateParams(SmoothParametrized mlp, SimpleGDParams updaterParameters,
+        int iteration, Matrix inputs, Matrix groundTruth) {
+        return new SimpleGDParams(mlp.differentiateByParameters(loss, inputs, groundTruth), learningRate);
+    }
 }
