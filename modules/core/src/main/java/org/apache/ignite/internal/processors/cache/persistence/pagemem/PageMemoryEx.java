@@ -85,7 +85,7 @@ public interface PageMemoryEx extends PageMemory {
     public long acquirePage(int grpId, long pageId, boolean restore) throws IgniteCheckedException;
 
     /**
-     * Heuristic method which allows a thread to check if it safe to start memory struture modifications
+     * Heuristic method which allows a thread to check if it safe to start memory structure modifications
      * in regard with checkpointing.
      *
      * @return {@code False} if there are too many dirty pages and a thread should wait for a

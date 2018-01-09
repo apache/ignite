@@ -39,9 +39,6 @@ public class PagesConcurrentHashSet implements Iterable<Set<FullPageId>> {
     private final AtomicReferenceArray<Set<FullPageId>> buckets
         = new AtomicReferenceArray<>(BUCKETS_COUNT);
 
-    /** Use skip list. */
-    private boolean useSkipList = false;
-
     /**
      * Adds the specified element to this set if it is not already present (optional operation).
      *
@@ -87,11 +84,8 @@ public class PagesConcurrentHashSet implements Iterable<Set<FullPageId>> {
     /**
      * @return created new set for bucket data storage.
      */
-    private Set<FullPageId> createNewSet() {
-        if (useSkipList)
-            return new ConcurrentSkipListSet<>(GridCacheDatabaseSharedManager.SEQUENTIAL_CP_PAGE_COMPARATOR);
-        else
-            return new GridConcurrentHashSet<>();
+    protected Set<FullPageId> createNewSet() {
+        return new GridConcurrentHashSet<>();
     }
 
     /**
