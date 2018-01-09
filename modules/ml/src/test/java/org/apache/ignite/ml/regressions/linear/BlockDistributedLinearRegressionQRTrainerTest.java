@@ -15,18 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.knn.models;
+package org.apache.ignite.ml.regressions.linear;
 
-/** This enum contains names of different normalization approaches. */
-public enum Normalization {
-    /** Minimax.
-     *
-     * x'=(x-MIN[X])/(MAX[X]-MIN[X])
-     */
-    MINIMAX,
-    /** Z normalization.
-     *
-     * x'=(x-M[X])/\sigma [X]
-     */
-    Z_NORMALIZATION
+import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
+import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
+
+/**
+ * Tests for {@link LinearRegressionQRTrainer} on {@link SparseBlockDistributedMatrix}.
+ */
+public class BlockDistributedLinearRegressionQRTrainerTest extends GridAwareAbstractLinearRegressionTrainerTest {
+    /** */
+    public BlockDistributedLinearRegressionQRTrainerTest() {
+        super(
+            new LinearRegressionQRTrainer(),
+            SparseBlockDistributedMatrix::new,
+            SparseBlockDistributedVector::new,
+            1e-6
+        );
+    }
 }

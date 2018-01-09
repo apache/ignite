@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
@@ -40,6 +39,97 @@ import static org.apache.ignite.internal.processors.platform.utils.PlatformConfi
  * Cache configuration serializer.
  */
 public class ClientCacheConfigurationSerializer {
+    /** Name. */
+    private static final short NAME = 0;
+
+    /** Common properties. */
+    private static final short CACHE_MODE = 1;
+
+    /** */
+    private static final short ATOMICITY_MODE = 2;
+
+    /** */
+    private static final short BACKUPS = 3;
+
+    /** */
+    private static final short WRITE_SYNCHRONIZATION_MODE = 4;
+
+    /** */
+    private static final short COPY_ON_READ = 5;
+
+    /** */
+    private static final short READ_FROM_BACKUP = 6;
+
+    /** Memory settings. */
+    private static final short DATA_REGION_NAME = 100;
+
+    /** */
+    private static final short ONHEAP_CACHE_ENABLED = 101;
+
+    /** SQL. */
+    private static final short QUERY_ENTITIES = 200;
+
+    /** */
+    private static final short QUERY_PARALLELISM = 201;
+
+    /** */
+    private static final short QUERY_DETAIL_METRICS_SIZE = 202;
+
+    /** */
+    private static final short SQL_SCHEMA = 203;
+
+    /** */
+    private static final short SQL_INDEX_MAX_INLINE_SIZE = 204;
+
+    /** */
+    private static final short SQL_ESCAPE_ALL = 205;
+
+    /** */
+    private static final short MAX_QUERY_ITERATORS_COUNT = 206;
+
+    /** Rebalance. */
+    private static final short REBALANCE_MODE = 300;
+
+    /** */
+    private static final short REBALANCE_DELAY = 301;
+
+    /** */
+    private static final short REBALANCE_TIMEOUT = 302;
+
+    /** */
+    private static final short REBALANCE_BATCH_SIZE = 303;
+
+    /** */
+    private static final short REBALANCE_BATCHES_PREFETCH_COUNT = 304;
+
+    /** */
+    private static final short REBALANCE_ORDER = 305;
+
+    /** */
+    private static final short REBALANCE_THROTTLE = 306;
+
+    /** Advanced. */
+    private static final short GROUP_NAME = 400;
+
+    /** */
+    private static final short KEY_CONFIGURATION = 401;
+
+    /** */
+    private static final short DEFAULT_LOCK_TIMEOUT = 402;
+
+    /** */
+    private static final short MAX_CONCURRENT_ASYNC_OPERATIONS = 403;
+
+    /** */
+    private static final short PARTITION_LOSS_POLICY = 404;
+
+    /** */
+    private static final short EAGER_TTL = 405;
+
+    /** */
+    private static final short STATISTICS_ENABLED = 406;
+
+
     /**
      * Writes the cache configuration.
      * @param writer Writer.
@@ -60,7 +150,6 @@ public class ClientCacheConfigurationSerializer {
         writer.writeBoolean(cfg.isEagerTtl());
         writer.writeBoolean(cfg.isStatisticsEnabled());
         writer.writeString(cfg.getGroupName());
-        writer.writeBoolean(cfg.isInvalidate());
         writer.writeLong(cfg.getDefaultLockTimeout());
         writer.writeInt(cfg.getMaxConcurrentAsyncOperations());
         writer.writeInt(cfg.getMaxQueryIteratorsCount());
@@ -119,60 +208,153 @@ public class ClientCacheConfigurationSerializer {
     static CacheConfiguration read(BinaryRawReader reader) {
         reader.readInt();  // Skip length.
 
-        CacheConfiguration cfg = new CacheConfiguration()
-                .setAtomicityMode(CacheAtomicityMode.fromOrdinal(reader.readInt()))
-                .setBackups(reader.readInt())
-                .setCacheMode(CacheMode.fromOrdinal(reader.readInt()))
-                .setCopyOnRead(reader.readBoolean())
-                .setDataRegionName(reader.readString())
-                .setEagerTtl(reader.readBoolean())
-                .setStatisticsEnabled(reader.readBoolean())
-                .setGroupName(reader.readString())
-                .setInvalidate(reader.readBoolean())
-                .setDefaultLockTimeout(reader.readLong())
-                .setMaxConcurrentAsyncOperations(reader.readInt())
-                .setMaxQueryIteratorsCount(reader.readInt())
-                .setName(reader.readString())
-                .setOnheapCacheEnabled(reader.readBoolean())
-                .setPartitionLossPolicy(PartitionLossPolicy.fromOrdinal((byte)reader.readInt()))
-                .setQueryDetailMetricsSize(reader.readInt())
-                .setQueryParallelism(reader.readInt())
-                .setReadFromBackup(reader.readBoolean())
-                .setRebalanceBatchSize(reader.readInt())
-                .setRebalanceBatchesPrefetchCount(reader.readLong())
-                .setRebalanceDelay(reader.readLong())
-                .setRebalanceMode(CacheRebalanceMode.fromOrdinal(reader.readInt()))
-                .setRebalanceOrder(reader.readInt())
-                .setRebalanceThrottle(reader.readLong())
-                .setRebalanceTimeout(reader.readLong())
-                .setSqlEscapeAll(reader.readBoolean())
-                .setSqlIndexMaxInlineSize(reader.readInt())
-                .setSqlSchema(reader.readString())
-                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.fromOrdinal(reader.readInt()));
+        short propCnt = reader.readShort();
 
-        // Key configuration.
-        int keyCnt = reader.readInt();
+        CacheConfiguration cfg = new CacheConfiguration();
 
-        if (keyCnt > 0) {
-            CacheKeyConfiguration[] keys = new CacheKeyConfiguration[keyCnt];
+        for (int i = 0; i < propCnt; i++) {
+            short code = reader.readShort();
 
-            for (int i = 0; i < keyCnt; i++) {
-                keys[i] = new CacheKeyConfiguration(reader.readString(), reader.readString());
+            switch (code) {
+                case ATOMICITY_MODE:
+                    cfg.setAtomicityMode(CacheAtomicityMode.fromOrdinal(reader.readInt()));
+                    break;
+
+                case BACKUPS:
+                    cfg.setBackups(reader.readInt());
+                    break;
+
+                case CACHE_MODE:
+                    cfg.setCacheMode(CacheMode.fromOrdinal(reader.readInt()));
+                    break;
+
+                case COPY_ON_READ:
+                    cfg.setCopyOnRead(reader.readBoolean());
+                    break;
+
+                case DATA_REGION_NAME:
+                    cfg.setDataRegionName(reader.readString());
+                    break;
+
+                case EAGER_TTL:
+                    cfg.setEagerTtl(reader.readBoolean());
+                    break;
+
+                case STATISTICS_ENABLED:
+                    cfg.setStatisticsEnabled(reader.readBoolean());
+                    break;
+
+                case GROUP_NAME:
+                    cfg.setGroupName(reader.readString());
+                    break;
+
+                case DEFAULT_LOCK_TIMEOUT:
+                    cfg.setDefaultLockTimeout(reader.readLong());
+                    break;
+
+                case MAX_CONCURRENT_ASYNC_OPERATIONS:
+                    cfg.setMaxConcurrentAsyncOperations(reader.readInt());
+                    break;
+
+                case MAX_QUERY_ITERATORS_COUNT:
+                    cfg.setMaxQueryIteratorsCount(reader.readInt());
+                    break;
+
+                case NAME:
+                    cfg.setName(reader.readString());
+                    break;
+
+                case ONHEAP_CACHE_ENABLED:
+                    cfg.setOnheapCacheEnabled(reader.readBoolean());
+                    break;
+
+                case PARTITION_LOSS_POLICY:
+                    cfg.setPartitionLossPolicy(PartitionLossPolicy.fromOrdinal((byte) reader.readInt()));
+                    break;
+
+                case QUERY_DETAIL_METRICS_SIZE:
+                    cfg.setQueryDetailMetricsSize(reader.readInt());
+                    break;
+
+                case QUERY_PARALLELISM:
+                    cfg.setQueryParallelism(reader.readInt());
+                    break;
+
+                case READ_FROM_BACKUP:
+                    cfg.setReadFromBackup(reader.readBoolean());
+                    break;
+
+                case REBALANCE_BATCH_SIZE:
+                    cfg.setRebalanceBatchSize(reader.readInt());
+                    break;
+
+                case REBALANCE_BATCHES_PREFETCH_COUNT:
+                    cfg.setRebalanceBatchesPrefetchCount(reader.readLong());
+                    break;
+
+                case REBALANCE_DELAY:
+                    cfg.setRebalanceDelay(reader.readLong());
+                    break;
+
+                case REBALANCE_MODE:
+                    cfg.setRebalanceMode(CacheRebalanceMode.fromOrdinal(reader.readInt()));
+                    break;
+
+                case REBALANCE_ORDER:
+                    cfg.setRebalanceOrder(reader.readInt());
+                    break;
+
+                case REBALANCE_THROTTLE:
+                    cfg.setRebalanceThrottle(reader.readLong());
+                    break;
+
+                case REBALANCE_TIMEOUT:
+                    cfg.setRebalanceTimeout(reader.readLong());
+                    break;
+
+                case SQL_ESCAPE_ALL:
+                    cfg.setSqlEscapeAll(reader.readBoolean());
+                    break;
+
+                case SQL_INDEX_MAX_INLINE_SIZE:
+                    cfg.setSqlIndexMaxInlineSize(reader.readInt());
+                    break;
+
+                case SQL_SCHEMA:
+                    cfg.setSqlSchema(reader.readString());
+                    break;
+
+                case WRITE_SYNCHRONIZATION_MODE:
+                    cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.fromOrdinal(reader.readInt()));
+                    break;
+
+                case KEY_CONFIGURATION:
+                    int keyCnt = reader.readInt();
+
+                    if (keyCnt > 0) {
+                        CacheKeyConfiguration[] keys = new CacheKeyConfiguration[keyCnt];
+
+                        for (int j = 0; j < keyCnt; j++) {
+                            keys[j] = new CacheKeyConfiguration(reader.readString(), reader.readString());
+                        }
+
+                        cfg.setKeyConfiguration(keys);
+                    }
+                    break;
+
+                case QUERY_ENTITIES:
+                    int qryEntCnt = reader.readInt();
+
+                    if (qryEntCnt > 0) {
+                        Collection<QueryEntity> entities = new ArrayList<>(qryEntCnt);
+
+                        for (int j = 0; j < qryEntCnt; j++)
+                            entities.add(readQueryEntity(reader));
+
+                        cfg.setQueryEntities(entities);
+                    }
+                    break;
             }
-
-            cfg.setKeyConfiguration(keys);
-        }
-
-        // Query entities.
-        int qryEntCnt = reader.readInt();
-
-        if (qryEntCnt > 0) {
-            Collection<QueryEntity> entities = new ArrayList<>(qryEntCnt);
-
-            for (int i = 0; i < qryEntCnt; i++)
-                entities.add(readQueryEntity(reader));
-
-            cfg.setQueryEntities(entities);
         }
 
         return cfg;
