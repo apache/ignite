@@ -788,7 +788,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public void SetBaselineTopology(IEnumerable<IClusterNode> nodes)
+        public void SetBaselineTopology(IEnumerable<IBaselineNode> nodes)
         {
             IgniteArgumentCheck.NotNull(nodes, "nodes");
 
@@ -810,7 +810,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public ICollection<IClusterNode> GetBaselineTopology()
+        public ICollection<IBaselineNode> GetBaselineTopology()
         {
             // TODO: We have a problem here because Java only gives BaselineNode back.
             throw new NotImplementedException();

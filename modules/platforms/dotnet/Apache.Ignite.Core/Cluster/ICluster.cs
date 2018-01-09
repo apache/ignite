@@ -114,12 +114,12 @@ namespace Apache.Ignite.Core.Cluster
         /// Sets the baseline topology nodes.
         /// </summary>
         /// <param name="nodes">The nodes.</param>
-        void SetBaselineTopology(IEnumerable<IClusterNode> nodes);
+        void SetBaselineTopology(IEnumerable<IBaselineNode> nodes);
 
         /// <summary>
         /// Gets the baseline topology.
         /// Returns null if <see cref="SetBaselineTopology(long)"/> has not been called.
         /// </summary>
-        ICollection<IClusterNode> GetBaselineTopology();
+        ICollection<IBaselineNode> GetBaselineTopology();
     }
 }
