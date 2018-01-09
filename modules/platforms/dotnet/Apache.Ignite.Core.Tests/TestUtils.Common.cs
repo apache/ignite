@@ -49,7 +49,9 @@ namespace Apache.Ignite.Core.Tests
         private const int DfltBusywaitSleepInterval = 200;
 
         /** Work dir. */
-        private static readonly string WorkDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        private static readonly string WorkDir = 
+            // ReSharper disable once AssignNullToNotNullAttribute
+            Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "ignite_work");
 
         /** */
         private static readonly IList<string> TestJvmOpts = Environment.Is64BitProcess
