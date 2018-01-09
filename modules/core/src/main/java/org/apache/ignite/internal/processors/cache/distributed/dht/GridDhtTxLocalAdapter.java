@@ -82,7 +82,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final IgniteInternalFuture<Boolean> ROLLBACK_FUT = new GridFutureAdapter<>();
+    private static final IgniteInternalFuture<Boolean> ROLLBACK_FUT = new GridFutureAdapter<>();
 
     /** Lock future updater. */
     private static final AtomicReferenceFieldUpdater<GridDhtTxLocalAdapter, IgniteInternalFuture> LOCK_FUT_UPD =
@@ -852,14 +852,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     }
 
     /**
-     * Returns current  lock future.
-     * @return Future.
-     */
-    public IgniteInternalFuture<Boolean> lockFuture() {
-        return lockFut;
-    }
-
-    /**
      * Atomically updates lock future.
      *
      * @param oldFut Old future.
@@ -869,6 +861,27 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      */
     public boolean updateLockFuture(IgniteInternalFuture<Boolean> oldFut, IgniteInternalFuture<Boolean> newFut) {
         return LOCK_FUT_UPD.compareAndSet(this, oldFut, newFut);
+    }
+
+    /**
+     * Prepare async rollback.
+     *
+     * @return Current lock future or null if it's safe to roll back.
+     */
+    public IgniteInternalFuture<Boolean> prepareAsyncRollback() {
+        IgniteInternalFuture<Boolean> fut;
+
+        while(true) {
+            fut = lockFut;
+
+            if (fut != null)
+                break;
+
+            if (updateLockFuture(null, ROLLBACK_FUT))
+                return null;
+        }
+
+        return fut == ROLLBACK_FUT ? null : fut;
     }
 
     /**

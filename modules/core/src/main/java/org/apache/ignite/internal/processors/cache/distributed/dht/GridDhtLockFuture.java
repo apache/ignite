@@ -83,12 +83,6 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRELOAD;
  */
 public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boolean>
     implements GridCacheVersionedFuture<Boolean>, GridDhtFuture<Boolean>, GridCacheMappedVersion {
-    public static final AtomicInteger undoCounter = new AtomicInteger();
-
-    public static final AtomicInteger createCounter = new AtomicInteger();
-
-    public static final AtomicInteger lockFastFailCountr = new AtomicInteger();
-
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -233,8 +227,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
 
-        createCounter.incrementAndGet();
-
         if (tx != null)
             tx.topologyVersion(topVer);
 
@@ -261,12 +253,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
             log = U.logger(cctx.kernalContext(), logRef, GridDhtLockFuture.class);
         }
 
-        if (tx != null && !tx.updateLockFuture(null, this)) {
-            lockFastFailCountr.incrementAndGet();
-
-            onError(new IgniteTxRollbackCheckedException("Failed to acquire lock because transaction " +
-                "has started to roll back [tx=" + CU.txString(tx) + ']'));
-        }
+        if (tx != null && !tx.updateLockFuture(null, this))
+            onError(tx.rollbackException());
     }
 
     /** {@inheritDoc} */
@@ -758,8 +746,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         if (super.onDone(success, err)) {
             if (log.isDebugEnabled())
                 log.debug("Completing future: " + this);
-
-            undoCounter.incrementAndGet();
 
             // Clean up.
             cctx.mvcc().removeVersionedFuture(this);

@@ -425,23 +425,12 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
 
         IgniteCheckedException err = null;
 
-        IgniteInternalFuture<Boolean> lockFut;
-
-        while(true) {
-            lockFut = lockFuture();
+        if (!commit) {
+            final IgniteInternalFuture<Boolean> lockFut = prepareAsyncRollback();
 
             if (lockFut != null)
-                break;
-
-            if (updateLockFuture(null, GridDhtTxLocalAdapter.ROLLBACK_FUT)) {
-                lockFut = GridDhtTxLocalAdapter.ROLLBACK_FUT;
-
-                break;
-            }
+                ((GridDhtLockFuture)lockFut).onError(rollbackException());
         }
-
-        if (lockFut != GridDhtTxLocalAdapter.ROLLBACK_FUT)
-            ((GridDhtLockFuture)lockFut).onError(rollbackException());
 
         if (!commit && prepFut != null) {
             try {

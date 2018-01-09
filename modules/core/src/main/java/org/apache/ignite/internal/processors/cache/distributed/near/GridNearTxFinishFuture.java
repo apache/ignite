@@ -64,7 +64,6 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
-import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 
 /**
@@ -403,6 +402,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      *
      * @param commit Commit flag.
      * @param clearThreadMap If {@code true} removes {@link GridNearTxLocal} from thread map.
+     * @param onTimeout If {@code true} called from timeout handler.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     public void finish(final boolean commit, final boolean clearThreadMap, final boolean onTimeout) {
@@ -418,30 +418,14 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             return;
         }
 
-        // Handle race with concurrent locking in case of async rollback.
+        // Handle possible concurrent locking in case of asynchronous rollback.
         if (!commit && !clearThreadMap) {
-            // TODO remove copy paste.
-            IgniteInternalFuture<Boolean> fut;
+            IgniteInternalFuture<Boolean> lockFut = tx.prepareAsyncRollback();
 
-            while(true) {
-                fut = tx.lockFuture();
-
-                if (fut != null)
-                    break;
-
-                if (tx.updateLockFuture(null, GridDhtTxLocalAdapter.ROLLBACK_FUT)) {
-                    fut = GridDhtTxLocalAdapter.ROLLBACK_FUT;
-
-                    break;
-                }
-            }
-
-            assert fut != null;
-
-            if (fut != GridDhtTxLocalAdapter.ROLLBACK_FUT) {
+            if (lockFut != null) {
                 if (onTimeout) {
-                    // Wait for lock future completion.
-                    fut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
+                    // Wait for lock future completion. This allows deadlock detection to kick in.
+                    lockFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
                         @Override public void apply(IgniteInternalFuture<Boolean> fut) {
                             doFinish(false, false);
                         }
@@ -450,11 +434,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                     return;
                 }
                 else {
-                    // Force finish.
-                    if (fut instanceof GridDhtColocatedLockFuture)
-                        ((GridDhtColocatedLockFuture)fut).onRollback(tx.rollbackException());
-                    else if (fut instanceof GridNearLockFuture)
-                        ((GridNearLockFuture)fut).onRollback(tx.rollbackException());
+                    // Abort locks.
+                    if (lockFut instanceof GridDhtColocatedLockFuture)
+                        ((GridDhtColocatedLockFuture)lockFut).onRollback(tx.rollbackException());
+                    else if (lockFut instanceof GridNearLockFuture)
+                        ((GridNearLockFuture)lockFut).onRollback(tx.rollbackException());
                 }
             }
         }
@@ -463,7 +447,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     }
 
     /**
-     * Do tx finish
+     * Finishes a transaction.
      *
      * @param commit Commit.
      * @param clearThreadMap Clear thread map.

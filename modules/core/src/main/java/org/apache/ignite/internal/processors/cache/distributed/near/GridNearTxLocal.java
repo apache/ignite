@@ -3273,6 +3273,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /**
      * @param clearThreadMap {@code True} if needed to clear thread map.
+     * @param onTimeout {@code True} if called from timeout handler.
      * Note: For async rollbacks (from timeouts or another thread) should not clear thread map
      * since thread started tx still should be able to see this tx to prevent subsequent operations.
      *
@@ -3292,7 +3293,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (fut != null)
             return chainFinishFuture(finishFut, false, clearThreadMap, onTimeout);
 
-        if (updateLockFuture(null, ROLLBACK_FUT) && fastFinish()) {
+        if (prepareAsyncRollback() == null && fastFinish()) {
             GridNearTxFastFinishFuture fut0;
 
             if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFastFinishFuture(this, false)))
