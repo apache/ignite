@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import javassist.CannotCompileException;
+import javassist.ClassClassPath;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtNewMethod;
@@ -68,10 +69,11 @@ public class IgniteExamplesMLTestSuite extends TestSuite {
     private static Class makeTestClass(Class<?> exampleCls, String basePkgForTests)
         throws NotFoundException, CannotCompileException {
         ClassPool cp = ClassPool.getDefault();
+        cp.insertClassPath(new ClassClassPath(IgniteExamplesMLTestSuite.class));
 
         CtClass cl = cp.makeClass(basePkgForTests + "." + exampleCls.getSimpleName() + "SelfName");
 
-        cl.setSuperclass(cp.getCtClass(GridAbstractExamplesTest.class.getName()));
+        cl.setSuperclass(cp.get(GridAbstractExamplesTest.class.getName()));
 
         cl.addMethod(CtNewMethod.make("public void testExample() { "
             + exampleCls.getCanonicalName()
