@@ -22,42 +22,39 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 
-public class SimpleGroupTrainerInput implements GroupTrainerInput<Double> {
+/** */
+class SimpleGroupTrainerInput implements GroupTrainerInput<Double> {
     /** */
-    private int limit;
+    private final int limit;
+    /** */
+    private final int eachNumCnt;
+    /** */
+    private final int iterCnt;
 
     /** */
-    private int eachNumberCount;
-
-    /** */
-    private int iterCnt;
-
-    /** */
-    public SimpleGroupTrainerInput(int limit, int eachNumCnt, int iterCnt) {
+    SimpleGroupTrainerInput(int limit, int eachNumCnt, int iterCnt) {
         this.limit = limit;
-        this.eachNumberCount = eachNumCnt;
+        this.eachNumCnt = eachNumCnt;
         this.iterCnt = iterCnt;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteSupplier<Stream<GroupTrainerCacheKey<Double>>> initialKeys(UUID trainingUUID) {
-        int lim = limit;
-        UUID uuid = trainingUUID;
-        return () -> IntStream.range(0, lim).mapToObj(i -> new GroupTrainerCacheKey<>(i, 0.0, uuid));
+        return () -> IntStream.range(0, limit).mapToObj(i -> new GroupTrainerCacheKey<>(i, 0.0, trainingUUID));
     }
 
     /** */
-    public int limit() {
+    int limit() {
         return limit;
     }
 
     /** */
-    public int iterCnt() {
+    int iterCnt() {
         return iterCnt;
     }
 
     /** */
-    public int eachNumberCount() {
-        return eachNumberCount;
+    int eachNumberCount() {
+        return eachNumCnt;
     }
 }

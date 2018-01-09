@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.nn.updaters;
 
-import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
@@ -26,7 +25,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 /**
  * Interface for models which are smooth functions of their parameters.
  */
-interface BaseSmoothParametrized<M extends BaseSmoothParametrized<M> & Model<Matrix, Matrix>> {
+interface BaseSmoothParametrized<M extends BaseSmoothParametrized<M>> {
     /**
      * Compose function in the following way: feed output of this model as input to second argument to loss function.
      * After that we have a function g of three arguments: input, ground truth, parameters.
@@ -40,8 +39,7 @@ interface BaseSmoothParametrized<M extends BaseSmoothParametrized<M> & Model<Mat
      * @param truthBatch Batch of ground truths.
      * @return Gradient of h at current point in parameters space.
      */
-    Vector differentiateByParameters(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
-        Matrix inputsBatch, Matrix truthBatch);
+    Vector differentiateByParameters(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss, Matrix inputsBatch, Matrix truthBatch);
 
     /**
      * Get parameters vector.

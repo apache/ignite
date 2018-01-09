@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.nn;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -42,7 +41,7 @@ import static org.apache.ignite.ml.math.util.MatrixUtil.elementWiseTimes;
 /**
  * Class encapsulating logic of multilayer perceptron.
  */
-public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParametrized<MultilayerPerceptron>, Serializable {
+public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParametrized<MultilayerPerceptron> {
     /**
      * This MLP architecture.
      */
@@ -69,7 +68,7 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
         architecture = arch;
         below = null;
 
-        initLayers(initializer != null ? initializer : new RandomInitializer(new Random()));
+        initLayers(initializer);
     }
 
     /**
@@ -78,7 +77,11 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
      * @param arch Architecture.
      */
     public MultilayerPerceptron(MLPArchitecture arch) {
-        this(arch, null);
+        layers = new ArrayList<>(arch.layersCount() + 1);
+        architecture = arch;
+        below = null;
+
+        initLayers(new RandomInitializer(new Random()));
     }
 
     /**
@@ -386,7 +389,7 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
             if (hasBiases(layer))
                 db = dz.foldRows(Vector::sum).times(invBatchSize);
 
-            // Because we go from last layer, add each layer to the beginning.
+            // Because we go from last layer, add each layer to the begining.
             layersParameters.add(0, new MLPLayer(dw, db));
         }
 
@@ -552,8 +555,7 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
      * @param nonlinearity Nonlinearity of current layer.
      * @return Gradients matrix.
      */
-    private Matrix differentiateNonlinearity(Matrix linearOut,
-        IgniteDifferentiableDoubleToDoubleFunction nonlinearity) {
+    private Matrix differentiateNonlinearity(Matrix linearOut, IgniteDifferentiableDoubleToDoubleFunction nonlinearity) {
         Matrix diff = linearOut.copy();
 
         diff.map(nonlinearity::differential);

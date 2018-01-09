@@ -18,10 +18,10 @@
 package org.apache.ignite.ml.trainers.group;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.chain.KeyAndContext;
@@ -46,15 +46,16 @@ public class LocalKeysProcessorJob<K, V, C, R extends Serializable> extends Base
      * @param worker Worker.
      * @param keySupplier Supplier of keys.
      * @param reducer Reducer.
+     * @param identity Identity for reducer.
      * @param trainingUUID UUID of training.
      * @param cacheName Name of cache used for training.
      */
     public LocalKeysProcessorJob(IgniteSupplier<C> ctxSupplier,
         IgniteFunction<KeyAndContext<K, C>, ResultAndUpdates<R>> worker,
         IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keySupplier,
-        IgniteFunction<List<R>, R> reducer,
+        IgniteBinaryOperator<R> reducer, R identity,
         UUID trainingUUID, String cacheName) {
-        super(worker, keySupplier, reducer, trainingUUID, cacheName);
+        super(worker, keySupplier, reducer, identity, trainingUUID, cacheName);
         this.ctxSupplier = ctxSupplier;
     }
 

@@ -19,7 +19,6 @@ package org.apache.ignite.ml.trainers.group;
 
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -27,7 +26,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.chain.Chains;
 import org.apache.ignite.ml.trainers.group.chain.ComputationsChain;
@@ -41,7 +40,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
     private static final int NODE_COUNT = 3;
 
     /** Grid instance. */
-    protected Ignite ignite;
+    private Ignite ignite;
 
     /**
      * Default constructor.
@@ -153,15 +152,15 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         cache.putAll(m);
 
         IgniteBiFunction<Integer, TestLocalContext, IgniteSupplier<Stream<GroupTrainerCacheKey<Double>>>> function = (o, l) -> () -> keys;
-        IgniteFunction<List<Integer>, Integer> max = ints -> ints.stream().mapToInt(x -> x).max().orElse(Integer.MIN_VALUE);
+        IgniteBinaryOperator<Integer> max = Integer::max;
 
         Integer res = chain.
-            thenDistributedForEntries((integer, context) -> () -> null, this::readAndIncrement, function, max).
+            thenDistributedForEntries((integer, context) -> () -> null, this::readAndIncrement, function, max, Integer.MIN_VALUE).
             process(init, new GroupTrainingContext<>(locCtx, cache, ignite));
 
-        int localMax = m.values().stream().max(Comparator.comparingInt(i -> i)).orElse(Integer.MIN_VALUE);
+        int locMax = m.values().stream().max(Comparator.comparingInt(i -> i)).orElse(Integer.MIN_VALUE);
 
-        assertEquals((long)localMax, (long)res);
+        assertEquals((long)locMax, (long)res);
 
         for (GroupTrainerCacheKey<Double> key : m.keySet())
             m.compute(key, (k, v) -> v + 1);
@@ -174,7 +173,7 @@ public class DistributedWorkersChainTest extends GridCommonAbstractTest {
         Integer val = ec.entry().getValue();
 
         ResultAndUpdates<Integer> res = ResultAndUpdates.of(val);
-        res.updateCache(TestGroupTrainingCache.getOrCreate(Ignition.localIgnite()), ec.entry().getKey(), val + 1);
+        res.update(TestGroupTrainingCache.getOrCreate(Ignition.localIgnite()), ec.entry().getKey(), val + 1);
 
         return res;
     }

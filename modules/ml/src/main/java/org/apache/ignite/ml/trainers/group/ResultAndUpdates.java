@@ -19,13 +19,11 @@ package org.apache.ignite.ml.trainers.group;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 
 /**
  * Class containing result of computation and updates which should be made for caches.
@@ -95,16 +93,13 @@ public class ResultAndUpdates<R> {
      * @param val New value.
      * @param <K> Type of key of cache to be updated.
      * @param <V> New value.
-     * @return This object.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> ResultAndUpdates<R> updateCache(IgniteCache<K, V> cache, K key, V val) {
+    public <K, V> void update(IgniteCache<K, V> cache, K key, V val) {
         String name = cache.getName();
 
         updates.computeIfAbsent(name, s -> new ConcurrentHashMap());
         updates.get(name).put(key, val);
-
-        return this;
     }
 
     /**
@@ -119,13 +114,14 @@ public class ResultAndUpdates<R> {
     /**
      * Sum collection of ResultAndUpdate into one: results are reduced by specified binary operator and updates are merged.
      *
-     * @param reducer Reducer used to combine computation results.
+     * @param op Binary operator used to combine computation results.
+     * @param identity Identity for op.
      * @param resultsAndUpdates ResultAndUpdates to be combined with.
      * @param <R> Type of computation result.
      * @return Sum of collection ResultAndUpdate objects.
      */
     @SuppressWarnings("unchecked")
-    static <R> ResultAndUpdates<R> sum(IgniteFunction<List<R>, R> reducer,
+    static <R> ResultAndUpdates<R> sum(IgniteBinaryOperator<R> op, R identity,
         Collection<ResultAndUpdates<R>> resultsAndUpdates) {
         Map<String, Map> allUpdates = new HashMap<>();
 
@@ -137,9 +133,9 @@ public class ResultAndUpdates<R> {
             }
         }
 
-        List<R> results = resultsAndUpdates.stream().map(ResultAndUpdates::result).collect(Collectors.toList());
+        R res = resultsAndUpdates.stream().map(ResultAndUpdates::result).reduce(op).orElse(identity);
 
-        return new ResultAndUpdates<>(reducer.apply(results), allUpdates);
+        return new ResultAndUpdates<>(res, allUpdates);
     }
 
     /**

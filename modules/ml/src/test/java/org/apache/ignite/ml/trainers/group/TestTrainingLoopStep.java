@@ -17,18 +17,17 @@
 
 package org.apache.ignite.ml.trainers.group;
 
-import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.chain.DistributedEntryProcessingStep;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 
 /** */
-public class TestTrainingLoopStep implements DistributedEntryProcessingStep<TestGroupTrainerLocalContext,
-    Double, Integer, Void, Double, Double> {
+class TestTrainingLoopStep implements DistributedEntryProcessingStep<TestGroupTrainerLocalContext, Double, Integer, Void, Double, Double> {
     /** {@inheritDoc} */
     @Override public IgniteSupplier<Void> remoteContextSupplier(Double input, TestGroupTrainerLocalContext locCtx) {
         // No context is needed.
@@ -41,8 +40,7 @@ public class TestTrainingLoopStep implements DistributedEntryProcessingStep<Test
             Integer oldVal = entryAndContext.entry().getValue();
             double v = oldVal * oldVal;
             ResultAndUpdates<Double> res = ResultAndUpdates.of(v);
-            res.updateCache(TestGroupTrainingCache.getOrCreate(Ignition.localIgnite()),
-                entryAndContext.entry().getKey(), (int)v);
+            res.update(TestGroupTrainingCache.getOrCreate(Ignition.localIgnite()), entryAndContext.entry().getKey(), (int)v);
             return res;
         };
     }
@@ -59,7 +57,12 @@ public class TestTrainingLoopStep implements DistributedEntryProcessingStep<Test
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFunction<List<Double>, Double> reducer() {
-        return doubles -> doubles.stream().mapToDouble(x -> x).sum();
+    @Override public Double identity() {
+        return 0.0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteBinaryOperator<Double> reducer() {
+        return (a, b) -> a + b;
     }
 }

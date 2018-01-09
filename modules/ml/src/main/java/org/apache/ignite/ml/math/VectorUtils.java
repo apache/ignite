@@ -135,24 +135,4 @@ public class VectorUtils {
 
         return res;
     }
-
-    /**
-     * Get copy of part of given length of given vector starting from given offset.
-     *
-     * @param v Vector to copy part from.
-     * @param off Offset.
-     * @param len Length.
-     * @return Copy of part of given length of given vector starting from given offset.
-     */
-    public static Vector copyPart(Vector v, int off, int len) {
-        assert off >= 0;
-        assert len <= v.size();
-
-        Vector res = v.like(len);
-
-        for (int i = 0; i < len; i++)
-            res.setX(i, v.getX(off + i));
-
-        return res;
-    }
 }

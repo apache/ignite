@@ -17,13 +17,13 @@
 
 package org.apache.ignite.ml.trainers.group;
 
-import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.chain.Chains;
@@ -33,14 +33,14 @@ import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 /**
  * Test group trainer.
  */
-public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext, Double, Integer, Integer, Integer,
-    Double, ConstModel<Integer>, SimpleGroupTrainerInput, Void> {
+class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext, Double, Integer, Integer, Integer, Double,
+    ConstModel<Integer>, SimpleGroupTrainerInput, Void> {
     /**
      * Construct instance of this class with given parameters.
      *
      * @param ignite Ignite instance.
      */
-    public TestGroupTrainer(Ignite ignite) {
+    TestGroupTrainer(Ignite ignite) {
         super(TestGroupTrainingCache.getOrCreate(ignite), ignite);
     }
 
@@ -56,23 +56,22 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
         return key -> {
             long i = key.nodeLocalEntityIndex();
             UUID trainingUUID = key.trainingUUID();
-            IgniteCache<GroupTrainerCacheKey<Double>, Integer> cache
-                = TestGroupTrainingCache.getOrCreate(Ignition.localIgnite());
+            IgniteCache<GroupTrainerCacheKey<Double>, Integer> cache = TestGroupTrainingCache.getOrCreate(Ignition.localIgnite());
 
             long sum = i * data.eachNumberCount();
 
             ResultAndUpdates<Integer> res = ResultAndUpdates.of((int)sum);
 
             for (int j = 0; j < data.eachNumberCount(); j++)
-                res.updateCache(cache, new GroupTrainerCacheKey<>(i, (double)j, trainingUUID), (int)i);
+                res.update(cache, new GroupTrainerCacheKey<>(i, (double)j, trainingUUID), (int)i);
 
             return res;
         };
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteFunction<List<Integer>, Integer> reduceDistributedInitData() {
-        return id -> id.stream().mapToInt(x -> x).sum();
+    @Override protected IgniteBinaryOperator<Integer> reduceDistributedInitData() {
+        return (a, b) -> a + b;
     }
 
     /** {@inheritDoc} */
@@ -83,7 +82,6 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
     /** {@inheritDoc} */
     @Override protected ComputationsChain<TestGroupTrainerLocalContext,
         Double, Integer, Double, Double> trainingLoopStep() {
-        // TODO:IGNITE-7350 here we should explicitly create variable because we cannot infer context type, think about it.
         ComputationsChain<TestGroupTrainerLocalContext, Double, Integer, Double, Double> chain = Chains.
             create(new TestTrainingLoopStep());
         return chain.
@@ -116,8 +114,7 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteFunction<EntryAndContext<Double, Integer, Void>,
-        ResultAndUpdates<Integer>> finalResultsExtractor() {
+    @Override protected IgniteFunction<EntryAndContext<Double, Integer, Void>, ResultAndUpdates<Integer>> finalResultsExtractor() {
         return entryAndCtx -> {
             Integer val = entryAndCtx.entry().getValue();
             return ResultAndUpdates.of(val % 2 == 0 ? val : 0);
@@ -125,8 +122,13 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteFunction<List<Integer>, Integer> finalResultsReducer() {
-        return id -> id.stream().mapToInt(x -> x).sum();
+    @Override protected Integer defaultFinalResult() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteBinaryOperator<Integer> finalResultsReducer() {
+        return (a, b) -> a + b;
     }
 
     /** {@inheritDoc} */
@@ -136,9 +138,7 @@ public class TestGroupTrainer extends GroupTrainer<TestGroupTrainerLocalContext,
 
     /** {@inheritDoc} */
     @Override protected void cleanup(TestGroupTrainerLocalContext locCtx) {
-        Stream<GroupTrainerCacheKey<Double>> toRemote = TestGroupTrainingCache.allKeys(locCtx.limit(),
-            locCtx.eachNumberCnt(), locCtx.trainingUUID());
-
+        Stream<GroupTrainerCacheKey<Double>> toRemote = TestGroupTrainingCache.allKeys(locCtx.limit(), locCtx.eachNumberCnt(), locCtx.trainingUUID());
         TestGroupTrainingCache.getOrCreate(ignite).removeAll(toRemote.collect(Collectors.toSet()));
     }
 }

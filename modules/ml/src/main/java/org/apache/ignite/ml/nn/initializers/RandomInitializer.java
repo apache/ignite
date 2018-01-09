@@ -28,7 +28,7 @@ public class RandomInitializer implements MLPInitializer {
     /**
      * RNG.
      */
-    private final Random rnd;
+    Random rnd;
 
     /**
      * Construct RandomInitializer from given RNG.

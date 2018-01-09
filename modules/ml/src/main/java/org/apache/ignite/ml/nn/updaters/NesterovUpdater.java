@@ -23,10 +23,9 @@ import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFun
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
- * Class encapsulating Nesterov algorithm for MLP parameters updateCache.
+ * Class encapsulating Nesterov algorithm for MLP parameters update.
  */
-public class NesterovUpdateCalculator<M extends SmoothParametrized>
-    implements ParameterUpdateCalculator<M, NesterovParameterUpdate> {
+public class NesterovUpdater implements ParameterUpdater<SmoothParametrized, NesterovUpdaterParams> {
     /**
      * Learning rate.
      */
@@ -43,19 +42,26 @@ public class NesterovUpdateCalculator<M extends SmoothParametrized>
     protected double momentum;
 
     /**
-     * Construct NesterovUpdateCalculator.
+     * Construct NesterovUpdater.
      *
      * @param momentum Momentum constant.
      */
-    public NesterovUpdateCalculator(double learningRate, double momentum) {
+    public NesterovUpdater(double learningRate, double momentum) {
         this.learningRate = learningRate;
         this.momentum = momentum;
     }
 
     /** {@inheritDoc} */
-    @Override public NesterovParameterUpdate calculateNewUpdate(SmoothParametrized mdl,
-        NesterovParameterUpdate updaterParameters, int iteration, Matrix inputs, Matrix groundTruth) {
-        // TODO:IGNITE-7350 create new updateCache object here instead of in-place change.
+    @Override public NesterovUpdaterParams init(SmoothParametrized mdl,
+        IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
+        this.loss = loss;
+
+        return new NesterovUpdaterParams(mdl.parametersCount());
+    }
+
+    /** {@inheritDoc} */
+    @Override public NesterovUpdaterParams updateParams(SmoothParametrized mdl, NesterovUpdaterParams updaterParameters,
+        int iteration, Matrix inputs, Matrix groundTruth) {
 
         if (iteration > 0) {
             Vector curParams = mdl.parameters();
@@ -63,23 +69,8 @@ public class NesterovUpdateCalculator<M extends SmoothParametrized>
         }
 
         Vector gradient = mdl.differentiateByParameters(loss, inputs, groundTruth);
-        updaterParameters.setPreviousUpdates(updaterParameters.prevIterationUpdates()
-            .plus(gradient.times(learningRate)));
+        updaterParameters.setPreviousUpdates(updaterParameters.prevIterationUpdates().plus(gradient.times(learningRate)));
 
         return updaterParameters;
-    }
-
-    /** {@inheritDoc} */
-    @Override public NesterovParameterUpdate init(M mdl,
-        IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
-        this.loss = loss;
-
-        return new NesterovParameterUpdate(mdl.parametersCount());
-    }
-
-    /** {@inheritDoc} */
-    @Override public <M1 extends M> M1 update(M1 obj, NesterovParameterUpdate update) {
-        Vector parameters = obj.parameters();
-        return (M1)obj.setParameters(parameters.minus(update.prevIterationUpdates()));
     }
 }

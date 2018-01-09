@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.trainers.group;
 
-import java.util.List;
+import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
@@ -37,7 +37,7 @@ public interface Metaoptimizer<LC, X, Y, I, D, O> {
      *
      * @return Function used to reduce distributed initialization results.
      */
-    IgniteFunction<List<D>, D> initialReducer();
+    IgniteBinaryOperator<D> initialReducer();
 
     /**
      * Maps data returned by distributed initialization to data consumed by training loop step.
@@ -69,7 +69,14 @@ public interface Metaoptimizer<LC, X, Y, I, D, O> {
      *
      * @return Binary operator used for reducing results returned by distributedPostprocessor.
      */
-    IgniteFunction<List<O>, O> postProcessReducer();
+    IgniteBinaryOperator<O> postProcessReducer();
+
+    /**
+     * Get identity of postProcessReducer.
+     *
+     * @return Identity of postProcessReducer.
+     */
+    O postProcessIdentity();
 
     /**
      * Transform data returned by distributed part of training loop step into input fed into distributed part of training
