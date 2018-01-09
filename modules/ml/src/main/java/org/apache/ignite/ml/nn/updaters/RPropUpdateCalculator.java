@@ -29,7 +29,7 @@ import org.apache.ignite.ml.math.util.MatrixUtil;
  * <p>
  * See <a href="https://paginas.fe.up.pt/~ee02162/dissertacao/RPROP%20paper.pdf">RProp</a>.</p>
  */
-public class RPropUpdater implements ParameterUpdater<SmoothParametrized, RPropUpdaterParams> {
+public class RPropUpdateCalculator<M extends SmoothParametrized> implements ParameterUpdateCalculator<M, RPropParameterUpdate> {
     /**
      * Default initial update.
      */
@@ -76,34 +76,27 @@ public class RPropUpdater implements ParameterUpdater<SmoothParametrized, RPropU
     protected IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
 
     /**
-     * Construct RPropUpdater.
+     * Construct RPropUpdateCalculator.
      *
      * @param initUpdate Initial update.
      * @param accelerationRate Acceleration rate.
      * @param deaccelerationRate Deacceleration rate.
      */
-    public RPropUpdater(double initUpdate, double accelerationRate, double deaccelerationRate) {
+    public RPropUpdateCalculator(double initUpdate, double accelerationRate, double deaccelerationRate) {
         this.initUpdate = initUpdate;
         this.accelerationRate = accelerationRate;
         this.deaccelerationRate = deaccelerationRate;
     }
 
     /**
-     * Construct RPropUpdater with default parameters.
+     * Construct RPropUpdateCalculator with default parameters.
      */
-    public RPropUpdater() {
+    public RPropUpdateCalculator() {
         this(DFLT_INIT_UPDATE, DFLT_ACCELERATION_RATE, DFLT_DEACCELERATION_RATE);
     }
 
     /** {@inheritDoc} */
-    @Override public RPropUpdaterParams init(SmoothParametrized mdl,
-        IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
-        this.loss = loss;
-        return new RPropUpdaterParams(mdl.parametersCount(), initUpdate);
-    }
-
-    /** {@inheritDoc} */
-    @Override public RPropUpdaterParams updateParams(SmoothParametrized mdl, RPropUpdaterParams updaterParams,
+    @Override public RPropParameterUpdate calculateNewUpdate(SmoothParametrized mdl, RPropParameterUpdate updaterParams,
         int iteration, Matrix inputs, Matrix groundTruth) {
         Vector gradient = mdl.differentiateByParameters(loss, inputs, groundTruth);
         Vector prevGradient = updaterParams.prevIterationGradient();
@@ -114,7 +107,7 @@ public class RPropUpdater implements ParameterUpdater<SmoothParametrized, RPropU
         else
             derSigns = gradient.like(gradient.size()).assign(1.0);
 
-        updaterParams.deltas().map(derSigns, (prevDelta, sign) -> {
+        Vector newDeltas = updaterParams.deltas().copy().map(derSigns, (prevDelta, sign) -> {
             if (sign > 0)
                 return Math.min(prevDelta * accelerationRate, UPDATE_MAX);
             else if (sign < 0)
@@ -123,12 +116,12 @@ public class RPropUpdater implements ParameterUpdater<SmoothParametrized, RPropU
                 return prevDelta;
         });
 
-        updaterParams.setPrevIterationBiasesUpdates(MatrixUtil.zipWith(gradient, updaterParams.deltas(), (der, delta, i) -> {
+        Vector newPrevIterationUpdates = MatrixUtil.zipWith(gradient, updaterParams.deltas(), (der, delta, i) -> {
             if (derSigns.getX(i) >= 0)
                 return -Math.signum(der) * delta;
 
             return updaterParams.prevIterationUpdates().getX(i);
-        }));
+        });
 
         Vector updatesMask = MatrixUtil.zipWith(derSigns, updaterParams.prevIterationUpdates(), (sign, upd, i) -> {
             if (sign < 0)
@@ -140,9 +133,19 @@ public class RPropUpdater implements ParameterUpdater<SmoothParametrized, RPropU
                 return -1.0;
         });
 
-        updaterParams.setUpdatesMask(updatesMask);
-        updaterParams.setPrevIterationWeightsDerivatives(gradient.copy());
+        return new RPropParameterUpdate(newPrevIterationUpdates, gradient.copy(), newDeltas, updatesMask);
+    }
 
-        return updaterParams;
+    /** {@inheritDoc} */
+    @Override public RPropParameterUpdate init(M mdl,
+        IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
+        this.loss = loss;
+        return new RPropParameterUpdate(mdl.parametersCount(), initUpdate);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <M1 extends M> M1 update(M1 obj, RPropParameterUpdate update) {
+        Vector updatesToAdd = VectorUtils.elementWiseTimes(update.updatesMask().copy(), update.prevIterationUpdates());
+        return (M1)obj.setParameters(obj.parameters().plus(updatesToAdd));
     }
 }

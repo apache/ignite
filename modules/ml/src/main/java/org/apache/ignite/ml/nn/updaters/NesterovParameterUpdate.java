@@ -17,25 +17,37 @@
 
 package org.apache.ignite.ml.nn.updaters;
 
+import java.io.Serializable;
+import java.util.List;
+import java.util.Objects;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
  * Data needed for Nesterov parameters updater.
  */
-public class NesterovUpdaterParams implements UpdaterParams<SmoothParametrized> {
+public class NesterovParameterUpdate implements Serializable {
     /**
      * Previous step weights updates.
      */
     protected Vector prevIterationUpdates;
 
     /**
-     * Construct NesterovUpdaterParams.
+     * Construct NesterovParameterUpdate.
      *
-     * @param paramsCnt Count of parameters on which update happens.
+     * @param paramsCnt Count of parameters on which updateCache happens.
      */
-    public NesterovUpdaterParams(int paramsCnt) {
+    public NesterovParameterUpdate(int paramsCnt) {
         prevIterationUpdates = new DenseLocalOnHeapVector(paramsCnt).assign(0);
+    }
+
+    /**
+     * Construct NesterovParameterUpdate.
+     *
+     * @param prevIterationUpdates Previous iteration updates.
+     */
+    public NesterovParameterUpdate(Vector prevIterationUpdates) {
+        this.prevIterationUpdates = prevIterationUpdates;
     }
 
     /**
@@ -44,7 +56,7 @@ public class NesterovUpdaterParams implements UpdaterParams<SmoothParametrized> 
      * @param updates Parameters updates.
      * @return This object with updated parameters updates.
      */
-    public NesterovUpdaterParams setPreviousUpdates(Vector updates) {
+    public NesterovParameterUpdate setPreviousUpdates(Vector updates) {
         prevIterationUpdates = updates;
         return this;
     }
@@ -58,10 +70,25 @@ public class NesterovUpdaterParams implements UpdaterParams<SmoothParametrized> 
         return prevIterationUpdates;
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public <M extends SmoothParametrized> M update(M obj) {
-        Vector parameters = obj.parameters();
-        return (M)obj.setParameters(parameters.minus(prevIterationUpdates));
+    /**
+     * Get sum of parameters updates.
+     *
+     * @param parameters Parameters to sum.
+     * @return Sum of parameters updates.
+     */
+    public static NesterovParameterUpdate sum(List<NesterovParameterUpdate> parameters) {
+        return parameters.stream().filter(Objects::nonNull).map(NesterovParameterUpdate::prevIterationUpdates)
+            .reduce(Vector::plus).map(NesterovParameterUpdate::new).orElse(null);
+    }
+
+    /**
+     * Get average of parameters updates.
+     *
+     * @param parameters Parameters to average.
+     * @return Average of parameters updates.
+     */
+    public static NesterovParameterUpdate avg(List<NesterovParameterUpdate> parameters) {
+        NesterovParameterUpdate sum = sum(parameters);
+        return sum != null ? sum.setPreviousUpdates(sum.prevIterationUpdates().divide(parameters.size())) : null;
     }
 }
