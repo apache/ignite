@@ -64,6 +64,21 @@ namespace Apache.Ignite.Core.Configuration
         public static TimeSpan DefaultIdleTimeout = TimeSpan.Zero;
 
         /// <summary>
+        /// Default value for <see cref="ThinClientEnabled"/> property.
+        /// </summary>
+        public const bool DefaultThinClientEnabled = true;
+
+        /// <summary>
+        /// Default value for <see cref="JdbcEnabled"/> property.
+        /// </summary>
+        public const bool DefaultJdbcEnabled = true;
+
+        /// <summary>
+        /// Default value for <see cref="OdbcEnabled"/> property.
+        /// </summary>
+        public const bool DefaultOdbcEnabled = true;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ClientConnectorConfiguration"/> class.
         /// </summary>
         public ClientConnectorConfiguration()
@@ -76,6 +91,10 @@ namespace Apache.Ignite.Core.Configuration
             MaxOpenCursorsPerConnection = DefaultMaxOpenCursorsPerConnection;
             ThreadPoolSize = DefaultThreadPoolSize;
             IdleTimeout = DefaultIdleTimeout;
+
+            ThinClientEnabled = DefaultThinClientEnabled;
+            OdbcEnabled = DefaultOdbcEnabled;
+            JdbcEnabled = DefaultJdbcEnabled;
         }
 
         /// <summary>
@@ -94,6 +113,10 @@ namespace Apache.Ignite.Core.Configuration
             MaxOpenCursorsPerConnection = reader.ReadInt();
             ThreadPoolSize = reader.ReadInt();
             IdleTimeout = reader.ReadLongAsTimespan();
+
+            ThinClientEnabled = reader.ReadBoolean();
+            OdbcEnabled = reader.ReadBoolean();
+            JdbcEnabled = reader.ReadBoolean();
         }
 
         /// <summary>
@@ -112,6 +135,10 @@ namespace Apache.Ignite.Core.Configuration
             writer.WriteInt(MaxOpenCursorsPerConnection);
             writer.WriteInt(ThreadPoolSize);
             writer.WriteTimeSpanAsLong(IdleTimeout);
+
+            writer.WriteBoolean(ThinClientEnabled);
+            writer.WriteBoolean(OdbcEnabled);
+            writer.WriteBoolean(JdbcEnabled);
         }
 
         /// <summary>
@@ -172,5 +199,20 @@ namespace Apache.Ignite.Core.Configuration
         /// Zero or negative means no timeout.
         /// </summary>
         public TimeSpan IdleTimeout { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether thin client connector is enabled.
+        /// </summary>
+        public bool ThinClientEnabled { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether JDBC connector is enabled.
+        /// </summary>
+        public bool JdbcEnabled { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether ODBC connector is enabled.
+        /// </summary>
+        public bool OdbcEnabled { get; set; }
     }
 }

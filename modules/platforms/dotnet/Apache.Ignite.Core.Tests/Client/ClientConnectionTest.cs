@@ -159,6 +159,22 @@ namespace Apache.Ignite.Core.Tests.Client
                 Assert.AreEqual("Failed to establish Ignite thin client connection, " +
                                 "examine inner exceptions for details.", ex.Message.Substring(0, 88));
             }
+
+            // Disable only thin client.
+            servCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                ClientConnectorConfiguration = new ClientConnectorConfiguration
+                {
+                    ThinClientEnabled = false
+                }
+            };
+
+            using (Ignition.Start(servCfg))
+            {
+                var ex = Assert.Throws<AggregateException>(() => Ignition.StartClient(clientCfg));
+                Assert.AreEqual("Failed to establish Ignite thin client connection, " +
+                                "examine inner exceptions for details.", ex.Message.Substring(0, 88));
+            }
         }
 
         /// <summary>

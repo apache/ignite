@@ -1447,6 +1447,21 @@
                                 <xs:documentation>Idle timeout for client connections on the server side. If no packets come within idle timeout, the connection is closed by the server. Zero or negative for no timeout.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
+                        <xs:attribute name="thinClientEnabled" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>Enables thin client connector.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="jdbcEnabled" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>Enables JDBC connector.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="odbcEnabled" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>Enables ODBC connector.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="persistentStoreConfiguration" minOccurs="0">
