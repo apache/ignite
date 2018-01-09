@@ -20,7 +20,6 @@ package org.apache.ignite.ml.nn;
 import java.util.Random;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.initializers.RandomInitializer;
@@ -43,7 +42,7 @@ public class SimpleMLPLocalBatchTrainerInput implements LocalBatchTrainerInput<M
     /**
      * Inputs stored as columns.
      */
-    private final Matrix inputs;
+    private Matrix inputs;
 
     /**
      * Ground truths stored as columns.
@@ -53,7 +52,7 @@ public class SimpleMLPLocalBatchTrainerInput implements LocalBatchTrainerInput<M
     /**
      * Size of batch returned on each step.
      */
-    private final int batchSize;
+    private int batchSize;
 
     /**
      * Construct instance of this class.
@@ -72,23 +71,21 @@ public class SimpleMLPLocalBatchTrainerInput implements LocalBatchTrainerInput<M
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier() {
-        return () -> {
-            int inputRowSize = inputs.rowSize();
-            int outputRowSize = groundTruth.rowSize();
+    @Override public IgniteBiTuple<Matrix, Matrix> getBatch() {
+        int inputRowSize = inputs.rowSize();
+        int outputRowSize = groundTruth.rowSize();
 
-            Matrix vectors = new DenseLocalOnHeapMatrix(inputRowSize, batchSize);
-            Matrix labels = new DenseLocalOnHeapMatrix(outputRowSize, batchSize);
+        Matrix vectors = new DenseLocalOnHeapMatrix(inputRowSize, batchSize);
+        Matrix labels = new DenseLocalOnHeapMatrix(outputRowSize, batchSize);
 
-            int[] samples = Utils.selectKDistinct(inputs.columnSize(), batchSize);
+        int[] samples = Utils.selectKDistinct(inputs.columnSize(), batchSize);
 
-            for (int i = 0; i < batchSize; i++) {
-                vectors.assignColumn(i, inputs.getCol(samples[i]));
-                labels.assignColumn(i, groundTruth.getCol(samples[i]));
-            }
+        for (int i = 0; i < batchSize; i++) {
+            vectors.assignColumn(i, inputs.getCol(samples[i]));
+            labels.assignColumn(i, groundTruth.getCol(samples[i]));
+        }
 
-            return new IgniteBiTuple<>(vectors, labels);
-        };
+        return new IgniteBiTuple<>(vectors, labels);
     }
 
     /** {@inheritDoc} */

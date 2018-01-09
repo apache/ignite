@@ -28,18 +28,19 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.apache.ignite.ml.nn.LocalBatchTrainerInput;
-import org.apache.ignite.ml.nn.updaters.ParameterUpdateCalculator;
+import org.apache.ignite.ml.nn.updaters.ParameterUpdater;
+import org.apache.ignite.ml.nn.updaters.UpdaterParams;
 
 /**
  * Batch trainer. This trainer is not distributed on the cluster, but input can theoretically read data from
  * Ignite cache.
  */
-public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P>
+public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P extends UpdaterParams<? super M>>
     implements Trainer<M, LocalBatchTrainerInput<M>> {
     /**
      * Supplier for updater function.
      */
-    private final IgniteSupplier<ParameterUpdateCalculator<M, P>> updaterSupplier;
+    private final IgniteSupplier<ParameterUpdater<? super M, P>> updaterSupplier;
 
     /**
      * Error threshold.
@@ -70,7 +71,7 @@ public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P>
      * @param maxIterations Maximal iterations count.
      */
     public LocalBatchTrainer(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
-        IgniteSupplier<ParameterUpdateCalculator<M, P>> updaterSupplier, double errorThreshold, int maxIterations) {
+        IgniteSupplier<ParameterUpdater<? super M, P>> updaterSupplier, double errorThreshold, int maxIterations) {
         this.loss = loss;
         this.updaterSupplier = updaterSupplier;
         this.errorThreshold = errorThreshold;
@@ -83,19 +84,19 @@ public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P>
         M mdl = data.mdl();
         double err;
 
-        ParameterUpdateCalculator<? super M, P> updater = updaterSupplier.get();
+        ParameterUpdater<? super M, P> updater = updaterSupplier.get();
 
         P updaterParams = updater.init(mdl, loss);
 
         while (i < maxIterations) {
-            IgniteBiTuple<Matrix, Matrix> batch = data.batchSupplier().get();
+            IgniteBiTuple<Matrix, Matrix> batch = data.getBatch();
             Matrix input = batch.get1();
             Matrix truth = batch.get2();
 
-            updaterParams = updater.calculateNewUpdate(mdl, updaterParams, i, input, truth);
+            updaterParams = updater.updateParams(mdl, updaterParams, i, input, truth);
 
             // Update mdl with updater parameters.
-            mdl = updater.update(mdl, updaterParams);
+            mdl = updaterParams.update(mdl);
 
             Matrix predicted = mdl.apply(input);
 
@@ -131,7 +132,7 @@ public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P>
      * @param updaterSupplier New updater supplier.
      * @return new trainer with the same parameters as this trainer, but with new updater supplier.
      */
-    public LocalBatchTrainer withUpdater(IgniteSupplier<ParameterUpdateCalculator<M, P>> updaterSupplier) {
+    public LocalBatchTrainer withUpdater(IgniteSupplier<ParameterUpdater<? super M, P>> updaterSupplier) {
         return new LocalBatchTrainer<>(loss, updaterSupplier, errorThreshold, maxIterations);
     }
 

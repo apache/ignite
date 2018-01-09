@@ -814,7 +814,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      */
     private static class BenchmarkReplaceValueEntryProcessor implements EntryProcessor<Object, Object, Object>, Serializable {
         /**
-         * New value for updateCache during process by default.
+         * New value for update during process by default.
          */
         private Object newVal;
 

@@ -15,33 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.nn;
+package org.apache.ignite.ml.nn.updaters;
 
+import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
- * Class containing popular loss functions.
+ * Interface for classes encapsulating parameters update logic.
+ *
+ * @param <M> Type of model to be updated.
+ * @param <P> Type of parameters needed for this updater.
  */
-public class LossFunctions {
+public interface ParameterUpdater<M, P extends UpdaterParams> {
     /**
-     * Mean squared error loss function.
+     * Initializes the updater.
+     *
+     * @param mdl Model to be trained.
+     * @param loss Loss function.
      */
-    public static IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> MSE = groundTruth ->
-        new IgniteDifferentiableVectorToDoubleFunction() {
-        /** {@inheritDoc} */
-        @Override public Vector differential(Vector pnt) {
-            double multiplier = 2.0 / pnt.size();
-            return pnt.minus(groundTruth).times(multiplier);
-        }
+    P init(M mdl, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss);
 
-        /** {@inheritDoc} */
-        @Override public Double apply(Vector vector) {
-            return groundTruth.copy().map(vector, (a, b) -> {
-                double diff = a - b;
-                return diff * diff;
-            }).sum() / (vector.size());
-        }
-    };
+    /**
+     * Update updater parameters.
+     *
+     * @param mdl Model to be updated.
+     * @param updaterParameters Updater parameters to update.
+     * @param iteration Current trainer iteration.
+     * @param inputs Inputs.
+     * @param groundTruth True values.
+     * @return Updated parameters.
+     */
+    P updateParams(M mdl, P updaterParameters, int iteration, Matrix inputs, Matrix groundTruth);
 }
