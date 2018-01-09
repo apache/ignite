@@ -112,6 +112,9 @@ public class TracerTest {
 
         // Custom color mapping.
         Tracer.showHtml(vec1, COLOR_MAPPER);
+
+        // Default color mapping with sorted vector.
+        Tracer.showHtml(vec1.copy().sort());
     }
 
     /** */
@@ -142,6 +145,9 @@ public class TracerTest {
 
         // Custom color mapping.
         Tracer.showHtml(vec1, COLOR_MAPPER, true);
+
+        // Default color mapping with sorted vector.
+        Tracer.showHtml(vec1.copy().sort(), true);
     }
 
     /** */
