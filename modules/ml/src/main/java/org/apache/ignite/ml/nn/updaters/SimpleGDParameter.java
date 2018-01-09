@@ -17,13 +17,14 @@
 
 package org.apache.ignite.ml.nn.updaters;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
- * Parameters for {@link SimpleGDUpdater}.
+ * Parameters for {@link SimpleGDUpdateCalculator}.
  */
-public class SimpleGDParams implements UpdaterParams<SmoothParametrized> {
+public class SimpleGDParameter implements Serializable {
     /**
      * Gradient.
      */
@@ -40,7 +41,7 @@ public class SimpleGDParams implements UpdaterParams<SmoothParametrized> {
      * @param paramsCnt Count of parameters.
      * @param learningRate Learning rate.
      */
-    public SimpleGDParams(int paramsCnt, double learningRate) {
+    public SimpleGDParameter(int paramsCnt, double learningRate) {
         gradient = new DenseLocalOnHeapVector(paramsCnt);
         this.learningRate = learningRate;
     }
@@ -51,15 +52,26 @@ public class SimpleGDParams implements UpdaterParams<SmoothParametrized> {
      * @param gradient Gradient.
      * @param learningRate Learning rate.
      */
-    public SimpleGDParams(Vector gradient, double learningRate) {
+    public SimpleGDParameter(Vector gradient, double learningRate) {
         this.gradient = gradient;
         this.learningRate = learningRate;
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public <M extends SmoothParametrized> M update(M obj) {
-        Vector params = obj.parameters();
-        return (M)obj.setParameters(params.minus(gradient.times(learningRate)));
+    /**
+     * Get gradient.
+     *
+     * @return Get gradient.
+     */
+    public Vector gradient() {
+        return gradient;
+    }
+
+    /**
+     * Get learning rate.
+     *
+     * @return learning rate.
+     */
+    public double learningRate() {
+        return learningRate;
     }
 }
