@@ -52,9 +52,12 @@ public class Tracer {
      * Continuous red-to-blue color mapping.
      */
     static private ColorMapper defaultColorMapper(double min, double max) {
+        double range = max - min;
+
         return new ColorMapper() {
             /** {@inheritDoc} */
             @Override public Color apply(Double d) {
+                d = (d - min) / range;
                 int r = (int)Math.round(255 * d);
                 int g = 0;
                 int b = (int)Math.round(255 * (1 - d));
