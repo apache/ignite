@@ -260,21 +260,24 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
         switch (clientType) {
             case ODBC_CLIENT: {
                 if (!cliConnCfg.isOdbcEnabled())
-                    throw new IgniteException("ODBC connection is not allowed.");
+                    throw new IgniteException("ODBC connection is not allowed, " +
+                        "see ClientConnectorConfiguration.odbcEnabled.");
 
                 return new OdbcConnectionContext(ctx, busyLock, maxCursors);
             }
 
             case JDBC_CLIENT: {
                 if (!cliConnCfg.isJdbcEnabled())
-                    throw new IgniteException("JDBC connection is not allowed.");
+                    throw new IgniteException("JDBC connection is not allowed, " +
+                        "see ClientConnectorConfiguration.jdbcEnabled.");
 
                 return new JdbcConnectionContext(ctx, busyLock, maxCursors);
             }
 
             case THIN_CLIENT: {
                 if (!cliConnCfg.isThinClientEnabled())
-                    throw new IgniteException("Thin client connection is not allowed.");
+                    throw new IgniteException("Thin client connection is not allowed, " +
+                        "see ClientConnectorConfiguration.thinClientEnabled.");
 
                 return new ClientConnectionContext(ctx, maxCursors);
             }
