@@ -203,16 +203,19 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Gets or sets a value indicating whether thin client connector is enabled.
         /// </summary>
+        [DefaultValue(DefaultThinClientEnabled)]
         public bool ThinClientEnabled { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether JDBC connector is enabled.
         /// </summary>
+        [DefaultValue(DefaultJdbcEnabled)]
         public bool JdbcEnabled { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether ODBC connector is enabled.
         /// </summary>
+        [DefaultValue(DefaultOdbcEnabled)]
         public bool OdbcEnabled { get; set; }
     }
 }

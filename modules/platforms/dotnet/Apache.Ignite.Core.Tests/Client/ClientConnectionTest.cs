@@ -171,9 +171,9 @@ namespace Apache.Ignite.Core.Tests.Client
 
             using (Ignition.Start(servCfg))
             {
-                var ex = Assert.Throws<AggregateException>(() => Ignition.StartClient(clientCfg));
-                Assert.AreEqual("Failed to establish Ignite thin client connection, " +
-                                "examine inner exceptions for details.", ex.Message.Substring(0, 88));
+                var ex = Assert.Throws<IgniteClientException>(() => Ignition.StartClient(clientCfg));
+                Assert.AreEqual("Client handshake failed: 'Thin client connection is not allowed.'. " +
+                                "Client version: 1.0.0. Server version: -1.-1.-1", ex.Message);
             }
         }
 
