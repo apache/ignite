@@ -633,6 +633,18 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * The on-heap cache is used for SQL query. The cache contains [offheap-link, onheap-cache-row] to prevent
+     * read from off-heap and deserialization cache entries that are used often.
+     * A row is cached on the access through SQL query.
+     *
+     * <p> Cache invalidation:
+     * <ul>
+     *     <li>When a cache entry is removed or updated the off-heap link removed from the on-heap cache.
+     *     </li>
+     *     <li>When a data page is evicted to disk oll links stored into the page are removed from the on-heap cache.
+     *     </li>
+     * </ul>
+     *
      * @return Whether SQL onheap cache is enabled.
      */
     public boolean isSqlOnheapCacheEnabled() {
