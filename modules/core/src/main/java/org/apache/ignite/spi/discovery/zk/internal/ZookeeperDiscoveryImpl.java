@@ -53,6 +53,7 @@ import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
@@ -415,7 +416,7 @@ public class ZookeeperDiscoveryImpl {
             return;
         }
 
-        sendCustomMessage(new ZkForceNodeFailMessage(nodeId, warning));
+        sendCustomMessage(new ZkForceNodeFailMessage(node.internalId(), warning));
     }
 
     /**
@@ -1437,6 +1438,8 @@ public class ZookeeperDiscoveryImpl {
                         // No-op.
                     }
                 }
+                else if (evtData0.resolvedMsg instanceof ZkForceNodeFailMessage)
+                    deleteAliveNode(((ZkForceNodeFailMessage)evtData0.resolvedMsg).nodeInternalId);
             }
         }
     }
@@ -2281,14 +2284,18 @@ public class ZookeeperDiscoveryImpl {
         ZookeeperClient zkClient = rtState.zkClient;
         ZkDiscoveryEventsData evtsData = rtState.evtsData;
 
+        ZookeeperClusterNode failedNode = null;
+
         if (msg instanceof ZkForceNodeFailMessage) {
             ZkForceNodeFailMessage msg0 = (ZkForceNodeFailMessage)msg;
 
-            if (rtState.top.nodesById.containsKey(msg0.nodeId))
+            failedNode = rtState.top.nodesByInternalId.get(msg0.nodeInternalId);
+
+            if (failedNode != null)
                 evtsData.topVer++;
             else {
                 if (log.isDebugEnabled())
-                    log.debug("Ignore forcible node fail request for unknown node: " + msg0.nodeId);
+                    log.debug("Ignore forcible node fail request for unknown node: " + msg0.nodeInternalId);
 
                 deleteCustomEventDataAsync(zkClient, evtPath);
 
@@ -2352,7 +2359,7 @@ public class ZookeeperDiscoveryImpl {
 
                 fastStopProcess = true;
 
-                // No need process this event on others nodes, skip this event.
+                // No need to process this event on others nodes, skip this event.
                 evtsData.evts.remove(evtData.eventId());
 
                 evtsData.evtIdGen--;
@@ -2381,6 +2388,26 @@ public class ZookeeperDiscoveryImpl {
 
             if (fastStopProcess)
                 deleteCustomEventDataAsync(zkClient, evtPath);
+
+            if (failedNode != null) {
+                deleteAliveNode(failedNode.internalId());
+
+                handleProcessedEventsOnNodesFail(Collections.singletonList(failedNode));
+            }
+        }
+    }
+
+    /**
+     * @param internalId Node internal ID.
+     * @throws Exception If failed.
+     */
+    private void deleteAliveNode(long internalId) throws Exception {
+        for (String child : rtState.zkClient.getChildren(zkPaths.aliveNodesDir)) {
+            if (ZkIgnitePaths.aliveInternalId(child) == internalId) {
+                rtState.zkClient.deleteIfExistsAsync(zkPaths.aliveNodesDir + "/" + child);
+
+                break;
+            }
         }
     }
 
@@ -2465,127 +2492,152 @@ public class ZookeeperDiscoveryImpl {
         boolean evtProcessed = false;
         boolean updateNodeInfo = false;
 
-        for (ZkDiscoveryEventData evtData : evts.tailMap(rtState.locNodeInfo.lastProcEvt, false).values()) {
-            if (!rtState.joined) {
-                if (evtData.eventType() != ZkDiscoveryEventData.ZK_EVT_NODE_JOIN)
-                    continue;
+        try {
+            for (ZkDiscoveryEventData evtData : evts.tailMap(rtState.locNodeInfo.lastProcEvt, false).values()) {
+                if (!rtState.joined) {
+                    if (evtData.eventType() != ZkDiscoveryEventData.ZK_EVT_NODE_JOIN)
+                        continue;
 
-                ZkDiscoveryNodeJoinEventData evtData0 = (ZkDiscoveryNodeJoinEventData)evtData;
+                    ZkDiscoveryNodeJoinEventData evtData0 = (ZkDiscoveryNodeJoinEventData)evtData;
 
-                UUID joinedId = evtData0.nodeId;
+                    UUID joinedId = evtData0.nodeId;
 
-                boolean locJoin = evtData0.joinedInternalId == rtState.internalOrder;
+                    boolean locJoin = evtData0.joinedInternalId == rtState.internalOrder;
 
-                if (locJoin) {
-                    assert locNode.id().equals(joinedId);
+                    if (locJoin) {
+                        assert locNode.id().equals(joinedId);
 
-                    processLocalJoin(evtsData, evtData0);
+                        processLocalJoin(evtsData, evtData0);
+
+                        evtProcessed = true;
+                    }
+                }
+                else {
+                    if (log.isDebugEnabled())
+                        log.debug("New discovery event data [evt=" + evtData + ", evtsHist=" + evts.size() + ']');
+
+                    switch (evtData.eventType()) {
+                        case ZkDiscoveryEventData.ZK_EVT_NODE_JOIN: {
+                            ZkDiscoveryNodeJoinEventData evtData0 = (ZkDiscoveryNodeJoinEventData)evtData;
+
+                            ZkJoiningNodeData joiningData;
+
+                            if (rtState.crd) {
+                                assert evtData0.joiningNodeData != null;
+
+                                joiningData = evtData0.joiningNodeData;
+                            }
+                            else {
+                                joiningData = unmarshalJoinData(evtData0.nodeId, evtData0.joinDataPrefixId);
+
+                                DiscoveryDataBag dataBag = new DiscoveryDataBag(evtData0.nodeId);
+
+                                dataBag.joiningNodeData(joiningData.discoveryData());
+
+                                exchange.onExchange(dataBag);
+                            }
+
+                            if (evtData0.secSubjPartCnt > 0 && joiningData.node().attribute(ATTR_SECURITY_SUBJECT_V2) == null)
+                                readAndInitSecuritySubject(joiningData.node(), evtData0);
+
+                            notifyNodeJoin(evtData0, joiningData);
+
+                            break;
+                        }
+
+                        case ZkDiscoveryEventData.ZK_EVT_NODE_FAILED: {
+                            notifyNodeFail((ZkDiscoveryNodeFailEventData)evtData);
+
+                            break;
+                        }
+
+                        case ZkDiscoveryEventData.ZK_EVT_CUSTOM_EVT: {
+                            ZkDiscoveryCustomEventData evtData0 = (ZkDiscoveryCustomEventData)evtData;
+
+                            if (evtData0.ackEvent() && evtData0.topologyVersion() < locNode.order())
+                                break;
+
+                            DiscoverySpiCustomMessage msg;
+
+                            if (rtState.crd) {
+                                assert evtData0.resolvedMsg != null : evtData0;
+
+                                msg = evtData0.resolvedMsg;
+                            }
+                            else {
+                                if (evtData0.msg == null) {
+                                    if (evtData0.ackEvent()) {
+                                        String path = zkPaths.ackEventDataPath(evtData0.origEvtId);
+
+                                        msg = unmarshalZip(zkClient.getData(path));
+                                    }
+                                    else {
+                                        assert evtData0.evtPath != null : evtData0;
+
+                                        byte[] msgBytes = readCustomEventData(zkClient,
+                                            evtData0.evtPath,
+                                            evtData0.sndNodeId);
+
+                                        msg = unmarshalZip(msgBytes);
+                                    }
+                                }
+                                else
+                                    msg = evtData0.msg;
+
+                                evtData0.resolvedMsg = msg;
+                            }
+
+                            if (msg instanceof ZkInternalMessage)
+                                processInternalMessage(evtData0, (ZkInternalMessage)msg);
+                            else {
+                                notifyCustomEvent(evtData0, msg);
+
+                                if (!evtData0.ackEvent())
+                                    updateNodeInfo = true;
+                            }
+
+                            break;
+                        }
+
+                        default:
+                            assert false : "Invalid event: " + evtData;
+                    }
 
                     evtProcessed = true;
                 }
-            }
-            else {
-                if (log.isDebugEnabled())
-                    log.debug("New discovery event data [evt=" + evtData + ", evtsHist=" + evts.size() + ']');
 
-                switch (evtData.eventType()) {
-                    case ZkDiscoveryEventData.ZK_EVT_NODE_JOIN: {
-                        ZkDiscoveryNodeJoinEventData evtData0 = (ZkDiscoveryNodeJoinEventData)evtData;
+                if (rtState.joined) {
+                    rtState.locNodeInfo.lastProcEvt = evtData.eventId();
 
-                        ZkJoiningNodeData joiningData;
+                    rtState.procEvtCnt++;
 
-                        if (rtState.crd) {
-                            assert evtData0.joiningNodeData != null;
-
-                            joiningData = evtData0.joiningNodeData;
-                        }
-                        else {
-                            joiningData = unmarshalJoinData(evtData0.nodeId, evtData0.joinDataPrefixId);
-
-                            DiscoveryDataBag dataBag = new DiscoveryDataBag(evtData0.nodeId);
-
-                            dataBag.joiningNodeData(joiningData.discoveryData());
-
-                            exchange.onExchange(dataBag);
-                        }
-
-                        if (evtData0.secSubjPartCnt > 0 && joiningData.node().attribute(ATTR_SECURITY_SUBJECT_V2) == null)
-                            readAndInitSecuritySubject(joiningData.node(), evtData0);
-
-                        notifyNodeJoin(evtData0, joiningData);
-
-                        break;
-                    }
-
-                    case ZkDiscoveryEventData.ZK_EVT_NODE_FAILED: {
-                        notifyNodeFail((ZkDiscoveryNodeFailEventData)evtData);
-
-                        break;
-                    }
-
-                    case ZkDiscoveryEventData.ZK_EVT_CUSTOM_EVT: {
-                        ZkDiscoveryCustomEventData evtData0 = (ZkDiscoveryCustomEventData)evtData;
-
-                        if (evtData0.ackEvent() && evtData0.topologyVersion() < locNode.order())
-                            break;
-
-                        DiscoverySpiCustomMessage msg;
-
-                        if (rtState.crd) {
-                            assert evtData0.resolvedMsg != null : evtData0;
-
-                            msg = evtData0.resolvedMsg;
-                        }
-                        else {
-                            if (evtData0.msg == null) {
-                                if (evtData0.ackEvent()) {
-                                    String path = zkPaths.ackEventDataPath(evtData0.origEvtId);
-
-                                    msg = unmarshalZip(zkClient.getData(path));
-                                }
-                                else {
-                                    assert evtData0.evtPath != null : evtData0;
-
-                                    byte[] msgBytes = readCustomEventData(zkClient,
-                                        evtData0.evtPath,
-                                        evtData0.sndNodeId);
-
-                                    msg = unmarshalZip(msgBytes);
-                                }
-                            }
-                            else
-                                msg = evtData0.msg;
-
-                            evtData0.resolvedMsg = msg;
-                        }
-
-                        if (msg instanceof ZkInternalMessage)
-                            processInternalMessage(evtData0, (ZkInternalMessage)msg);
-                        else {
-                            notifyCustomEvent(evtData0, msg);
-
-                            if (!evtData0.ackEvent())
-                                updateNodeInfo = true;
-                        }
-
-                        break;
-                    }
-
-                    default:
-                        assert false : "Invalid event: " + evtData;
+                    if (rtState.procEvtCnt % evtsAckThreshold == 0)
+                        updateNodeInfo = true;
                 }
+            }
+        }
+        catch (KeeperException.NoNodeException e) {
+            // Can get NoNodeException if local node was forcible failed,
+            // in this case coordinator does not wait when this node process all events.
+            boolean exists;
 
-                evtProcessed = true;
+            try {
+                exists = rtState.zkClient.exists(rtState.locNodeZkPath);
+            }
+            catch (Exception e0) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to check is local node is alive:" + e0);
+
+                exists = true;
             }
 
-            if (rtState.joined) {
-                rtState.locNodeInfo.lastProcEvt = evtData.eventId();
+            if (!exists) {
+                U.warn(log, "Failed to process discovery event, local node was forced to stop.", e);
 
-                rtState.procEvtCnt++;
-
-                if (rtState.procEvtCnt % evtsAckThreshold == 0)
-                    updateNodeInfo = true;
+                throw localNodeFail("Local node was forced to stop.", true);
             }
+
+            throw e;
         }
 
         if (rtState.crd)
@@ -2819,38 +2871,26 @@ public class ZookeeperDiscoveryImpl {
         throws Exception {
         ClusterNode creatorNode = rtState.top.nodesById.get(evtData.sndNodeId);
 
+        ZookeeperClusterNode node = rtState.top.nodesByInternalId.get(msg.nodeInternalId);
+
+        assert node != null : msg.nodeInternalId;
+
         if (msg.warning != null) {
             U.warn(log, "Received force EVT_NODE_FAILED event with warning [" +
-                "nodeId=" + msg.nodeId +
+                "nodeId=" + node.id() +
                 ", msg=" + msg.warning +
                 ", nodeInitiatedEvt=" + (creatorNode != null ? creatorNode : evtData.sndNodeId) + ']');
         }
         else {
             U.warn(log, "Received force EVT_NODE_FAILED event [" +
-                "nodeId=" + msg.nodeId +
+                "nodeId=" + node.id() +
                 ", nodeInitiatedEvt=" + (creatorNode != null ? creatorNode : evtData.sndNodeId) + ']');
         }
-
-        ZookeeperClusterNode node = rtState.top.nodesById.get(msg.nodeId);
-
-        assert node != null : msg.nodeId;
 
         if (node.isLocal())
             throw localNodeFail("Received force EVT_NODE_FAILED event for local node.", true);
         else
             notifyNodeFail(node.internalId(), evtData.topologyVersion());
-
-        if (rtState.crd) {
-            ZookeeperClient zkClient = rtState.zkClient;
-
-            for (String child : zkClient.getChildren(zkPaths.aliveNodesDir)) {
-                if (ZkIgnitePaths.aliveInternalId(child) == node.internalId()) {
-                    zkClient.deleteIfExistsAsync(zkPaths.aliveNodesDir + "/" + child);
-
-                    break;
-                }
-            }
-        }
     }
 
     /**
@@ -3104,6 +3144,7 @@ public class ZookeeperDiscoveryImpl {
                     }
 
                     ZkCommunicationProblemContext ctx = new ZkCommunicationProblemContext(
+                        ((IgniteKernal)spi.ignite()).context().cache().context(),
                         topSnapshot,
                         initialNodes,
                         nodesRes);
@@ -3296,7 +3337,7 @@ public class ZookeeperDiscoveryImpl {
      * @param clientReconnect {@code True} if allow client reconnect.
      * @return Exception to be thrown.
      */
-    private Exception localNodeFail(String msg, boolean clientReconnect) {
+    private ZookeeperClientFailedException localNodeFail(String msg, boolean clientReconnect) {
         U.warn(log, msg);
 
 //        if (locNode.isClient() && rtState.zkClient.connected()) {
@@ -3611,13 +3652,6 @@ public class ZookeeperDiscoveryImpl {
     /**
      *
      */
-    public void onStop() {
-        // No-op.
-    }
-
-    /**
-     *
-     */
     public void stop() {
         stop0(new IgniteSpiException("Node stopped"));
     }
@@ -3695,8 +3729,6 @@ public class ZookeeperDiscoveryImpl {
 
         U.error(log, "Fatal error in ZookeeperDiscovery. " +
             "Stopping the node in order to prevent cluster wide instability.", err);
-
-        onStop();
 
         stop0(err);
 

@@ -196,7 +196,7 @@ public abstract class DiscoveryMessageResultsCollector<M, R>  {
 
             nodeFailed = true;
 
-            return false;
+            return true;
         }
 
         /**

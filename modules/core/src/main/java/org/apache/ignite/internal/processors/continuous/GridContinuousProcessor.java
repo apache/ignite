@@ -166,11 +166,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     @Override public void start() throws IgniteCheckedException {
         discoProtoVer = ctx.discovery().mutableCustomMessages() ? 1 : 2;
 
-        if (ctx.config().isDaemon())
-            return;
-
         if (discoProtoVer == 2)
             routinesInfo = new ContinuousRoutinesInfo();
+
+        if (ctx.config().isDaemon())
+            return;
 
         retryDelay = ctx.config().getNetworkSendRetryDelay();
         retryCnt = ctx.config().getNetworkSendRetryCount();
@@ -509,6 +509,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
         if (discoProtoVer == 2) {
+            if (ctx.isDaemon())
+                return;
+
             if (data.commonData() != null) {
                 ContinuousRoutinesCommonDiscoveryData commonData =
                     (ContinuousRoutinesCommonDiscoveryData)data.commonData();

@@ -432,9 +432,11 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
         ZookeeperClusterNode locNode = initLocalNode();
 
-        log.info("Start Zookeeper discovery [zkConnectionString=" + zkConnectionString +
-            ", sessionTimeout=" + sesTimeout +
-            ", zkRootPath=" + zkRootPath + ']');
+        if (log.isInfoEnabled()) {
+            log.info("Start Zookeeper discovery [zkConnectionString=" + zkConnectionString +
+                ", sessionTimeout=" + sesTimeout +
+                ", zkRootPath=" + zkRootPath + ']');
+        }
 
         impl = new ZookeeperDiscoveryImpl(
             this,
@@ -470,12 +472,6 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     }
 
     /** {@inheritDoc} */
-    @Override protected void onContextDestroyed0() {
-        if (impl != null)
-            impl.onStop();
-    }
-
-    /** {@inheritDoc} */
     @Override public void spiStop() throws IgniteSpiException {
         if (impl != null)
             impl.stop();
@@ -489,15 +485,13 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
         initAddresses();
 
-        consistentId = consistentId();
-
         ZookeeperClusterNode locNode = new ZookeeperClusterNode(
             ignite.configuration().getNodeId(),
             addrs.get1(),
             addrs.get2(),
             locNodeVer,
             locNodeAttrs,
-            consistentId,
+            consistentId(),
             sesTimeout,
             ignite.configuration().isClientMode(),
             metricsProvider);

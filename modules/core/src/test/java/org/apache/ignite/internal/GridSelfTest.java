@@ -45,6 +45,8 @@ public class GridSelfTest extends ClusterGroupAbstractTest {
 
         for (int i = 0; i < NODES_CNT; i++)
             startGrid(i);
+
+        waitForTopology(NODES_CNT);
     }
 
     /** {@inheritDoc} */

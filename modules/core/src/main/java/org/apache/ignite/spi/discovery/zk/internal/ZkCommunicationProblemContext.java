@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CommunicationProblemContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 
 /**
  *
@@ -51,15 +52,22 @@ class ZkCommunicationProblemContext implements CommunicationProblemContext {
     /** */
     private final List<ClusterNode> curNodes;
 
+    /** */
+    private final GridCacheSharedContext ctx;
+
     /**
+     * @param ctx Context.
      * @param curNodes Current topology snapshot.
      * @param initialNodes Topology snapshot when communication error resolve started.
      * @param nodesState Nodes communication state.
      */
-    ZkCommunicationProblemContext(List<ClusterNode> curNodes,
+    ZkCommunicationProblemContext(
+        GridCacheSharedContext ctx,
+        List<ClusterNode> curNodes,
         List<ClusterNode> initialNodes,
         Map<UUID, BitSet> nodesState)
     {
+        this.ctx = ctx;
         this.curNodes = Collections.unmodifiableList(curNodes);
         this.initialNodes = initialNodes;
         this.nodesState = nodesState;

@@ -43,8 +43,8 @@ public interface DiscoverySpiCustomMessage extends Serializable {
 
     /**
      * Called on discovery coordinator node after after listener is notified. If returns {@code true}
-     * then message is not passed to others nodes, if after this {@link #ackMessage()} returns ack, it is sent to
-     * all nodes.
+     * then message is not passed to others nodes, if after this method {@link #ackMessage()} returns non-null ack
+     * message, it is sent to all nodes.
      *
      * @return {@code True} if message should not be sent to all nodes.
      */

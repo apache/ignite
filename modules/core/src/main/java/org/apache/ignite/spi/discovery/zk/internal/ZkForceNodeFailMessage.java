@@ -30,17 +30,17 @@ public class ZkForceNodeFailMessage implements DiscoverySpiCustomMessage, ZkInte
     private static final long serialVersionUID = 0L;
 
     /** */
-    final UUID nodeId;
+    final long nodeInternalId;
 
     /** */
     final String warning;
 
     /**
-     * @param nodeId Node ID.
+     * @param nodeInternalId Node ID.
      * @param warning Warning to be displayed on all nodes.
      */
-    ZkForceNodeFailMessage(UUID nodeId, String warning) {
-        this.nodeId = nodeId;
+    ZkForceNodeFailMessage(long nodeInternalId, String warning) {
+        this.nodeInternalId = nodeInternalId;
         this.warning = warning;
     }
 
