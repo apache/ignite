@@ -40,7 +40,100 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
+ * BaselineTopology represents a set of "database nodes" - nodes responsible for holding persistent-enabled caches
+ * and persisting their information to durable storage.
  *
+ * Two major features BaselineTopology allows are:
+ * <ol>
+ *     <li>Protection from conflicting updates.</li>
+ *     <li>Cluster auto activation.</li>
+ * </ol>
+ *
+ * <h2>Protection from conflicting updates</h2>
+ * <p>
+ *     Consider en example: there is a cluster of three nodes, A, B and C, all nodes store persistent data.
+ *
+ *     Cluster history looks like this:
+ *           [A,B,C]
+ *           |     \
+ *      (1)cluster segmentation, two parts get activated independently
+ *           |     |
+ *         [A,B]  [C]
+ *           |     |
+ *      (2)updates to both parts
+ *
+ *      After independent updates applied to both parts of cluster at point(2) node C should not be allowed to join
+ *      [A,B] part.
+ *
+ *      The following algorithm makes sure node C will never join [A,B] part back:
+ *      <ol>
+ *          <li>
+ *              When the cluster is initially activated BaselineTopology is created; its property <b>branchingPntHash</b>
+ *              is calculated based on consistent IDs of all nodes.
+ *          </li>
+ *          <li>
+ *              At point(1) two parts are activated separately; BaselineTopology in each is updated:
+ *              old <b>branchingPntHash</b> is moved to <b>branchingHistory</b> list;
+ *              new one is calculated based on new set of nodes.
+ *          </li>
+ *          <li>
+ *              If node C tries to join other part of cluster (e.g. after network connectivity repair)
+ *              [A,B] cluster checks its <b>branchingPntHash</b> and <b>branchingHistory</b>
+ *              to see if branching history of C's BaselineTopology has diverged from [A,B].
+ *              If divergence is detected [A,B] cluster refuses to let C into topology.
+ *          </li>
+ *      </ol>
+ *
+ *      All new nodes joining a cluster should pass validation process before join; detailed algorithm of the process
+ *      is described below.
+ * </p>
+ *
+ * <h3>Joining node validation algorithm</h3>
+ * Node joining a cluster firstly reads its local BaselineTopology from metastore and sends it to the cluster.
+ *
+ * <ol>
+ *     <li>
+ *         When BaselineTopology is set (e.g. on first activation) or recreated (e.g. with set-baseline command)
+ *         its ID on all nodes is incremented by one.
+ *
+ *         So when cluster receives a join request with BaselineTopology it firstly compares joining node BlT ID with
+ *         local BlT ID.
+ *
+ *         If joining node has a BaselineTopology with ID greater than one in cluster it means that BlT was changed
+ *         more times there; therefore new node is not allowed to join the cluster.
+ *     </li>
+ *     <li>
+ *         If user manually activates cluster when some of Baseline nodes are offline no new BlT is created.
+ *         Instead current set of online nodes from BaselineTopology is used to update {@link BaselineTopology#branchingPntHash}
+ *         property of current BaselineTopology.
+ *         Old value of the property is moved to {@link BaselineTopology#branchingHist} list.
+ *
+ *         If joining node and local BlT IDs are the same then cluster takes <b>branchingPntHash</b> of joining node
+ *         and verifies that its local <b>branchingHist</b> contains that hash.
+ *
+ *         If joining node hash is not presented in cluster branching history list
+ *         it means that joining node was activated independently of currently running cluster;
+ *         therefore new node is not allowed to join the cluster.
+ *
+ *         If joining node hash is presented in the history, that it is safe to let the node join the cluster.
+ *     </li>
+ *     <li>
+ *         When BaselineTopology is recreated (e.g. with set-baseline command) previous BaselineTopology is moved
+ *         to BaselineHistory (consult source code of {@link GridClusterStateProcessor} for more details).
+ *
+ *         If cluster sees that joining node BlT ID is less than cluster BlT ID it looks up for BaselineHistory item
+ *         for new node ID.
+ *         Having this BaselineHistory item cluster verifies that branching history of the item contains
+ *         branching point hash of joining node
+ *         (similar check as in the case above with only difference that joining node BlT is compared against
+ *         BaselineHistory item instead of BaselineTopology).
+ *
+ *         If new node branching point hash is found in the history than node is allowed to join;
+ *         otherwise it is rejected.
+ *     </li>
+ * </ol>
+ *
+ * <h2>Cluster auto activation</h2>
  */
 public class BaselineTopology implements Serializable {
     /** */
@@ -68,10 +161,14 @@ public class BaselineTopology implements Serializable {
     /** Consistent ID to compact ID mapping. */
     private final Map<Object, Short> consistentIdMapping;
 
+    /** */
+    private BranchingPointType lastBranchingPointType;
+
     /** Branching point hash. */
     private long branchingPntHash;
 
-    /** */
+    /** History of branching events.
+     * Each time when branching point hash changes previous value is added to this list. */
     private final List<Long> branchingHist;
 
     /**
@@ -100,6 +197,8 @@ public class BaselineTopology implements Serializable {
 
             consistentIdMapping.put(consistentId, compactId++);
         }
+
+        lastBranchingPointType = BranchingPointType.NEW_BASELINE_TOPOLOGY;
 
         branchingHist = new ArrayList<>();
 
@@ -327,6 +426,8 @@ public class BaselineTopology implements Serializable {
     boolean updateHistory(Collection<? extends BaselineNode> nodes) {
         long newTopHash = calculateTopologyHash(nodes);
 
+        lastBranchingPointType = BranchingPointType.CLUSTER_ACTIVATION;
+
         if (branchingPntHash != newTopHash) {
             branchingPntHash = newTopHash;
 
@@ -336,6 +437,25 @@ public class BaselineTopology implements Serializable {
         }
 
         return false;
+    }
+
+    /**
+     * Resets branching history of the current BaselineTopology.
+     * Current branching point hash and list of previous branching hashes are erased
+     * and replaced with the hash passed via method parameter.
+     *
+     * All nodes that were offline when reset happened (thus didn't reset history of their local BaselineTopologies)
+     * won't be allowed to join the cluster when started back.
+     *
+     * @param newBranchingPointHash New branching point hash.
+     */
+    void resetBranchingHistory(long newBranchingPointHash) {
+        lastBranchingPointType = BranchingPointType.BRANCHING_HISTORY_RESET;
+
+        branchingHist.clear();
+
+        branchingPntHash = newBranchingPointHash;
+        branchingHist.add(newBranchingPointHash);
     }
 
     /**
@@ -356,7 +476,9 @@ public class BaselineTopology implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "BaselineTopology [id=" + id + ", branchingHash=" + branchingPntHash +
-            ", baselineNodes=" + nodeMap.keySet() + ']';
+        return "BaselineTopology [id=" + id
+            + ", branchingHash=" + branchingPntHash
+            + ", branchingType='" + lastBranchingPointType + '\''
+            + ", baselineNodes=" + nodeMap.keySet() + ']';
     }
 }

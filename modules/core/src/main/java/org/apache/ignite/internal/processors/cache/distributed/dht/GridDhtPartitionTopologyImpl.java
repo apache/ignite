@@ -366,13 +366,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             && Files.exists(((FilePageStoreManager)storeMgr).getPath(grp.sharedGroup(), grp.cacheOrGroupName(), p)))) {
                             GridDhtLocalPartition locPart = createPartition(p);
 
-                            boolean owned = locPart.own();
+                            if (!grp.persistenceEnabled()) {
+                                boolean owned = locPart.own();
 
-                            assert owned : "Failed to own partition for oldest node [grp=" + grp.cacheOrGroupName() +
-                                ", part=" + locPart + ']';
+                                assert owned : "Failed to own partition for oldest node [grp=" + grp.cacheOrGroupName() +
+                                    ", part=" + locPart + ']';
 
-                            if (log.isDebugEnabled())
-                                log.debug("Owned partition for oldest node: " + locPart);
+                                if (log.isDebugEnabled())
+                                    log.debug("Owned partition for oldest node: " + locPart);
+                            }
 
                             updateSeq = updateLocal(p, locPart.state(), updateSeq, affVer);
                         }
@@ -1515,13 +1517,26 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (part == null)
                     continue;
 
-                long updCntr = cntrMap.updateCounter(part.id());
+                boolean reserve = part.reserve();
 
-                if (updCntr > part.updateCounter())
-                    part.updateCounter(updCntr);
-                else if (part.updateCounter() > 0) {
-                    cntrMap.initialUpdateCounter(part.id(), part.initialUpdateCounter());
-                    cntrMap.updateCounter(part.id(), part.updateCounter());
+                try {
+                    GridDhtPartitionState state = part.state();
+
+                    if (!reserve || state == EVICTED || state == RENTING)
+                        continue;
+
+                    long updCntr = cntrMap.updateCounter(part.id());
+
+                    if (updCntr > part.updateCounter())
+                        part.updateCounter(updCntr);
+                    else if (part.updateCounter() > 0) {
+                        cntrMap.initialUpdateCounter(part.id(), part.initialUpdateCounter());
+                        cntrMap.updateCounter(part.id(), part.updateCounter());
+                    }
+                }
+                finally {
+                    if (reserve)
+                        part.release();
                 }
             }
         }

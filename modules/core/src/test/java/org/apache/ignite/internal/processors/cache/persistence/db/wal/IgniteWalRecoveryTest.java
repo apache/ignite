@@ -73,6 +73,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.PAX;
@@ -91,7 +92,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Assert;
-import sun.nio.ch.DirectBuffer;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
@@ -1200,7 +1200,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
             int pageSize = sharedCtx.database().pageSize();
 
-            ByteBuffer buf1 = ByteBuffer.allocateDirect(pageSize);
+            ByteBuffer buf = ByteBuffer.allocateDirect(pageSize);
 
             // Now check that deltas can be correctly applied.
             try (WALIterator it = sharedCtx.wal().replay(ptr)) {
@@ -1229,22 +1229,18 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
                         assertNotNull("Missing page snapshot [page=" + fullId + ", delta=" + delta + ']', pageData);
 
-                        buf1.order(ByteOrder.nativeOrder());
+                        buf.order(ByteOrder.nativeOrder());
 
-                        buf1.position(0);
-                        buf1.put(pageData);
-                        buf1.position(0);
+                        buf.position(0);
+                        buf.put(pageData);
+                        buf.position(0);
 
-                        delta.applyDelta(sharedCtx
-                                .database()
-                                .dataRegion(null)
-                                .pageMemory(),
+                        delta.applyDelta(sharedCtx.database().dataRegion(null).pageMemory(),
+                            GridUnsafe.bufferAddress(buf));
 
-                                ((DirectBuffer)buf1).address());
+                        buf.position(0);
 
-                        buf1.position(0);
-
-                        buf1.get(pageData);
+                        buf.get(pageData);
                     }
                 }
             }
@@ -1262,7 +1258,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                     long page = pageMem.acquirePage(fullId.groupId(), fullId.pageId(), true);
 
                     try {
-                        long buf = pageMem.writeLock(fullId.groupId(), fullId.pageId(), page, true);
+                        long bufPtr = pageMem.writeLock(fullId.groupId(), fullId.pageId(), page, true);
 
                         try {
                             byte[] data = entry.getValue();
@@ -1271,7 +1267,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                                 if (fullId.pageId() == TrackingPageIO.VERSIONS.latest().trackingPageFor(fullId.pageId(), db.pageSize()))
                                     continue; // Skip tracking pages.
 
-                                assertEquals("page=" + fullId + ", pos=" + i, PageUtils.getByte(buf, i), data[i]);
+                                assertEquals("page=" + fullId + ", pos=" + i, PageUtils.getByte(bufPtr, i), data[i]);
                             }
                         }
                         finally {

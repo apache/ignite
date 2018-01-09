@@ -46,6 +46,10 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
+
 /**
  *
  */
@@ -121,9 +125,9 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
             ignite.createCache(
                 new CacheConfiguration<Integer, Integer>()
                     .setName(CACHE_NAME)
-                    .setCacheMode(CacheMode.PARTITIONED)
+                    .setCacheMode(PARTITIONED)
                     .setBackups(1)
-                    .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
+                    .setPartitionLossPolicy(READ_ONLY_SAFE)
             );
 
         int key = -1;
@@ -280,9 +284,9 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
             ignite.createCache(
                 new CacheConfiguration<Integer, Integer>()
                     .setName(CACHE_NAME)
-                    .setCacheMode(CacheMode.PARTITIONED)
+                    .setCacheMode(PARTITIONED)
                     .setBackups(1)
-                    .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
+                    .setPartitionLossPolicy(READ_ONLY_SAFE)
             );
 
         int key = -1;
@@ -388,10 +392,11 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
             ig.createCache(
                 new CacheConfiguration<Integer, Integer>()
                     .setName(CACHE_NAME)
-                    .setCacheMode(CacheMode.PARTITIONED)
+                    .setCacheMode(PARTITIONED)
                     .setBackups(1)
-                    .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
+                    .setPartitionLossPolicy(READ_ONLY_SAFE)
                     .setReadFromBackup(true)
+                    .setWriteSynchronizationMode(FULL_SYNC)
                     .setRebalanceDelay(-1)
             );
 
@@ -468,10 +473,10 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
             ig.createCache(
                 new CacheConfiguration<Integer, Integer>()
                     .setName(CACHE_NAME)
-                    .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-                    .setCacheMode(CacheMode.PARTITIONED)
+                    .setWriteSynchronizationMode(FULL_SYNC)
+                    .setCacheMode(PARTITIONED)
                     .setBackups(1)
-                    .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
+                    .setPartitionLossPolicy(READ_ONLY_SAFE)
                     .setReadFromBackup(true)
                     .setRebalanceDelay(-1)
             );

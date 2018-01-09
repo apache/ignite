@@ -78,7 +78,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 import sun.misc.JavaNioAccess;
 import sun.misc.SharedSecrets;
-import sun.nio.ch.DirectBuffer;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
@@ -124,7 +123,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** Invalid relative pointer value. */
     private static final long INVALID_REL_PTR = RELATIVE_PTR_MASK;
 
-    /** */
+    /** Pointer which means that this page is outdated (for example, cache was destroyed, partition eviction'd happened */
     private static final long OUTDATED_REL_PTR = INVALID_REL_PTR + 1;
 
     /** Address mask to avoid ABA problem. */
@@ -398,8 +397,8 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
-    @Override public long writeLock(int cacheId, long pageId, long page, boolean restore) {
-        return writeLockPage(page, new FullPageId(pageId, cacheId), !restore);
+    @Override public long writeLock(int grpId, long pageId, long page, boolean restore) {
+        return writeLockPage(page, new FullPageId(pageId, grpId), !restore);
     }
 
     /** {@inheritDoc} */
@@ -414,9 +413,9 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeUnlock(int cacheId, long pageId, long page, Boolean walPlc,
+    @Override public void writeUnlock(int grpId, long pageId, long page, Boolean walPlc,
         boolean dirtyFlag, boolean restore) {
-        writeUnlockPage(page, new FullPageId(pageId, cacheId), walPlc, dirtyFlag, restore);
+        writeUnlockPage(page, new FullPageId(pageId, grpId), walPlc, dirtyFlag, restore);
     }
 
     /** {@inheritDoc} */
@@ -528,12 +527,12 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
-    @Override public long metaPageId(int cacheId) throws IgniteCheckedException {
-        return storeMgr.metaPageId(cacheId);
+    @Override public long metaPageId(int grpId) throws IgniteCheckedException {
+        return storeMgr.metaPageId(grpId);
     }
 
     /** {@inheritDoc} */
-    @Override public long partitionMetaPageId(int cacheId, int partId) throws IgniteCheckedException {
+    @Override public long partitionMetaPageId(int grpId, int partId) throws IgniteCheckedException {
         return PageIdUtils.pageId(partId, PageIdAllocator.FLAG_DATA, 0);
     }
 
@@ -1032,11 +1031,11 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /**
      * @param absPtr Absolute ptr.
-     * @param tmpBuf Tmp buffer.
+     * @param buf Tmp buffer.
      */
-    private void copyInBuffer(long absPtr, ByteBuffer tmpBuf) {
-        if (tmpBuf.isDirect()) {
-            long tmpPtr = ((DirectBuffer)tmpBuf).address();
+    private void copyInBuffer(long absPtr, ByteBuffer buf) {
+        if (buf.isDirect()) {
+            long tmpPtr = GridUnsafe.bufferAddress(buf);
 
             GridUnsafe.copyMemory(absPtr + PAGE_OVERHEAD, tmpPtr, pageSize());
 
@@ -1044,7 +1043,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             assert GridUnsafe.getInt(tmpPtr + 4) == 0; //TODO GG-11480
         }
         else {
-            byte[] arr = tmpBuf.array();
+            byte[] arr = buf.array();
 
             assert arr != null;
             assert arr.length == pageSize();
@@ -1054,14 +1053,14 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
-    @Override public int invalidate(int cacheId, int partId) {
+    @Override public int invalidate(int grpId, int partId) {
         int tag = 0;
 
         for (Segment seg : segments) {
             seg.writeLock().lock();
 
             try {
-                int newTag = seg.incrementPartTag(cacheId, partId);
+                int newTag = seg.incrementPartTag(grpId, partId);
 
                 if (tag == 0)
                     tag = newTag;

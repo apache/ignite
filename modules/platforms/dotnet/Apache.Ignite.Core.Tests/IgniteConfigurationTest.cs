@@ -561,6 +561,8 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(DataStorageConfiguration.DefaultSystemRegionMaxSize, cfg.SystemRegionMaxSize);
             Assert.AreEqual(DataStorageConfiguration.DefaultPageSize, cfg.PageSize);
             Assert.AreEqual(DataStorageConfiguration.DefaultConcurrencyLevel, cfg.ConcurrencyLevel);
+            Assert.AreEqual(DataStorageConfiguration.DefaultWalAutoArchiveAfterInactivity, 
+                cfg.WalAutoArchiveAfterInactivity);
         }
 
         /// <summary>
@@ -593,6 +595,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(ClientConnectorConfiguration.DefaultSocketBufferSize, cfg.SocketSendBufferSize);
             Assert.AreEqual(ClientConnectorConfiguration.DefaultTcpNoDelay, cfg.TcpNoDelay);
             Assert.AreEqual(ClientConnectorConfiguration.DefaultThreadPoolSize, cfg.ThreadPoolSize);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultIdleTimeout, cfg.IdleTimeout);
         }
 
         /// <summary>
@@ -786,6 +789,7 @@ namespace Apache.Ignite.Core.Tests
                     SystemRegionMaxSize = 128 * 1024 * 1024,
                     ConcurrencyLevel = 1,
                     PageSize = 8 * 1024,
+                    WalAutoArchiveAfterInactivity = TimeSpan.FromMinutes(5),
                     DefaultDataRegionConfiguration = new DataRegionConfiguration
                     {
                         Name = "reg1",

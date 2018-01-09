@@ -184,8 +184,8 @@ public class ColumnDecisionTreeTrainerTest extends BaseDecisionTreeTest {
         byRegion.keySet().forEach(k -> {
             LabeledVectorDouble sp = byRegion.get(k).get(0);
             Tracer.showAscii(sp.features());
-            X.println("Actual and predicted vectors [act=" + sp.label() + " " + ", pred=" + mdl.predict(sp.features()) + "]");
-            assert mdl.predict(sp.features()) == sp.doubleLabel();
+            X.println("Actual and predicted vectors [act=" + sp.label() + " " + ", pred=" + mdl.apply(sp.features()) + "]");
+            assert mdl.apply(sp.features()) == sp.doubleLabel();
         });
     }
 }

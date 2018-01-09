@@ -1736,21 +1736,24 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @return Caches to be started when this node starts.
      */
-    @NotNull public List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> cachesToStartOnLocalJoin() {
-        return cachesInfo.cachesToStartOnLocalJoin();
+    @Nullable public LocalJoinCachesContext localJoinCachesContext() {
+        return cachesInfo.localJoinCachesContext();
     }
 
     /**
-     * @param caches Caches to start.
+     * @param locJoinCtx Local join cache context.
      * @param exchTopVer Current exchange version.
      * @throws IgniteCheckedException If failed.
      */
     public void startCachesOnLocalJoin(
-        List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> caches,
+        LocalJoinCachesContext locJoinCtx,
         AffinityTopologyVersion exchTopVer
     ) throws IgniteCheckedException {
-        if (!F.isEmpty(caches)) {
-            for (T2<DynamicCacheDescriptor, NearCacheConfiguration> t : caches) {
+        if (locJoinCtx != null) {
+            sharedCtx.affinity().initCachesOnLocalJoin(
+                locJoinCtx.cacheGroupDescriptors(), locJoinCtx.cacheDescriptors());
+
+            for (T2<DynamicCacheDescriptor, NearCacheConfiguration> t : locJoinCtx.caches()) {
                 DynamicCacheDescriptor desc = t.get1();
 
                 prepareCacheStart(
@@ -2406,12 +2409,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param msg Message.
      * @param topVer Current topology version.
+     * @param curState Current cluster state.
      * @throws IgniteCheckedException If configuration validation failed.
      * @return Exchange actions.
      */
-    public ExchangeActions onStateChangeRequest(ChangeGlobalStateMessage msg, AffinityTopologyVersion topVer)
-        throws IgniteCheckedException {
-        return cachesInfo.onStateChangeRequest(msg, topVer);
+    public ExchangeActions onStateChangeRequest(
+        ChangeGlobalStateMessage msg,
+        AffinityTopologyVersion topVer,
+        DiscoveryDataClusterState curState
+    ) throws IgniteCheckedException {
+        return cachesInfo.onStateChangeRequest(msg, topVer, curState);
     }
 
     /**

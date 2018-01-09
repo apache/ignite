@@ -6586,6 +6586,33 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Get major Java version from string.
+     *
+     * @param verStr Version string.
+     * @return Major version or zero if failed to resolve.
+     */
+    public static int majorJavaVersion(String verStr) {
+        if (F.isEmpty(verStr))
+            return 0;
+
+        try {
+            String[] parts = verStr.split("\\.");
+
+            int major = Integer.parseInt(parts[0]);
+
+            if (parts.length == 1)
+                return major;
+
+            int minor = Integer.parseInt(parts[1]);
+
+            return major == 1 ? minor : major;
+        }
+        catch (Exception e) {
+            return 0;
+        }
+    }
+
+    /**
      * Indicates whether HotSpot VM is used.
      *
      * @return {@code true} if current JVM implementation is a Sun HotSpot VM, {@code false} otherwise.
@@ -9422,11 +9449,9 @@ public abstract class IgniteUtils {
         try {
             Method mtd = cls.getDeclaredMethod(name, paramTypes);
 
-            if (mtd.getReturnType() != void.class) {
-                mtd.setAccessible(true);
+            mtd.setAccessible(true);
 
-                return mtd;
-            }
+            return mtd;
         }
         catch (NoSuchMethodException ignored) {
             // No-op.

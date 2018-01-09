@@ -15,24 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.examples;
 
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgnitePdsWalTlbTest;
+import org.apache.ignite.examples.sql.SqlDdlExample;
+import org.apache.ignite.examples.sql.SqlDmlExample;
+import org.apache.ignite.examples.sql.SqlQueriesExample;
+import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
 /**
- *
+ * SQL examples self test.
  */
-public class IgnitePdsOutOfMemoryTestSuite extends TestSuite {
+public class SqlExamplesSelfTest extends GridAbstractExamplesTest {
     /**
-     * @return Suite.
      * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Persistent Store OOM Test Suite");
+    public void testSqlJavaExample() throws Exception {
+        SqlQueriesExample.main(EMPTY_ARGS);
+    }
 
-        suite.addTestSuite(IgnitePdsWalTlbTest.class);
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSqlDmlExample() throws Exception {
+        SqlDmlExample.main(EMPTY_ARGS);
+    }
 
-        return suite;
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSqlDdlExample() throws Exception {
+        SqlDdlExample.main(EMPTY_ARGS);
     }
 }

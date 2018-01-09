@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSel
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.processors.service.ClosureServiceClientsNodesTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
+import org.apache.ignite.internal.util.GridCleanerTest;
 import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.DynamicProxySerializationMultiJvmSelfTest;
@@ -185,6 +186,8 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(IgniteDiagnosticMessagesTest.class);
 
         suite.addTestSuite(IgniteRejectConnectOnNodeStopTest.class);
+
+        suite.addTestSuite(GridCleanerTest.class);
 
         return suite;
     }

@@ -219,15 +219,14 @@ public abstract class AbstractWalRecordsIterator
         if (hnd == null)
             return null;
 
-        final FileWALPointer ptr = new FileWALPointer(
-            hnd.idx,
-            (int)hnd.in.position(),
-            0);
+        FileWALPointer ptr = new FileWALPointer(hnd.idx, (int)hnd.in.position(),0);
 
         try {
-            final WALRecord rec = hnd.ser.readRecord(hnd.in, ptr);
+            WALRecord rec = hnd.ser.readRecord(hnd.in, ptr);
 
             ptr.length(rec.size());
+
+            rec.position(ptr);
 
             // cast using diamond operator here can break compile for 7
             return new IgniteBiTuple<>((WALPointer)ptr, postProcessRecord(rec));

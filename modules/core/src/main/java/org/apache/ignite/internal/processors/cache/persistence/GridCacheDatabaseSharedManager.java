@@ -817,50 +817,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         return res;
     }
 
-    /**
-     * @throws IgniteCheckedException
-     */
-    private void getMetastoreData() throws IgniteCheckedException {
-        try {
-            DataStorageConfiguration memCfg = cctx.kernalContext().config().getDataStorageConfiguration();
-
-            DataRegionConfiguration plcCfg = createDataRegionConfiguration(memCfg);
-
-            File allocPath = buildAllocPath(plcCfg);
-
-            DirectMemoryProvider memProvider = allocPath == null ?
-                new UnsafeMemoryProvider(log) :
-                new MappedFileMemoryProvider(
-                    log,
-                    allocPath);
-
-            DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(plcCfg);
-
-            PageMemoryEx storePageMem = (PageMemoryEx)createPageMemory(memProvider, memCfg, plcCfg, memMetrics, false);
-
-            DataRegion regCfg = new DataRegion(storePageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg, storePageMem));
-
-            CheckpointStatus status = readCheckpointStatus();
-
-            cctx.pageStore().initializeForMetastorage();
-
-            restoreMemory(status, true, storePageMem);
-
-            metaStorage = new MetaStorage(cctx.wal(), regCfg, memMetrics, true);
-
-            metaStorage.init(this);
-
-            // here get some data
-
-            metaStorage = null;
-
-            storePageMem.stop();
-        }
-        catch (StorageException e) {
-            throw new IgniteCheckedException(e);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public void lock() throws IgniteCheckedException {
         if (fileLockHolder != null) {
@@ -1017,8 +973,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             super.checkRegionEvictionProperties(regCfg, dbCfg);
 
         if (regCfg.getPageEvictionMode() != DataPageEvictionMode.DISABLED)
-            U.warn(log, "Page eviction mode for [" + regCfg.getName() + "] memory region is ignored " +
-                "because Ignite Native Persistence is enabled");
+            U.warn(log, "Page eviction mode set for [" + regCfg.getName() + "] data will have no effect" +
+                " because the oldest pages are evicted automatically if Ignite persistence is enabled.");
     }
 
     /** {@inheritDoc} */
@@ -2054,6 +2010,34 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         MetastoreDataRecord metastoreDataRecord = (MetastoreDataRecord)rec;
 
                         metaStorage.applyUpdate(metastoreDataRecord.key(), metastoreDataRecord.value());
+
+                        break;
+
+                    case META_PAGE_UPDATE_NEXT_SNAPSHOT_ID:
+                    case META_PAGE_UPDATE_LAST_SUCCESSFUL_SNAPSHOT_ID:
+                    case META_PAGE_UPDATE_LAST_SUCCESSFUL_FULL_SNAPSHOT_ID:
+                        if (metastoreOnly)
+                            continue;
+
+                        PageDeltaRecord rec0 = (PageDeltaRecord) rec;
+
+                        PageMemoryEx pageMem = getPageMemoryForCacheGroup(rec0.groupId());
+
+                        long page = pageMem.acquirePage(rec0.groupId(), rec0.pageId(), true);
+
+                        try {
+                            long addr = pageMem.writeLock(rec0.groupId(), rec0.pageId(), page, true);
+
+                            try {
+                                rec0.applyDelta(pageMem, addr);
+                            }
+                            finally {
+                                pageMem.writeUnlock(rec0.groupId(), rec0.pageId(), page, null, true, true);
+                            }
+                        }
+                        finally {
+                            pageMem.releasePage(rec0.groupId(), rec0.pageId(), page);
+                        }
 
                         break;
 

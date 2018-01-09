@@ -99,7 +99,7 @@ class ClusterCachesInfo {
     private GridData gridData;
 
     /** */
-    private List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> locJoinStartCaches = Collections.emptyList();
+    private LocalJoinCachesContext locJoinCachesCtx;
 
     /** */
     private Map<String, T2<CacheConfiguration, NearCacheConfiguration>> locCfgsForActivation = Collections.emptyMap();
@@ -805,13 +805,13 @@ class ClusterCachesInfo {
      *
      * @return Caches to be started when this node starts.
      */
-    @NotNull public List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> cachesToStartOnLocalJoin() {
+    @Nullable public LocalJoinCachesContext localJoinCachesContext() {
         if (ctx.isDaemon())
-            return Collections.emptyList();
+            return null;
 
-        List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> result = locJoinStartCaches;
+        LocalJoinCachesContext result = locJoinCachesCtx;
 
-        locJoinStartCaches = Collections.emptyList();
+        locJoinCachesCtx = null;
 
         return result;
     }
@@ -888,7 +888,7 @@ class ClusterCachesInfo {
                 if (gridData == null) { // First node starts.
                     assert joinDiscoData != null;
 
-                    initStartCachesForLocalJoin(true);
+                    initStartCachesForLocalJoin(true, false);
                 }
             }
         }
@@ -1090,10 +1090,7 @@ class ClusterCachesInfo {
 
         gridData = new GridData(joinDiscoData, cachesData, conflictErr);
 
-        if (!disconnectedState())
-            initStartCachesForLocalJoin(false);
-        else
-            locJoinStartCaches = Collections.emptyList();
+        initStartCachesForLocalJoin(false, disconnectedState());
     }
 
     /**
@@ -1102,8 +1099,8 @@ class ClusterCachesInfo {
      *
      * @param firstNode {@code True} if first node in cluster starts.
      */
-    private void initStartCachesForLocalJoin(boolean firstNode) {
-        assert F.isEmpty(locJoinStartCaches) : locJoinStartCaches;
+    private void initStartCachesForLocalJoin(boolean firstNode, boolean reconnect) {
+        assert locJoinCachesCtx == null : locJoinCachesCtx;
 
         if (ctx.state().clusterState().transition()) {
             joinOnTransition = true;
@@ -1112,7 +1109,7 @@ class ClusterCachesInfo {
         }
 
         if (joinDiscoData != null) {
-            locJoinStartCaches = new ArrayList<>();
+            List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> locJoinStartCaches = new ArrayList<>();
             locCfgsForActivation = new HashMap<>();
 
             boolean active = ctx.state().clusterState().active();
@@ -1122,6 +1119,9 @@ class ClusterCachesInfo {
                     continue;
 
                 CacheConfiguration<?, ?> cfg = desc.cacheConfiguration();
+
+                if (reconnect && surviveReconnect(cfg.getName()))
+                    continue;
 
                 CacheJoinNodeDiscoveryData.CacheInfo locCfg = joinDiscoData.caches().get(cfg.getName());
 
@@ -1159,6 +1159,11 @@ class ClusterCachesInfo {
                         locCfgsForActivation.put(desc.cacheName(), new T2<>(desc.cacheConfiguration(), nearCfg));
                 }
             }
+
+            locJoinCachesCtx = new LocalJoinCachesContext(
+                locJoinStartCaches,
+                new HashMap<>(registeredCacheGrps),
+                new HashMap<>(registeredCaches));
         }
     }
 
@@ -1167,7 +1172,7 @@ class ClusterCachesInfo {
      */
     public void onStateChangeFinish(ChangeGlobalStateFinishMessage msg) {
         if (joinOnTransition) {
-            initStartCachesForLocalJoin(false);
+            initStartCachesForLocalJoin(false, false);
 
             joinOnTransition = false;
         }
@@ -1179,9 +1184,12 @@ class ClusterCachesInfo {
      * @return Exchange action.
      * @throws IgniteCheckedException If configuration validation failed.
      */
-    public ExchangeActions onStateChangeRequest(ChangeGlobalStateMessage msg, AffinityTopologyVersion topVer)
+    public ExchangeActions onStateChangeRequest(ChangeGlobalStateMessage msg, AffinityTopologyVersion topVer, DiscoveryDataClusterState curState)
         throws IgniteCheckedException {
         ExchangeActions exchangeActions = new ExchangeActions();
+
+        if (msg.activate() == curState.active())
+            return exchangeActions;
 
         if (msg.activate()) {
             for (DynamicCacheDescriptor desc : orderedCaches(CacheComparators.DIRECT)) {
@@ -1722,7 +1730,7 @@ class ClusterCachesInfo {
             }
 
             if (!cachesOnDisconnect.clusterActive())
-                initStartCachesForLocalJoin(false);
+                initStartCachesForLocalJoin(false, true);
         }
 
         if (clientReconnectReqs != null) {
