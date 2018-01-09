@@ -422,13 +422,6 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         if (!srv)
             return;
 
-        // TODO: What if we trigger checkpoint synchronously here? In this case there will be no need for proxy
-        // TODO: enable/disable, which could be frustrating user experience. On the other hand, WAL disable for a
-        // TODO: single cache may slowdown operations on other caches.
-
-        // TODO: We can mark dirty pages synchronously right here. It would guarantee that all subsequent operations
-        // TODO: will hit another checkpoint and will not corrupt state of pages which are currently being flushed.
-
         synchronized (mux) {
             WalStateResult res = null;
 
@@ -445,6 +438,10 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                     if (F.eq(msg.enable(), grpCtx.walEnabled()))
                         res = new WalStateResult(msg, false);
                     else {
+                        // TODO: 1. Change group context state here.
+                        // TODO: 2. Initiate checkpoint and await for mark stage synchronously (see GridDhtPartitionsExchangeFuture#tryToPerformLocalSnapshotOperation)
+                        // TODO: 3. Await for checkpoint completion in worker thread, then complete.
+
                         WalStateChangeWorker worker = new WalStateChangeWorker(msg);
 
                         new IgniteThread(worker).start();
