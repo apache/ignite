@@ -376,31 +376,33 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
                         // Find existing deployments that need to be checked
                         // whether they should be reused for this request.
-                        for (SharedDeployment d : deps) {
-                            if (!d.pendingUndeploy() && !d.undeployed()) {
-                                Map<UUID, IgniteUuid> parties = d.participants();
+                        if (ctx.config().getDeploymentMode() == CONTINUOUS) {
+                            for (SharedDeployment d : deps) {
+                                if (!d.pendingUndeploy() && !d.undeployed()) {
+                                    Map<UUID, IgniteUuid> parties = d.participants();
 
-                                if (parties != null) {
-                                    IgniteUuid ldrId = parties.get(meta.senderNodeId());
+                                    if (parties != null) {
+                                        IgniteUuid ldrId = parties.get(meta.senderNodeId());
 
-                                    if (ldrId != null) {
-                                        assert !ldrId.equals(meta.classLoaderId());
+                                        if (ldrId != null) {
+                                            assert !ldrId.equals(meta.classLoaderId());
 
-                                        if (log.isDebugEnabled())
-                                            log.debug("Skipping deployment (loaders on remote node are different) " +
-                                                "[dep=" + d + ", meta=" + meta + ']');
+                                            if (log.isDebugEnabled())
+                                                log.debug("Skipping deployment (loaders on remote node are different) " +
+                                                    "[dep=" + d + ", meta=" + meta + ']');
 
-                                        continue;
+                                            continue;
+                                        }
                                     }
+
+                                    if (depsToCheck == null)
+                                        depsToCheck = new LinkedList<>();
+
+                                    if (log.isDebugEnabled())
+                                        log.debug("Adding deployment to check: " + d);
+
+                                    depsToCheck.add(d);
                                 }
-
-                                if (depsToCheck == null)
-                                    depsToCheck = new LinkedList<>();
-
-                                if (log.isDebugEnabled())
-                                    log.debug("Adding deployment to check: " + d);
-
-                                depsToCheck.add(d);
                             }
                         }
 

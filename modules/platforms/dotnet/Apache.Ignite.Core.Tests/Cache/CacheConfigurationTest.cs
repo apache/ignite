@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
@@ -81,11 +82,18 @@ namespace Apache.Ignite.Core.Tests.Cache
                             Name = "myMemPolicy",
                             InitialSize = 77 * 1024 * 1024,
                             MaxSize = 99 * 1024 * 1024
+                        },
+                        new MemoryPolicyConfiguration
+                        {
+                            Name = MemoryConfiguration.DefaultDefaultMemoryPolicyName,
+                            InitialSize = 55 * 1024 * 1024,
+                            MaxSize = 88 * 1024 * 1024
                         }
                     }
                 },
 #pragma warning restore 618
-                SpringConfigUrl = "Config\\cache-default.xml"
+                DataStorageConfiguration = null,
+                SpringConfigUrl = Path.Combine("Config", "cache-default.xml")
             };
 
             _ignite = Ignition.Start(cfg);
@@ -123,8 +131,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             var springConfig = _ignite.GetCache<int, int>(SpringCacheName).GetConfiguration();
 
             var ignoredProps = new[] {"AffinityFunction"};
-
-            TestUtils.AssertReflectionEqual(springConfig, new CacheConfiguration(SpringCacheName),
+            
+            AssertExtensions.ReflectionEqual(springConfig, new CacheConfiguration(SpringCacheName),
                 ignoredProperties: new HashSet<string>(ignoredProps));
             
             AssertConfigIsDefault(springConfig);
@@ -345,7 +353,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                     y.PluginConfigurations.Select(p => p.GetType()));
             }
 
-            TestUtils.AssertReflectionEqual(x.KeyConfiguration, y.KeyConfiguration);
+            AssertExtensions.ReflectionEqual(x.KeyConfiguration, y.KeyConfiguration);
 
             Assert.AreEqual(x.OnheapCacheEnabled, y.OnheapCacheEnabled);
             Assert.AreEqual(x.StoreConcurrentLoadAllThreshold, y.StoreConcurrentLoadAllThreshold);
@@ -542,6 +550,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.FieldTypeName, y.FieldTypeName);
             Assert.AreEqual(x.IsKeyField, y.IsKeyField);
             Assert.AreEqual(x.NotNull, y.NotNull);
+            Assert.AreEqual(x.DefaultValue, y.DefaultValue);
         }
 
         /// <summary>
@@ -571,7 +580,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Gets the custom cache configuration.
         /// </summary>
-        private static CacheConfiguration GetCustomCacheConfiguration(string name = null)
+        public static CacheConfiguration GetCustomCacheConfiguration(string name = null)
         {
             return new CacheConfiguration
             {
@@ -617,7 +626,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                         Fields = new[]
                         {
                             new QueryField("length", typeof(int)), 
-                            new QueryField("name", typeof(string)) {IsKeyField = true},
+                            new QueryField("name", typeof(string)) {IsKeyField = true, DefaultValue = "defName"},
                             new QueryField("location", typeof(string)) {NotNull = true},
                         },
                         Aliases = new [] {new QueryAlias("length", "len") },
@@ -726,7 +735,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                         TableName = "MyTable",
                         Fields = new[]
                         {
-                            new QueryField("length", typeof(int)), 
+                            new QueryField("length", typeof(int)) {DefaultValue = -1}, 
                             new QueryField("name", typeof(string)), 
                             new QueryField("location", typeof(string)) {IsKeyField = true}
                         },

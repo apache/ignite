@@ -147,7 +147,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             memCfg.setWalAutoArchiveAfterInactivity(archiveIncompleteSegmentAfterInactivityMs);
 
         cfg.setDataStorageConfiguration(memCfg);
-
         return cfg;
     }
 
@@ -441,10 +440,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         final IgniteCache<Object, Object> entries = txPutDummyRecords(ignite0, cntEntries, txCnt);
 
-        final Map<Object, Object> ctrlMap = new HashMap<>();
-        for (Cache.Entry<Object, Object> next : entries) {
-            ctrlMap.put(next.getKey(), next.getValue());
-        }
+        final Map<Object, Object> ctrlMap = new HashMap<>();    for (Cache.Entry<Object, Object> next : entries)
+                ctrlMap.put(next.getKey(), next.getValue());
+
 
         final String subfolderName = genDbSubfolderName(ignite0, 0);
         stopGrid("node0");
@@ -467,14 +465,16 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
                 if (val instanceof IndexedObject) {
                     IndexedObject indexedObj = (IndexedObject)val;
+
                     assertEquals(indexedObj.iVal, indexedObj.jVal);
                     assertEquals(indexedObj.iVal, key);
-                    for (byte datum : indexedObj.getData()) {
+
+                    for (byte datum : indexedObj.getData())
                         assertTrue(datum >= 'A' && datum <= 'A' + 10);
-                    }
                 }
             }
         };
+
         scanIterateAndCount(factory, workDir, subfolderName, cntEntries, txCnt, objConsumer, null);
 
         assertTrue(" Control Map is not empty after reading entries " + ctrlMap, ctrlMap.isEmpty());
@@ -555,7 +555,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testFillWalWithDifferentTypes() throws Exception {
-        int cntEntries = 0;
+        int cntEntries;
 
         final Map<Object, Object> ctrlMap = new HashMap<>();
         final Map<Object, Object> ctrlMapForBinaryObjects = new HashMap<>();
@@ -595,14 +595,13 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         ctrlStringsForBinaryObjSearch.add(search3); //validate only string itself
         addlCache.put(key, "SearchKey");
 
-        cntEntries = addlCache.size();
-        for (Cache.Entry<Object, Object> next : addlCache) {
-            ctrlMap.put(next.getKey(), next.getValue());
-        }
+            cntEntries = addlCache.size();
+            for (Cache.Entry<Object, Object> next : addlCache)
+                ctrlMap.put(next.getKey(), next.getValue());
 
-        for (Cache.Entry<Object, Object> next : addlCache) {
-            ctrlMapForBinaryObjects.put(next.getKey(), next.getValue());
-        }
+            for (Cache.Entry<Object, Object> next : addlCache)
+                ctrlMapForBinaryObjects.put(next.getKey(), next.getValue());
+
 
         final String subfolderName = genDbSubfolderName(ignite0, 0);
 
@@ -693,9 +692,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                             binaryObj.field("jVal").toString());
 
                         byte data[] = binaryObj.field("data");
-                        for (byte datum : data) {
+                        for (byte datum : data)
                             assertTrue(datum >= 'A' && datum <= 'A' + 10);
-                        }
                     }
                 }
             }
@@ -704,15 +702,19 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         final IgniteInClosure<DataRecord> binObjToStrChecker = new IgniteInClosure<DataRecord>() {
             @Override public void apply(DataRecord record) {
                 String strRepresentation = record.toString();
+
                 for (Iterator<String> iter = ctrlStringsForBinaryObjSearch.iterator(); iter.hasNext(); ) {
                     final String next = iter.next();
+
                     if (strRepresentation.contains(next)) {
                         iter.remove();
+
                         break;
                     }
                 }
             }
         };
+
         scanIterateAndCount(keepBinFactory, workDir, subfolderName, cntEntries, 0, binObjConsumer, binObjToStrChecker);
 
         assertTrue(" Control Map is not empty after reading entries: " + ctrlMapForBinaryObjects,

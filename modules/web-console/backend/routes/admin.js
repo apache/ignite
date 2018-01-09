@@ -17,16 +17,16 @@
 
 'use strict';
 
+const express = require('express');
+
 // Fire me up!
 
 module.exports = {
     implements: 'routes/admin',
-    inject: ['require(lodash)', 'require(express)', 'settings', 'mongo', 'services/spaces', 'services/mails', 'services/sessions', 'services/users', 'services/notifications']
+    inject: ['settings', 'mongo', 'services/spaces', 'services/mails', 'services/sessions', 'services/users', 'services/notifications']
 };
 
 /**
- * @param _
- * @param express
  * @param settings
  * @param mongo
  * @param spacesService
@@ -36,7 +36,7 @@ module.exports = {
  * @param {NotificationsService} notificationsService
  * @returns {Promise}
  */
-module.exports.factory = function(_, express, settings, mongo, spacesService, mailsService, sessionsService, usersService, notificationsService) {
+module.exports.factory = function(settings, mongo, spacesService, mailsService, sessionsService, usersService, notificationsService) {
     return new Promise((factoryResolve) => {
         const router = new express.Router();
 

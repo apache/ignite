@@ -205,4 +205,48 @@ BOOST_AUTO_TEST_CASE(ConnectionAttributeConnectionDeadSet)
     CheckSQLConnectionDiagnosticError("HY092");
 }
 
+BOOST_AUTO_TEST_CASE(StatementAttributeQueryTimeout)
+{
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
+
+    SQLULEN timeout = -1;
+    SQLRETURN ret = SQLGetStmtAttr(stmt, SQL_ATTR_QUERY_TIMEOUT, &timeout, 0, 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+    BOOST_REQUIRE_EQUAL(timeout, 0);
+
+    ret = SQLSetStmtAttr(stmt, SQL_ATTR_QUERY_TIMEOUT, reinterpret_cast<SQLPOINTER>(7), 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    timeout = -1;
+
+    ret = SQLGetStmtAttr(stmt, SQL_ATTR_QUERY_TIMEOUT, &timeout, 0, 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+    BOOST_REQUIRE_EQUAL(timeout, 7);
+}
+
+BOOST_AUTO_TEST_CASE(ConnectionAttributeConnectionTimeout)
+{
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
+
+    SQLUINTEGER timeout = -1;
+    SQLRETURN ret = SQLGetConnectAttr(dbc, SQL_ATTR_CONNECTION_TIMEOUT, &timeout, 0, 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+    BOOST_REQUIRE_EQUAL(timeout, 0);
+
+    ret = SQLSetConnectAttr(dbc, SQL_ATTR_CONNECTION_TIMEOUT, reinterpret_cast<SQLPOINTER>(42), 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    timeout = -1;
+
+    ret = SQLGetConnectAttr(dbc, SQL_ATTR_CONNECTION_TIMEOUT, &timeout, 0, 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+    BOOST_REQUIRE_EQUAL(timeout, 42);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

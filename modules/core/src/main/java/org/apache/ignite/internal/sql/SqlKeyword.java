@@ -99,6 +99,9 @@ public class SqlKeyword {
     /** Keyword: INDEX. */
     public static final String INDEX = "INDEX";
 
+    /** Keyword: INLINE_SIZE. */
+    public static final String INLINE_SIZE = "INLINE_SIZE";
+
     /** Keyword: INT. */
     public static final String INT = "INT";
 
@@ -197,6 +200,9 @@ public class SqlKeyword {
 
     /** Keyword: YEAR. */
     public static final String YEAR = "YEAR";
+
+    /** Keyword: PARALLEL. */
+    public static final String PARALLEL = "PARALLEL";
 
     /** All keywords. */
     private static final HashSet<String> KEYWORDS;

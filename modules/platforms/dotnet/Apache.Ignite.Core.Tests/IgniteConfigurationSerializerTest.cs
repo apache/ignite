@@ -46,7 +46,6 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Multicast;
     using Apache.Ignite.Core.Events;
-    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.PersistentStore;
@@ -98,6 +97,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(new TimeSpan(1, 2, 3), cfg.LongQueryWarningTimeout);
             Assert.IsFalse(cfg.IsActiveOnStart);
             Assert.AreEqual("someId012", cfg.ConsistentId);
+            Assert.IsFalse(cfg.RedirectJavaConsoleOutput);
 
             Assert.AreEqual("secondCache", cfg.CacheConfiguration.Last().Name);
 
@@ -132,6 +132,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(typeof(int), queryEntity.Fields.Single().FieldType);
             Assert.IsTrue(queryEntity.Fields.Single().IsKeyField);
             Assert.IsTrue(queryEntity.Fields.Single().NotNull);
+            Assert.AreEqual(3.456d, (double)queryEntity.Fields.Single().DefaultValue);
             Assert.AreEqual("somefield.field", queryEntity.Aliases.Single().FullName);
             Assert.AreEqual("shortField", queryEntity.Aliases.Single().Alias);
 
@@ -250,6 +251,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(client.TcpNoDelay);
             Assert.AreEqual(14, client.MaxOpenCursorsPerConnection);
             Assert.AreEqual(15, client.ThreadPoolSize);
+            Assert.AreEqual(19, client.IdleTimeout.TotalSeconds);
 
             var pers = cfg.PersistentStoreConfiguration;
 
@@ -307,6 +309,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(16, ds.WalSegments);
             Assert.AreEqual(17, ds.WalSegmentSize);
             Assert.AreEqual("wal-store", ds.WalPath);
+            Assert.AreEqual(TimeSpan.FromSeconds(18), ds.WalAutoArchiveAfterInactivity);
             Assert.IsTrue(ds.WriteThrottlingEnabled);
 
             var dr = ds.DataRegionConfigurations.Single();
@@ -355,14 +358,22 @@ namespace Apache.Ignite.Core.Tests
         /// Tests that all properties are present in the schema.
         /// </summary>
         [Test]
-        [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
         public void TestAllPropertiesArePresentInSchema()
         {
-            var schema = XDocument.Load("IgniteConfigurationSection.xsd")
-                    .Root.Elements()
-                    .Single(x => x.Attribute("name").Value == "igniteConfiguration");
+            CheckAllPropertiesArePresentInSchema("IgniteConfigurationSection.xsd", "igniteConfiguration", 
+                typeof(IgniteConfiguration));
+        }
 
-            var type = typeof(IgniteConfiguration);
+        /// <summary>
+        /// Checks that all properties are present in schema.
+        /// </summary>
+        [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
+        public static void CheckAllPropertiesArePresentInSchema(string xsd, string sectionName, Type type)
+        {
+            var schema = XDocument.Load(xsd)
+                .Root.Elements()
+                .Single(x => x.Attribute("name").Value == sectionName);
+
 
             CheckPropertyIsPresentInSchema(type, schema);
         }
@@ -514,15 +525,15 @@ namespace Apache.Ignite.Core.Tests
         {
             // Empty section.
             var cfg = IgniteConfiguration.FromXml("<x />");
-            TestUtils.AssertReflectionEqual(new IgniteConfiguration(), cfg);
+            AssertExtensions.ReflectionEqual(new IgniteConfiguration(), cfg);
 
             // Empty section with XML header.
             cfg = IgniteConfiguration.FromXml("<?xml version=\"1.0\" encoding=\"utf-16\"?><x />");
-            TestUtils.AssertReflectionEqual(new IgniteConfiguration(), cfg);
+            AssertExtensions.ReflectionEqual(new IgniteConfiguration(), cfg);
 
             // Simple test.
             cfg = IgniteConfiguration.FromXml(@"<igCfg igniteInstanceName=""myGrid"" clientMode=""true"" />");
-            TestUtils.AssertReflectionEqual(new IgniteConfiguration {IgniteInstanceName = "myGrid", ClientMode = true}, cfg);
+            AssertExtensions.ReflectionEqual(new IgniteConfiguration {IgniteInstanceName = "myGrid", ClientMode = true}, cfg);
 
             // Invalid xml.
             var ex = Assert.Throws<ConfigurationErrorsException>(() =>
@@ -537,7 +548,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 cfg = IgniteConfiguration.FromXml(xmlReader);
             }
-            TestUtils.AssertReflectionEqual(new IgniteConfiguration { IgniteInstanceName = "myGrid", ClientMode = true }, cfg);
+            AssertExtensions.ReflectionEqual(new IgniteConfiguration { IgniteInstanceName = "myGrid", ClientMode = true }, cfg);
         }
 
         /// <summary>
@@ -555,29 +566,28 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static void CheckSchemaValidation()
         {
-            var sb = new StringBuilder();
-
-            using (var xmlWriter = XmlWriter.Create(sb))
-            {
-                IgniteConfigurationXmlSerializer.Serialize(GetTestConfig(), xmlWriter, "igniteConfiguration");
-            }
-
-            CheckSchemaValidation(sb.ToString());
+            CheckSchemaValidation(GetTestConfig().ToXml());
         }
 
         /// <summary>
         /// Checks the schema validation.
         /// </summary>
-        /// <param name="xml">The XML.</param>
         private static void CheckSchemaValidation(string xml)
         {
+            var xmlns = "http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection";
+            var schemaFile = "IgniteConfigurationSection.xsd";
+
+            CheckSchemaValidation(xml, xmlns, schemaFile);
+        }
+
+        /// <summary>
+        /// Checks the schema validation.
+        /// </summary>
+        public static void CheckSchemaValidation(string xml, string xmlns, string schemaFile)
+        {
             var document = new XmlDocument();
-
-            document.Schemas.Add("http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection",
-                XmlReader.Create("IgniteConfigurationSection.xsd"));
-
+            document.Schemas.Add(xmlns, XmlReader.Create(schemaFile));
             document.Load(new StringReader(xml));
-
             document.Validate(null);
         }
 
@@ -589,7 +599,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var resCfg = SerializeDeserialize(cfg);
 
-            TestUtils.AssertReflectionEqual(cfg, resCfg);
+            AssertExtensions.ReflectionEqual(cfg, resCfg);
         }
 
         /// <summary>
@@ -668,7 +678,8 @@ namespace Apache.Ignite.Core.Tests
                                     new QueryField("field", typeof(int))
                                     {
                                         IsKeyField = true,
-                                        NotNull = true
+                                        NotNull = true,
+                                        DefaultValue = "foo"
                                     }
                                 },
                                 Indexes = new[]
@@ -887,7 +898,8 @@ namespace Apache.Ignite.Core.Tests
                     SocketReceiveBufferSize = 5,
                     SocketSendBufferSize = 6,
                     TcpNoDelay = false,
-                    ThreadPoolSize = 7
+                    ThreadPoolSize = 7,
+                    IdleTimeout = TimeSpan.FromMinutes(5)
                 },
                 PersistentStoreConfiguration = new PersistentStoreConfiguration
                 {
@@ -949,6 +961,7 @@ namespace Apache.Ignite.Core.Tests
                     SystemRegionMaxSize = 128 * 1024 * 1024,
                     ConcurrencyLevel = 1,
                     PageSize = 5 * 1024,
+                    WalAutoArchiveAfterInactivity = TimeSpan.FromSeconds(19),
                     DefaultDataRegionConfiguration = new DataRegionConfiguration
                     {
                         Name = "reg1",

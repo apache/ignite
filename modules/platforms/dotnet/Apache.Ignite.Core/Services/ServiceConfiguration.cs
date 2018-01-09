@@ -17,11 +17,16 @@
 
 namespace Apache.Ignite.Core.Services
 {
+    using System;
+    using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
 
     /// <summary>
     /// Service configuration.
     /// </summary>
+    [Serializable]
     public class ServiceConfiguration
     {
         /// <summary>
@@ -57,6 +62,69 @@ namespace Apache.Ignite.Core.Services
         /// <summary>
         /// Gets or sets node filter used to filter nodes on which the service will be deployed.
         /// </summary>
-        public IClusterNodeFilter NodeFilter { get; set; } 
+        public IClusterNodeFilter NodeFilter { get; set; }
+
+        /// <summary>
+        /// Serializes the Service configuration using IBinaryRawWriter
+        /// </summary>
+        /// <param name="w">IBinaryRawWriter</param>
+        internal void Write(IBinaryRawWriter w)
+        {
+            Debug.Assert(w != null);
+
+            w.WriteString(Name);
+            w.WriteObject(Service);
+            w.WriteInt(TotalCount);
+            w.WriteInt(MaxPerNodeCount);
+            w.WriteString(CacheName);
+            w.WriteObject(AffinityKey);
+
+            if (NodeFilter != null)
+                w.WriteObject(NodeFilter);
+            else
+                w.WriteObject<object>(null);
+        }
+
+        /// <summary>
+        /// Default constructor
+        /// </summary>
+        public ServiceConfiguration()
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Deserialization constructor. Used to collect FailedConfigurations during ServiceDeploymentException 
+        /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+        internal ServiceConfiguration(IBinaryRawReader r)
+        {
+            Debug.Assert(r != null);
+
+            Name = r.ReadString();
+
+            try
+            {
+                Service = r.ReadObject<IService>();
+            }
+            catch (Exception)
+            {
+                // Ignore exceptions in user deserealization code.
+            }
+
+            TotalCount = r.ReadInt();
+            MaxPerNodeCount = r.ReadInt();
+            CacheName = r.ReadString();
+            AffinityKey = r.ReadObject<object>();
+
+            try
+            {
+                NodeFilter = r.ReadObject<IClusterNodeFilter>();
+            }
+            catch (Exception)
+            {
+                // Ignore exceptions in user deserealization code.
+            }
+        }
     }
 }

@@ -42,11 +42,12 @@ public class FileExporter<D> implements Exporter<D, String> {
 
     /** {@inheritDoc} */
     @Override public void save(D d, String path) {
-        try (FileOutputStream fos = new FileOutputStream(path)){
-            try (ObjectOutputStream outStream = new ObjectOutputStream(fos)){
+        try (FileOutputStream fos = new FileOutputStream(path)) {
+            try (ObjectOutputStream outStream = new ObjectOutputStream(fos)) {
                 outStream.writeObject(d);
             }
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             if (log != null)
                 log.error("Error opening file.", e);
         }
@@ -56,13 +57,13 @@ public class FileExporter<D> implements Exporter<D, String> {
     @Override public D load(String path) {
         D mdl = null;
 
-        try (FileInputStream fis = new FileInputStream(path)){
+        try (FileInputStream fis = new FileInputStream(path)) {
             try (ObjectInputStream inputStream = new ObjectInputStream(fis)) {
                 mdl = (D)inputStream.readObject();
             }
             catch (ClassNotFoundException e) {
-            if (log != null)
-                log.error("Object creation failed.", e);
+                if (log != null)
+                    log.error("Object creation failed.", e);
             }
         }
         catch (IOException e) {

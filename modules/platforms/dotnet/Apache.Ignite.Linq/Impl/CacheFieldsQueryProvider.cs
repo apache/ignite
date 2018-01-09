@@ -63,7 +63,6 @@ namespace Apache.Ignite.Linq.Impl
         {
             Debug.Assert(queryParser != null);
             Debug.Assert(executor != null);
-            Debug.Assert(ignite != null);
             Debug.Assert(cacheConfiguration != null);
             Debug.Assert(cacheValueType != null);
 
@@ -85,6 +84,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the ignite.
         /// </summary>
+        [Obsolete("Deprecated, null for thin client, only used for ICacheQueryable.")]
         public IIgnite Ignite
         {
             get { return _ignite; }

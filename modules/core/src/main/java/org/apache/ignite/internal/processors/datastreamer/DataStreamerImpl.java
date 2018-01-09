@@ -779,6 +779,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             else
                 topVer = ctx.cache().context().exchange().readyAffinityVersion();
 
+            List<List<ClusterNode>> assignments = cctx.affinity().assignments(topVer);
+
             if (!allowOverwrite() && !cctx.isLocal()) { // Cases where cctx required.
                 gate = cctx.gate();
 
@@ -956,7 +958,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     final List<GridFutureAdapter<?>> futs;
 
                     try {
-                        futs = buf.update(entriesForNode, topVer, opFut, remap);
+                        futs = buf.update(entriesForNode, topVer, assignments, opFut, remap);
 
                         opFut.markInitialized();
                     }
@@ -1411,6 +1413,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         @Nullable List<GridFutureAdapter<?>> update(
             Iterable<DataStreamerEntry> newEntries,
             AffinityTopologyVersion topVer,
+            List<List<ClusterNode>> assignments,
             GridCompoundFuture opFut,
             boolean remap
         ) throws IgniteInterruptedCheckedException {
@@ -1441,8 +1444,18 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         futs[b.partId] = curFut0;
                     }
 
-                    if (b.batchTopVer == null)
+                    if (b.batchTopVer == null) {
                         b.batchTopVer = topVer;
+
+                        b.assignments = assignments;
+                    }
+
+                    // topology changed, but affinity is the same, no re-map is required.
+                    if (!topVer.equals(b.batchTopVer) && b.assignments.equals(assignments)) {
+                        b.batchTopVer = topVer;
+
+                        b.assignments = assignments;
+                    }
 
                     curBatchTopVer = b.batchTopVer;
 
@@ -2185,6 +2198,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         /** */
         private final IgniteInClosure<? super IgniteInternalFuture<Object>> signalC;
+
+        /** Batch assignments */
+        public List<List<ClusterNode>> assignments;
 
         /**
          * @param partId Partition ID.

@@ -576,4 +576,18 @@ public interface CacheMetrics {
      * @see CacheWriter
      */
     public boolean isWriteThrough();
+
+    /**
+     * Checks whether cache topology is valid for read operations.
+     *
+     * @return {@code true} when cache topology is valid for reading.
+     */
+    public boolean isValidForReading();
+
+    /**
+     * Checks whether cache topology is valid for write operations.
+     *
+     * @return {@code true} when cache topology is valid for writing.
+     */
+    public boolean isValidForWriting();
 }

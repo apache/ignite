@@ -21,7 +21,7 @@ export default class {
     static $inject = ['$animate', '$element', '$transclude'];
 
     constructor($animate, $element, $transclude) {
-        $animate.enabled(false, $element);
+        $animate.enabled($element, false);
 
         this.hasItemView = $transclude.isSlotFilled('itemView');
 

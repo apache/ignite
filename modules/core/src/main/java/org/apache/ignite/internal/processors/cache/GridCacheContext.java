@@ -254,6 +254,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Whether {@link EventType#EVT_CACHE_REBALANCE_STOPPED} was sent (used only for REPLICATED cache). */
     private volatile boolean rebalanceStoppedEvtSent;
 
+    /** Statistics enabled flag. */
+    private volatile boolean statisticsEnabled;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -2125,6 +2128,23 @@ public class GridCacheContext<K, V> implements Externalizable {
                 builder0.affinityFieldName(fieldName);
             }
         }
+    }
+
+    /**
+     * @return Statistics enabled flag.
+     */
+    public boolean statisticsEnabled() {
+        return statisticsEnabled;
+    }
+
+    /**
+     * @param statisticsEnabled Statistics enabled flag.
+     */
+    public void statisticsEnabled(boolean statisticsEnabled) {
+        this.statisticsEnabled = statisticsEnabled;
+
+        if (isNear())
+            near().dht().context().statisticsEnabled = statisticsEnabled;
     }
 
     /** {@inheritDoc} */

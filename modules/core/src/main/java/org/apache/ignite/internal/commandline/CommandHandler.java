@@ -33,7 +33,7 @@ public class CommandHandler {
      */
     public static void main(String[] args) throws GridClientException {
         String host = "127.0.0.1";
-        String port = "11212";
+        String port = "11211";
         Boolean activate = null;
 
         if (args.length == 1 && "--help".equals(args[0])){

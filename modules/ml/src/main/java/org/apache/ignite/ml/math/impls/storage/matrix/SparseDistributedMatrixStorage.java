@@ -48,14 +48,19 @@ import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 public class SparseDistributedMatrixStorage extends CacheUtils implements MatrixStorage, StorageConstants, DistributedStorage<RowColMatrixKey> {
     /** Cache name used for all instances of {@link SparseDistributedMatrixStorage}. */
     private static final String CACHE_NAME = "ML_SPARSE_MATRICES_CONTAINER";
+
     /** Amount of rows in the matrix. */
     private int rows;
+
     /** Amount of columns in the matrix. */
     private int cols;
+
     /** Row or column based storage mode. */
     private int stoMode;
+
     /** Random or sequential access mode. */
     private int acsMode;
+
     /** Matrix uuid. */
     private UUID uuid;
 
@@ -161,7 +166,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
      */
     private double matrixGet(int a, int b) {
         // Remote get from the primary node (where given row or column is stored locally).
-        return ignite().compute(groupForKey(CACHE_NAME, a)).call(() -> {
+        return ignite().compute(getClusterGroupForGivenKey(CACHE_NAME, a)).call(() -> {
             IgniteCache<RowColMatrixKey, Map<Integer, Double>> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
 
             // Local get.
@@ -183,7 +188,7 @@ public class SparseDistributedMatrixStorage extends CacheUtils implements Matrix
      */
     private void matrixSet(int a, int b, double v) {
         // Remote set on the primary node (where given row or column is stored locally).
-        ignite().compute(groupForKey(CACHE_NAME, a)).run(() -> {
+        ignite().compute(getClusterGroupForGivenKey(CACHE_NAME, a)).run(() -> {
             IgniteCache<RowColMatrixKey, Map<Integer, Double>> cache = Ignition.localIgnite().getOrCreateCache(CACHE_NAME);
 
             // Local get.

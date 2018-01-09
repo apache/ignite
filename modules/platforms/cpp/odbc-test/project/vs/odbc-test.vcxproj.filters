@@ -133,6 +133,12 @@
     <ClCompile Include="..\..\src\sql_get_info_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\types_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\odbc_test_suite.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\test_type.h">
@@ -149,6 +155,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\complex_type.h">
       <Filter>Code\CacheTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\odbc_test_suite.h">
+      <Filter>Code</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

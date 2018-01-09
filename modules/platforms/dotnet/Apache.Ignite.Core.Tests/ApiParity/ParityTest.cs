@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Reflection;
     using System.Text;
     using System.Text.RegularExpressions;
     using Apache.Ignite.Core.Impl.Common;
@@ -35,8 +36,13 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         private static readonly Regex JavaPropertyRegex = 
             new Regex("(@Deprecated)?\\s+public [^=^\r^\n]+ (\\w+)\\(\\) {", RegexOptions.Compiled);
 
+        /** Interface method regex. */
+        private static readonly Regex JavaInterfaceMethodRegex = 
+            new Regex("(@Deprecated)?\\s+(@Override)?\\s+public [^=^\r^\n]+ (\\w+)\\(.*?\\)",
+                RegexOptions.Compiled | RegexOptions.Singleline);
+
         /** Properties that are not needed on .NET side. */
-        private static readonly string[] UnneededProperties =
+        private static readonly string[] UnneededMethods =
         {
             "toString",
             "hashCode",
@@ -52,45 +58,89 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             IEnumerable<string> knownMissingProperties = null,
             Dictionary<string, string> knownMappings = null)
         {
-            var path = Path.Combine(IgniteHome.Resolve(null), javaFilePath);
-
-            Assert.IsTrue(File.Exists(path));
+            var path = GetFullPath(javaFilePath);
 
             var dotNetProperties = type.GetProperties()
-                .ToDictionary(x => x.Name, x => x, StringComparer.OrdinalIgnoreCase);
+                .ToDictionary(x => x.Name, x => (MemberInfo) x, StringComparer.OrdinalIgnoreCase);
 
             var javaProperties = GetJavaProperties(path)
                 .Except(excludedProperties ?? Enumerable.Empty<string>());
 
-            var missingProperties = javaProperties
-                .Where(jp => !GetNameVariants(jp, knownMappings).Any(dotNetProperties.ContainsKey))
+            CheckParity(type, knownMissingProperties, knownMappings, javaProperties, dotNetProperties);
+        }
+
+        /// <summary>
+        /// Tests the configuration parity.
+        /// </summary>
+        public static void CheckInterfaceParity(string javaFilePath, 
+            Type type, 
+            IEnumerable<string> excludedMembers = null,
+            IEnumerable<string> knownMissingMembers = null,
+            Dictionary<string, string> knownMappings = null)
+        {
+            var path = GetFullPath(javaFilePath);
+
+            var dotNetMembers = type.GetMembers()
+                .GroupBy(x => x.Name)
+                .ToDictionary(x => x.Key, x => x.First(), StringComparer.OrdinalIgnoreCase);
+
+            var javaMethods = GetJavaInterfaceMethods(path)
+                .Except(excludedMembers ?? Enumerable.Empty<string>());
+
+            CheckParity(type, knownMissingMembers, knownMappings, javaMethods, dotNetMembers);
+        }
+
+        /// <summary>
+        /// Gets the full path.
+        /// </summary>
+        private static string GetFullPath(string javaFilePath)
+        {
+            javaFilePath = javaFilePath.Replace('\\', Path.DirectorySeparatorChar);
+
+            var path = Path.Combine(IgniteHome.Resolve(null), javaFilePath);
+            Assert.IsTrue(File.Exists(path), path);
+
+            return path;
+        }
+
+        /// <summary>
+        /// Checks the parity.
+        /// </summary>
+        private static void CheckParity(Type type, IEnumerable<string> knownMissingMembers, 
+            IDictionary<string, string> knownMappings, IEnumerable<string> javaMethods, 
+            IDictionary<string, MemberInfo> dotNetMembers)
+        {
+            var missingMembers = javaMethods
+                .Where(jp => !GetNameVariants(jp, knownMappings).Any(dotNetMembers.ContainsKey))
                 .ToDictionary(x => x, x => x, StringComparer.OrdinalIgnoreCase);
 
-            var knownMissing = (knownMissingProperties ?? Enumerable.Empty<string>())
+            var knownMissing = (knownMissingMembers ?? Enumerable.Empty<string>())
                 .ToDictionary(x => x, x => x, StringComparer.OrdinalIgnoreCase);
 
             var sb = new StringBuilder();
+            var codeSb = new StringBuilder();
 
-            foreach (var javaMissingProp in missingProperties)
+            foreach (var javaMissingProp in missingMembers)
             {
                 if (!knownMissing.ContainsKey(javaMissingProp.Key))
                 {
-                    sb.AppendFormat("{0}.{1} property is missing in .NET.\n", type.Name, javaMissingProp.Key);
+                    sb.AppendFormat("{0}.{1} member is missing in .NET.\n", type.Name, javaMissingProp.Key);
+                    codeSb.AppendFormat("\"{0}\", ", javaMissingProp.Key);
                 }
             }
 
             foreach (var dotnetMissingProp in knownMissing)
             {
-                if (!missingProperties.ContainsKey(dotnetMissingProp.Key))
+                if (!missingMembers.ContainsKey(dotnetMissingProp.Key))
                 {
-                    sb.AppendFormat("{0}.{1} property is missing in Java, but is specified as known in .NET.\n", 
+                    sb.AppendFormat("{0}.{1} member is missing in Java, but is specified as known in .NET.\n",
                         type.Name, dotnetMissingProp.Key);
                 }
             }
 
             if (sb.Length > 0)
             {
-                Assert.Fail(sb.ToString());
+                Assert.Fail(sb + "\nQuoted list: " + codeSb);
             }
         }
 
@@ -106,7 +156,21 @@ namespace Apache.Ignite.Core.Tests.ApiParity
                 .Where(m => m.Groups[1].Value == string.Empty)
                 .Select(m => m.Groups[2].Value.Replace("get", ""))
                 .Where(x => !x.Contains(" void "))
-                .Except(UnneededProperties);
+                .Except(UnneededMethods);
+        }
+
+        /// <summary>
+        /// Gets the java interface methods from file.
+        /// </summary>
+        private static IEnumerable<string> GetJavaInterfaceMethods(string path)
+        {
+            var text = File.ReadAllText(path);
+
+            return JavaInterfaceMethodRegex.Matches(text)
+                .OfType<Match>()
+                .Where(m => m.Groups[1].Value == string.Empty)
+                .Select(m => m.Groups[3].Value.Replace("get", ""))
+                .Except(UnneededMethods);
         }
 
         /// <summary>
@@ -116,6 +180,10 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             IDictionary<string, string> knownMappings)
         {
             yield return javaPropertyName;
+            
+            yield return "get" + javaPropertyName;
+            
+            yield return "is" + javaPropertyName;
 
             yield return javaPropertyName.Replace("PoolSize", "ThreadPoolSize");
 

@@ -20,6 +20,11 @@ package org.apache.ignite.ml.math.functions;
 import java.io.Serializable;
 import java.util.function.ToDoubleFunction;
 
+/**
+ * Serializable function that produces a double-valued result.
+ *
+ * @see java.util.function.ToDoubleFunction
+ */
 @FunctionalInterface
 public interface IgniteToDoubleFunction<T> extends ToDoubleFunction<T>, Serializable {
 }

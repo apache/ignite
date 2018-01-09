@@ -44,8 +44,14 @@ namespace ignite_test
 
         SQLGetDiagRec(handleType, handle, 1, sqlstate, &nativeCode, message, ODBC_BUFFER_SIZE, &reallen);
 
-        return std::string(reinterpret_cast<char*>(sqlstate)) + ": " +
-            std::string(reinterpret_cast<char*>(message), reallen);
+        std::string res(reinterpret_cast<char*>(sqlstate));
+
+        if (!res.empty())
+            res.append(": ").append(reinterpret_cast<char*>(message), reallen);
+        else
+            res = "No results";
+
+        return res;
     }
 
     void InitConfig(ignite::IgniteConfiguration& cfg, const char* cfgFile)
@@ -65,12 +71,8 @@ namespace ignite_test
         cfg.jvmOpts.push_back("-DIGNITE_UPDATE_NOTIFIER=false");
         cfg.jvmOpts.push_back("-Duser.language=en");
 
-        std::string home;
-        bool homeFound = jni::ResolveIgniteHome("", home);
-
-        assert(homeFound);
-
-        cfg.jvmClassPath = jni::CreateIgniteHomeClasspath(home, true);
+        cfg.igniteHome = jni::ResolveIgniteHome();
+        cfg.jvmClassPath = jni::CreateIgniteHomeClasspath(cfg.igniteHome, true);
 
 #ifdef IGNITE_TESTS_32
         cfg.jvmInitMem = 256;

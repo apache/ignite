@@ -27,6 +27,7 @@ import java.util.Properties;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -187,7 +188,10 @@ public class VisorGridConfiguration extends VisorDataTransferObject {
 
         srvcCfgs = VisorServiceConfiguration.list(c.getServiceConfiguration());
 
-        dataStorage = new VisorDataStorageConfiguration(c.getDataStorageConfiguration());
+        DataStorageConfiguration dsCfg = c.getDataStorageConfiguration();
+
+        if (dsCfg != null)
+            dataStorage = new VisorDataStorageConfiguration(dsCfg);
     }
 
     /**

@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         /// <summary>
         /// Initializes a new instance of the <see cref="AtomicReferenceTest"/> class.
         /// </summary>
-        public AtomicReferenceTest() : base("config\\compute\\compute-grid1.xml")
+        public AtomicReferenceTest() : base("Config\\Compute\\compute-grid1.xml")
         {
             // No-op.
         }
