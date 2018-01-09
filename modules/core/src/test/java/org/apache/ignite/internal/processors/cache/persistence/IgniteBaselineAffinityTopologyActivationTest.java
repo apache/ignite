@@ -850,35 +850,13 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         }
 
         assertTrue("Expected exception wasn't thrown.", expectedExceptionThrown);
-
-
-        stopAllGrids(false);
-
-        final Ignite node = startGridWithConsistentId("C");
-
-        boolean nodeCActivated = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return node.active();
-            }
-        }, 10_000);
-
-        assertTrue(nodeCActivated);
-
-        node.cluster().setBaselineTopology(null);
-
-        verifyBaselineTopologyOnNodes(nullVerifier, new Ignite[] {node});
-
-        stopAllGrids(false);
-
-        startGridWithConsistentId("A");
-        startGridWithConsistentId("B");
-        startGridWithConsistentId("C");
     }
 
     /**
-     *
+     * Restore this test when requirements for BaselineTopology deletion are clarified and this feature
+     * is covered with more tests.
      */
-    public void testBaselineTopologyHistoryIsDeletedOnBaselineDelete() throws Exception {
+    public void _testBaselineTopologyHistoryIsDeletedOnBaselineDelete() throws Exception {
         BaselineTopologyHistoryVerifier verifier = new BaselineTopologyHistoryVerifier() {
             @Override public void verify(BaselineTopologyHistory bltHist) {
                 assertNotNull(bltHist);
