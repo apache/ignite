@@ -90,7 +90,7 @@ class GridCacheLogger implements IgniteLogger, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void debug(String msg) {
+    @Override public void debug(String marker, String msg) {
         log.debug(format(msg));
     }
 
@@ -100,33 +100,23 @@ class GridCacheLogger implements IgniteLogger, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void trace(String msg) {
+    @Override public void trace(String marker, String msg) {
         log.trace(format(msg));
     }
 
     /** {@inheritDoc} */
-    @Override public void info(String msg) {
+    @Override public void info(String marker, String msg) {
         log.info(format(msg));
     }
 
     /** {@inheritDoc} */
-    @Override public void warning(String msg) {
-        log.warning(format(msg));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void warning(String msg, @Nullable Throwable e) {
+    @Override public void warning(String marker, String msg, @Nullable Throwable e) {
         log.warning(format(msg), e);
     }
 
     /** {@inheritDoc} */
-    @Override public void error(String msg) {
-        log.error(format(msg));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void error(String msg, @Nullable Throwable e) {
-        log.error(format(msg), e);
+    @Override public void error(String marker, String msg, @Nullable Throwable e) {
+        log.error(marker, format(msg), e);
     }
 
     /** {@inheritDoc} */

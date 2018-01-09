@@ -106,37 +106,27 @@ public class PlatformLogger implements IgniteLogger {
     }
 
     /** {@inheritDoc} */
-    @Override public void trace(String msg) {
+    @Override public void trace(String marker, String msg) {
         log(LVL_TRACE, msg, null);
     }
 
     /** {@inheritDoc} */
-    @Override public void debug(String msg) {
+    @Override public void debug(String marker, String msg) {
         log(LVL_DEBUG, msg, null);
     }
 
     /** {@inheritDoc} */
-    @Override public void info(String msg) {
+    @Override public void info(String marker, String msg) {
         log(LVL_INFO, msg, null);
     }
 
     /** {@inheritDoc} */
-    @Override public void warning(String msg) {
-        log(LVL_WARN, msg, null);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void warning(String msg, @Nullable Throwable e) {
+    @Override public void warning(String marker, String msg, @Nullable Throwable e) {
         log(LVL_WARN, msg, e);
     }
 
     /** {@inheritDoc} */
-    @Override public void error(String msg) {
-        log(LVL_ERROR, msg, null);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void error(String msg, @Nullable Throwable e) {
+    @Override public void error(String marker, String msg, @Nullable Throwable e) {
         log(LVL_ERROR, msg, e);
     }
 

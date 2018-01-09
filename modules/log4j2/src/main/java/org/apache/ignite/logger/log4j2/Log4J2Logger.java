@@ -26,7 +26,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -439,7 +438,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void trace(String msg) {
+    @Override public void trace(String marker, String msg) {
         if (!isTraceEnabled())
             warning("Logging at TRACE level without checking if TRACE level is enabled: " + msg);
 
@@ -447,7 +446,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void debug(String msg) {
+    @Override public void debug(String marker, String msg) {
         if (!isDebugEnabled())
             warning("Logging at DEBUG level without checking if DEBUG level is enabled: " + msg);
 
@@ -455,7 +454,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void info(String msg) {
+    @Override public void info(String marker, String msg) {
         if (!isInfoEnabled())
             warning("Logging at INFO level without checking if INFO level is enabled: " + msg);
 
@@ -463,22 +462,12 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void warning(String msg) {
-        impl.warn(msg);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void warning(String msg, @Nullable Throwable e) {
+    @Override public void warning(String marker, String msg, @Nullable Throwable e) {
         impl.warn(msg, e);
     }
 
     /** {@inheritDoc} */
-    @Override public void error(String msg) {
-        impl.error(msg);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void error(String msg, @Nullable Throwable e) {
+    @Override public void error(String marker, String msg, @Nullable Throwable e) {
         impl.error(msg, e);
     }
 

@@ -114,37 +114,27 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     }
 
     /** {@inheritDoc} */
-    @Override public void trace(String msg) {
+    @Override public void trace(String marker, String msg) {
         impl.trace(enrich(msg));
     }
 
     /** {@inheritDoc} */
-    @Override public void debug(String msg) {
+    @Override public void debug(String marker, String msg) {
         impl.debug(enrich(msg));
     }
 
     /** {@inheritDoc} */
-    @Override public void info(String msg) {
+    @Override public void info(String marker, String msg) {
         impl.info(enrich(msg));
     }
 
     /** {@inheritDoc} */
-    @Override public void warning(String msg) {
-        impl.warning(enrich(msg));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void warning(String msg, Throwable e) {
+    @Override public void warning(String marker, String msg, Throwable e) {
         impl.warning(enrich(msg), e);
     }
 
     /** {@inheritDoc} */
-    @Override public void error(String msg) {
-        impl.error(enrich(msg));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void error(String msg, Throwable e) {
+    @Override public void error(String marker, String msg, Throwable e) {
         impl.error(enrich(msg), e);
     }
 

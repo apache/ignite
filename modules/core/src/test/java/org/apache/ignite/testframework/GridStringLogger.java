@@ -107,27 +107,22 @@ public class GridStringLogger implements IgniteLogger {
     }
 
     /** {@inheritDoc} */
-    @Override public void trace(String msg) {
+    @Override public void trace(String marker, String msg) {
         log(msg);
     }
 
     /** {@inheritDoc} */
-    @Override public void debug(String msg) {
+    @Override public void debug(String marker, String msg) {
         log(msg);
     }
 
     /** {@inheritDoc} */
-    @Override public void info(String msg) {
+    @Override public void info(String marker, String msg) {
         log(msg);
     }
 
     /** {@inheritDoc} */
-    @Override public void warning(String msg) {
-        log(msg);
-    }
-
-    /** {@inheritDoc} */
-    @Override public synchronized void warning(String msg, @Nullable Throwable e) {
+    @Override public synchronized void warning(String marker, String msg, @Nullable Throwable e) {
         log(msg);
 
         if (e != null)
@@ -135,12 +130,7 @@ public class GridStringLogger implements IgniteLogger {
     }
 
     /** {@inheritDoc} */
-    @Override public void error(String msg) {
-        log(msg);
-    }
-
-    /** {@inheritDoc} */
-    @Override public synchronized void error(String msg, @Nullable Throwable e) {
+    @Override public synchronized void error(String marker, String msg, @Nullable Throwable e) {
         log(msg);
 
         if (e != null)

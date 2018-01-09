@@ -262,7 +262,7 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void trace(String msg) {
+    @Override public void trace(String marker, String msg) {
         if (!impl.isLoggable(FINEST))
             warning("Logging at TRACE level without checking if TRACE level is enabled: " + msg);
 
@@ -270,7 +270,7 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void debug(String msg) {
+    @Override public void debug(String marker, String msg) {
         if (!impl.isLoggable(FINE))
             warning("Logging at DEBUG level without checking if DEBUG level is enabled: " + msg);
 
@@ -278,7 +278,7 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void info(String msg) {
+    @Override public void info(String marker, String msg) {
         if (!impl.isLoggable(INFO))
             warning("Logging at INFO level without checking if INFO level is enabled: " + msg);
 
@@ -286,27 +286,12 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void warning(String msg) {
-        impl.warning(msg);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void warning(String msg, @Nullable Throwable e) {
+    @Override public void warning(String marker, String msg, @Nullable Throwable e) {
         impl.log(WARNING, msg, e);
     }
 
     /** {@inheritDoc} */
-    @Override public void error(String msg) {
-        impl.severe(msg);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isQuiet() {
-        return quiet;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void error(String msg, @Nullable Throwable e) {
+    @Override public void error(String marker, String msg, @Nullable Throwable e) {
         impl.log(SEVERE, msg, e);
     }
 
@@ -323,6 +308,11 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
     /** {@inheritDoc} */
     @Override public boolean isInfoEnabled() {
         return impl.isLoggable(INFO);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isQuiet() {
+        return quiet;
     }
 
     /** {@inheritDoc} */

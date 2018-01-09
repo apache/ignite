@@ -172,7 +172,7 @@ public class MarshallerContextLockingSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void debug(String msg) {
+        @Override public void debug(String marker, String msg) {
             logs.add(msg);
         }
 
