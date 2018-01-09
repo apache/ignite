@@ -812,6 +812,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ICollection<IClusterNode> GetBaselineTopology()
         {
+            // TODO: We have a problem here because Java only gives BaselineNode back.
             throw new NotImplementedException();
         }
 
