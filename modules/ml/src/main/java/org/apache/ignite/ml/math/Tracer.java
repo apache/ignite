@@ -52,8 +52,6 @@ public class Tracer {
      * Continuous red-to-blue color mapping.
      */
     static private ColorMapper defaultColorMapper(double min, double max) {
-        double range = max - min;
-
         return new ColorMapper() {
             /** {@inheritDoc} */
             @Override public Color apply(Double d) {
@@ -353,6 +351,11 @@ public class Tracer {
         }
     }
 
+    /**
+     * Returns {@code true} if browse can be used (to show HTML for example), otherwise returns {@code false}.
+     *
+     * @return {@code true} if browse can be used (to show HTML for example), otherwise returns {@code false}
+     */
     private static boolean isBrowseSupported() {
         return Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE);
     }
