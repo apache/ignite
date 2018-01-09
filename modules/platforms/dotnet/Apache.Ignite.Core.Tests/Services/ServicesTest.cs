@@ -292,7 +292,6 @@ namespace Apache.Ignite.Core.Tests.Services
 
             // Check proxy properties
             Assert.IsNotNull(prx);
-            Assert.AreEqual(prx.GetType(), svc.GetType());
             Assert.AreEqual(prx.ToString(), svc.ToString());
             Assert.AreEqual(17, prx.TestProperty);
             Assert.IsTrue(prx.Initialized);
@@ -375,7 +374,6 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(1, desc.AffinityKey);
             Assert.AreEqual(1, desc.MaxPerNodeCount);
             Assert.AreEqual(1, desc.TotalCount);
-            Assert.AreEqual(typeof(TestIgniteServiceSerializable), desc.Type);
             Assert.AreEqual(Grid1.GetCluster().GetLocalNode().Id, desc.OriginNodeId);
 
             var top = desc.TopologySnapshot;

@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Services
             if (serviceType == null) throw new ArgumentNullException("serviceType");
             var isClass = serviceType.IsClass;
             var proxyType = ModuleBuilder.DefineType(
-                string.Format("{0}Proxy", serviceType.FullName),
+                string.Format("{0}", serviceType.FullName),
                 TypeAttributes.Class, isClass ? serviceType : null);
             var buildContext = new ProxyBuildContext(proxyType, serviceType);
             if (!isClass)
