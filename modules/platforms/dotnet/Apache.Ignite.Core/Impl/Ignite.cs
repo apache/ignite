@@ -85,7 +85,8 @@ namespace Apache.Ignite.Core.Impl
             GetBinaryProcessor = 21,
             ReleaseStart = 22,
             SetBaselineTopologyVersion = 23,
-            SetBaselineTopologyNodes = 24
+            SetBaselineTopologyNodes = 24,
+            GetBaselineTopology = 25
         }
 
         /** */
@@ -812,8 +813,8 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ICollection<IBaselineNode> GetBaselineTopology()
         {
-            // TODO: We have a problem here because Java only gives BaselineNode back.
-            throw new NotImplementedException();
+            return DoInOp((int) Op.GetBaselineTopology, 
+                s => Marshaller.StartUnmarshal(s).ReadCollectionRaw(r => (IBaselineNode) new BaselineNode(r)));
         }
 
         /** <inheritdoc /> */
