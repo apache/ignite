@@ -83,7 +83,9 @@ namespace Apache.Ignite.Core.Impl
             LoggerIsLevelEnabled = 19,
             LoggerLog = 20,
             GetBinaryProcessor = 21,
-            ReleaseStart = 22
+            ReleaseStart = 22,
+            SetBaselineTopologyVersion = 23,
+            SetBaselineTopologyNodes = 24
         }
 
         /** */
@@ -782,7 +784,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public void SetBaselineTopology(long topologyVersion)
         {
-            throw new NotImplementedException();
+            DoOutInOp((int) Op.SetBaselineTopologyVersion, topologyVersion);
         }
 
         /** <inheritdoc /> */
@@ -790,7 +792,21 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNull(nodes, "nodes");
 
-            throw new NotImplementedException();
+            DoOutOp((int) Op.SetBaselineTopologyNodes, w =>
+            {
+                var pos = w.Stream.Position;
+                w.WriteInt(0);
+                var cnt = 0;
+
+                foreach (var node in nodes)
+                {
+                    // TODO: What if the node is already offline?
+                    cnt++;
+                    w.WriteObjectDetached(node.ConsistentId);
+                }
+
+                w.Stream.WriteInt(pos, cnt);
+            });
         }
 
         /** <inheritdoc /> */

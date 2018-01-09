@@ -63,7 +63,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -443,10 +442,10 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
                 Collection<BaselineNode> nodes = new ArrayList<>(cnt);
 
                 for (int i = 0; i < cnt; i++) {
-                    UUID id = reader.readUuid();
+                    Object consId = reader.readObjectDetached();
                     nodes.add(new BaselineNode() {
                         @Override public Object consistentId() {
-                            return id;
+                            return consId;
                         }
 
                         @Override public <T> T attribute(String name) {
