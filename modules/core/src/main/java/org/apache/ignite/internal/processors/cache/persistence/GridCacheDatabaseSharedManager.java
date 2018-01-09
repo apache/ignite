@@ -167,9 +167,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Default minimum checkpointing page buffer size (may be adjusted by Ignite). */
     public static final Long DFLT_MAX_CHECKPOINTING_PAGE_BUFFER_SIZE = 2 * GB;
 
-    /**
-     * Pages comparator to order disk writes, first compare by cache group and then by effective page
-     */
+    /** Pages comparator to order disk writes, first compares cache group and then effective page ID. */
     public static final Comparator<FullPageId> SEQUENTIAL_CP_PAGE_COMPARATOR = new Comparator<FullPageId>() {
         @Override public int compare(FullPageId o1, FullPageId o2) {
             int cmp = Integer.compare(o1.groupId(), o2.groupId());
@@ -284,7 +282,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     private boolean stopping;
 
-    /** Checkpoint runner thread pool. If null tasks are to be run in single thread */
+    /** Async checkpointer: includes runner thread pool. If {@code null} tasks are to be run in single thread. */
     @Nullable private AsyncCheckpointer asyncCheckpointer;
 
     /** Buffer for the checkpoint threads. */
@@ -2096,6 +2094,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         final int totalPagesToWriteCnt = chp.cpScope.totalCpPages();
 
+                        // This factory creates callable to write provided pages IDs array to page store.
                         final IgniteClosure<FullPageId[], Callable<Void>> wrCpPagesFactory;
 
                         wrCpPagesFactory = new IgniteClosure<FullPageId[], Callable<Void>>() {
@@ -2123,7 +2122,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     wrCpPagesFactory);
                             }
                             else {
-                                Collection<FullPageIdsBuffer> cpPages = chp.cpScope.splitAndSortCpPagesIfNeeded(persistenceCfg);
+                                Collection<FullPageIdsBuffer> cpPages
+                                    = chp.cpScope.splitAndSortCpPagesIfNeeded(persistenceCfg);
 
                                 wrCompleteFut = new CountDownFuture(cpPages.size());
 
@@ -2321,16 +2321,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     if (grp.isLocal())
                         continue;
 
-                    //Create here temporary collection with basic fields to preallocate cacheStateLater and
-                    // for iterating
+                    //Create temporary collection with basic fields to preallocate CacheState's internal arrays later
                     Collection<PartitionState> partsState = new ArrayList<>();
 
                     int prevPartId = -1;
+
                     for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-                        final int partId = part.id();
-                        if (prevPartId > partId)
-                            throw new IllegalStateException("Broken order of " +
-                                "GridDhtPartitionTopology.currentLocalPartitions(): [prev=" + prevPartId + ", cur=" + partId + "]");
+                        int partId = part.id();
+
+                        if (partId < prevPartId)
+                            throw new IllegalStateException("Broken order of GridDhtPartitionTopology" +
+                                ".currentLocalPartitions(): [prev=" + prevPartId + ", cur=" + partId + "]");
+
                         partsState.add(new PartitionState(partId, part.dataStore().fullSize(), part.updateCounter()));
                     }
 
@@ -2544,18 +2546,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
-    /** Pages write task */
+    /** Pages write task. Contains array of page IDs to write to page store. */
     private class WriteCheckpointPages implements Callable<Void> {
         /** */
         private CheckpointMetricsTracker tracker;
 
-        /** Array of page IDs to write under this task. Overall pages to write may be greater than this collection */
+        /** Array of page IDs to write under this task. Overall pages to write may be greater than this collection. */
         private FullPageId[] writePageIds;
 
         /** */
         private GridConcurrentHashSet<PageStore> updStores;
 
-        /** Total pages to write, counter may be greater than {@link #writePageIds} size */
+        /** Total pages to write, counter may be greater than {@link #writePageIds} size. */
         private final int totalPagesToWrite;
 
         /**

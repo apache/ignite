@@ -24,16 +24,17 @@ import java.util.Comparator;
 import org.apache.ignite.internal.pagemem.FullPageId;
 
 /**
- * Full Pages IDs buffer.
+ * Full Pages IDs buffer. Wraps array of pages and start-end position. <br> Usage of this class allows to save arrays
+ * allocation. <br> Several page IDs buffers can share same array but with different offset and length.
  */
 public class FullPageIdsBuffer {
-    /** Source array. May be shared between different buffers */
+    /** Source array. May be shared between different buffers. */
     private final FullPageId[] arr;
 
-    /** Start position. Index of first element inclusive. */
+    /** Start position. Index of first element, inclusive. */
     private final int position;
 
-    /** Limit. Index of last element exclusive. */
+    /** Limit. Index of last element, exclusive. */
     private final int limit;
 
     /**
@@ -48,51 +49,57 @@ public class FullPageIdsBuffer {
     }
 
     /**
-     * @return
+     * @return copy of buffer data as array. Causes new instance allocation.
      */
     public FullPageId[] toArray() {
         return Arrays.copyOfRange(arr, position, limit);
     }
 
     /**
-     * @return
+     * @return Number of remaining (contained) page identifiers.
      */
     public int remaining() {
         return limit - position;
     }
 
     /**
-     * @param comp
+     * Sorts underlying sub array with provided comparator.
+     *
+     * @param comp the comparator to determine the order of elements in the buffer.
      */
     public void sort(Comparator<FullPageId> comp) {
         Arrays.sort(arr, position, limit, comp);
     }
 
     /**
-     * @return
+     * @return shared array of pages. Operating on this array outside bounds may be unsafe.
      */
     public FullPageId[] internalArray() {
         return arr;
     }
 
     /**
-     * @return
+     * @return Start position. Index of first element, inclusive.
      */
     public int position() {
         return position;
     }
 
     /**
-     * @return
+     * @return Limit. Index of last element, exclusive.
      */
     public int limit() {
         return limit;
     }
 
     /**
-     * @param position
-     * @param limit
-     * @return
+     * Creates buffer from current buffer range.
+     *
+     * @param position required start position, absolute - counted from array start, inclusive. <br> May not be less
+     * that current buffer {@link #position}.
+     * @param limit required buffer limit, absolute - counted from internal array start position, exclusive. <br> May
+     * not be greater that current buffer {@link #limit}.
+     * @return buffer created. Shares array with initial buffer.
      */
     public FullPageIdsBuffer bufferOfRange(int position, int limit) {
         assert position >= this.position;
@@ -114,6 +121,7 @@ public class FullPageIdsBuffer {
             return Collections.singletonList(this);
 
         final Collection<FullPageIdsBuffer> res = new ArrayList<>();
+
         final int totalSize = remaining();
 
         for (int i = 0; i < pagesSubArrays; i++) {
@@ -123,6 +131,7 @@ public class FullPageIdsBuffer {
 
             res.add(bufferOfRange(position + from, position + to));
         }
+
         return res;
     }
 }
