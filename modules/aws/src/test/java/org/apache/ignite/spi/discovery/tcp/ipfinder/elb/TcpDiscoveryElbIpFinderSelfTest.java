@@ -23,7 +23,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstract
 /**
  * TcpDiscoveryElbIpFinderSelfTest test.
  */
-public class TcpDiscoveryElbIpFinderSelfTest extends TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryElbIpFinder> {
+public class TcpDiscoveryElbIpFinderSelfTest extends
+    TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryElbIpFinder> {
     /**
      * Constructor.
      *
@@ -33,17 +34,17 @@ public class TcpDiscoveryElbIpFinderSelfTest extends TcpDiscoveryIpFinderAbstrac
         // No-op.
     }
 
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         // No-op.
     }
 
-    /** {@inheritDoc} */
+    /* {@inheritDoc} */
     @Override protected TcpDiscoveryElbIpFinder ipFinder() throws Exception {
+        // No-op.
         return null;
     }
 
-    /** {@inheritDoc} */
+    /* {@inheritDoc} */
     @Override public void testIpFinder() throws Exception {
         TcpDiscoveryElbIpFinder ipFinder = new TcpDiscoveryElbIpFinder();
 
