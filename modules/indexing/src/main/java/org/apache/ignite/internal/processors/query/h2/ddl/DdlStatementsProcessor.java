@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.ddl;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -43,6 +44,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlterTableAddColumn;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlterTableDropColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlCreateIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlCreateTable;
@@ -346,7 +348,7 @@ public class DdlStatementsProcessor {
 
                         QueryField field = new QueryField(col.columnName(),
                             DataType.getTypeClassName(col.column().getType()),
-                            col.column().isNullable());
+                            col.column().isNullable(), col.defaultValue());
 
                         cols.add(field);
 
@@ -361,6 +363,60 @@ public class DdlStatementsProcessor {
 
                         fut = ctx.query().dynamicColumnAdd(tbl.cacheName(), cmd.schemaName(),
                             tbl.rowDescriptor().type().tableName(), cols, cmd.ifTableExists(), cmd.ifNotExists());
+                    }
+                }
+            }
+            else if (stmt0 instanceof GridSqlAlterTableDropColumn) {
+                GridSqlAlterTableDropColumn cmd = (GridSqlAlterTableDropColumn)stmt0;
+
+                GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+
+                if (tbl == null && cmd.ifTableExists()) {
+                    ctx.cache().createMissingQueryCaches();
+
+                    tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+                }
+
+                if (tbl == null) {
+                    if (!cmd.ifTableExists())
+                        throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
+                            cmd.tableName());
+                }
+                else {
+                    assert tbl.rowDescriptor() != null;
+
+                    if (QueryUtils.isSqlType(tbl.rowDescriptor().type().valueClass()))
+                        throw new SchemaOperationException("Cannot drop column(s) because table was created " +
+                            "with " + PARAM_WRAP_VALUE + "=false option.");
+
+                    List<String> cols = new ArrayList<>(cmd.columns().length);
+
+                    GridQueryTypeDescriptor type = tbl.rowDescriptor().type();
+
+                    for (String colName : cmd.columns()) {
+                        if (!tbl.doesColumnExist(colName)) {
+                            if ((!cmd.ifExists() || cmd.columns().length != 1)) {
+                                throw new SchemaOperationException(SchemaOperationException.CODE_COLUMN_NOT_FOUND,
+                                    colName);
+                            }
+                            else {
+                                cols = null;
+
+                                break;
+                            }
+                        }
+
+                        SchemaOperationException err = QueryUtils.validateDropColumn(type, colName);
+
+                        if (err != null)
+                            throw err;
+
+                        cols.add(colName);
+                    }
+
+                    if (cols != null) {
+                        fut = ctx.query().dynamicColumnRemove(tbl.cacheName(), cmd.schemaName(),
+                            type.tableName(), cols, cmd.ifTableExists(), cmd.ifExists());
                     }
                 }
             }
@@ -449,6 +505,8 @@ public class DdlStatementsProcessor {
 
         Set<String> notNullFields = null;
 
+        HashMap<String, Object> dfltValues = new HashMap<>();
+
         for (Map.Entry<String, GridSqlColumn> e : createTbl.columns().entrySet()) {
             GridSqlColumn gridCol = e.getValue();
 
@@ -462,7 +520,15 @@ public class DdlStatementsProcessor {
 
                 notNullFields.add(e.getKey());
             }
+
+            Object dfltVal = gridCol.defaultValue();
+
+            if (dfltVal != null)
+                dfltValues.put(e.getKey(), dfltVal);
         }
+
+        if (!F.isEmpty(dfltValues))
+            res.setDefaultFieldValues(dfltValues);
 
         String valTypeName = QueryUtils.createTableValueTypeName(createTbl.schemaName(), createTbl.tableName());
         String keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);

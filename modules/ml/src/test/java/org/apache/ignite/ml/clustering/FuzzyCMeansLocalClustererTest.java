@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
@@ -38,7 +37,7 @@ public class FuzzyCMeansLocalClustererTest {
     /** Test FCM on points that forms three clusters on the line. */
     @Test
     public void equalWeightsOneDimension() {
-        BaseFuzzyCMeansClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
+        FuzzyCMeansLocalClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
                 2, BaseFuzzyCMeansClusterer.StopCondition.STABLE_CENTERS,
                 0.01, 10, null);
 
@@ -46,7 +45,7 @@ public class FuzzyCMeansLocalClustererTest {
                                            {7},   {8},  {9},  {10},
                                            {-1},  {0},  {1}};
 
-        Matrix pntMatrix = new DenseLocalOnHeapMatrix(points);
+        DenseLocalOnHeapMatrix pntMatrix = new DenseLocalOnHeapMatrix(points);
 
         FuzzyCMeansModel mdl = clusterer.cluster(pntMatrix, 3);
 
@@ -60,7 +59,7 @@ public class FuzzyCMeansLocalClustererTest {
     /** Test FCM on points that forms four clusters on the plane. */
     @Test
     public void equalWeightsTwoDimensions() {
-        BaseFuzzyCMeansClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
+        FuzzyCMeansLocalClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
                 2, BaseFuzzyCMeansClusterer.StopCondition.STABLE_CENTERS,
                 0.01, 20, null);
 
@@ -69,7 +68,7 @@ public class FuzzyCMeansLocalClustererTest {
                                            {-10, 10},  {-9, 11},  {-10, 9},  {-11, 9},
                                            {10, -10},  {9, -11},  {10, -9},  {11, -9}};
 
-        Matrix pntMatrix = new DenseLocalOnHeapMatrix(points);
+        DenseLocalOnHeapMatrix pntMatrix = new DenseLocalOnHeapMatrix(points);
 
         FuzzyCMeansModel mdl = clusterer.cluster(pntMatrix, 4);
         Vector[] centers = mdl.centers();
@@ -86,12 +85,12 @@ public class FuzzyCMeansLocalClustererTest {
     /** Test FCM on points which have the equal coordinates. */
     @Test
     public void checkCentersOfTheSamePointsTwoDimensions() {
-        BaseFuzzyCMeansClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
+        FuzzyCMeansLocalClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
                 2, BaseFuzzyCMeansClusterer.StopCondition.STABLE_MEMBERSHIPS, 0.01, 10, null);
 
         double[][] points = new double[][] {{3.3, 10}, {3.3, 10}, {3.3, 10}, {3.3, 10}, {3.3, 10}};
 
-        Matrix pntMatrix = new DenseLocalOnHeapMatrix(points);
+        DenseLocalOnHeapMatrix pntMatrix = new DenseLocalOnHeapMatrix(points);
 
         int k = 2;
         FuzzyCMeansModel mdl = clusterer.cluster(pntMatrix, k);
@@ -107,7 +106,7 @@ public class FuzzyCMeansLocalClustererTest {
     /** Test FCM on points located on the circle. */
     @Test
     public void checkCentersLocationOnSphere() {
-        BaseFuzzyCMeansClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
+        FuzzyCMeansLocalClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
                 2, BaseFuzzyCMeansClusterer.StopCondition.STABLE_CENTERS, 0.01, 100, null);
 
         int numOfPoints = 650;
@@ -119,7 +118,7 @@ public class FuzzyCMeansLocalClustererTest {
             points[i][1] = Math.sin(Math.PI * 2 * i / numOfPoints) * radius;
         }
 
-        Matrix pntMatrix = new DenseLocalOnHeapMatrix(points);
+        DenseLocalOnHeapMatrix pntMatrix = new DenseLocalOnHeapMatrix(points);
 
         int k = 10;
         FuzzyCMeansModel mdl = clusterer.cluster(pntMatrix, k);
@@ -134,12 +133,12 @@ public class FuzzyCMeansLocalClustererTest {
     /** Test FCM on points that forms the line located on the plane. */
     @Test
     public void test2DLineClustering() {
-        BaseFuzzyCMeansClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
+        FuzzyCMeansLocalClusterer clusterer = new FuzzyCMeansLocalClusterer(new EuclideanDistance(),
                 2, BaseFuzzyCMeansClusterer.StopCondition.STABLE_CENTERS, 0.01, 50, null);
 
         double[][] points = new double[][]{{1, 2}, {3, 6}, {5, 10}};
 
-        Matrix pntMatrix = new DenseLocalOnHeapMatrix(points);
+        DenseLocalOnHeapMatrix pntMatrix = new DenseLocalOnHeapMatrix(points);
 
         int k = 2;
         FuzzyCMeansModel mdl = clusterer.cluster(pntMatrix, k);
@@ -185,7 +184,7 @@ public class FuzzyCMeansLocalClustererTest {
                 2, BaseFuzzyCMeansClusterer.StopCondition.STABLE_CENTERS, 0.01, 10, null);
         double[][] points = new double[][]{{1}, {2}, {3}, {4}};
 
-        FuzzyCMeansModel cluster = clusterer.cluster(new DenseLocalOnHeapMatrix(points), 1);
+        clusterer.cluster(new DenseLocalOnHeapMatrix(points), 1);
     }
 
     /** Test FCM on different numbers of points and weights. */
@@ -198,6 +197,6 @@ public class FuzzyCMeansLocalClustererTest {
         ArrayList<Double> weights = new ArrayList<>();
         Collections.addAll(weights, 1.0, 34.0, 2.5, 5.0, 0.5);
 
-        FuzzyCMeansModel cluster = clusterer.cluster(new DenseLocalOnHeapMatrix(points), 2, weights);
+        clusterer.cluster(new DenseLocalOnHeapMatrix(points), 2, weights);
     }
 }

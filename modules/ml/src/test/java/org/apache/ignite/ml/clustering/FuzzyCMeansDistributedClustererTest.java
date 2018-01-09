@@ -88,6 +88,8 @@ public class FuzzyCMeansDistributedClustererTest extends GridCommonAbstractTest 
         assertEquals(0, measure.compute(centers[1], new DenseLocalOnHeapVector(new double[]{10, -10})), 1);
         assertEquals(0, measure.compute(centers[2], new DenseLocalOnHeapVector(new double[]{10, 10})), 1);
         assertEquals(0, measure.compute(centers[3], new DenseLocalOnHeapVector(new double[]{-10, 10})), 1);
+
+        pntMatrix.destroy();
     }
 
     /** Perform N tests each of which contains M random points placed around K centers on the plane. */
@@ -116,7 +118,7 @@ public class FuzzyCMeansDistributedClustererTest extends GridCommonAbstractTest 
      * @param distributedClusterer Tested clusterer.
      * @param seed Seed for the random numbers generator.
      */
-    public void performRandomTest(FuzzyCMeansDistributedClusterer distributedClusterer, long seed) {
+    private void performRandomTest(FuzzyCMeansDistributedClusterer distributedClusterer, long seed) {
         final int minNumCenters = 2;
         final int maxNumCenters = 5;
         final double maxRadius = 1000;
@@ -130,11 +132,10 @@ public class FuzzyCMeansDistributedClustererTest extends GridCommonAbstractTest 
         double[][] centers = new double[numCenters][2];
 
         for (int i = 0; i < numCenters; i++) {
-            double radius = maxRadius;
             double angle = Math.PI * 2.0 * i / numCenters;
 
-            centers[i][0] = Math.cos(angle) * radius;
-            centers[i][1] = Math.sin(angle) * radius;
+            centers[i][0] = Math.cos(angle) * maxRadius;
+            centers[i][1] = Math.sin(angle) * maxRadius;
         }
 
         int numPoints = minPoints + random.nextInt(maxPoints - minPoints);
@@ -173,5 +174,7 @@ public class FuzzyCMeansDistributedClustererTest extends GridCommonAbstractTest 
         }
 
         assertEquals(0, cntr);
+
+        pntMatrix.destroy();
     }
 }

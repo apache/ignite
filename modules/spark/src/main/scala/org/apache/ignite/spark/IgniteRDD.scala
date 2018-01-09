@@ -26,10 +26,10 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata
 import org.apache.ignite.lang.IgniteUuid
 import org.apache.ignite.spark.impl._
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.types._
-import org.apache.spark.sql._
 import org.apache.spark._
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql._
+import org.apache.spark.sql.types._
 
 import scala.collection.JavaConversions._
 
@@ -314,17 +314,35 @@ class IgniteRDD[K, V] (
      * @return Spark schema.
      */
     private def buildSchema(fieldsMeta: java.util.List[GridQueryFieldMetadata]): StructType = {
-        new StructType(fieldsMeta.map(i ⇒ new StructField(i.fieldName(), dataType(i.fieldTypeName()), nullable = true))
+        new StructType(fieldsMeta.map(i ⇒
+            new StructField(i.fieldName(), IgniteRDD.dataType(i.fieldTypeName(), i.fieldName()), nullable = true))
             .toArray)
     }
 
     /**
-     * Gets Spark data type based on type name.
+     * Generates affinity key for given cluster node.
      *
-     * @param typeName Type name.
-     * @return Spark data type.
+     * @param value Value to generate key for.
+     * @param node Node to generate key for.
+     * @return Affinity key.
      */
-    private def dataType(typeName: String): DataType = typeName match {
+    private def affinityKeyFunc(value: V, node: ClusterNode): IgniteUuid = {
+        val aff = ic.ignite().affinity[IgniteUuid](cacheName)
+
+        Stream.from(1, Math.max(1000, aff.partitions() * 2))
+            .map(_ ⇒ IgniteUuid.randomUuid()).find(node == null || aff.mapKeyToNode(_).eq(node))
+            .getOrElse(IgniteUuid.randomUuid())
+    }
+}
+
+object IgniteRDD {
+    /**
+      * Gets Spark data type based on type name.
+      *
+      * @param typeName Type name.
+      * @return Spark data type.
+      */
+    def dataType(typeName: String, fieldName: String): DataType = typeName match {
         case "java.lang.Boolean" ⇒ BooleanType
         case "java.lang.Byte" ⇒ ByteType
         case "java.lang.Short" ⇒ ShortType
@@ -343,17 +361,24 @@ class IgniteRDD[K, V] (
     }
 
     /**
-     * Generates affinity key for given cluster node.
-     *
-     * @param value Value to generate key for.
-     * @param node Node to generate key for.
-     * @return Affinity key.
-     */
-    private def affinityKeyFunc(value: V, node: ClusterNode): IgniteUuid = {
-        val aff = ic.ignite().affinity[IgniteUuid](cacheName)
+      * Converts java.util.Date to java.sql.Date as j.u.Date not supported by Spark SQL.
+      *
+      * @param input Any value.
+      * @return If input is java.util.Date returns java.sql.Date representation of given value, otherwise returns unchanged value.
+      */
+    def convertIfNeeded(input: Any): Any =
+        if (input == null)
+            input
+        else {
+            input match {
+                case timestamp: java.sql.Timestamp ⇒
+                    timestamp
 
-        Stream.from(1, Math.max(1000, aff.partitions() * 2))
-            .map(_ ⇒ IgniteUuid.randomUuid()).find(node == null || aff.mapKeyToNode(_).eq(node))
-            .getOrElse(IgniteUuid.randomUuid())
-    }
+                //Spark SQL doesn't support java.util.Date see - https://spark.apache.org/docs/latest/sql-programming-guide.html#data-types
+                case date: java.util.Date ⇒
+                    new java.sql.Date(date.getTime)
+
+                case _ ⇒ input
+            }
+        }
 }
