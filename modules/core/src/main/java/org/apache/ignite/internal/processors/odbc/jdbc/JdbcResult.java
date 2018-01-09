@@ -62,9 +62,6 @@ public class JdbcResult implements JdbcRawBinarylizable {
     /** Columns metadata result V2. */
     static final byte META_COLUMNS_V2 = 14;
 
-    /** Columns metadata result V3. */
-    static final byte META_COLUMNS_V3 = 15;
-
     /** Success status. */
     private byte type;
 
@@ -155,11 +152,6 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
             case META_COLUMNS_V2:
                 res = new JdbcMetaColumnsResultV2();
-
-                break;
-
-            case META_COLUMNS_V3:
-                res = new JdbcMetaColumnsResultV3();
 
                 break;
 

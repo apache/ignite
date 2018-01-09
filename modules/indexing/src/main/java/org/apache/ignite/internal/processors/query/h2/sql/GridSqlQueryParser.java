@@ -95,7 +95,6 @@ import org.h2.table.Table;
 import org.h2.table.TableBase;
 import org.h2.table.TableFilter;
 import org.h2.table.TableView;
-import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.AND;
@@ -1200,23 +1199,9 @@ public class GridSqlQueryParser {
             throw new IgniteSQLException("Computed columns are not supported [colName=" + col.getName() + ']',
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-        if (col.getDefaultExpression() != null) {
-            if (!col.getDefaultExpression().isConstant()) {
-                throw new IgniteSQLException("Non-constant DEFAULT expressions are not supported [colName=" + col.getName() + ']',
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-            }
-
-            DataType colType = DataType.getDataType(col.getType());
-            DataType dfltType = DataType.getDataType(col.getDefaultExpression().getType());
-
-            if ((DataType.isStringType(colType.type) && !DataType.isStringType(dfltType.type))
-                || (DataType.supportsAdd(colType.type) && !DataType.supportsAdd(dfltType.type))) {
-                throw new IgniteSQLException("Invalid default value for column. [colName=" + col.getName()
-                    + ", colType=" + colType.name
-                    + ", dfltValueType=" + dfltType.name + ']',
-                    IgniteQueryErrorCode.UNEXPECTED_ELEMENT_TYPE);
-            }
-        }
+        if (col.getDefaultExpression() != null)
+            throw new IgniteSQLException("DEFAULT expressions are not supported [colName=" + col.getName() + ']',
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         if (col.getSequence() != null)
             throw new IgniteSQLException("SEQUENCE columns are not supported [colName=" + col.getName() + ']',
@@ -1240,15 +1225,13 @@ public class GridSqlQueryParser {
     /**
      * Parse {@code ALTER TABLE ... ADD COLUMN} statement.
      * @param addCol H2 statement.
-     * @return Grid SQL statement.
-     *
      * @see <a href="http://www.h2database.com/html/grammar.html#alter_table_add"></a>
      */
     private GridSqlStatement parseAddColumn(AlterTableAlterColumn addCol) {
         assert addCol.getType() == CommandInterface.ALTER_TABLE_ADD_COLUMN;
 
         if (ALTER_COLUMN_BEFORE_COL.get(addCol) != null || ALTER_COLUMN_AFTER_COL.get(addCol) != null)
-            throw new IgniteSQLException("ALTER TABLE ADD COLUMN BEFORE/AFTER is not supported" ,
+            throw new IgniteSQLException("ALTER TABLE ADD COLUMN BEFORE/AFTER is not supported",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         GridSqlAlterTableAddColumn res = new GridSqlAlterTableAddColumn();
@@ -1257,15 +1240,8 @@ public class GridSqlQueryParser {
 
         GridSqlColumn[] gridNewCols = new GridSqlColumn[h2NewCols.size()];
 
-        for (int i = 0; i < h2NewCols.size(); i++) {
-            Column col = h2NewCols.get(i);
-
-            if (col.getDefaultExpression() != null)
-                throw new IgniteSQLException("ALTER TABLE ADD COLUMN with DEFAULT value is not supported " +
-                    "[col=" + col.getName() + ']', IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
+        for (int i = 0; i < h2NewCols.size(); i++)
             gridNewCols[i] = parseColumn(h2NewCols.get(i));
-        }
 
         res.columns(gridNewCols);
 

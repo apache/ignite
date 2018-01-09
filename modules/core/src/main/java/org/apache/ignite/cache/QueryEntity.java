@@ -86,9 +86,6 @@ public class QueryEntity implements Serializable {
     /** Fields that must have non-null value. NB: DO NOT remove underscore to avoid clashes with QueryEntityEx. */
     private Set<String> _notNullFields;
 
-    /** Fields default values. */
-    private Map<String, Object> defaultFieldValues = new HashMap<>();
-
     /**
      * Creates an empty query entity.
      */
@@ -117,9 +114,6 @@ public class QueryEntity implements Serializable {
         tableName = other.tableName;
 
         _notNullFields = other._notNullFields != null ? new HashSet<>(other._notNullFields) : null;
-
-        defaultFieldValues = other.defaultFieldValues != null ? new HashMap<>(other.defaultFieldValues)
-            : new HashMap<String, Object>();
     }
 
     /**
@@ -361,12 +355,9 @@ public class QueryEntity implements Serializable {
      * Sets table name for this query entity.
      *
      * @param tableName table name
-     * @return {@code this} for chaining.
      */
-    public QueryEntity setTableName(String tableName) {
+    public void setTableName(String tableName) {
         this.tableName = tableName;
-
-        return this;
     }
 
     /**
@@ -386,27 +377,6 @@ public class QueryEntity implements Serializable {
      */
     public QueryEntity setNotNullFields(@Nullable Set<String> notNullFields) {
         this._notNullFields = notNullFields;
-
-        return this;
-    }
-
-    /**
-     * Gets fields default values.
-     *
-     * @return Field's name to default value map.
-     */
-    public Map<String, Object> getDefaultFieldValues() {
-        return defaultFieldValues;
-    }
-
-    /**
-     * Sets fields default values.
-     *
-     * @param defaultFieldValues Field's name to default value map.
-     * @return {@code this} for chaining.
-     */
-    public QueryEntity setDefaultFieldValues(Map<String, Object> defaultFieldValues) {
-        this.defaultFieldValues = defaultFieldValues;
 
         return this;
     }
@@ -669,14 +639,13 @@ public class QueryEntity implements Serializable {
             F.eq(aliases, entity.aliases) &&
             F.eqNotOrdered(idxs, entity.idxs) &&
             F.eq(tableName, entity.tableName) &&
-            F.eq(_notNullFields, entity._notNullFields) &&
-            F.eq(defaultFieldValues, entity.defaultFieldValues);
+            F.eq(_notNullFields, entity._notNullFields);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(keyType, valType, keyFieldName, valueFieldName, fields, keyFields, aliases, idxs,
-            tableName, _notNullFields, defaultFieldValues);
+            tableName, _notNullFields);
     }
 
     /** {@inheritDoc} */

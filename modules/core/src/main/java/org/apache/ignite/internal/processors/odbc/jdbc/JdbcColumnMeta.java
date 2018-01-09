@@ -128,13 +128,6 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
     }
 
     /**
-     * @return Column's default value.
-     */
-    public String defaultValue() {
-        return null;
-    }
-
-    /**
      * Return 'nullable' flag in compatibility mode (according with column name and column type).
      *
      * @return {@code true} in case the column allows null values. Otherwise returns {@code false}

@@ -457,8 +457,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     fields.Add(new QueryField(columnName, memberInfo.Value)
                     {
                         IsKeyField = isKey,
-                        NotNull = attr.NotNull,
-                        DefaultValue = attr.DefaultValue
+                        NotNull = attr.NotNull
                     });
 
                     ScanAttributes(memberInfo.Value, fields, indexes, columnName, visitedTypes, isKey);

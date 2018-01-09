@@ -141,9 +141,4 @@ public class QueryClassProperty implements GridQueryProperty {
     @Override public boolean notNull() {
         return notNull;
     }
-
-    /** {@inheritDoc} */
-    @Override public Object defaultValue() {
-        return null;
-    }
 }

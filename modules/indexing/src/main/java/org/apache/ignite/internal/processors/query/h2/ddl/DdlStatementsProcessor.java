@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2.ddl;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -348,7 +347,7 @@ public class DdlStatementsProcessor {
 
                         QueryField field = new QueryField(col.columnName(),
                             DataType.getTypeClassName(col.column().getType()),
-                            col.column().isNullable(), col.defaultValue());
+                            col.column().isNullable());
 
                         cols.add(field);
 
@@ -505,8 +504,6 @@ public class DdlStatementsProcessor {
 
         Set<String> notNullFields = null;
 
-        HashMap<String, Object> dfltValues = new HashMap<>();
-
         for (Map.Entry<String, GridSqlColumn> e : createTbl.columns().entrySet()) {
             GridSqlColumn gridCol = e.getValue();
 
@@ -520,15 +517,7 @@ public class DdlStatementsProcessor {
 
                 notNullFields.add(e.getKey());
             }
-
-            Object dfltVal = gridCol.defaultValue();
-
-            if (dfltVal != null)
-                dfltValues.put(e.getKey(), dfltVal);
         }
-
-        if (!F.isEmpty(dfltValues))
-            res.setDefaultFieldValues(dfltValues);
 
         String valTypeName = QueryUtils.createTableValueTypeName(createTbl.schemaName(), createTbl.tableName());
         String keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);

@@ -31,8 +31,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "findKeyType",
             "findValueType",
             "KeyFields",
-            "NotNullFields",
-            "FieldsDefaultValues"
+            "NotNullFields"
         };
 
         /// <summary>

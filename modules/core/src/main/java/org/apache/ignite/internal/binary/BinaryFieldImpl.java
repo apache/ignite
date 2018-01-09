@@ -56,8 +56,6 @@ public class BinaryFieldImpl implements BinaryFieldEx {
     /**
      * Constructor.
      *
-     * @param ctx Binary context.
-     * @param typeId Type ID.
      * @param schemas Schemas.
      * @param fieldName Field name.
      * @param fieldId Field ID.
@@ -279,9 +277,6 @@ public class BinaryFieldImpl implements BinaryFieldEx {
         }
 
         int schemaId = obj.schemaId();
-
-        if (schemaId == 0)
-            return BinarySchema.ORDER_NOT_FOUND;
 
         BinarySchema schema = schemas.schema(schemaId);
 
