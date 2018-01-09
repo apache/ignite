@@ -223,7 +223,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 // Can not set baseline while inactive.
                 var ex = Assert.Throws<IgniteException>(() => cluster.SetBaselineTopology(2));
-                Assert.AreEqual("", ex.Message);
+                Assert.AreEqual("Changing BaselineTopology on inactive cluster is not allowed.", ex.Message);
 
                 // Set with version.
                 cluster.SetActive(true);
