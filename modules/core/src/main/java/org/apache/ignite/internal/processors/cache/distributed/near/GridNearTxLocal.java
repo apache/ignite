@@ -3293,7 +3293,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (fut != null)
             return chainFinishFuture(finishFut, false, clearThreadMap, onTimeout);
 
-        if (prepareAsyncRollback() == null && fastFinish()) {
+        if ((clearThreadMap || prepareAsyncRollback() == null) && fastFinish()) {
             GridNearTxFastFinishFuture fut0;
 
             if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFastFinishFuture(this, false)))
