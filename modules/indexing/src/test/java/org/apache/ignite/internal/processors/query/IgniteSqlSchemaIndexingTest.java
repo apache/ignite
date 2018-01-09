@@ -206,6 +206,7 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
      * @param log logger for assertThrows
      * @param schemaName Schema name without quotes for testing
      * @param caseSensitive Whether schema name is case sensitive.
+     * @param msg Expected error message.
      */
     private static void escapeCheckSchemaName(final IgniteCache<Integer, Fact> cache, IgniteLogger log,
         String schemaName, boolean caseSensitive, String msg) {
