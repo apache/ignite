@@ -71,35 +71,67 @@ public interface IgniteLogger {
      * @param ctgr Category for new logger.
      * @return New logger with given category.
      */
-    public IgniteLogger getLogger(Object ctgr);
+    IgniteLogger getLogger(Object ctgr);
 
     /**
      * Logs out trace message.
      *
      * @param msg Trace message.
      */
-    public void trace(String msg);
+    default void trace(String msg) {
+        trace(null, msg);
+    }
+
+    /**
+     * Logs out trace message.
+     *
+     * @param marker
+     * @param msg Trace message.
+     */
+    void trace(String marker, String msg);
 
     /**
      * Logs out debug message.
      *
      * @param msg Debug message.
      */
-    public void debug(String msg);
+    default void debug(String msg) {
+        debug(null, msg);
+    }
+
+    /**
+     * Logs out debug message.
+     *
+     * @param marker
+     * @param msg Debug message.
+     */
+    void debug(String marker, String msg);
 
     /**
      * Logs out information message.
      *
      * @param msg Information message.
      */
-    public void info(String msg);
+    default void info(String msg) {
+        info(null, msg);
+    }
+
+    /**
+     * Logs out information message.
+     *
+     * @param marker
+     * @param msg Information message.
+     */
+    void info(String marker, String msg);
 
     /**
      * Logs out warning message.
      *
      * @param msg Warning message.
      */
-    public void warning(String msg);
+    default void warning(String msg) {
+        warning(msg, null);
+    }
 
     /**
      * Logs out warning message with optional exception.
@@ -107,14 +139,27 @@ public interface IgniteLogger {
      * @param msg Warning message.
      * @param e Optional exception (can be {@code null}).
      */
-    public void warning(String msg, @Nullable Throwable e);
+    default void warning(String msg, @Nullable Throwable e) {
+        warning(null, msg, e);
+    }
+
+    /**
+     * Logs out warning message with optional exception.
+     *
+     * @param marker
+     * @param msg Warning message.
+     * @param e Optional exception (can be {@code null}).
+     */
+    void warning(String marker, String msg, @Nullable Throwable e);
 
     /**
      * Logs out error message.
      *
      * @param msg Error message.
      */
-    public void error(String msg);
+    default void error(String msg) {
+        error(null, msg, null);
+    }
 
     /**
      * Logs error message with optional exception.
@@ -122,40 +167,51 @@ public interface IgniteLogger {
      * @param msg Error message.
      * @param e Optional exception (can be {@code null}).
      */
-    public void error(String msg, @Nullable Throwable e);
+    default void error(String msg, @Nullable Throwable e) {
+        error(null, msg, e);
+    }
+
+    /**
+     * Logs error message with optional exception.
+     *
+     * @param marker
+     * @param msg Error message.
+     * @param e Optional exception (can be {@code null}).
+     */
+    void error(String marker, String msg, @Nullable Throwable e);
 
     /**
      * Tests whether {@code trace} level is enabled.
      *
      * @return {@code true} in case when {@code trace} level is enabled, {@code false} otherwise.
      */
-    public boolean isTraceEnabled();
+    boolean isTraceEnabled();
 
     /**
      * Tests whether {@code debug} level is enabled.
      *
      * @return {@code true} in case when {@code debug} level is enabled, {@code false} otherwise.
      */
-    public boolean isDebugEnabled();
+    boolean isDebugEnabled();
 
     /**
      * Tests whether {@code info} level is enabled.
      *
      * @return {@code true} in case when {@code info} level is enabled, {@code false} otherwise.
      */
-    public boolean isInfoEnabled();
+    boolean isInfoEnabled();
 
     /**
      * Tests whether Logger is in "Quiet mode".
      *
      * @return {@code true} "Quiet mode" is enabled, {@code false} otherwise
      */
-    public boolean isQuiet();
+    boolean isQuiet();
 
     /**
      * Gets name of the file being logged to if one is configured or {@code null} otherwise.
      *
      * @return Name of the file being logged to if one is configured or {@code null} otherwise.
      */
-    public String fileName();
+    String fileName();
 }
