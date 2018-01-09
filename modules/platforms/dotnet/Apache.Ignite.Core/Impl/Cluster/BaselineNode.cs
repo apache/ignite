@@ -58,5 +58,17 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             get { return _attributes; }
         }
+
+        /// <summary>
+        /// Writes this instance to specified writer.
+        /// </summary>
+        public static void Write(BinaryWriter writer, IBaselineNode node)
+        {
+            Debug.Assert(writer != null);
+            Debug.Assert(node != null);
+
+            writer.WriteObjectDetached(node.ConsistentId);
+            writer.WriteDictionary(node.Attributes);
+        }
     }
 }

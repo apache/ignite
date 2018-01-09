@@ -802,13 +802,7 @@ namespace Apache.Ignite.Core.Impl
                 foreach (var node in nodes)
                 {
                     cnt++;
-                    w.WriteObjectDetached(node.ConsistentId);
-
-                    var attrs = node.Attributes;
-                    if (attrs != null)
-                    {
-                        // TODO
-                    }
+                    BaselineNode.Write(w, node);
                 }
 
                 w.Stream.WriteInt(pos, cnt);
