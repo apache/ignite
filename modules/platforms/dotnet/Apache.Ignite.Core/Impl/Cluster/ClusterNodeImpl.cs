@@ -123,7 +123,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public IDictionary<string, object> GetAttributes()
         {
-            return _attrs.AsReadOnly();
+            return _attrs;
         }
 
         /** <inheritDoc /> */
