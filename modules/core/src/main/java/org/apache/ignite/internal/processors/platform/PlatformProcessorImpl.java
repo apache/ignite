@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
@@ -57,10 +58,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -136,6 +139,12 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** */
     private static final int OP_RELEASE_START = 22;
+
+    /** */
+    private static final int OP_SET_BASELINE_TOPOLOGY_VER = 23;
+
+    /** */
+    private static final int OP_SET_BASELINE_TOPOLOGY_NODES = 24;
 
     /** Start latch. */
     private final CountDownLatch startLatch = new CountDownLatch(1);
@@ -405,6 +414,10 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
                 return 0;
             }
+
+            case OP_SET_BASELINE_TOPOLOGY_VER: {
+                ctx.grid().cluster().setBaselineTopology(val);
+            }
         }
 
         return PlatformAbstractTarget.throwUnsupported(type);
@@ -421,6 +434,32 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
             case OP_LOGGER_LOG: {
                 loggerLog(reader.readInt(), reader.readString(), reader.readString(), reader.readString());
+
+                return 0;
+            }
+
+            case OP_SET_BASELINE_TOPOLOGY_NODES: {
+                int cnt = reader.readInt();
+                Collection<BaselineNode> nodes = new ArrayList<>(cnt);
+
+                for (int i = 0; i < cnt; i++) {
+                    UUID id = reader.readUuid();
+                    nodes.add(new BaselineNode() {
+                        @Override public Object consistentId() {
+                            return id;
+                        }
+
+                        @Override public <T> T attribute(String name) {
+                            return null;
+                        }
+
+                        @Override public Map<String, Object> attributes() {
+                            return null;
+                        }
+                    });
+                }
+
+                ctx.grid().cluster().setBaselineTopology(nodes);
 
                 return 0;
             }

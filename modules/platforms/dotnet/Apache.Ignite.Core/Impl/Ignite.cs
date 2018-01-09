@@ -788,7 +788,6 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public void SetBaselineTopology(IEnumerable<IClusterNode> nodes)
         {
-            // TODO: BaselineNode interface?
             IgniteArgumentCheck.NotNull(nodes, "nodes");
 
             throw new NotImplementedException();
