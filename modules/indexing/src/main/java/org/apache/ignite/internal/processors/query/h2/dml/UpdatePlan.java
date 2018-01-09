@@ -237,6 +237,8 @@ public final class UpdatePlan {
             newColVals.put(colName, DmlUtils.convert(row.get(i), rowDesc, expCls, colTypes[i]));
         }
 
+        desc.setDefaults(key, val);
+
         // We update columns in the order specified by the table for a reason - table's
         // column order preserves their precedence for correct update of nested properties.
         Column[] cols = tbl.getColumns();
@@ -274,6 +276,7 @@ public final class UpdatePlan {
      *
      * @param row Row to process.
      * @throws IgniteCheckedException if failed.
+     * @return Tuple contains: [key, old value, new value]
      */
     public T3<Object, Object, Object> processRowForUpdate(List<?> row) throws IgniteCheckedException {
         GridH2RowDescriptor rowDesc = tbl.rowDescriptor();

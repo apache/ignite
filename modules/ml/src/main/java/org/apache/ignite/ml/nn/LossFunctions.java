@@ -30,18 +30,18 @@ public class LossFunctions {
      */
     public static IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> MSE = groundTruth ->
         new IgniteDifferentiableVectorToDoubleFunction() {
-        /** {@inheritDoc} */
-        @Override public Vector differential(Vector pnt) {
-            double multiplier = 2.0 / pnt.size();
-            return pnt.minus(groundTruth).times(multiplier);
-        }
+            /** {@inheritDoc} */
+            @Override public Vector differential(Vector pnt) {
+                double multiplier = 2.0 / pnt.size();
+                return pnt.minus(groundTruth).times(multiplier);
+            }
 
-        /** {@inheritDoc} */
-        @Override public Double apply(Vector vector) {
-            return groundTruth.copy().map(vector, (a, b) -> {
-                double diff = a - b;
-                return diff * diff;
-            }).sum() / (vector.size());
-        }
-    };
+            /** {@inheritDoc} */
+            @Override public Double apply(Vector vector) {
+                return groundTruth.copy().map(vector, (a, b) -> {
+                    double diff = a - b;
+                    return diff * diff;
+                }).sum() / (vector.size());
+            }
+        };
 }
