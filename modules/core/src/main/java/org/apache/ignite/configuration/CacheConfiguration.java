@@ -181,6 +181,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default query parallelism. */
     public static final int DFLT_QUERY_PARALLELISM = 1;
 
+    /** Default value for events enabled flag. */
+    public static final boolean DFLT_EVENTS_ENABLED = true;
+
     /** Cache name. */
     private String name;
 
@@ -361,6 +364,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Cache key configuration. */
     private CacheKeyConfiguration[] keyCfg;
 
+    /** Events enabled. */
+    private boolean evtsEnabled = DFLT_EVENTS_ENABLED;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -453,6 +459,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         storeConcurrentLoadAllThreshold = cc.getStoreConcurrentLoadAllThreshold();
         maxQryIterCnt = cc.getMaxQueryIteratorsCount();
         sqlOnheapCache = cc.isSqlOnheapCacheEnabled();
+        evtsEnabled = cc.isEventsEnabled();
     }
 
     /**
@@ -2179,6 +2186,27 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** {@inheritDoc} */
     @Override public CacheConfiguration<K, V> setStoreByValue(boolean isStoreByVal) {
         super.setStoreByValue(isStoreByVal);
+
+        return this;
+    }
+
+    /**
+     * Checks whether events is enabled for this cache.
+     *
+     * @return Events enabled flag.
+     */
+    public Boolean isEventsEnabled() {
+        return evtsEnabled;
+    }
+
+    /**
+     * Sets events enabled flag.
+     *
+     * @param evtsEnabled Events enabled flag.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setEventsEnabled(boolean evtsEnabled) {
+        this.evtsEnabled = evtsEnabled;
 
         return this;
     }

@@ -372,7 +372,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
     public boolean isRecordable(int type) {
         GridCacheContext cctx0 = cctx;
 
-        return cctx0 != null && cctx0.userCache() && cctx0.gridEvents().isRecordable(type);
+        return cctx0 != null && cctx0.userCache() && cctx0.gridEvents().isRecordable(type) && cctx0.config().isEventsEnabled();
     }
 
     /** {@inheritDoc} */
