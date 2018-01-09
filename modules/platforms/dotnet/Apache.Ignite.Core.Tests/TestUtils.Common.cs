@@ -20,7 +20,9 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
+    using System.Reflection;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
@@ -45,6 +47,9 @@ namespace Apache.Ignite.Core.Tests
 
         /** */
         private const int DfltBusywaitSleepInterval = 200;
+
+        /** Work dir. */
+        private static readonly string WorkDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
         /** */
         private static readonly IList<string> TestJvmOpts = Environment.Is64BitProcess
@@ -367,6 +372,34 @@ namespace Apache.Ignite.Core.Tests
 
             return marsh.Unmarshal<T>(marsh.Marshal(obj));
 #endif
+        }
+
+        /// <summary>
+        /// Clears the work dir.
+        /// </summary>
+        public static void ClearWorkDir()
+        {
+            // Delete everything we can. Some files may be locked.
+            foreach (var e in Directory.GetFileSystemEntries(WorkDir, "*", SearchOption.AllDirectories))
+            {
+                try
+                {
+                    File.Delete(e);
+                }
+                catch (Exception)
+                {
+                    // Ignore
+                }
+
+                try
+                {
+                    Directory.Delete(e, true);
+                }
+                catch (Exception)
+                {
+                    // Ignore
+                }
+            }
         }
     }
 }

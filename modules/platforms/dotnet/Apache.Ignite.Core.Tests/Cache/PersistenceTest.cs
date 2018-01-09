@@ -46,6 +46,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 Directory.Delete(_tempDir, true);
             }
+
+            TestUtils.ClearWorkDir();
         }
 
         /// <summary>
