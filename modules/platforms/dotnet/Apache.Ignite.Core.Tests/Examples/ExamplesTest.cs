@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Tests.Examples
     using Apache.Ignite.Examples.Datagrid;
     using Apache.Ignite.Examples.Messaging;
     using Apache.Ignite.Examples.Misc;
+    using Apache.Ignite.Examples.Sql;
     using Apache.Ignite.Examples.ThinClient;
     using NUnit.Framework;
 
@@ -57,7 +58,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         private static readonly Type[] NoDllExamples =
         {
             typeof(BinaryModeExample), typeof(NearCacheExample), typeof(PeerAssemblyLoadingExample),
-            typeof(ThinClientPutGetExample)
+            typeof(ThinClientPutGetExample), typeof(SqlExample), typeof(LinqExample), typeof(SqlDmlExample)
         };
 
         /** Config file path. */

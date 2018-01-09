@@ -31,14 +31,13 @@ namespace Apache.Ignite.Examples.Sql
     /// This example populates cache with sample data and runs several LINQ queries over this data.
     /// <para />
     /// 1) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build).
-    ///    Apache.Ignite.ExamplesDll.dll must appear in %IGNITE_HOME%/platforms/dotnet/examples/Apache.Ignite.ExamplesDll/bin/${Platform]/${Configuration} folder.
     /// 2) Set this class as startup object (Apache.Ignite.Examples project -> right-click -> Properties ->
     ///     Application -> Startup object);
     /// 3) Start example (F5 or Ctrl+F5).
     /// <para />
     /// This example can be run with standalone Apache Ignite.NET node:
     /// 1) Run %IGNITE_HOME%/platforms/dotnet/bin/Apache.Ignite.exe:
-    /// Apache.Ignite.exe -configFileName=platforms\dotnet\examples\apache.ignite.examples\app.config -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
+    /// Apache.Ignite.exe -configFileName=platforms\dotnet\examples\apache.ignite.examples\app.config
     /// 2) Start example.
     /// </summary>
     public class LinqExample
