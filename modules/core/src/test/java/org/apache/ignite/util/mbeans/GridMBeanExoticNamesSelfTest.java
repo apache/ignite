@@ -25,24 +25,20 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Disabling MBeans test.
+ * Testing registration of MBeans with special characters in group name or bean name.
  */
 public class GridMBeanExoticNamesSelfTest extends GridCommonAbstractTest {
-    /** Test registration of a bean with special characters in group name */
+    /** Test registration of a bean with special characters in group name. */
     public void testGroupWithSpecialSymbols() throws Exception {
         checkMBeanRegistration("dummy!@#$^&*()?\\grp", "dummy");
     }
 
-    /** Test registration of a bean with special characters in name */
+    /** Test registration of a bean with special characters in name. */
     public void testNameWithSpecialSymbols() throws Exception {
         checkMBeanRegistration("dummygrp", "dum!@#$^&*()?\\my");
     }
 
-    /**
-     * Test MBean registration.
-     *
-     * @throws Exception Thrown if test fails.
-     */
+    /** Test MBean registration. */
     private void checkMBeanRegistration(String grp, String name) throws Exception {
         // Node should start and stop with no errors.
         try (Ignite ignite = startGrid(0)) {
