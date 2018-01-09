@@ -19,22 +19,15 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.elb;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
-import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
 import com.amazonaws.services.elasticloadbalancing.AmazonElasticLoadBalancing;
 import com.amazonaws.services.elasticloadbalancing.AmazonElasticLoadBalancingClientBuilder;
-import com.amazonaws.services.elasticloadbalancing.model.DescribeLoadBalancersRequest;
-import com.amazonaws.services.elasticloadbalancing.model.Instance;
-import com.amazonaws.services.elasticloadbalancing.model.LoadBalancerDescription;
+import java.net.InetSocketAddress;
+import java.util.Collection;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
 
-import java.net.InetSocketAddress;
-import java.util.Collection;
-import java.util.List;
-
 import static com.amazonaws.util.StringUtils.isNullOrEmpty;
-import static java.util.stream.Collectors.toList;
 
 /**
  * AWS ELB-based IP finder.
@@ -89,22 +82,8 @@ public class TcpDiscoveryElbIpFinder extends TcpDiscoveryIpFinderAdapter {
     public Collection<InetSocketAddress> getRegisteredAddresses() throws IgniteSpiException {
         initClients();
 
-        DescribeLoadBalancersRequest req = new DescribeLoadBalancersRequest().withLoadBalancerNames(loadBalancerName);
-
-        List<String> instanceIds = amazonELBClient.describeLoadBalancers(req)
-            .getLoadBalancerDescriptions()
-            .stream()
-            .map(LoadBalancerDescription::getInstances)
-            .flatMap(instances -> instances.stream())
-            .map(Instance::getInstanceId)
-            .collect(toList());
-
-        return amazonEC2Client.describeInstances(new DescribeInstancesRequest().withInstanceIds(instanceIds))
-            .getReservations()
-            .stream()
-            .flatMap(reservation -> reservation.getInstances().stream())
-            .map(instance -> new InetSocketAddress(instance.getPrivateIpAddress(), 0))
-            .collect(toList());
+        // TODO ZK
+        return null;
     }
 
     /**
