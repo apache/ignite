@@ -60,6 +60,16 @@ namespace Apache.Ignite.Core.Cluster
         bool TryGetAttribute<T>(string name, out T attr);
 
         /// <summary>
+        /// Gets all node attributes. Attributes are assigned to nodes at startup.
+        /// <para />
+        /// Note that attributes cannot be changed at runtime.
+        /// </summary>
+        /// <returns>All node attributes.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
+        [Obsolete]
+        IDictionary<string, object> GetAttributes();
+
+        /// <summary>
         /// Collection of addresses this node is known by. 
         /// </summary>
         /// <returns>Collection of addresses.</returns>

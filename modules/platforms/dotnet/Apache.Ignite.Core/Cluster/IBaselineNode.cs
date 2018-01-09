@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Cluster
 {
     using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// Baseline topology node (see <see cref="ICluster.GetBaselineTopology"/>).
@@ -32,11 +31,7 @@ namespace Apache.Ignite.Core.Cluster
 
         /// <summary>
         /// Gets all node attributes. Attributes are assigned to nodes at startup.
-        /// <para />
-        /// Note that attributes cannot be changed at runtime.
         /// </summary>
-        /// <returns>All node attributes.</returns>
-        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
-        IDictionary<string, object> GetAttributes();
+        IDictionary<string, object> Attributes { get; }
     }
 }

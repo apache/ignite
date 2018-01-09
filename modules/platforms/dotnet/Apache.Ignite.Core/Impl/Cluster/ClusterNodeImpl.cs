@@ -185,7 +185,16 @@ namespace Apache.Ignite.Core.Impl.Cluster
         }
 
         /** <inheritDoc /> */
-        public object ConsistentId { get { return _consistentId; } }
+        public object ConsistentId
+        {
+            get { return _consistentId; }
+        }
+
+        /** <inheritDoc /> */
+        public IDictionary<string, object> Attributes
+        {
+            get { return _attrs; }
+        }
 
         /** <inheritDoc /> */
         public bool IsClient

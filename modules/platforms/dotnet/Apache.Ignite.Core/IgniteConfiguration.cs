@@ -1095,7 +1095,7 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Gets or sets the user attributes for this node.
         /// <para />
-        /// These attributes can be retrieved later via <see cref="IClusterNode.GetAttributes"/>.
+        /// These attributes can be retrieved later via <see cref="IBaselineNode.Attributes"/>.
         /// Environment variables are added to node attributes automatically.
         /// NOTE: attribute names starting with "org.apache.ignite" are reserved for internal use.
         /// </summary>

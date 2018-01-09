@@ -801,9 +801,14 @@ namespace Apache.Ignite.Core.Impl
 
                 foreach (var node in nodes)
                 {
-                    // TODO: What if the node is already offline?
                     cnt++;
                     w.WriteObjectDetached(node.ConsistentId);
+
+                    var attrs = node.Attributes;
+                    if (attrs != null)
+                    {
+                        // TODO
+                    }
                 }
 
                 w.Stream.WriteInt(pos, cnt);

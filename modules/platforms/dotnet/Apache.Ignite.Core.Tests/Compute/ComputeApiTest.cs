@@ -142,9 +142,13 @@ namespace Apache.Ignite.Core.Tests.Compute
                 Assert.IsTrue(node.Addresses.Count > 0);
                 Assert.Throws<NotSupportedException>(() => node.Addresses.Add("addr"));
 
-                Assert.NotNull(node.GetAttributes());
-                Assert.IsTrue(node.GetAttributes().Count > 0);
-                Assert.Throws<NotSupportedException>(() => node.GetAttributes().Add("key", "val"));
+                Assert.NotNull(node.Attributes);
+                Assert.IsTrue(node.Attributes.Count > 0);
+                Assert.Throws<NotSupportedException>(() => node.Attributes.Add("key", "val"));
+
+#pragma warning disable 612
+                Assert.AreSame(node.Attributes, node.GetAttributes());
+#pragma warning restore 612
 
                 Assert.NotNull(node.HostNames);
                 Assert.Throws<NotSupportedException>(() => node.HostNames.Add("h"));
