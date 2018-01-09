@@ -56,7 +56,7 @@ public class TracerExample {
         Tracer.showAscii(m, "%.3g");
 
         System.out.println("\n>>> Tracer output to browser in HTML.");
-        Tracer.showHtml(m, COLOR_MAPPER);
+        Tracer.showHtmlWithAsciiFallback(m, COLOR_MAPPER);
 
         System.out.println("\n>>> Tracer utility example completed.");
     }

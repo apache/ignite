@@ -26,7 +26,6 @@ import java.util.Optional;
 import org.apache.ignite.ml.math.impls.MathTestConstants;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.nio.file.Files.createTempFile;
@@ -109,7 +108,6 @@ public class TracerTest {
      *
      */
     @Test
-    @Ignore("Can not run on TeamCity yet, see IGNITE-5725")
     public void testHtmlVectorTracer() throws IOException {
         Vector vec1 = makeRandomVector(1000);
 
@@ -117,7 +115,7 @@ public class TracerTest {
         Tracer.showHtml(vec1);
 
         // Custom color mapping.
-        Tracer.showHtml(vec1, COLOR_MAPPER);
+        Tracer.showHtmlWithAsciiFallback(vec1, COLOR_MAPPER);
 
         // Default color mapping with sorted vector.
         Tracer.showHtml(vec1.sort());
@@ -127,12 +125,11 @@ public class TracerTest {
      *
      */
     @Test
-    @Ignore("Can not run on TeamCity yet, see IGNITE-5725")
     public void testHtmlMatrixTracer() throws IOException {
         Matrix mtx1 = makeRandomMatrix(100, 100);
 
         // Custom color mapping.
-        Tracer.showHtml(mtx1, COLOR_MAPPER);
+        Tracer.showHtmlWithAsciiFallback(mtx1, COLOR_MAPPER);
 
         Matrix mtx2 = new DenseLocalOnHeapMatrix(100, 100);
 

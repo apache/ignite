@@ -252,6 +252,21 @@ public class Tracer {
     }
 
     /**
+     * Shows given matrix in the browser with D3-based visualization if browse is supported, otherwise uses ascii
+     * format to show the matrix.
+     *
+     * @param mtx Matrix to show.
+     * @param cm Optional color mapper. If not provided - red-to-blue (R_B) mapper will be used.
+     * @throws IOException Thrown in case of any errors.
+     */
+    public static void showHtmlWithAsciiFallback(Matrix mtx, ColorMapper cm) throws IOException {
+        if (isBrowseSupported())
+            showHtml(mtx, cm);
+        else
+            showAscii(mtx);
+    }
+
+    /**
      * Shows given vector in the browser with D3-based visualization.
      *
      * @param vec Vector to show.
@@ -297,6 +312,25 @@ public class Tracer {
             replaceAll("/\\*@MAX@\\*/.*\n", "var max = " + dataColorJson(max, cm.apply(max)) + ";\n").
             replaceAll("/\\*@DATA@\\*/.*\n", "var data = " + mkJsArrayString(vec, cm) + ";\n")
         );
+    }
+
+    /**
+     * Shows given vector in the browser with D3-based visualization if browse is supported, otherwise uses ascii
+     * format to show the vector.
+     *
+     * @param vec Vector to show.
+     * @param cm Optional color mapper. If not provided - red-to-blue (R_B) mapper will be used.
+     * @throws IOException Thrown in case of any errors.
+     */
+    public static void showHtmlWithAsciiFallback(Vector vec, ColorMapper cm) throws IOException {
+        if (isBrowseSupported())
+            showHtml(vec, cm);
+        else
+            showAscii(vec);
+    }
+
+    private static boolean isBrowseSupported() {
+        return Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE);
     }
 
     /**
