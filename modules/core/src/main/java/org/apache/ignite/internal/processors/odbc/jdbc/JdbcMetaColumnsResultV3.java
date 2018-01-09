@@ -15,18 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.nn.updaters;
+package org.apache.ignite.internal.processors.odbc.jdbc;
+
+import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * A common interface for parameter updaters.
- *
- * @param <T> Type of object to be updated with this params.
+ * JDBC columns metadata result.
  */
-public interface UpdaterParams<T> {
+public class JdbcMetaColumnsResultV3 extends JdbcMetaColumnsResult {
     /**
-     * Update given obj with this parameters.
-     *
-     * @param obj Object to be updated.
+     * Default constructor is used for deserialization.
      */
-    <M extends T> M update(M obj);
+    JdbcMetaColumnsResultV3() {
+        super(META_COLUMNS_V3);
+    }
+
+    /**
+     * @param meta Columns metadata.
+     */
+    JdbcMetaColumnsResultV3(Collection<JdbcColumnMeta> meta) {
+        super(META_COLUMNS_V3, meta);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected JdbcColumnMeta createMetaColumn() {
+        return new JdbcColumnMetaV3();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcMetaColumnsResultV3.class, this);
+    }
 }
