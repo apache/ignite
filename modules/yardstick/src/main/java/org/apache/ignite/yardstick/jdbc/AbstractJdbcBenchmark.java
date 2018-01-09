@@ -78,8 +78,11 @@ abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
                             }
                         }
 
-                        if (url != null)
-                            break;
+                        if (url == null) {
+                            url = JdbcThinUtils.URL_PREFIX + "127.0.0.1" + '/';
+                            println("Found another client node on localhost");
+                        }
+                        break;
                     }
                 }
             }
