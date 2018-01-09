@@ -52,6 +52,9 @@
     <Reference Include="System.Transactions" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Sql\LinqExample.cs" />
+    <Compile Include="Sql\QueryDmlExample.cs" />
+    <Compile Include="Sql\QueryExample.cs" />
     <Compile Include="ThinClient\ThinClientPutGetExample.cs" />
     <Compile Include="ThinClient\ThinClientQueryExample.cs" />
     <Compile Include="Compute\ClosureExample.cs" />
@@ -64,9 +67,7 @@
     <Compile Include="Datagrid\NearCacheExample.cs" />
     <Compile Include="Datagrid\OptimisticTransactionExample.cs" />
     <Compile Include="Datagrid\PutGetExample.cs" />
-    <Compile Include="Datagrid\LinqExample.cs" />
     <Compile Include="Datagrid\BinaryModeExample.cs" />
-    <Compile Include="Datagrid\QueryDmlExample.cs" />
     <Compile Include="Datagrid\QueryExample.cs" />
     <Compile Include="Datagrid\StoreExample.cs" />
     <Compile Include="Datagrid\TransactionDeadlockDetectionExample.cs" />

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Examples.Datagrid
+namespace Apache.Ignite.Examples.Sql
 {
     using System;
     using Apache.Ignite.Core;
