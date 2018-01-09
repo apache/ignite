@@ -79,8 +79,14 @@ class QuickSortRecursiveTask implements Callable<Void> {
         if (remaining == 0)
             return null;
 
-        if (isUnderThreshold(remaining)) {
-            buf.sort(settings.comp);
+        final boolean preSorted = buf.isSortedUsingComparator(settings.comp);
+
+        if (preSorted || isUnderThreshold(remaining)) {
+            if (!preSorted)
+                buf.sort(settings.comp);
+            else
+                //todo remove (? validate order)
+                System.out.print("Presorted set having " + buf.remaining() + " elements; ");
 
             int subArrays = (remaining / ONE_WRITE_CHUNK_THRESHOLD) + 1;
 

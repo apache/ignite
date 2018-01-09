@@ -18,11 +18,13 @@
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.SortedSet;
 import org.apache.ignite.configuration.CheckpointWriteOrder;
@@ -64,30 +66,11 @@ public class CheckpointScope {
                 Integer bucketIdx = next.getKey();
                 MultiSetCollector collector = next.getValue();
 
-                int locIdx = 0;
-                FullPageId[] independentPageId = new FullPageId[collector.size()];
+                final FullPageIdsBuffer buf = mergeSetsForBucket(bucketIdx, collector);
 
-                for (Set<FullPageId> set : collector.unmergedSets) {
-                    if(set instanceof SortedSet) {
-                        final SortedSet sortedSet = (SortedSet)set;
+                globalIdx += buf.remaining();
 
-                        if(sortedSet.comparator() == GridCacheDatabaseSharedManager.SEQUENTIAL_CP_PAGE_COMPARATOR) {
-                            //this set is already sorted.
-                            //System.err.print(""); //todo remove
-                        }
-                    }
-
-                    for (FullPageId pageId : set) {
-                        independentPageId[locIdx] = pageId;
-                        locIdx++;
-                        globalIdx++;
-
-                        assert bucketIdx.equals(PagesConcurrentHashSet.getBucketIndex(pageId));
-                    }
-                }
-
-                //actual number of pages may be less
-                buffers.add(new FullPageIdsBuffer(independentPageId, 0, locIdx));
+                buffers.add(buf);
 
             }
         }
@@ -96,6 +79,98 @@ public class CheckpointScope {
 
         return buffers;
     }
+
+    //todo javadoc, create buffer instead of list
+    public static <E> List<E> merge(Iterable<Set<E>> lists, Comparator<E> comp) {
+        PriorityQueue<CompIterator<E>> queue = new PriorityQueue<>();
+        for (Set<? extends E> list : lists)
+            if (!list.isEmpty())
+                queue.add(new CompIterator<E>(comp, list.iterator()));
+
+        List<E> merged = new ArrayList<E>();
+        while (!queue.isEmpty()) {
+            CompIterator<E> next = queue.remove();
+            final E element = next.next();
+            assert element != null;
+            merged.add(element);
+            if (next.hasNext())
+                queue.add(next);
+        }
+
+        return merged;
+    }
+
+    //todo javadoc
+    private static class CompIterator<E> implements Iterator<E>, Comparable<CompIterator<E>> {
+        /** Peek elem. */
+        private E peekElem;
+        /** Comparator. */
+        private Comparator<E> comp;
+        /** Iterator */
+        private Iterator<? extends E> it;
+
+        public CompIterator(Comparator<E> comp, Iterator<? extends E> it) {
+            this.comp = comp;
+            this.it = it;
+            if (it.hasNext()) peekElem = it.next();
+            else peekElem = null;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return peekElem != null;
+        }
+
+        @Override
+        public E next() {
+            E ret = peekElem;
+            if (it.hasNext()) peekElem = it.next();
+            else peekElem = null;
+            return ret;
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int compareTo(CompIterator<E> o) {
+            if (peekElem == null) return 1;
+            else return comp.compare(peekElem, o.peekElem);
+        }
+
+    }
+
+    private FullPageIdsBuffer mergeSetsForBucket(Integer bucketIdx, MultiSetCollector collector) {
+        Comparator<FullPageId> comp = GridCacheDatabaseSharedManager.SEQUENTIAL_CP_PAGE_COMPARATOR;
+
+        if(collector.isSorted(comp)) {
+            final List<FullPageId> merge = merge(collector.unmergedSets, comp);
+
+            FullPageId[] pageIds = merge.toArray(new FullPageId[merge.size()]);
+            FullPageIdsBuffer buf = new FullPageIdsBuffer(pageIds, 0, merge.size());
+            buf.setSortedUsingComparator(comp);
+
+            return buf;
+        }
+
+        int locIdx = 0;
+        FullPageId[] pageIds = new FullPageId[collector.size()];
+
+        for (Set<FullPageId> set : collector.unmergedSets) {
+            for (FullPageId pageId : set) {
+                pageIds[locIdx] = pageId;
+                locIdx++;
+
+                assert bucketIdx.equals(PagesConcurrentHashSet.getBucketIndex(pageId));
+            }
+        }
+
+        //actual number of pages may be less
+        return new FullPageIdsBuffer(pageIds, 0, locIdx);
+    }
+
 
     /**
      * Adds several striped sets of pages from data region.
@@ -123,6 +198,10 @@ public class CheckpointScope {
         return calcPagesNum() > 0;
     }
 
+    /**
+     * @return calculated page's number from all regions and all buckets, actual size may became less because eviction
+     * can write pages in parallel with checkpoint.
+     */
     private int calcPagesNum() {
         if (pagesNum < 0) {
             int sum = 0;
@@ -233,6 +312,23 @@ public class CheckpointScope {
          */
         public void add(Set<FullPageId> set) {
             unmergedSets.add(set);
+        }
+
+        /**
+         * @return Returns {@code true} if all sets are presorted.
+         * @param comparator
+         */
+        public boolean isSorted(Comparator<FullPageId> comparator) {
+            for (Set<FullPageId> next : unmergedSets) {
+                if (!(next instanceof SortedSet))
+                    return false;
+
+                SortedSet sortedSet = (SortedSet)next;
+
+                if (sortedSet.comparator() != comparator)
+                    return false;
+            }
+            return true;
         }
     }
 }

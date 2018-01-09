@@ -16,10 +16,12 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import java.util.Comparator;
 import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
+import org.jsr166.LongAdder8;
 
 /**
  *
@@ -29,6 +31,52 @@ public class PagesStripedSkipListSet extends PagesConcurrentHashSet {
      * @return created new set for bucket data storage.
      */
     @Override protected Set<FullPageId> createNewSet() {
-        return new ConcurrentSkipListSet<>(GridCacheDatabaseSharedManager.SEQUENTIAL_CP_PAGE_COMPARATOR);
+        return new GridConcurrentSkipListSetEx<>(GridCacheDatabaseSharedManager.SEQUENTIAL_CP_PAGE_COMPARATOR);
+    }
+
+    /**
+     * Provides overriden method {@code #size ()}. NOTE: Only the following methods supports this addition: <ul>
+     * <li>{@code #add()}</li> <li>{@code #remove()}</li> <ul/>
+     */
+    private static class GridConcurrentSkipListSetEx<E> extends GridConcurrentSkipListSet<E> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Size. */
+        private final LongAdder8 size = new LongAdder8();
+
+        /**
+         * @param comp Comparator.
+         */
+        public GridConcurrentSkipListSetEx(Comparator<E> comp) {
+            super(comp);
+        }
+
+        /**
+         * @return Size based on performed operations.
+         */
+        @Override public int size() {
+            return size.intValue();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean add(E e) {
+            boolean res = super.add(e);
+
+            if (res)
+                size.increment();
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean remove(Object o) {
+            boolean res = super.remove(o);
+
+            if (res)
+                size.decrement();
+
+            return res;
+        }
     }
 }

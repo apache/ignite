@@ -854,12 +854,17 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             sets[i] = seg.segCheckpointPages = seg.segDirtyPages;
 
-            seg.segDirtyPages = new PagesConcurrentHashSet();
+            seg.segDirtyPages = createPagesSet();
         }
 
         memMetrics.resetDirtyPages();
 
         return sets;
+    }
+
+    //todo option
+    private PagesConcurrentHashSet createPagesSet() {
+        return false ? new PagesConcurrentHashSet() : new PagesStripedSkipListSet();
     }
 
     /** {@inheritDoc} */
@@ -1684,7 +1689,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         private long memPerTbl;
 
         /** Pages marked as dirty since the last checkpoint. */
-        private PagesConcurrentHashSet segDirtyPages = new PagesConcurrentHashSet();
+        private PagesConcurrentHashSet segDirtyPages = createPagesSet();
 
         /** Pages under current checkpoint. */
         private volatile PagesConcurrentHashSet segCheckpointPages;

@@ -37,6 +37,9 @@ public class FullPageIdsBuffer {
     /** Limit. Index of last element, exclusive. */
     private final int limit;
 
+    /** Cached comparator used for sorting this buffer. */
+    private Comparator<FullPageId> sortedUsingComparator;
+
     /**
      * @param arr Array.
      * @param position Position.
@@ -69,6 +72,8 @@ public class FullPageIdsBuffer {
      */
     public void sort(Comparator<FullPageId> comp) {
         Arrays.sort(arr, position, limit, comp);
+
+        setSortedUsingComparator(comp);
     }
 
     /**
@@ -134,5 +139,14 @@ public class FullPageIdsBuffer {
         }
 
         return res;
+    }
+
+    //todo javadoc
+    public void setSortedUsingComparator(Comparator<FullPageId> sorted) {
+        this.sortedUsingComparator = sorted;
+    }
+
+    public boolean isSortedUsingComparator(Comparator<FullPageId> comp) {
+        return sortedUsingComparator!=null && sortedUsingComparator == comp;
     }
 }
