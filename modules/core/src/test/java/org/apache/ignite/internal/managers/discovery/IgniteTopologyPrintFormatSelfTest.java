@@ -253,7 +253,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
         private List<String> logs = new ArrayList<>();
 
         /**  {@inheritDoc} */
-        @Override public void debug(String msg) {
+        @Override public void debug(String marker, String msg) {
             if ((msg != null && !msg.isEmpty()) && (
                 msg.contains(TOPOLOGY_SNAPSHOT)
                     || msg.contains(SERV_NODE)
@@ -264,7 +264,7 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void info(String msg) {
+        @Override public void info(String marker, String msg) {
             if ((msg != null && !msg.isEmpty()) && (
                 msg.contains(TOPOLOGY_SNAPSHOT)
                 || msg.contains(SERV_NODE)
