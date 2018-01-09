@@ -175,6 +175,10 @@ public class ZookeeperClient implements Watcher {
                 Event.KeeperState zkState = evt.getState();
 
                 switch (zkState) {
+                    case SaslAuthenticated:
+                        // No-op.
+                        return;
+
                     case Disconnected:
                         newState = ConnectionState.Disconnected;
 
