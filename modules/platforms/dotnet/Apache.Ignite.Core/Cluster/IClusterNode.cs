@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Cluster
     /// <para/>
     /// All members are thread-safe and may be used concurrently from multiple threads.
     /// </summary>
-    public interface IClusterNode
+    public interface IClusterNode : IBaselineNode
     {
         /// <summary>
         /// Globally unique node ID. A new ID is generated every time a node restarts.
@@ -131,10 +131,5 @@ namespace Apache.Ignite.Core.Cluster
         /// <returns>Runtime metrics snapshot for this node.</returns>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         IClusterMetrics GetMetrics();
-
-        /// <summary>
-        /// Gets the consistent ID from <see cref="IgniteConfiguration.ConsistentId"/>.
-        /// </summary>
-        object ConsistentId { get; }
     }
 }
