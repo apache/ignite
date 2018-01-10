@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Default idle timeout.
         /// </summary>
-        public static TimeSpan DefaultIdleTimeout = TimeSpan.Zero;
+        public static readonly TimeSpan DefaultIdleTimeout = TimeSpan.Zero;
 
         /// <summary>
         /// Default value for <see cref="ThinClientEnabled"/> property.

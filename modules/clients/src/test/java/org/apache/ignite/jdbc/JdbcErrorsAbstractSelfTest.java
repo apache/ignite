@@ -115,7 +115,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * @throws SQLException if failed.
      */
     public void testUnsupportedSql() throws SQLException {
-        checkErrorState("ALTER TABLE \"test\".Integer DROP COLUMN _key", "0A000");
+        checkErrorState("ALTER TABLE \"test\".Integer MODIFY COLUMN _key CHAR", "0A000");
     }
 
     /**
