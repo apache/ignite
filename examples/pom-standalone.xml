@@ -27,11 +27,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <!-- maven-compiler-plugin options to run java-1.8 by default -->
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
 
-        <!-- Prevent "[WARNING] ... i.e. build is platform dependent!" -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- will be changed by profile activation. allows to combine profiles. -->

@@ -33,7 +33,6 @@
     </parent>
 
     <properties>
-        <!-- maven-compiler-plugin options to run java-1.8 by default -->
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
 

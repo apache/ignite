@@ -103,7 +103,7 @@
     </dependencies>
 
     <properties>
-        <!-- Will be changed by profile activation. Allows to combine profiles. -->
+        <!-- will be changed by profile activation. allows to combine profiles. -->
         <lgpl.folder>src/main/java</lgpl.folder>
         <lgpl.test.folder>src/test/java</lgpl.test.folder>
         <spark.folder>src/main/java</spark.folder>
@@ -258,9 +258,7 @@
                         <configuration>
                             <sources>
                                 <source>${lgpl.folder}</source>
-                                <source>src/main/java</source>
                                 <source>${spark.folder}</source>
-                                <source>src/main/ml</source>
                             </sources>
                         </configuration>
                     </execution>
@@ -275,7 +273,6 @@
                             <sources>
                                 <source>${lgpl.test.folder}</source>
                                 <source>${spark.test.folder}</source>
-                                <source>src/test/java</source>
                             </sources>
                         </configuration>
                     </execution>
