@@ -194,6 +194,8 @@ public class CacheGroupContext {
         this.cacheType = cacheType;
         this.walEnabled = walEnabled;
 
+        persistWalStateIfNeeded(!walEnabled);
+
         ioPlc = cacheType.ioPolicy();
 
         depEnabled = ctx.kernalContext().deploy().enabled() && !ctx.kernalContext().cacheObjects().isBinaryEnabled(ccfg);
@@ -1007,9 +1009,19 @@ public class CacheGroupContext {
     }
 
     /**
-     * @param walEnabled WAL enabled flag.
+     * @param enabled WAL enabled flag.
      */
-    public void walEnabled(boolean walEnabled) {
-        this.walEnabled = walEnabled;
+    public void walEnabled(boolean enabled) {
+        persistWalStateIfNeeded(!enabled);
+
+        this.walEnabled = enabled;
+    }
+
+    /**
+     * @param disabled Disabled.
+     */
+    private void persistWalStateIfNeeded(boolean disabled) {
+        if (disabled && shared().pageStore() != null)
+            shared().pageStore().walDisabled(grpId, disabled);
     }
 }

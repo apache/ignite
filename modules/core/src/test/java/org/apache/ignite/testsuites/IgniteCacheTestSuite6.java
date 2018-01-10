@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.WalModeChangeFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeCoordinatorNotAffinityNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheExchangeMergeTest;
@@ -61,6 +62,7 @@ public class IgniteCacheTestSuite6 extends TestSuite {
 
         suite.addTestSuite(WalModeChangeSelfTest.class);
         suite.addTestSuite(WalModeChangeCoordinatorNotAffinityNodeSelfTest.class);
+        suite.addTestSuite(WalModeChangeFailoverSelfTest.class);
 
 //        TODO enable this test after IGNITE-6753, now it takes too long
 //        suite.addTestSuite(IgniteOutOfMemoryPropagationTest.class);
