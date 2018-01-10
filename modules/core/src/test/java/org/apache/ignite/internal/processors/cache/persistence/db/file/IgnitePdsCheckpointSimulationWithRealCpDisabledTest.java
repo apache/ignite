@@ -66,7 +66,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesConcurrentHashSet;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesStripedConcurrentHashSet;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
@@ -559,13 +559,13 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
             ig.context().cache().context().database().checkpointReadUnlock();
         }
 
-        PagesConcurrentHashSet[] cpPages = mem.beginCheckpoint();
+        PagesStripedConcurrentHashSet[] cpPages = mem.beginCheckpoint();
 
         ig.context().cache().context().database().checkpointReadLock();
 
         try {
             for (FullPageId fullId : pageIds) {
-                assertTrue(PagesConcurrentHashSet.contains(cpPages, fullId));
+                assertTrue(PagesStripedConcurrentHashSet.contains(cpPages, fullId));
 
                 ByteBuffer buf = ByteBuffer.allocate(mem.pageSize());
 
@@ -854,7 +854,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         while (checkpoints > 0) {
             Map<FullPageId, Integer> snapshot = null;
 
-            PagesConcurrentHashSet[] pageIds;
+            PagesStripedConcurrentHashSet[] pageIds;
 
             updLock.writeLock().lock();
 
@@ -869,7 +869,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                     // No more writes should be done at this point.
                     run.set(false);
 
-                info("Acquired pages for checkpoint: " + PagesConcurrentHashSet.size(pageIds));
+                info("Acquired pages for checkpoint: " + PagesStripedConcurrentHashSet.size(pageIds));
             }
             finally {
                 updLock.writeLock().unlock();
@@ -888,7 +888,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
                 long write = 0;
 
-                for (PagesConcurrentHashSet concurrentHashSet : pageIds) {
+                for (PagesStripedConcurrentHashSet concurrentHashSet : pageIds) {
                     for (Set<FullPageId> next : concurrentHashSet) {
                         for (FullPageId fullId : next) {
                             long cpStart = System.nanoTime();

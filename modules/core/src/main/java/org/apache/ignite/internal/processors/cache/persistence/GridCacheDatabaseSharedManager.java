@@ -111,7 +111,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesConcurrentHashSet;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesStripedConcurrentHashSet;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
@@ -1809,13 +1809,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         Collection<DataRegion> memPolicies = context().database().dataRegions();
 
-        List<IgniteBiTuple<PageMemory, PagesConcurrentHashSet[]>> cpEntities = new ArrayList<>(memPolicies.size());
+        List<IgniteBiTuple<PageMemory, PagesStripedConcurrentHashSet[]>> cpEntities = new ArrayList<>(memPolicies.size());
 
         for (DataRegion memPlc : memPolicies) {
             if (memPlc.config().isPersistenceEnabled()) {
                 PageMemoryEx pageMem = (PageMemoryEx)memPlc.pageMemory();
 
-                cpEntities.add(new IgniteBiTuple<PageMemory, PagesConcurrentHashSet[]>(pageMem, pageMem.beginCheckpoint()));
+                cpEntities.add(new IgniteBiTuple<PageMemory, PagesStripedConcurrentHashSet[]>(pageMem, pageMem.beginCheckpoint()));
             }
         }
 
@@ -1826,12 +1826,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         int cpPagesCnt = 0;
 
-        for (IgniteBiTuple<PageMemory, PagesConcurrentHashSet[]> e : cpEntities) {
+        for (IgniteBiTuple<PageMemory, PagesStripedConcurrentHashSet[]> e : cpEntities) {
             PageMemoryEx pageMem = (PageMemoryEx)e.get1();
 
-            PagesConcurrentHashSet[] cpPages = e.get2();
+            PagesStripedConcurrentHashSet[] cpPages = e.get2();
 
-            for (PagesConcurrentHashSet set : cpPages) {
+            for (PagesStripedConcurrentHashSet set : cpPages) {
                 for (Set<FullPageId> innerSet : set) {
                     for (FullPageId fullId : innerSet) {
 
@@ -1861,7 +1861,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         long fsync = U.currentTimeMillis();
 
-        for (IgniteBiTuple<PageMemory, PagesConcurrentHashSet[]> e : cpEntities)
+        for (IgniteBiTuple<PageMemory, PagesStripedConcurrentHashSet[]> e : cpEntities)
             ((PageMemoryEx)e.get1()).finishCheckpoint();
 
         writeCheckpointEntry(

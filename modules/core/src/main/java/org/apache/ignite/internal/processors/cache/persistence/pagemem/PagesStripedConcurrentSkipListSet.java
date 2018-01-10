@@ -24,9 +24,13 @@ import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
 import org.jsr166.LongAdder8;
 
 /**
- *
+ * Special set to store page IDs in buckets based on cache Group ID + partition ID.
+ * Stripes pages by value of Hash(cacheGroupId,partitionId) into several sets.
+ * Inner set for buckets in this implementation is sorted (skip list) set.
+ * Inner sets can be taken at checkpoint, and then merged into one sorted set for each stripe.
+ * Using this implementation avoids sorting at checkpointer thread(s).
  */
-public class PagesStripedSkipListSet extends PagesConcurrentHashSet {
+public class PagesStripedConcurrentSkipListSet extends PagesStripedConcurrentHashSet {
     /**
      * @return created new set for bucket data storage.
      */
@@ -35,8 +39,8 @@ public class PagesStripedSkipListSet extends PagesConcurrentHashSet {
     }
 
     /**
-     * Provides overriden method {@code #size ()}. NOTE: Only the following methods supports this addition: <ul>
-     * <li>{@code #add()}</li> <li>{@code #remove()}</li> <ul/>
+     * Provides overriden method {@code #size()}. NOTE: Only the following methods supports this addition: <ul>
+     * <li>{@code #add()}</li> <li>{@code #remove()}</li> </ul>. Usage of other methods may make size inconsistent.
      */
     private static class GridConcurrentSkipListSetEx<E> extends GridConcurrentSkipListSet<E> {
         /** */

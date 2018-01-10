@@ -85,8 +85,17 @@ class QuickSortRecursiveTask implements Callable<Void> {
             if (!preSorted)
                 buf.sort(settings.comp);
             else
-                //todo remove (? validate order)
-                System.out.print("Presorted set having " + buf.remaining() + " elements; ");
+            {
+                // validate order of elements presorted.
+                FullPageId prevId = null;
+                for (int i = buf.position(); i < buf.limit(); i++) {
+                    FullPageId id = buf.internalArray()[i];
+
+                    assert prevId == null || settings.comp.compare(id, prevId) >= 0 : "Invalid order of element in presorted set";
+
+                    prevId = id;
+                }
+            }
 
             int subArrays = (remaining / ONE_WRITE_CHUNK_THRESHOLD) + 1;
 

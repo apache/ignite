@@ -703,7 +703,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         FullPageId fullPageId = new FullPageId(pageId, cacheId);
 
-        PagesConcurrentHashSet pages0 = seg.segCheckpointPages;
+        PagesStripedConcurrentHashSet pages0 = seg.segCheckpointPages;
 
         if (pages0 != null)
             pages0.remove(fullPageId);
@@ -841,10 +841,9 @@ public class PageMemoryImpl implements PageMemoryEx {
         return res;
     }
 
-
     /** {@inheritDoc} */
-    @Override public PagesConcurrentHashSet[] beginCheckpoint() throws IgniteException {
-        PagesConcurrentHashSet[] sets = new PagesConcurrentHashSet[segments.length];
+    @Override public PagesStripedConcurrentHashSet[] beginCheckpoint() throws IgniteException {
+        PagesStripedConcurrentHashSet[] sets = new PagesStripedConcurrentHashSet[segments.length];
 
         for (int i = 0; i < segments.length; i++) {
             Segment seg = segments[i];
@@ -862,9 +861,12 @@ public class PageMemoryImpl implements PageMemoryEx {
         return sets;
     }
 
+    /**
+     * @return striped concurrent Hash/Skip list set for isolated storage of dirty pages for same page store file.
+     */
     //todo option
-    private PagesConcurrentHashSet createPagesSet() {
-        return false ? new PagesConcurrentHashSet() : new PagesStripedSkipListSet();
+    private PagesStripedConcurrentHashSet createPagesSet() {
+        return false ? new PagesStripedConcurrentHashSet() : new PagesStripedConcurrentSkipListSet();
     }
 
     /** {@inheritDoc} */
@@ -1363,7 +1365,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     boolean isInCheckpoint(FullPageId pageId) {
         Segment seg = segment(pageId.groupId(), pageId.pageId());
 
-        PagesConcurrentHashSet pages0 = seg.segCheckpointPages;
+        PagesStripedConcurrentHashSet pages0 = seg.segCheckpointPages;
 
         return pages0 != null && pages0.contains(pageId);
     }
@@ -1375,7 +1377,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     boolean clearCheckpoint(FullPageId fullPageId) {
         Segment seg = segment(fullPageId.groupId(), fullPageId.pageId());
 
-        PagesConcurrentHashSet pages0 = seg.segCheckpointPages;
+        PagesStripedConcurrentHashSet pages0 = seg.segCheckpointPages;
 
         assert pages0 != null;
 
@@ -1689,10 +1691,10 @@ public class PageMemoryImpl implements PageMemoryEx {
         private long memPerTbl;
 
         /** Pages marked as dirty since the last checkpoint. */
-        private PagesConcurrentHashSet segDirtyPages = createPagesSet();
+        private PagesStripedConcurrentHashSet segDirtyPages = createPagesSet();
 
         /** Pages under current checkpoint. */
-        private volatile PagesConcurrentHashSet segCheckpointPages;
+        private volatile PagesStripedConcurrentHashSet segCheckpointPages;
 
         /** Maximum allowed dirty pages in segment before checkpoint start. */
         private final int maxDirtyPages;
@@ -1826,7 +1828,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             if (PageHeader.isAcquired(absPtr))
                 return false;
 
-            PagesConcurrentHashSet cpPages = segCheckpointPages;
+            PagesStripedConcurrentHashSet cpPages = segCheckpointPages;
 
             if (isDirty(absPtr)) {
                 // Can evict a dirty page only if should be written by a checkpoint.

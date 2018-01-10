@@ -19,19 +19,20 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Special set to store page IDs in buckets based on cache Group ID + partition ID. Pages stored in one file in page
- * store are guaranteed to be placed in one bucket.
+ * store are guaranteed to be placed in one bucket. This allows to process each bucket (0..15) separately in different
+ * threads at stage of sorting.
+ *
+ * Inner set for buckets in this implementation is not sorted (hash) set.
  */
-public class PagesConcurrentHashSet implements Iterable<Set<FullPageId>> {
+public class PagesStripedConcurrentHashSet implements Iterable<Set<FullPageId>> {
     /** Buckets count. */
     public static final int BUCKETS_COUNT = 16;
 
@@ -82,7 +83,7 @@ public class PagesConcurrentHashSet implements Iterable<Set<FullPageId>> {
     }
 
     /**
-     * @return created new set for bucket data storage.
+     * @return created new inner set for bucket (stripe) data storage.
      */
     protected Set<FullPageId> createNewSet() {
         return new GridConcurrentHashSet<>();
@@ -153,8 +154,8 @@ public class PagesConcurrentHashSet implements Iterable<Set<FullPageId>> {
      * @param id page to find.
      * @return true if page is contained at least in one set in this array.
      */
-    public static boolean contains(PagesConcurrentHashSet[] pages, FullPageId id) {
-        for (PagesConcurrentHashSet bucketSet : pages) {
+    public static boolean contains(PagesStripedConcurrentHashSet[] pages, FullPageId id) {
+        for (PagesStripedConcurrentHashSet bucketSet : pages) {
             for (Set<FullPageId> innerSet : bucketSet) {
                 if (innerSet.contains(id))
                     return true;
@@ -167,10 +168,10 @@ public class PagesConcurrentHashSet implements Iterable<Set<FullPageId>> {
      * @param pages sets array.
      * @return overall size.
      */
-    public static int size(PagesConcurrentHashSet[] pages) {
+    public static int size(PagesStripedConcurrentHashSet[] pages) {
         int size = 0;
 
-        for (PagesConcurrentHashSet bucketSet : pages) {
+        for (PagesStripedConcurrentHashSet bucketSet : pages) {
             for (Set<FullPageId> innerSet : bucketSet) {
                 size += innerSet.size();
             }
@@ -180,7 +181,7 @@ public class PagesConcurrentHashSet implements Iterable<Set<FullPageId>> {
     }
 
     /**
-     * Iterator over current local partitions.
+     * Iterator over all sets in buckets. Not created (empty) sets are skipped.
      */
     private class FullPageIdsIterator implements Iterator<Set<FullPageId>> {
         /** Next index. */

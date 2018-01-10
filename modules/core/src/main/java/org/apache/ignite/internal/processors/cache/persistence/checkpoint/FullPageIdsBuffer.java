@@ -21,6 +21,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
+import java.util.PriorityQueue;
 import org.apache.ignite.internal.pagemem.FullPageId;
 
 /**
@@ -141,12 +143,147 @@ public class FullPageIdsBuffer {
         return res;
     }
 
-    //todo javadoc
-    public void setSortedUsingComparator(Comparator<FullPageId> sorted) {
-        this.sortedUsingComparator = sorted;
+    /**
+     * Marks buffer elements as sorted using exact comparator instance.
+     *
+     * @param comp comparator used for sorting.
+     */
+    private FullPageIdsBuffer setSortedUsingComparator(Comparator<FullPageId> comp) {
+        sortedUsingComparator = comp;
+
+        return this;
     }
 
-    public boolean isSortedUsingComparator(Comparator<FullPageId> comp) {
-        return sortedUsingComparator!=null && sortedUsingComparator == comp;
+    /**
+     * Checks if this buffer was already sorted by provided comparator instance.
+     *
+     * @param comp comparator probably used for sorting.
+     * @return {@code True} if buffer elements are sorted using exactly the same comparator.
+     */
+    boolean isSortedUsingComparator(Comparator<FullPageId> comp) {
+        return sortedUsingComparator != null && sortedUsingComparator == comp;
+    }
+
+    /**
+     * @param multiColl Multiple collections to create buffer from. Collection elements may be removed during this
+     * method operation.
+     * @return buffer with element from all collections
+     */
+    static FullPageIdsBuffer createBufferFromMultiCollection(Iterable<? extends Collection<FullPageId>> multiColl) {
+        int size = 0;
+
+        for (Collection<FullPageId> next : multiColl) {
+            size += next.size();
+        }
+
+        FullPageId[] pageIds = new FullPageId[size];
+        int locIdx = 0;
+
+        for (Collection<FullPageId> set : multiColl) {
+            for (FullPageId pageId : set) {
+                pageIds[locIdx] = pageId;
+                locIdx++;
+            }
+        }
+
+        //actual number of pages may be less then initial calculated size
+        return new FullPageIdsBuffer(pageIds, 0, locIdx);
+    }
+
+    /**
+     * @param multiColl multi collections, each collection is already ordered using compartator {@code comp}.
+     * @param comp comparator used for ordering provided {@code multiColl}.
+     * @return buffer with all found collections elements.
+     */
+    static FullPageIdsBuffer createBufferFromSortedCollections(Iterable<? extends Collection<FullPageId>> multiColl,
+        Comparator<FullPageId> comp) {
+        PriorityQueue<ComparableIterator<FullPageId>> queue = new PriorityQueue<>();
+        int size = 0;
+
+        for (Collection<FullPageId> list : multiColl) {
+            int curListSize = list.size();
+
+            size += curListSize;
+            if (curListSize > 0)
+                queue.add(new ComparableIterator<>(comp, list.iterator()));
+        }
+
+        FullPageId[] arr = new FullPageId[size];
+        int locIdx = 0;
+
+        while (!queue.isEmpty()) {
+            ComparableIterator<FullPageId> next = queue.remove();
+            FullPageId element = next.next();
+
+            if (element != null) { // here null is possible because of parallel removal from underlying collections
+                arr[locIdx] = element;
+                locIdx++;
+            }
+
+            if (next.hasNext())
+                queue.add(next);
+        }
+
+        //actual number of pages may be less then precalculated size
+        return new FullPageIdsBuffer(arr, 0, locIdx).setSortedUsingComparator(comp);
+    }
+
+    /**
+     * Comparable iterator, which uses peeked elements values for actual comparing iterators.
+     * @param <E> element for iterating
+     */
+    private static class ComparableIterator<E> implements Iterator<E>, Comparable<ComparableIterator<E>> {
+        /** Peek element. */
+        private E peekElem;
+
+        /** Comparator for element. */
+        private Comparator<E> comp;
+
+        /** Iterator */
+        private Iterator<? extends E> it;
+
+        /**
+         * @param comp compactor for elements.
+         * @param it underlying iterator to obtain next elements.
+         */
+        ComparableIterator(Comparator<E> comp, Iterator<? extends E> it) {
+            this.comp = comp;
+            this.it = it;
+
+            peekElem = it.hasNext() ? it.next() : null;
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public boolean hasNext() {
+            return peekElem != null;
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public E next() {
+            E ret = peekElem;
+
+            peekElem = it.hasNext() ? it.next() : null;
+
+            return ret;
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public int compareTo(ComparableIterator<E> o) {
+            return peekElem == null ? 1 : comp.compare(peekElem, o.peekElem);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object obj) {
+            return obj.getClass() == ComparableIterator.class && compareTo((ComparableIterator)obj) == 0;
+        }
     }
 }

@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -35,8 +34,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.AsyncCheckpointer;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointScope;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.FullPageIdsBuffer;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesConcurrentHashSet;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesStripedConcurrentHashSet;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -361,10 +359,10 @@ public class SplitAndSortCpPagesTest {
         for (int r = 0; r < regions; r++) {
             int segments = CheckpointScope.EXPECTED_SEGMENTS_COUNT;
 
-            PagesConcurrentHashSet[] arrFromRegion = new PagesConcurrentHashSet[segments];
+            PagesStripedConcurrentHashSet[] arrFromRegion = new PagesStripedConcurrentHashSet[segments];
 
             for (int s = 0; s < segments; s++) {
-                PagesConcurrentHashSet set = arrFromRegion[s] = new PagesConcurrentHashSet();
+                PagesStripedConcurrentHashSet set = arrFromRegion[s] = new PagesStripedConcurrentHashSet();
                  
                 for (int p = 0; p < pagesPerSegment; p++) {
                     long pageId = randomPageId(random);

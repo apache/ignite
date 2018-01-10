@@ -31,7 +31,7 @@ import org.apache.ignite.configuration.CheckpointWriteOrder;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesConcurrentHashSet;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesStripedConcurrentHashSet;
 
 /**
  * Checkpoint scope is the unsorted sets of all dirty pages collections from all regions
@@ -44,7 +44,7 @@ public class CheckpointScope {
     private int pagesNum = -1;
 
     /** All dirty pages from all regions. Usually contain 1 element. */
-    private List<BucketEnabledCollector> regionsPages;
+    private List<StripedMultiSetCollector> regionsPages;
 
     /**
      * Creates scope.
@@ -55,120 +55,39 @@ public class CheckpointScope {
     }
 
     /**
-     * @return buffers with arrays with all checkpoint pages, may be processed independently.
+     * @return buffers with arrays with all checkpoint pages, each buffer may be processed independently.
      */
     public List<FullPageIdsBuffer> toBuffers() {
         List<FullPageIdsBuffer> buffers = new ArrayList<>();
-        int globalIdx = 0;
+        int totalSize = 0;
 
-        for (BucketEnabledCollector regions : regionsPages) {
-            for (Map.Entry<Integer, MultiSetCollector> next : regions.pagesByBucket.entrySet()) {
-                Integer bucketIdx = next.getKey();
-                MultiSetCollector collector = next.getValue();
+        for (StripedMultiSetCollector regions : regionsPages) {
+            for (MultiSetCollector next : regions.pagesByBucket.values()) {
+                FullPageIdsBuffer buf = mergeSetsForBucket(next);
 
-                final FullPageIdsBuffer buf = mergeSetsForBucket(bucketIdx, collector);
-
-                globalIdx += buf.remaining();
+                totalSize += buf.remaining();
 
                 buffers.add(buf);
-
             }
         }
         //actual number of pages may decrease here because of pages eviction (evicted page may have been already saved).
-        pagesNum = globalIdx;
+        pagesNum = totalSize;
 
         return buffers;
     }
 
-    //todo javadoc, create buffer instead of list
-    public static <E> List<E> merge(Iterable<Set<E>> lists, Comparator<E> comp) {
-        PriorityQueue<CompIterator<E>> queue = new PriorityQueue<>();
-        for (Set<? extends E> list : lists)
-            if (!list.isEmpty())
-                queue.add(new CompIterator<E>(comp, list.iterator()));
-
-        List<E> merged = new ArrayList<E>();
-        while (!queue.isEmpty()) {
-            CompIterator<E> next = queue.remove();
-            final E element = next.next();
-            assert element != null;
-            merged.add(element);
-            if (next.hasNext())
-                queue.add(next);
-        }
-
-        return merged;
-    }
-
-    //todo javadoc
-    private static class CompIterator<E> implements Iterator<E>, Comparable<CompIterator<E>> {
-        /** Peek elem. */
-        private E peekElem;
-        /** Comparator. */
-        private Comparator<E> comp;
-        /** Iterator */
-        private Iterator<? extends E> it;
-
-        public CompIterator(Comparator<E> comp, Iterator<? extends E> it) {
-            this.comp = comp;
-            this.it = it;
-            if (it.hasNext()) peekElem = it.next();
-            else peekElem = null;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return peekElem != null;
-        }
-
-        @Override
-        public E next() {
-            E ret = peekElem;
-            if (it.hasNext()) peekElem = it.next();
-            else peekElem = null;
-            return ret;
-        }
-
-        @Override
-        public void remove() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public int compareTo(CompIterator<E> o) {
-            if (peekElem == null) return 1;
-            else return comp.compare(peekElem, o.peekElem);
-        }
-
-    }
-
-    private FullPageIdsBuffer mergeSetsForBucket(Integer bucketIdx, MultiSetCollector collector) {
+    /**
+     * Creates buffer from multi sets. This method supports decreasing collection size in parallel with method execution.
+     *
+     * @param collector multi set collector.
+     * @return buffer created from umerged sets.
+     */
+    private FullPageIdsBuffer mergeSetsForBucket(MultiSetCollector collector) {
         Comparator<FullPageId> comp = GridCacheDatabaseSharedManager.SEQUENTIAL_CP_PAGE_COMPARATOR;
 
-        if(collector.isSorted(comp)) {
-            final List<FullPageId> merge = merge(collector.unmergedSets, comp);
-
-            FullPageId[] pageIds = merge.toArray(new FullPageId[merge.size()]);
-            FullPageIdsBuffer buf = new FullPageIdsBuffer(pageIds, 0, merge.size());
-            buf.setSortedUsingComparator(comp);
-
-            return buf;
-        }
-
-        int locIdx = 0;
-        FullPageId[] pageIds = new FullPageId[collector.size()];
-
-        for (Set<FullPageId> set : collector.unmergedSets) {
-            for (FullPageId pageId : set) {
-                pageIds[locIdx] = pageId;
-                locIdx++;
-
-                assert bucketIdx.equals(PagesConcurrentHashSet.getBucketIndex(pageId));
-            }
-        }
-
-        //actual number of pages may be less
-        return new FullPageIdsBuffer(pageIds, 0, locIdx);
+        return collector.isSorted(comp)
+            ? FullPageIdsBuffer.createBufferFromSortedCollections(collector.unmergedSets, comp)
+            : FullPageIdsBuffer.createBufferFromMultiCollection(collector.unmergedSets);
     }
 
 
@@ -176,11 +95,11 @@ public class CheckpointScope {
      * Adds several striped sets of pages from data region.
      * @param sets dirty pages collections from region (array with sets from all segments).
      */
-    public void addDataRegionCpPages(PagesConcurrentHashSet[] sets) {
-        BucketEnabledCollector pagesByBucket = new BucketEnabledCollector();
+    public void addDataRegionCpPages(PagesStripedConcurrentHashSet[] sets) {
+        StripedMultiSetCollector pagesByBucket = new StripedMultiSetCollector();
 
-        for (PagesConcurrentHashSet setToAdd : sets) {
-            for (int idx = 0; idx < PagesConcurrentHashSet.BUCKETS_COUNT; idx++) {
+        for (PagesStripedConcurrentHashSet setToAdd : sets) {
+            for (int idx = 0; idx < PagesStripedConcurrentHashSet.BUCKETS_COUNT; idx++) {
                 Set<FullPageId> setForBucket = setToAdd.getOptionalSetForBucket(idx);
 
                 if (setForBucket != null)
@@ -206,7 +125,7 @@ public class CheckpointScope {
         if (pagesNum < 0) {
             int sum = 0;
 
-            for (BucketEnabledCollector next : regionsPages) {
+            for (StripedMultiSetCollector next : regionsPages) {
                 sum += next.size();
             }
 
@@ -247,13 +166,13 @@ public class CheckpointScope {
     }
 
     /**
-     * Class for separate collection pages from corresponding bucket. Class is not thread safe.
+     * Class for separate collection pages from corresponding bucket (stripe). Class is not thread safe.
      */
-    private static class BucketEnabledCollector {
+    private static class StripedMultiSetCollector {
         /**
-         * Maps bucket index -> multi set collector for this bucket.
+         * Maps bucket (stripe) index -> multi set collector for this bucket.
          */
-        private Map<Integer, MultiSetCollector> pagesByBucket = new HashMap<>(PagesConcurrentHashSet.BUCKETS_COUNT);
+        private Map<Integer, MultiSetCollector> pagesByBucket = new HashMap<>(PagesStripedConcurrentHashSet.BUCKETS_COUNT);
 
         /**
          * @return overall size of contained sets for all buckets.
@@ -269,23 +188,23 @@ public class CheckpointScope {
         }
 
         /**
-         * @param idx Bucket index.
+         * @param bucketIdx Bucket index.
          * @return collector of sets for bucket.
          */
-        MultiSetCollector getOrCreateBucket(int idx) {
-            MultiSetCollector collector = pagesByBucket.get(idx);
+        MultiSetCollector getOrCreateBucket(int bucketIdx) {
+            MultiSetCollector collector = pagesByBucket.get(bucketIdx);
 
             if (collector == null) {
                 collector = new MultiSetCollector();
 
-                pagesByBucket.put(idx, collector);
+                pagesByBucket.put(bucketIdx, collector);
             }
             return collector;
         }
     }
 
     /**
-     * Class to collect several sets for same bucket, avoiding collection data copy. Class is not thread safe.
+     * Class to collect several sets for same bucket (stripe), avoiding collection data copy. Class is not thread safe.
      */
     private static class MultiSetCollector {
         /**
