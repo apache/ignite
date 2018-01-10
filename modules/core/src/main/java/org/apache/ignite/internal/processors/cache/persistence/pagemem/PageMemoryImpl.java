@@ -38,6 +38,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
@@ -76,7 +78,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import sun.misc.JavaNioAccess;
 import sun.misc.SharedSecrets;
-import sun.nio.ch.DirectBuffer;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
@@ -500,12 +501,50 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             seg.loadedPages.put(cacheId, PageIdUtils.effectivePageId(pageId), relPtr, seg.partTag(cacheId, partId));
         }
+        catch (IgniteOutOfMemoryException oom) {
+            DataRegionConfiguration dataRegionCfg = getDataRegionConfiguration();
+
+            throw (IgniteOutOfMemoryException) new IgniteOutOfMemoryException("Out of memory in data region [" +
+                "name=" + dataRegionCfg.getName() +
+                ", initSize=" + U.readableSize(dataRegionCfg.getInitialSize(), false) +
+                ", maxSize=" + U.readableSize(dataRegionCfg.getMaxSize(), false) +
+                ", persistenceEnabled=" + dataRegionCfg.isPersistenceEnabled() + "] Try the following:" + U.nl() +
+                "  ^-- Increase maximum off-heap memory size (DataRegionConfiguration.maxSize)" + U.nl() +
+                "  ^-- Enable Ignite persistence (DataRegionConfiguration.persistenceEnabled)" + U.nl() +
+                "  ^-- Enable eviction or expiration policies"
+            ).initCause(oom);
+        }
         finally {
             seg.writeLock().unlock();
         }
 
         //we have allocated 'tracking' page, we need to allocate regular one
         return isTrackingPage ? allocatePage(cacheId, partId, flags) : pageId;
+    }
+
+    /**
+     * @return Data region configuration.
+     */
+    private DataRegionConfiguration getDataRegionConfiguration() {
+        DataStorageConfiguration memCfg = ctx.kernalContext().config().getDataStorageConfiguration();
+
+        assert memCfg != null;
+
+        String dataRegionName = memMetrics.getName();
+
+        if (memCfg.getDefaultDataRegionConfiguration().getName().equals(dataRegionName))
+            return memCfg.getDefaultDataRegionConfiguration();
+
+        DataRegionConfiguration[] dataRegions = memCfg.getDataRegionConfigurations();
+
+        if (dataRegions != null) {
+            for (DataRegionConfiguration reg : dataRegions) {
+                if (reg != null && reg.getName().equals(dataRegionName))
+                    return reg;
+            }
+        }
+
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -1017,11 +1056,11 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /**
      * @param absPtr Absolute ptr.
-     * @param tmpBuf Tmp buffer.
+     * @param buf Tmp buffer.
      */
-    private void copyInBuffer(long absPtr, ByteBuffer tmpBuf) {
-        if (tmpBuf.isDirect()) {
-            long tmpPtr = ((DirectBuffer)tmpBuf).address();
+    private void copyInBuffer(long absPtr, ByteBuffer buf) {
+        if (buf.isDirect()) {
+            long tmpPtr = GridUnsafe.bufferAddress(buf);
 
             GridUnsafe.copyMemory(absPtr + PAGE_OVERHEAD, tmpPtr, pageSize());
 
@@ -1029,7 +1068,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             assert GridUnsafe.getInt(tmpPtr + 4) == 0; //TODO GG-11480
         }
         else {
-            byte[] arr = tmpBuf.array();
+            byte[] arr = buf.array();
 
             assert arr != null;
             assert arr.length == pageSize();
@@ -1860,8 +1899,20 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             final int cap = loadedPages.capacity();
 
-            if (acquiredPages() >= loadedPages.size())
-                throw new IgniteOutOfMemoryException("Failed to evict page from segment (all pages are acquired).");
+            if (acquiredPages() >= loadedPages.size()) {
+                DataRegionConfiguration dataRegionCfg = getDataRegionConfiguration();
+
+                throw new IgniteOutOfMemoryException("Failed to evict page from segment (all pages are acquired)."
+                    + U.nl() + "Out of memory in data region [" +
+                    "name=" + dataRegionCfg.getName() +
+                    ", initSize=" + U.readableSize(dataRegionCfg.getInitialSize(), false) +
+                    ", maxSize=" + U.readableSize(dataRegionCfg.getMaxSize(), false) +
+                    ", persistenceEnabled=" + dataRegionCfg.isPersistenceEnabled() + "] Try the following:" + U.nl() +
+                    "  ^-- Increase maximum off-heap memory size (DataRegionConfiguration.maxSize)" + U.nl() +
+                    "  ^-- Enable Ignite persistence (DataRegionConfiguration.persistenceEnabled)" + U.nl() +
+                    "  ^-- Enable eviction or expiration policies"
+                );
+            }
 
             // With big number of random picked pages we may fall into infinite loop, because
             // every time the same page may be found.
@@ -2026,6 +2077,8 @@ public class PageMemoryImpl implements PageMemoryEx {
                 prevAddr = addr;
             }
 
+            DataRegionConfiguration dataRegionCfg = getDataRegionConfiguration();
+
             throw new IgniteOutOfMemoryException("Failed to find a page for eviction [segmentCapacity=" + cap +
                 ", loaded=" + loadedPages.size() +
                 ", maxDirtyPages=" + maxDirtyPages +
@@ -2033,7 +2086,15 @@ public class PageMemoryImpl implements PageMemoryEx {
                 ", cpPages=" + (segCheckpointPages == null ? 0 : segCheckpointPages.size()) +
                 ", pinnedInSegment=" + pinnedCnt +
                 ", failedToPrepare=" + failToPrepare +
-                ']');
+                ']' + U.nl() + "Out of memory in data region [" +
+                "name=" + dataRegionCfg.getName() +
+                ", initSize=" + U.readableSize(dataRegionCfg.getInitialSize(), false) +
+                ", maxSize=" + U.readableSize(dataRegionCfg.getMaxSize(), false) +
+                ", persistenceEnabled=" + dataRegionCfg.isPersistenceEnabled() + "] Try the following:" + U.nl() +
+                "  ^-- Increase maximum off-heap memory size (DataRegionConfiguration.maxSize)" + U.nl() +
+                "  ^-- Enable Ignite persistence (DataRegionConfiguration.persistenceEnabled)" + U.nl() +
+                "  ^-- Enable eviction or expiration policies"
+            );
         }
 
         /**

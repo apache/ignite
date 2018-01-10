@@ -52,7 +52,13 @@
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
-            <version>2.11.8</version>
+            <version>${scala211.library.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-reflect</artifactId>
+            <version>${scala211.library.version}</version>
         </dependency>
 
         <dependency>
@@ -88,7 +94,7 @@
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
-            <version>${hadoop.version}</version>
+            <version>${spark.hadoop.version}</version>
         </dependency>
 
         <dependency>
@@ -152,12 +158,6 @@
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-tags_2.11</artifactId>
-            <version>${spark.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-unsafe_2.10</artifactId>
             <version>${spark.version}</version>
         </dependency>
 
@@ -265,10 +265,25 @@
             <version>3.0.0</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.codehaus.janino</groupId>
             <artifactId>commons-compiler</artifactId>
             <version>3.0.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>antlr4-runtime</artifactId>
+            <version>4.5.3</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jul-to-slf4j</artifactId>
+            <version>1.7.16</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

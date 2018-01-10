@@ -68,7 +68,7 @@ public class RecordV1Serializer implements RecordSerializer {
     public static final int HEADER_RECORD_SIZE = REC_TYPE_SIZE + FILE_WAL_POINTER_SIZE + CRC_SIZE + RecordDataV1Serializer.HEADER_RECORD_DATA_SIZE;
 
     /** Skip CRC calculation/check flag */
-    public static boolean SKIP_CRC = IgniteSystemProperties.getBoolean(IGNITE_PDS_SKIP_CRC, false);
+    public static boolean skipCrc = IgniteSystemProperties.getBoolean(IGNITE_PDS_SKIP_CRC, false);
 
     /** V1 data serializer. */
     private final RecordDataV1Serializer dataSerializer;
@@ -152,15 +152,15 @@ public class RecordV1Serializer implements RecordSerializer {
         }
 
         /** {@inheritDoc} */
-        @Override public void writeWithHeaders(WALRecord record, ByteBuffer buf) throws IgniteCheckedException {
+        @Override public void writeWithHeaders(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
             // Write record type.
-            putRecordType(buf, record);
+            putRecordType(buf, rec);
 
             // Write record file position.
-            putPositionOfRecord(buf, record);
+            putPositionOfRecord(buf, rec);
 
             // Write record data.
-            dataSerializer.writeRecord(record, buf);
+            dataSerializer.writeRecord(rec, buf);
         }
     };
 
@@ -193,8 +193,8 @@ public class RecordV1Serializer implements RecordSerializer {
 
     /** {@inheritDoc} */
     @SuppressWarnings("CastConflictsWithInstanceof")
-    @Override public void writeRecord(WALRecord record, ByteBuffer buf) throws IgniteCheckedException {
-        writeWithCrc(record, buf, recordIO);
+    @Override public void writeRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
+        writeWithCrc(rec, buf, recordIO);
     }
 
     /** {@inheritDoc} */
@@ -225,29 +225,29 @@ public class RecordV1Serializer implements RecordSerializer {
      */
     public static FileWALPointer readPosition(DataInput in) throws IOException {
         long idx = in.readLong();
-        int fileOffset = in.readInt();
+        int fileOff = in.readInt();
 
-        return new FileWALPointer(idx, fileOffset, 0);
+        return new FileWALPointer(idx, fileOff, 0);
     }
 
     /**
      * Writes record file position to given {@code buf}.
      *
      * @param buf Buffer to write record file position.
-     * @param record WAL record.
+     * @param rec WAL record.
      */
-    public static void putPositionOfRecord(ByteBuffer buf, WALRecord record) {
-        putPosition(buf, (FileWALPointer) record.position());
+    private static void putPositionOfRecord(ByteBuffer buf, WALRecord rec) {
+        putPosition(buf, (FileWALPointer)rec.position());
     }
 
     /**
      * Writes record type to given {@code buf}.
      *
      * @param buf Buffer to write record type.
-     * @param record WAL record.
+     * @param rec WAL record.
      */
-    public static void putRecordType(ByteBuffer buf, WALRecord record) {
-        buf.put((byte)(record.type().ordinal() + 1));
+    static void putRecordType(ByteBuffer buf, WALRecord rec) {
+        buf.put((byte)(rec.type().ordinal() + 1));
     }
 
     /**
@@ -258,7 +258,7 @@ public class RecordV1Serializer implements RecordSerializer {
      * @throws IgniteCheckedException If logical end of segment is reached.
      * @throws IOException In case of I/O problems.
      */
-    public static RecordType readRecordType(DataInput in) throws IgniteCheckedException, IOException {
+    static RecordType readRecordType(DataInput in) throws IgniteCheckedException, IOException {
         int type = in.readUnsignedByte();
 
         if (type == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE)
@@ -282,10 +282,10 @@ public class RecordV1Serializer implements RecordSerializer {
      * @throws EOFException In case of end of file.
      * @throws IgniteCheckedException If it's unable to read record.
      */
-    public static WALRecord readWithCrc(FileInput in0, WALPointer expPtr, RecordIO reader) throws EOFException, IgniteCheckedException {
+    static WALRecord readWithCrc(FileInput in0, WALPointer expPtr, RecordIO reader) throws EOFException, IgniteCheckedException {
         long startPos = -1;
 
-        try (FileInput.Crc32CheckingFileInput in = in0.startRead(SKIP_CRC)) {
+        try (FileInput.Crc32CheckingFileInput in = in0.startRead(skipCrc)) {
             startPos = in0.position();
 
             WALRecord res = reader.readWithHeaders(in, expPtr);
@@ -307,19 +307,19 @@ public class RecordV1Serializer implements RecordSerializer {
     /**
      * Writes record with calculated CRC to buffer {@code buf}.
      *
-     * @param record WAL record.
+     * @param rec WAL record.
      * @param buf Buffer to write.
      * @param writer Record write I/O interface.
      * @throws IgniteCheckedException If it's unable to write record.
      */
-    public static void writeWithCrc(WALRecord record, ByteBuffer buf, RecordIO writer) throws IgniteCheckedException {
-        assert record.size() >= 0 && buf.remaining() >= record.size() : record.size();
+    static void writeWithCrc(WALRecord rec, ByteBuffer buf, RecordIO writer) throws IgniteCheckedException {
+        assert rec.size() >= 0 && buf.remaining() >= rec.size() : rec.size();
 
         int startPos = buf.position();
 
-        writer.writeWithHeaders(record, buf);
+        writer.writeWithHeaders(rec, buf);
 
-        if (!SKIP_CRC) {
+        if (!skipCrc) {
             int curPos = buf.position();
 
             buf.position(startPos);
