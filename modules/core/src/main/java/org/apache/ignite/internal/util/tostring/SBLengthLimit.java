@@ -55,20 +55,23 @@ class SBLengthLimit {
     void onWrite(SBLimitedLength sb, int writtenLen) {
         len += writtenLen;
 
-        if (len > MAX_TO_STR_LEN && sb.getTail() == null) {
-            CircularStringBuilder tail = new CircularStringBuilder(TAIL_LEN);
-
-            tail.append(sb.impl().substring(MAX_TO_STR_LEN - TAIL_LEN));
-
-            sb.setTail(tail);
-            sb.setLength(MAX_TO_STR_LEN - TAIL_LEN);
-        }
+// TODO IGNITE-7195
+//        if (len > MAX_TO_STR_LEN && sb.getTail() == null) {
+//            CircularStringBuilder tail = new CircularStringBuilder(TAIL_LEN);
+//
+//            tail.append(sb.impl().substring(MAX_TO_STR_LEN - TAIL_LEN));
+//
+//            sb.setTail(tail);
+//            sb.setLength(MAX_TO_STR_LEN - TAIL_LEN);
+//        }
     }
 
     /**
      * @return {@code True} if reached limit.
      */
     boolean overflowed() {
-        return len > MAX_TO_STR_LEN;
+        // TODO IGNITE-7195
+        return false;
+        //return len > MAX_TO_STR_LEN;
     }
 }

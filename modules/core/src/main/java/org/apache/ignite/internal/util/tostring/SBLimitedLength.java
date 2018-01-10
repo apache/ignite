@@ -25,6 +25,9 @@ import java.util.Arrays;
  */
 public class SBLimitedLength extends GridStringBuilder {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private SBLengthLimit lenLimit;
 
     /** Additional string builder to get tail of message. */
