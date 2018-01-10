@@ -506,7 +506,7 @@ public class JdbcThinTcpIo {
             trustCertKeyStoreUrl = System.getProperty("javax.net.ssl.trustStore");
 
         if (trustCertKeyStorePwd == null)
-            cliCertKeyStorePwd = System.getProperty("javax.net.ssl.trustStorePassword");
+            trustCertKeyStorePwd = System.getProperty("javax.net.ssl.trustStorePassword");
 
         if (trustCertKeyStoreType == null)
             trustCertKeyStoreType = System.getProperty("javax.net.ssl.trustStoreType", "JKS");

@@ -123,12 +123,12 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
     /** Trusted certificate key store password. */
     private StringProperty sslTrustCertificateKeyStorePassword =
-        new StringProperty("trustCertificateKeyStorePassword",
+        new StringProperty("sslTrustCertificateKeyStorePassword",
         "Trusted certificate key store password", null, null, false, null);
 
     /** Trusted certificate key store type. */
     private StringProperty sslTrustCertificateKeyStoreType =
-        new StringProperty("trustCertificateKeyStoreType",
+        new StringProperty("sslTrustCertificateKeyStoreType",
         "Trusted certificate key store type",
             null, null, false, null);
 

@@ -49,6 +49,9 @@ public class ClientConnectorConfiguration {
     /** Default idle timeout. */
     public static final int DFLT_IDLE_TIMEOUT = 0;
 
+    /** Default value of whether to use Ignite SSL context factory. */
+    public static final boolean DFLT_USE_IGNITE_SSL_CTX_FACTORY = true;
+
     /** Host. */
     private String host;
 
@@ -79,12 +82,14 @@ public class ClientConnectorConfiguration {
     /** SSL enable flag, default is disabled. */
     private boolean sslEnabled;
 
+    /** If to use SSL context factory from Ignite configuration. */
+    private boolean useIgniteSslCtxFactory = DFLT_USE_IGNITE_SSL_CTX_FACTORY;
+
     /** SSL need client auth flag. */
     private boolean sslClientAuth;
 
     /** SSL connection factory. */
     private Factory<SSLContext> sslCtxFactory;
-
 
     /**
      * Creates SQL connector configuration with all default values.
@@ -110,6 +115,10 @@ public class ClientConnectorConfiguration {
         tcpNoDelay = cfg.isTcpNoDelay();
         threadPoolSize = cfg.getThreadPoolSize();
         idleTimeout = cfg.getIdleTimeout();
+        sslEnabled = cfg.isSslEnabled();
+        sslClientAuth = cfg.isSslClientAuth();
+        useIgniteSslCtxFactory = cfg.isUseIgniteSslContextFactory();
+        sslCtxFactory = cfg.getSslContextFactory();
     }
 
     /**
@@ -338,6 +347,28 @@ public class ClientConnectorConfiguration {
      */
     public ClientConnectorConfiguration setSslEnabled(boolean sslEnabled) {
         this.sslEnabled = sslEnabled;
+
+        return this;
+    }
+
+    /**
+     * Gets whether to use Ignite SSL context factory configured through
+     * {@link IgniteConfiguration#getSslContextFactory()} if {@link #getSslContextFactory()} is not set.
+     *
+     * @return {@code True} if Ignite SSL context factory can be used.
+     */
+    public boolean isUseIgniteSslContextFactory() {
+        return useIgniteSslCtxFactory;
+    }
+
+    /**
+     * Sets whether to use Ignite SSL context factory. See {@link #isUseIgniteSslContextFactory()} for more information.
+     *
+     * @param useIgniteSslCtxFactory Whether to use Ignite SSL context factory
+     * @return {@code this} for chaining.
+     */
+    public ClientConnectorConfiguration setUseIgniteSslContextFactory(boolean useIgniteSslCtxFactory) {
+        this.useIgniteSslCtxFactory = useIgniteSslCtxFactory;
 
         return this;
     }

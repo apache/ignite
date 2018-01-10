@@ -73,6 +73,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
         cfg.setClientConnectorConfiguration(
             new ClientConnectorConfiguration()
                 .setSslEnabled(true)
+                .setUseIgniteSslContextFactory(false)
                 .setSslContextFactory(sslContextFactory));
 
         return cfg;

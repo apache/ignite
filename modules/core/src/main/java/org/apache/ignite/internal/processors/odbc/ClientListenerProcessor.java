@@ -21,6 +21,9 @@ import java.net.InetAddress;
 import java.nio.ByteOrder;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -125,18 +128,31 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                         GridNioFilter[] filters;
 
                         if (cliConnCfg.isSslEnabled()) {
-                            GridNioSslFilter sslFilter =
-                                new GridNioSslFilter(cliConnCfg.getSslContextFactory().create(),
+                            try {
+                                Factory<SSLContext> sslCtxFactory = cliConnCfg.isUseIgniteSslContextFactory() ?
+                                    cfg.getSslContextFactory() : cliConnCfg.getSslContextFactory();
+
+                                if (sslCtxFactory == null)
+                                    throw new IgniteCheckedException("Failed to create client listener " +
+                                        "(SSL is enabled but factory is null). Check the ClientConnectorConfiguration");
+
+                                GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtxFactory.create(),
                                     true, ByteOrder.nativeOrder(), log);
 
-                            sslFilter.directMode(false);
+                                sslFilter.directMode(false);
 
-                            boolean auth = cliConnCfg.isSslClientAuth();
+                                boolean auth = cliConnCfg.isSslClientAuth();
 
-                            sslFilter.wantClientAuth(auth);
-                            sslFilter.needClientAuth(auth);
+                                sslFilter.wantClientAuth(auth);
+                                sslFilter.needClientAuth(auth);
 
-                            filters = new GridNioFilter[] {openSesFilter, codecFilter, sslFilter};
+                                filters = new GridNioFilter[] {openSesFilter, codecFilter, sslFilter};
+                            } catch (Exception e) {
+                                throw new IgniteCheckedException("Failed to create client listener " +
+                                    "(unable to create SSL context, check ssl context factory configuration): "
+                                    + e.getMessage(), e);
+                            }
+
                         }
                         else
                             filters = new GridNioFilter[] {openSesFilter, codecFilter};
