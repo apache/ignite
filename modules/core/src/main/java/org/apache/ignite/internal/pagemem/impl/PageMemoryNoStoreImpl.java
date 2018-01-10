@@ -289,12 +289,14 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         }
 
         if (relPtr == INVALID_REL_PTR)
-            throw new IgniteOutOfMemoryException("Not enough memory allocated " +
-                "[policyName=" + dataRegionCfg.getName() +
-                ", size=" + U.readableSize(dataRegionCfg.getMaxSize(), false) + ']' + U.nl() +
-                "Consider increasing memory policy size, enabling evictions, adding more nodes to the cluster, " +
-                "reducing number of backups or reducing model size."
-
+            throw new IgniteOutOfMemoryException("Out of memory in data region [" +
+                "name=" + dataRegionCfg.getName() +
+                ", initSize=" + U.readableSize(dataRegionCfg.getInitialSize(), false) +
+                ", maxSize=" + U.readableSize(dataRegionCfg.getMaxSize(), false) +
+                ", persistenceEnabled=" + dataRegionCfg.isPersistenceEnabled() + "] Try the following:" + U.nl() +
+                "  ^-- Increase maximum off-heap memory size (DataRegionConfiguration.maxSize)" + U.nl() +
+                "  ^-- Enable Ignite persistence (DataRegionConfiguration.persistenceEnabled)" + U.nl() +
+                "  ^-- Enable eviction or expiration policies"
             );
 
         assert (relPtr & ~PageIdUtils.PAGE_IDX_MASK) == 0 : U.hexLong(relPtr & ~PageIdUtils.PAGE_IDX_MASK);
