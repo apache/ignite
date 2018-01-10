@@ -481,7 +481,7 @@ public class IgniteConfiguration {
     private ClientConnectorConfiguration cliConnCfg = ClientListenerProcessor.DFLT_CLI_CFG;
 
     /** */
-    private CommunicationProblemResolver commProblemRslvr;
+    private CommunicationFailureResolver commFailureRslvr;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -510,7 +510,7 @@ public class IgniteConfiguration {
         loadBalancingSpi = cfg.getLoadBalancingSpi();
         indexingSpi = cfg.getIndexingSpi();
 
-        commProblemRslvr = cfg.getCommunicationProblemResolver();
+        commFailureRslvr = cfg.getCommunicationFailureResolver();
 
         /*
          * Order alphabetically for maintenance purposes.
@@ -599,16 +599,16 @@ public class IgniteConfiguration {
      * TODO ZK
      * @return
      */
-    public CommunicationProblemResolver getCommunicationProblemResolver() {
-        return commProblemRslvr;
+    public CommunicationFailureResolver getCommunicationFailureResolver() {
+        return commFailureRslvr;
     }
 
     /**
      * TODO ZK
-     * @param commProblemRslvr
+     * @param commFailureRslvr
      */
-    public IgniteConfiguration setCommunicationProblemResolver(CommunicationProblemResolver commProblemRslvr) {
-        this.commProblemRslvr = commProblemRslvr;
+    public IgniteConfiguration setCommunicationFailureResolver(CommunicationFailureResolver commFailureRslvr) {
+        this.commFailureRslvr = commFailureRslvr;
 
         return this;
     }

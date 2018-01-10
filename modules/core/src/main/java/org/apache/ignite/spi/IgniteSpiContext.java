@@ -362,11 +362,11 @@ public interface IgniteSpiContext {
     /**
      * @return {@code True} if cluster supports communication error resolving.
      */
-    public boolean communicationErrorResolveSupported();
+    public boolean communicationFailureResolveSupported();
 
     /**
      * @param node Problem node.
      * @param err Error.
      */
-    public void resolveCommunicationError(ClusterNode node, Exception err);
+    public void resolveCommunicationFailure(ClusterNode node, Exception err);
 }

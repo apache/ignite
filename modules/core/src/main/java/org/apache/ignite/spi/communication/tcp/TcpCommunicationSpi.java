@@ -3416,10 +3416,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             IgniteSpiContext ctx = getSpiContext();
 
-            if (connectionError(errs) && ctx.communicationErrorResolveSupported()) {
+            if (connectionError(errs) && ctx.communicationFailureResolveSupported()) {
                 commErrResolve = true;
 
-                ctx.resolveCommunicationError(node, errs);
+                ctx.resolveCommunicationFailure(node, errs);
             }
 
             if (!commErrResolve && enableForcibleNodeKill) {

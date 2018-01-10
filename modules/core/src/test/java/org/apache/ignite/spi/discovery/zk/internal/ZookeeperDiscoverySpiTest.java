@@ -52,8 +52,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.CommunicationProblemContext;
-import org.apache.ignite.configuration.CommunicationProblemResolver;
+import org.apache.ignite.configuration.CommunicationFailureContext;
+import org.apache.ignite.configuration.CommunicationFailureResolver;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -184,7 +184,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     private boolean persistence;
 
     /** */
-    private IgniteOutClosure<CommunicationProblemResolver> commProblemRslvr;
+    private IgniteOutClosure<CommunicationFailureResolver> commProblemRslvr;
 
     /** */
     private IgniteOutClosure<DiscoverySpiNodeAuthenticator> auth;
@@ -326,7 +326,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             cfg.setCommunicationSpi(new ZkTestCommunicationSpi());
 
         if (commProblemRslvr != null)
-            cfg.setCommunicationProblemResolver(commProblemRslvr.apply());
+            cfg.setCommunicationFailureResolver(commProblemRslvr.apply());
 
         return cfg;
     }
@@ -2176,6 +2176,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             cache.put(i, i);
 
         waitForTopology(4);
+
+        ignite(3).createCache(largeCacheConfiguration("c2"));
     }
 
     /**
@@ -2383,7 +2385,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         assert nodes > 1;
 
         sesTimeout = 2000;
-        commProblemRslvr = NoOpCommunicationProblemResolver.FACTORY;
+        commProblemRslvr = NoOpCommunicationFailureResolver.FACTORY;
 
         startGridsMultiThreaded(nodes);
 
@@ -2416,7 +2418,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      */
     public void testNoOpCommunicationErrorResolve_3() throws Exception {
         sesTimeout = 2000;
-        commProblemRslvr = NoOpCommunicationProblemResolver.FACTORY;
+        commProblemRslvr = NoOpCommunicationFailureResolver.FACTORY;
 
         startGridsMultiThreaded(3);
 
@@ -2464,7 +2466,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         testCommSpi = true;
 
         sesTimeout = 2000;
-        commProblemRslvr = NoOpCommunicationProblemResolver.FACTORY;
+        commProblemRslvr = NoOpCommunicationFailureResolver.FACTORY;
 
         startGrid(0);
 
@@ -2506,7 +2508,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         testCommSpi = true;
 
         sesTimeout = 2000;
-        commProblemRslvr = NoOpCommunicationProblemResolver.FACTORY;
+        commProblemRslvr = NoOpCommunicationFailureResolver.FACTORY;
 
         startGrid(0);
 
@@ -2617,7 +2619,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     private void communicationErrorResolve_KillNodes(int startNodes, Collection<Long> killNodes) throws Exception {
         testCommSpi = true;
 
-        commProblemRslvr = TestNodeKillCommunicationProblemResolver.factory(killNodes);
+        commProblemRslvr = TestNodeKillCommunicationFailureResolver.factory(killNodes);
 
         startGrids(startNodes);
 
@@ -2668,7 +2670,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         sesTimeout = 2000;
 
         testCommSpi = true;
-        commProblemRslvr = KillCoordinatorCommunicationProblemResolver.FACTORY;
+        commProblemRslvr = KillCoordinatorCommunicationFailureResolver.FACTORY;
 
         startGrids(10);
 
@@ -2712,7 +2714,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         sesTimeout = 2000;
 
         testCommSpi = true;
-        commProblemRslvr = KillRandomCommunicationProblemResolver.FACTORY;
+        commProblemRslvr = KillRandomCommunicationFailureResolver.FACTORY;
 
         startGridsMultiThreaded(10);
 
@@ -4065,16 +4067,16 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     /**
      *
      */
-    static class NoOpCommunicationProblemResolver implements CommunicationProblemResolver {
+    static class NoOpCommunicationFailureResolver implements CommunicationFailureResolver {
         /** */
-        static final IgniteOutClosure<CommunicationProblemResolver> FACTORY = new IgniteOutClosure<CommunicationProblemResolver>() {
-            @Override public CommunicationProblemResolver apply() {
-                return new NoOpCommunicationProblemResolver();
+        static final IgniteOutClosure<CommunicationFailureResolver> FACTORY = new IgniteOutClosure<CommunicationFailureResolver>() {
+            @Override public CommunicationFailureResolver apply() {
+                return new NoOpCommunicationFailureResolver();
             }
         };
 
         /** {@inheritDoc} */
-        @Override public void resolve(CommunicationProblemContext ctx) {
+        @Override public void resolve(CommunicationFailureContext ctx) {
             // No-op.
         }
     }
@@ -4082,11 +4084,11 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     /**
      *
      */
-    static class KillCoordinatorCommunicationProblemResolver implements CommunicationProblemResolver {
+    static class KillCoordinatorCommunicationFailureResolver implements CommunicationFailureResolver {
         /** */
-        static final IgniteOutClosure<CommunicationProblemResolver> FACTORY = new IgniteOutClosure<CommunicationProblemResolver>() {
-            @Override public CommunicationProblemResolver apply() {
-                return new KillCoordinatorCommunicationProblemResolver();
+        static final IgniteOutClosure<CommunicationFailureResolver> FACTORY = new IgniteOutClosure<CommunicationFailureResolver>() {
+            @Override public CommunicationFailureResolver apply() {
+                return new KillCoordinatorCommunicationFailureResolver();
             }
         };
 
@@ -4095,7 +4097,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public void resolve(CommunicationProblemContext ctx) {
+        @Override public void resolve(CommunicationFailureContext ctx) {
             List<ClusterNode> nodes = ctx.topologySnapshot();
 
             ClusterNode node = nodes.get(0);
@@ -4109,11 +4111,11 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     /**
      *
      */
-    static class KillRandomCommunicationProblemResolver implements CommunicationProblemResolver {
+    static class KillRandomCommunicationFailureResolver implements CommunicationFailureResolver {
         /** */
-        static final IgniteOutClosure<CommunicationProblemResolver> FACTORY = new IgniteOutClosure<CommunicationProblemResolver>() {
-            @Override public CommunicationProblemResolver apply() {
-                return new KillRandomCommunicationProblemResolver();
+        static final IgniteOutClosure<CommunicationFailureResolver> FACTORY = new IgniteOutClosure<CommunicationFailureResolver>() {
+            @Override public CommunicationFailureResolver apply() {
+                return new KillRandomCommunicationFailureResolver();
             }
         };
 
@@ -4122,7 +4124,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public void resolve(CommunicationProblemContext ctx) {
+        @Override public void resolve(CommunicationFailureContext ctx) {
             List<ClusterNode> nodes = ctx.topologySnapshot();
 
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
@@ -4149,15 +4151,15 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     /**
      *
      */
-    static class TestNodeKillCommunicationProblemResolver implements CommunicationProblemResolver {
+    static class TestNodeKillCommunicationFailureResolver implements CommunicationFailureResolver {
         /**
          * @param killOrders Killed nodes order.
          * @return Factory.
          */
-        static IgniteOutClosure<CommunicationProblemResolver> factory(final Collection<Long> killOrders)  {
-            return new IgniteOutClosure<CommunicationProblemResolver>() {
-                @Override public CommunicationProblemResolver apply() {
-                    return new TestNodeKillCommunicationProblemResolver(killOrders);
+        static IgniteOutClosure<CommunicationFailureResolver> factory(final Collection<Long> killOrders)  {
+            return new IgniteOutClosure<CommunicationFailureResolver>() {
+                @Override public CommunicationFailureResolver apply() {
+                    return new TestNodeKillCommunicationFailureResolver(killOrders);
                 }
             };
         }
@@ -4168,12 +4170,12 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         /**
          * @param killOrders Killed nodes order.
          */
-        TestNodeKillCommunicationProblemResolver(Collection<Long> killOrders) {
+        TestNodeKillCommunicationFailureResolver(Collection<Long> killOrders) {
             this.killNodeOrders = killOrders;
         }
 
         /** {@inheritDoc} */
-        @Override public void resolve(CommunicationProblemContext ctx) {
+        @Override public void resolve(CommunicationFailureContext ctx) {
             List<ClusterNode> nodes = ctx.topologySnapshot();
 
             assertTrue(nodes.size() > 0);

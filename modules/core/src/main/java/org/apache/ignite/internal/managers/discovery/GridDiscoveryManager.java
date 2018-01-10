@@ -53,10 +53,10 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.CommunicationProblemResolver;
+import org.apache.ignite.configuration.CommunicationFailureResolver;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.DefaultCommunicationProblemResolver;
+import org.apache.ignite.configuration.DefaultCommunicationFailureResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -551,8 +551,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             });
         }
 
-        if (ctx.config().getCommunicationProblemResolver() != null)
-            ctx.resource().injectGeneric(ctx.config().getCommunicationProblemResolver());
+        if (ctx.config().getCommunicationFailureResolver() != null)
+            ctx.resource().injectGeneric(ctx.config().getCommunicationFailureResolver());
 
         spi.setListener(new DiscoverySpiListener() {
             private long gridStartTime;
@@ -2352,22 +2352,22 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @throws IgniteCheckedException If configuration is not valid.
      */
     public static void initCommunicationErrorResolveConfiguration(IgniteConfiguration cfg) throws IgniteCheckedException {
-        CommunicationProblemResolver rslvr = cfg.getCommunicationProblemResolver();
+        CommunicationFailureResolver rslvr = cfg.getCommunicationFailureResolver();
         CommunicationSpi commSpi = cfg.getCommunicationSpi();
         DiscoverySpi discoverySpi = cfg.getDiscoverySpi();
 
         if (rslvr != null) {
             if (!supportsCommunicationErrorResolve(commSpi))
-                throw new IgniteCheckedException("CommunicationProblemResolver is configured, but communication SPI does not support communication" +
+                throw new IgniteCheckedException("CommunicationFailureResolver is configured, but communication SPI does not support communication" +
                     "problem resolve: " + commSpi.getClass().getName());
 
             if (!supportsCommunicationErrorResolve(discoverySpi))
-                throw new IgniteCheckedException("CommunicationProblemResolver is configured, but discovery SPI does not support communication" +
+                throw new IgniteCheckedException("CommunicationFailureResolver is configured, but discovery SPI does not support communication" +
                     "problem resolve: " + discoverySpi.getClass().getName());
         }
         else {
             if (supportsCommunicationErrorResolve(commSpi) && supportsCommunicationErrorResolve(discoverySpi))
-                cfg.setCommunicationProblemResolver(new DefaultCommunicationProblemResolver());
+                cfg.setCommunicationFailureResolver(new DefaultCommunicationFailureResolver());
         }
     }
 
@@ -2391,7 +2391,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return {@code True} if communication error resolve is supported.
      */
     public boolean communicationErrorResolveSupported() {
-        return ctx.config().getCommunicationProblemResolver() != null;
+        return ctx.config().getCommunicationFailureResolver() != null;
     }
 
     /**

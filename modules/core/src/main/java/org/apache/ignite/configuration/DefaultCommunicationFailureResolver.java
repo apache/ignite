@@ -29,13 +29,13 @@ import org.apache.ignite.resources.LoggerResource;
 /**
  *
  */
-public class DefaultCommunicationProblemResolver implements CommunicationProblemResolver {
+public class DefaultCommunicationFailureResolver implements CommunicationFailureResolver {
     /** */
     @LoggerResource
     private IgniteLogger log;
 
     /** {@inheritDoc} */
-    @Override public void resolve(CommunicationProblemContext ctx) {
+    @Override public void resolve(CommunicationFailureContext ctx) {
         ClusterGraph graph = new ClusterGraph(log, ctx);
 
         ClusterSearch cluster = graph.findLargestIndependentCluster();
@@ -147,7 +147,7 @@ public class DefaultCommunicationProblemResolver implements CommunicationProblem
         private final long[] visitBitSet;
 
         /** */
-        private final CommunicationProblemContext ctx;
+        private final CommunicationFailureContext ctx;
 
         /** */
         private final List<ClusterNode> nodes;
@@ -156,7 +156,7 @@ public class DefaultCommunicationProblemResolver implements CommunicationProblem
          * @param log Logger.
          * @param ctx Context.
          */
-        ClusterGraph(IgniteLogger log, CommunicationProblemContext ctx) {
+        ClusterGraph(IgniteLogger log, CommunicationFailureContext ctx) {
             this.log = log;
             this.ctx = ctx;
 
@@ -300,6 +300,6 @@ public class DefaultCommunicationProblemResolver implements CommunicationProblem
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DefaultCommunicationProblemResolver.class, this);
+        return S.toString(DefaultCommunicationFailureResolver.class, this);
     }
 }

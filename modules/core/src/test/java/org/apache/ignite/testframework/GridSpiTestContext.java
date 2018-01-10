@@ -608,12 +608,12 @@ public class GridSpiTestContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean communicationErrorResolveSupported() {
+    @Override public boolean communicationFailureResolveSupported() {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override public void resolveCommunicationError(ClusterNode node, Exception err) {
+    @Override public void resolveCommunicationFailure(ClusterNode node, Exception err) {
         throw new UnsupportedOperationException();
     }
 

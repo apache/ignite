@@ -20,9 +20,9 @@ package org.apache.ignite.configuration;
 /**
  *
  */
-public interface CommunicationProblemResolver {
+public interface CommunicationFailureResolver {
     /**
      * @param ctx Context.
      */
-    public void resolve(CommunicationProblemContext ctx);
+    public void resolve(CommunicationFailureContext ctx);
 }

@@ -26,13 +26,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CommunicationProblemContext;
+import org.apache.ignite.configuration.CommunicationFailureContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 
 /**
  *
  */
-class ZkCommunicationProblemContext implements CommunicationProblemContext {
+class ZkCommunicationFailureContext implements CommunicationFailureContext {
     /** */
     private static final Comparator<ClusterNode> NODE_ORDER_CMP = new Comparator<ClusterNode>() {
         @Override public int compare(ClusterNode node1, ClusterNode node2) {
@@ -61,7 +61,7 @@ class ZkCommunicationProblemContext implements CommunicationProblemContext {
      * @param initialNodes Topology snapshot when communication error resolve started.
      * @param nodesState Nodes communication state.
      */
-    ZkCommunicationProblemContext(
+    ZkCommunicationFailureContext(
         GridCacheSharedContext ctx,
         List<ClusterNode> curNodes,
         List<ClusterNode> initialNodes,

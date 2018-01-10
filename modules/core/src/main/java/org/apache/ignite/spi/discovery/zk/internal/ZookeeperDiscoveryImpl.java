@@ -47,7 +47,7 @@ import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CommunicationProblemResolver;
+import org.apache.ignite.configuration.CommunicationFailureResolver;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -3143,7 +3143,7 @@ public class ZookeeperDiscoveryImpl {
                 }
             }
             else {
-                CommunicationProblemResolver rslvr = spi.ignite().configuration().getCommunicationProblemResolver();
+                CommunicationFailureResolver rslvr = spi.ignite().configuration().getCommunicationFailureResolver();
 
                 if (rslvr != null) {
                     if (log.isInfoEnabled()) {
@@ -3151,7 +3151,7 @@ public class ZookeeperDiscoveryImpl {
                             ", rslvr=" + rslvr.getClass().getSimpleName() + ']');
                     }
 
-                    ZkCommunicationProblemContext ctx = new ZkCommunicationProblemContext(
+                    ZkCommunicationFailureContext ctx = new ZkCommunicationFailureContext(
                         ((IgniteKernal)spi.ignite()).context().cache().context(),
                         topSnapshot,
                         initialNodes,

@@ -24,7 +24,7 @@ import org.apache.ignite.spi.communication.CommunicationSpi;
 /**
  *
  */
-public interface CommunicationProblemContext {
+public interface CommunicationFailureContext {
     /**
      * @return Current topology snapshot.
      */
