@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -296,10 +297,14 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             if (isDone())
                 return false;
 
+            boolean nodeStop = false;
+
             if (err != null) {
                 tx.commitError(err);
 
                 boolean marked = tx.setRollbackOnly();
+
+                nodeStop = err instanceof NodeStoppingException;
 
                 if (err instanceof IgniteTxRollbackCheckedException) {
                     if (marked) {
@@ -347,11 +352,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                     finishOnePhase(commit);
 
-                    tx.tmFinish(commit);
+                    tx.tmFinish(commit, nodeStop);
                 }
 
                 if (super.onDone(tx0, err)) {
-                    if (error() instanceof IgniteTxHeuristicCheckedException) {
+                    if (error() instanceof IgniteTxHeuristicCheckedException && !nodeStop) {
                         AffinityTopologyVersion topVer = tx.topologyVersion();
 
                         for (IgniteTxEntry e : tx.writeMap().values()) {

@@ -913,6 +913,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         // No new caches should be added after this point.
         exch.onKernalStop(cancel);
 
+        sharedCtx.mvcc().onStop();
+
         for (GridCacheAdapter<?, ?> cache : caches.values()) {
             GridCacheAffinityManager aff = cache.context().affinity();
 
