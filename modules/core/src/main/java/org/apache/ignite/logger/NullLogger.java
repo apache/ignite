@@ -31,27 +31,37 @@ public class NullLogger implements IgniteLogger {
     }
 
     /** {@inheritDoc} */
-    @Override public void trace(String marker, String msg) {
+    @Override public void trace(String msg) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void debug(String marker, String msg) {
+    @Override public void debug(String msg) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void info(String marker, String msg) {
+    @Override public void info(String msg) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void warning(String marker, String msg, @Nullable Throwable e) {
+    @Override public void warning(String msg) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void error(String marker, String msg, @Nullable Throwable e) {
+    @Override public void warning(String msg, @Nullable Throwable e) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void error(String msg) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void error(String msg, @Nullable Throwable e) {
         // No-op.
     }
 
