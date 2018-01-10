@@ -95,24 +95,25 @@ public class LabeledDatasetLoader {
         int colSize, int rowIdx, String[] rowData) {
         final Vector vec = LabeledDataset.emptyVector(colSize, isDistributed);
 
+        if (isFallOnBadData && rowData.length != colSize + 1)
+            throw new CardinalityException(colSize + 1, rowData.length);
+
+        double val = fillMissedData();
+
         for (int j = 0; j < colSize; j++) {
-
-            if (rowData.length == colSize + 1) {
-                double val = fillMissedData();
-
-                try {
-                    val = Double.parseDouble(rowData[j + 1]);
-                    vec.set(j, val);
-                }
-                catch (NumberFormatException e) {
-                    if (isFallOnBadData)
-                        throw new FileParsingException(rowData[j + 1], rowIdx, pathToFile);
-                    else
-                        vec.set(j, val);
-                }
+            try {
+                val = Double.parseDouble(rowData[j + 1]);
+                vec.set(j, val);
             }
-            else
-                throw new CardinalityException(colSize + 1, rowData.length);
+            catch (NumberFormatException e) {
+                if (isFallOnBadData)
+                    throw new FileParsingException(rowData[j + 1], rowIdx, pathToFile);
+                else
+                    vec.set(j, val);
+            }
+            catch (ArrayIndexOutOfBoundsException e){
+                vec.set(j, val);
+            }
         }
         return vec;
     }

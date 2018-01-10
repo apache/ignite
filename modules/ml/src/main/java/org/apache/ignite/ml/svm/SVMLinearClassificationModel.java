@@ -62,8 +62,8 @@ public class SVMLinearClassificationModel implements Model<Vector, Double>, Expo
     }
 
     /** {@inheritDoc} */
-    @Override public Double apply(Vector vector) {
-        return null;
+    @Override public Double apply(Vector input) {
+        return input.dot(weights) + intercept;
     }
 
     /**  {@inheritDoc} */
@@ -89,5 +89,9 @@ public class SVMLinearClassificationModel implements Model<Vector, Double>, Expo
 
     public double getIntercept() {
         return intercept;
+    }
+
+    public double getRegularization() {
+        return 1.0;
     }
 }
