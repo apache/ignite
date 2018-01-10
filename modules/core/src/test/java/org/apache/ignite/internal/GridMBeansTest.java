@@ -56,8 +56,7 @@ public class GridMBeansTest extends GridCommonAbstractTest {
     /** Check that kernal bean is available */
     public void testKernalBeans() throws Exception {
         checkBean("Kernal", "IgniteKernal", "InstanceName", grid().name());
-        checkBean("Kernal", "ClusterMetricsMXBeanImpl", "TotalServerNodes", 1);
-        checkBean("Kernal", "ClusterMetricsMXBeanImpl", "TotalServerNodes", 1);
+        checkBean("Kernal", "ClusterLocalNodeMetricsMXBeanImpl", "TotalNodes", 1);
     }
 
     /** Check that kernal bean is available */
