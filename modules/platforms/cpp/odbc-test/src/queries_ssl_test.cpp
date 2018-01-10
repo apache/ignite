@@ -82,10 +82,7 @@ struct SslQueriesTestSuiteFixture
         BOOST_REQUIRE(dbc != NULL);
 
         // Connect string
-        std::vector<SQLCHAR> connectStr0;
-
-        connectStr0.reserve(connectStr.size() + 1);
-        std::copy(connectStr.begin(), connectStr.end(), std::back_inserter(connectStr0));
+        std::vector<SQLCHAR> connectStr0(connectStr.begin(), connectStr.end());
 
         SQLCHAR outstr[ODBC_BUFFER_SIZE];
         SQLSMALLINT outstrlen;
@@ -524,9 +521,9 @@ BOOST_AUTO_TEST_CASE(TestConnectionSsl)
         "ADDRESS=127.0.0.1:11110;"
         "SCHEMA=cache;"
         "SSL_MODE=require;"
-        "SSL_KEY_FILE=" << cfgDirPath << "/ssl/client_full.pem;"
-        "SSL_CERT_FILE=" << cfgDirPath << "/ssl/client_full.pem;"
-        "SSL_CA_FILE=" << cfgDirPath << "/ssl/ca.pem;";
+        "SSL_KEY_FILE=" << cfgDirPath << Fs << "ssl" << Fs << "client_full.pem;"
+        "SSL_CERT_FILE=" << cfgDirPath << Fs << "ssl" << Fs << "client_full.pem;"
+        "SSL_CA_FILE=" << cfgDirPath << Fs << "ssl" << Fs << "ca.pem;";
 
     Connect(connectString.str());
 
