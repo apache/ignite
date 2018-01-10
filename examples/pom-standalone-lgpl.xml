@@ -215,9 +215,7 @@
                         <configuration>
                             <sources>
                                 <source>${lgpl.folder}</source>
-                                <source>src/main/java</source>
                                 <source>${spark.folder}</source>
-                                <source>src/main/ml</source>
                             </sources>
                         </configuration>
                     </execution>
