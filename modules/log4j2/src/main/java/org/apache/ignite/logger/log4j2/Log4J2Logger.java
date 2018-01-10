@@ -440,11 +440,21 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
+    @Override public void trace(String msg) {
+        trace(null, msg);
+    }
+
+    /** {@inheritDoc} */
     @Override public void trace(String marker, String msg) {
         if (!isTraceEnabled())
             warning("Logging at TRACE level without checking if TRACE level is enabled: " + msg);
 
         impl.trace(getMarkerOrNull(marker), msg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void debug(String msg) {
+        debug(null, msg);
     }
 
     /** {@inheritDoc} */
@@ -456,6 +466,11 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
+    @Override public void info(String msg) {
+        info(null, msg);
+    }
+
+    /** {@inheritDoc} */
     @Override public void info(String marker, String msg) {
         if (!isInfoEnabled())
             warning("Logging at INFO level without checking if INFO level is enabled: " + msg);
@@ -464,8 +479,18 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
+    @Override public void warning(String msg, @Nullable Throwable e) {
+        warning(null, msg, e);
+    }
+
+    /** {@inheritDoc} */
     @Override public void warning(String marker, String msg, @Nullable Throwable e) {
         impl.warn(getMarkerOrNull(marker), msg, e);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void error(String msg, @Nullable Throwable e) {
+        error(null, msg, e);
     }
 
     /** {@inheritDoc} */
