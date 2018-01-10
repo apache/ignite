@@ -445,17 +445,19 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
                 for (int i = 0; i < cnt; i++) {
                     Object consId = reader.readObjectDetached();
+                    Map<String, Object> attrs = reader.readMap();
+
                     nodes.add(new BaselineNode() {
                         @Override public Object consistentId() {
                             return consId;
                         }
 
                         @Override public <T> T attribute(String name) {
-                            return null;
+                            return (T) attrs.get(name);
                         }
 
                         @Override public Map<String, Object> attributes() {
-                            return null;
+                            return attrs;
                         }
                     });
                 }
