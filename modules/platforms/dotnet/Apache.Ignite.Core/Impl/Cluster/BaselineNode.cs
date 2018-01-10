@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
 {
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Binary;
@@ -44,7 +45,8 @@ namespace Apache.Ignite.Core.Impl.Cluster
             Debug.Assert(reader != null);
 
             _consistentId = reader.ReadObject<object>();
-            _attributes = reader.ReadDictionaryAsGeneric<string, object>().AsReadOnly();
+            _attributes = Enumerable.Range(0, reader.ReadInt())
+                .ToDictionary(x => reader.ReadString(), x => reader.ReadObject<object>());
         }
 
         /** <inheritdoc /> */
@@ -68,7 +70,23 @@ namespace Apache.Ignite.Core.Impl.Cluster
             Debug.Assert(node != null);
 
             writer.WriteObjectDetached(node.ConsistentId);
-            writer.WriteDictionary(node.Attributes);
+            
+            var attrs = node.Attributes;
+
+            if (attrs != null)
+            {
+                writer.WriteInt(attrs.Count);
+
+                foreach (var attr in attrs)
+                {
+                    writer.WriteString(attr.Key);
+                    writer.WriteObjectDetached(attr.Value);
+                }
+            }
+            else
+            {
+                writer.WriteInt(0);
+            }
         }
     }
 }
