@@ -2861,7 +2861,34 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCommunicationErrorResolve_CachesInfo1() throws Exception {
+        testCommSpi = true;
+        sesTimeout = 5000;
 
+        final CacheInfoCommunicationFailureResolver rslvr = new CacheInfoCommunicationFailureResolver();
+
+        commProblemRslvr = new IgniteOutClosure<CommunicationFailureResolver>() {
+            @Override public CommunicationFailureResolver apply() {
+                return rslvr;
+            }
+        };
+
+        startGrids(2);
+
+        ZookeeperDiscoverySpi spi = spi(ignite(0));
+
+        rslvr.latch = new CountDownLatch(1);
+
+        ZkTestCommunicationSpi.spi(ignite(0)).initCheckResult(2, 0);
+
+        spi.resolveCommunicationError(spi.getRemoteNodes().iterator().next(), new Exception("test"));
+
+        assertTrue(rslvr.latch.await(10, SECONDS));
+
+        List<String> caches = Arrays.asList(DEFAULT_CACHE_NAME);
+
+        Collections.sort(caches);
+
+        assertEquals(caches, rslvr.caches);
     }
 
     /**
@@ -4061,6 +4088,51 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             @Override public boolean systemOperationAllowed(SecurityPermission perm) {
                 return true;
             }
+        }
+    }
+
+    /**
+     *
+     */
+    static class CacheInfoCommunicationFailureResolver implements CommunicationFailureResolver {
+        /** */
+        @LoggerResource
+        private IgniteLogger log;
+
+        /** */
+        List<String> caches;
+
+        /** */
+        Map<String, List<List<ClusterNode>>> affMap;
+
+        /** */
+        Map<String, List<List<ClusterNode>>> ownersMap;
+
+        /** */
+        volatile CountDownLatch latch;
+
+        /** {@inheritDoc} */
+        @Override public void resolve(CommunicationFailureContext ctx) {
+            assert latch != null;
+            assert latch.getCount() == 1L : latch.getCount();
+
+            caches = ctx.startedCaches();
+
+            Collections.sort(caches);
+
+            log.info("Resolver called, started caches: " + caches);
+
+            assertNotNull(caches);
+
+            affMap = new HashMap<>();
+            ownersMap = new HashMap<>();
+
+            for (String cache : caches) {
+                affMap.put(cache, ctx.cacheAffinity(cache));
+                ownersMap.put(cache, ctx.cachePartitionOwners(cache));
+            }
+
+            latch.countDown();
         }
     }
 

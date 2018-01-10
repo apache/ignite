@@ -229,6 +229,12 @@ public interface GridDhtPartitionTopology {
     public List<ClusterNode> owners(int p);
 
     /**
+     * @return List indexed by partition number, each list element is collection of all nodes who
+     *      owns corresponding partition.
+     */
+    public List<List<ClusterNode>> allOwners();
+
+    /**
      * @param p Partition ID.
      * @param topVer Topology version.
      * @return Collection of all nodes who {@code own} this partition.

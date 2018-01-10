@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.Comparator;
@@ -25,9 +26,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CommunicationFailureContext;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
  *
@@ -53,7 +60,7 @@ class ZkCommunicationFailureContext implements CommunicationFailureContext {
     private final List<ClusterNode> curNodes;
 
     /** */
-    private final GridCacheSharedContext ctx;
+    private final GridCacheSharedContext<?, ?> ctx;
 
     /**
      * @param ctx Context.
@@ -62,7 +69,7 @@ class ZkCommunicationFailureContext implements CommunicationFailureContext {
      * @param nodesState Nodes communication state.
      */
     ZkCommunicationFailureContext(
-        GridCacheSharedContext ctx,
+        GridCacheSharedContext<?, ?> ctx,
         List<ClusterNode> curNodes,
         List<ClusterNode> initialNodes,
         Map<UUID, BitSet> nodesState)
@@ -97,17 +104,61 @@ class ZkCommunicationFailureContext implements CommunicationFailureContext {
 
     /** {@inheritDoc} */
     @Override public List<String> startedCaches() {
-        return null; // TODO ZK
+        Map<Integer, DynamicCacheDescriptor> cachesMap = ctx.affinity().caches();
+
+        List<String> res = new ArrayList<>(cachesMap.size());
+
+        for (DynamicCacheDescriptor desc : cachesMap.values()) {
+            if (desc.cacheType().userCache())
+                res.add(desc.cacheName());
+        }
+
+        return res;
     }
 
     /** {@inheritDoc} */
     @Override public List<List<ClusterNode>> cacheAffinity(String cacheName) {
-        return null; // TODO ZK
+        if (cacheName == null)
+            throw new NullPointerException("Null cache name.");
+
+        DynamicCacheDescriptor cacheDesc = ctx.affinity().caches().get(CU.cacheId(cacheName));
+
+        if (cacheDesc == null)
+            throw new IllegalArgumentException("Invalid cache name: " + cacheName);
+
+        GridAffinityAssignmentCache aff = ctx.affinity().groupAffinity(cacheDesc.groupId());
+
+        assert aff != null : cacheName;
+
+        return aff.readyAssignments(aff.lastVersion());
     }
 
     /** {@inheritDoc} */
     @Override public List<List<ClusterNode>> cachePartitionOwners(String cacheName) {
-        return null; // TODO ZK
+        if (cacheName == null)
+            throw new NullPointerException("Null cache name.");
+
+        DynamicCacheDescriptor cacheDesc = ctx.affinity().caches().get(CU.cacheId(cacheName));
+
+        if (cacheDesc == null)
+            throw new IllegalArgumentException("Invalid cache name: " + cacheName);
+
+        if (cacheDesc.cacheConfiguration().getCacheMode() == CacheMode.LOCAL)
+            return Collections.emptyList();
+
+        CacheGroupContext grp = ctx.cache().cacheGroup(cacheDesc.groupId());
+
+        GridDhtPartitionTopology top;
+
+        if (grp == null) {
+            top = ctx.exchange().clientTopologyIfExists(cacheDesc.groupId());
+
+            assert top != null : cacheName;
+        }
+        else
+            top = grp.topology();
+
+        return top.allOwners();
     }
 
     /** {@inheritDoc} */
@@ -126,5 +177,10 @@ class ZkCommunicationFailureContext implements CommunicationFailureContext {
      */
     Set<ClusterNode> killedNodes() {
         return killedNodes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "ZkCommunicationFailureContext []";
     }
 }

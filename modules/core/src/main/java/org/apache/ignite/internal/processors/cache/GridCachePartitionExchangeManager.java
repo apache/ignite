@@ -713,6 +713,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /**
      * @param grpId Cache group ID.
+     * @return Topology.
+     */
+    @Nullable public GridDhtPartitionTopology clientTopologyIfExists(int grpId) {
+        return clientTops.get(grpId);
+    }
+
+    /**
+     * @param grpId Cache group ID.
      * @param discoCache Discovery data cache.
      * @return Topology.
      */

@@ -58,6 +58,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -67,6 +68,7 @@ import org.apache.ignite.internal.util.io.GridByteArrayOutputStream;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.MarshallerUtils;
@@ -3064,8 +3066,18 @@ public class ZookeeperDiscoveryImpl {
         return new ZkDistributedCollectDataFuture(this, rtState, zkPaths.distributedFutureBasePath(futId),
             new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    // Future is completed from ZK event thread.
-                    onCommunicationErrorResolveStatusReceived(rtState);
+                    WaitExchangeCompletionCallback cb = new WaitExchangeCompletionCallback(new Callable<Void>() {
+                        @Override public Void call() throws Exception {
+                            onCommunicationErrorResolveStatusReceived(rtState);
+
+                            return null;
+                        }
+                    }, rtState);
+
+                    // ZkDistributedCollectDataFuture is completed from ZK event thread.
+                    // If exchange is in progress then wait when it finish to make sure coordinator has information
+                    // about all caches. Since callback is called from Zookeeper thread then new exchange can not start.
+                    cb.runOfWaitForExchange();
 
                     return null;
                 }
@@ -3077,7 +3089,7 @@ public class ZookeeperDiscoveryImpl {
      * @param rtState Runtime state.
      * @throws Exception If failed.
      */
-    private void onCommunicationErrorResolveStatusReceived(ZkRuntimeState rtState) throws Exception {
+    private void onCommunicationErrorResolveStatusReceived(final ZkRuntimeState rtState) throws Exception {
         ZkDiscoveryEventsData evtsData = rtState.evtsData;
 
         UUID futId = evtsData.communicationErrorResolveFutureId();
@@ -4173,6 +4185,62 @@ public class ZookeeperDiscoveryImpl {
             assert rc == 0 : KeeperException.Code.get(rc);
 
             checkClientsStatus(children);
+        }
+    }
+
+    /**
+     *
+     */
+    class WaitExchangeCompletionCallback extends ZkAbstractCallabck implements AsyncCallback.StatCallback {
+        /** */
+        private final Callable<Void> cb;
+
+        /**
+         * @param cb Callback.
+         * @param rtState Runtime state.
+         */
+        WaitExchangeCompletionCallback(Callable<Void> cb, ZkRuntimeState rtState) {
+            super(rtState, ZookeeperDiscoveryImpl.this);
+
+            this.cb = cb;
+        }
+
+        /**
+         * @throws Exception If callback failed.
+         */
+        void runOfWaitForExchange() throws Exception {
+            GridCacheSharedContext cacheCtx = ((IgniteKernal)spi.ignite()).context().cache().context();
+
+            IgniteInternalFuture<?> exchFut =
+                cacheCtx.exchange().affinityReadyFuture(cacheCtx.discovery().topologyVersionEx());
+
+            if (exchFut != null && !exchFut.isDone()) {
+                exchFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> fut) {
+                        // Most probably listener is run from Ignite thread, run fake async operation to return to Zookeeper thread.
+                        rtState.zkClient.existsAsync(zkPaths.aliveNodesDir, null, WaitExchangeCompletionCallback.this);
+                    }
+                });
+
+                return;
+            }
+
+            cb.call();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void processResult(int rc, String path, Object ctx, Stat stat) {
+            if (!onProcessStart())
+                return;
+
+            try {
+                runOfWaitForExchange();
+
+                onProcessEnd();
+            }
+            catch (Throwable e) {
+                onProcessError(e);
+            }
         }
     }
 
