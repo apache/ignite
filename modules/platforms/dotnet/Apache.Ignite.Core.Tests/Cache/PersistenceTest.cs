@@ -218,14 +218,13 @@ namespace Apache.Ignite.Core.Tests.Cache
             };
 
             using (var ignite = Ignition.Start(cfg1))
-            using (Ignition.Start(cfg2))
             {
-                var cluster = ignite.GetCluster();
-                Assert.AreEqual(2, cluster.TopologyVersion);
+                // Start and stop to bump topology version.
+                Ignition.Start(cfg2);
+                Ignition.Stop(cfg2.IgniteInstanceName, true);
 
-                // TODO
-                var attrs = cluster.GetLocalNode().Attributes;
-                Assert.IsNotNull(attrs);
+                var cluster = ignite.GetCluster();
+                Assert.AreEqual(3, cluster.TopologyVersion);
 
                 // Can not set baseline while inactive.
                 var ex = Assert.Throws<IgniteException>(() => cluster.SetBaselineTopology(2));
