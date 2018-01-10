@@ -30,9 +30,6 @@ public class SBLimitedLength extends GridStringBuilder {
     /** Additional string builder to get tail of message. */
     private CircularStringBuilder tail;
 
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /**
      * @param cap Capacity.
      */
