@@ -57,6 +57,12 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /** Ssl context factory. */
     private static Factory<SSLContext> sslContextFactory;
 
+    /** Set SSL context factory to client listener. */
+    private static boolean setSslCtxFactoryToCli;
+
+    /** Set SSL context factory to ignite. */
+    private static boolean setSslCtxFactoryToIgnite;
+
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -73,8 +79,10 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
         cfg.setClientConnectorConfiguration(
             new ClientConnectorConfiguration()
                 .setSslEnabled(true)
-                .setUseIgniteSslContextFactory(false)
-                .setSslContextFactory(sslContextFactory));
+                .setUseIgniteSslContextFactory(setSslCtxFactoryToIgnite)
+                .setSslContextFactory(setSslCtxFactoryToCli ? sslContextFactory : null));
+
+        cfg.setSslContextFactory(setSslCtxFactoryToIgnite ? sslContextFactory : null);
 
         return cfg;
     }
@@ -83,6 +91,30 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testConnection() throws Exception {
+        setSslCtxFactoryToCli = true;
+        sslContextFactory = getTestSslContextFactory();
+
+        startGrids(1);
+
+        try {
+            try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?useSSL=true" +
+                "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
+                "&sslClientCertificateKeyStorePassword=123456" +
+                "&sslTrustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
+                "&sslTrustCertificateKeyStorePassword=123456")) {
+                checkConnection(conn);
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConnectionUseIgniteFactory() throws Exception {
+        setSslCtxFactoryToIgnite = true;
         sslContextFactory = getTestSslContextFactory();
 
         startGrids(1);
@@ -105,6 +137,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testDefaultContext() throws Exception {
+        setSslCtxFactoryToCli = true;
         // Factory return default SSL context
         sslContextFactory = new Factory<SSLContext>() {
             @Override public SSLContext create() {
@@ -142,6 +175,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testContextFactory() throws Exception {
+        setSslCtxFactoryToCli = true;
         sslContextFactory = getTestSslContextFactory();
 
         startGrids(1);
@@ -159,6 +193,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testSslServerAndPlainClient() throws Exception {
+        setSslCtxFactoryToCli = true;
         sslContextFactory = getTestSslContextFactory();
 
         startGrids(1);
@@ -181,6 +216,8 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testInvalidKeystoreConfig() throws Exception {
+        setSslCtxFactoryToCli = true;
+
         startGrids(1);
 
         try {
