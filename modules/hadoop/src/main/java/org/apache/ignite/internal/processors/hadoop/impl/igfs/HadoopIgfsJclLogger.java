@@ -57,27 +57,42 @@ public class HadoopIgfsJclLogger implements IgniteLogger {
     }
 
     /** {@inheritDoc} */
-    @Override public void trace(String marker, String msg) {
+    @Override public void trace(String msg) {
         impl.trace(msg);
     }
 
     /** {@inheritDoc} */
-    @Override public void debug(String marker, String msg) {
+    @Override public void debug(String msg) {
         impl.debug(msg);
     }
 
     /** {@inheritDoc} */
-    @Override public void info(String marker, String msg) {
+    @Override public void info(String msg) {
         impl.info(msg);
     }
 
     /** {@inheritDoc} */
-    @Override public void warning(String marker, String msg, @Nullable Throwable e) {
+    @Override public void warning(String msg) {
+        impl.warn(msg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void warning(String msg, @Nullable Throwable e) {
         impl.warn(msg, e);
     }
 
     /** {@inheritDoc} */
-    @Override public void error(String marker, String msg, @Nullable Throwable e) {
+    @Override public void error(String msg) {
+        impl.error(msg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isQuiet() {
+        return quiet;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void error(String msg, @Nullable Throwable e) {
         impl.error(msg, e);
     }
 
@@ -94,11 +109,6 @@ public class HadoopIgfsJclLogger implements IgniteLogger {
     /** {@inheritDoc} */
     @Override public boolean isInfoEnabled() {
         return impl.isInfoEnabled();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isQuiet() {
-        return quiet;
     }
 
     /** {@inheritDoc} */
