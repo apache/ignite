@@ -22,7 +22,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
@@ -324,7 +326,9 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
 
     /** {@inheritDoc} */
     @Override protected void cleanup(MLPGroupUpdateTrainerLocalContext locCtx) {
-
+        MLPGroupUpdateTrainerDataCache.getOrCreate(ignite).remove(locCtx.trainingUUID());
+        Set<GroupTrainerCacheKey<Void>> toRmv = MLPCache.allKeys(locCtx.parallelTrainingsCnt(), locCtx.trainingUUID()).collect(Collectors.toSet());
+        MLPCache.getOrCreate(ignite).removeAll(toRmv);
     }
 
     /**
