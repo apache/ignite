@@ -4237,6 +4237,24 @@ public abstract class IgniteUtils {
 
     /**
      * Depending on whether or not log is provided and quiet mode is enabled logs given
+     * messages as quiet message or normal log WARN message. If {@code log} is {@code null}
+     * or in QUIET mode it will add {@code (wrn)} prefix to the message.
+     *
+     * @param log Optional logger to use when QUIET mode is not enabled.
+     * @param msg Message to log.
+     */
+    public static void warnDev(@Nullable IgniteLogger log, Object msg) {
+        assert msg != null;
+
+        if (log != null)
+            log.warning(IgniteLogger.DEV_ONLY, compact(msg.toString()), null);
+        else
+            X.println("[" + SHORT_DATE_FMT.format(new java.util.Date()) + "] (wrn) " +
+                compact(msg.toString()));
+    }
+
+    /**
+     * Depending on whether or not log is provided and quiet mode is enabled logs given
      * messages as quiet message or normal log INFO message.
      * <p>
      * <b>NOTE:</b> unlike the normal logging when INFO level may not be enabled and
