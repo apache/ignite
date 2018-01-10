@@ -141,7 +141,7 @@ namespace ignite
                 if (!loaded)
                 {
                     AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
-                        "Can not load OpenSSL library (have you set OPENSSL_HOME?).");
+                        "Can not load OpenSSL library (did you set OPENSSL_HOME environment variable?).");
 
                     return SqlResult::AI_ERROR;
                 }

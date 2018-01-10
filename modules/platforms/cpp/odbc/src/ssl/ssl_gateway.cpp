@@ -31,9 +31,6 @@ namespace ignite
     {
         namespace ssl
         {
-            SslGateway* SslGateway::self = 0;
-            common::concurrent::CriticalSection SslGateway::constructionCs;
-
             SslGateway::SslGateway() :
                 inited(false),
                 functions()
@@ -77,15 +74,9 @@ namespace ignite
 
             SslGateway& SslGateway::GetInstance()
             {
-                if (!self)
-                {
-                    common::concurrent::CsLockGuard lock(constructionCs);
+                static SslGateway self;
 
-                    if (!self)
-                        self = new SslGateway();
-                }
-
-                return *self;
+                return self;
             }
 
             bool SslGateway::LoadAll()

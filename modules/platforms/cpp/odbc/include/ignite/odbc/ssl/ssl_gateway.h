@@ -86,6 +86,15 @@ namespace ignite
                     return functions;
                 }
 
+                /**
+                 * Check whether the libraries are loaded.
+                 * @return @c true if loaded.
+                 */
+                bool Loaded() const
+                {
+                    return inited;
+                }
+
             private:
                 /**
                  * Constructor.
@@ -111,12 +120,6 @@ namespace ignite
                  * @return Method pointer.
                  */
                 static void* LoadSslMethod(common::dynamic::Module mod, const char* name);
-
-                /** Singlton instance. */
-                static SslGateway* self;
-
-                /** Critical section to prevent multiple instance creation. */
-                static common::concurrent::CriticalSection constructionCs;
 
                 /** Indicates whether the library was inited. */
                 bool inited;

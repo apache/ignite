@@ -53,6 +53,8 @@ namespace ignite
 
             bool SecureSocketClient::Connect(const char* hostname, uint16_t port, diagnostic::Diagnosable& diag)
             {
+                assert(SslGateway::GetInstance().Loaded());
+
                 if (!context)
                 {
                     context = MakeContext(certPath, keyPath, caPath, diag);
@@ -169,6 +171,8 @@ namespace ignite
 
             int SecureSocketClient::Send(const int8_t* data, size_t size, int32_t timeout)
             {
+                assert(SslGateway::GetInstance().Loaded());
+
                 if (!sslBio)
                 {
                     LOG_MSG("Trying to send data using closed connection");
@@ -192,6 +196,8 @@ namespace ignite
 
             int SecureSocketClient::Receive(int8_t* buffer, size_t size, int32_t timeout)
             {
+                assert(SslGateway::GetInstance().Loaded());
+
                 if (!sslBio)
                 {
                     LOG_MSG("Trying to receive data using closed connection");
@@ -221,6 +227,8 @@ namespace ignite
             void* SecureSocketClient::MakeContext(const std::string& certPath, const std::string& keyPath,
                 const std::string& caPath, diagnostic::Diagnosable& diag)
             {
+                assert(SslGateway::GetInstance().Loaded());
+
                 static bool sslLibInited = false;
                 static common::concurrent::CriticalSection sslCs;
 
@@ -317,6 +325,8 @@ namespace ignite
 
             void SecureSocketClient::CloseInteral()
             {
+                assert(SslGateway::GetInstance().Loaded());
+
                 if (sslBio)
                 {
                     ssl::BIO_free_all(reinterpret_cast<BIO*>(sslBio));
