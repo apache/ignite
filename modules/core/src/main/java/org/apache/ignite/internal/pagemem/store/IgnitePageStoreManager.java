@@ -201,4 +201,9 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @return number of pages.
      */
     public long pagesAllocated(int grpId);
+
+    /**
+     * Sets allocated size stats to current underlying storage size.
+     */
+    public void resetAllocatedSize();
 }
