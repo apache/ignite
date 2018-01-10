@@ -110,7 +110,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(SpringCfgPath, cfg.SpringConfigUrl);
             Assert.IsTrue(cfg.JvmOptions.Contains("-DOPT1") && cfg.JvmOptions.Contains("-DOPT2"));
             Assert.IsTrue(cfg.Assemblies.Contains("test-1.dll") && cfg.Assemblies.Contains("test-2.dll"));
-            Assert.AreEqual(601, cfg.JvmInitialMemoryMb);
+            Assert.AreEqual(602, cfg.JvmInitialMemoryMb);
             Assert.AreEqual(702, cfg.JvmMaxMemoryMb);
         }
 
@@ -188,17 +188,17 @@ namespace Apache.Ignite.Core.Tests
             var proc = new IgniteProcess(
                 "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + SpringCfgPath,
-                "-JvmInitialMemoryMB=615",
-                "-JvmMaxMemoryMB=863"
+                "-JvmInitialMemoryMB=616",
+                "-JvmMaxMemoryMB=866"
                 );
 
             Assert.IsTrue(_grid.WaitTopology(2));
 
             var minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
-            Assert.AreEqual((long) 615*1024*1024, minMem);
+            Assert.AreEqual((long) 616*1024*1024, minMem);
 
             var maxMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MaxMemTask, null);
-            AssertJvmMaxMemory((long) 863*1024*1024, maxMem);
+            AssertJvmMaxMemory((long) 866*1024*1024, maxMem);
         }
 
         /// <summary>
@@ -218,7 +218,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(_grid.WaitTopology(2));
 
             var minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
-            Assert.AreEqual((long) 601*1024*1024, minMem);
+            Assert.AreEqual((long) 602*1024*1024, minMem);
 
             var maxMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MaxMemTask, null);
             AssertJvmMaxMemory((long) 702*1024*1024, maxMem);
@@ -230,12 +230,12 @@ namespace Apache.Ignite.Core.Tests
             // Command line options overwrite config file options
             // ReSharper disable once RedundantAssignment
             proc = new IgniteProcess("-jvmClasspath=" + TestUtils.CreateTestClasspath(),
-                "-J-Xms605m", "-J-Xmx706m");
+                "-J-Xms606m", "-J-Xmx706m");
 
             Assert.IsTrue(_grid.WaitTopology(2));
 
             minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
-            Assert.AreEqual((long) 605*1024*1024, minMem);
+            Assert.AreEqual((long) 606*1024*1024, minMem);
 
             maxMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MaxMemTask, null);
             AssertJvmMaxMemory((long) 706*1024*1024, maxMem);
@@ -250,7 +250,7 @@ namespace Apache.Ignite.Core.Tests
             var proc = new IgniteProcess(
                 "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + SpringCfgPath,
-                "-J-Xms555m",
+                "-J-Xms556m",
                 "-J-Xmx666m",
                 "-JvmInitialMemoryMB=128",
                 "-JvmMaxMemoryMB=256"
@@ -260,7 +260,7 @@ namespace Apache.Ignite.Core.Tests
 
             // Raw JVM options (Xms/Xmx) should override custom options
             var minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
-            Assert.AreEqual((long) 555*1024*1024, minMem);
+            Assert.AreEqual((long) 556*1024*1024, minMem);
 
             var maxMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MaxMemTask, null);
             AssertJvmMaxMemory((long) 666*1024*1024, maxMem);
