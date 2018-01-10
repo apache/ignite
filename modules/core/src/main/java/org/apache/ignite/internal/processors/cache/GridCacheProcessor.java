@@ -1097,8 +1097,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         onKernalStop(cache, true);
                         stopCache(cache, true, false);
 
-                        if (!grp.hasCaches())
+                        sharedCtx.affinity().stopCacheOnReconnect(cache.context());
+
+                        if (!grp.hasCaches()) {
                             stopCacheGroup(grp);
+
+                            sharedCtx.affinity().stopCacheGroupOnReconnect(grp);
+                        }
                     }
                 }
             });
