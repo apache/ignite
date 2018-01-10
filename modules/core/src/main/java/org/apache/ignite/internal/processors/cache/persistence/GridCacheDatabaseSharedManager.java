@@ -1117,7 +1117,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 Set<Integer> grps = grpsByRegions.get(e.getKey());
 
-                m.resetTotalAllocatedPages(0);
+                m.resetTotalAllocatedPages();
 
                 if (grps != null) {
                     for (int grp : grps)
