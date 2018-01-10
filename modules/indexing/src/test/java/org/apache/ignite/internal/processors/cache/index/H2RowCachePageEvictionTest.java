@@ -41,14 +41,14 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Tests H2RowCacheRegistry
+ * Tests for H2RowCacheRegistry with page eviction.
  */
 public class H2RowCachePageEvictionTest extends GridCommonAbstractTest {
     /** Entries count. */
-    private static final int ENTRIES = 30_000;
+    private static final int ENTRIES = 10_000;
 
     /** Offheap size for memory policy. */
-    private static final int SIZE = 32 * 1024 * 1024;
+    private static final int SIZE = 12 * 1024 * 1024;
 
     /** Test time. */
     private static final int TEST_TIME = 3 * 60_000;
@@ -82,17 +82,18 @@ public class H2RowCachePageEvictionTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return TEST_TIME + 3 * 60_000;
+        return TEST_TIME + 10 * 60_000;
     }
 
     /**
      * @param name Cache name.
+     * @param sqlOnheapCacheEnabled sqlOnheapCacheEnabled flag.
      * @return Cache configuration.
      */
-    private CacheConfiguration cacheConfiguration(String name) {
+    private CacheConfiguration cacheConfiguration(String name, boolean sqlOnheapCacheEnabled) {
         return new CacheConfiguration()
             .setName(name)
-            .setSqlOnheapCacheEnabled(true)
+            .setSqlOnheapCacheEnabled(sqlOnheapCacheEnabled)
             .setDataRegionName(DATA_REGION_NAME)
             .setAffinity(new RendezvousAffinityFunction(false, 2))
             .setQueryEntities(Collections.singleton(
@@ -117,14 +118,16 @@ public class H2RowCachePageEvictionTest extends GridCommonAbstractTest {
     /**
      */
     private void checkRowCacheOnPageEviction() {
-        grid().getOrCreateCache(cacheConfiguration(CACHE_NAME));
+        grid().getOrCreateCache(cacheConfiguration(CACHE_NAME, true));
 
         int grpId = grid().cachex(CACHE_NAME).context().groupId();
 
         assertEquals(grpId, grid().cachex(CACHE_NAME).context().groupId());
 
-        for (int i = 0; i < ENTRIES; ++i)
-            grid().cache(CACHE_NAME).put(i, new Value(i));
+        try (IgniteDataStreamer<Integer, Value> stream = grid().dataStreamer(CACHE_NAME)) {
+            for (int i = 0; i < ENTRIES; ++i)
+                stream.addData(i, new Value(i));
+        }
 
         H2RowCache rowCache = rowCache(grid()).forGroup(grpId);
 
@@ -134,8 +137,10 @@ public class H2RowCachePageEvictionTest extends GridCommonAbstractTest {
 
         int rowCacheSizeBeforeEvict = rowCache.size();
 
-        for (int i = ENTRIES; i < 2 * ENTRIES; ++i)
-            grid().cache(CACHE_NAME).put(i, new Value(i));
+        try (IgniteDataStreamer<Integer, Value> stream = grid().dataStreamer(CACHE_NAME)) {
+            for (int i = ENTRIES; i < 2 * ENTRIES; ++i)
+                stream.addData(i, new Value(i));
+        }
 
         assertTrue("rowCache size before evictions: " + rowCacheSizeBeforeEvict +
                 ", after evictions: " + rowCache.size(),
@@ -145,7 +150,7 @@ public class H2RowCachePageEvictionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception On error.
      */
-    public void testEvictPagesWithDiskStorage() throws Exception {
+    public void testEvictPagesWithDiskStorageSingleCacheInGroup() throws Exception {
         persistenceEnabled = true;
 
         startGrid();
@@ -158,7 +163,22 @@ public class H2RowCachePageEvictionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception On error.
      */
-    public void testEvcitPagesWithoutDiskStorage() throws Exception {
+    public void testEvictPagesWithDiskStorageWithOtherCacheInGroup() throws Exception {
+        persistenceEnabled = true;
+
+        startGrid();
+
+        grid().active(true);
+
+        grid().getOrCreateCache(cacheConfiguration("cacheWithoutOnHeapCache", false));
+
+        checkRowCacheOnPageEviction();
+    }
+
+    /**
+     * @throws Exception On error.
+     */
+    public void testEvictPagesWithoutDiskStorageSingleCacheInGroup() throws Exception {
         persistenceEnabled = false;
 
         startGrid();
@@ -167,79 +187,16 @@ public class H2RowCachePageEvictionTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test invalid. One cache.get touches more then 5 pages.
      * @throws Exception On error.
      */
-    public void _testTouchPageOnRead() throws Exception {
-        persistenceEnabled = true;
+    public void testEvictPagesWithoutDiskStorageWithOtherCacheInGroup() throws Exception {
+        persistenceEnabled = false;
 
         startGrid();
 
-        grid().active(true);
+        grid().getOrCreateCache(cacheConfiguration("cacheWithoutOnHeapCache", false));
 
-        grid().getOrCreateCache(cacheConfiguration(CACHE_NAME));
-
-        int grpId = grid().cachex(CACHE_NAME).context().groupId();
-
-        assertEquals(grpId, grid().cachex(CACHE_NAME).context().groupId());
-
-        try (IgniteDataStreamer<Integer, Value> stream  = grid().dataStreamer(CACHE_NAME)) {
-            for (int i = 0; i < ENTRIES * 10; ++i)
-                stream.addData(i, new Value(i));
-        }
-
-        H2RowCache rowCache = rowCache(grid()).forGroup(grpId);
-
-        assertNotNull(rowCache);
-
-        int touchKey = RND.nextInt(ENTRIES);
-        long touchLink = getLinkForKey(rowCache, touchKey);
-
-        long endTime = System.currentTimeMillis() + TEST_TIME;
-
-        int key = 0;
-
-        long iter = 0;
-        while (System.currentTimeMillis() < endTime) {
-            // Touch hot key
-            grid().cache(CACHE_NAME).query(new SqlQuery(Value.class, "_key = " + touchKey)).getAll();
-
-            // Touch other
-            grid().cache(CACHE_NAME).get(key);
-
-            // Check rows cache (and touch)
-            assertNotNull ("Iter=" + iter, rowCache.get(touchLink));
-
-            key++;
-
-            if (key > ENTRIES * 10)
-                key = 0;
-
-            iter++;
-        }
-    }
-
-    /**
-     * @param rowCache Row cache.
-     * @param key Key to find.
-     * @return Row's link.
-     */
-    private long getLinkForKey(H2RowCache rowCache, int key) {
-        // Touch key.
-        grid().cache(CACHE_NAME).query(new SqlQuery(Value.class, "_key = " + key)).getAll();
-
-        ConcurrentHashMap<Long, GridH2KeyValueRowOnheap> rowsMap = GridTestUtils.getFieldValue(rowCache, "rows");
-
-        for (Map.Entry<Long, GridH2KeyValueRowOnheap> e : rowsMap.entrySet()) {
-            GridH2KeyValueRowOnheap val = e.getValue();
-
-            if ((Integer)val.key().value(null, false) == key)
-                return e.getKey();
-        }
-
-        fail("Row cache doesn't contain key [key=" + key + ']');
-
-        return -1;
+        checkRowCacheOnPageEviction();
     }
 
     /**
