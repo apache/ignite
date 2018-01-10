@@ -18,9 +18,12 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 
 /**
@@ -36,7 +39,7 @@ public class LocalJoinCachesContext {
     private Map<Integer, CacheGroupDescriptor> cacheGrpDescs;
 
     /** */
-    Map<String, DynamicCacheDescriptor> cacheDescs;
+    private Map<String, DynamicCacheDescriptor> cacheDescs;
 
     /**
      * @param locJoinStartCaches Local caches to start on join.
@@ -72,5 +75,43 @@ public class LocalJoinCachesContext {
      */
     public Map<String, DynamicCacheDescriptor> cacheDescriptors() {
         return cacheDescs;
+    }
+
+    /**
+     * @param cacheNames Survived caches to clean.
+     */
+    public void removeSurvivedCaches(Set<String> cacheNames) {
+        if (cacheDescs != null) {
+            for (String cacheName : cacheNames)
+                cacheDescs.remove(cacheName);
+        }
+
+        Iterator<T2<DynamicCacheDescriptor, NearCacheConfiguration>> it = locJoinStartCaches.iterator();
+
+        for (; it.hasNext();) {
+            T2<DynamicCacheDescriptor, NearCacheConfiguration> entry = it.next();
+
+            DynamicCacheDescriptor desc = entry.get1();
+
+            if (cacheNames.contains(desc.cacheName()))
+                it.remove();
+        }
+    }
+
+    /**
+     * @param cacheGrps Survived caches groups to clean.
+     */
+    public void removeSurvivedCacheGroups(Set<Integer> cacheGrps) {
+        if (cacheGrpDescs != null) {
+            for (Integer grpId : cacheGrps)
+                cacheGrpDescs.remove(grpId);
+        }
+    }
+
+    /**
+     * @return {@code True} if the context is empty.
+     */
+    public boolean isEmpty() {
+        return F.isEmpty(locJoinStartCaches) && F.isEmpty(cacheGrpDescs) && F.isEmpty(cacheDescs);
     }
 }
