@@ -273,19 +273,13 @@ public class SBLimitedLength extends GridStringBuilder {
             return super.toString();
         else {
             int tailLen = tail.length();
-            StringBuilder result = new StringBuilder(impl().capacity() + 100);
-            result.append(impl());
-            result.append("... and ").append(String.valueOf(tail.getSkipped() + tailLen))
+            StringBuilder res = new StringBuilder(impl().capacity() + 100);
+
+            res.append(impl());
+            res.append("... and ").append(String.valueOf(tail.getSkipped() + tailLen))
                 .append(" skipped ...").append(tail.toString());
-            return result.toString();
+
+            return res.toString();
         }
     }
-
-    /**
-     * @param str String.
-     */
-    void appendNoLimitCheck(String str) {
-        super.a(str);
-    }
-
 }

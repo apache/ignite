@@ -90,7 +90,8 @@ public class GridToStringBuilder {
     public static final boolean INCLUDE_SENSITIVE =
         IgniteSystemProperties.getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, true);
 
-    public static final int COLLECTION_LIMIT =
+    /** */
+    private static final int COLLECTION_LIMIT =
         IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, 100);
 
     /** */
@@ -908,14 +909,19 @@ public class GridToStringBuilder {
         else {
             int overflow = 0;
             char bracket = ' ';
+
             if (val instanceof Collection && ((Collection)val).size() > COLLECTION_LIMIT) {
                 overflow = ((Collection)val).size() - COLLECTION_LIMIT;
                 bracket = ']';
                 val = F.retain((Collection) val, true, COLLECTION_LIMIT);
-            } else if (val instanceof Map && ((Map)val).size() > COLLECTION_LIMIT) {
-                Map tmp = U.newHashMap(COLLECTION_LIMIT);
+            }
+            else if (val instanceof Map && ((Map)val).size() > COLLECTION_LIMIT) {
+                Map<Object, Object> tmp = U.newHashMap(COLLECTION_LIMIT);
+
                 overflow = ((Map)val).size() - COLLECTION_LIMIT;
+
                 bracket= '}';
+
                 int cntr = 0;
 
                 for (Object o : ((Map)val).entrySet()) {
@@ -1040,39 +1046,44 @@ public class GridToStringBuilder {
      * @param arr Array object.
      * @return String representation of an array.
      */
+    @SuppressWarnings({"ConstantConditions", "unchecked"})
     public static <T> String arrayToString(Class arrType, Object arr) {
-        T[] array = (T[]) arr;
-        if (array.length > COLLECTION_LIMIT) {
+        T[] array = (T[])arr;
+
+        if (array.length > COLLECTION_LIMIT)
             arr = Arrays.copyOf(array, COLLECTION_LIMIT);
-        }
 
-        String result = null;
+        String res;
+
         if (arrType.equals(byte[].class))
-            result =  Arrays.toString((byte[]) arr);
+            res = Arrays.toString((byte[])arr);
         else if (arrType.equals(boolean[].class))
-            result =  Arrays.toString((boolean[]) arr);
+            res = Arrays.toString((boolean[])arr);
         else if (arrType.equals(short[].class))
-            result =  Arrays.toString((short[]) arr);
+            res = Arrays.toString((short[])arr);
         else if (arrType.equals(int[].class))
-            result =  Arrays.toString((int[]) arr);
+            res = Arrays.toString((int[])arr);
         else if (arrType.equals(long[].class))
-            result =  Arrays.toString((long[]) arr);
+            res = Arrays.toString((long[])arr);
         else if (arrType.equals(float[].class))
-            result =  Arrays.toString((float[]) arr);
+            res = Arrays.toString((float[])arr);
         else if (arrType.equals(double[].class))
-            result =  Arrays.toString((double[]) arr);
+            res = Arrays.toString((double[])arr);
         else if (arrType.equals(char[].class))
-            result =  Arrays.toString((char[]) arr);
-        else result =  Arrays.toString((Object[])arr);
+            res = Arrays.toString((char[])arr);
+        else
+            res = Arrays.toString((Object[])arr);
 
         if (array.length > COLLECTION_LIMIT) {
-            StringBuilder resultSB = new StringBuilder(result);
-            resultSB.deleteCharAt(resultSB.length()-1);
-            resultSB.append("... and ").append(array.length - COLLECTION_LIMIT).append(" more]");
-            result = resultSB.toString();
+            StringBuilder resSB = new StringBuilder(res);
+
+            resSB.deleteCharAt(resSB.length() - 1);
+            resSB.append("... and ").append(array.length - COLLECTION_LIMIT).append(" more]");
+
+            res = resSB.toString();
         }
 
-        return result;
+        return res;
     }
 
     /**

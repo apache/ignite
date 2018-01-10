@@ -53,12 +53,13 @@ class SBLengthLimit {
      * @param writtenLen Written length.
      */
     void onWrite(SBLimitedLength sb, int writtenLen) {
-
         len += writtenLen;
 
         if (len > MAX_TO_STR_LEN && sb.getTail() == null) {
             CircularStringBuilder tail = new CircularStringBuilder(TAIL_LEN);
+
             tail.append(sb.impl().substring(MAX_TO_STR_LEN - TAIL_LEN));
+
             sb.setTail(tail);
             sb.setLength(MAX_TO_STR_LEN - TAIL_LEN);
         }

@@ -20,9 +20,11 @@ package org.apache.ignite.internal.util.tostring;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
+/**
+ *
+ */
 @GridCommonTest(group = "Utils")
 public class CircularStringBuilderSelfTest extends GridCommonAbstractTest {
-
     /**
      * @throws Exception If failed.
      */
@@ -50,6 +52,12 @@ public class CircularStringBuilderSelfTest extends GridCommonAbstractTest {
         testSB(8, "1234", 2, "12341234");
     }
 
+    /**
+     * @param capacity Capacity.
+     * @param pattern Pattern to add.
+     * @param num How many times pattern should be added.
+     * @param expected Expected string.
+     */
     private void testSB(int capacity, String pattern, int num, String expected){
         CircularStringBuilder csb = new CircularStringBuilder(capacity);
 
