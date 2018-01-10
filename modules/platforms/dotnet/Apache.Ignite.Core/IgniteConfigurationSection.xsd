@@ -308,6 +308,13 @@
                                                                         <xs:sequence>
                                                                             <xs:element name="queryField" maxOccurs="unbounded">
                                                                                 <xs:complexType>
+                                                                                    <xs:all>
+                                                                                        <xs:element name="defaultValue" minOccurs="0">
+                                                                                            <xs:annotation>
+                                                                                                <xs:documentation>Default field value.</xs:documentation>
+                                                                                            </xs:annotation>
+                                                                                        </xs:element>
+                                                                                    </xs:all>
                                                                                     <xs:attribute name="name" type="xs:string" use="required">
                                                                                         <xs:annotation>
                                                                                             <xs:documentation>Cache name.</xs:documentation>
@@ -1440,6 +1447,11 @@
                         <xs:attribute name="threadPoolSize" type="xs:int">
                             <xs:annotation>
                                 <xs:documentation>SQL connector thread pool size.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="idleTimeout" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Idle timeout for client connections on the server side. If no packets come within idle timeout, the connection is closed by the server. Zero or negative for no timeout.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>

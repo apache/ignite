@@ -42,6 +42,9 @@ public class ClientConnectorConfiguration {
     /** Default size of thread pool. */
     public static final int DFLT_THREAD_POOL_SIZE = IgniteConfiguration.DFLT_PUBLIC_THREAD_CNT;
 
+    /** Default idle timeout. */
+    public static final int DFLT_IDLE_TIMEOUT = 0;
+
     /** Host. */
     private String host;
 
@@ -66,6 +69,9 @@ public class ClientConnectorConfiguration {
     /** Thread pool size. */
     private int threadPoolSize = DFLT_THREAD_POOL_SIZE;
 
+    /** Idle timeout. */
+    private long idleTimeout = DFLT_IDLE_TIMEOUT;
+
     /**
      * Creates SQL connector configuration with all default values.
      */
@@ -89,6 +95,7 @@ public class ClientConnectorConfiguration {
         sockSndBufSize = cfg.getSocketSendBufferSize();
         tcpNoDelay = cfg.isTcpNoDelay();
         threadPoolSize = cfg.getThreadPoolSize();
+        idleTimeout = cfg.getIdleTimeout();
     }
 
     /**
@@ -264,6 +271,32 @@ public class ClientConnectorConfiguration {
      */
     public ClientConnectorConfiguration setThreadPoolSize(int threadPoolSize) {
         this.threadPoolSize = threadPoolSize;
+
+        return this;
+    }
+
+    /**
+     * Gets idle timeout for client connections.
+     * If no packets come within idle timeout, the connection is closed.
+     * Zero or negative means no timeout.
+     *
+     * @return Idle timeout in milliseconds.
+     */
+    public long getIdleTimeout() {
+        return idleTimeout;
+    }
+
+    /**
+     * Sets idle timeout for client connections.
+     * If no packets come within idle timeout, the connection is closed.
+     * Zero or negative means no timeout.
+     *
+     * @param idleTimeout Idle timeout in milliseconds.
+     * @see #getIdleTimeout()
+     * @return {@code this} for chaining.
+     */
+    public ClientConnectorConfiguration setIdleTimeout(long idleTimeout) {
+        this.idleTimeout = idleTimeout;
 
         return this;
     }

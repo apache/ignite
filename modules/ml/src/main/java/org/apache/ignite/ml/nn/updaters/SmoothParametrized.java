@@ -17,8 +17,11 @@
 
 package org.apache.ignite.ml.nn.updaters;
 
+import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.math.Matrix;
+
 /**
  * Interface for models which are smooth functions of their parameters.
  */
-public interface SmoothParametrized<M extends SmoothParametrized<M>> extends BaseSmoothParametrized<M> {
+public interface SmoothParametrized<M extends SmoothParametrized<M>> extends BaseSmoothParametrized<M>, Model<Matrix, Matrix> {
 }
