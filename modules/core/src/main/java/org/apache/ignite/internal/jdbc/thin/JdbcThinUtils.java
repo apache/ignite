@@ -50,6 +50,9 @@ public class JdbcThinUtils {
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";
 
+    /** Default socket send and receive buffer size. */
+    public static final int DFLT_SOCK_BUF_SIZE = 64 * 1024;
+
     /**
      * Converts Java class name to type from {@link Types}.
      *

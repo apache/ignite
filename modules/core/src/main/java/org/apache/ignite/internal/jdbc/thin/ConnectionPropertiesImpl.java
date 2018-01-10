@@ -85,12 +85,12 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** Socket send buffer size property. */
     private IntegerProperty socketSendBuffer = new IntegerProperty(
         "socketSendBuffer", "Socket send buffer size",
-        0, false, 0, Integer.MAX_VALUE);
+        JdbcThinUtils.DFLT_SOCK_BUF_SIZE, false, 0, Integer.MAX_VALUE);
 
     /** Socket receive buffer size property. */
     private IntegerProperty socketReceiveBuffer = new IntegerProperty(
         "socketReceiveBuffer", "Socket send buffer size",
-        0, false, 0, Integer.MAX_VALUE);
+        JdbcThinUtils.DFLT_SOCK_BUF_SIZE, false, 0, Integer.MAX_VALUE);
 
     /** Executes update queries on ignite server nodes flag. */
     private BooleanProperty skipReducerOnUpdate = new BooleanProperty(

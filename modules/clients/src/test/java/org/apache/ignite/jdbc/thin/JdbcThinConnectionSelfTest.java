@@ -36,6 +36,7 @@ import java.util.concurrent.Executors;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
@@ -154,18 +155,18 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             "Property cannot be lower than 0 [name=socketReceiveBuffer, value=-1]");
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
-            assertEquals(0, io(conn).connectionProperties().getSocketSendBuffer());
-            assertEquals(0, io(conn).connectionProperties().getSocketReceiveBuffer());
+            assertEquals(JdbcThinUtils.DFLT_SOCK_BUF_SIZE, io(conn).connectionProperties().getSocketSendBuffer());
+            assertEquals(JdbcThinUtils.DFLT_SOCK_BUF_SIZE, io(conn).connectionProperties().getSocketReceiveBuffer());
         }
 
         // Note that SO_* options are hints, so we check that value is equals to either what we set or to default.
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?socketSendBuffer=1024")) {
             assertEquals(1024, io(conn).connectionProperties().getSocketSendBuffer());
-            assertEquals(0, io(conn).connectionProperties().getSocketReceiveBuffer());
+            assertEquals(JdbcThinUtils.DFLT_SOCK_BUF_SIZE, io(conn).connectionProperties().getSocketReceiveBuffer());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?socketReceiveBuffer=1024")) {
-            assertEquals(0, io(conn).connectionProperties().getSocketSendBuffer());
+            assertEquals(JdbcThinUtils.DFLT_SOCK_BUF_SIZE, io(conn).connectionProperties().getSocketSendBuffer());
             assertEquals(1024, io(conn).connectionProperties().getSocketReceiveBuffer());
         }
 

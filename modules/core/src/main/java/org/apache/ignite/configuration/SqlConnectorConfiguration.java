@@ -36,7 +36,7 @@ public class SqlConnectorConfiguration {
     public static final int DFLT_PORT_RANGE = 100;
 
     /** Default socket send and receive buffer size. */
-    public static final int DFLT_SOCK_BUF_SIZE = 0;
+    public static final int DFLT_SOCK_BUF_SIZE = 64 * 1024;
 
     /** Default value for {@code TCP_NODELAY} socket option (value is <tt>true</tt>). */
     public static final boolean DFLT_TCP_NO_DELAY = true;
