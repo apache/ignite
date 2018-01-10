@@ -145,6 +145,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** */
     private static final int OP_SET_BASELINE_TOPOLOGY_NODES = 24;
 
+    /** */
+    private static final int OP_GET_BASELINE_TOPOLOGY = 25;
+
     /** Start latch. */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
@@ -643,6 +646,18 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
                 for (String name : names)
                     writer.writeString(name);
+
+                return;
+            }
+
+            case OP_GET_BASELINE_TOPOLOGY: {
+                Collection<BaselineNode> blt = ignite().cluster().currentBaselineTopology();
+                writer.writeInt(blt.size());
+
+                for (BaselineNode n : blt) {
+                    writer.writeObjectDetached(n.consistentId());
+                    writer.writeMap(n.attributes());
+                }
 
                 return;
             }
