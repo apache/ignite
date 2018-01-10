@@ -381,6 +381,11 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         public static void ClearWorkDir()
         {
+            if (!Directory.Exists(WorkDir))
+            {
+                return;
+            }
+
             // Delete everything we can. Some files may be locked.
             foreach (var e in Directory.GetFileSystemEntries(WorkDir, "*", SearchOption.AllDirectories))
             {
