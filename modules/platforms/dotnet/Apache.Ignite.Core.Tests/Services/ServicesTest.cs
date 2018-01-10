@@ -745,11 +745,6 @@ namespace Apache.Ignite.Core.Tests.Services
             // Verify decriptor
             var descriptor = Services.GetServiceDescriptors().Single(x => x.Name == javaSvcName);
             Assert.AreEqual(javaSvcName, descriptor.Name);
-            Assert.Throws<ServiceInvocationException>(() =>
-            {
-                // ReSharper disable once UnusedVariable
-                var type = descriptor.Type;
-            });
 
             var svc = Services.GetServiceProxy<IJavaService>(javaSvcName, false);
             var binSvc = Services.WithKeepBinary().WithServerKeepBinary()
