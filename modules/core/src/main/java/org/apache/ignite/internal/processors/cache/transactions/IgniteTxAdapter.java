@@ -434,26 +434,32 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      */
     @SuppressWarnings({"CatchGenericClass"})
     protected void uncommit(boolean nodeStopping) {
-        if (!nodeStopping) {
-            for (IgniteTxEntry e : writeMap().values()) {
-                try {
-                    GridCacheEntryEx entry = e.cached();
+        try {
+            if (!nodeStopping) {
+                for (IgniteTxEntry e : writeMap().values()) {
+                    try {
+                        GridCacheEntryEx entry = e.cached();
 
-                    if (e.op() != NOOP)
-                        entry.invalidate(xidVer);
-                }
-                catch (Throwable t) {
-                    U.error(log, "Failed to invalidate transaction entries while reverting a commit.", t);
+                        if (e.op() != NOOP)
+                            entry.invalidate(xidVer);
+                    }
+                    catch (Throwable t) {
+                        U.error(log, "Failed to invalidate transaction entries while reverting a commit.", t);
 
-                    if (t instanceof Error)
-                        throw (Error)t;
+                        if (t instanceof Error)
+                            throw (Error)t;
 
-                    break;
+                            break;
+                        }
+                    }
+
+
+                    cctx.tm().uncommitTx(this);
                 }
             }
+        catch (Exception ex) {
+            U.error(log, "Failed to do uncommit.", ex);
         }
-
-        cctx.tm().uncommitTx(this);
     }
 
     /** {@inheritDoc} */
