@@ -23,6 +23,7 @@ import java.util.TreeMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -34,15 +35,19 @@ import sun.nio.ch.DirectBuffer;
  */
 public class WalStat {
     /** Rec type sizes. */
-    final Map<String, RecordStat> recTypeSizes = new TreeMap<>();
+    private final Map<String, RecordStat> recTypeSizes = new TreeMap<>();
+
+    /** Data Record: operation performed */
+    private final Map<String, RecordStat> dataRecordOperation = new TreeMap<>();
+
     /** Page snapshot types. */
-    final Map<String, RecordStat> pageSnapshotTypes = new TreeMap<>();
+    private final Map<String, RecordStat> pageSnapshotTypes = new TreeMap<>();
     /** Page snapshot partition. */
-    final Map<Integer, RecordStat> pageSnapshotPart = new TreeMap<>();
+    private final Map<Integer, RecordStat> pageSnapshotPart = new TreeMap<>();
     /** Page snapshot indexes. */
-    final Map<Integer, RecordStat> pageSnapshotIndexes = new TreeMap<>();
+    private final Map<Integer, RecordStat> pageSnapshotIndexes = new TreeMap<>();
     /** Page snapshot cache groups. */
-    final Map<Integer, RecordStat> pageSnapshotCacheGroups = new TreeMap<>();
+    private final Map<Integer, RecordStat> pageSnapshotCacheGroups = new TreeMap<>();
 
     /**
      * @param key
@@ -71,11 +76,10 @@ public class WalStat {
      */
     void registerRecord(WALRecord.RecordType type, WALRecord record) {
         String key = type.toString();
-        if (type == WALRecord.RecordType.PAGE_RECORD) {
-            final PageSnapshot record1 = (PageSnapshot)record;
-
-            registerPageSnapshot(record1);
-        }
+        if (type == WALRecord.RecordType.PAGE_RECORD)
+            registerPageSnapshot((PageSnapshot)record);
+        else if(type== WALRecord.RecordType.DATA_RECORD)
+            registerDataRecord((DataRecord)record);
 
         registerRecSize(key, record);
     }
@@ -95,6 +99,14 @@ public class WalStat {
         computeStatIfAbsent(PageIdUtils.partId(pageId), record, pageSnapshotPart);
         computeStatIfAbsent(idx, record, pageSnapshotIndexes);
         computeStatIfAbsent(fullPageId.groupId(), record, pageSnapshotCacheGroups);
+    }
+
+    /**
+     * @param record
+     */
+    private void registerDataRecord(DataRecord record) {
+        if (!record.writeEntries().isEmpty())
+            computeStatIfAbsent(record.writeEntries().get(0).op().toString(), record, dataRecordOperation);
     }
 
     /**
@@ -129,6 +141,9 @@ public class WalStat {
         final StringBuilder sb = new StringBuilder();
 
         printMap(sb, "Record size in bytes", recTypeSizes);
+
+        printMap(sb, "Data Record Operations", dataRecordOperation);
+
         printMap(sb, "Page Snapshot Page Types", pageSnapshotTypes);
         printMap(sb, "Page Snapshot Partitions", pageSnapshotPart);
         printMap(sb, "Page Snapshot Indexes", pageSnapshotIndexes);
