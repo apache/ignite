@@ -591,6 +591,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                     res = ReadEnum0<T>(this, _mode != BinaryMode.Deserialize);
 
                     return true;
+
+                case 254:
+                    // Skip optimized object.
+                    // Or can we just return some wrapper?
+                    res = default(T);
+                    var len = Stream.ReadInt();
+                    Stream.Seek(len, SeekOrigin.Current);
+                    return true;
             }
 
             if (BinarySystemHandlers.TryReadSystemType(hdr, this, out res))
