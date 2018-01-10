@@ -181,11 +181,11 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
                 filterArrayList.add(new GridNioCodecFilter(new GridTcpRestParser(routerClient), gridLog, false));
 
                 if (cfg.isNetCompressionEnabled()) {
-                    GridNioCompressionFilter compressFilter = new GridNioCompressionFilter(true, ByteOrder.nativeOrder(), gridLog);
+                    GridNioCompressionFilter compressionFilter = new GridNioCompressionFilter(true, ByteOrder.nativeOrder(), gridLog);
 
-                    compressFilter.directMode(false);
+                    compressionFilter.directMode(false);
 
-                    filterArrayList.add(compressFilter);
+                    filterArrayList.add(compressionFilter);
                 }
 
                 if (sslCtx != null) {

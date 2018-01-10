@@ -20,7 +20,7 @@ public class BlockingCompressionHandler {
     /** Logger. */
     private IgniteLogger log;
 
-    /** Compress engine. */
+    /** Compression engine. */
     private final CompressionEngine compressionEngine;
 
     /** Output buffer into which compressed data will be written. */

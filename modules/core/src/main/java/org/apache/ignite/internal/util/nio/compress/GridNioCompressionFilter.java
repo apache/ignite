@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.lang.IgniteInClosure;
 
-import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.COMPRESS_META;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.COMPRESSION_META;
 
 /** */
 public class GridNioCompressionFilter extends GridNioFilterAdapter {
@@ -83,14 +83,14 @@ public class GridNioCompressionFilter extends GridNioFilterAdapter {
 
         CompressionEngine engine;
 
-        GridCompressionMeta compressMeta = ses.meta(COMPRESS_META.ordinal());
+        GridCompressionMeta compressMeta = ses.meta(COMPRESSION_META.ordinal());
 
         if (compressMeta == null) {
             engine = new LZ4Engine();
 
             compressMeta = new GridCompressionMeta();
 
-            ses.addMeta(COMPRESS_META.ordinal(), compressMeta);
+            ses.addMeta(COMPRESSION_META.ordinal(), compressMeta);
         }
         else {
             engine = compressMeta.compressionEngine();
@@ -280,7 +280,7 @@ public class GridNioCompressionFilter extends GridNioFilterAdapter {
      * @return compression handler.
      */
     private GridNioCompressionHandler compressionHandler(GridNioSession ses) {
-        GridCompressionMeta compressMeta = ses.meta(COMPRESS_META.ordinal());
+        GridCompressionMeta compressMeta = ses.meta(COMPRESSION_META.ordinal());
 
         assert compressMeta != null;
 

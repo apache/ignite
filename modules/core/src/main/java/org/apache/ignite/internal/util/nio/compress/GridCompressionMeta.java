@@ -30,7 +30,7 @@ public class GridCompressionMeta {
     /** Data read but not decoded by blocking Compress handler. */
     private ByteBuffer encodedBuf;
 
-    /** Compress engine. */
+    /** Compression engine. */
     private CompressionEngine compressionEngine;
 
     /** */

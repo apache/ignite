@@ -144,7 +144,7 @@ import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.COMPRESS_META;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.COMPRESSION_META;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.RecoveryLastReceivedMessage.ALREADY_CONNECTED;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.RecoveryLastReceivedMessage.NEED_WAIT;
@@ -3180,7 +3180,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         }
 
                         if (isNetworkCompressingEnabled()) {
-                            meta.put(COMPRESS_META.ordinal(), compressMeta = new GridCompressionMeta());
+                            meta.put(COMPRESSION_META.ordinal(), compressMeta = new GridCompressionMeta());
 
                             compressMeta.compressionEngine(new LZ4Engine());
                         }
