@@ -696,7 +696,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * @throws SQLException If failed.
      */
     public void testDdlWrongSyntax() throws SQLException {
-        checkSqlErrorMessage("create table wrong (id int wrong key, val varchar)", "42000",
+        checkSqlErrorMessage("create table test2 (id int wrong key, val varchar)", "42000",
             "Failed to parse query. Syntax error in SQL statement \"CREATE TABLE TEST2 (ID INT WRONG[*]");
 
         checkSqlErrorMessage("drop table test on", "42000",
