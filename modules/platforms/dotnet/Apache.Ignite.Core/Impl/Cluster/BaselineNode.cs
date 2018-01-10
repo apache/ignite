@@ -19,11 +19,9 @@ namespace Apache.Ignite.Core.Impl.Cluster
 {
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Collections;
 
     /// <summary>
     /// Baseline node.
@@ -45,8 +43,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
             Debug.Assert(reader != null);
 
             _consistentId = reader.ReadObject<object>();
-            _attributes = Enumerable.Range(0, reader.ReadInt())
-                .ToDictionary(x => reader.ReadString(), x => reader.ReadObject<object>());
+            _attributes = ClusterNodeImpl.ReadAttributes(reader);
         }
 
         /** <inheritdoc /> */

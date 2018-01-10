@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
 
             _id = id.Value;
 
-            _attrs = reader.ReadDictionaryAsGeneric<string, object>().AsReadOnly();
+            _attrs = ReadAttributes(reader);
             _addrs = reader.ReadCollectionAsList<string>().AsReadOnly();
             _hosts = reader.ReadCollectionAsList<string>().AsReadOnly();
             _order = reader.ReadLong();
@@ -233,6 +233,24 @@ namespace Apache.Ignite.Core.Impl.Cluster
         internal void Init(Ignite grid)
         {
             _igniteRef = new WeakReference(grid);
+        }
+
+        /// <summary>
+        /// Reads the attributes.
+        /// </summary>
+        internal static IDictionary<string, object> ReadAttributes(IBinaryRawReader reader)
+        {
+            Debug.Assert(reader != null);
+
+            var count = reader.ReadInt();
+            var res = new Dictionary<string, object>(count);
+
+            for (var i = 0; i < count; i++)
+            {
+                res[reader.ReadString()] = reader.ReadObject<object>();
+            }
+
+            return res.AsReadOnly();
         }
     }
 }
