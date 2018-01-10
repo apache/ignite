@@ -387,6 +387,46 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Tests the QueryField.DefaultValue functionality.
+        /// </summary>
+        [Test]
+        public void TestDefaultValue()
+        {
+            // Attribute-based config.
+            var cfg = new CacheConfiguration("def_value_attr", new QueryEntity(typeof(int), typeof(Foo)));
+            Assert.AreEqual(-1, cfg.QueryEntities.Single().Fields.Single(x => x.Name == "Id").DefaultValue);
+            
+            var cache = Ignition.GetIgnite().CreateCache<int, Foo>(cfg);
+            Assert.AreEqual(-1,
+                cache.GetConfiguration().QueryEntities.Single().Fields.Single(x => x.Name == "Id").DefaultValue);
+
+            cache.Query(new SqlFieldsQuery("insert into foo(_key, id, name) values (?, ?, ?)", 1, 2, "John")).GetAll();
+            cache.Query(new SqlFieldsQuery("insert into foo(_key, name) values (?, ?)", 3, "Mary")).GetAll();
+
+            Assert.AreEqual(2, cache[1].Id);
+            Assert.AreEqual(-1, cache[3].Id);
+
+            // QueryEntity-based config.
+            cfg = new CacheConfiguration("def_value_binary", new QueryEntity
+            {
+                KeyType = typeof(int),
+                ValueTypeName = "DefValTest",
+                Fields = new[]
+                {
+                    new QueryField("Name", typeof(string)) {DefaultValue = "foo"}
+                }
+            });
+
+            var cache2 = Ignition.GetIgnite().CreateCache<int, int>(cfg).WithKeepBinary<int, IBinaryObject>();
+
+            cache2.Query(new SqlFieldsQuery("insert into DefValTest(_key, name) values (?, ?)", 1, "John")).GetAll();
+            cache2.Query(new SqlFieldsQuery("insert into DefValTest(_key) values (?)", 2)).GetAll();
+
+            Assert.AreEqual("John", cache2[1].GetField<string>("Name"));
+            Assert.AreEqual("foo", cache2[2].GetField<string>("Name"));
+        }
+
+        /// <summary>
         /// Key.
         /// </summary>
         private struct Key
@@ -423,7 +463,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// </summary>
         private class Foo
         {
-            [QuerySqlField] public int Id { get; set; }
+            [QuerySqlField(DefaultValue = -1)] public int Id { get; set; }
             [QuerySqlField(NotNull = true)] public string Name { get; set; }
         }
 

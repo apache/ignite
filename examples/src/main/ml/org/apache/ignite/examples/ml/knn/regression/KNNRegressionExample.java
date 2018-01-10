@@ -19,6 +19,7 @@ package org.apache.ignite.examples.ml.knn.regression;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.apache.ignite.Ignite;
@@ -53,7 +54,7 @@ public class KNNRegressionExample {
     private static final String SEPARATOR = ",";
 
     /** */
-    public static final String KNN_CLEARED_MACHINES_TXT = "datasets/knn/cleared_machines.txt";
+    private static final String KNN_CLEARED_MACHINES_TXT = "../datasets/cleared_machines.txt";
 
     /**
      * Executes example.
@@ -71,7 +72,11 @@ public class KNNRegressionExample {
 
                 try {
                     // Prepare path to read
-                    Path path = Paths.get(KNNClassificationExample.class.getClassLoader().getResource(KNN_CLEARED_MACHINES_TXT).toURI());
+                    URL url = KNNClassificationExample.class.getResource(KNN_CLEARED_MACHINES_TXT);
+                    if (url == null)
+                        throw new RuntimeException("Can't get URL for: " + KNN_CLEARED_MACHINES_TXT);
+
+                    Path path = Paths.get(url.toURI());
 
                     // Read dataset from file
                     LabeledDataset dataset = LabeledDatasetLoader.loadFromTxtFile(path, SEPARATOR, false, false);
@@ -82,14 +87,15 @@ public class KNNRegressionExample {
                     // Random splitting of iris data as 80% train and 20% test datasets
                     LabeledDatasetTestTrainPair split = new LabeledDatasetTestTrainPair(dataset, 0.2);
 
-                    System.out.println("\n>>> Amount of observations in train dataset " + split.train().rowSize());
-                    System.out.println("\n>>> Amount of observations in test dataset " + split.test().rowSize());
+                    System.out.println("\n>>> Amount of observations in train dataset: " + split.train().rowSize());
+                    System.out.println("\n>>> Amount of observations in test dataset: " + split.test().rowSize());
 
                     LabeledDataset test = split.test();
                     LabeledDataset train = split.train();
 
                     // Builds weighted kNN-regression with Manhattan Distance
-                    KNNMultipleLinearRegression knnMdl = new KNNMultipleLinearRegression(7, new ManhattanDistance(), KNNStrategy.WEIGHTED, train);
+                    KNNMultipleLinearRegression knnMdl = new KNNMultipleLinearRegression(7, new ManhattanDistance(),
+                        KNNStrategy.WEIGHTED, train);
 
                     // Clone labels
                     final double[] labels = test.labels();
@@ -137,7 +143,7 @@ public class KNNRegressionExample {
                 }
                 catch (URISyntaxException | IOException e) {
                     e.printStackTrace();
-                    System.out.println("\n>>> Check resources");
+                    System.out.println("\n>>> Unexpected exception, check resources: " + e);
                 }
                 finally {
                     System.out.println("\n>>> kNN regression example completed.");

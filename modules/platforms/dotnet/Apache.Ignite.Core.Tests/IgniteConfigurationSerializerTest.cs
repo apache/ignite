@@ -132,6 +132,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(typeof(int), queryEntity.Fields.Single().FieldType);
             Assert.IsTrue(queryEntity.Fields.Single().IsKeyField);
             Assert.IsTrue(queryEntity.Fields.Single().NotNull);
+            Assert.AreEqual(3.456d, (double)queryEntity.Fields.Single().DefaultValue);
             Assert.AreEqual("somefield.field", queryEntity.Aliases.Single().FullName);
             Assert.AreEqual("shortField", queryEntity.Aliases.Single().Alias);
 
@@ -250,6 +251,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(client.TcpNoDelay);
             Assert.AreEqual(14, client.MaxOpenCursorsPerConnection);
             Assert.AreEqual(15, client.ThreadPoolSize);
+            Assert.AreEqual(19, client.IdleTimeout.TotalSeconds);
 
             var pers = cfg.PersistentStoreConfiguration;
 
@@ -676,7 +678,8 @@ namespace Apache.Ignite.Core.Tests
                                     new QueryField("field", typeof(int))
                                     {
                                         IsKeyField = true,
-                                        NotNull = true
+                                        NotNull = true,
+                                        DefaultValue = "foo"
                                     }
                                 },
                                 Indexes = new[]
@@ -895,7 +898,8 @@ namespace Apache.Ignite.Core.Tests
                     SocketReceiveBufferSize = 5,
                     SocketSendBufferSize = 6,
                     TcpNoDelay = false,
-                    ThreadPoolSize = 7
+                    ThreadPoolSize = 7,
+                    IdleTimeout = TimeSpan.FromMinutes(5)
                 },
                 PersistentStoreConfiguration = new PersistentStoreConfiguration
                 {
