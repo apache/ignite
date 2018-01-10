@@ -49,6 +49,8 @@ public class IgniteWalConverter {
         H2ExtrasInnerIO.register();
         H2ExtrasLeafIO.register();
 
+        boolean print = false;
+
         final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(new NullLogger(),
             Integer.parseInt(args[0]),
             null,
@@ -62,11 +64,19 @@ public class IgniteWalConverter {
         if (workFiles == null)
             throw new IllegalArgumentException("No .wal files in dir: " + args[1]);
 
+        final WalStat stat = new WalStat();
+
         try (WALIterator stIt = factory.iteratorWorkFiles(workFiles)) {
             while (stIt.hasNextX()) {
                 IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
 
-                System.out.println("[W] " + next.get2());
+                final WALRecord record = next.get2();
+                final WALRecord.RecordType type = record.type();
+
+                stat.registerRecord(type, record);
+
+                if (print)
+                    System.out.println("[W] " + record);
             }
         }
 
@@ -77,9 +87,17 @@ public class IgniteWalConverter {
                 while (stIt.hasNextX()) {
                     IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
 
-                    System.out.println("[A] " + next.get2());
+                    final WALRecord record = next.get2();
+                    stat.registerRecord(record.type(), record);
+
+                    if (print)
+                        System.out.println("[A] " + record);
                 }
             }
         }
+
+        System.err.flush();
+
+        System.out.println("Statistic collected:\n"+ stat.toString());
     }
 }
