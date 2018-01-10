@@ -24,7 +24,15 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
+import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
+import org.apache.ignite.transactions.Transaction;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * This example demonstrates some of the cache rich API capabilities.
@@ -49,6 +57,20 @@ public class CacheApiExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
             System.out.println(">>> Cache API example started.");
+
+            CacheConfiguration cc = new CacheConfiguration();
+            cc.setName("TTT");
+            cc.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+            IgniteCache cache2 = ignite.getOrCreateCache(cc);
+
+            Transaction tx = Ignition.ignite().transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
+            cache2 = ignite.getOrCreateCache(cc);
+            for (int i = 0; i < 1000; i++) {
+                cache2.put(i,i);
+            }
+
+            System.out.println(GridToStringBuilder.toString(TransactionProxyImpl.class, (TransactionProxyImpl) tx));
+            tx.commit();
 
             // Auto-close cache at the end of the example.
             try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(CACHE_NAME)) {

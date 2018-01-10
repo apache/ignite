@@ -867,7 +867,7 @@ public class GridToStringBuilder {
         finally {
             queue.offer(tmp);
 
-            if (newStr)
+            if (newStr) {
                 lenLim.reset();
         }
     }
@@ -939,7 +939,6 @@ public class GridToStringBuilder {
             buf.a(val);
 
             if (overflow > 0) {
-                buf.d(buf.length() - 1);
                 buf.a("... and ").a(overflow).a(" more").a(bracket);
             }
         }
@@ -1050,7 +1049,7 @@ public class GridToStringBuilder {
     public static <T> String arrayToString(Class arrType, Object arr) {
         T[] array = (T[])arr;
 
-        if (array.length > COLLECTION_LIMIT)
+        if (array != null && array.length > COLLECTION_LIMIT)
             arr = Arrays.copyOf(array, COLLECTION_LIMIT);
 
         String res;

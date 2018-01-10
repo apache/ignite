@@ -190,9 +190,6 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testToStringSizeLimits() throws Exception {
-        // TODO IGNITE-7195
-        if (true)
-            return;
 
         int limit = IgniteSystemProperties.getInteger(IGNITE_TO_STRING_MAX_LENGTH, 10_000);
         int tailLen = limit / 10 * 2;
@@ -204,7 +201,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         String expected = "TestClass2 [str=" + sb.toString() + "]";
         assertEquals(expected, actual);
 
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 110; i++) {
             sb.append('b');
         }
         actual = GridToStringBuilder.toString(TestClass2.class, new TestClass2(sb.toString()));
