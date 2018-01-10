@@ -205,21 +205,7 @@ public class PlatformContextImpl implements PlatformContext {
             BinaryRawWriterEx w = writer(out);
 
             w.writeUuid(node.id());
-
-            Map<String, Object> attrs = new HashMap<>(node.attributes());
-
-            Iterator<Map.Entry<String, Object>> attrIter = attrs.entrySet().iterator();
-
-            while (attrIter.hasNext()) {
-                Map.Entry<String, Object> entry = attrIter.next();
-
-                Object val = entry.getValue();
-
-                if (val != null && !val.getClass().getName().startsWith("java.lang"))
-                    attrIter.remove();
-            }
-
-            w.writeMap(attrs);
+            PlatformUtils.writeNodeAttributes(w, node.attributes());
             w.writeCollection(node.addresses());
             w.writeCollection(node.hostNames());
             w.writeLong(node.order());

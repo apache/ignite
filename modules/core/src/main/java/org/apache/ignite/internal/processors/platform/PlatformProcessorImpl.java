@@ -31,6 +31,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -448,27 +449,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
                 for (int i = 0; i < cnt; i++) {
                     Object consId = reader.readObjectDetached();
+                    Map<String, Object> attrs = PlatformUtils.readNodeAttributes(reader);
 
-                    int attrCnt = reader.readInt();
-                    Map<String, Object> attrs = new HashMap<>(attrCnt);
-
-                    for (int j = 0; j < attrCnt; j++) {
-                        attrs.put(reader.readString(), reader.readObjectDetached());
-                    }
-
-                    nodes.add(new BaselineNode() {
-                        @Override public Object consistentId() {
-                            return consId;
-                        }
-
-                        @Override public <T> T attribute(String name) {
-                            return (T) attrs.get(name);
-                        }
-
-                        @Override public Map<String, Object> attributes() {
-                            return attrs;
-                        }
-                    });
+                    nodes.add(new DetachedClusterNode(consId, attrs));
                 }
 
                 ctx.grid().cluster().setBaselineTopology(nodes);
@@ -662,18 +645,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
                 for (BaselineNode n : blt) {
                     writer.writeObjectDetached(n.consistentId());
-
-                    Map<String, Object> attrs = n.attributes();
-                    if (attrs != null) {
-                        writer.writeInt(attrs.size());
-
-                        for (Map.Entry<String, Object> e : attrs.entrySet()) {
-                            writer.writeString(e.getKey());
-                            writer.writeObjectDetached(e.getValue());
-                        }
-                    } else {
-                        writer.writeInt(0);
-                    }
+                    PlatformUtils.writeNodeAttributes(writer, n.attributes());
                 }
 
                 return;
