@@ -46,6 +46,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             Debug.Assert(stream != null);
 
+            stream.WriteByte(BinaryTypeId.OptimizedMarshaller);
             stream.WriteInt(_data.Length);
             stream.WriteByteArray(_data);
         }
