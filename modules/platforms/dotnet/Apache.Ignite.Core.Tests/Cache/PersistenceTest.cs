@@ -241,10 +241,16 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.AreEqual("node1", cluster.GetBaselineTopology().Single().ConsistentId);
 
                 // Set with nodes.
-                cluster.SetBaselineTopology(cluster.GetNodes());
+                cluster.SetBaselineTopology(res);
                 
                 res = cluster.GetBaselineTopology();
                 CollectionAssert.AreEquivalent(new[] { "node1", "node2" }, res.Select(x => x.ConsistentId));
+
+                cluster.SetBaselineTopology(cluster.GetTopology(1));
+                Assert.AreEqual("node1", cluster.GetBaselineTopology().Single().ConsistentId);
+
+                // Set to two nodes.
+                cluster.SetBaselineTopology(cluster.GetTopology(2));
             }
 
             // Check auto activation on cluster restart.
