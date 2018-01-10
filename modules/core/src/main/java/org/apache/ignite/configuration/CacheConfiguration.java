@@ -210,6 +210,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private boolean onheapCache;
 
+    /** Use on-heap cache for rows for SQL queries. */
+    private boolean sqlOnheapCache;
+
     /** Eviction filter. */
     private EvictionFilter<?, ?> evictFilter;
 
@@ -449,6 +452,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         writeSync = cc.getWriteSynchronizationMode();
         storeConcurrentLoadAllThreshold = cc.getStoreConcurrentLoadAllThreshold();
         maxQryIterCnt = cc.getMaxQueryIteratorsCount();
+        sqlOnheapCache = cc.isSqlOnheapCacheEnabled();
     }
 
     /**
@@ -624,6 +628,47 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setOnheapCacheEnabled(boolean onheapCache) {
         this.onheapCache = onheapCache;
+
+        return this;
+    }
+
+    /**
+     * The on-heap cache is used for SQL query. The cache contains [offheap-link, onheap-cache-row] to prevent
+     * read from off-heap and deserialization cache entries that are used often.
+     * A row is cached on the access through SQL query.
+     *
+     * <p> Cache invalidation:
+     * <ul>
+     *     <li>When a cache entry is removed or updated the off-heap link removed from the on-heap cache.
+     *     </li>
+     *     <li>When a data page is evicted to disk oll links stored into the page are removed from the on-heap cache.
+     *     </li>
+     * </ul>
+     *
+     * @return Whether SQL onheap cache is enabled.
+     */
+    public boolean isSqlOnheapCacheEnabled() {
+        return sqlOnheapCache;
+    }
+
+    /**
+     * The on-heap cache is used for SQL query. The cache contains [offheap-link, onheap-cache-row] to prevent
+     * read from off-heap and deserialization cache entries that are used often.
+     * A row is cached on the access through SQL query.
+     *
+     * <p> Cache invalidation:
+     * <ul>
+     *     <li>When a cache entry is removed or updated the off-heap link removed from the on-heap cache.
+     *     </li>
+     *     <li>When a data page is evicted to disk oll links stored into the page are removed from the on-heap cache.
+     *     </li>
+     * </ul>
+     *
+     * @param sqlOnheapCache SQL onheap cache enabled flag.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setSqlOnheapCacheEnabled(boolean sqlOnheapCache) {
+        this.sqlOnheapCache = sqlOnheapCache;
 
         return this;
     }
