@@ -43,8 +43,8 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             Debug.Assert(reader != null);
 
-            _attributes = reader.ReadDictionaryAsGeneric<string, object>().AsReadOnly();
             _consistentId = reader.ReadObject<object>();
+            _attributes = reader.ReadDictionaryAsGeneric<string, object>().AsReadOnly();
         }
 
         /** <inheritdoc /> */

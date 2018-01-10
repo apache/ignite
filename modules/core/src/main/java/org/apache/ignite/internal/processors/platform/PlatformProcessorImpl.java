@@ -448,7 +448,13 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
                 for (int i = 0; i < cnt; i++) {
                     Object consId = reader.readObjectDetached();
-                    Map<String, Object> attrs = reader.readMap();
+
+                    int attrCnt = reader.readInt();
+                    Map<String, Object> attrs = new HashMap<>(attrCnt);
+
+                    for (int j = 0; j < attrCnt; j++) {
+                        attrs.put(reader.readString(), reader.readObjectDetached());
+                    }
 
                     nodes.add(new BaselineNode() {
                         @Override public Object consistentId() {
@@ -656,7 +662,18 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
                 for (BaselineNode n : blt) {
                     writer.writeObjectDetached(n.consistentId());
-                    writer.writeMap(n.attributes());
+
+                    Map<String, Object> attrs = n.attributes();
+                    if (attrs != null) {
+                        writer.writeInt(attrs.size());
+
+                        for (Map.Entry<String, Object> e : attrs.entrySet()) {
+                            writer.writeString(e.getKey());
+                            writer.writeObjectDetached(e.getValue());
+                        }
+                    } else {
+                        writer.writeInt(0);
+                    }
                 }
 
                 return;
