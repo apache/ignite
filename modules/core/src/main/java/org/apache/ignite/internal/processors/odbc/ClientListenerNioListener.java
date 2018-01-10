@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
@@ -197,20 +198,27 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
 
         ClientListenerProtocolVersion ver = ClientListenerProtocolVersion.create(verMajor, verMinor, verMaintenance);
 
-        ClientListenerConnectionContext connCtx;
-
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(8), null, null);
 
-        try {
-            byte clientType = reader.readByte();
+        byte clientType = reader.readByte();
 
-            connCtx = prepareContext(clientType);
+        ClientListenerConnectionContext connCtx = prepareContext(clientType);
+
+        try {
+            ensureClientPermissions(clientType);
         }
-        catch (IgniteException e) {
+        catch (IgniteCheckedException e) {
+            ClientListenerProtocolVersion currVer;
+
+            if (connCtx == null)
+                currVer = ClientListenerProtocolVersion.create(0, 0, 0);
+            else
+                currVer = connCtx.currentVersion();
+
             writer.writeBoolean(false);
-            writer.writeShort((short)-1);
-            writer.writeShort((short)-1);
-            writer.writeShort((short)-1);
+            writer.writeShort(currVer.major());
+            writer.writeShort(currVer.minor());
+            writer.writeShort(currVer.maintenance());
 
             writer.doWriteString(e.getMessage());
 
@@ -258,32 +266,52 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
      */
     private ClientListenerConnectionContext prepareContext(byte clientType) {
         switch (clientType) {
+            case ODBC_CLIENT:
+                return new OdbcConnectionContext(ctx, busyLock, maxCursors);
+
+            case JDBC_CLIENT:
+                return new JdbcConnectionContext(ctx, busyLock, maxCursors);
+
+            case THIN_CLIENT:
+                return new ClientConnectionContext(ctx, maxCursors);
+        }
+
+        return null;
+    }
+
+    /**
+     * Ensures if the given type of client is enabled by config.
+     *
+     * @param clientType Client type.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void ensureClientPermissions(byte clientType) throws IgniteCheckedException {
+        switch (clientType) {
             case ODBC_CLIENT: {
                 if (!cliConnCfg.isOdbcEnabled())
-                    throw new IgniteException("ODBC connection is not allowed, " +
+                    throw new IgniteCheckedException("ODBC connection is not allowed, " +
                         "see ClientConnectorConfiguration.odbcEnabled.");
-
-                return new OdbcConnectionContext(ctx, busyLock, maxCursors);
+                break;
             }
 
             case JDBC_CLIENT: {
                 if (!cliConnCfg.isJdbcEnabled())
-                    throw new IgniteException("JDBC connection is not allowed, " +
+                    throw new IgniteCheckedException("JDBC connection is not allowed, " +
                         "see ClientConnectorConfiguration.jdbcEnabled.");
 
-                return new JdbcConnectionContext(ctx, busyLock, maxCursors);
+                break;
             }
 
             case THIN_CLIENT: {
                 if (!cliConnCfg.isThinClientEnabled())
-                    throw new IgniteException("Thin client connection is not allowed, " +
+                    throw new IgniteCheckedException("Thin client connection is not allowed, " +
                         "see ClientConnectorConfiguration.thinClientEnabled.");
 
-                return new ClientConnectionContext(ctx, maxCursors);
+                break;
             }
 
             default:
-                throw new IgniteException("Unknown client type: " + clientType);
+                throw new IgniteCheckedException("Unknown client type: " + clientType);
         }
     }
 }
