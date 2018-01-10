@@ -85,6 +85,8 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         c.setCacheConfiguration(cc);
 
+        c.setLocalHost("127.0.0.1");
+
         return c;
     }
 
