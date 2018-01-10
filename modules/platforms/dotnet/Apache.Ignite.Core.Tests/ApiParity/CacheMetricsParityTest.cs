@@ -33,19 +33,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         };
 
         /** Properties that are missing on .NET side. */
-        private static readonly string[] MissingProperties =
-        {
-            // IGNITE-7126
-            "HeapEntriesCount",
-            "TotalPartitionsCount",
-            "RebalancingPartitionsCount",
-            "KeysToRebalanceLeft",
-            "RebalancingKeysRate",
-            "RebalancingBytesRate",
-            "isValidForReading",
-            "isValidForWriting",
-            "EstimatedRebalancingFinishTime",
-            "RebalancingStartTime"
+        private static readonly string[] MissingProperties = {
         };
 
         /// <summary>
