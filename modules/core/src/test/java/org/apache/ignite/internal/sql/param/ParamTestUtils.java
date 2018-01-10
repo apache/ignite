@@ -19,7 +19,6 @@ package org.apache.ignite.internal.sql.param;
 
 import com.google.common.base.Optional;
 import junit.framework.TestCase;
-import org.apache.ignite.internal.sql.SqlEnumParserUtils;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
 import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.sql.command.SqlCommand;
@@ -257,8 +256,10 @@ public final class ParamTestUtils {
 
         EnumSet<TestParamDef.Syntax> syntaxes = EnumSet.of(KEY_WITH_OPT_NO, KEY_EQ_VAL);
 
-        for (SqlEnumParserUtils.BooleanEnum v : SqlEnumParserUtils.BooleanEnum.values())
-            params.add(new TestParamDef.ValidValue<>(v.toString(), v.toBoolean(), syntaxes));
+        params.add(new TestParamDef.ValidValue<>("true", true, syntaxes));
+        params.add(new TestParamDef.ValidValue<>("false", false, syntaxes));
+        params.add(new TestParamDef.ValidValue<>("1", true, syntaxes));
+        params.add(new TestParamDef.ValidValue<>("0", false, syntaxes));
 
         params.add(new TestParamDef.InvalidValue<Boolean>(BAD_BOOLEAN_VALUE,
             "re:.*Unexpected token: \"" + BAD_BOOLEAN_VALUE.toUpperCase()

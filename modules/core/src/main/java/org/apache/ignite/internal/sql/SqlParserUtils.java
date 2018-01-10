@@ -20,19 +20,24 @@ package org.apache.ignite.internal.sql;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.sql.command.SqlQualifiedName;
 import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Set;
 
-import static org.apache.ignite.internal.sql.SqlKeyword.DEFAULT;
 import static org.apache.ignite.internal.sql.SqlKeyword.EXISTS;
 import static org.apache.ignite.internal.sql.SqlKeyword.IF;
 import static org.apache.ignite.internal.sql.SqlKeyword.NOT;
+import static org.apache.ignite.internal.sql.SqlLexerTokenType.COMMA;
+import static org.apache.ignite.internal.sql.SqlLexerTokenType.PARENTHESIS_RIGHT;
 
 /**
  * Parser utility methods.
  */
 public class SqlParserUtils {
+
+    public enum ParamFormat {
+        KEY_SPACE_VAL, KEY_EQ_VAL
+    }
+
     /**
      * Parse IF EXISTS statement.
      *
@@ -40,12 +45,12 @@ public class SqlParserUtils {
      * @return {@code True} if statement is found.
      */
     public static boolean parseIfExists(SqlLexer lex) {
-        SqlLexerToken tok = lex.lookAhead();
+        SqlLexerToken token = lex.lookAhead();
 
-        if (matchesKeyword(tok, IF)) {
+        if (matchesKeyword(token, IF)) {
             lex.shift();
 
-            skipKeyword(lex, EXISTS);
+            skipKeywords(lex, EXISTS);
 
             return true;
         }
@@ -60,13 +65,13 @@ public class SqlParserUtils {
      * @return {@code True} if statement is found.
      */
     public static boolean parseIfNotExists(SqlLexer lex) {
-        SqlLexerToken tok = lex.lookAhead();
+        SqlLexerToken token = lex.lookAhead();
 
-        if (matchesKeyword(tok, IF)) {
+        if (matchesKeyword(token, IF)) {
             lex.shift();
 
-            skipKeyword(lex, NOT);
-            skipKeyword(lex, EXISTS);
+            skipKeywords(lex, NOT);
+            skipKeywords(lex, EXISTS);
 
             return true;
         }
@@ -77,22 +82,21 @@ public class SqlParserUtils {
     /**
      * Skip comma or right parenthesis.
      *
-     * @param lex The lexer.
-     * @return The skipped token type.
+     * @param lex Lexer.
+     * @return {@code True} if right parenthesis is found.
      */
-    public static SqlLexerTokenType skipCommaOrRightParenthesis(SqlLexer lex) {
+    public static boolean skipCommaOrRightParenthesis(SqlLexer lex) {
         if (lex.shift()) {
             switch (lex.tokenType()) {
-                case PARENTHESIS_RIGHT:
                 case COMMA:
-                    return lex.tokenType();
+                    return false;
 
-                default:
-                    // Fall through
+                case PARENTHESIS_RIGHT:
+                    return true;
             }
         }
 
-        throw errorUnexpectedToken(lex, ",", ")");
+        throw errorUnexpectedToken(lex, COMMA.asString(), PARENTHESIS_RIGHT.asString());
     }
 
     /**
@@ -110,7 +114,7 @@ public class SqlParserUtils {
             lex.shift();
         }
 
-        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.KEYWORD) {
+        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
             try {
                 long val = sign * Long.parseLong(lex.token());
 
@@ -173,17 +177,17 @@ public class SqlParserUtils {
     /**
      * Check if token is identifier.
      *
-     * @param tok Token.
+     * @param token Token.
      * @return {@code True} if we are standing on possible identifier.
      */
-    public static boolean isValidIdentifier(SqlLexerToken tok) {
-        switch (tok.tokenType()) {
-            case KEYWORD:
-                char c = tok.tokenFirstChar();
+    public static boolean isValidIdentifier(SqlLexerToken token) {
+        switch (token.tokenType()) {
+            case DEFAULT:
+                char c = token.tokenFirstChar();
 
-                return ((c >= 'A' && c <= 'Z') || c == '_') && !SqlKeyword.isKeyword(tok.token());
+                return ((c >= 'A' && c <= 'Z') || c == '_') && !SqlKeyword.isKeyword(token.token());
 
-            case DBL_QUOTED:
+            case QUOTED:
                 return true;
 
             default:
@@ -194,46 +198,49 @@ public class SqlParserUtils {
     /**
      * Check if current lexer token matches expected.
      *
-     * @param tok Token..
+     * @param token Token..
      * @param expKeyword Expected keyword.
      * @return {@code True} if matches.
      */
-    public static boolean matchesKeyword(SqlLexerToken tok, String expKeyword) {
-        return tok.tokenType() == SqlLexerTokenType.KEYWORD && expKeyword.equals(tok.token());
+    public static boolean matchesKeyword(SqlLexerToken token, String expKeyword) {
+        return token.tokenType() == SqlLexerTokenType.DEFAULT && expKeyword.equals(token.token());
     }
 
     /**
-     * Skip token if it matches expected keyword.
+     * Skip token if it matches expected keyword sequence.
      *
      * @param lex Lexer.
-     * @param expKeyword Expected keyword.
+     * @param expKeywords Expected keywords
      */
-    public static void skipKeyword(SqlLexer lex, String expKeyword) {
-        if (lex.shift() && matchesKeyword(lex, expKeyword))
-            return;
-
-        throw errorUnexpectedToken(lex, expKeyword);
+    public static void skipKeywords(SqlLexer lex, String... expKeywords) {
+        for (String keyword : expKeywords) {
+            if (!lex.shift() || !matchesKeyword(lex, keyword))
+                throw errorUnexpectedToken(lex, keyword);
+        }
     }
 
     /**
-     * Skip next token if it matches expected type.
+     * Skips a token type or throws an error if the current token type is different.
      *
-     * @param lex Lexer.
-     * @param tokTyp Expected token type.
+     * @param lex The lexer.
+     * @param tokTyp Token type to skip.
      */
     public static void skipToken(SqlLexer lex, SqlLexerTokenType tokTyp) {
-        if (lex.shift() && F.eq(lex.tokenType(), tokTyp))
+        if (lex.shift() && lex.tokenType() == tokTyp)
             return;
 
         throw errorUnexpectedToken(lex, tokTyp.asString());
     }
 
     /**
-     * Skips equals token if it happens to be the next.
+     * Skips token if it matches {@code tokTyp} parameter, otherwise does nothing.
+     *
      * @param lex The lexer.
+     * @param tokTyp Token type to skip.
+     * @return true if the specified token met and skipped, false if the token at the current position is different.
      */
-    public static boolean skipOptionalEqSign(SqlLexer lex) {
-        if (lex.lookAhead().tokenType() == SqlLexerTokenType.EQUALS) {
+    public static boolean skipOptionalToken(SqlLexer lex, SqlLexerTokenType tokTyp) {
+        if (lex.lookAhead().tokenType() == tokTyp) {
             lex.shift();
             return true;
         }
@@ -242,160 +249,130 @@ public class SqlParserUtils {
     }
 
     /**
-     * Parses the next token, which shall be be either a string or an identifier and specified as a keyword
-     * (without quotes) or as a double-quoted string. The provided setter is invoked with the parsed value
-     * and optional parameters.
+     * Skips next token if it's an equal sign.
      *
-     * @param lex The lexer.
-     * @param paramDesc Parameter description for error message.
-     * @param isIdentifier Should the token obey rules for identifiers?
-     * @param setter Setter to invoke with the value.
+     * @param lex Lexer.
      */
-    public static void parseKeywordOrQuoted(SqlLexer lex, String paramDesc, boolean isIdentifier, Setter<String> setter) {
-        SqlLexerToken nextTok = lex.lookAhead();
-
-        switch (nextTok.tokenType()) {
-            case DBL_QUOTED:
-                if (isIdentifier && !isValidIdentifier(nextTok))
-                    throw errorUnexpectedToken(nextTok, "[optionally quoted identifier " + paramDesc + "]");
-
-                lex.shift();
-
-                setter.apply(lex.token(), false, true);
-
-                return;
-
-            case KEYWORD:
-                if (isIdentifier && !isValidIdentifier(nextTok))
-                    throw errorUnexpectedToken(nextTok, "[optionally quoted identifier " + paramDesc + "]");
-
-                lex.shift();
-
-                setter.apply(lex.token(), false, false);
-
-                return;
-
-            default:
-                throw errorUnexpectedToken(nextTok, "[optionally quoted " + paramDesc + "]");
-        }
+    public static boolean skipOptionalEqSign(SqlLexer lex) {
+        return skipOptionalToken(lex, SqlLexerTokenType.EQUALS);
     }
 
     /**
      * Create parse exception referring to current lexer position.
      *
-     * @param tok Token.
+     * @param token Token.
      * @param msg Message.
      * @return Exception.
      */
-    public static SqlParseException error(SqlLexerToken tok, String msg) {
-        return error0(tok, IgniteQueryErrorCode.PARSING, msg);
+    public static SqlParseException error(SqlLexerToken token, String msg) {
+        return error0(token, IgniteQueryErrorCode.PARSING, msg);
     }
 
     /**
      * Create parse exception referring to current lexer position.
      *
-     * @param tok Token.
+     * @param token Token.
      * @param code Error code.
      * @param msg Message.
      * @return Exception.
      */
-    private static SqlParseException error0(SqlLexerToken tok, int code, String msg) {
-        return new SqlParseException(tok.sql(), tok.tokenPosition(), code, msg);
+    private static SqlParseException error0(SqlLexerToken token, int code, String msg) {
+        return new SqlParseException(token.sql(), token.tokenPosition(), code, msg);
     }
 
     /**
      * Create generic parse exception due to unexpected token.
      *
-     * @param tok Token.
+     * @param token Token.
      * @return Exception.
      */
-    public static SqlParseException errorUnexpectedToken(SqlLexerToken tok) {
-        return errorUnexpectedToken0(tok);
+    public static SqlParseException errorUnexpectedToken(SqlLexerToken token) {
+        return errorUnexpectedToken0(token);
     }
 
     /**
      * Throw unsupported token exception if passed keyword is found.
      *
-     * @param tok Token.
+     * @param token Token.
      * @param keyword Keyword.
      */
-    public static void errorUnsupportedIfMatchesKeyword(SqlLexerToken tok, String keyword) {
-        if (matchesKeyword(tok, keyword))
-            throw errorUnsupported(tok);
+    public static void errorUnsupportedIfMatchesKeyword(SqlLexerToken token, String keyword) {
+        if (matchesKeyword(token, keyword))
+            throw errorUnsupported(token);
     }
 
     /**
      * Throw unsupported token exception if one of passed keywords is found.
      *
-     * @param tok Token.
+     * @param token Token.
      * @param keywords Keywords.
      */
-    public static void errorUnsupportedIfMatchesKeyword(SqlLexerToken tok, String... keywords) {
+    public static void errorUnsupportedIfMatchesKeyword(SqlLexerToken token, String... keywords) {
         if (F.isEmpty(keywords))
             return;
 
         for (String keyword : keywords)
-            errorUnsupportedIfMatchesKeyword(tok, keyword);
+            errorUnsupportedIfMatchesKeyword(token, keyword);
     }
 
     /**
      * Error on unsupported keyword.
      *
-     * @param tok Token.
+     * @param token Token.
      * @return Error.
      */
-    public static SqlParseException errorUnsupported(SqlLexerToken tok) {
-        throw error0(tok, IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
-            "Unsupported keyword: \"" + tok.token() + "\"");
+    public static SqlParseException errorUnsupported(SqlLexerToken token) {
+        throw error0(token, IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
+            "Unsupported keyword: \"" + token.token() + "\"");
     }
 
     /**
      * Create generic parse exception due to unexpected token.
      *
      * @param lex Lexer.
-     * @param expTok Expected token.
+     * @param expToken Expected token.
      * @return Exception.
      */
-    public static SqlParseException errorUnexpectedToken(SqlLexer lex, String expTok) {
-        return errorUnexpectedToken0(lex, expTok);
+    public static SqlParseException errorUnexpectedToken(SqlLexer lex, String expToken) {
+        return errorUnexpectedToken0(lex, expToken);
     }
 
     /**
      * Create generic parse exception due to unexpected token.
      *
-     * @param tok Token.
-     * @param firstExpTok First expected token.
+     * @param token Token.
+     * @param firstExpToken First expected token.
      * @param expTokens Additional expected tokens (if any).
      * @return Exception.
      */
-    public static SqlParseException errorUnexpectedToken(SqlLexerToken tok, String firstExpTok,
+    public static SqlParseException errorUnexpectedToken(SqlLexerToken token, String firstExpToken,
         String... expTokens) {
         if (F.isEmpty(expTokens))
-            return errorUnexpectedToken0(tok, firstExpTok);
+            return errorUnexpectedToken0(token, firstExpToken);
         else {
             String[] expTokens0 = new String[expTokens.length + 1];
 
-            expTokens0[0] = firstExpTok;
+            expTokens0[0] = firstExpToken;
 
             System.arraycopy(expTokens, 0, expTokens0, 1, expTokens.length);
 
-            throw errorUnexpectedToken0(tok, expTokens0);
+            throw errorUnexpectedToken0(token, expTokens0);
         }
     }
 
     /**
      * Create generic parse exception due to unexpected token.
      *
-     * @param tok Token.
+     * @param token Token.
      * @param expTokens Expected tokens (if any).
      * @return Exception.
      */
     @SuppressWarnings("StringConcatenationInsideStringBufferAppend")
-    private static SqlParseException errorUnexpectedToken0(SqlLexerToken tok, String... expTokens) {
-        String tok0 = tok.token();
+    private static SqlParseException errorUnexpectedToken0(SqlLexerToken token, String... expTokens) {
+        String token0 = token.token();
 
         StringBuilder msg = new StringBuilder(
-            tok0 == null ? "Unexpected end of command" : "Unexpected token: \"" + tok0 + "\"");
+            token0 == null ? "Unexpected end of command" : "Unexpected token: \"" + token0 + "\"");
 
         if (!F.isEmpty(expTokens)) {
             msg.append(" (expected: ");
@@ -414,112 +391,74 @@ public class SqlParserUtils {
             msg.append(")");
         }
 
-        throw error(tok, msg.toString());
+        throw error(token, msg.toString());
     }
 
-    /**
-     * Tries to parse a string parameter, if exists and invokes the supplied setter to record the value.
-     *
-     * <p>The parameter can be defined in one of the following ways:
-     * <ul>
-     *     <li>{@code keyword <space> value},
-     *     <li>{@code keyword=value}.
-     * </ul>
-     *
-     * <p>If {@code allowDflt} is true, {@link SqlKeyword#DEFAULT} value is permitted.
-     *
-     * @param lex The lexer.
-     * @param keyword The keyword, which prefixes
-     * @param parsedParams The parameters, which has been already parsed for duplicate checking. If provided,
-     *      a duplicate parameter is not allowed.
-     * @param allowDflt Allow {@link SqlKeyword#DEFAULT} as the possible value.
-     * @param setter A closure/lambda that is called with the value to set and some options.
-     */
-    public static boolean tryParseStringParam(SqlLexer lex, String keyword, String desc,
-        @Nullable Set<String> parsedParams, boolean isIdentifier, boolean allowDflt, Setter<String> setter) {
+    public static String parseString(SqlLexer lex) {
+        if (lex.shift() &&
+            (lex.tokenType() == SqlLexerTokenType.DEFAULT || lex.tokenType() == SqlLexerTokenType.QUOTED))
+            return lex.token();
 
-        if (!matchesKeyword(lex.lookAhead(), keyword))
-            return false;
+        throw errorUnexpectedToken(lex, "[string]");
+    }
 
-        if (parsedParams != null && parsedParams.contains(keyword))
-            throw error(lex.currentToken(), "Duplicate parameter: " + keyword);
-
+    public static ParamFormat checkAndSkipParamName(SqlLexer lex, Set<String> parsedParams) {
         lex.shift();
 
-        skipOptionalEqSign(lex);
+        String paramName = lex.token();
 
-        if (allowDflt && matchesKeyword(lex.lookAhead(), DEFAULT)) {
+        if (!parsedParams.add(paramName))
+            throw error(lex, "Only one " + paramName + " clause may be specified.");
 
-            lex.shift();
-
-            setter.apply(null, true, false);
-        }
-        else
-            parseKeywordOrQuoted(lex, desc, isIdentifier, setter);
-
-        if (parsedParams != null)
-            parsedParams.add(keyword);
-
-        return true;
+        return skipOptionalToken(lex, SqlLexerTokenType.EQUALS) ? ParamFormat.KEY_EQ_VAL : ParamFormat.KEY_SPACE_VAL;
     }
 
-    /**
-     * Tries to parse an integer parameter, if exists and invokes the supplied setter to record the value.
-     *
-     * <p>The parameter can be defined in one of the following ways:
-     * <ul>
-     *     <li>{@code keyword <space> value},
-     *     <li>{@code keyword=value}.
-     * </ul>
-     *
-     * <p>If {@code allowDflt} is true, {@link SqlKeyword#DEFAULT} value is permitted.
-     *
-     * @param lex The lexer.
-     * @param keyword The keyword, which prefixes
-     * @param parsedParams The parameters, which has been already parsed for duplicate checking. If provided,
-     *      a duplicate parameter is not allowed.
-     * @param allowDflt Allow {@link SqlKeyword#DEFAULT} as the possible value.
-     * @param setter A closure/lambda that is called with the value to set and some options.
-     */
-    public static boolean tryParseIntParam(SqlLexer lex, String keyword, @Nullable Set<String> parsedParams,
-        boolean allowDflt, Setter<Integer> setter) {
-
-        if (!matchesKeyword(lex.lookAhead(), keyword))
-            return false;
-
-        if (parsedParams != null && parsedParams.contains(keyword))
-            throw error(lex.currentToken(), "Only one " + keyword + " clause may be specified.");
-
+    public static <T extends Enum<T>> T parseEnum(SqlLexer lex, Class<T> enumCls) {
         lex.shift();
 
-        skipOptionalEqSign(lex);
-
-        if (allowDflt && matchesKeyword(lex.lookAhead(), DEFAULT)) {
-
-            lex.shift();
-
-            setter.apply(null, true, false);
+        try {
+            return Enum.valueOf(enumCls, lex.token().trim().toUpperCase());
         }
-        else
-            setter.apply(parseInt(lex), false, false);
-
-        if (parsedParams != null)
-            parsedParams.add(keyword);
-
-        return true;
+        catch (IllegalArgumentException e) {
+            throw errorUnexpectedToken(lex, "[" + enumValuesList(enumCls) + "]");
+        }
     }
 
-    /** A lambda/closure to use with {@link SqlParserUtils} tryParseXxx() methods. */
-    public interface Setter<T> {
+    private static <E extends Enum<E>> String enumValuesList(Class<E> enumCls) {
 
-        /**
-         * Records the value of the parameter.
-         *
-         * @param val The value read from SQL command.
-         * @param isDflt true, if {@link SqlKeyword#DEFAULT} was specified as the value.
-         * @param isQuoted true, if the value was quoted (if applicable).
-         */
-        void apply(T val, boolean isDflt, boolean isQuoted);
+        E[] enumVals = enumCls.getEnumConstants();
+
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < enumVals.length - 2; i++)
+            sb.append(String.valueOf(enumVals[i])).append(", ");
+
+        sb.append(", or ").append(enumVals[enumVals.length - 1]);
+
+        return sb.toString();
+    }
+
+    public static Boolean tryParseBoolean(SqlLexer lex, ParamFormat paramFmt) {
+        Boolean val = null;
+
+        SqlLexerToken token = lex.lookAhead();
+
+        if (token.tokenType() == SqlLexerTokenType.QUOTED || token.tokenType() == SqlLexerTokenType.DEFAULT) {
+            String valStr = token.token().toUpperCase();
+
+            if (F.eq(valStr, "TRUE") || F.eq(valStr, "1"))
+                val = true;
+            else if (F.eq(valStr, "FALSE") || F.eq(valStr, "0"))
+                val = false;
+
+            if (val != null)
+                lex.shift();
+        }
+
+        if (val == null && paramFmt == ParamFormat.KEY_EQ_VAL)
+            throw errorUnexpectedToken(lex, "[boolean]");
+
+        return val;
     }
 
     /**

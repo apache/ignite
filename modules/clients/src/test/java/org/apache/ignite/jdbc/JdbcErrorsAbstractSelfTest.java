@@ -38,7 +38,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.H2FallbackTempDisabler;
+import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -532,7 +532,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws SQLException if failed.
      */
-    public void testNotNullRestrictionReadThroughCacheStore() throws SQLException {
+    public void testNotNullRestrictionReadThroughCacheStore() throws Exception {
         checkNotNullRestrictionReadThroughCacheStore(false);
     }
 
@@ -542,7 +542,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws SQLException if failed.
      */
-    public void testNotNullRestrictionReadThroughCacheStoreInternal() throws SQLException {
+    public void testNotNullRestrictionReadThroughCacheStoreInternal() throws Exception {
         checkNotNullRestrictionReadThroughCacheStore(true);
     }
 
@@ -552,20 +552,25 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws SQLException if failed.
      */
-    public void checkNotNullRestrictionReadThroughCacheStore(final boolean useInternalCmd) throws SQLException {
-        checkErrorState(new ConnClosure() {
-            @Override public void run(Connection conn) throws Exception {
-                conn.setSchema("PUBLIC");
+    public void checkNotNullRestrictionReadThroughCacheStore(final boolean useInternalCmd) throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(useInternalCmd, new GridTestUtils.RunnableThrowingClosure() {
+            @Override public void run() throws Exception {
 
-                try (Statement stmt = conn.createStatement(); H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(useInternalCmd)) {
-                    String params = useInternalCmd
-                        ? ("template=\"" + CACHE_STORE_TEMPLATE + "\"")
-                        : ("WITH \"template=" + CACHE_STORE_TEMPLATE + "\"");
+                checkErrorState(new ConnClosure() {
+                    @Override public void run(Connection conn) throws Exception {
+                        conn.setSchema("PUBLIC");
 
-                    stmt.execute("CREATE TABLE cache_store_nulltest(id INT PRIMARY KEY, age INT NOT NULL) " + params);
-                }
+                        try (Statement stmt = conn.createStatement()) {
+                            String params = useInternalCmd
+                                ? ("template=\"" + CACHE_STORE_TEMPLATE + "\"")
+                                : ("WITH \"template=" + CACHE_STORE_TEMPLATE + "\"");
+
+                            stmt.execute("CREATE TABLE cache_store_nulltest(id INT PRIMARY KEY, age INT NOT NULL) " + params);
+                        }
+                    }
+                }, "0A000");
             }
-        }, "0A000");
+        });
     }
 
     /**
@@ -574,7 +579,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws SQLException if failed.
      */
-    public void testNotNullRestrictionCacheInterceptor() throws SQLException {
+    public void testNotNullRestrictionCacheInterceptor() throws Exception {
         checkNotNullRestrictionCacheInterceptor(false);
     }
 
@@ -584,7 +589,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws SQLException if failed.
      */
-    public void testNotNullRestrictionCacheInterceptorInternal() throws SQLException {
+    public void testNotNullRestrictionCacheInterceptorInternal() throws Exception {
         checkNotNullRestrictionCacheInterceptor(true);
     }
 
@@ -594,20 +599,25 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      *
      * @throws SQLException if failed.
      */
-    public void checkNotNullRestrictionCacheInterceptor(final boolean useInternalCmd) throws SQLException {
-        checkErrorState(new ConnClosure() {
-            @Override public void run(Connection conn) throws Exception {
-                conn.setSchema("PUBLIC");
+    public void checkNotNullRestrictionCacheInterceptor(final boolean useInternalCmd) throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(useInternalCmd, new GridTestUtils.RunnableThrowingClosure() {
+            @Override public void run() throws Exception {
 
-                try (Statement stmt = conn.createStatement(); H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(useInternalCmd)) {
-                    String params = useInternalCmd
-                        ? ("template=\"" + CACHE_INTERCEPTOR_TEMPLATE + "\"")
-                        : ("WITH \"template=" + CACHE_INTERCEPTOR_TEMPLATE + "\"");
+                checkErrorState(new ConnClosure() {
+                    @Override public void run(Connection conn) throws Exception {
+                        conn.setSchema("PUBLIC");
 
-                    stmt.execute("CREATE TABLE cache_interceptor_nulltest(id INT PRIMARY KEY, age INT NOT NULL) " + params);
-                }
+                        try (Statement stmt = conn.createStatement()) {
+                            String params = useInternalCmd
+                                ? ("template=\"" + CACHE_INTERCEPTOR_TEMPLATE + "\"")
+                                : ("WITH \"template=" + CACHE_INTERCEPTOR_TEMPLATE + "\"");
+
+                            stmt.execute("CREATE TABLE cache_interceptor_nulltest(id INT PRIMARY KEY, age INT NOT NULL) " + params);
+                        }
+                    }
+                }, "0A000");
             }
-        }, "0A000");
+        });
     }
 
     /**

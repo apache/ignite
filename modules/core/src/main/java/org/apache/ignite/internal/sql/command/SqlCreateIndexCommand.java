@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.sql.command;
 
-import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
 import org.apache.ignite.internal.sql.SqlLexerToken;
 import org.apache.ignite.internal.sql.SqlParserUtils;
-import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -35,9 +33,9 @@ import java.util.LinkedList;
 import java.util.Set;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.ASC;
+import static org.apache.ignite.internal.sql.SqlKeyword.BACKUPS;
 import static org.apache.ignite.internal.sql.SqlKeyword.DESC;
 import static org.apache.ignite.internal.sql.SqlKeyword.IF;
-import static org.apache.ignite.internal.sql.SqlKeyword.INLINE_SIZE;
 import static org.apache.ignite.internal.sql.SqlKeyword.ON;
 import static org.apache.ignite.internal.sql.SqlKeyword.PARALLEL;
 import static org.apache.ignite.internal.sql.SqlParserUtils.error;
@@ -47,7 +45,7 @@ import static org.apache.ignite.internal.sql.SqlParserUtils.parseIdentifier;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIfNotExists;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdentifier;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipCommaOrRightParenthesis;
-import static org.apache.ignite.internal.sql.SqlParserUtils.skipKeyword;
+import static org.apache.ignite.internal.sql.SqlParserUtils.skipKeywords;
 
 /**
  * CREATE INDEX command.
@@ -72,7 +70,7 @@ public class SqlCreateIndexCommand implements SqlCommand {
      * Parallelism level. <code>parallel=0</code> means that a default number
      * of cores will be used during index creation (e.g. 25% of available cores).
      */
-    private int parallel;
+    private Integer parallel;
 
     /** Columns. */
     @GridToStringInclude
@@ -83,7 +81,7 @@ public class SqlCreateIndexCommand implements SqlCommand {
     private Set<String> colNames;
 
     /** Inline size. Zero effectively disables inlining. */
-    private int inlineSize = QueryIndex.DFLT_INLINE_SIZE;
+    private Integer inlineSize;
 
     /** {@inheritDoc} */
     @Override public String schemaName() {
@@ -119,14 +117,14 @@ public class SqlCreateIndexCommand implements SqlCommand {
     /**
      * @param val Parallelism level.
      */
-    public void parallel(int val) {
+    public void parallel(Integer val) {
         parallel = val;
     }
 
     /**
      * @return Parallelism level.
      */
-    public int parallel() {
+    public Integer parallel() {
         return parallel;
     }
 
@@ -140,14 +138,14 @@ public class SqlCreateIndexCommand implements SqlCommand {
     /**
      * @return Inline size.
      */
-    public int inlineSize() {
+    public Integer inlineSize() {
         return inlineSize;
     }
 
     /**
      * @param val Inline size.
      */
-    public void inlineSize(int val) {
+    public void inlineSize(Integer val) {
         inlineSize = val;
     }
 
@@ -168,16 +166,13 @@ public class SqlCreateIndexCommand implements SqlCommand {
         return cols != null ? cols : Collections.<SqlIndexColumn>emptySet();
     }
 
-    /** Parameters, which are already parsed (for duplicate checking). */
-    private Set<String> parsedParams = new HashSet<>();
-
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
         ifNotExists = parseIfNotExists(lex);
 
         idxName = parseIndexName(lex);
 
-        skipKeyword(lex, ON);
+        skipKeywords(lex, ON);
 
         SqlQualifiedName tblQName = parseQualifiedIdentifier(lex);
 
@@ -212,12 +207,10 @@ public class SqlCreateIndexCommand implements SqlCommand {
         if (!lex.shift() || lex.tokenType() != SqlLexerTokenType.PARENTHESIS_LEFT)
             throw errorUnexpectedToken(lex, "(");
 
-        while (true) {
+        do {
             parseIndexColumn(lex);
-
-            if (skipCommaOrRightParenthesis(lex) == SqlLexerTokenType.PARENTHESIS_RIGHT)
-                break;
         }
+        while (!skipCommaOrRightParenthesis(lex));
     }
 
     /**
@@ -261,59 +254,38 @@ public class SqlCreateIndexCommand implements SqlCommand {
      * @param lex Lexer.
      */
     private void parseParameters(SqlLexer lex) {
+        Set<String> parsedParams = new HashSet<>();
+
         while (lex.lookAhead().tokenType() != SqlLexerTokenType.EOF) {
 
-            if (!tryParseParallel(lex) &&
-                !tryParseInlineSize(lex))
+            SqlLexerToken nextTok = lex.lookAhead();
 
-                throw errorUnexpectedToken(lex.lookAhead());
+            if (nextTok.tokenType() == SqlLexerTokenType.DEFAULT) {
+                switch (nextTok.token()) {
+                    case PARALLEL: {
+                        SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+
+                        parallel = SqlParserUtils.parseInt(lex);
+
+                        continue;
+                    }
+
+                    case BACKUPS: {
+                        SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+
+                        inlineSize = SqlParserUtils.parseInt(lex);
+
+                        continue;
+                    }
+
+                    default:
+                        // fallthrough
+                }
+            }
+
+            throw errorUnexpectedToken(nextTok, PARALLEL, BACKUPS);
         }
     }
-
-    /**
-     * If PARALLEL parameter goes next, parses it.
-     *
-     * @param lex The lexer.
-     * @return True if we realy met the PARALLEL parameter.
-     * @throws SqlParseException in case of syntax or value error.
-     */
-    private boolean tryParseParallel(final SqlLexer lex) {
-
-        return SqlParserUtils.tryParseIntParam(lex, PARALLEL, parsedParams, false, new SqlParserUtils.Setter<Integer>() {
-
-            @Override public void apply(Integer val, boolean isDflt, boolean isQuoted) {
-                assert val != null;
-
-                if (val < 0)
-                    throw error(lex, "Illegal " + PARALLEL + " value. Should be positive: " + val);
-
-                parallel(val);
-            }
-        });
-    }
-
-    /**
-     * If INLINE_SIZE parameter goes next, parses it.
-     *
-     * @param lex The lexer.
-     * @return True if we realy met the INLINE_SIZE parameter.
-     * @throws SqlParseException in case of syntax or value error.
-     */
-    private boolean tryParseInlineSize(final SqlLexer lex) {
-
-        return SqlParserUtils.tryParseIntParam(lex, INLINE_SIZE, parsedParams, true, new SqlParserUtils.Setter<Integer>() {
-
-            @Override public void apply(Integer val, boolean isDflt, boolean isQuoted) {
-                assert isDflt || val != null;
-
-                if (val < 0)
-                    throw error(lex, "Illegal " + INLINE_SIZE + " value. Should be positive: " + val);
-
-                inlineSize(isDflt ? QueryIndex.DFLT_INLINE_SIZE : val);
-            }
-        });
-    }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

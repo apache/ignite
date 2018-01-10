@@ -24,13 +24,10 @@ import java.util.HashMap;
  */
 public enum SqlLexerTokenType {
     /** Standard word. */
-    KEYWORD,
+    DEFAULT,
 
     /** Double-quoted phrase. */
-    DBL_QUOTED,
-
-    /** Single-quoted string literal */
-    SGL_QUOTED,
+    QUOTED,
 
     /** Minus sign. */
     MINUS('-'),

@@ -33,6 +33,7 @@ import java.net.MulticastSocket;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -107,6 +108,7 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_PARSER_H2_FALLBACK_DISABLED;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.springframework.util.FileSystemUtils.deleteRecursively;
 
@@ -1721,6 +1723,54 @@ public final class GridTestUtils {
         }
 
         return false;
+    }
+
+    /** FIXME SHQ */
+    public static void runWithAlteredProperty(RunnableThrowingClosure lambda,
+        String propName, @Nullable String propValue) throws Exception {
+
+        String oldVal = System.getProperty(propName);
+
+        if (propValue != null)
+            System.setProperty(propName, propValue);
+        else
+            System.clearProperty(propName);
+
+        try {
+            lambda.run();
+        }
+        finally {
+            if (oldVal != null)
+                System.setProperty(propName, oldVal);
+            else
+                System.clearProperty(propName);
+        }
+    }
+
+    /**
+     * Runnable that accepts a {@link Connection} and can throw an exception.
+     */
+    public interface RunnableThrowingClosure {
+        /**
+         * @throws Exception On error.
+         */
+        void run() throws Exception;
+    }
+
+    /** FIXME SHQ */
+    public static void runWithH2FallbackDisabled(RunnableThrowingClosure lambda) throws Exception {
+        runWithH2FallbackDisabled(true, lambda);
+    }
+
+    /** FIXME SHQ */
+    public static void runWithH2FallbackEnabled(RunnableThrowingClosure lambda) throws Exception {
+        runWithH2FallbackDisabled(false, lambda);
+    }
+
+    /** FIXME SHQ */
+    public static void runWithH2FallbackDisabled(boolean isDisabled, RunnableThrowingClosure lambda) throws Exception {
+        GridTestUtils.runWithAlteredProperty(lambda,
+            IGNITE_SQL_PARSER_H2_FALLBACK_DISABLED, isDisabled ? "TRUE" : "FALSE");
     }
 
     /**

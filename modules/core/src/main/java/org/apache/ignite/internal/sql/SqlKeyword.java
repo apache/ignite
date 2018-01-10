@@ -84,7 +84,7 @@ public class SqlKeyword {
     /** Keyword: DECIMAL. */
     public static final String DECIMAL = "DECIMAL";
 
-    /** Keyword: KEYWORD. */
+    /** Keyword: DEFAULT. */
     public static final String DEFAULT = "DEFAULT";
 
     /** Keyword: DESC. */
@@ -246,8 +246,8 @@ public class SqlKeyword {
     /** Keyword: WRAP_KEY. */
     public static final String WRAP_KEY = "WRAP_KEY";
 
-    /** Keyword: WRAP_VALUE. */
-    public static final String WRAP_VALUE = "WRAP_VALUE";
+    /** Keyword: WRAP_VAL. */
+    public static final String WRAP_VAL = "WRAP_VALUE";
 
     /** Keyword: WRITE_SYNCHRONIZATION_MODE. */
     public static final String WRITE_SYNCHRONIZATION_MODE = "WRITE_SYNCHRONIZATION_MODE";

@@ -23,7 +23,8 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.sql.param.ParamTestUtils;
 import org.apache.ignite.internal.sql.param.TestParamDef;
-import org.apache.ignite.internal.util.H2FallbackTempDisabler;
+import org.apache.ignite.internal.util.lang.GridAbsClosure;
+import org.apache.ignite.testframework.GridTestUtils;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -42,7 +43,7 @@ import static org.apache.ignite.internal.sql.SqlKeyword.NO_WRAP_VALUE;
 import static org.apache.ignite.internal.sql.SqlKeyword.TEMPLATE;
 import static org.apache.ignite.internal.sql.SqlKeyword.VAL_TYPE;
 import static org.apache.ignite.internal.sql.SqlKeyword.WRAP_KEY;
-import static org.apache.ignite.internal.sql.SqlKeyword.WRAP_VALUE;
+import static org.apache.ignite.internal.sql.SqlKeyword.WRAP_VAL;
 import static org.apache.ignite.internal.sql.SqlKeyword.WRITE_SYNCHRONIZATION_MODE;
 
 /**
@@ -136,7 +137,7 @@ public class SqlParserCreateTableSelfTest extends SqlParserAbstractSelfTest {
         PARAM_TESTS.add(ParamTestUtils.makeBasicBoolDef(WRAP_KEY, NO_WRAP_KEY, "wrapKey",
             Optional.<Boolean>fromNullable(null), Optional.<Boolean>fromNullable(null)));
 
-        PARAM_TESTS.add(ParamTestUtils.makeBasicBoolDef(WRAP_VALUE, NO_WRAP_VALUE, "wrapValue",
+        PARAM_TESTS.add(ParamTestUtils.makeBasicBoolDef(WRAP_VAL, NO_WRAP_VALUE, "wrapValue",
             Optional.<Boolean>fromNullable(null), Optional.<Boolean>fromNullable(null)));
 
         DEFAULT_PARAM_VALS = createDefaultParamVals(PARAM_TESTS);
@@ -178,38 +179,40 @@ public class SqlParserCreateTableSelfTest extends SqlParserAbstractSelfTest {
     /**
      * Tests for base CREATE TABLE command.
      */
-    public void testBasicSyntax() {
+    public void testBasicSyntax() throws Exception {
 
-        try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(true)) {
+        GridTestUtils.runWithH2FallbackDisabled(new GridTestUtils.RunnableThrowingClosure() {
+            @Override public void run() throws Exception {
 
-            assertParseError(null,
-                "CREATE TABLE",
-                "Unexpected end of command (expected: \"[qualified identifier]\", \"IF\")");
+                assertParseError(null,
+                    "CREATE TABLE",
+                    "Unexpected end of command (expected: \"[qualified identifier]\", \"IF\")");
 
-            assertParseError(null,
-                "CREATE TABLE tbl",
-                "Unexpected end of command (expected: \"(\")");
+                assertParseError(null,
+                    "CREATE TABLE tbl",
+                    "Unexpected end of command (expected: \"(\")");
 
-            assertParseError(null,
-                "CREATE TABLE (a INT PRIMARY KEY), b VARCHAR)",
-                "Unexpected token: \"(\" (expected: \"[qualified identifier]\", \"IF\")");
+                assertParseError(null,
+                    "CREATE TABLE (a INT PRIMARY KEY), b VARCHAR)",
+                    "Unexpected token: \"(\" (expected: \"[qualified identifier]\", \"IF\")");
 
-            assertParseError(null,
-                "CREATE TABLE (a int, b varchar)",
-                "Unexpected token: \"(\" (expected: \"[qualified identifier]\", \"IF\")");
+                assertParseError(null,
+                    "CREATE TABLE (a int, b varchar)",
+                    "Unexpected token: \"(\" (expected: \"[qualified identifier]\", \"IF\")");
 
-            assertParseError(null,
-                "CREATE TABLE tbl (a int, a varchar)",
-                "Column already defined: A");
+                assertParseError(null,
+                    "CREATE TABLE tbl (a int, a varchar)",
+                    "Column already defined: A");
 
-            assertParseError(null,
-                "CREATE TABLE tbl (a INT, b VARCHAR, a INT PRIMARY KEY)",
-                "Column already defined: A");
+                assertParseError(null,
+                    "CREATE TABLE tbl (a INT, b VARCHAR, a INT PRIMARY KEY)",
+                    "Column already defined: A");
 
-            assertParseError(null,
-                "CREATE TABLE tbl (a INT, b VARCHAR, a date PRIMARY KEY)",
-                "Column already defined: A");
-        }
+                assertParseError(null,
+                    "CREATE TABLE tbl (a INT, b VARCHAR, a date PRIMARY KEY)",
+                    "Column already defined: A");
+            }
+        });
     }
 
     /**
@@ -217,14 +220,16 @@ public class SqlParserCreateTableSelfTest extends SqlParserAbstractSelfTest {
      *
      * @throws AssertionError If failed.
      */
-    public void testParams() {
+    public void testParams() throws Exception {
 
-        try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(true)) {
+        GridTestUtils.runWithH2FallbackDisabled(new GridTestUtils.RunnableThrowingClosure() {
+            @Override public void run() throws Exception {
 
-            String baseCmd = "CREATE TABLE tbl (\"" + PK_NAME + "\" INT PRIMARY KEY, b VARCHAR)";
+                String baseCmd = "CREATE TABLE tbl (\"" + PK_NAME + "\" INT PRIMARY KEY, b VARCHAR)";
 
-            for (TestParamDef testParamDef : PARAM_TESTS)
-                testParameter(null, baseCmd, testParamDef, DEFAULT_PARAM_VALS);
-        }
+                for (TestParamDef testParamDef : PARAM_TESTS)
+                    testParameter(null, baseCmd, testParamDef, DEFAULT_PARAM_VALS);
+            }
+        });
     }
 }

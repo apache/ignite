@@ -30,13 +30,13 @@ public class SqlColumn {
     private final SqlColumnType typ;
 
     /** Scale. */
-    private final int scale;
+    private final Integer scale;
 
     /** Precision. */
-    private final int precision;
+    private final Integer precision;
 
     /** Is column nullable. */
-    private final boolean isNullable;
+    private final Boolean isNullable;
 
     /**
      * Constructs the object.
@@ -45,7 +45,7 @@ public class SqlColumn {
      * @param typ Type.
      */
     public SqlColumn(String name, SqlColumnType typ) {
-        this(name, typ, 0, 0, true);
+        this(name, typ, null, null, null);
     }
 
     /**
@@ -55,8 +55,8 @@ public class SqlColumn {
      * @param typ Type.
      * @param precision Precision.
      */
-    public SqlColumn(String name, SqlColumnType typ, int precision) {
-        this(name, typ, 0, precision, true);
+    public SqlColumn(String name, SqlColumnType typ, Integer precision) {
+        this(name, typ, null, precision, null);
     }
 
     /**
@@ -66,7 +66,7 @@ public class SqlColumn {
      * @param typ Type.
      * @param precision Precision.
      */
-    public SqlColumn(String name, SqlColumnType typ, int precision, boolean isNullable) {
+    public SqlColumn(String name, SqlColumnType typ, Integer precision, Boolean isNullable) {
         this(name, typ, 0, precision, isNullable);
     }
 
@@ -79,7 +79,7 @@ public class SqlColumn {
      * @param scale Scale.
      * @param isNullable Is nullable.
      */
-    public SqlColumn(String name, SqlColumnType typ, int scale, int precision, boolean isNullable) {
+    public SqlColumn(String name, SqlColumnType typ, Integer scale, Integer precision, Boolean isNullable) {
         this.name = name;
         this.typ = typ;
         this.scale = scale;
@@ -104,14 +104,14 @@ public class SqlColumn {
     /**
      * @return Scale.
      */
-    public int scale() {
+    public Integer scale() {
         return scale;
     }
 
     /**
      * @return Precision.
      */
-    public int precision() {
+    public Integer precision() {
         return precision;
     }
 
@@ -120,7 +120,7 @@ public class SqlColumn {
      *
      * @return true if column is nullable.
      */
-    public boolean isNullable() {
+    public Boolean isNullable() {
         return isNullable;
     }
 

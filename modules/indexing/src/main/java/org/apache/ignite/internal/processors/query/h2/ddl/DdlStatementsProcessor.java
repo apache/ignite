@@ -74,10 +74,13 @@ import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.PARAM_WRAP_VALUE;
+import static org.apache.ignite.internal.sql.SqlKeyword.INLINE_SIZE;
 import static org.apache.ignite.internal.sql.SqlKeyword.KEY_TYPE;
+import static org.apache.ignite.internal.sql.SqlKeyword.PARALLEL;
 import static org.apache.ignite.internal.sql.SqlKeyword.VAL_TYPE;
 import static org.apache.ignite.internal.sql.SqlKeyword.WRAP_KEY;
-import static org.apache.ignite.internal.sql.SqlKeyword.WRAP_VALUE;
+import static org.apache.ignite.internal.sql.SqlKeyword.WRAP_VAL;
+import static org.apache.ignite.internal.sql.SqlParserUtils.error;
 
 /**
  * DDL statements processor.<p>
@@ -196,15 +199,19 @@ public class DdlStatementsProcessor {
     }
 
     /**
-     * Post-processes the {@link SqlCreateTableCommand} by setting default values or combinations of parameters
-     * to proper values.
+     * Post-processes the {@link SqlCreateTableCommand} by checking and setting default values
+     * or combinations of parameters to proper values (semantic processing).
      *
      * @param cmd The command to fix.
      */
     private void postProcessCreateTableCmd(SqlCreateTableCommand cmd) {
 
+        // Template name
+
         if (F.isEmpty(cmd.templateName()))
             cmd.templateName(QueryUtils.TEMPLATE_PARTITIONED);
+
+        // Columns
 
         Map<String, SqlColumn> cols = cmd.columns();
 
@@ -223,7 +230,7 @@ public class DdlStatementsProcessor {
             throw new IgniteSQLException("Table must have at least one non PRIMARY KEY column.",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-        // Process key wrapping.
+        // Key wrapping.
 
         Boolean wrapKey = cmd.wrapKey();
 
@@ -243,17 +250,18 @@ public class DdlStatementsProcessor {
 
         cmd.wrapKey(wrapKey0);
 
-        // Process value wrapping.
+        // Value wrapping.
+
         Boolean wrapVal = cmd.wrapValue();
 
         if (wrapVal != null && !wrapVal) {
             if (valColsNum > 1) {
-                throw new IgniteSQLException(WRAP_VALUE + " cannot be false when multiple non-primary key " +
+                throw new IgniteSQLException(WRAP_VAL + " cannot be false when multiple non-primary key " +
                     "columns exist.", IgniteQueryErrorCode.PARSING);
             }
 
             if (!F.isEmpty(cmd.valueTypeName())) {
-                throw new IgniteSQLException(WRAP_VALUE + " cannot be false when " + VAL_TYPE + " is set.",
+                throw new IgniteSQLException(WRAP_VAL + " cannot be false when " + VAL_TYPE + " is set.",
                     IgniteQueryErrorCode.PARSING);
             }
 
@@ -262,17 +270,35 @@ public class DdlStatementsProcessor {
         else
             cmd.wrapValue(true); // By default value is always wrapped to allow for ALTER TABLE ADD COLUMN commands.
 
+        // Key & value type names
+
         if (!F.isEmpty(cmd.valueTypeName()) && F.eq(cmd.keyTypeName(), cmd.valueTypeName()))
             throw new IgniteSQLException("Key and value type names " +
                 "should be different for CREATE TABLE: " + cmd.valueTypeName(), IgniteQueryErrorCode.PARSING);
 
-        if (cmd.affinityKey() == null) {
+        // Affinity key
+
+        String affinityKey = cmd.affinityKey();
+        if (affinityKey == null) {
             if (cmd.primaryKeyColumnNames().size() == 1 && cmd.wrapKey())
                 cmd.affinityKey(cmd.primaryKeyColumnNames().iterator().next());
         }
+        else {
+            if (!cmd.columns().containsKey(affinityKey))
+                throw new IgniteSQLException("Affinity key column with given name not found: " + affinityKey);
+
+            if (!cmd.primaryKeyColumnNames().contains(affinityKey))
+                throw new IgniteSQLException("Affinity key column must be one of key columns: " + affinityKey);
+        }
+
+        // Backups
 
         if (cmd.backups() == null)
             cmd.backups(0);
+        else {
+            if (cmd.backups() < 0)
+                throw new IgniteSQLException("Number of backups should be positive: " + cmd.backups());
+        }
     }
 
     /**
@@ -342,10 +368,21 @@ public class DdlStatementsProcessor {
         }
 
         newIdx.setFields(flds);
-        newIdx.setInlineSize(cmd.inlineSize());
+
+        Integer inlineSize = cmd.inlineSize();
+
+        if (inlineSize != null && inlineSize < 0)
+            throw new IgniteSQLException("Illegal inline size value. Should be positive: " + inlineSize);
+
+        newIdx.setInlineSize(inlineSize != null ? inlineSize : QueryIndex.DFLT_INLINE_SIZE);
+
+        Integer parallel = cmd.parallel();
+
+        if (parallel != null && parallel < 0)
+            throw new IgniteSQLException("Illegal parallel value. Should be positive: " + parallel);
 
         fut = ctx.query().dynamicIndexCreate(tbl.cacheName(), cmd.schemaName(), typeDesc.tableName(),
-            newIdx, cmd.ifNotExists(), cmd.parallel());
+            newIdx, cmd.ifNotExists(), parallel);
 
         return fut;
     }

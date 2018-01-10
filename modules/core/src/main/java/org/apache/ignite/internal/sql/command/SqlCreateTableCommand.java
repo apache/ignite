@@ -19,12 +19,9 @@ package org.apache.ignite.internal.sql.command;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.internal.sql.SqlEnumParserUtils;
-import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerToken;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
-import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.internal.sql.SqlParserUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -36,7 +33,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.ignite.internal.sql.SqlEnumParserUtils.tryParseBoolean;
 import static org.apache.ignite.internal.sql.SqlKeyword.AFFINITY_KEY;
 import static org.apache.ignite.internal.sql.SqlKeyword.ATOMICITY;
 import static org.apache.ignite.internal.sql.SqlKeyword.BACKUPS;
@@ -70,8 +66,6 @@ import static org.apache.ignite.internal.sql.SqlKeyword.LONGVARCHAR;
 import static org.apache.ignite.internal.sql.SqlKeyword.MEDIUMINT;
 import static org.apache.ignite.internal.sql.SqlKeyword.NCHAR;
 import static org.apache.ignite.internal.sql.SqlKeyword.NOT;
-import static org.apache.ignite.internal.sql.SqlKeyword.NO_WRAP_KEY;
-import static org.apache.ignite.internal.sql.SqlKeyword.NO_WRAP_VALUE;
 import static org.apache.ignite.internal.sql.SqlKeyword.NULL;
 import static org.apache.ignite.internal.sql.SqlKeyword.NUMBER;
 import static org.apache.ignite.internal.sql.SqlKeyword.NUMERIC;
@@ -93,7 +87,7 @@ import static org.apache.ignite.internal.sql.SqlKeyword.VARCHAR;
 import static org.apache.ignite.internal.sql.SqlKeyword.VARCHAR2;
 import static org.apache.ignite.internal.sql.SqlKeyword.VARCHAR_CASESENSITIVE;
 import static org.apache.ignite.internal.sql.SqlKeyword.WRAP_KEY;
-import static org.apache.ignite.internal.sql.SqlKeyword.WRAP_VALUE;
+import static org.apache.ignite.internal.sql.SqlKeyword.WRAP_VAL;
 import static org.apache.ignite.internal.sql.SqlKeyword.WRITE_SYNCHRONIZATION_MODE;
 import static org.apache.ignite.internal.sql.SqlKeyword.YEAR;
 import static org.apache.ignite.internal.sql.SqlParserUtils.error;
@@ -104,7 +98,7 @@ import static org.apache.ignite.internal.sql.SqlParserUtils.parseIfNotExists;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseInt;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdentifier;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipCommaOrRightParenthesis;
-import static org.apache.ignite.internal.sql.SqlParserUtils.skipKeyword;
+import static org.apache.ignite.internal.sql.SqlParserUtils.skipKeywords;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipToken;
 
 /**
@@ -179,9 +173,6 @@ public class SqlCreateTableCommand implements SqlCommand {
     /** Data region. */
     @GridToStringInclude
     private String dataRegionName;
-
-    /** Set of already parsed parameters for duplicate checking.*/
-    private Set<String> parsedParams = new HashSet<>();
 
     /**
      * @return Cache name upon which new cache configuration for this table must be based.
@@ -414,12 +405,10 @@ public class SqlCreateTableCommand implements SqlCommand {
         if (!lex.shift() || lex.tokenType() != SqlLexerTokenType.PARENTHESIS_LEFT)
             throw errorUnexpectedToken(lex, "(");
 
-        while (true) {
+        do {
             parseColumnOrConstraint(lex);
-
-            if (skipCommaOrRightParenthesis(lex) == SqlLexerTokenType.PARENTHESIS_RIGHT)
-                break;
         }
+        while (!skipCommaOrRightParenthesis(lex));
     }
 
     /**
@@ -447,7 +436,7 @@ public class SqlCreateTableCommand implements SqlCommand {
     private void parseColumn(SqlLexer lex) {
         String name = parseIdentifier(lex);
 
-        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.KEYWORD) {
+        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
             SqlColumn col = null;
 
             String typTok = lex.token();
@@ -524,7 +513,7 @@ public class SqlCreateTableCommand implements SqlCommand {
                     int scale = parseInt(lex);
                     int precision = 0;
 
-                    if (skipCommaOrRightParenthesis(lex) == SqlLexerTokenType.COMMA) {
+                    if (!skipCommaOrRightParenthesis(lex)) {
                         precision = parseInt(lex);
 
                         skipToken(lex, SqlLexerTokenType.PARENTHESIS_RIGHT);
@@ -595,7 +584,7 @@ public class SqlCreateTableCommand implements SqlCommand {
 
                     lex.shift();
 
-                    skipKeyword(lex, KEY);
+                    skipKeywords(lex, KEY);
                 }
 
                 return;
@@ -617,7 +606,7 @@ public class SqlCreateTableCommand implements SqlCommand {
         if (matchesKeyword(lex.lookAhead(), NOT)) {
 
             lex.shift();
-            skipKeyword(lex, NULL);
+            skipKeywords(lex, NULL);
 
             isNullable = false;
 
@@ -658,20 +647,17 @@ public class SqlCreateTableCommand implements SqlCommand {
 
         pkColNames = new HashSet<>();
 
-        skipKeyword(lex, PRIMARY);
-        skipKeyword(lex, KEY);
+        skipKeywords(lex, PRIMARY, KEY);
 
         skipToken(lex, SqlLexerTokenType.PARENTHESIS_LEFT);
 
-        while (true) {
+        do {
             String pkColName = parseIdentifier(lex);
 
             if (!pkColNames.add(pkColName))
                 throw error(lex, "Duplicate PK column name: " + pkColName);
-
-            if (skipCommaOrRightParenthesis(lex) == SqlLexerTokenType.PARENTHESIS_RIGHT)
-                break;
         }
+        while (!skipCommaOrRightParenthesis(lex));
     }
 
     /**
@@ -702,295 +688,108 @@ public class SqlCreateTableCommand implements SqlCommand {
      * @param lex The lexer.
      */
     private void parseParametersSection(SqlLexer lex) {
+        Set<String> parsedParams = new HashSet<>();
 
         while (lex.lookAhead().tokenType() != SqlLexerTokenType.EOF) {
 
-            if (!tryParseTemplate(lex) &&
-                !tryParseBackups(lex) &&
-                !tryParseAtomicity(lex) &&
-                !tryParseWriteSyncMode(lex) &&
-                !tryParseCacheGroup(lex) &&
-                !tryParseAffinityKey(lex) &&
-                !tryParseCacheName(lex) &&
-                !tryParseDataRegion(lex) &&
-                !tryParseKeyType(lex) &&
-                !tryParseValueType(lex) &&
-                !tryParseWrapKey(lex) &&
-                !tryParseWrapValue(lex))
+            SqlLexerToken nextTok = lex.lookAhead();
 
-                throw errorUnexpectedToken(lex.lookAhead());
+            if (nextTok.tokenType() == SqlLexerTokenType.DEFAULT) {
+                switch (nextTok.token()) {
+                    case TEMPLATE:
+                        SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+
+                        templateName = SqlParserUtils.parseString(lex);
+
+                        continue;
+
+                    case BACKUPS:
+                        SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+
+                        backups = SqlParserUtils.parseInt(lex);
+
+                        continue;
+
+                    case ATOMICITY:
+                        SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+
+                        atomicityMode = SqlParserUtils.parseEnum(lex, CacheAtomicityMode.class);
+
+                        continue;
+
+                    case WRITE_SYNCHRONIZATION_MODE:
+                        SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+
+                        writeSyncMode = SqlParserUtils.parseEnum(lex, CacheWriteSynchronizationMode.class);
+
+                        continue;
+
+                    case CACHE_GROUP:
+                        SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+
+                        cacheGrp = SqlParserUtils.parseString(lex);
+
+                        continue;
+
+                    case AFFINITY_KEY:
+                        SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+
+                        affinityKey = SqlParserUtils.parseString(lex);
+
+                        continue;
+
+                    case DATA_REGION:
+                        SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+
+                        dataRegionName = SqlParserUtils.parseString(lex);
+
+                        continue;
+
+                    case CACHE_NAME:
+                        SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+
+                        cacheName = SqlParserUtils.parseString(lex);
+
+                        continue;
+
+                    case KEY_TYPE:
+                        SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+
+                        keyTypeName = SqlParserUtils.parseString(lex);
+
+                        continue;
+
+                    case VAL_TYPE:
+                        SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+
+                        valTypeName = SqlParserUtils.parseString(lex);
+
+                        continue;
+
+                    case WRAP_KEY: {
+                        SqlParserUtils.ParamFormat paramFmt = SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+
+                        wrapKey = SqlParserUtils.tryParseBoolean(lex, paramFmt);
+
+                        continue;
+                    }
+
+                    case WRAP_VAL: {
+                        SqlParserUtils.ParamFormat paramFmt = SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+
+                        wrapKey = SqlParserUtils.tryParseBoolean(lex, paramFmt);
+
+                        continue;
+                    }
+
+                    default:
+                        // fallthrough
+                }
+
+                throw errorUnexpectedToken(nextTok, TEMPLATE, BACKUPS, ATOMICITY, WRITE_SYNCHRONIZATION_MODE,
+                    CACHE_GROUP, AFFINITY_KEY, DATA_REGION, CACHE_NAME, KEY_TYPE, VAL_TYPE, WRAP_KEY, WRAP_VAL);
+            }
         }
-    }
-
-    /**
-     * Tries to parse {@link SqlKeyword#TEMPLATE} option and updates the command fields.
-     *
-     * @return true if the option found and parsed successfully, false if not found.
-     * @throws SqlParseException in case of parse failure.
-     */
-    private boolean tryParseTemplate(final SqlLexer lex) {
-
-        return SqlParserUtils.tryParseStringParam(lex, TEMPLATE, "template name" , parsedParams, false, true,
-
-            new SqlParserUtils.Setter<String>() {
-
-                @Override public void apply(String val, boolean isDflt, boolean isQuoted) {
-
-                    templateName(isDflt ? null : val);
-                }
-            }
-        );
-    }
-
-    /**
-     * Tries to parse {@link SqlKeyword#BACKUPS} option and updates the command fields.
-     *
-     * @return true if the option found and parsed successfully, false if not found.
-     * @throws SqlParseException in case of parse failure.
-     */
-    private boolean tryParseBackups(final SqlLexer lex) {
-
-        return SqlParserUtils.tryParseIntParam(lex, BACKUPS, parsedParams, true,
-
-            new SqlParserUtils.Setter<Integer>() {
-
-                @Override public void apply(Integer backupsNum, boolean isDflt, boolean isQuoted) {
-
-                    if (isDflt)
-                        backups(null);
-                    else {
-                        if (backupsNum < 0)
-                            throw error(lex.currentToken(), "Number of backups should be positive [val=" + backupsNum + "]");
-
-                        backups(backupsNum);
-                    }
-                }
-            });
-    }
-
-    /**
-     * Tries to parse {@link SqlKeyword#ATOMICITY} option and updates the command fields.
-     *
-     * @return true if the option found and parsed successfully, false if not found.
-     * @throws SqlParseException in case of parse failure.
-     */
-    private boolean tryParseAtomicity(final SqlLexer lex) {
-
-        return SqlEnumParserUtils.tryParseEnumParam(lex, ATOMICITY, CacheAtomicityMode.class, parsedParams, true,
-
-            new SqlParserUtils.Setter<CacheAtomicityMode>() {
-
-                @Override public void apply(CacheAtomicityMode mode, boolean isDflt, boolean isQuoted) {
-
-                    atomicityMode(isDflt ? null : mode);
-                }
-            });
-    }
-
-    /**
-     * Tries to parse {@link SqlKeyword#WRITE_SYNCHRONIZATION_MODE} option and updates the command fields.
-     *
-     * @return true if the option found and parsed successfully, false if not found.
-     * @throws SqlParseException in case of parse failure.
-     */
-    private boolean tryParseWriteSyncMode(final SqlLexer lex) {
-
-        return SqlEnumParserUtils.tryParseEnumParam(lex, WRITE_SYNCHRONIZATION_MODE, CacheWriteSynchronizationMode.class,
-
-            parsedParams, true, new SqlParserUtils.Setter<CacheWriteSynchronizationMode>() {
-
-                @Override public void apply(CacheWriteSynchronizationMode mode, boolean isDflt, boolean isQuoted) {
-
-                    writeSynchronizationMode(isDflt ? null : mode);
-                }
-            });
-    }
-
-    /**
-     * Tries to parse {@link SqlKeyword#CACHE_GROUP} option and updates the command fields.
-     *
-     * @return true if the option found and parsed successfully, false if not found.
-     * @throws SqlParseException in case of parse failure.
-     */
-    private boolean tryParseCacheGroup(final SqlLexer lex) {
-
-        return SqlParserUtils.tryParseStringParam(lex, CACHE_GROUP, "cache group name" , parsedParams,
-
-            false, false, new SqlParserUtils.Setter<String>() {
-
-                @Override public void apply(String val, boolean isDflt, boolean isQuoted) {
-
-                    assert !isDflt;
-
-                    cacheGroup(val);
-                }
-            }
-        );
-    }
-
-    /**
-     * Tries to parse {@link SqlKeyword#AFFINITY_KEY} option and updates the command fields.
-     *
-     * @return true if the option found and parsed successfully, false if not found.
-     * @throws SqlParseException in case of parse failure.
-     */
-    private boolean tryParseAffinityKey(final SqlLexer lex) {
-
-        return SqlParserUtils.tryParseStringParam(lex, AFFINITY_KEY, "affinity key", parsedParams,
-
-            false, false, new SqlParserUtils.Setter<String>() {
-
-                @Override public void apply(String val, boolean isDflt, boolean isQuoted) {
-
-                    assert !isDflt;
-
-                    SqlColumn affCol = null;
-
-                    for (SqlColumn col : columns().values()) {
-
-                        boolean isNameEqual = isQuoted ? col.name().equals(val) : col.name().equalsIgnoreCase(val);
-
-                        if (isNameEqual) {
-                            if (affCol != null)
-                                throw error(lex.currentToken(),
-                                    "Ambiguous affinity column name, use single quotes for case sensitivity: " + val);
-
-                            affCol = col;
-                        }
-                    }
-
-                    if (affCol == null)
-                        throw error(lex.currentToken(), "Affinity key column with given name not found: " + val);
-
-                    if (!pkColNames.contains(affCol.name()))
-                        throw error(lex.currentToken(), "Affinity key column must be one of key columns: " + affCol.name());
-
-                    affinityKey(affCol.name());
-                }
-            }
-        );
-    }
-
-    /**
-     * Tries to parse {@link SqlKeyword#CACHE_NAME} option and updates the command fields.
-     *
-     * @return true if the option found and parsed successfully, false if not found.
-     * @throws SqlParseException in case of parse failure.
-     */
-    private boolean tryParseCacheName(SqlLexer lex) {
-
-        return SqlParserUtils.tryParseStringParam(lex, CACHE_NAME, "cache name" , parsedParams,
-            false, false,
-            new SqlParserUtils.Setter<String>() {
-
-                @Override public void apply(String val, boolean isDflt, boolean isQuoted) {
-
-                    assert !isDflt;
-
-                    cacheName(val);
-                }
-            }
-        );
-    }
-
-    /**
-     * Tries to parse {@link SqlKeyword#DATA_REGION} option and updates the command fields.
-     *
-     * @return true if the option found and parsed successfully, false if not found.
-     * @throws SqlParseException in case of parse failure.
-     */
-    private boolean tryParseDataRegion(final SqlLexer lex) {
-
-        return SqlParserUtils.tryParseStringParam(lex, DATA_REGION, "data region" , parsedParams,
-            false, true,
-            new SqlParserUtils.Setter<String>() {
-
-                @Override public void apply(String val, boolean isDflt, boolean isQuoted) {
-
-                    dataRegionName(isDflt ? null : val);
-                }
-            }
-        );
-    }
-
-    /**
-     * Tries to parse {@link SqlKeyword#KEY_TYPE} option and updates the command fields.
-     *
-     * @return true if the option found and parsed successfully, false if not found.
-     * @throws SqlParseException in case of parse failure.
-     */
-    private boolean tryParseKeyType(final SqlLexer lex) {
-
-        return SqlParserUtils.tryParseStringParam(lex, KEY_TYPE, "key type" , parsedParams,
-            true, false,
-            new SqlParserUtils.Setter<String>() {
-
-                @Override public void apply(String val, boolean isDflt, boolean isQuoted) {
-
-                    assert !isDflt;
-
-                    keyTypeName(val);
-                }
-            }
-        );
-    }
-
-    /**
-     * Tries to parse {@link SqlKeyword#VAL_TYPE} option and updates the command fields.
-     *
-     * @return true if the option found and parsed successfully, false if not found.
-     * @throws SqlParseException in case of parse failure.
-     */
-    private boolean tryParseValueType(final SqlLexer lex) {
-
-        return SqlParserUtils.tryParseStringParam(lex, VAL_TYPE, "value type" , parsedParams,
-            true, false,
-            new SqlParserUtils.Setter<String>() {
-
-                @Override public void apply(String val, boolean isDflt, boolean isQuoted) {
-
-                    assert !isDflt;
-
-                    valueTypeName(val);
-                }
-            }
-        );
-    }
-
-    /**
-     * Tries to parse {@link SqlKeyword#WRAP_KEY} option and updates the command fields.
-     *
-     * @return true if the option found and parsed successfully, false if not found.
-     * @throws SqlParseException in case of parse failure.
-     */
-    private boolean tryParseWrapKey(final SqlLexer lex) {
-
-        return tryParseBoolean(lex, WRAP_KEY, NO_WRAP_KEY, parsedParams,true,
-            new SqlParserUtils.Setter<Boolean>() {
-
-                @Override public void apply(Boolean val, boolean isDflt, boolean isQuoted) {
-
-                    wrapKey(val);
-                }
-            });
-    }
-
-    /**
-     * Tries to parse {@link SqlKeyword#WRAP_VALUE} option and updates the command fields.
-     *
-     * @return true if the option found and parsed successfully, false if not found.
-     * @throws SqlParseException in case of parse failure.
-     */
-    private boolean tryParseWrapValue(final SqlLexer lex) {
-
-        return tryParseBoolean(lex, WRAP_VALUE, NO_WRAP_VALUE, parsedParams, true,
-            new SqlParserUtils.Setter<Boolean>() {
-
-            @Override public void apply(Boolean val, boolean isDflt, boolean isQuoted) {
-
-                wrapValue(val);
-            }
-        });
     }
 
     /** {@inheritDoc} */

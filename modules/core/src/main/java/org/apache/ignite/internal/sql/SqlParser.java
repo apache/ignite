@@ -89,7 +89,7 @@ public class SqlParser {
                     // Empty command, skip.
                     continue;
 
-                case KEYWORD:
+                case DEFAULT:
                     SqlCommand cmd = null;
 
                     switch (lex.token()) {
@@ -114,7 +114,7 @@ public class SqlParser {
                     else
                         throw errorUnexpectedToken(lex, CREATE, DROP);
 
-                case DBL_QUOTED:
+                case QUOTED:
                 case MINUS:
                 case DOT:
                 case COMMA:
@@ -132,7 +132,7 @@ public class SqlParser {
      * @return Command.
      */
     private SqlCommand processCreate() {
-        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.KEYWORD) {
+        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
             SqlCommand cmd = null;
 
             switch (lex.token()) {
@@ -170,7 +170,7 @@ public class SqlParser {
      * @return Command.
      */
     private SqlCommand processDrop() {
-        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.KEYWORD) {
+        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
             SqlCommand cmd = null;
 
             switch (lex.token()) {

@@ -516,7 +516,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
             run("CREATE TABLE test (id INT PRIMARY KEY, x VARCHAR) with \"wrap_value=false\"");
 
             assertThrows("ALTER TABLE test DROP COLUMN x",
-                "Cannot drop column(s) because table was created with WRAP_VALUE=false option.");
+                "Cannot drop column(s) because table was created with WRAP_VAL=false option.");
         }
         finally {
             run("DROP TABLE IF EXISTS test");
@@ -645,7 +645,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
      */
     private void doTestAlterTableOnFlatValue(String tblName) {
         assertThrows("ALTER TABLE " + tblName + " ADD COLUMN y varchar",
-            "Cannot add column(s) because table was created with WRAP_VALUE=false option.");
+            "Cannot add column(s) because table was created with WRAP_VAL=false option.");
     }
 
     /**
