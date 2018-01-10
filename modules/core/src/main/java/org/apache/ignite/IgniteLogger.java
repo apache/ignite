@@ -66,6 +66,11 @@ import org.jetbrains.annotations.Nullable;
 @GridToStringExclude
 public interface IgniteLogger {
     /**
+     * Marker for log messages that are useful in development environments, but not in production.
+     */
+    String DEV_ONLY = "DEV_ONLY";
+
+    /**
      * Creates new logger with given category based off the current instance.
      *
      * @param ctgr Category for new logger.
