@@ -57,12 +57,11 @@ class SBLengthLimit {
      */
     void onWrite(SBLimitedLength sb, int writtenLen) {
         len += writtenLen;
-        System.out.println("written " + writtenLen + "sbLen==" + sb.impl().length() + " sb.getTail()==null" + (sb.getTail() == null));
-        if (overflowed(sb) && sb.getTail() == null) {
+
+        if (overflowed(sb) && (sb.getTail() == null || sb.getTail().length() == 0)) {
             CircularStringBuilder tail = getTail();
 
             int newSbLen = Math.min(sb.length(), HEAD_LEN + 1);
-            System.out.println("toTail " + sb.impl().substring(newSbLen).length());
             tail.append(sb.impl().substring(newSbLen));
 
             sb.setTail(tail);

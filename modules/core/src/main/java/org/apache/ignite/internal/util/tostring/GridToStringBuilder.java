@@ -867,7 +867,7 @@ public class GridToStringBuilder {
         finally {
             queue.offer(tmp);
 
-            if (newStr) {
+            if (newStr)
                 lenLim.reset();
         }
     }

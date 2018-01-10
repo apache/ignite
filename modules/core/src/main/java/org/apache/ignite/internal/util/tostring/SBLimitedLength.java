@@ -45,14 +45,8 @@ public class SBLimitedLength extends GridStringBuilder {
      */
     void initLimit(SBLengthLimit lenLimit) {
         this.lenLimit = lenLimit;
-        if (lenLimit.overflowed(this)) {
-            if (tail == null) {
-                tail = lenLimit.getTail();
-            } else {
-                tail.reset();
-            }
-        } else
-            tail = null;
+        if (tail != null)
+            tail.reset();
     }
 
     /**
@@ -279,7 +273,6 @@ public class SBLimitedLength extends GridStringBuilder {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        System.out.println("toString with " + tail.getSkipped() + " skipped");
         if (tail == null)
             return super.toString();
         else {
