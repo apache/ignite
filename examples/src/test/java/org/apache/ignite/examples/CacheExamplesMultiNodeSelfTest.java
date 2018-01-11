@@ -17,7 +17,7 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.datagrid.JdbcExample;
+import org.apache.ignite.examples.sql.SqlJdbcExample;
 
 /**
  * Cache examples multi-node self test.
@@ -49,6 +49,6 @@ public class CacheExamplesMultiNodeSelfTest extends CacheExamplesSelfTest {
      * @throws Exception If failed.
      */
     public void testJdbcThinExample() throws Exception {
-        JdbcExample.main(EMPTY_ARGS);
+        SqlJdbcExample.main(EMPTY_ARGS);
     }
 }

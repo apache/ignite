@@ -15,18 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.knn.models;
+package org.apache.ignite.internal.util;
 
-/** This enum contains names of different normalization approaches. */
-public enum Normalization {
-    /** Minimax.
+import java.nio.ByteBuffer;
+
+/**
+ * Cleaner interface for {@code java.nio.ByteBuffer}.
+ */
+public interface DirectBufferCleaner {
+    /**
+     * Cleans direct buffer.
      *
-     * x'=(x-MIN[X])/(MAX[X]-MIN[X])
+     * @param buf direct buffer.
      */
-    MINIMAX,
-    /** Z normalization.
-     *
-     * x'=(x-M[X])/\sigma [X]
-     */
-    Z_NORMALIZATION
+    public void clean(ByteBuffer buf);
 }

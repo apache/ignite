@@ -250,6 +250,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(client.TcpNoDelay);
             Assert.AreEqual(14, client.MaxOpenCursorsPerConnection);
             Assert.AreEqual(15, client.ThreadPoolSize);
+            Assert.AreEqual(19, client.IdleTimeout.TotalSeconds);
 
             var pers = cfg.PersistentStoreConfiguration;
 
@@ -895,7 +896,8 @@ namespace Apache.Ignite.Core.Tests
                     SocketReceiveBufferSize = 5,
                     SocketSendBufferSize = 6,
                     TcpNoDelay = false,
-                    ThreadPoolSize = 7
+                    ThreadPoolSize = 7,
+                    IdleTimeout = TimeSpan.FromMinutes(5)
                 },
                 PersistentStoreConfiguration = new PersistentStoreConfiguration
                 {

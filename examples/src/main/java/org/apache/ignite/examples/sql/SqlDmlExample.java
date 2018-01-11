@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.datagrid;
+package org.apache.ignite.examples.sql;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -30,12 +30,12 @@ import java.util.List;
 /**
  * Example to showcase DML capabilities of Ignite's SQL engine.
  */
-public class CacheQueryDmlExample {
+public class SqlDmlExample {
     /** Organizations cache name. */
-    private static final String ORG_CACHE = CacheQueryDmlExample.class.getSimpleName() + "Organizations";
+    private static final String ORG_CACHE = SqlDmlExample.class.getSimpleName() + "Organizations";
 
     /** Persons cache name. */
-    private static final String PERSON_CACHE = CacheQueryDmlExample.class.getSimpleName() + "Persons";
+    private static final String PERSON_CACHE = SqlDmlExample.class.getSimpleName() + "Persons";
 
     /**
      * Executes example.
