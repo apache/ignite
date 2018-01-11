@@ -114,7 +114,6 @@ namespace Apache.Ignite.Core.Tests.Client
             Assert.Throws<ArgumentNullException>(() => Ignition.StartClient(new IgniteClientConfiguration()));
         }
 
-#if !NETCOREAPP2_0
         /// <summary>
         /// Tests the incorrect protocol version error.
         /// </summary>
@@ -135,7 +134,6 @@ namespace Apache.Ignite.Core.Tests.Client
                                 "Client version: -1.-1.-1. Server version: 1.0.0", ex.Message);
             }
         }
-#endif
 
         /// <summary>
         /// Tests that connector can be disabled.
