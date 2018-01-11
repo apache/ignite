@@ -81,6 +81,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.RebalanceReassignExchangeTask;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.StopCachesOnClientReconnectExchangeTask;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -925,6 +926,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     public IgniteInternalFuture<Boolean> forceRebalance(GridDhtPartitionExchangeId exchId) {
         return exchWorker.forceRebalance(exchId);
+    }
+
+    /**
+     * @param caches Caches to stop.
+     * @return Future that will be completed when caches are stopped from the exchange thread.
+     */
+    public IgniteInternalFuture<Void> deferStopCachesOnClientReconnect(Collection<GridCacheAdapter> caches) {
+        assert cctx.discovery().localNode().isClient();
+
+        return exchWorker.deferStopCachesOnClientReconnect(caches);
     }
 
     /**
@@ -2064,6 +2075,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             futQ.add(new ForceRebalanceExchangeTask(exchId, fut));
 
             return fut;
+        }
+
+        /**
+         * @param caches Caches to stop.
+         */
+        IgniteInternalFuture<Void> deferStopCachesOnClientReconnect(Collection<GridCacheAdapter> caches) {
+            StopCachesOnClientReconnectExchangeTask task = new StopCachesOnClientReconnectExchangeTask(caches);
+
+            futQ.add(task);
+
+            return task;
         }
 
         /**

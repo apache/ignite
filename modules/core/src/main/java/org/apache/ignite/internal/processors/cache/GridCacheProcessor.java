@@ -81,6 +81,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalP
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.StopCachesOnClientReconnectExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
@@ -360,6 +361,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             CacheStatisticsModeChangeTask task0 = (CacheStatisticsModeChangeTask)task;
 
             processStatisticsModeChange(task0.message());
+        }
+        else if (task instanceof StopCachesOnClientReconnectExchangeTask) {
+            StopCachesOnClientReconnectExchangeTask task0 = (StopCachesOnClientReconnectExchangeTask)task;
+
+            stopCachesOnClientReconnect(task0.stoppedCaches());
+
+            task0.onDone();
         }
         else
             U.warn(log, "Unsupported custom exchange task: " + task);
@@ -1086,22 +1094,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheAdapter cache : reconnected)
             cache.context().gate().reconnected(false);
 
-        if (!stoppedCaches.isEmpty()) {
-            for (GridCacheAdapter cache : stoppedCaches) {
-                CacheGroupContext grp = cache.context().group();
-
-                onKernalStop(cache, true);
-                stopCache(cache, true, false);
-
-                sharedCtx.affinity().stopCacheOnReconnect(cache.context());
-
-                if (!grp.hasCaches()) {
-                    stopCacheGroup(grp);
-
-                    sharedCtx.affinity().stopCacheGroupOnReconnect(grp);
-                }
-            }
-        }
+        if (!stoppedCaches.isEmpty())
+            return sharedCtx.exchange().deferStopCachesOnClientReconnect(stoppedCaches);
 
         return null;
     }
@@ -2482,6 +2476,28 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 cache.context().statisticsEnabled(msg.enabled());
             else
                 log.warning("Failed to change cache configuration, cache not found [cacheName=" + cacheName + ']');
+        }
+    }
+
+    /**
+     * @param stoppedCaches Stopped caches.
+     */
+    private void stopCachesOnClientReconnect(Collection<GridCacheAdapter> stoppedCaches) {
+        assert ctx.discovery().localNode().isClient();
+
+        for (GridCacheAdapter cache : stoppedCaches) {
+            CacheGroupContext grp = cache.context().group();
+
+            onKernalStop(cache, true);
+            stopCache(cache, true, false);
+
+            sharedCtx.affinity().stopCacheOnReconnect(cache.context());
+
+            if (!grp.hasCaches()) {
+                stopCacheGroup(grp);
+
+                sharedCtx.affinity().stopCacheGroupOnReconnect(grp);
+            }
         }
     }
 
