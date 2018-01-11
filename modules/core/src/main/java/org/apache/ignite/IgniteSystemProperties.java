@@ -720,6 +720,11 @@ public final class IgniteSystemProperties {
             "IGNITE_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD";
 
     /**
+     * If this property is set, then Ignite will use Async File IO factory by default.
+     */
+    public static final String IGNITE_USE_ASYNC_FILE_IO_FACTORY = "IGNITE_USE_ASYNC_FILE_IO_FACTORY";
+
+    /**
      * If the property is set {@link org.apache.ignite.internal.pagemem.wal.record.TxRecord} records
      * will be logged to WAL.
      *
@@ -730,6 +735,24 @@ public final class IgniteSystemProperties {
     /** If this property is set, {@link PersistentStoreConfiguration#writeThrottlingEnabled} will be overridden to true
      * independent of initial value in configuration. */
     public static final String IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED = "IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED";
+
+    /**
+     * Property for setup WAL serializer version.
+     */
+    public static final String IGNITE_WAL_SERIALIZER_VERSION = "IGNITE_WAL_SERIALIZER_VERSION";
+
+    /**
+     * When set to {@code true}, Data store folders are generated only by consistent id, and no consistent ID will be
+     * set based on existing data store folders. This option also enables compatible folder generation mode as it was
+     * before 2.3.
+     */
+    public static final String IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID = "IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID";
+
+    /**
+     * When set to {@code true}, warnings that are intended for development environments and not for production
+     * (such as coding mistakes in code using Ignite) will not be logged.
+     */
+    public static final String IGNITE_DEV_ONLY_WARNINGS_DISABLED = "IGNITE_DEV_ONLY_WARNINGS_DISABLED";
 
     /**
      * Enforces singleton.
