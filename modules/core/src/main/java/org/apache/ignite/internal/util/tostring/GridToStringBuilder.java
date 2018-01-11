@@ -1048,6 +1048,9 @@ public class GridToStringBuilder {
      */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
     public static <T> String arrayToString(Class arrType, Object arr) {
+        if (arr == null)
+            return "null";
+
         T[] array = (T[])arr;
 
         if (array.length > COLLECTION_LIMIT)
