@@ -16,6 +16,10 @@
     <NoWarn>1701;1702;1705;NU1701</NoWarn>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="..\Apache.Ignite.Core.Tests\ApiParity\BinaryParityTest.cs" Link="ApiParity\BinaryParityTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\ApiParity\CacheAffinityParityTest.cs" Link="ApiParity\CacheAffinityParityTest.cs" />
@@ -42,7 +46,12 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\ApiParity\TransactionsParityTest.cs" Link="ApiParity\TransactionsParityTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\AssertExtensions.cs" Link="Common\AssertExtensions.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\BinaryConfigurationTest.cs" Link="Binary\BinaryConfigurationTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Binary\BinaryBuilderSelfTest.cs" Link="Binary\BinaryBuilderSelfTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Binary\BinaryBuilderSelfTestDynamicRegistration.cs" Link="Binary\BinaryBuilderSelfTestDynamicRegistration.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Binary\BinaryDateTimeTest.cs" Link="Binary\BinaryDateTimeTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Binary\BinarySelfTest.cs" Link="Binary\BinarySelfTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Binary\EnumsTest.cs" Link="Binary\EnumsTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Binary\EnumsTestOnline.cs" Link="Binary\EnumsTestOnline.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Binary\JavaBinaryInteropTest.cs" Link="Binary\JavaBinaryInteropTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\AdvancedSerializationTest.cs" Link="Binary\Serializable\AdvancedSerializationTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Binary\Serializable\CallbacksTest.cs" Link="Binary\Serializable\CallbacksTest.cs" />
@@ -98,6 +107,7 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientTestBase.cs" Link="ThinClient\ClientTestBase.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\IgniteClientConfigurationTest.cs" Link="ThinClient\IgniteClientConfigurationTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Compute\ComputeApiTest.cs" Link="Compute\ComputeApiTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Compute\ComputeApiTest.JavaTask.cs" Link="Compute\ComputeApiTest.JavaTask.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\DataStructures\AtomicLongTest.cs" Link="DataStructures\AtomicLongTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\DataStructures\AtomicReferenceTest.cs" Link="DataStructures\AtomicReferenceTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\DataStructures\AtomicSequenceTest.cs" Link="DataStructures\AtomicSequenceTest.cs" />
