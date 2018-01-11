@@ -65,6 +65,9 @@ public class QueryBinaryProperty implements GridQueryProperty {
     /** Whether user was warned about missing property. */
     private volatile boolean warned;
 
+    /** */
+    private final boolean notNull;
+
     /**
      * Constructor.
      *
@@ -74,10 +77,10 @@ public class QueryBinaryProperty implements GridQueryProperty {
      * @param type Result type.
      * @param key {@code true} if key property, {@code false} otherwise, {@code null}  if unknown.
      * @param alias Field alias.
+     * @param notNull {@code true} if null value is not allowed.
      */
     public QueryBinaryProperty(GridKernalContext ctx, String propName, QueryBinaryProperty parent,
-        Class<?> type, @Nullable Boolean key, String alias) {
-
+        Class<?> type, @Nullable Boolean key, String alias, boolean notNull) {
         this.ctx = ctx;
 
         log = ctx.log(QueryBinaryProperty.class);
@@ -86,6 +89,7 @@ public class QueryBinaryProperty implements GridQueryProperty {
         this.alias = F.isEmpty(alias) ? propName : alias;
         this.parent = parent;
         this.type = type;
+        this.notNull = notNull;
 
         if (key != null)
             this.isKeyProp = key ? 1 : -1;
@@ -265,5 +269,10 @@ public class QueryBinaryProperty implements GridQueryProperty {
     /** {@inheritDoc} */
     @Override public GridQueryProperty parent() {
         return parent;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean notNull() {
+        return notNull;
     }
 }

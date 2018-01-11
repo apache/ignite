@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -72,6 +73,7 @@ import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPR;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -660,6 +662,24 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 return null;
             }
         });
+    }
+
+    public void suspend(String cacheName) {
+        for (Map.Entry<GridCacheInternalKey, GridCacheRemovable> e : dsMap.entrySet()) {
+            String cacheName0 = ATOMICS_CACHE_NAME + "@" + e.getKey().groupName();
+
+            if (cacheName0.equals(cacheName))
+                e.getValue().suspend();
+        }
+    }
+
+    public void restart(IgniteInternalCache cache) {
+        for (Map.Entry<GridCacheInternalKey, GridCacheRemovable> e : dsMap.entrySet()) {
+            String cacheName0 = ATOMICS_CACHE_NAME + "@" + e.getKey().groupName();
+
+            if (cacheName0.equals(cache.name()))
+                e.getValue().restart(cache);
+        }
     }
 
     /**

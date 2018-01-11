@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         private readonly Func<Guid, object, bool> _invoker;
 
         /** Current Ignite instance. */
-        private readonly Ignite _ignite;
+        private readonly IIgniteInternal _ignite;
         
         /** Underlying filter. */
         private readonly object _filter;
@@ -148,7 +148,7 @@ namespace Apache.Ignite.Core.Impl.Messaging
         {
             var writer0 = (BinaryWriter)writer.GetRawWriter();
 
-            writer0.WithDetach(w => w.WriteObject(Filter));
+            writer0.WriteObjectDetached(Filter);
         }
 
         /// <summary>

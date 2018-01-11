@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
@@ -496,6 +497,21 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
                 return true;
             }
         }
+    }
+
+    /**
+     * Resets future for subsequent reuse.
+     */
+    public void reset() {
+        final Object oldState = state;
+
+        if (oldState == INIT)
+            return;
+
+        if (!isDone(oldState))
+            throw new IgniteException("Illegal state");
+
+        compareAndSetState(oldState, INIT);
     }
 
     /**

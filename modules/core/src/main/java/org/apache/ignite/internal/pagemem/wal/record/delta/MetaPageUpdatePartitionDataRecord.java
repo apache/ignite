@@ -111,6 +111,8 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
         io.setGlobalRemoveId(pageAddr, globalRmvId);
         io.setSize(pageAddr, partSize);
         io.setCountersPageId(pageAddr, cntrsPageId);
+        io.setPartitionState(pageAddr, state);
+        io.setCandidatePageCount(pageAddr, allocatedIdxCandidate);
     }
 
     /**
@@ -127,6 +129,6 @@ public class MetaPageUpdatePartitionDataRecord extends PageDeltaRecord {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(MetaPageUpdatePartitionDataRecord.class, this);
+        return S.toString(MetaPageUpdatePartitionDataRecord.class, this, "super", super.toString());
     }
 }

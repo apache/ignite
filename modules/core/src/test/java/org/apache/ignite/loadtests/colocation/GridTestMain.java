@@ -119,51 +119,6 @@ public class GridTestMain {
     }
 
     /**
-     *
-     */
-    private static void localPoolRun() {
-        X.println("Local thread pool run...");
-
-        ExecutorService exe = new IgniteThreadPoolExecutor(400, 400, 0, new ArrayBlockingQueue<Runnable>(400) {
-            @Override public boolean offer(Runnable runnable) {
-                try {
-                    put(runnable);
-                }
-                catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-                return true;
-            }
-        });
-
-        long start = System.currentTimeMillis();
-
-        final IgniteCache<GridTestKey, Long> cache = G.ignite().cache("partitioned");
-
-        // Collocate computations and data.
-        for (long i = 0; i < GridTestConstants.ENTRY_COUNT; i++) {
-            final long key = i;
-
-            exe.submit(new Runnable() {
-                @Override public void run() {
-                    Long val = cache.localPeek(new GridTestKey(key), CachePeekMode.ONHEAP);
-
-                    if (val == null || val != key)
-                        throw new RuntimeException("Invalid value found [key=" + key + ", val=" + val + ']');
-                }
-            });
-
-            if (i % 10000 == 0)
-                X.println("Executed jobs: " + i);
-        }
-
-        long end = System.currentTimeMillis();
-
-        X.println("Executed " + GridTestConstants.ENTRY_COUNT + " computations in " + (end - start) + "ms.");
-    }
-
-    /**
      * Load cache from data store. Also take a look at
      * {@link GridTestCacheStore#loadAll} method.
      *

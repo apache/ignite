@@ -154,11 +154,6 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
     public Value wrap(Object o, int type) throws IgniteCheckedException;
 
     /**
-     * @return {@code True} if index should support snapshots.
-     */
-    public boolean snapshotableIndex();
-
-    /**
      * Checks if provided column id matches key column or key alias.
      *
      * @param colId Column id.

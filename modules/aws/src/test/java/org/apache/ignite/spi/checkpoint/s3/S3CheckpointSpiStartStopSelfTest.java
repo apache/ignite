@@ -36,7 +36,7 @@ public class S3CheckpointSpiStartStopSelfTest extends GridSpiStartStopAbstractTe
 
         spi.setAwsCredentials(cred);
 
-        spi.setBucketNameSuffix("unit-test-bucket");
+        spi.setBucketNameSuffix(S3CheckpointSpiSelfTest.getBucketNameSuffix());
 
         super.spiConfigure(spi);
     }

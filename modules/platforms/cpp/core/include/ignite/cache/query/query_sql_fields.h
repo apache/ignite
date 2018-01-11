@@ -54,6 +54,7 @@ namespace ignite
                     loc(false),
                     distributedJoins(false),
                     enforceJoinOrder(false),
+                    lazy(false),
                     args()
                 {
                     // No-op.
@@ -72,6 +73,7 @@ namespace ignite
                     loc(false),
                     distributedJoins(false),
                     enforceJoinOrder(false),
+                    lazy(false),
                     args()
                 {
                     // No-op.
@@ -89,6 +91,7 @@ namespace ignite
                     loc(other.loc),
                     distributedJoins(other.distributedJoins),
                     enforceJoinOrder(other.enforceJoinOrder),
+                    lazy(other.lazy),
                     args()
                 {
                     args.reserve(other.args.size());
@@ -139,11 +142,12 @@ namespace ignite
                         using std::swap;
 
                         swap(sql, other.sql);
-                        swap(sql, other.schema);
+                        swap(schema, other.schema);
                         swap(pageSize, other.pageSize);
                         swap(loc, other.loc);
                         swap(distributedJoins, other.distributedJoins);
                         swap(enforceJoinOrder, other.enforceJoinOrder);
+                        swap(lazy, other.lazy);
                         swap(args, other.args);
                     }
                 }
@@ -209,6 +213,38 @@ namespace ignite
                 }
 
                 /**
+                 * Gets lazy query execution flag.
+                 *
+                 * See SetLazy(bool) for more information.
+                 *
+                 * @return Lazy flag.
+                 */
+                bool IsLazy() const
+                {
+                    return lazy;
+                }
+
+                /**
+                 * Sets lazy query execution flag.
+                 *
+                 * By default Ignite attempts to fetch the whole query result set to memory and send it to the client.
+                 * For small and medium result sets this provides optimal performance and minimize duration of internal
+                 * database locks, thus increasing concurrency.
+                 *
+                 * If result set is too big to fit in available memory this could lead to excessive GC pauses and even
+                 * OutOfMemoryError. Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing
+                 * memory consumption at the cost of moderate performance hit.
+                 *
+                 * Defaults to @c false, meaning that the whole result set is fetched to memory eagerly.
+                 *
+                 * @param lazy Lazy query execution flag.
+                 */
+                void SetLazy(bool lazy)
+                {
+                    this->lazy = lazy;
+                }
+
+                /**
                  * Checks if join order of tables if enforced.
                  *
                  * @return Flag value.
@@ -220,13 +256,11 @@ namespace ignite
 
                 /**
                  * Sets flag to enforce join order of tables in the query.
-                 * If set to true query optimizer will not reorder tables in
-                 * join. By default is false.
                  *
-                 * It is not recommended to enable this property unless you are
-                 * sure that your indexes and the query itself are correct and
-                 * tuned as much as possible but query optimizer still produces
-                 * wrong join order.
+                 * If set to true query optimizer will not reorder tables in join. By default is false.
+                 *
+                 * It is not recommended to enable this property unless you are sure that your indexes and the query
+                 * itself are correct and tuned as much as possible but query optimizer still produces wrong join order.
                  *
                  * @param enforce Flag value.
                  */
@@ -261,9 +295,8 @@ namespace ignite
                 /**
                  * Add argument.
                  *
-                 * Template argument type should be copy-constructable and
-                 * assignable. Also BinaryType class template should be specialized
-                 * for this type.
+                 * Template argument type should be copy-constructable and assignable. Also BinaryType class template
+                 * should be specialized for this type.
                  *
                  * @param arg Argument.
                  */
@@ -271,6 +304,17 @@ namespace ignite
                 void AddArgument(const T& arg)
                 {
                     args.push_back(new impl::cache::query::QueryArgument<T>(arg));
+                }
+
+                /**
+                 * Add array of bytes as an argument.
+                 *
+                 * @param src Array pointer.
+                 * @param len Array length in bytes.
+                 */
+                void AddInt8ArrayArgument(const int8_t* src, int32_t len)
+                {
+                    args.push_back(new impl::cache::query::QueryInt8ArrayArgument(src, len));
                 }
 
                 /**
@@ -283,9 +327,9 @@ namespace ignite
 
                 /**
                  * Set schema name for the query.
-                 * If not set, current cache name is used, which means you can
-                 * omit schema name for tables within the current cache.
-                 * 
+                 * If not set, current cache name is used, which means you can omit schema name for tables within the
+                 * current cache.
+                 *
                  * @param schema Schema. Empty string to unset.
                  */
                 void SetSchema(const std::string& schema)
@@ -296,8 +340,8 @@ namespace ignite
                 /**
                  * Get schema name for the query.
                  *
-                 * If not set, current cache name is used, which means you can
-                 * omit schema name for tables within the current cache.
+                 * If not set, current cache name is used, which means you can omit schema name for tables within the
+                 * current cache.
                  *
                  * @return Schema. Empty string if not set.
                  */
@@ -326,9 +370,10 @@ namespace ignite
 
                     writer.WriteBool(distributedJoins);
                     writer.WriteBool(enforceJoinOrder);
-                    writer.WriteInt32(0);     // Timeout, ms
-                    writer.WriteBool(false);  // ReplicatedOnly
-                    writer.WriteBool(false);  // Colocated
+                    writer.WriteBool(lazy);
+                    writer.WriteInt32(0);       // Timeout, ms
+                    writer.WriteBool(false);    // ReplicatedOnly
+                    writer.WriteBool(false);    // Colocated
 
                     if (schema.empty())
                         writer.WriteNull();
@@ -354,6 +399,9 @@ namespace ignite
 
                 /** Enforce join order flag. */
                 bool enforceJoinOrder;
+
+                /** Lazy flag. */
+                bool lazy;
 
                 /** Arguments. */
                 std::vector<impl::cache::query::QueryArgumentBase*> args;

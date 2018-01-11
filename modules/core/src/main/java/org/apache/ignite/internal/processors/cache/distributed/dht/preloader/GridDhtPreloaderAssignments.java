@@ -30,25 +30,24 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Exchange future. */
-    @GridToStringExclude
-    private final GridDhtPartitionsExchangeFuture exchFut;
+    /** */
+    private final GridDhtPartitionExchangeId exchangeId;
 
-    /** Last join order. */
+    /** */
     private final AffinityTopologyVersion topVer;
 
     /** */
     private boolean cancelled;
 
     /**
-     * @param exchFut Exchange future.
+     * @param exchangeId Exchange ID.
      * @param topVer Last join order.
      */
-    public GridDhtPreloaderAssignments(GridDhtPartitionsExchangeFuture exchFut, AffinityTopologyVersion topVer) {
-        assert exchFut != null;
+    public GridDhtPreloaderAssignments(GridDhtPartitionExchangeId exchangeId, AffinityTopologyVersion topVer) {
+        assert exchangeId != null;
         assert topVer.topologyVersion() > 0 : topVer;
 
-        this.exchFut = exchFut;
+        this.exchangeId = exchangeId;
         this.topVer = topVer;
     }
 
@@ -69,8 +68,8 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
     /**
      * @return Exchange future.
      */
-    GridDhtPartitionsExchangeFuture exchangeFuture() {
-        return exchFut;
+    GridDhtPartitionExchangeId exchangeId() {
+        return exchangeId;
     }
 
     /**
@@ -82,7 +81,7 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtPreloaderAssignments.class, this, "exchId", exchFut.exchangeId(),
+        return S.toString(GridDhtPreloaderAssignments.class, this, "exchId", exchangeId,
             "super", super.toString());
     }
 }

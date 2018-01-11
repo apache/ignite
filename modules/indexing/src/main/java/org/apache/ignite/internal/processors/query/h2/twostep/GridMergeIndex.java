@@ -46,7 +46,6 @@ import org.h2.index.IndexType;
 import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
-import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
@@ -329,7 +328,7 @@ public abstract class GridMergeIndex extends BaseIndex {
     private void markLastPage(GridResultPage page) {
         GridQueryNextPageResponse res = page.response();
 
-        if (res.allRows() != -2) { // -2 means the last page.
+        if (!res.last()) {
             UUID nodeId = page.source();
 
             initLastPages(nodeId, res);
@@ -337,12 +336,12 @@ public abstract class GridMergeIndex extends BaseIndex {
             ConcurrentMap<SourceKey,Integer> lp = lastPages;
 
             if (lp == null)
-                return; // It was not initialized --> wait for -2.
+                return; // It was not initialized --> wait for last page flag.
 
             Integer lastPage = lp.get(new SourceKey(nodeId, res.segmentId()));
 
             if (lastPage == null)
-                return; // This node may use the new protocol --> wait for -2.
+                return; // This node may use the new protocol --> wait for last page flag.
 
             if (lastPage != res.page()) {
                 assert lastPage > res.page();

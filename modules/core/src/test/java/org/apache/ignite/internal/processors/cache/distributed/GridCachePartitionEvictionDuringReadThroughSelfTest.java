@@ -53,6 +53,7 @@ public class GridCachePartitionEvictionDuringReadThroughSelfTest extends GridCom
                 .setAtomicityMode(CacheAtomicityMode.ATOMIC)
                 .setBackups(0) // No need for backup, just load from the store if needed
                 .setCacheStoreFactory(new CacheStoreFactory())
+                .setOnheapCacheEnabled(true)
                 .setEvictionPolicy(new LruEvictionPolicy(100))
                 .setNearConfiguration(new NearCacheConfiguration<Integer, Integer>()
                 .setNearEvictionPolicy(new LruEvictionPolicy<Integer, Integer>()));
@@ -75,6 +76,8 @@ public class GridCachePartitionEvictionDuringReadThroughSelfTest extends GridCom
      * @throws Exception if failed.
      */
     public void testPartitionRent() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5759");
+
         startGrid(0);
 
         final AtomicBoolean done = new AtomicBoolean();

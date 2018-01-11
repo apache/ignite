@@ -795,7 +795,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            BinaryClassDescriptor desc = ctx.descriptorForClass(val.getClass(), false);
+            BinaryClassDescriptor desc = ctx.descriptorForClass(val.getDeclaringClass(), false);
 
             out.unsafeEnsure(1 + 4);
 
@@ -805,7 +805,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
                 out.unsafeWriteInt(desc.typeId());
             else {
                 out.unsafeWriteInt(GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
-                doWriteString(val.getClass().getName());
+                doWriteString(val.getDeclaringClass().getName());
             }
 
             out.writeInt(val.ordinal());

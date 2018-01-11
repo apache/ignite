@@ -104,6 +104,9 @@ public abstract class SqlListenerUtils {
             case GridBinaryMarshaller.INT_ARR:
                 return BinaryUtils.doReadIntArray(reader.in());
 
+            case GridBinaryMarshaller.LONG_ARR:
+                return BinaryUtils.doReadLongArray(reader.in());
+
             case GridBinaryMarshaller.FLOAT_ARR:
                 return BinaryUtils.doReadFloatArray(reader.in());
 
@@ -192,6 +195,8 @@ public abstract class SqlListenerUtils {
             writer.writeShortArray((short[])obj);
         else if (cls == int[].class)
             writer.writeIntArray((int[])obj);
+        else if (cls == long[].class)
+            writer.writeLongArray((long[])obj);
         else if (cls == float[].class)
             writer.writeFloatArray((float[])obj);
         else if (cls == double[].class)
@@ -238,6 +243,7 @@ public abstract class SqlListenerUtils {
             || cls == char[].class
             || cls == short[].class
             || cls == int[].class
+            || cls == long[].class
             || cls == float[].class
             || cls == double[].class
             || cls == String[].class

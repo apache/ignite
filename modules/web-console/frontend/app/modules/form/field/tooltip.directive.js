@@ -18,7 +18,7 @@
 const template = '<i class="tipField icon-help"></i>';
 
 export default ['igniteFormFieldTooltip', ['$tooltip', ($tooltip) => {
-    const link = ($scope, $element, $attrs, [form, field], $transclude) => {
+    const link = ($scope, $element, $attrs, [field], $transclude) => {
         const content = Array.prototype.slice
             .apply($transclude($scope))
             .reduce((html, el) => html += el.outerHTML || el.textContent || el, '');
@@ -44,6 +44,6 @@ export default ['igniteFormFieldTooltip', ['$tooltip', ($tooltip) => {
         link,
         replace: true,
         transclude: true,
-        require: ['^form', '?^igniteFormField']
+        require: ['?^igniteFormField']
     };
 }]];

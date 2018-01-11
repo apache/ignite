@@ -208,35 +208,35 @@ public class VisorCacheAggregatedMetrics extends VisorDataTransferObject {
 
     /**
      * @param metric Metrics to process.
-     * @return Off heap entries count.
+     * @return Off heap primary entries count.
      */
-    private long getOffHeapEntriesCount(VisorCacheMetrics metric) {
-        return metric.getOffHeapEntriesCount();
+    private long getOffHeapPrimaryEntriesCount(VisorCacheMetrics metric) {
+        return metric.getOffHeapPrimaryEntriesCount();
     }
 
     /**
-     * @return Minimum number of elements in off heap.
+     * @return Minimum number of primary elements in off heap.
      */
-    public long getMinimumOffHeapSize() {
+    public long getMinimumOffHeapPrimarySize() {
         if (minOffHeapSize == null) {
             minOffHeapSize = Long.MAX_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
-                minOffHeapSize = Math.min(minOffHeapSize, getOffHeapEntriesCount(metric));
+                minOffHeapSize = Math.min(minOffHeapSize, getOffHeapPrimaryEntriesCount(metric));
         }
 
         return minOffHeapSize;
     }
 
     /**
-     * @return Average number of elements in off heap.
+     * @return Average number of primary elements in off heap.
      */
-    public double getAverageOffHeapSize() {
+    public double getAverageOffHeapPrimarySize() {
         if (avgOffHeapSize == null) {
             avgOffHeapSize = 0.0d;
 
             for (VisorCacheMetrics metric : metrics.values())
-                avgOffHeapSize += getOffHeapEntriesCount(metric);
+                avgOffHeapSize += getOffHeapPrimaryEntriesCount(metric);
 
             avgOffHeapSize /= metrics.size();
         }
@@ -245,14 +245,14 @@ public class VisorCacheAggregatedMetrics extends VisorDataTransferObject {
     }
 
     /**
-     * @return Maximum number of elements in off heap in the cache.
+     * @return Maximum number of primary elements in off heap.
      */
-    public long getMaximumOffHeapSize() {
+    public long getMaximumOffHeapPrimarySize() {
         if (maxOffHeapSize == null) {
             maxOffHeapSize = Long.MIN_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
-                maxOffHeapSize = Math.max(maxOffHeapSize, getOffHeapEntriesCount(metric));
+                maxOffHeapSize = Math.max(maxOffHeapSize, getOffHeapPrimaryEntriesCount(metric));
         }
 
         return maxOffHeapSize;

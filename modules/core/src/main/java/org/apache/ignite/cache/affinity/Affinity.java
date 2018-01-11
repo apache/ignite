@@ -25,8 +25,8 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Provides affinity information to detect which node is primary and which nodes are
- * backups for a partitioned cache. You can get an instance of this interface by calling
- * {@code Ignite.affinity(cacheName)} method.
+ * backups for a partitioned or replicated cache. You can get an instance of this
+ * interface by calling {@code Ignite.affinity(cacheName)} method.
  * <p>
  * Mapping of a key to a node is a three-step operation. First step will get an affinity key for given key
  * using {@link AffinityKeyMapper}. If mapper is not specified, the original key will be used. Second step
@@ -153,11 +153,7 @@ public interface Affinity<K> {
      * This method works as following:
      * <ul>
      * <li>For local caches it returns only local node mapped to all keys.</li>
-     * <li>
-     *      For fully replicated caches {@link AffinityFunction} is
-     *      used to determine which keys are mapped to which nodes.
-     * </li>
-     * <li>For partitioned caches, the returned map represents node-to-key affinity.</li>
+     * <li>For other caches, the returned map represents node-to-key affinity.</li>
      * </ul>
      *
      * @param keys Keys to map to nodes.
@@ -174,11 +170,7 @@ public interface Affinity<K> {
      * This method works as following:
      * <ul>
      * <li>For local caches it returns only local node ID.</li>
-     * <li>
-     *      For fully replicated caches first node ID returned by {@link AffinityFunction}
-     *      is returned.
-     * </li>
-     * <li>For partitioned caches, primary node for the given key is returned.</li>
+     * <li>For other caches, primary node for the given key is returned.</li>
      * </ul>
      *
      * @param key Keys to map to a node.

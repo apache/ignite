@@ -19,23 +19,33 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.s3;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.Collection;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
 import org.apache.ignite.testsuites.IgniteIgnore;
 import org.apache.ignite.testsuites.IgniteS3TestSuite;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Abstract TcpDiscoveryS3IpFinder to test with different ways of setting AWS credentials.
  */
 abstract class TcpDiscoveryS3IpFinderAbstractSelfTest
     extends TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryS3IpFinder> {
+
+    /** Bucket endpoint */
+    protected @Nullable String bucketEndpoint;
+
+    /** Server-side encryption algorithm for Amazon S3-managed encryption keys. */
+    protected @Nullable String SSEAlgorithm;
+
     /**
      * Constructor.
      *
      * @throws Exception If any error occurs.
      */
-    protected TcpDiscoveryS3IpFinderAbstractSelfTest() throws Exception {
+    TcpDiscoveryS3IpFinderAbstractSelfTest() throws Exception {
     }
 
     /** {@inheritDoc} */
@@ -47,11 +57,9 @@ abstract class TcpDiscoveryS3IpFinderAbstractSelfTest
         assert finder.isShared() : "Ip finder should be shared by default.";
 
         setAwsCredentials(finder);
-
-        // Bucket name should be unique for the host to parallel test run on one bucket.
-        String bucketName = IgniteS3TestSuite.getBucketName(
-            "ip-finder-unit-test-bucket-" + InetAddress.getLocalHost().getAddress()[3]);
-        finder.setBucketName(bucketName);
+        setBucketEndpoint(finder);
+        setBucketName(finder);
+        setSSEAlgorithm(finder);
 
         for (int i = 0; i < 5; i++) {
             Collection<InetSocketAddress> addrs = finder.getRegisteredAddresses();
@@ -81,4 +89,50 @@ abstract class TcpDiscoveryS3IpFinderAbstractSelfTest
      * @param finder finder credentials to set into
      */
     protected abstract void setAwsCredentials(TcpDiscoveryS3IpFinder finder);
+
+    /**
+     * Set Bucket endpoint into the provided {@code finder}.
+     * @param finder finder endpoint to set into.
+     */
+    private void setBucketEndpoint(TcpDiscoveryS3IpFinder finder) {
+        finder.setBucketEndpoint(bucketEndpoint);
+    }
+
+    /**
+     * Set server-side encryption algorithm for Amazon S3-managed encryption keys into the provided {@code finder}.
+     *
+     * @param finder finder encryption algorithm to set into.
+     */
+    private void setSSEAlgorithm(TcpDiscoveryS3IpFinder finder) {
+        finder.setSSEAlgorithm(SSEAlgorithm);
+    }
+
+    /**
+     * Set Bucket endpoint into the provided {@code finder}.
+     * @param finder finder endpoint to set into.
+     */
+    protected void setBucketName(TcpDiscoveryS3IpFinder finder) {
+        finder.setBucketName(getBucketName());
+    }
+
+    /**
+     * Gets Bucket name.
+     * Bucket name should be unique for the host to parallel test run on one bucket.
+     * Please note that the final bucket name should not exceed 63 chars.
+     *
+     * @return Bucket name.
+     */
+    static String getBucketName() {
+        String bucketName;
+        try {
+            bucketName = IgniteS3TestSuite.getBucketName(
+                "ip-finder-unit-test-" + InetAddress.getLocalHost().getHostName().toLowerCase());
+        }
+        catch (UnknownHostException e) {
+            bucketName = IgniteS3TestSuite.getBucketName(
+                "ip-finder-unit-test-rnd-" + ThreadLocalRandom.current().nextInt(100));
+        }
+
+        return bucketName;
+    }
 }

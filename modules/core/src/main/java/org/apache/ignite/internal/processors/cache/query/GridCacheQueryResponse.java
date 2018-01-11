@@ -130,10 +130,10 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
         if (err != null && errBytes == null)
             errBytes = U.marshal(ctx, err);
 
-        if (metaDataBytes == null)
+        if (metaDataBytes == null && metadata != null)
             metaDataBytes = marshalCollection(metadata, cctx);
 
-        if (dataBytes == null)
+        if (dataBytes == null && data != null)
             dataBytes = marshalCollection(data, cctx);
 
         if (addDepInfo && !F.isEmpty(data)) {

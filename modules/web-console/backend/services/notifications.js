@@ -21,16 +21,15 @@
 
 module.exports = {
     implements: 'services/notifications',
-    inject: ['require(lodash)', 'mongo', 'browsers-handler']
+    inject: ['mongo', 'browsers-handler']
 };
 
 /**
- * @param _
  * @param mongo
  * @param browsersHnd
  * @returns {NotificationsService}
  */
-module.exports.factory = (_, mongo, browsersHnd) => {
+module.exports.factory = (mongo, browsersHnd) => {
     class NotificationsService {
         /**
          * Update notifications.

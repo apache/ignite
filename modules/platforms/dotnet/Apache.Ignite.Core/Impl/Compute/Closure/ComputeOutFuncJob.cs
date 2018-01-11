@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         }
 
         /** <inheritDoc /> */
-        public void Inject(Ignite grid)
+        public void Inject(IIgniteInternal grid)
         {
             ResourceProcessor.Inject(_clo, grid);
         }
@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         {
             var writer0 = (BinaryWriter) writer.GetRawWriter();
 
-            writer0.WithDetach(w => w.WriteObject(_clo));
+            writer0.WriteObjectDetached(_clo);
         }
 
         /// <summary>

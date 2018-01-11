@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.logger.log4j2.Log4j2LoggerSelfTest;
+import org.apache.ignite.logger.log4j2.Log4j2LoggerVerboseModeSelfTest;
 
 /**
  * Log4j2 logging tests.
@@ -32,6 +33,7 @@ public class IgniteLog4j2TestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Log4j2 Logging Test Suite");
 
         suite.addTest(new TestSuite(Log4j2LoggerSelfTest.class));
+        suite.addTest(new TestSuite(Log4j2LoggerVerboseModeSelfTest.class));
 
         return suite;
     }

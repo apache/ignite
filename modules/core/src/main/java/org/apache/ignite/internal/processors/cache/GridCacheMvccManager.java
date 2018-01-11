@@ -272,12 +272,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         exchLog = cctx.logger(getClass().getName() + ".exchange");
 
         pendingExplicit = GridConcurrentFactory.newMap();
-    }
 
-    /**
-     * Cache futures listener must be registered after communication listener.
-     */
-    public void registerEventListener() {
         cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
     }
 
@@ -483,13 +478,14 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     /**
      * @param fut Future.
      * @param futId Future ID.
+     * @return {@code True} if added.
      */
-    public void addFuture(final GridCacheFuture<?> fut, final IgniteUuid futId) {
+    public boolean addFuture(final GridCacheFuture<?> fut, final IgniteUuid futId) {
         GridCacheFuture<?> old = futs.put(futId, fut);
 
         assert old == null : old;
 
-        onFutureAdded(fut);
+        return onFutureAdded(fut);
     }
 
     /**
@@ -1053,7 +1049,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @return Explicit locks release future.
      */
     public IgniteInternalFuture<?> finishExplicitLocks(AffinityTopologyVersion topVer) {
-        GridCompoundFuture<Object, Object> res = new GridCompoundFuture<>();
+        GridCompoundFuture<Object, Object> res = new CacheObjectsReleaseFuture<>("ExplicitLock", topVer);
 
         for (GridCacheExplicitLockSpan span : pendingExplicit.values()) {
             AffinityTopologyVersion snapshot = span.topologyVersion();
@@ -1074,7 +1070,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      */
     @SuppressWarnings("unchecked")
     public IgniteInternalFuture<?> finishAtomicUpdates(AffinityTopologyVersion topVer) {
-        GridCompoundFuture<Object, Object> res = new FinishAtomicUpdateFuture();
+        GridCompoundFuture<Object, Object> res = new FinishAtomicUpdateFuture("AtomicUpdate", topVer);
 
         for (GridCacheAtomicFuture<?> fut : atomicFuts.values()) {
             IgniteInternalFuture<Void> complete = fut.completeFuture(topVer);
@@ -1093,11 +1089,13 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @return Finish update future.
      */
     @SuppressWarnings("unchecked")
-    public IgniteInternalFuture<?> finishDataStreamerUpdates() {
-        GridCompoundFuture<Object, Object> res = new GridCompoundFuture<>();
+    public IgniteInternalFuture<?> finishDataStreamerUpdates(AffinityTopologyVersion topVer) {
+        GridCompoundFuture<Void, Object> res = new CacheObjectsReleaseFuture<>("DataStreamer", topVer);
 
-        for (IgniteInternalFuture fut : dataStreamerFuts)
-            res.add(fut);
+        for (DataStreamerFuture fut : dataStreamerFuts) {
+            if (fut.topVer.compareTo(topVer) < 0)
+                res.add(fut);
+        }
 
         res.markInitialized();
 
@@ -1345,9 +1343,17 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     /**
      * Finish atomic update future.
      */
-    private static class FinishAtomicUpdateFuture extends GridCompoundFuture<Object, Object> {
+    private static class FinishAtomicUpdateFuture extends CacheObjectsReleaseFuture<Object, Object> {
         /** */
         private static final long serialVersionUID = 0L;
+
+        /**
+         * @param type Type.
+         * @param topVer Topology version.
+         */
+        private FinishAtomicUpdateFuture(String type, AffinityTopologyVersion topVer) {
+            super(type, topVer);
+        }
 
         /** {@inheritDoc} */
         @Override protected boolean ignoreFailure(Throwable err) {

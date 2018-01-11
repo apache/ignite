@@ -113,7 +113,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public String getDatabaseProductName() throws SQLException {
-        return "Ignite Cache";
+        return "Apache Ignite";
     }
 
     /** {@inheritDoc} */

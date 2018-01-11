@@ -666,7 +666,11 @@ namespace ignite
             /** Offset added to pointers to change binding of column data. */
             int* columnBindOffset;
 
+            /** Parameters. */
             app::ParameterSet parameters;
+
+            /** Query timeout in seconds. */
+            int32_t timeout;
         };
     }
 }

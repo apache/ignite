@@ -17,14 +17,15 @@
 
 'use strict';
 
+const _ = require('lodash');
+
 // Fire me up!
 
 /**
  * Module interaction with agents.
  */
 module.exports = {
-    implements: 'agent-socket',
-    inject: ['require(lodash)']
+    implements: 'agent-socket'
 };
 
 /**
@@ -78,17 +79,16 @@ class Command {
 }
 
 /**
- * @param _
  * @returns {AgentSocket}
  */
-module.exports.factory = function(_) {
+module.exports.factory = function() {
     /**
      * Connected agent descriptor.
      */
     class AgentSocket {
         /**
          * @param {Socket} socket Socket for interaction.
-         * @param {String} tokens Active tokens.
+         * @param {Array.<String>} tokens Agent tokens.
          * @param {String} demoEnabled Demo enabled.
          */
         constructor(socket, tokens, demoEnabled) {
@@ -126,14 +126,14 @@ module.exports.factory = function(_) {
          * Send event to agent.
          *
          * @param {String} event - Event name.
-         * @param {Array.<Object>?} args - Transmitted arguments.
+         * @param {Object?} args - Transmitted arguments.
          * @returns {Promise}
          */
         emitEvent(event, ...args) {
             return new Promise((resolve, reject) =>
-                this._emit(event, args, (error, res) => {
-                    if (error)
-                        return reject(error);
+                this._emit(event, args, (resErr, res) => {
+                    if (resErr)
+                        return reject(resErr);
 
                     resolve(res);
                 })
@@ -202,7 +202,7 @@ module.exports.factory = function(_) {
                 params[`p${idx + 1}`] = args[idx];
             });
 
-            return this.emitEvent('node:rest', {uri: 'ignite', demo, params, method: 'GET'})
+            return this.emitEvent('node:rest', {uri: 'ignite', demo, params})
                 .then(this.restResultParse);
         }
 

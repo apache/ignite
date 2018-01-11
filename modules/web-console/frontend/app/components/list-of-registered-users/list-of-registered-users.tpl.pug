@@ -45,8 +45,7 @@ include /app/helpers/jade/mixins
                     required: false,
                     options: '$ctrl.actionOptions'
                 })
-                button.btn-ignite.btn-ignite--primary-outline(ng-click='$ctrl.exportCsv()' bs-tooltip='' data-title='Export table to csv' data-placement='top')
-                    svg(ignite-icon='csv')
+                grid-export(grid-api='$ctrl.gridApi')
                 form.ui-grid-settings-dateperiod(name=form novalidate)
                     -var form = 'admin'
                     +ignite-form-field-datepicker('Period: from', '$ctrl.params.startDate', '"startDate"', null, '$ctrl.params.endDate')
@@ -61,7 +60,7 @@ include /app/helpers/jade/mixins
                     span(ng-if='$ctrl.groupBy === "country"') List of registered countries
                     grid-column-selector(grid-api='$ctrl.gridApi')
                 .panel-selected(ng-show='$ctrl.selected.length')
-                    | {{ $ctrl.selected.length }} item{{ $ctrl.selected.length > 1 ? 's' : '' }} selected            
+                    grid-item-selected(grid-api='$ctrl.gridApi')
 
         .panel-collapse
-            .grid.ui-grid--ignite.ui-grid-disabled-group-selection(ui-grid='$ctrl.gridOptions' ui-grid-resize-columns ui-grid-selection ui-grid-exporter ui-grid-pinning ui-grid-grouping)
+            .grid.ui-grid--ignite.ui-grid-disabled-group-selection(ui-grid='$ctrl.gridOptions' ui-grid-resize-columns ui-grid-selection ui-grid-exporter ui-grid-pinning ui-grid-grouping ui-grid-hovering)

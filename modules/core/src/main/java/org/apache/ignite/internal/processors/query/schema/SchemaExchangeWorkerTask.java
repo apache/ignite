@@ -39,6 +39,11 @@ public class SchemaExchangeWorkerTask implements CachePartitionExchangeWorkerTas
         this.msg = msg;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean skipForExchangeMerge() {
+        return false;
+    }
+
     /**
      * @return Message.
      */

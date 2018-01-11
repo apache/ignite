@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -29,6 +30,9 @@ public class OdbcQueryExecuteBatchResult {
     /** Index of the set which caused an error. */
     private final long errorSetIdx;
 
+    /** Error code. */
+    private final int errorCode;
+
     /** Error message. */
     private final String errorMessage;
 
@@ -39,17 +43,20 @@ public class OdbcQueryExecuteBatchResult {
         this.rowsAffected = rowsAffected;
         this.errorSetIdx = -1;
         this.errorMessage = null;
+        this.errorCode = ClientListenerResponse.STATUS_SUCCESS;
     }
 
     /**
      * @param rowsAffected Number of rows affected by the query.
      * @param errorSetIdx Sets processed.
+     * @param errorCode Error code.
      * @param errorMessage Error message.
      */
-    public OdbcQueryExecuteBatchResult(long rowsAffected, long errorSetIdx, String errorMessage) {
+    public OdbcQueryExecuteBatchResult(long rowsAffected, long errorSetIdx, int errorCode, String errorMessage) {
         this.rowsAffected = rowsAffected;
         this.errorSetIdx = errorSetIdx;
         this.errorMessage = errorMessage;
+        this.errorCode = errorCode;
     }
 
     /**
@@ -71,5 +78,12 @@ public class OdbcQueryExecuteBatchResult {
      */
     @Nullable public String errorMessage() {
         return errorMessage;
+    }
+
+    /**
+     * @return Error code.
+     */
+    public int errorCode() {
+        return errorCode;
     }
 }

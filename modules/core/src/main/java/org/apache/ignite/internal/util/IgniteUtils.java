@@ -73,9 +73,13 @@ import java.nio.channels.FileLock;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.charset.Charset;
+import java.nio.file.DirectoryStream;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.security.AccessController;
 import java.security.KeyManagementException;
 import java.security.MessageDigest;
@@ -139,6 +143,7 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import javax.management.DynamicMBean;
 import javax.management.JMException;
+import javax.management.MBeanRegistrationException;
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
@@ -155,6 +160,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteDeploymentException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -515,11 +521,14 @@ public abstract class IgniteUtils {
         }
     };
 
+    /** Ignite MBeans disabled flag. */
+    public static boolean IGNITE_MBEANS_DISABLED = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_MBEANS_DISABLED);
+
     /** */
     private static final boolean assertionsEnabled;
 
     /*
-     *
+     * Initializes enterprise check.
      */
     static {
         boolean assertionsEnabled0 = true;
@@ -4486,10 +4495,12 @@ public abstract class IgniteUtils {
      * @param impl MBean implementation.
      * @param itf MBean interface.
      * @return JMX object name.
+     * @throws MBeanRegistrationException if MBeans are disabled.
      * @throws JMException If MBean creation failed.
      */
-    public static <T> ObjectName registerMBean(MBeanServer mbeanSrv, @Nullable String igniteInstanceName,
-        @Nullable String grp, String name, T impl, @Nullable Class<T> itf) throws JMException {
+    public static <T> ObjectName registerMBean(MBeanServer mbeanSrv, @Nullable String igniteInstanceName, @Nullable String grp,
+        String name, T impl, @Nullable Class<T> itf) throws JMException {if(IGNITE_MBEANS_DISABLED)
+            throw new MBeanRegistrationException(new IgniteIllegalStateException("No MBeans are allowed."));
         assert mbeanSrv != null;
         assert name != null;
         assert itf != null;
@@ -4510,10 +4521,15 @@ public abstract class IgniteUtils {
      * @param impl MBean implementation.
      * @param itf MBean interface.
      * @return JMX object name.
+     * @throws MBeanRegistrationException if MBeans are disabled.
      * @throws JMException If MBean creation failed.
+     * @throws IgniteException If MBean creation are not allowed.
      */
     public static <T> ObjectName registerMBean(MBeanServer mbeanSrv, ObjectName name, T impl, Class<T> itf)
         throws JMException {
+        if(IGNITE_MBEANS_DISABLED)
+            throw new MBeanRegistrationException(new IgniteIllegalStateException("MBeans are disabled."));
+
         assert mbeanSrv != null;
         assert name != null;
         assert itf != null;
@@ -4536,10 +4552,15 @@ public abstract class IgniteUtils {
      * @param impl MBean implementation.
      * @param itf MBean interface.
      * @return JMX object name.
+     * @throws MBeanRegistrationException if MBeans are disabled.
      * @throws JMException If MBean creation failed.
+     * @throws IgniteException If MBean creation are not allowed.
      */
     public static <T> ObjectName registerCacheMBean(MBeanServer mbeanSrv, @Nullable String igniteInstanceName,
         @Nullable String cacheName, String name, T impl, Class<T> itf) throws JMException {
+        if(IGNITE_MBEANS_DISABLED)
+            throw new MBeanRegistrationException(new IgniteIllegalStateException("MBeans are disabled."));
+
         assert mbeanSrv != null;
         assert name != null;
         assert itf != null;
@@ -7375,6 +7396,15 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Awaits for condition ignoring interrupts.
+     *
+     * @param cond Condition to await for.
+     */
+    public static void awaitQuiet(Condition cond) {
+        cond.awaitUninterruptibly();
+    }
+
+    /**
      * Awaits for condition.
      *
      * @param cond Condition to await for.
@@ -9959,6 +9989,108 @@ public abstract class IgniteUtils {
         catch (Exception e) {
             throw new IgniteCheckedException(e);
         }
+    }
+
+    /**
+     * Return count of regular file in the directory (including in sub-directories)
+     *
+     * @param dir path to directory
+     * @return count of regular file
+     * @throws IOException sometimes
+     */
+    public static int fileCount(Path dir) throws IOException {
+        int cnt = 0;
+
+        try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir)){
+            for (Path d : ds) {
+                if (Files.isDirectory(d))
+                    cnt += fileCount(d);
+
+                else if (Files.isRegularFile(d))
+                    cnt++;
+            }
+        }
+
+        return cnt;
+    }
+
+    /**
+     * Will calculate the size of a directory.
+     *
+     * If there is concurrent activity in the directory, than returned value may be wrong.
+     */
+    public static long dirSize(Path path) throws IgniteCheckedException {
+        final AtomicLong s = new AtomicLong(0);
+
+        try {
+            Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+                @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    s.addAndGet(attrs.size());
+
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult visitFileFailed(Path file, IOException exc) {
+                    U.error(null, "file skipped - " + file, exc);
+
+                    // Skip directory or file
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+                    if (exc != null)
+                        U.error(null, "error during size calculation of directory - " + dir, exc);
+
+                    // Ignoring
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            throw new IgniteCheckedException("walkFileTree will not throw IOException if the FileVisitor does not");
+        }
+
+        return s.get();
+    }
+
+    /**
+     * @param path Path.
+     * @param name Name.
+     */
+    public static Path searchFileRecursively(Path path, @NotNull final String name) throws IgniteCheckedException {
+        final AtomicReference<Path> res = new AtomicReference<>();
+
+        try {
+            Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+                @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    if (name.equals(file.getFileName().toString())) {
+                        res.set(file);
+
+                        return FileVisitResult.TERMINATE;
+                    }
+
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult visitFileFailed(Path file, IOException exc) {
+                    U.error(null, "file skipped during recursive search - " + file, exc);
+
+                    // Ignoring.
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+                    if (exc != null)
+                        U.error(null, "error during recursive search - " + dir, exc);
+
+                    // Ignoring.
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            throw new IgniteCheckedException("walkFileTree will not throw IOException if the FileVisitor does not");
+        }
+
+        return res.get();
     }
 
     /**

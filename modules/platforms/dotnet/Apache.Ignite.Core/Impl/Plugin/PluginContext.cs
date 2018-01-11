@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Impl.Plugin
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Resource;
-    using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Interop;
     using Apache.Ignite.Core.Plugin;
 
@@ -65,11 +64,7 @@ namespace Apache.Ignite.Core.Impl.Plugin
         /** <inheritdoc /> */
         public IPlatformTarget GetExtension(int id)
         {
-            var ignite = _pluginProcessor.Ignite;
-
-            var ext = UnmanagedUtils.ProcessorExtension(ignite.InteropProcessor, id);
-
-            return new PlatformTarget(ext, ignite.Marshaller);
+            return _pluginProcessor.Ignite.GetExtension(id);
         }
 
         /** <inheritdoc /> */

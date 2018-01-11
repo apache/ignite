@@ -20,6 +20,9 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.logger.log4j.GridLog4jCorrectFileNameTest;
 import org.apache.ignite.logger.log4j.GridLog4jInitializedTest;
+import org.apache.ignite.logger.log4j.GridLog4jLoggingFileTest;
+import org.apache.ignite.logger.log4j.GridLog4jLoggingPathTest;
+import org.apache.ignite.logger.log4j.GridLog4jLoggingUrlTest;
 import org.apache.ignite.logger.log4j.GridLog4jNotInitializedTest;
 
 /**
@@ -36,6 +39,9 @@ public class IgniteLog4jTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridLog4jInitializedTest.class));
         suite.addTest(new TestSuite(GridLog4jNotInitializedTest.class));
         suite.addTest(new TestSuite(GridLog4jCorrectFileNameTest.class));
+        suite.addTest(new TestSuite(GridLog4jLoggingFileTest.class));
+        suite.addTest(new TestSuite(GridLog4jLoggingPathTest.class));
+        suite.addTest(new TestSuite(GridLog4jLoggingUrlTest.class));
 
         return suite;
     }

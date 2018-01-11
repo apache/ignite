@@ -45,9 +45,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public const long DefaultInitialSize = 256 * 1024 * 1024;
 
         /// <summary>
-        /// The default maximum size, equals to 80% of total RAM.
+        /// The default maximum size, equals to 20% of total RAM.
         /// </summary>
-        public static readonly long DefaultMaxSize = (long) ((long) NativeMethods.GetTotalPhysicalMemory() * 0.8);
+        public static readonly long DefaultMaxSize = (long) ((long) NativeMethods.GetTotalPhysicalMemory() * 0.2);
 
         /// <summary>
         /// The default sub intervals.

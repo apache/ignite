@@ -692,11 +692,17 @@ class ClientImpl extends TcpDiscoveryImpl {
                 }
 
                 if (X.hasCause(e, StreamCorruptedException.class)) {
-                    if (--sslConnectAttempts == 0)
-                        throw new IgniteSpiException("Unable to establish plain connection. " +
-                            "Was remote cluster configured with SSL? [rmtAddr=" + addr + ", errMsg=\"" + e.getMessage() + "\"]", e);
+                    // StreamCorruptedException could be caused by remote node failover
+                    if (connectAttempts < 2) {
+                        connectAttempts++;
 
-                    continue;
+                        continue;
+                    }
+
+                    if (log.isDebugEnabled())
+                        log.debug("Connect failed with StreamCorruptedException, skip address: " + addr);
+
+                    break;
                 }
 
                 if (timeoutHelper.checkFailureTimeoutReached(e))

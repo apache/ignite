@@ -36,6 +36,10 @@ import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
+import org.apache.ignite.internal.processors.platform.compute.PlatformCompute;
+import org.apache.ignite.internal.processors.platform.events.PlatformEvents;
+import org.apache.ignite.internal.processors.platform.messaging.PlatformMessaging;
+import org.apache.ignite.internal.processors.platform.services.PlatformServices;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
@@ -125,6 +129,19 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
     /** */
     private static final int OP_PERSISTENT_STORE_METRICS = 30;
+
+    /** */
+    private static final int OP_GET_COMPUTE = 31;
+
+    /** */
+    private static final int OP_GET_MESSAGING = 32;
+
+    /** */
+    private static final int OP_GET_EVENTS = 33;
+
+    /** */
+    private static final int OP_GET_SERVICES = 34;
+
 
     /** Projection. */
     private final ClusterGroupEx prj;
@@ -381,6 +398,18 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
             case OP_FOR_SERVERS:
                 return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forServers());
+
+            case OP_GET_COMPUTE:
+                return new PlatformCompute(platformCtx, prj, PlatformUtils.ATTR_PLATFORM);
+
+            case OP_GET_MESSAGING:
+                return new PlatformMessaging(platformCtx, platformCtx.kernalContext().grid().message(prj));
+
+            case OP_GET_EVENTS:
+                return new PlatformEvents(platformCtx, platformCtx.kernalContext().grid().events(prj));
+
+            case OP_GET_SERVICES:
+                return new PlatformServices(platformCtx, platformCtx.kernalContext().grid().services(prj),false);
         }
 
         return super.processOutObject(type);

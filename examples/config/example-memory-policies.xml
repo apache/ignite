@@ -34,12 +34,9 @@
 
         <property name="memoryConfiguration">
             <bean class="org.apache.ignite.configuration.MemoryConfiguration">
-                <!-- Setting a name of the default memory policy -->
+                <!-- Setting a name of the default memory policy. Required to set only if the default policy's
+                    parameters are overridden like it's done below. -->
                 <property name="defaultMemoryPolicyName" value="Default_Region"/>
-                <!-- Setting the page size to 4 KB -->
-                <property name="pageSize" value="4096"/>
-                <property name="systemCacheInitialSize" value="#{40 * 1024 * 1024}"/>
-                <property name="systemCacheMaxSize" value="#{40 * 1024 * 1024}"/>
 
                 <!-- Defining several memory policies for different memory regions -->
                 <property name="memoryPolicies">

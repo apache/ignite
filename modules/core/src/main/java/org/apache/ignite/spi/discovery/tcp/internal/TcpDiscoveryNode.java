@@ -649,4 +649,24 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     @Override public String toString() {
         return S.toString(TcpDiscoveryNode.class, this, "isClient", isClient());
     }
+
+    /**
+     * IMPORTANT!
+     * Only purpose of this constructor is creating node which contains necessary data to store on disc only
+     * @param node to copy data from
+     */
+    public TcpDiscoveryNode(
+        ClusterNode node
+    ) {
+        this.id = node.id();
+        this.consistentId = node.consistentId();
+        this.addrs = node.addresses();
+        this.hostNames = node.hostNames();
+        this.order = node.order();
+        this.ver = node.version();
+        this.daemon = node.isDaemon();
+        this.clientRouterNodeId = node.isClient() ? node.id() : null;
+
+        attrs = Collections.singletonMap(ATTR_NODE_CONSISTENT_ID, consistentId);
+    }
 }

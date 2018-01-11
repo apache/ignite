@@ -3205,8 +3205,12 @@ public class GridNioServer<T> {
 
                     GridSelectorNioSessionImpl ses0 = (GridSelectorNioSessionImpl)ses;
 
-                    if (!ses0.procWrite.get() && ses0.procWrite.compareAndSet(false, true))
-                        ses0.worker().registerWrite(ses0);
+                    if (!ses0.procWrite.get() && ses0.procWrite.compareAndSet(false, true)) {
+                        GridNioWorker worker = ses0.worker();
+
+                        if (worker != null)
+                            worker.registerWrite(ses0);
+                    }
 
                     return null;
                 }
@@ -3878,9 +3882,10 @@ public class GridNioServer<T> {
             GridNioSession ses = randomSession(clientWorkers.get(w1));
 
             if (ses != null) {
-                log.info("Move session [from=" + w1 +
-                    ", to=" + w2 +
-                    ", ses=" + ses + ']');
+                if (log.isInfoEnabled())
+                    log.info("Move session [from=" + w1 +
+                        ", to=" + w2 +
+                        ", ses=" + ses + ']');
 
                 moveSession(ses, w1, w2);
             }

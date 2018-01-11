@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.Serializable;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -157,6 +158,48 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
 
             ignite.destroyCache(ccfg1.getName());
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDynamicCacheSavingOnNewNode() throws Exception {
+        Ignite ignite = startGrid(0);
+
+        ignite.active(true);
+
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
+
+        IgniteCache cache = ignite.getOrCreateCache(ccfg);
+
+        for (int i = 0; i < 160; i++)
+            cache.put(i, i);
+
+        ignite = startGrid(1);
+
+        awaitPartitionMapExchange();
+
+        cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; i < 160; i++)
+            assertEquals(i, cache.get(i));
+
+        stopAllGrids(true);
+
+        startGrid(0);
+        ignite = startGrid(1);
+
+        ignite.active(true);
+
+        cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; i < 160; i++)
+            assertEquals(i, cache.get(i));
     }
 
     /**

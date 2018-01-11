@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.Configuration;
@@ -62,6 +63,8 @@ namespace Apache.Ignite.Core.Tests
         {
             CheckDefaultProperties(new IgniteConfiguration());
             CheckDefaultProperties(new PersistentStoreConfiguration());
+            CheckDefaultProperties(new ClientConnectorConfiguration());
+            CheckDefaultProperties(new SqlConnectorConfiguration());
         }
 
         /// <summary>
@@ -86,7 +89,9 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new MemoryConfiguration());
             CheckDefaultValueAttributes(new MemoryPolicyConfiguration());
             CheckDefaultValueAttributes(new SqlConnectorConfiguration());
+            CheckDefaultValueAttributes(new ClientConnectorConfiguration());
             CheckDefaultValueAttributes(new PersistentStoreConfiguration());
+            CheckDefaultValueAttributes(new IgniteClientConfiguration());
         }
 
         /// <summary>
@@ -319,6 +324,9 @@ namespace Apache.Ignite.Core.Tests
 
                 // Check PersistentStoreConfiguration defaults.
                 CheckDefaultProperties(resCfg.PersistentStoreConfiguration);
+
+                // Connector defaults.
+                CheckDefaultProperties(resCfg.ClientConnectorConfiguration);
             }
         }
 
@@ -513,6 +521,8 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(IgniteConfiguration.DefaultLongQueryWarningTimeout, cfg.LongQueryWarningTimeout);
             Assert.AreEqual(IgniteConfiguration.DefaultIsLateAffinityAssignment, cfg.IsLateAffinityAssignment);
             Assert.AreEqual(IgniteConfiguration.DefaultIsActiveOnStart, cfg.IsActiveOnStart);
+            Assert.AreEqual(IgniteConfiguration.DefaultClientConnectorConfigurationEnabled, 
+                cfg.ClientConnectorConfigurationEnabled);
 
             // Thread pools.
             Assert.AreEqual(IgniteConfiguration.DefaultManagementThreadPoolSize, cfg.ManagementThreadPoolSize);
@@ -550,6 +560,38 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(PersistentStoreConfiguration.DefaultRateTimeInterval, cfg.RateTimeInterval);
             Assert.AreEqual(PersistentStoreConfiguration.DefaultWalStorePath, cfg.WalStorePath);
             Assert.AreEqual(PersistentStoreConfiguration.DefaultWalArchivePath, cfg.WalArchivePath);
+        }
+
+        /// <summary>
+        /// Checks the default properties.
+        /// </summary>
+        /// <param name="cfg">Config.</param>
+        private static void CheckDefaultProperties(ClientConnectorConfiguration cfg)
+        {
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultPort, cfg.Port);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultPortRange, cfg.PortRange);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultMaxOpenCursorsPerConnection,
+                cfg.MaxOpenCursorsPerConnection);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultSocketBufferSize, cfg.SocketReceiveBufferSize);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultSocketBufferSize, cfg.SocketSendBufferSize);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultTcpNoDelay, cfg.TcpNoDelay);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultThreadPoolSize, cfg.ThreadPoolSize);
+        }
+
+        /// <summary>
+        /// Checks the default properties.
+        /// </summary>
+        /// <param name="cfg">Config.</param>
+        private static void CheckDefaultProperties(SqlConnectorConfiguration cfg)
+        {
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultPort, cfg.Port);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultPortRange, cfg.PortRange);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultMaxOpenCursorsPerConnection,
+                cfg.MaxOpenCursorsPerConnection);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultSocketBufferSize, cfg.SocketReceiveBufferSize);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultSocketBufferSize, cfg.SocketSendBufferSize);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultTcpNoDelay, cfg.TcpNoDelay);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultThreadPoolSize, cfg.ThreadPoolSize);
         }
 
         /// <summary>

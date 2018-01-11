@@ -27,6 +27,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SpiQuery;
@@ -174,6 +175,46 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < 50; i++)
                 assertEquals(i * 100, res.get(i).intValue());
+        }
+        finally {
+            cache.destroy();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetObjectFieldPartitioned() throws Exception {
+        IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
+
+        Affinity<Integer> affinity = affinity(cache);
+
+        try {
+            int [] keys = new int[50];
+
+            for (int i = 0, j = 0; i < keys.length; j++) {
+                if (affinity.partition(j) == 0)
+                    keys[i++] = j;
+            }
+
+            for (int i : keys)
+                cache.put(i, new Value("str" + i, i * 100));
+
+            IgniteClosure<Cache.Entry<Integer, Value>, Integer> transformer =
+                new IgniteClosure<Cache.Entry<Integer, Value>, Integer>() {
+                    @Override public Integer apply(Cache.Entry<Integer, Value> e) {
+                        return e.getValue().idx;
+                    }
+                };
+
+            List<Integer> res = cache.query(new ScanQuery<Integer, Value>().setPartition(0), transformer).getAll();
+
+            assertEquals(50, res.size());
+
+            Collections.sort(res);
+
+            for (int i = 0; i < keys.length; i++)
+                assertEquals(keys[i] * 100, res.get(i).intValue());
         }
         finally {
             cache.destroy();

@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Impl.Deployment
         /// <summary>
         /// Initializes a new instance of the <see cref="PeerAssemblyResolver"/> class.
         /// </summary>
-        public PeerAssemblyResolver(Ignite ignite, Guid originNodeId)
+        public PeerAssemblyResolver(IIgniteInternal ignite, Guid originNodeId)
         {
             Debug.Assert(ignite != null);
 
@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Impl.Deployment
         /// <summary>
         /// Gets an instance of <see cref="PeerAssemblyResolver"/> when peer loading is enabled; otherwise null.
         /// </summary>
-        public static PeerAssemblyResolver GetInstance(Ignite ignite, Guid originNodeId)
+        public static PeerAssemblyResolver GetInstance(IIgniteInternal ignite, Guid originNodeId)
         {
             if (ignite == null || ignite.Configuration.PeerAssemblyLoadingMode == PeerAssemblyLoadingMode.Disabled)
             {
@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Impl.Deployment
         /// <returns>
         /// Resulting type or null.
         /// </returns>
-        public static Type LoadAssemblyAndGetType(string typeName, Ignite ignite, Guid originNodeId)
+        public static Type LoadAssemblyAndGetType(string typeName, IIgniteInternal ignite, Guid originNodeId)
         {
             Debug.Assert(!string.IsNullOrEmpty(typeName));
 
@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Impl.Deployment
         /// <summary>
         /// Gets the assembly.
         /// </summary>
-        private static Assembly GetAssembly(Ignite ignite, string assemblyName, Guid originNodeId)
+        private static Assembly GetAssembly(IIgniteInternal ignite, string assemblyName, Guid originNodeId)
         {
             return LoadedAssembliesResolver.Instance.GetAssembly(assemblyName)
                    ?? AssemblyLoader.GetAssembly(assemblyName)
@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Impl.Deployment
         /// <summary>
         /// Loads the assembly.
         /// </summary>
-        private static Assembly LoadAssembly(Ignite ignite, string assemblyName, Guid originNodeId)
+        private static Assembly LoadAssembly(IIgniteInternal ignite, string assemblyName, Guid originNodeId)
         {
             var res = RequestAssembly(assemblyName, ignite, originNodeId);
 
@@ -132,7 +132,8 @@ namespace Apache.Ignite.Core.Impl.Deployment
         /// Successful result or null.
         /// </returns>
         /// <exception cref="IgniteException"></exception>
-        private static AssemblyRequestResult RequestAssembly(string assemblyName, Ignite ignite, Guid originNodeId)
+        private static AssemblyRequestResult RequestAssembly(string assemblyName, IIgniteInternal ignite, 
+            Guid originNodeId)
         {
             Debug.Assert(assemblyName != null);
             Debug.Assert(ignite != null);
@@ -146,9 +147,9 @@ namespace Apache.Ignite.Core.Impl.Deployment
             var func = new GetAssemblyFunc();
             var req = new AssemblyRequest(assemblyName);
 
-            foreach (var node in GetDotNetNodes(ignite, originNodeId))
+            foreach (var node in GetDotNetNodes(ignite.GetIgnite(), originNodeId))
             {
-                var compute = ignite.GetCluster().ForNodeIds(node).GetCompute();
+                var compute = ignite.GetIgnite().GetCluster().ForNodeIds(node).GetCompute();
                 var result = ComputeApplySafe(compute, func, req);
 
                 if (result != null)

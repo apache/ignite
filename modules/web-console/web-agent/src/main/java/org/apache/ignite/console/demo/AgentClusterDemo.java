@@ -55,6 +55,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
 import static org.apache.ignite.console.demo.AgentDemoUtils.newScheduledThreadPool;
 import static org.apache.ignite.events.EventType.EVTS_DISCOVERY;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.VISOR_TASK_EVTS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_ADDRS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_PORT;
 
@@ -92,7 +93,13 @@ public class AgentClusterDemo {
         cfg.setIgniteInstanceName((client ? "demo-client-" : "demo-server-" ) + gridIdx);
         cfg.setLocalHost("127.0.0.1");
         cfg.setEventStorageSpi(new MemoryEventStorageSpi());
-        cfg.setIncludeEventTypes(EVTS_DISCOVERY);
+
+        int[] evts = new int[EVTS_DISCOVERY.length + VISOR_TASK_EVTS.length];
+
+        System.arraycopy(EVTS_DISCOVERY, 0, evts, 0, EVTS_DISCOVERY.length);
+        System.arraycopy(VISOR_TASK_EVTS, 0, evts, EVTS_DISCOVERY.length, VISOR_TASK_EVTS.length);
+
+        cfg.setIncludeEventTypes(evts);
 
         cfg.getConnectorConfiguration().setPort(basePort);
 

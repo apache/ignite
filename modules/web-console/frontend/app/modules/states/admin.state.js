@@ -24,7 +24,7 @@ angular
 .module('ignite-console.states.admin', [
     'ui.router'
 ])
-.config(['$stateProvider', 'AclRouteProvider', function($stateProvider, AclRoute) {
+.config(['$stateProvider', function($stateProvider) {
     // set up the states
     $stateProvider
     .state('base.settings.admin', {
@@ -50,8 +50,8 @@ angular
             }
         },
         // templateUrl,
-        onEnter: AclRoute.checkAccess('admin_page'),
-        metaTags: {
+        permission: 'admin_page',
+        tfMetaTags: {
             title: 'Admin panel'
         }
     });

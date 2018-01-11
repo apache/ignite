@@ -37,10 +37,16 @@ web-console-footer {
         display: flex;
         flex-direction: row;
         align-items: center;
+
+        & > :nth-child(2) {
+            margin-left: auto;
+        }
     }
 
     ignite-powered-by-apache {
-        margin-left: auto;
+        & > a {
+            margin-left: 40px;
+        }
     }
 
     a {

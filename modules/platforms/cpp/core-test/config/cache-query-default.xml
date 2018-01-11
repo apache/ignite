@@ -160,6 +160,35 @@
                         </list>
                     </property>
                 </bean>
+
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="ByteArrayCache"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+
+                    <property name="affinity">
+                        <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
+                            <property name="partitions" value="256"/>
+                        </bean>
+                    </property>
+
+                    <!-- Configure type metadata to enable queries. -->
+                    <property name="queryEntities">
+                        <list>
+                            <bean class="org.apache.ignite.cache.QueryEntity">
+                                <property name="keyType" value="java.lang.Integer"/>
+                                <property name="valueType" value="ByteArrayType"/>
+                                <property name="fields">
+                                    <map>
+                                        <entry key="intVal" value="java.lang.Integer"/>
+                                        <entry key="arrayVal" value="[B"/>
+                                    </map>
+                                </property>
+                            </bean>
+                        </list>
+                    </property>
+                </bean>
             </list>
         </property>
 
