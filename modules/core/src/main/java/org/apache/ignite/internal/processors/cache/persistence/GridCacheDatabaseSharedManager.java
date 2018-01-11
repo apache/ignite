@@ -1065,8 +1065,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         try {
             CheckpointStatus status = readCheckpointStatus();
 
-            if (!CheckpointStatus.NULL_UUID.equals(status.cpStartId))
-                resetTotalMemoryPagesMetricToStoreSize();
+            initPageMemoryMetricsIfNeeded(status);
 
             checkpointReadLock();
 
@@ -1091,7 +1090,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      *
      */
-    private void resetTotalMemoryPagesMetricToStoreSize() {
+    private void initPageMemoryMetricsIfNeeded(CheckpointStatus status) {
+        if (CheckpointStatus.NULL_UUID.equals(status.cpStartId))
+            return;
+
         Map<String, Set<Integer>> grpsByRegions = new HashMap<>();
 
         for (Object ctx : cctx.cacheContexts()) {
