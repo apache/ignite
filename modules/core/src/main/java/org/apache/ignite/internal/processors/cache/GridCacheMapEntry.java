@@ -750,7 +750,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     // Update indexes before actual write to entry.
                     if (cctx.mvccEnabled())
-                        cctx.offheap().mvccInitialValue(this, ret, nextVer, expTime, null); // TODO IGNITE-3478.
+                        cctx.offheap().mvccInitialValue(this, ret, nextVer, expTime, null);
                     else
                         storeValue(ret, expTime, nextVer, null);
 
@@ -823,8 +823,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             wasNew = isNew();
         }
 
-        // TODO IGNITE-3478: tests reload with mvcc enabled.
-
         String taskName = cctx.kernalContext().job().currentTaskName();
 
         // Check before load.
@@ -855,13 +853,19 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     // Update indexes.
                     if (ret != null) {
-                        storeValue(ret, expTime, nextVer, null);
+                        if (cctx.mvccEnabled())
+                            cctx.offheap().mvccInitialValue(this, ret, nextVer, expTime, null);
+                        else
+                            storeValue(ret, expTime, nextVer, null);
 
                         if (cctx.deferredDelete() && !isInternal() && !detached() && deletedUnlocked())
                             deletedUnlocked(false);
                     }
                     else {
-                        removeValue();
+                        if (cctx.mvccEnabled())
+                            cctx.offheap().mvccRemoveAll(this);
+                        else
+                            removeValue();
 
                         if (cctx.deferredDelete() && !isInternal() && !detached() && !deletedUnlocked())
                             deletedUnlocked(true);
@@ -1015,7 +1019,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             assert val != null;
 
-            if (cctx.mvccEnabled() && !((IgniteCacheOffheapManagerImpl)cctx.offheap()).IGNITE_FAKE_MVCC_STORAGE) {
+            if (cctx.mvccEnabled()) {
                 assert mvccVer != null;
 
                 mvccWaitTxs = cctx.offheap().mvccUpdate(tx.local(),
@@ -1194,7 +1198,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
             }
 
-            if (cctx.mvccEnabled() && !((IgniteCacheOffheapManagerImpl)cctx.offheap()).IGNITE_FAKE_MVCC_STORAGE) {
+            if (cctx.mvccEnabled()) {
                 assert mvccVer != null;
 
                 mvccWaitTxs = cctx.offheap().mvccRemove(tx.local(), this, mvccVer);
@@ -2597,7 +2601,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             boolean walEnabled = !cctx.isNear() && cctx.group().persistenceEnabled();
 
-            // TODO IGNITE-3478: move checks in special initialValue method.
             if (cctx.group().persistenceEnabled()) {
                 unswap(false);
 
@@ -2785,7 +2788,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
 
                 if (val != null) {
-                    if (cctx.mvccEnabled()) // TODO IGNITE-3478
+                    if (cctx.mvccEnabled())
                         cctx.offheap().mvccInitialValue(this, val, newVer, expTime, null);
                     else
                         storeValue(val, expTime, newVer, null);

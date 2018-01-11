@@ -1190,8 +1190,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                         resolveTaskName(),
                                         null,
                                         keepBinary,
-                                        null,
-                                        null) : null; // TODO IGNITE-3478
+                                        null, // TODO IGNITE-7371
+                                        null) : null;
 
                                 if (res != null) {
                                     old = res.value();
@@ -1210,7 +1210,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                     resolveTaskName(),
                                     null,
                                     keepBinary,
-                                    null); // TODO IGNITE-3478
+                                    null); // TODO IGNITE-7371
                             }
                         }
                         catch (ClusterTopologyCheckedException e) {
@@ -1738,7 +1738,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (timeout == -1)
                 return new GridFinishedFuture<>(timeoutException());
 
-            assert pessimistic(); // TODO IGNITE-4191
+            assert pessimistic(); // TODO IGNITE-7184
 
             addActiveCache(cctx, false);
 
@@ -1789,7 +1789,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         init();
 
         if (cacheCtx.mvccEnabled() && (optimistic() && !readCommitted()) && mvccTracker == null) {
-            // TODO IGNITE-3478: support async tx rollback (e.g. on timeout).
+            // TODO IGNITE-7388: support async tx rollback (e.g. on timeout).
             final GridFutureAdapter fut = new GridFutureAdapter();
 
             boolean canRemap = cctx.lockedTopologyVersion(null) == null;
@@ -1932,7 +1932,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                             resolveTaskName(),
                                             null,
                                             txEntry.keepBinary(),
-                                            null, // TODO IGNITE-3478
+                                            null, // TODO IGNITE-7371
                                             null);
 
                                         if (getRes != null) {
@@ -1952,7 +1952,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                             resolveTaskName(),
                                             null,
                                             txEntry.keepBinary(),
-                                            null); // TODO IGNITE-3478
+                                            null); // TODO IGNITE-7371
                                     }
 
                                     // If value is in cache and passed the filter.
@@ -2229,7 +2229,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                     null,
                                     txEntry.keepBinary(),
                                     null,
-                                    null); // TODO IGNITE-3478
+                                    null); // TODO IGNITE-7371
 
                                 if (getRes != null) {
                                     val = getRes.value();
@@ -2248,7 +2248,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                     resolveTaskName(),
                                     null,
                                     txEntry.keepBinary(),
-                                    null); // TODO IGNITE-3478
+                                    null); // TODO IGNITE-7371
                             }
 
                             if (val != null) {
@@ -2316,7 +2316,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                         resolveTaskName(),
                                         accessPlc,
                                         !deserializeBinary,
-                                        mvccReadVersion(cacheCtx), // TODO IGNITE-3478
+                                        mvccReadVersion(cacheCtx), // TODO IGNITE-7371
                                         null) : null;
 
                                 if (getRes != null) {
@@ -2336,7 +2336,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                     resolveTaskName(),
                                     accessPlc,
                                     !deserializeBinary,
-                                    mvccReadVersion(cacheCtx)); // TODO IGNITE-3478
+                                    mvccReadVersion(cacheCtx)); // TODO IGNITE-7371
                             }
 
                             if (val != null) {
@@ -2805,7 +2805,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             expiryPlc0,
                             txEntry == null ? keepBinary : txEntry.keepBinary(),
                             null,
-                            null); // TODO IGNITE-3478
+                            null); // TODO IGNITE-7371
 
                         if (res == null) {
                             if (misses == null)

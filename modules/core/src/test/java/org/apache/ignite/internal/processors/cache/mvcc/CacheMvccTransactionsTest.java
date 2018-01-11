@@ -97,9 +97,10 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
- * TODO IGNITE-3478: extend tests to use single/mutiple nodes, all tx types.
- * TODO IGNITE-3478: test with cache groups.
- * TODO IGNITE-3478: add check for cleanup in all test (at the and do update for all keys, check there are 2 versions left).
+ * TODO IGNITE-6739: tests reload
+ * TODO IGNITE-6739: extend tests to use single/mutiple nodes, all tx types.
+ * TODO IGNITE-6739: test with cache groups.
+ * TODO IGNITE-6739: add check for cleanup in all test (at the and do update for all keys, check there are 2 versions left).
  */
 @SuppressWarnings("unchecked")
 public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
@@ -1903,7 +1904,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     }
 
     /**
-     * TODO IGNITE-3478: enable when scan is fully implemented.
+     * TODO IGNITE-6353: enable when scan is fully implemented.
      *
      * @throws Exception If failed
      */
@@ -2021,7 +2022,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     }
 
     /**
-     * TODO IGNITE-3478 enable when recovery is implemented.
+     * TODO IGNITE-5935 enable when recovery is implemented.
      *
      * @throws Exception If failed.
      */

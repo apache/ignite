@@ -274,8 +274,6 @@ public class MvccProcessor extends GridProcessorAdapter {
         if (evtType == EVT_NODE_METRICS_UPDATED || evtType == EVT_DISCOVERY_CUSTOM_EVT)
             return;
 
-        // TODO: IGNITE-3478 handle inactive state.
-
         MvccCoordinator crd;
 
         if (evtType == EVT_NODE_SEGMENTED || evtType == EVT_CLIENT_NODE_DISCONNECTED)
@@ -442,7 +440,6 @@ public class MvccProcessor extends GridProcessorAdapter {
     public IgniteInternalFuture<MvccVersion> requestQueryCounter(MvccCoordinator crd) {
         assert crd != null;
 
-        // TODO IGNITE-3478: special case for local?
         MvccVersionFuture fut = new MvccVersionFuture(futIdCntr.incrementAndGet(), crd, null);
 
         verFuts.put(fut.id, fut);
@@ -470,7 +467,6 @@ public class MvccProcessor extends GridProcessorAdapter {
         assert crdId != null;
         assert txs != null && txs.size() > 0;
 
-        // TODO IGNITE-3478: special case for local?
         WaitAckFuture fut = new WaitAckFuture(futIdCntr.incrementAndGet(), crdId, false);
 
         ackFuts.put(fut.id, fut);
@@ -756,7 +752,6 @@ public class MvccProcessor extends GridProcessorAdapter {
 
         long nextCtr = mvccCntr.incrementAndGet();
 
-        // TODO IGNITE-3478 sorted? + change GridLongList.writeTo?
         MvccVersionResponse res = new MvccVersionResponse();
 
         long minActive = Long.MAX_VALUE;
@@ -796,7 +791,7 @@ public class MvccProcessor extends GridProcessorAdapter {
      * @param txCntr Counter assigned to transaction.
      */
     private void onTxDone(Long txCntr) {
-        GridFutureAdapter fut; // TODO IGNITE-3478.
+        GridFutureAdapter fut;
 
         GridCacheVersion ver = activeTxs.remove(txCntr);
 

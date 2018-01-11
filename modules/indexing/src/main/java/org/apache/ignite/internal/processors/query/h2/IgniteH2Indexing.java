@@ -3176,7 +3176,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
                 else {
                     try {
-                        mvccProc.requestTxCounter(crd, new MvccTxResponseListener(tx), tx.nearXidVersion()).get();
+                        mvccProc.requestTxCounter(crd, new MvccTxResponseListener(tx), tx.nearXidVersion()).get(); // TODO IGNITE-7388
                     }
                     catch (IgniteCheckedException e) {
                         throw new CacheException(e);

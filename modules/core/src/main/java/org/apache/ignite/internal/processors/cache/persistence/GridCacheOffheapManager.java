@@ -52,8 +52,8 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCounter;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -579,7 +579,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     /** {@inheritDoc} */
     @Override public IgniteRebalanceIterator rebalanceIterator(int part, AffinityTopologyVersion topVer,
         Long partCntrSince) throws IgniteCheckedException {
-        if (partCntrSince == null)
+        if (partCntrSince == null || grp.mvccEnabled()) // TODO IGNITE-7384
             return super.rebalanceIterator(part, topVer, partCntrSince);
 
         GridCacheDatabaseSharedManager database = (GridCacheDatabaseSharedManager)ctx.database();
@@ -835,17 +835,17 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public long mvccCounter() {
-            return 0; // TODO IGNITE-3478.
+            return 0;  // TODO IGNITE-7384
         }
 
         /** {@inheritDoc} */
         @Override public long mvccCoordinatorVersion() {
-            return 0; // TODO IGNITE-3478.
+            return 0; // TODO IGNITE-7384
         }
 
         /** {@inheritDoc} */
         @Override public boolean removed() {
-            return false;  // TODO IGNITE-3478.
+            return false; // TODO IGNITE-7384
         }
     }
 

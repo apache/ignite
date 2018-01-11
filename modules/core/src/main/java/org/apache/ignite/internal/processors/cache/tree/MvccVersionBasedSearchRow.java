@@ -76,7 +76,6 @@ public class MvccVersionBasedSearchRow extends SearchRow implements BPlusTree.Tr
         if (ver.activeTransactions().size() > 0) {
             long rowCrdVer = unmaskCoordinatorVersion(crdVerMasked);
 
-            // TODO IGNITE-3478 sort active transactions?
             if (rowCrdVer == ver.coordinatorVersion())
                 visible = !ver.activeTransactions().contains(rowIo.getMvccCounter(pageAddr, idx));
         }

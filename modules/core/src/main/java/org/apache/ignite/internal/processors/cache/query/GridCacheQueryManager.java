@@ -1446,7 +1446,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             final MvccCoordinator mvccCrd;
 
-            // TODO IGNITE-3478.
+            // TODO IGNITE-6353
             if (cctx.mvccEnabled()) {
                 mvccCrd = cctx.affinity().mvccCoordinator(cctx.shared().exchange().readyAffinityVersion());
 

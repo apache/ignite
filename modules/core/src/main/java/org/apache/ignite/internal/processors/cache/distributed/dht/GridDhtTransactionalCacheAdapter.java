@@ -681,7 +681,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             GridDhtTopologyFuture topFut = top.topologyVersionFuture();
 
             if (!topFut.isDone() || !topFut.topologyVersion().equals(req.topologyVersion())) {
-                // TODO IGNITE-4191 Wait for topology change, remap client TX in case affinity was changed.
+                // TODO IGNITE-7164 Wait for topology change, remap client TX in case affinity was changed.
                 top.readUnlock();
 
                 GridNearTxQueryEnlistResponse res = new GridNearTxQueryEnlistResponse(
@@ -722,9 +722,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     false,
                     ctx.ioPolicy(),
                     PESSIMISTIC,
-                    REPEATABLE_READ, // TODO
+                    REPEATABLE_READ,
                     req.timeout(),
-                    false, // TODO
+                    false,
                     false,
                     false,
                     -1,
@@ -732,7 +732,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     req.subjectId(),
                     req.taskNameHash());
 
-                // if (req.syncCommit()) TODO
+                // if (req.syncCommit())
                 tx.syncMode(FULL_SYNC);
 
                 tx = ctx.tm().onCreated(null, tx);
@@ -1527,7 +1527,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                         tx != null ? tx.resolveTaskName() : null,
                                         null,
                                         req.keepBinary(),
-                                        null); // TODO IGNITE-3478
+                                        null); // TODO IGNITE-7371
                                 }
 
                                 assert e.lockedBy(mappedVer) ||

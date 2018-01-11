@@ -605,7 +605,7 @@ public class IgniteTxHandler {
         if (expVer.equals(curVer))
             return false;
 
-        // TODO IGNITE-3478 check mvcc crd for mvcc enabled txs.
+        // TODO IGNITE-6754 check mvcc crd for mvcc enabled txs.
 
         for (IgniteTxEntry e : F.concat(false, req.reads(), req.writes())) {
             GridCacheContext ctx = e.context();
@@ -1657,7 +1657,7 @@ public class IgniteTxHandler {
                                                 tx.resolveTaskName(),
                                                 /*expiryPlc*/null,
                                                 /*keepBinary*/true,
-                                                null); // TODO IGNITE-3478
+                                                null); // TODO IGNITE-7371
 
                                             if (val == null)
                                                 val = cacheCtx.toCacheObject(cacheCtx.store().load(null, entry.key()));

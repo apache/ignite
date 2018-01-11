@@ -901,7 +901,7 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 131: // TODO IGNITE-3478 fix constants.
+            case 131:
                 msg = new MvccAckRequestTx();
 
                 break;

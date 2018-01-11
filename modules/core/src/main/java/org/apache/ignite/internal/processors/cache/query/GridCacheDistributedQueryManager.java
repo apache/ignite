@@ -535,7 +535,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
             String clsName = qry.query().queryClassName();
 
-            // TODO IGNITE-3478.
+            // TODO IGNITE-6353
             final MvccCoordinator mvccCrd;
             final MvccVersion mvccVer;
 

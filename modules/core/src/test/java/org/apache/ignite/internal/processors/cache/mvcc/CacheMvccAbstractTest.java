@@ -810,7 +810,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
             assertTrue(ackFuts.isEmpty());
 
-            // TODO IGNITE-3478
+            // TODO IGNITE-6739
             // checkActiveQueriesCleanup(node);
         }
     }

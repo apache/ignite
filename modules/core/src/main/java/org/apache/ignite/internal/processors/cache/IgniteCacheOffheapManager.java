@@ -292,7 +292,6 @@ public interface IgniteCacheOffheapManager {
     public int onUndeploy(ClassLoader ldr);
 
     /**
-     * TODO IGNITE-3478, review usages, pass correct version.
      *
      * @param cacheId Cache ID.
      * @param primary Primary entries flag.

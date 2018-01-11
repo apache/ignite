@@ -590,25 +590,37 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     @SuppressWarnings("unchecked")
     @Override public void addDiagnosticRequest(IgniteDiagnosticPrepareContext ctx) {
         if (!isDone()) {
-            // TODO IGNITE-3478 (mvcc wait txs fut)
             for (IgniteInternalFuture fut : futures()) {
                 if (!fut.isDone()) {
-                    MiniFuture f = (MiniFuture)fut;
+                    if (MiniFuture.class.isInstance(fut)) {
+                        MiniFuture f = (MiniFuture)fut;
 
-                    if (!f.node().isLocal()) {
-                        GridCacheVersion dhtVer = tx.xidVersion();
-                        GridCacheVersion nearVer = tx.nearXidVersion();
+                        if (!f.node().isLocal()) {
+                            GridCacheVersion dhtVer = tx.xidVersion();
+                            GridCacheVersion nearVer = tx.nearXidVersion();
 
-                        ctx.remoteTxInfo(f.node().id(), dhtVer, nearVer, "GridDhtTxFinishFuture " +
-                            "waiting for response [node=" + f.node().id() +
-                            ", topVer=" + tx.topologyVersion() +
-                            ", dhtVer=" + dhtVer +
-                            ", nearVer=" + nearVer +
-                            ", futId=" + futId +
-                            ", miniId=" + f.futId +
-                            ", tx=" + tx + ']');
+                            ctx.remoteTxInfo(f.node().id(), dhtVer, nearVer, "GridDhtTxFinishFuture " +
+                                "waiting for response [node=" + f.node().id() +
+                                ", topVer=" + tx.topologyVersion() +
+                                ", dhtVer=" + dhtVer +
+                                ", nearVer=" + nearVer +
+                                ", futId=" + futId +
+                                ", miniId=" + f.futId +
+                                ", tx=" + tx + ']');
 
-                        return;
+                            return;
+                        }
+                    }
+                    else if (MvccFuture.class.isInstance(fut)) {
+                        MvccFuture f = (MvccFuture)fut;
+
+                        if (!cctx.localNodeId().equals(f.coordinatorNodeId())) {
+                            ctx.basicInfo(f.coordinatorNodeId(), "GridDhtTxFinishFuture " +
+                                "waiting for mvcc coordinator reply [mvccCrdNode=" + f.coordinatorNodeId() +
+                                ", loc=" + f.coordinatorNodeId().equals(cctx.localNodeId()) + ']');
+
+                            return;
+                        }
                     }
                 }
             }
