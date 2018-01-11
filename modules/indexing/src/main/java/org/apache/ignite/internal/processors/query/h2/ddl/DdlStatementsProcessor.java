@@ -382,6 +382,10 @@ public class DdlStatementsProcessor {
                 else {
                     assert tbl.rowDescriptor() != null;
 
+                    if (tbl.cache().mvccEnabled())
+                        throw new IgniteSQLException("Cannot drop column(s) with enabled MVCC. " +
+                            "Operation is unsupported at the moment.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
                     if (QueryUtils.isSqlType(tbl.rowDescriptor().type().valueClass()))
                         throw new SchemaOperationException("Cannot drop column(s) because table was created " +
                             "with " + PARAM_WRAP_VALUE + "=false option.");
