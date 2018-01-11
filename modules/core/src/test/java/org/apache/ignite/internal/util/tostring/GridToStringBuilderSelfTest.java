@@ -190,10 +190,6 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testToStringSizeLimits() throws Exception {
-        // TODO IGNITE-7195
-        if (true)
-            return;
-
         int limit = IgniteSystemProperties.getInteger(IGNITE_TO_STRING_MAX_LENGTH, 10_000);
         int tailLen = limit / 10 * 2;
         StringBuilder sb = new StringBuilder(limit + 10);
@@ -201,14 +197,14 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
             sb.append('a');
         }
         String actual = GridToStringBuilder.toString(TestClass2.class, new TestClass2(sb.toString()));
-        String expected = "TestClass2 [str=" + sb.toString() + "]";
+        String expected = "TestClass2 [str=" + sb.toString() + ", nullArr=null]";
         assertEquals(expected, actual);
 
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 110; i++) {
             sb.append('b');
         }
         actual = GridToStringBuilder.toString(TestClass2.class, new TestClass2(sb.toString()));
-        expected = "TestClass2 [str=" + sb.toString() + "]";
+        expected = "TestClass2 [str=" + sb.toString() + ", nullArr=null]";
         assertEquals(expected.substring(0, limit - tailLen), actual.substring(0, limit - tailLen));
         assertEquals(expected.substring(expected.length() - tailLen), actual.substring(actual.length() - tailLen));
         assertTrue(actual.contains("... and"));
@@ -330,12 +326,22 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     *
+     */
     private static class TestClass2{
         /** */
         @SuppressWarnings("unused")
         @GridToStringInclude
         private String str;
 
+        /** */
+        @GridToStringInclude
+        private Object[] nullArr;
+
+        /**
+         * @param str String.
+         */
         public TestClass2(String str) {
             this.str = str;
         }
