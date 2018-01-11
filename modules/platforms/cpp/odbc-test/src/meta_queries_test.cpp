@@ -140,9 +140,7 @@ struct MetaQueriesTestSuiteFixture : public odbc::OdbcTestSuite
      */
     ~MetaQueriesTestSuiteFixture()
     {
-        Disconnect();
-
-        Ignition::StopAll(true);
+        // No-op.
     }
 
     /** Node started during the test. */

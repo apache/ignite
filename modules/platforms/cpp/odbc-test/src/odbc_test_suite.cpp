@@ -86,15 +86,22 @@ namespace ignite
 
         void OdbcTestSuite::Disconnect()
         {
-            // Releasing statement handle.
-            SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+            if (stmt)
+            {
+                // Releasing statement handle.
+                SQLFreeHandle(SQL_HANDLE_STMT, stmt);
 
-            // Disconneting from the server.
-            SQLDisconnect(dbc);
+                // Disconneting from the server.
+                SQLDisconnect(dbc);
 
-            // Releasing allocated handles.
-            SQLFreeHandle(SQL_HANDLE_DBC, dbc);
-            SQLFreeHandle(SQL_HANDLE_ENV, env);
+                // Releasing allocated handles.
+                SQLFreeHandle(SQL_HANDLE_DBC, dbc);
+                SQLFreeHandle(SQL_HANDLE_ENV, env);
+
+                stmt = NULL;
+                dbc = NULL;
+                env = NULL;
+            }
         }
 
         Ignite OdbcTestSuite::StartTestNode(const char* cfg, const char* name)

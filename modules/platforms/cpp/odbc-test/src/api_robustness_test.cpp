@@ -150,9 +150,7 @@ struct ApiRobustnessTestSuiteFixture : public odbc::OdbcTestSuite
      */
     ~ApiRobustnessTestSuiteFixture()
     {
-        Disconnect();
-
-        Ignition::StopAll(true);
+        // No-op.
     }
 
     /** Node started during the test. */
