@@ -117,6 +117,28 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    public void testConnectionTrustAll() throws Exception {
+        setSslCtxFactoryToCli = true;
+        sslCtxFactory = getTestSslContextFactory();
+
+        startGrids(1);
+
+        try {
+            try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?useSSL=true" +
+                "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
+                "&sslClientCertificateKeyStorePassword=123456" +
+                "&sslTrustAll=true")) {
+                checkConnection(conn);
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testConnectionUseIgniteFactory() throws Exception {
         setSslCtxFactoryToIgnite = true;
         sslCtxFactory = getTestSslContextFactory();

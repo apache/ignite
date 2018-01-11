@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.jdbc.thin;
 
 import java.sql.SQLException;
+import javax.net.ssl.TrustManager;
+import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
  * Provide access and manipulations with connection JDBC properties.
@@ -147,101 +149,199 @@ public interface ConnectionProperties {
     public void setSkipReducerOnUpdate(boolean skipReducerOnUpdate);
 
     /**
+     * Gets SSL connection flag.
+     *
      * @return Use SSL flag.
      */
     public boolean isUseSSL();
 
     /**
+     * Use SSL connection to Ignite node. In case set to {@code true} SSL context must be configured.
+     * {@link #setSslClientCertificateKeyStoreUrl} property and related properties must be set up
+     * or JSSE properties must be set up (see {@code javax.net.ssl.keyStore} and other {@code javax.net.ssl.*}
+     * properties)
+     *
+     * In case set to {@code false} plain connection is used. Default value is {@code false}
+     *
      * @param useSSL Use SSL flag.
      */
     public void setUseSSL(boolean useSSL);
 
     /**
+     * Gets protocol for secure transport.
+     *
      * @return SSL protocol name.
      */
-    public String sslProtocol();
+    public String getSslProtocol();
 
     /**
+     * Sets protocol for secure transport. If not specified, TLS protocol will be used.
+     * Protocols implementations supplied by JSEE: SSLv3 (SSL), TLSv1 (TLS), TLSv1.1, TLSv1.2
+     *
+     * <p>See more at JSSE Reference Guide.
+     *
      * @param sslProtocol SSL protocol name.
      */
     public void setSslProtocol(String sslProtocol);
 
     /**
+     * Gets algorithm that will be used to create a key manager.
+     *
+     * @return Key manager algorithm.
+     */
+    public String getSslKeyAlgorithm();
+
+    /**
+     * Sets key manager algorithm that will be used to create a key manager. Notice that in most cased default value
+     * suites well, however, on Android platform this value need to be set to <tt>X509<tt/>.
+     * Algorithms implementations supplied by JSEE: PKIX (X509 or SunPKIX), SunX509
+     *
+     * <p>See more at JSSE Reference Guide.
+     *
+     * @param keyAlgorithm Key algorithm name.
+     */
+    public void setSslKeyAlgorithm(String keyAlgorithm);
+
+    /**
+     * Gets the key store URL.
+     *
      * @return Client certificate KeyStore URL.
      */
     public String getSslClientCertificateKeyStoreUrl();
 
     /**
+     * Sets path to the key store file. This is a mandatory parameter since
+     * ssl context could not be initialized without key manager.
+     *
+     * In case {@link #isUseSSL()} is enabled and key store URL isn't specified by Ignite properties (e.g. at JDBC URL)
+     * the JSSE property {@code javax.net.ssl.keyStore} will be used.
+     *
      * @param url Client certificate KeyStore URL.
      */
     public void setSslClientCertificateKeyStoreUrl(String url);
 
     /**
+     * Gets key store password.
+     *
      * @return Client certificate KeyStore password.
      */
     public String getSslClientCertificateKeyStorePassword();
 
     /**
+     * Sets key store password.
+     *
+     * In case {@link #isUseSSL()} is enabled and key store password isn't specified by Ignite properties
+     * (e.g. at JDBC URL) the JSSE property {@code javax.net.ssl.keyStorePassword} will be used.
+     *
      * @param passwd Client certificate KeyStore password.
      */
     public void setSslClientCertificateKeyStorePassword(String passwd);
 
     /**
+     * Gets key store type used for context creation.
+     *
      * @return Client certificate KeyStore type.
      */
     public String getSslClientCertificateKeyStoreType();
 
     /**
+     * Sets key store type used in context initialization.
+     *
+     * In case {@link #isUseSSL()} is enabled and key store type isn't specified by Ignite properties (e.g. at JDBC URL)
+     * the JSSE property {@code javax.net.ssl.keyStoreType} will be used.
+     * In case both Ignite properties and JSSE properties are not set the default 'JKS' type is used.
+     *
+     * <p>See more at JSSE Reference Guide.
+     *
      * @param ksType Client certificate KeyStore type.
      */
     public void setSslClientCertificateKeyStoreType(String ksType);
 
     /**
+     * Gets the trust store URL.
+     *
      * @return Trusted certificate KeyStore URL.
      */
     public String getSslTrustCertificateKeyStoreUrl();
 
     /**
+     * Sets path to the trust store file. This is an optional parameter,
+     * however one of the {@code setSslTrustCertificateKeyStoreUrl(String)}, {@link #setSslTrustAll(boolean)}
+     * properties must be set.
+     *
+     * In case {@link #isUseSSL()} is enabled and trust store URL isn't specified by Ignite properties
+     * (e.g. at JDBC URL) the JSSE property {@code javax.net.ssl.trustStore} will be used.
+     *
      * @param url Trusted certificate KeyStore URL.
      */
     public void setSslTrustCertificateKeyStoreUrl(String url);
 
     /**
+     * Gets trust store password.
+     *
      * @return Trusted certificate KeyStore password.
      */
     public String getSslTrustCertificateKeyStorePassword();
 
     /**
+     * Sets trust store password.
+     *
+     * In case {@link #isUseSSL()} is enabled and trust store password isn't specified by Ignite properties
+     * (e.g. at JDBC URL) the JSSE property {@code javax.net.ssl.trustStorePassword} will be used.
+     *
      * @param passwd Trusted certificate KeyStore password.
      */
     public void setSslTrustCertificateKeyStorePassword(String passwd);
 
     /**
+     * Gets trust store type.
+     *
      * @return Trusted certificate KeyStore type.
      */
     public String getSslTrustCertificateKeyStoreType();
 
     /**
+     * Sets trust store type.
+     *
+     * In case {@link #isUseSSL()} is enabled and trust store type isn't specified by Ignite properties
+     * (e.g. at JDBC URL) the JSSE property {@code javax.net.ssl.trustStoreType} will be used.
+     * In case both Ignite properties and JSSE properties are not set the default 'JKS' type is used.
+     *
      * @param ksType Trusted certificate KeyStore type.
      */
     public void setSslTrustCertificateKeyStoreType(String ksType);
 
     /**
+     * Gets trust any server certificate flag.
+     *
      * @return Trust all certificates flag.
      */
     public boolean isSslTrustAll();
 
     /**
+     * Sets to {@code true} to trust any server certificate (revoked, expired or self-signed SSL certificates).
+     *
+     * <p> Defaults is {@code false}.
+     *
+     * Note: Do not enable this option in production you are ever going to use
+     * on a network you do not entirely trust. Especially anything going over the public internet.
+     *
      * @param trustAll Trust all certificates flag.
      */
     public void setSslTrustAll(boolean trustAll);
 
     /**
+     * Gets the class name of the custom implementation of the Factory&lt;SSLSocketFactory&gt;.
+     *
      * @return Custom class name that implements Factory&lt;SSLSocketFactory&gt;.
      */
     public String getSslFactory();
 
     /**
+     * Sets the class name of the custom implementation of the Factory&lt;SSLSocketFactory&gt;.
+     * If {@link #isUseSSL()} property is enabled and factory is specified the custom factory will be used
+     * instead of JSSE socket factory. So, other SSL properties will be ignored.
+     *
      * @param sslFactory Custom class name that implements Factory&lt;SSLSocketFactory&gt;.
      */
     public void setSslFactory(String sslFactory);

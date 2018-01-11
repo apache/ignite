@@ -90,53 +90,57 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private BooleanProperty skipReducerOnUpdate = new BooleanProperty(
         "skipReducerOnUpdate", "Enable execution update queries on ignite server nodes", false, false);
 
-    /** Lazy query execution property. */
+    /** SSL: Use SSL connection to Ignite node. */
     private BooleanProperty useSSL = new BooleanProperty("useSSL",
         "Use SSL connection", false, false);
 
-    /** Client certificate key store url. */
+    /** SSL: Client certificate key store url. */
     private StringProperty sslProtocol = new StringProperty("sslProtocol",
         "SSL protocol name", null,  null, false, null);
 
-    /** Client certificate key store url. */
+    /** SSL: Key algorithm name. */
+    private StringProperty sslKeyAlgorithm = new StringProperty("sslKeyAlgorithm",
+        "SSL key algorithm name", "SunX509",  null, false, null);
+
+    /** SSL: Client certificate key store url. */
     private StringProperty sslClientCertificateKeyStoreUrl =
         new StringProperty("sslClientCertificateKeyStoreUrl",
         "Client certificate key store URL",
         null, null, false, null);
 
-    /** Client certificate key store password. */
+    /** SSL: Client certificate key store password. */
     private StringProperty sslClientCertificateKeyStorePassword =
         new StringProperty("sslClientCertificateKeyStorePassword",
         "Client certificate key store password",
             null, null, false, null);
 
-    /** Client certificate key store type. */
+    /** SSL: Client certificate key store type. */
     private StringProperty sslClientCertificateKeyStoreType =
         new StringProperty("sslClientCertificateKeyStoreType",
         "Client certificate key store type",
             null, null, false, null);
 
-    /** Trusted certificate key store url. */
+    /** SSL: Trusted certificate key store url. */
     private StringProperty sslTrustCertificateKeyStoreUrl =
         new StringProperty("sslTrustCertificateKeyStoreUrl",
         "Trusted certificate key store URL", null, null, false, null);
 
-    /** Trusted certificate key store password. */
+    /** SSL Trusted certificate key store password. */
     private StringProperty sslTrustCertificateKeyStorePassword =
         new StringProperty("sslTrustCertificateKeyStorePassword",
         "Trusted certificate key store password", null, null, false, null);
 
-    /** Trusted certificate key store type. */
+    /** SSL: Trusted certificate key store type. */
     private StringProperty sslTrustCertificateKeyStoreType =
         new StringProperty("sslTrustCertificateKeyStoreType",
         "Trusted certificate key store type",
             null, null, false, null);
 
-    /** Trust all certificates. */
+    /** SSL: Trust all certificates. */
     private BooleanProperty sslTrustAll = new BooleanProperty("sslTrustAll",
         "Trust all certificates",false, false);
 
-    /** Custom class name that implements Factory&lt;SSLSocketFactory&gt;. */
+    /** SSL: Custom class name that implements Factory&lt;SSLSocketFactory&gt;. */
     private StringProperty sslFactory = new StringProperty("sslFactory",
         "Custom class name that implements Factory<SSLSocketFactory>", null, null, false, null);
 
@@ -145,7 +149,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         host, port,
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
         tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate,
-        useSSL, sslProtocol,
+        useSSL, sslProtocol, sslKeyAlgorithm,
         sslClientCertificateKeyStoreUrl, sslClientCertificateKeyStorePassword, sslClientCertificateKeyStoreType,
         sslTrustCertificateKeyStoreUrl, sslTrustCertificateKeyStorePassword, sslTrustCertificateKeyStoreType,
         sslTrustAll, sslFactory
@@ -282,13 +286,23 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
-    @Override public String sslProtocol() {
+    @Override public String getSslProtocol() {
         return sslProtocol.value();
     }
 
     /** {@inheritDoc} */
     @Override public void setSslProtocol(String sslProtocol) {
         this.sslProtocol.setValue(sslProtocol);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getSslKeyAlgorithm() {
+        return sslKeyAlgorithm.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSslKeyAlgorithm(String keyAlgorithm) {
+        sslKeyAlgorithm.setValue(keyAlgorithm);
     }
 
     /** {@inheritDoc} */
