@@ -1881,7 +1881,8 @@ export default class IgniteConfigurationGenerator {
     /**
      * Generate eviction policy object.
      * @param {Object} ccfg Parent configuration.
-     * @param {String} name Property name.
+     * @param {Function} available Function to check feature is supported in Ignite current version.
+     * @param {Boolean} near Near cache flag.
      * @param {Object} src Source.
      * @param {Object} dflt Default.
      * @returns {Object} Parent configuration.
@@ -2335,7 +2336,7 @@ export default class IgniteConfigurationGenerator {
         this.cacheNodeFilter(cache, igfs ? [igfs] : [], ccfg);
         this.cacheConcurrency(cache, available, ccfg);
         this.cacheRebalance(cache, ccfg);
-        this.cacheNearServer(cache, ccfg);
+        this.cacheNearServer(cache, available, ccfg);
         this.cacheStatistics(cache, ccfg);
         this.cacheDomains(cache.domains, available, ccfg);
 
