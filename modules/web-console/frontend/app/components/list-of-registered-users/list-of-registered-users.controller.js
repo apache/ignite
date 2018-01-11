@@ -261,10 +261,6 @@ export default class IgniteListOfRegisteredUsersCtrl {
         }
     }
 
-    exportCsv() {
-        this.gridApi.exporter.csvExport('visible', 'visible');
-    }
-
     groupByUser() {
         this.groupBy = 'user';
 
