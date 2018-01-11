@@ -15,25 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
-
-import junit.framework.TestSuite;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.elb.TcpDiscoveryElbIpFinderSelfTest;
-import org.apache.ignite.testframework.IgniteTestSuite;
+package org.apache.ignite.internal.processors.query;
 
 /**
- * ELB IP finder test suite.
+ * Row cache cleaner is used by page memory manager to remove updated / evicted links from rows cache.
  */
-public class IgniteElbTestSuite extends TestSuite {
+public interface GridQueryRowCacheCleaner {
     /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
+     * Remove row by link.
+     *
+     * @param link Link to remove.
      */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new IgniteTestSuite("ELB Integration Test Suite");
-
-        suite.addTestSuite(TcpDiscoveryElbIpFinderSelfTest.class);
-
-        return suite;
-    }
+    void remove(long link);
 }

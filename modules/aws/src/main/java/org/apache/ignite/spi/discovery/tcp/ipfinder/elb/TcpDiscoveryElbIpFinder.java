@@ -20,11 +20,13 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
 import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
+import com.amazonaws.services.ec2.model.Reservation;
 import com.amazonaws.services.elasticloadbalancing.AmazonElasticLoadBalancing;
 import com.amazonaws.services.elasticloadbalancing.AmazonElasticLoadBalancingClientBuilder;
 import com.amazonaws.services.elasticloadbalancing.model.DescribeLoadBalancersRequest;
 import com.amazonaws.services.elasticloadbalancing.model.Instance;
 import com.amazonaws.services.elasticloadbalancing.model.LoadBalancerDescription;
+import java.util.ArrayList;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
@@ -34,7 +36,6 @@ import java.util.Collection;
 import java.util.List;
 
 import static com.amazonaws.util.StringUtils.isNullOrEmpty;
-import static java.util.stream.Collectors.toList;
 
 /**
  * AWS ELB-based IP finder.
@@ -67,7 +68,7 @@ public class TcpDiscoveryElbIpFinder extends TcpDiscoveryIpFinderAdapter {
     private AmazonEC2 amazonEC2Client;
 
     /** */
-    private AWSCredentialsProvider credentialsProvider;
+    private AWSCredentialsProvider credsProvider;
 
     /** */
     private String region;
@@ -82,47 +83,53 @@ public class TcpDiscoveryElbIpFinder extends TcpDiscoveryIpFinderAdapter {
         setShared(true);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Collection<InetSocketAddress> getRegisteredAddresses() throws IgniteSpiException {
+    /** {@inheritDoc} */
+    @Override public Collection<InetSocketAddress> getRegisteredAddresses() throws IgniteSpiException {
         initClients();
+
+        List<String> instanceIds = new ArrayList<>();
 
         DescribeLoadBalancersRequest req = new DescribeLoadBalancersRequest().withLoadBalancerNames(loadBalancerName);
 
-        List<String> instanceIds = amazonELBClient.describeLoadBalancers(req)
-            .getLoadBalancerDescriptions()
-            .stream()
-            .map(LoadBalancerDescription::getInstances)
-            .flatMap(instances -> instances.stream())
-            .map(Instance::getInstanceId)
-            .collect(toList());
+        List<LoadBalancerDescription> descs = amazonELBClient.describeLoadBalancers(req).getLoadBalancerDescriptions();
 
-        return amazonEC2Client.describeInstances(new DescribeInstancesRequest().withInstanceIds(instanceIds))
-            .getReservations()
-            .stream()
-            .flatMap(reservation -> reservation.getInstances().stream())
-            .map(instance -> new InetSocketAddress(instance.getPrivateIpAddress(), 0))
-            .collect(toList());
+        for (LoadBalancerDescription desc : descs) {
+            for (Instance instance : desc.getInstances())
+                instanceIds.add(instance.getInstanceId());
+        }
+
+        DescribeInstancesRequest instReq = new DescribeInstancesRequest().withInstanceIds(instanceIds);
+
+        List<Reservation> reservations = amazonEC2Client.describeInstances(instReq).getReservations();
+
+        List<InetSocketAddress> addrs = new ArrayList<>();
+
+        for (Reservation reservation : reservations) {
+            List<com.amazonaws.services.ec2.model.Instance> instances = reservation.getInstances();
+
+            for (com.amazonaws.services.ec2.model.Instance instance : instances)
+                addrs.add(new InetSocketAddress(instance.getPrivateIpAddress(), 0));
+        }
+
+        return addrs;
     }
 
     /**
      * Initializing the IP finder.
      */
     private void initClients() {
-        if (credentialsProvider == null || isNullOrEmpty(loadBalancerName) || isNullOrEmpty(region))
+        if (credsProvider == null || isNullOrEmpty(loadBalancerName) || isNullOrEmpty(region))
             throw new IgniteSpiException("One or more configuration parameters are invalid [setCredentialsProvider=" +
-                credentialsProvider + ", setRegion=" + region + ", setLoadBalancerName=" +
+                credsProvider + ", setRegion=" + region + ", setLoadBalancerName=" +
                 loadBalancerName + "]");
 
         if (amazonEC2Client == null)
-            amazonEC2Client = AmazonEC2ClientBuilder.standard().withRegion(region).withCredentials(credentialsProvider)
+            amazonEC2Client = AmazonEC2ClientBuilder.standard().withRegion(region).withCredentials(credsProvider)
                 .build();
 
         if (amazonELBClient == null)
             amazonELBClient = AmazonElasticLoadBalancingClientBuilder.standard().withRegion(region)
-                .withCredentials(credentialsProvider).build();
+                .withCredentials(credsProvider).build();
     }
 
     /**
@@ -153,27 +160,20 @@ public class TcpDiscoveryElbIpFinder extends TcpDiscoveryIpFinderAdapter {
      *
      * For details refer to Amazon API reference.
      *
-     * @param credentialsProvider AWS credentials provider.
-     * @return {@code this} for chaining.
+     * @param credsProvider AWS credentials provider.
      */
     @IgniteSpiConfiguration(optional = false)
-    public void setCredentialsProvider(AWSCredentialsProvider credentialsProvider) {
-        this.credentialsProvider = credentialsProvider;
+    public void setCredentialsProvider(AWSCredentialsProvider credsProvider) {
+        this.credsProvider = credsProvider;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void registerAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
+    /** {@inheritDoc} */
+    @Override public void registerAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
         //No-op, ELB will take care of registration.
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void unregisterAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
+    /** {@inheritDoc} */
+    @Override public void unregisterAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
         // No-op, ELB will take care of this process.
     }
 }
