@@ -208,8 +208,6 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
 
             ensureClientPermissions(clientType);
 
-            assert connCtx != null;
-
             if (connCtx.isVersionSupported(ver)) {
                 connCtx.initializeFromHandshake(ver, reader);
 
