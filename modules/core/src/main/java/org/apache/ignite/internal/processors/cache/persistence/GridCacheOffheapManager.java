@@ -402,7 +402,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      */
     private static long writeSharedGroupCacheSizes(PageMemory pageMem, int grpId,
         long cntrsPageId, int partId, Map<Integer, Long> sizes) throws IgniteCheckedException {
-        byte[] data = PagePartitionCountersIO.serializeCacheSizes(sizes);
+        byte[] data = PagePartitionCountersIO.VERSIONS.latest().serializeCacheSizes(sizes);
 
         int items = data.length / PagePartitionCountersIO.ITEM_SIZE;
         boolean init = cntrsPageId == 0;
