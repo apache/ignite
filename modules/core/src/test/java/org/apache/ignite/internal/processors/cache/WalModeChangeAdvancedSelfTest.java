@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import com.mchange.v2.c3p0.util.TestUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.testframework.GridTestUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,14 +27,18 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+
 /**
- * Concurrent test for WAL state change.
+ * Concurrent and advanced tests for WAL state change.
  */
-public class WalModeChangeConcurrentSelfTest extends WalModeChangeCommonAbstractSelfTest {
+@SuppressWarnings("unchecked")
+public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSelfTest {
     /**
      * Constructor.
      */
-    public WalModeChangeConcurrentSelfTest() {
+    public WalModeChangeAdvancedSelfTest() {
         super(false);
     }
 
@@ -54,12 +54,75 @@ public class WalModeChangeConcurrentSelfTest extends WalModeChangeCommonAbstract
         deleteWorkFiles();
     }
 
+    /** {@inheritDoc} */
+    public void testCacheCleanup() throws Exception {
+        Ignite srv = startGrid(config(SRV_1, false, false));
+
+        srv.active(true);
+
+        IgniteCache cache1 = srv.getOrCreateCache(cacheConfig(CACHE_NAME, PARTITIONED, TRANSACTIONAL));
+        IgniteCache cache2 = srv.getOrCreateCache(cacheConfig(CACHE_NAME_2, PARTITIONED, TRANSACTIONAL));
+
+        assertForAllNodes(CACHE_NAME, true);
+        assertForAllNodes(CACHE_NAME_2, true);
+
+        for (int i = 0; i < 10; i++) {
+            cache1.put(i, i);
+            cache2.put(i, i);
+        }
+
+        srv.cluster().walDisable(CACHE_NAME);
+
+        assertForAllNodes(CACHE_NAME, false);
+        assertForAllNodes(CACHE_NAME_2, true);
+
+        for (int i = 10; i < 20; i++) {
+            cache1.put(i, i);
+            cache2.put(i, i);
+        }
+
+        srv.cluster().walDisable(CACHE_NAME_2);
+
+        assertForAllNodes(CACHE_NAME, false);
+        assertForAllNodes(CACHE_NAME_2, false);
+
+        for (int i = 20; i < 30; i++) {
+            cache1.put(i, i);
+            cache2.put(i, i);
+        }
+
+        assertEquals(cache1.size(), 30);
+        assertEquals(cache2.size(), 30);
+
+        srv.cluster().walEnable(CACHE_NAME);
+
+        assertForAllNodes(CACHE_NAME, true);
+        assertForAllNodes(CACHE_NAME_2, false);
+
+        assertEquals(cache1.size(), 30);
+        assertEquals(cache2.size(), 30);
+
+        stopAllGrids(true);
+
+        srv = startGrid(config(SRV_1, false, false));
+
+        srv.active(true);
+
+        cache1 = srv.getOrCreateCache(cacheConfig(CACHE_NAME, PARTITIONED, TRANSACTIONAL));
+        cache2 = srv.getOrCreateCache(cacheConfig(CACHE_NAME_2, PARTITIONED, TRANSACTIONAL));
+
+        assertForAllNodes(CACHE_NAME, true);
+        assertForAllNodes(CACHE_NAME_2, false);
+
+        assertEquals(cache1.size(), 30);
+        assertEquals(cache2.size(), 0);
+    }
+
     /**
      * Test that concurrent enable/disable events doesn't leave to hangs.
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     public void testConcurrentOperations() throws Exception {
         final Ignite srv1 = startGrid(config(SRV_1, false, false));
         final Ignite srv2 = startGrid(config(SRV_2, false, false));
@@ -71,7 +134,7 @@ public class WalModeChangeConcurrentSelfTest extends WalModeChangeCommonAbstract
 
         cacheCli.active(true);
 
-        final IgniteCache cache = cacheCli.getOrCreateCache(cacheConfig(CacheMode.PARTITIONED));
+        final IgniteCache cache = cacheCli.getOrCreateCache(cacheConfig(PARTITIONED));
 
         for (int i = 0; i < 3; i++) {
             // Start pushing requests.

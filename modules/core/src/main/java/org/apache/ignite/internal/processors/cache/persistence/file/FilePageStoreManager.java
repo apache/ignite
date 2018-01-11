@@ -636,7 +636,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void beforeCacheGroupStart(CacheGroupDescriptor grpDesc) {
-        if (!walEnabled(grpDesc.groupId())) {
+        if (grpDesc.persistenceEnabled() && !walEnabled(grpDesc.groupId())) {
             File dir = cacheWorkDir(grpDesc.config());
 
             assert dir.exists();
@@ -644,6 +644,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             boolean res = IgniteUtils.delete(dir);
 
             assert res;
+
+            grpDesc.walEnabled(false);
         }
     }
 
