@@ -46,10 +46,6 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
 
     // TODO: Test node failures (one thread spans messages, another kills oldest node and create another one)
 
-    // TODO: Test concurrent requests from different nodes, count success/error rates
-
-    // TODO: Test with concurrent cache operations.
-
     /** Whether coordinator node should be filtered out. */
     private final boolean filterOnCrd;
 
