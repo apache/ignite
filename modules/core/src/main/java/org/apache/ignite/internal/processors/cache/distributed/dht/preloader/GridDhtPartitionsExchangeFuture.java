@@ -717,7 +717,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void initCachesOnLocalJoin() throws IgniteCheckedException {
         cctx.activate();
 
-        LocalJoinCachesContext locJoinCtx = cctx.cache().localJoinCachesContext();
+        LocalJoinCachesContext locJoinCtx = exchActions == null ? null : exchActions.localJoinContext();
 
         List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> caches = locJoinCtx == null ? null :
             locJoinCtx.caches();
