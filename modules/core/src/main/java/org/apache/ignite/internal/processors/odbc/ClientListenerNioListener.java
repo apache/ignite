@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -202,12 +201,28 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
 
         byte clientType = reader.readByte();
 
-        ClientListenerConnectionContext connCtx = prepareContext(clientType);
+        ClientListenerConnectionContext connCtx = null;
 
         try {
+            connCtx = prepareContext(clientType);
+
             ensureClientPermissions(clientType);
+
+            assert connCtx != null;
+
+            if (connCtx.isVersionSupported(ver)) {
+                connCtx.initializeFromHandshake(ver, reader);
+
+                ses.addMeta(CONN_CTX_META_KEY, connCtx);
+            }
+            else
+                throw new IgniteCheckedException("Unsupported version: " + ver.toString());
+
+            connCtx.handler().writeHandshake(writer);
         }
         catch (IgniteCheckedException e) {
+            log.error("Error on handshake. " + e.getMessage(), e);
+
             ClientListenerProtocolVersion currVer;
 
             if (connCtx == null)
@@ -219,40 +234,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
             writer.writeShort(currVer.major());
             writer.writeShort(currVer.minor());
             writer.writeShort(currVer.maintenance());
-
             writer.doWriteString(e.getMessage());
-
-            ses.send(writer.array());
-
-            return;
-        }
-
-        assert connCtx != null;
-
-        String errMsg = null;
-
-        if (connCtx.isVersionSupported(ver)) {
-            connCtx.initializeFromHandshake(ver, reader);
-
-            ses.addMeta(CONN_CTX_META_KEY, connCtx);
-        }
-        else {
-            log.warning("Unsupported version: " + ver.toString());
-
-            errMsg = "Unsupported version.";
-        }
-
-        if (errMsg == null)
-            connCtx.handler().writeHandshake(writer);
-        else {
-            ClientListenerProtocolVersion currentVer = connCtx.currentVersion();
-
-            // Failed handshake response
-            writer.writeBoolean(false);
-            writer.writeShort(currentVer.major());
-            writer.writeShort(currentVer.minor());
-            writer.writeShort(currentVer.maintenance());
-            writer.doWriteString(errMsg);
         }
 
         ses.send(writer.array());
@@ -263,8 +245,9 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
      *
      * @param clientType Client type.
      * @return Context.
+     * @throws IgniteCheckedException If failed.
      */
-    private ClientListenerConnectionContext prepareContext(byte clientType) {
+    private ClientListenerConnectionContext prepareContext(byte clientType) throws IgniteCheckedException {
         switch (clientType) {
             case ODBC_CLIENT:
                 return new OdbcConnectionContext(ctx, busyLock, maxCursors);
@@ -276,7 +259,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
                 return new ClientConnectionContext(ctx, maxCursors);
         }
 
-        return null;
+        throw new IgniteCheckedException("Unknown client type: " + clientType);
     }
 
     /**
