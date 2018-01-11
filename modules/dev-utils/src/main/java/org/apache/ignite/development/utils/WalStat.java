@@ -54,20 +54,12 @@ public class WalStat {
 
     /** Page snapshot types. */
     private final Map<String, RecordSizeCountStat> pageSnapshotTypes = new TreeMap<>();
-    /** Page snapshot partition. */
-    private final Map<Integer, RecordSizeCountStat> pageSnapshotPart = new TreeMap<>();
+
     /** Page snapshot indexes. */
     private final Map<Integer, RecordSizeCountStat> pageSnapshotIndexes = new TreeMap<>();
+
     /** Page snapshot cache groups. */
     private final Map<Integer, RecordSizeCountStat> pageSnapshotCacheGroups = new TreeMap<>();
-
-    /**
-     * @param key
-     * @param record
-     */
-    private void registerRecSize(String key, WALRecord record) {
-        computeStatIfAbsent(key, record, recTypeSizes);
-    }
 
     /**
      * @param key
@@ -87,7 +79,6 @@ public class WalStat {
      * @param record
      */
     void registerRecord(WALRecord.RecordType type, WALRecord record) {
-        String key = type.toString();
         if (type == WALRecord.RecordType.PAGE_RECORD)
             registerPageSnapshot((PageSnapshot)record);
         else if (type == WALRecord.RecordType.DATA_RECORD)
@@ -95,7 +86,7 @@ public class WalStat {
         else if (type == WALRecord.RecordType.TX_RECORD)
             registerTxRecord((TxRecord)record);
 
-        registerRecSize(key, record);
+        computeStatIfAbsent(type.toString(), record, recTypeSizes);
     }
 
     /**
