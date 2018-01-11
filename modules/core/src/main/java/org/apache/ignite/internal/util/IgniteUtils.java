@@ -4237,14 +4237,20 @@ public abstract class IgniteUtils {
 
     /**
      * Depending on whether or not log is provided and quiet mode is enabled logs given
-     * messages as quiet message or normal log WARN message. If {@code log} is {@code null}
-     * or in QUIET mode it will add {@code (wrn)} prefix to the message.
+     * messages as quiet message or normal log WARN message with {@link IgniteLogger#DEV_ONLY DEV_ONLY} marker.
+     * If {@code log} is {@code null} or in QUIET mode it will add {@code (wrn)} prefix to the message.
+     * If property {@link IgniteSystemProperties#IGNITE_DEV_ONLY_WARNINGS_DISABLED IGNITE_DEV_ONLY_WARNINGS_DISABLED}
+     * is set to true, the message will not be logged.
      *
      * @param log Optional logger to use when QUIET mode is not enabled.
      * @param msg Message to log.
      */
     public static void warnDev(@Nullable IgniteLogger log, Object msg) {
         assert msg != null;
+
+        // don't log message if DEV_ONLY messages are disabled
+        if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DEV_ONLY_WARNINGS_DISABLED))
+            return;
 
         if (log != null)
             log.warning(IgniteLogger.DEV_ONLY, compact(msg.toString()), null);

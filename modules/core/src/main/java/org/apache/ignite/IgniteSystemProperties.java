@@ -764,6 +764,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID = "IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID";
 
     /**
+     * When set to {@code true}, warnings that are intended for development environments and not for production
+     * (such as coding mistakes in code using Ignite) will not be logged.
+     */
+    public static final String IGNITE_DEV_ONLY_WARNINGS_DISABLED = "IGNITE_DEV_ONLY_WARNINGS_DISABLED";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
