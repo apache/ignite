@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Client
         /// <summary>
         /// Default socket buffer size.
         /// </summary>
-        public const int DefaultSocketBufferSize = 0;
+        public const int DefaultSocketBufferSize = 64 * 1024;
 
         /// <summary>
         /// Default value of <see cref="TcpNoDelay" /> property.

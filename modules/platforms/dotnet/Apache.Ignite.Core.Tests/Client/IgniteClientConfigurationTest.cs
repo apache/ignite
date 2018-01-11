@@ -157,7 +157,8 @@ namespace Apache.Ignite.Core.Tests.Client
                 using (var client = Ignition.StartClient())
                 {
                     Assert.AreEqual("127.0.0.1", client.GetConfiguration().Host);
-                    Assert.AreEqual(0, client.GetConfiguration().SocketSendBufferSize);
+                    Assert.AreEqual(IgniteClientConfiguration.DefaultSocketBufferSize, 
+                        client.GetConfiguration().SocketSendBufferSize);
                 }
 
                 // Custom section.

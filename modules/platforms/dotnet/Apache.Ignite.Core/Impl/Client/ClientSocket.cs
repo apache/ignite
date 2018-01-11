@@ -428,18 +428,10 @@ namespace Apache.Ignite.Core.Impl.Client
                         NoDelay = cfg.TcpNoDelay,
                         Blocking = true,
                         SendTimeout = (int) cfg.SocketTimeout.TotalMilliseconds,
-                        ReceiveTimeout = (int) cfg.SocketTimeout.TotalMilliseconds
+                        ReceiveTimeout = (int) cfg.SocketTimeout.TotalMilliseconds,
+                        SendBufferSize = cfg.SocketSendBufferSize,
+                        ReceiveBufferSize = cfg.SocketReceiveBufferSize
                     };
-
-                    if (cfg.SocketSendBufferSize != IgniteClientConfiguration.DefaultSocketBufferSize)
-                    {
-                        socket.SendBufferSize = cfg.SocketSendBufferSize;
-                    }
-
-                    if (cfg.SocketReceiveBufferSize != IgniteClientConfiguration.DefaultSocketBufferSize)
-                    {
-                        socket.ReceiveBufferSize = cfg.SocketReceiveBufferSize;
-                    }
 
                     socket.Connect(ipEndPoint);
 
