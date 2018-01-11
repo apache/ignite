@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -89,6 +90,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     /** Operation mutex. */
     private final Object mux = new Object();
 
+    /** Logger. */
+    private final IgniteLogger log;
+
     /** Current coordinator node. */
     private ClusterNode crdNode;
 
@@ -105,9 +109,14 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             IgniteConfiguration cfg = kernalCtx.config();
 
             srv = !cfg.isClientMode() && !cfg.isDaemon();
+
+            log = kernalCtx.log(WalStateManager.class);
         }
-        else
+        else {
             srv = false;
+
+            log = null;
+        }
 
         if (srv) {
             ioLsnr = new GridMessageListener() {
@@ -127,6 +136,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         }
         else
             ioLsnr = null;
+
     }
 
     /** {@inheritDoc} */
@@ -157,6 +167,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 WalStateProposeMessage msg = grpDesc.nextWalChangeRequest();
 
                 if (msg != null) {
+                    if (log.isDebugEnabled())
+                        log.debug("Processing WAL state message on start: " + msg);
+
                     boolean enabled = grpDesc.walEnabled();
 
                     WalStateResult res;
@@ -300,6 +313,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             try {
                 cctx.discovery().sendCustomEvent(msg);
+
+                if (log.isDebugEnabled())
+                    log.debug("Initiated WAL state change operation: " + msg);
             }
             catch (Exception e) {
                 IgniteCheckedException e0 =
@@ -327,6 +343,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             // Validate current caches state before deciding whether to process message further.
             if (validateProposeDiscovery(msg)) {
+                if (log.isDebugEnabled())
+                    log.debug("WAL state change message is valid (will continue processing): " + msg);
+
                 CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
 
                 assert grpDesc != null;
@@ -337,8 +356,21 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
                 msg.affinityNode(affNode);
 
-                if (grpDesc.addWalChangeRequest(msg))
+                if (grpDesc.addWalChangeRequest(msg)) {
                     msg.exchangeMessage(msg);
+
+                    if (log.isDebugEnabled())
+                        log.debug("WAL state change message will be processed in exchange thread: " + msg);
+                }
+                else {
+                    if (log.isDebugEnabled())
+                        log.debug("WAL state change message is added to pending set and will be processed later: " +
+                            msg);
+                }
+            }
+            else {
+                if (log.isDebugEnabled())
+                    log.debug("WAL state change message is invalid (will ignore): " + msg);
             }
         }
     }
