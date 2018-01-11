@@ -89,8 +89,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityPermission;
@@ -1129,6 +1129,14 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param assigns Assignments.
      */
     private void redeploy(GridServiceAssignments assigns) {
+        if (assigns.topologyVersion() < ctx.discovery().topologyVersion()) {
+            if (log.isDebugEnabled())
+                log.debug("Skip outdated assignment [assigns=" + assigns +
+                    ", topVer=" + ctx.discovery().topologyVersion() + ']');
+
+            return;
+        }
+
         String svcName = assigns.name();
 
         Integer assignCnt = assigns.assigns().get(ctx.localNodeId());
