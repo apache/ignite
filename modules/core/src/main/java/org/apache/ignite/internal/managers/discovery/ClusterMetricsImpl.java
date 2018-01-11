@@ -256,7 +256,7 @@ public class ClusterMetricsImpl implements ClusterMetrics {
     @Override public long getNonHeapMemoryUsed() {
         Collection<GridCacheAdapter<?, ?>> caches = ctx.cache().internalCaches();
 
-        long nonHeapUsed = 0;
+        long nonHeapUsed = vmMetrics.getNonHeapMemoryUsed();
 
         for (GridCacheAdapter<?, ?> cache : caches)
             if (cache.context().statisticsEnabled() && cache.context().started()
