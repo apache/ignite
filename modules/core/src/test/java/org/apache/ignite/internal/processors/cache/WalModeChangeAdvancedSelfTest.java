@@ -233,6 +233,8 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
                 catch (Exception e) {
                     throw new RuntimeException();
                 }
+
+                restartCnt.incrementAndGet();
             }
         });
 
