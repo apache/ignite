@@ -146,9 +146,9 @@ namespace Apache.Ignite.Core.Tests.Compute
                 Assert.IsTrue(node.Attributes.Count > 0);
                 Assert.Throws<NotSupportedException>(() => node.Attributes.Add("key", "val"));
 
-#pragma warning disable 612
+#pragma warning disable 618
                 Assert.AreSame(node.Attributes, node.GetAttributes());
-#pragma warning restore 612
+#pragma warning restore 618
 
                 Assert.NotNull(node.HostNames);
                 Assert.Throws<NotSupportedException>(() => node.HostNames.Add("h"));
