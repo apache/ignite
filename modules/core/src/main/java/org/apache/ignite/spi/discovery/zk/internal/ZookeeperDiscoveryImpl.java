@@ -58,6 +58,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridLongList;
@@ -329,8 +330,12 @@ public class ZookeeperDiscoveryImpl {
 
                     fut.scheduleCheckOnTimeout();
                 }
-                else
+                else {
                     fut = commErrProcFut.get();
+
+                    if (fut == null)
+                        continue;
+                }
             }
 
             nodeStatusFut = fut.nodeStatusFuture(node);
@@ -4211,12 +4216,19 @@ public class ZookeeperDiscoveryImpl {
         void runOfWaitForExchange() throws Exception {
             GridCacheSharedContext cacheCtx = ((IgniteKernal)spi.ignite()).context().cache().context();
 
-            IgniteInternalFuture<?> exchFut =
-                cacheCtx.exchange().affinityReadyFuture(cacheCtx.discovery().topologyVersionEx());
+            final AffinityTopologyVersion topVer = cacheCtx.discovery().topologyVersionEx();
+
+            IgniteInternalFuture<?> exchFut = cacheCtx.exchange().affinityReadyFuture(topVer);
 
             if (exchFut != null && !exchFut.isDone()) {
+                if (log.isInfoEnabled())
+                    log.info("Wait for current exchange completion [topVer=" + topVer + ']');
+
                 exchFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> fut) {
+                        if (log.isInfoEnabled())
+                            log.info("Finished wait for current exchange completion [topVer=" + topVer + ']');
+
                         // Most probably listener is run from Ignite thread, run fake async operation to return to Zookeeper thread.
                         rtState.zkClient.existsAsync(zkPaths.aliveNodesDir, null, WaitExchangeCompletionCallback.this);
                     }

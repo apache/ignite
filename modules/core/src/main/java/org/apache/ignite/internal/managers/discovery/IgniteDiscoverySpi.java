@@ -57,11 +57,11 @@ public interface IgniteDiscoverySpi extends DiscoverySpi {
     /**
      * @return {@code True} if supports communication error resolve.
      */
-    public boolean supportsCommunicationErrorResolve();
+    public boolean supportsCommunicationFailureResolve();
 
     /**
      * @param node Problem node.
      * @param err Connection error.
      */
-    public void resolveCommunicationError(ClusterNode node, Exception err);
+    public void resolveCommunicationFailure(ClusterNode node, Exception err);
 }

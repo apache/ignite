@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CommunicationFailureContext;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -35,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -103,14 +105,14 @@ class ZkCommunicationFailureContext implements CommunicationFailureContext {
     }
 
     /** {@inheritDoc} */
-    @Override public List<String> startedCaches() {
+    @Override public Map<String, CacheConfiguration<?, ?>> startedCaches() {
         Map<Integer, DynamicCacheDescriptor> cachesMap = ctx.affinity().caches();
 
-        List<String> res = new ArrayList<>(cachesMap.size());
+        Map<String, CacheConfiguration<?, ?>> res = U.newHashMap(cachesMap.size());
 
         for (DynamicCacheDescriptor desc : cachesMap.values()) {
             if (desc.cacheType().userCache())
-                res.add(desc.cacheName());
+                res.put(desc.cacheName(), desc.cacheConfiguration());
         }
 
         return res;

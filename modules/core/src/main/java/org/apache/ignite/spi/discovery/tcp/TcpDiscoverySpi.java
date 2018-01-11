@@ -2108,12 +2108,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /** {@inheritDoc} */
-    @Override public boolean supportsCommunicationErrorResolve() {
+    @Override public boolean supportsCommunicationFailureResolve() {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override public void resolveCommunicationError(ClusterNode node, Exception err) {
+    @Override public void resolveCommunicationFailure(ClusterNode node, Exception err) {
         throw new UnsupportedOperationException();
     }
 

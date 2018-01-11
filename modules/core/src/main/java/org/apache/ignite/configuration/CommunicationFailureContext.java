@@ -18,6 +18,7 @@
 package org.apache.ignite.configuration;
 
 import java.util.List;
+import java.util.Map;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 
@@ -38,9 +39,9 @@ public interface CommunicationFailureContext {
     public boolean connectionAvailable(ClusterNode node1, ClusterNode node2);
 
     /**
-     * @return List of currently started cache.
+     * @return Currently started caches.
      */
-    public List<String> startedCaches();
+    public Map<String, CacheConfiguration<?, ?>> startedCaches();
 
     /**
      * @param cacheName Cache name.

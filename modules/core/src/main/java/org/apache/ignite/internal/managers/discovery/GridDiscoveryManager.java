@@ -79,7 +79,6 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
@@ -2458,7 +2457,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return {@code True} if SPI supports communication error resolve.
      */
     private static boolean supportsCommunicationErrorResolve(DiscoverySpi spi) {
-        return spi instanceof IgniteDiscoverySpi && ((IgniteDiscoverySpi)spi).supportsCommunicationErrorResolve();
+        return spi instanceof IgniteDiscoverySpi && ((IgniteDiscoverySpi)spi).supportsCommunicationFailureResolve();
     }
 
     /**
@@ -2496,7 +2495,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         if (!supportsCommunicationErrorResolve(spi) || !supportsCommunicationErrorResolve(ctx.config().getCommunicationSpi()))
             throw new UnsupportedOperationException();
 
-        ((IgniteDiscoverySpi)spi).resolveCommunicationError(node, err);
+        ((IgniteDiscoverySpi)spi).resolveCommunicationFailure(node, err);
     }
 
     /** Worker for network segment checks. */
