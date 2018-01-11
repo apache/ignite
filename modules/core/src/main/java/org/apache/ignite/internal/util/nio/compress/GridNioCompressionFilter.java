@@ -83,7 +83,7 @@ public class GridNioCompressionFilter extends GridNioFilterAdapter {
     /**
      * @return New instance of compression engine.
      */
-    public static CompressionEngine createEngine(CompressionType compressionType) throws IOException {
+    public static CompressionEngine createEngine(CompressionType compressionType) {
         switch (compressionType) {
             case LZ4:
                 return new LZ4Engine();
@@ -95,7 +95,7 @@ public class GridNioCompressionFilter extends GridNioFilterAdapter {
                 return new DeflaterEngine();
 
             default:
-                throw new IOException("Wrong CompressionType argument: " + compressionType);
+                throw new IllegalArgumentException("Wrong compression type: " + compressionType);
         }
     }
 
@@ -109,7 +109,7 @@ public class GridNioCompressionFilter extends GridNioFilterAdapter {
         GridCompressionMeta compressMeta = ses.meta(COMPRESSION_META.ordinal());
 
         if (compressMeta == null) {
-            engine = new LZ4Engine();
+            engine = createEngine(compressionType);
 
             compressMeta = new GridCompressionMeta();
 
