@@ -26,7 +26,8 @@ import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
- *
+ * Page IO for Partition Counters, IO for pages containing cache ID mapping to its size. Used only for caches in shared
+ * cache groups.
  */
 public class PagePartitionCountersIO extends PageIO {
     /** */
@@ -69,7 +70,7 @@ public class PagePartitionCountersIO extends PageIO {
      * @param cacheSizes Cache sizes: cache Id in shared group mapped to its size. Not null.
      * @return Serialized cache sizes or 0-byte length array if map was empty.
      */
-    public static byte[] serializeCacheSizes(Map<Integer, Long> cacheSizes) {
+    public byte[] serializeCacheSizes(Map<Integer, Long> cacheSizes) {
         byte[] data = new byte[cacheSizes.size() * ITEM_SIZE];
         long off = GridUnsafe.BYTE_ARR_OFF;
 
@@ -136,7 +137,7 @@ public class PagePartitionCountersIO extends PageIO {
      * @param res Result map of cache sizes.
      * @return {@code True} if the map was fully read.
      */
-    public static boolean readCacheSizes(long pageAddr, Map<Integer, Long> res) {
+    public boolean readCacheSizes(long pageAddr, Map<Integer, Long> res) {
         int cnt = getCount(pageAddr);
 
         assert cnt >= 0 && cnt <= Short.MAX_VALUE : cnt;
