@@ -32,6 +32,7 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Files;
 import java.sql.Time;
 import java.util.ArrayList;
@@ -208,6 +209,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** Use mapped byte buffer. */
     private static boolean mmap = IgniteSystemProperties.getBoolean(IGNITE_WAL_MMAP, true);
+
+    /** Interrupted flag. */
+    private final ThreadLocal<Boolean> interrupted = new ThreadLocal<Boolean>() {
+        @Override protected Boolean initialValue() {
+            return false;
+        }
+    };
 
     /** */
     private final boolean alwaysWriteFullPages;
@@ -1105,31 +1113,75 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (log.isDebugEnabled())
                 log.debug("Switching to a new WAL segment: " + nextFile.getAbsolutePath());
 
-            FileIO fileIO = ioFactory.create(nextFile);
+            SegmentedRingByteBuffer rbuf = null;
 
-            SegmentedRingByteBuffer rbuf;
+            FileIO fileIO = null;
 
-            if (mmap) {
+            FileWriteHandle hnd;
+
+            boolean interrupted = this.interrupted.get();
+
+            while (true) {
                 try {
-                    MappedByteBuffer buf = fileIO.map((int)maxWalSegmentSize);
+                    fileIO = ioFactory.create(nextFile);
 
-                    rbuf = new SegmentedRingByteBuffer(buf, metrics);
+                    if (mmap) {
+                        try {
+                            MappedByteBuffer buf = fileIO.map((int)maxWalSegmentSize);
+
+                            rbuf = new SegmentedRingByteBuffer(buf, metrics);
+                        }
+                        catch (IOException e) {
+                            if (e instanceof ClosedByInterruptException)
+                                throw e;
+                            else
+                                throw new IgniteCheckedException(e);
+                        }
+                    }
+                    else
+                        rbuf = cur.buf.reset();
+
+                    hnd = new FileWriteHandle(
+                        fileIO,
+                        cur.idx + 1,
+                        cctx.igniteInstanceName(),
+                        0,
+                        false,
+                        serializer,
+                        rbuf);
+
+
+                    if (interrupted)
+                        Thread.currentThread().interrupt();
+
+                    break;
                 }
-                catch (IOException e) {
-                    throw new IgniteCheckedException(e);
+                catch (ClosedByInterruptException e) {
+                    interrupted = true;
+
+                    Thread.interrupted();
+
+                    if (fileIO != null) {
+                        try {
+                            fileIO.close();
+                        }
+                        catch (IOException ignored) {
+                            // No-op.
+                        }
+
+                        fileIO = null;
+                    }
+
+                    if (rbuf != null) {
+                        rbuf.free();
+
+                        rbuf = null;
+                    }
+                }
+                finally {
+                    this.interrupted.set(false);
                 }
             }
-            else
-                rbuf = cur.buf.reset();
-
-            FileWriteHandle hnd = new FileWriteHandle(
-                fileIO,
-                cur.idx + 1,
-                cctx.igniteInstanceName(),
-                0,
-                false,
-                serializer,
-                rbuf);
 
             return hnd;
         }
@@ -1497,32 +1549,36 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @throws IgniteCheckedException If failed (if interrupted or if exception occurred in the archiver thread).
          */
         private long nextAbsoluteSegmentIndex(long curIdx) throws IgniteCheckedException {
-            try {
-                synchronized (this) {
-                    if (cleanErr != null)
-                        throw cleanErr;
+            synchronized (this) {
+                if (cleanErr != null)
+                    throw cleanErr;
 
-                    assert curIdx == curAbsWalIdx;
+                assert curIdx == curAbsWalIdx;
 
-                    curAbsWalIdx++;
+                curAbsWalIdx++;
 
-                    // Notify archiver thread.
-                    notifyAll();
+                // Notify archiver thread.
+                notifyAll();
 
-                    while (curAbsWalIdx - lastAbsArchivedIdx > dsCfg.getWalSegments() && cleanErr == null)
+                while (curAbsWalIdx - lastAbsArchivedIdx > dsCfg.getWalSegments() && cleanErr == null) {
+                    try {
                         wait();
-
-                    // Wait for formatter so that we do not open an empty file in DEFAULT mode.
-                    while (curAbsWalIdx % dsCfg.getWalSegments() > formatted)
-                        wait();
-
-                    return curAbsWalIdx;
+                    }
+                    catch (InterruptedException e) {
+                        interrupted.set(true);
+                    }
                 }
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
 
-                throw new IgniteInterruptedCheckedException(e);
+                // Wait for formatter so that we do not open an empty file in DEFAULT mode.
+                while (curAbsWalIdx % dsCfg.getWalSegments() > formatted)
+                    try {
+                        wait();
+                    }
+                    catch (InterruptedException e) {
+                        interrupted.set(true);
+                    }
+
+                return curAbsWalIdx;
             }
         }
 
@@ -2326,7 +2382,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             assert serializer != null;
 
-            fileIO.position(pos);
+            if (!mmap)
+                fileIO.position(pos);
 
             this.serializer = serializer;
 
@@ -2339,18 +2396,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /**
          * Write serializer version to current handle.
-         *
-         * @throws IgniteCheckedException If fail to write serializer version.
          */
-        public void writeHeader() throws IgniteCheckedException {
-            try {
-                assert fileIO.position() == 0 : "Serializer version can be written only at the begin of file. " +
-                    "Current file position: " + fileIO.position();
-            }
-            catch (IOException e) {
-                throw new IgniteCheckedException("Unable to write serializer version for segment " + idx, e);
-            }
-
+        public void writeHeader() {
             SegmentedRingByteBuffer.WriteSegment seg = buf.offer(RecordV1Serializer.HEADER_RECORD_SIZE);
 
             assert seg != null && seg.position() > 0;
