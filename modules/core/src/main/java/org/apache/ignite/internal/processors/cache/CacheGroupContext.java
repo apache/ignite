@@ -194,7 +194,7 @@ public class CacheGroupContext {
         this.cacheType = cacheType;
         this.walEnabled = walEnabled;
 
-        persistWalStateIfNeeded(!walEnabled);
+        persistWalState(walEnabled);
 
         ioPlc = cacheType.ioPolicy();
 
@@ -1012,16 +1012,16 @@ public class CacheGroupContext {
      * @param enabled WAL enabled flag.
      */
     public void walEnabled(boolean enabled) {
-        persistWalStateIfNeeded(!enabled);
+        persistWalState(enabled);
 
         this.walEnabled = enabled;
     }
 
     /**
-     * @param disabled Disabled.
+     * @param enabled Enabled flag..
      */
-    private void persistWalStateIfNeeded(boolean disabled) {
-        if (disabled && shared().pageStore() != null)
-            shared().pageStore().walDisabled(grpId, disabled);
+    private void persistWalState(boolean enabled) {
+        if (shared().pageStore() != null)
+            shared().pageStore().walEnabled(grpId, enabled);
     }
 }

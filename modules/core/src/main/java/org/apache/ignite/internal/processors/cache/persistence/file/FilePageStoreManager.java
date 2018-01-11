@@ -636,7 +636,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void beforeCacheGroupStart(CacheGroupDescriptor grpDesc) {
-        if (walDisabled(grpDesc.groupId())) {
+        if (!walEnabled(grpDesc.groupId())) {
             File dir = cacheWorkDir(grpDesc.config());
 
             assert dir.exists();
@@ -655,7 +655,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             final String workDir = U.defaultWorkDirectory();
             final File db = U.resolveWorkDirectory(workDir, DFLT_STORE_DIR, false);
             final File wal = new File(db, "wal");
-            final File node = new File(wal, "disabledWal-" + cctx.discovery().consistentId());
+            final File node = new File(wal, "disabledWal-" + cctx.igniteInstanceName());
 
             if (!node.exists())
                 node.mkdirs();
@@ -670,15 +670,14 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    public void walDisabled(int grpId, boolean disable) { // Todo to be replaced with MetaStore usage
+    public void walEnabled(int grpId, boolean enabled) { // Todo to be replaced with MetaStore usage
         try {
             final File file = new File(walMarkersDir(), grpId + "");
 
-            if (disable)
-                file.createNewFile();
-
+            if (enabled)
+                file.delete();
             else
-                file.delete(); // Can be missed for newcomers.
+                file.createNewFile();
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -686,10 +685,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    public boolean walDisabled(int grpId) { // Todo to be replaced with MetaStore usage
+    public boolean walEnabled(int grpId) { // Todo to be replaced with MetaStore usage
         final File file = new File(walMarkersDir(), String.valueOf(grpId));
 
-        return file.exists();
+        return !file.exists();
     }
 
     /** {@inheritDoc} */

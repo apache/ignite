@@ -193,12 +193,12 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void walDisabled(int grpId, boolean disable) {
+    @Override public void walEnabled(int grpId, boolean enabled) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public boolean walDisabled(int grpId) {
+    @Override public boolean walEnabled(int grpId) {
         return false;
     }
 

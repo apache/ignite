@@ -204,16 +204,16 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * Marks cache group as with disabled WAL.
      *
      * @param grpId Group id.
-     * @param disable Disable.
+     * @param enabled flag.
      */
-    public void walDisabled(int grpId, boolean disable);
+    public void walEnabled(int grpId, boolean enabled);
 
     /**
      * Checks cache group is with disabled WAL.
      *
      * @param grpId Group id.
      */
-    public boolean walDisabled(int grpId);
+    public boolean walEnabled(int grpId);
 
     /**
      * Provides list of cache groups with disabled WAL
