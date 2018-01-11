@@ -198,14 +198,14 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
             sb.append('a');
         }
         String actual = GridToStringBuilder.toString(TestClass2.class, new TestClass2(sb.toString()));
-        String expected = "TestClass2 [str=" + sb.toString() + "]";
+        String expected = "TestClass2 [str=" + sb.toString() + ", nullArr=null]";
         assertEquals(expected, actual);
 
         for (int i = 0; i < 110; i++) {
             sb.append('b');
         }
         actual = GridToStringBuilder.toString(TestClass2.class, new TestClass2(sb.toString()));
-        expected = "TestClass2 [str=" + sb.toString() + "]";
+        expected = "TestClass2 [str=" + sb.toString() + ", nullArr=null]";
         assertEquals(expected.substring(0, limit - tailLen), actual.substring(0, limit - tailLen));
         assertEquals(expected.substring(expected.length() - tailLen), actual.substring(actual.length() - tailLen));
         assertTrue(actual.contains("... and"));
@@ -332,6 +332,9 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         @SuppressWarnings("unused")
         @GridToStringInclude
         private String str;
+
+        @GridToStringInclude
+        private Object[] nullArr;
 
         public TestClass2(String str) {
             this.str = str;

@@ -939,6 +939,7 @@ public class GridToStringBuilder {
             buf.a(val);
 
             if (overflow > 0) {
+                buf.d(buf.length() - 1);
                 buf.a("... and ").a(overflow).a(" more").a(bracket);
             }
         }
@@ -1073,7 +1074,7 @@ public class GridToStringBuilder {
         else
             res = Arrays.toString((Object[])arr);
 
-        if (array.length > COLLECTION_LIMIT) {
+        if (array != null && array.length > COLLECTION_LIMIT) {
             StringBuilder resSB = new StringBuilder(res);
 
             resSB.deleteCharAt(resSB.length() - 1);
