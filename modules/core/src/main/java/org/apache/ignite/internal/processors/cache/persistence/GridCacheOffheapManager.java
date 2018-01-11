@@ -402,9 +402,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      */
     private static long writeSharedGroupCacheSizes(PageMemory pageMem, int grpId,
         long cntrsPageId, int partId, Map<Integer, Long> sizes) throws IgniteCheckedException {
-        byte[] data = serializeCacheSizes(sizes);
+        byte[] data = PagePartitionCountersIO.serializeCacheSizes(sizes);
 
-        int items = data.length / 12;
+        int items = data.length / PagePartitionCountersIO.ITEM_SIZE;
         boolean init = cntrsPageId == 0;
 
         if (init && !sizes.isEmpty())
@@ -505,23 +505,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         finally {
             pageMem.releasePage(grpId, metaPageId, metaPage);
         }
-    }
-
-    /**
-     * @param cacheSizes Cache sizes: cache Id in shared group mapped to its size. Not null.
-     * @return Serialized cache sizes or 0-byte length array if map was empty.
-     */
-    private static byte[] serializeCacheSizes(Map<Integer, Long> cacheSizes) {
-        // Item size = 4 bytes (cache ID) + 8 bytes (cache size) = 12 bytes
-        byte[] data = new byte[cacheSizes.size() * 12];
-        long off = GridUnsafe.BYTE_ARR_OFF;
-
-        for (Map.Entry<Integer, Long> entry : cacheSizes.entrySet()) {
-            GridUnsafe.putInt(data, off, entry.getKey()); off += 4;
-            GridUnsafe.putLong(data, off, entry.getValue()); off += 8;
-        }
-
-        return data;
     }
 
     /**
