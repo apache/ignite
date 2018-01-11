@@ -529,7 +529,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Tests the transaction deadlock detection.
         /// </summary>
-        [Test]
+        [Test, Timeout(50000)]
         public void TestTxDeadlockDetection()
         {
             var cache = Cache();
