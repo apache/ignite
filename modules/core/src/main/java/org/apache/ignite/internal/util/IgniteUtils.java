@@ -4068,41 +4068,19 @@ public abstract class IgniteUtils {
 
     /**
      * Closes class loader logging possible checked exception.
-     * Note: this issue for problem <a href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=5041014">
-     * http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=5041014</a>.
      *
      * @param clsLdr Class loader. If it's {@code null} - it's no-op.
      * @param log Logger to log possible checked exception with (optional).
      */
     public static void close(@Nullable URLClassLoader clsLdr, @Nullable IgniteLogger log) {
-        if (clsLdr != null)
+        if (clsLdr != null) {
             try {
-                URLClassPath path = SharedSecrets.getJavaNetAccess().getURLClassPath(clsLdr);
-
-                Field ldrFld = path.getClass().getDeclaredField("loaders");
-
-                ldrFld.setAccessible(true);
-
-                Iterable ldrs = (Iterable)ldrFld.get(path);
-
-                for (Object ldr : ldrs)
-                    if (ldr.getClass().getName().endsWith("JarLoader"))
-                        try {
-                            Field jarFld = ldr.getClass().getDeclaredField("jar");
-
-                            jarFld.setAccessible(true);
-
-                            ZipFile jar = (ZipFile)jarFld.get(ldr);
-
-                            jar.close();
-                        }
-                        catch (Exception e) {
-                            warn(log, "Failed to close resource: " + e.getMessage());
-                        }
+                clsLdr.close();
             }
             catch (Exception e) {
                 warn(log, "Failed to close resource: " + e.getMessage());
             }
+        }
     }
 
     /**
@@ -6605,6 +6583,33 @@ public abstract class IgniteUtils {
      */
     public static String jreVersion() {
         return javaRtVer;
+    }
+
+    /**
+     * Get major Java version from string.
+     *
+     * @param verStr Version string.
+     * @return Major version or zero if failed to resolve.
+     */
+    public static int majorJavaVersion(String verStr) {
+        if (F.isEmpty(verStr))
+            return 0;
+
+        try {
+            String[] parts = verStr.split("\\.");
+
+            int major = Integer.parseInt(parts[0]);
+
+            if (parts.length == 1)
+                return major;
+
+            int minor = Integer.parseInt(parts[1]);
+
+            return major == 1 ? minor : major;
+        }
+        catch (Exception e) {
+            return 0;
+        }
     }
 
     /**

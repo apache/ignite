@@ -75,7 +75,7 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
     }
 
     /** {@inheritDoc} */
-    @Override public Double predict(Vector v) {
+    @Override public Double apply(Vector v) {
         LabeledVector[] neighbors = findKNearestNeighbors(v, true);
 
         return classify(neighbors, v, stgy);

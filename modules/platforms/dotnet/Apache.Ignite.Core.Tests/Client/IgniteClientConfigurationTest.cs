@@ -43,6 +43,7 @@ namespace Apache.Ignite.Core.Tests.Client
             Assert.AreEqual(IgniteClientConfiguration.DefaultSocketBufferSize, cfg.SocketReceiveBufferSize);
             Assert.AreEqual(IgniteClientConfiguration.DefaultSocketBufferSize, cfg.SocketSendBufferSize);
             Assert.AreEqual(IgniteClientConfiguration.DefaultTcpNoDelay, cfg.TcpNoDelay);
+            Assert.AreEqual(IgniteClientConfiguration.DefaultSocketTimeout, cfg.SocketTimeout);
         }
 
         /// <summary>
@@ -68,6 +69,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 SocketReceiveBufferSize = 222,
                 SocketSendBufferSize = 333,
                 TcpNoDelay = false,
+                SocketTimeout = TimeSpan.FromSeconds(15),
                 BinaryConfiguration = new BinaryConfiguration
                 {
                     CompactFooter = false,

@@ -198,6 +198,11 @@
                     <xs:documentation>Value for TCP_NODELAY socket option.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="socketTimeout" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation>Socket operation timeout. Zero or negative for infinite timeout.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
         </xs:complexType>
     </xs:element>
 </xs:schema>

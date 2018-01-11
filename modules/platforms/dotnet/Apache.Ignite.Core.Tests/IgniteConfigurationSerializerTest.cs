@@ -307,6 +307,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(16, ds.WalSegments);
             Assert.AreEqual(17, ds.WalSegmentSize);
             Assert.AreEqual("wal-store", ds.WalPath);
+            Assert.AreEqual(TimeSpan.FromSeconds(18), ds.WalAutoArchiveAfterInactivity);
             Assert.IsTrue(ds.WriteThrottlingEnabled);
 
             var dr = ds.DataRegionConfigurations.Single();
@@ -956,6 +957,7 @@ namespace Apache.Ignite.Core.Tests
                     SystemRegionMaxSize = 128 * 1024 * 1024,
                     ConcurrencyLevel = 1,
                     PageSize = 5 * 1024,
+                    WalAutoArchiveAfterInactivity = TimeSpan.FromSeconds(19),
                     DefaultDataRegionConfiguration = new DataRegionConfiguration
                     {
                         Name = "reg1",

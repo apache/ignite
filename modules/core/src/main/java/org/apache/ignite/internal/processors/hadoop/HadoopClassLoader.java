@@ -391,15 +391,8 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
             // First, check if the class has already been loaded
             Class c = findLoadedClass(name);
 
-            if (c == null) {
-                long t1 = System.nanoTime();
-
+            if (c == null)
                 c = findClass(name);
-
-                // this is the defining class loader; record the stats
-                sun.misc.PerfCounter.getFindClassTime().addElapsedTimeFrom(t1);
-                sun.misc.PerfCounter.getFindClasses().increment();
-            }
 
             if (resolve)
                 resolveClass(c);
