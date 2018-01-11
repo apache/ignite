@@ -54,7 +54,11 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
         deleteWorkFiles();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Test cache cleanup on restart.
+     *
+     * @throws Exception If failed.
+     */
     public void testCacheCleanup() throws Exception {
         Ignite srv = startGrid(config(SRV_1, false, false));
 
