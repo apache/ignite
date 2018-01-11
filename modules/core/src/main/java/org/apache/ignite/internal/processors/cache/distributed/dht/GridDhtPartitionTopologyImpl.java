@@ -372,7 +372,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 assert owned : "Failed to own partition for oldest node [grp=" + grp.cacheOrGroupName() +
                                     ", part=" + locPart + ']';
 
-                                if (log.isDebugEnabled()) {
+                                if (log.isDebugEnabled())
                                     log.debug("Owned partition for oldest node [grp=" + grp.cacheOrGroupName() +
                                     ", part=" + locPart + ']');
                             }
