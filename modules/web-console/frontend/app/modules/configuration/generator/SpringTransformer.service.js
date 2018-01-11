@@ -19,6 +19,9 @@ import _ from 'lodash';
 
 import AbstractTransformer from './AbstractTransformer';
 import StringBuilder from './StringBuilder';
+import VersionService from 'app/services/Version.service';
+
+const versionService = new VersionService();
 
 export default class IgniteSpringTransformer extends AbstractTransformer {
     static escapeXml(str) {
@@ -252,10 +255,11 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
      * Build final XML.
      *
      * @param {Bean} cfg Ignite configuration.
+     * @param available Function to check target version of generated source to appropriate for generation.
      * @param {Boolean} clientNearCaches
      * @returns {StringBuilder}
      */
-    static igniteConfiguration(cfg, clientNearCaches) {
+    static igniteConfiguration(cfg, available, clientNearCaches) {
         const sb = new StringBuilder();
 
         // 0. Add header.
@@ -302,7 +306,7 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
         _.forEach(clientNearCaches, (cache) => {
             this.commentBlock(sb, `Configuration of near cache for cache "${cache.name}"`);
 
-            this.appendBean(sb, this.generator.cacheNearClient(cache), true);
+            this.appendBean(sb, this.generator.cacheNearClient(cache, available), true);
 
             sb.emptyLine();
         });
@@ -322,6 +326,8 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
         const clientNearCaches = client ? _.filter(cluster.caches, (cache) =>
             cache.cacheMode === 'PARTITIONED' && _.get(cache, 'clientNearConfiguration.enabled')) : [];
 
-        return this.igniteConfiguration(cfg, clientNearCaches);
+        const available = versionService.since.bind(versionService, targetVer.ignite);
+
+        return this.igniteConfiguration(cfg, available, clientNearCaches);
     }
 }
