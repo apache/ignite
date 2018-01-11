@@ -114,12 +114,17 @@ namespace ignite
                 common::dynamic::Module LoadSslLibrary(const char* name);
 
                 /**
+                 * Load all SSL libraries.
+                 */
+                bool LoadSslLibraries();
+
+                /**
                  * Load SSL method.
                  * @param mod Module.
                  * @param name Name.
                  * @return Method pointer.
                  */
-                static void* LoadSslMethod(common::dynamic::Module mod, const char* name);
+                void* LoadSslMethod(const char* name);
 
                 /** Indicates whether the library was inited. */
                 bool inited;
@@ -132,6 +137,9 @@ namespace ignite
 
                 /** ssleay32 module. */
                 common::dynamic::Module ssleay32;
+
+                /** libssl module. */
+                common::dynamic::Module libssl;
 
                 /** Functions. */
                 SslFunctions functions;

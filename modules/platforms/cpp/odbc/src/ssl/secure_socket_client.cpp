@@ -317,7 +317,7 @@ namespace ignite
 
                     ssl::SSL_CTX_free(ctx);
 
-                    return false;
+                    return 0;
                 }
 
                 return ctx;
