@@ -19,7 +19,7 @@ package org.apache.ignite.development.utils;
 /**
  * Statistic for record size
  */
-public class RecordStat {
+public class RecordSizeCountStat {
     /** Size. */
     private long size;
     /** Count. */

@@ -18,6 +18,8 @@ package org.apache.ignite.development.utils;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.TreeMap;
 import org.apache.ignite.IgniteCheckedException;
@@ -25,6 +27,7 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
+import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -35,19 +38,28 @@ import sun.nio.ch.DirectBuffer;
  */
 public class WalStat {
     /** Rec type sizes. */
-    private final Map<String, RecordStat> recTypeSizes = new TreeMap<>();
+    private final Map<String, RecordSizeCountStat> recTypeSizes = new TreeMap<>();
 
     /** Data Record: operation performed */
-    private final Map<String, RecordStat> dataRecordOperation = new TreeMap<>();
+    private final Map<String, RecordSizeCountStat> dataRecordOperation = new TreeMap<>();
+
+    /** Tx Record: action */
+    private final Map<String, RecordSizeCountStat> txRecordAct = new TreeMap<>();
+
+    /** Tx Record: participating primary nodes */
+    private final Map<Integer, RecordSizeCountStat> txRecordPrimNodesCnt = new TreeMap<>();
+
+    /** Tx Record: participating primary nodes */
+    private final Map<Integer, RecordSizeCountStat> txRecordNodesCnt = new TreeMap<>();
 
     /** Page snapshot types. */
-    private final Map<String, RecordStat> pageSnapshotTypes = new TreeMap<>();
+    private final Map<String, RecordSizeCountStat> pageSnapshotTypes = new TreeMap<>();
     /** Page snapshot partition. */
-    private final Map<Integer, RecordStat> pageSnapshotPart = new TreeMap<>();
+    private final Map<Integer, RecordSizeCountStat> pageSnapshotPart = new TreeMap<>();
     /** Page snapshot indexes. */
-    private final Map<Integer, RecordStat> pageSnapshotIndexes = new TreeMap<>();
+    private final Map<Integer, RecordSizeCountStat> pageSnapshotIndexes = new TreeMap<>();
     /** Page snapshot cache groups. */
-    private final Map<Integer, RecordStat> pageSnapshotCacheGroups = new TreeMap<>();
+    private final Map<Integer, RecordSizeCountStat> pageSnapshotCacheGroups = new TreeMap<>();
 
     /**
      * @param key
@@ -63,9 +75,9 @@ public class WalStat {
      * @param map
      * @param <K>
      */
-    private <K> void computeStatIfAbsent(K key, WALRecord record, Map<K, RecordStat> map) {
-        final RecordStat val = map.get(key);
-        final RecordStat recordStat = val == null ? new RecordStat() : val;
+    private <K> void computeStatIfAbsent(K key, WALRecord record, Map<K, RecordSizeCountStat> map) {
+        final RecordSizeCountStat val = map.get(key);
+        final RecordSizeCountStat recordStat = val == null ? new RecordSizeCountStat() : val;
         recordStat.occurrence(record.size());
         map.put(key, recordStat);
     }
@@ -78,10 +90,33 @@ public class WalStat {
         String key = type.toString();
         if (type == WALRecord.RecordType.PAGE_RECORD)
             registerPageSnapshot((PageSnapshot)record);
-        else if(type== WALRecord.RecordType.DATA_RECORD)
+        else if (type == WALRecord.RecordType.DATA_RECORD)
             registerDataRecord((DataRecord)record);
+        else if (type == WALRecord.RecordType.TX_RECORD)
+            registerTxRecord((TxRecord)record);
 
         registerRecSize(key, record);
+    }
+
+    /**
+     * @param txRecord
+     */
+    private void registerTxRecord(TxRecord txRecord) {
+        computeStatIfAbsent(txRecord.state().toString(), txRecord, txRecordAct);
+
+        final Map<Short, Collection<Short>> map = txRecord.participatingNodes();
+        if (map != null) {
+            computeStatIfAbsent(map.keySet().size(), txRecord, txRecordPrimNodesCnt);
+
+            final HashSet<Object> set = new HashSet<>();
+
+            for (Map.Entry<Short, Collection<Short>> next : map.entrySet()) {
+                set.add(next.getKey());
+                set.addAll(next.getValue());
+            }
+
+            computeStatIfAbsent(set.size(), txRecord, txRecordNodesCnt);
+        }
     }
 
     /**
@@ -93,10 +128,7 @@ public class WalStat {
         final int idx = PageIdUtils.pageIndex(pageId);
 
         final String type = getType(record);
-        // if (idx == 8 || idx == 9)
-        //    System.out.println(idx + ":" + type);
         computeStatIfAbsent(type, record, pageSnapshotTypes);
-        // computeStatIfAbsent(PageIdUtils.partId(pageId), record, pageSnapshotPart);
         computeStatIfAbsent(idx, record, pageSnapshotIndexes);
         computeStatIfAbsent(fullPageId.groupId(), record, pageSnapshotCacheGroups);
     }
@@ -140,14 +172,17 @@ public class WalStat {
     @Override public String toString() {
         final StringBuilder sb = new StringBuilder();
 
-        printMap(sb, "Record size in bytes", recTypeSizes);
+        printSizeCountMap(sb, "Record type", recTypeSizes);
 
-        printMap(sb, "Data Record Operations", dataRecordOperation);
+        printSizeCountMap(sb, "Tx Record: Action", txRecordAct);
+        printSizeCountMap(sb, "Tx Record: Primary nodes count", txRecordPrimNodesCnt);
+        printSizeCountMap(sb, "Tx Record: Nodes count", txRecordNodesCnt);
 
-        printMap(sb, "Page Snapshot Page Types", pageSnapshotTypes);
-        //printMap(sb, "Page Snapshot Partitions", pageSnapshotPart);
-        printMap(sb, "Page Snapshot Indexes", pageSnapshotIndexes);
-        printMap(sb, "Page Snapshot Cache Groups", pageSnapshotCacheGroups);
+        printSizeCountMap(sb, "Data Record Operations", dataRecordOperation);
+
+        printSizeCountMap(sb, "Page Snapshot Page Types", pageSnapshotTypes);
+        printSizeCountMap(sb, "Page Snapshot Indexes", pageSnapshotIndexes);
+        printSizeCountMap(sb, "Page Snapshot Cache Groups", pageSnapshotCacheGroups);
 
         return sb.toString();
     }
@@ -157,11 +192,11 @@ public class WalStat {
      * @param mapName
      * @param map
      */
-    private void printMap(StringBuilder sb, String mapName, Map<?, RecordStat> map) {
+    private void printSizeCountMap(StringBuilder sb, String mapName, Map<?, RecordSizeCountStat> map) {
         sb.append(mapName).append(": \n");
         sb.append("key\tsize\tcount\tavg.size");
         sb.append("\n");
-        for (Map.Entry<?, RecordStat> next : map.entrySet()) {
+        for (Map.Entry<?, RecordSizeCountStat> next : map.entrySet()) {
             sb.append(next.getKey()).append("\t").append(next.getValue()).append("\t");
             sb.append("\n");
         }

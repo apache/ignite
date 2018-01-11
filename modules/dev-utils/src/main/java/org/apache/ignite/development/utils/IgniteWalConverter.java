@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2InnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2LeafIO;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.NullLogger;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Print WAL log data in human-readable form.
@@ -49,7 +50,8 @@ public class IgniteWalConverter {
         H2ExtrasInnerIO.register();
         H2ExtrasLeafIO.register();
 
-        boolean print = false;
+        boolean printRecords = false;
+        boolean printStat = true;
 
         final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(new NullLogger(),
             Integer.parseInt(args[0]),
@@ -64,7 +66,7 @@ public class IgniteWalConverter {
         if (workFiles == null)
             throw new IllegalArgumentException("No .wal files in dir: " + args[1]);
 
-        final WalStat stat = new WalStat();
+        @Nullable final WalStat stat = printStat ? new WalStat() : null;
 
         try (WALIterator stIt = factory.iteratorWorkFiles(workFiles)) {
             while (stIt.hasNextX()) {
@@ -73,9 +75,10 @@ public class IgniteWalConverter {
                 final WALRecord record = next.get2();
                 final WALRecord.RecordType type = record.type();
 
-                stat.registerRecord(type, record);
+                if (stat != null)
+                    stat.registerRecord(type, record);
 
-                if (print)
+                if (printRecords)
                     System.out.println("[W] " + record);
             }
         }
@@ -88,9 +91,10 @@ public class IgniteWalConverter {
                     IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
 
                     final WALRecord record = next.get2();
-                    stat.registerRecord(record.type(), record);
+                    if (stat != null)
+                        stat.registerRecord(record.type(), record);
 
-                    if (print)
+                    if (printRecords)
                         System.out.println("[A] " + record);
                 }
             }
@@ -98,6 +102,7 @@ public class IgniteWalConverter {
 
         System.err.flush();
 
-        System.out.println("Statistic collected:\n"+ stat.toString());
+        if (stat != null)
+            System.out.println("Statistic collected:\n" + stat.toString());
     }
 }
