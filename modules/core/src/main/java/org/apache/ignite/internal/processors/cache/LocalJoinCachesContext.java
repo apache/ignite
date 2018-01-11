@@ -23,8 +23,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Context to capture caches state for a node joining to an active cluster. Since registered caches is updated in
@@ -33,12 +35,15 @@ import org.apache.ignite.internal.util.typedef.T2;
  */
 public class LocalJoinCachesContext {
     /** */
+    @GridToStringInclude
     private List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> locJoinStartCaches = Collections.emptyList();
 
     /** */
+    @GridToStringInclude
     private Map<Integer, CacheGroupDescriptor> cacheGrpDescs;
 
     /** */
+    @GridToStringInclude
     private Map<String, DynamicCacheDescriptor> cacheDescs;
 
     /**
@@ -113,5 +118,10 @@ public class LocalJoinCachesContext {
      */
     public boolean isEmpty() {
         return F.isEmpty(locJoinStartCaches) && F.isEmpty(cacheGrpDescs) && F.isEmpty(cacheDescs);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(LocalJoinCachesContext.class, this);
     }
 }

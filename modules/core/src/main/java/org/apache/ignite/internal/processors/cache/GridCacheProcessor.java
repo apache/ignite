@@ -1086,30 +1086,24 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheAdapter cache : reconnected)
             cache.context().gate().reconnected(false);
 
-        IgniteInternalFuture<?> stopFut = null;
-
         if (!stoppedCaches.isEmpty()) {
-            stopFut = ctx.closure().runLocalSafe(new Runnable() {
-                @Override public void run() {
-                    for (GridCacheAdapter cache : stoppedCaches) {
-                        CacheGroupContext grp = cache.context().group();
+            for (GridCacheAdapter cache : stoppedCaches) {
+                CacheGroupContext grp = cache.context().group();
 
-                        onKernalStop(cache, true);
-                        stopCache(cache, true, false);
+                onKernalStop(cache, true);
+                stopCache(cache, true, false);
 
-                        sharedCtx.affinity().stopCacheOnReconnect(cache.context());
+                sharedCtx.affinity().stopCacheOnReconnect(cache.context());
 
-                        if (!grp.hasCaches()) {
-                            stopCacheGroup(grp);
+                if (!grp.hasCaches()) {
+                    stopCacheGroup(grp);
 
-                            sharedCtx.affinity().stopCacheGroupOnReconnect(grp);
-                        }
-                    }
+                    sharedCtx.affinity().stopCacheGroupOnReconnect(grp);
                 }
-            });
+            }
         }
 
-        return stopFut;
+        return null;
     }
 
     /**
