@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -199,6 +200,54 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         startGrid(config(CLI, true, false));
         assertForAllNodes(CACHE_NAME, true);
+    }
+
+    /**
+     * Test coordinator node migration.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCoordinatorMigration() throws Exception {
+        final AtomicInteger IDX = new AtomicInteger();
+
+        startGrid(config("srv-" + IDX.get(), false, false));
+        startGrid(config("srv-" + IDX.incrementAndGet(), false, false));
+
+        Ignite cli = startGrid(config(CLI, true, false));
+
+        cli.active(true);
+
+        cli.getOrCreateCache(cacheConfig(PARTITIONED));
+
+        final AtomicInteger restartCnt = new AtomicInteger();
+
+        Thread t = new Thread(new Runnable() {
+            @Override public void run() {
+                String victimName = "srv-" + (IDX.get() - 1);
+                String newName = "srv-" + IDX.incrementAndGet();
+
+                try {
+                    stopGrid(victimName);
+                    startGrid(config(newName, false, false));
+                }
+                catch (Exception e) {
+                    throw new RuntimeException();
+                }
+            }
+        });
+
+        t.start();
+
+        boolean state = true;
+
+        while (restartCnt.get() < 20 && !Thread.currentThread().isInterrupted()) {
+            if (state)
+                cli.cluster().walDisable(CACHE_NAME);
+            else
+                cli.cluster().walEnable(CACHE_NAME);
+
+            state = !state;
+        }
     }
 
     /**
