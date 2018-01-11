@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import com.mchange.v2.c3p0.util.TestUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.testframework.GridTestUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -70,57 +73,59 @@ public class WalModeChangeConcurrentSelfTest extends WalModeChangeCommonAbstract
 
         final IgniteCache cache = cacheCli.getOrCreateCache(cacheConfig(CacheMode.PARTITIONED));
 
-        // Start pushing requests.
-        Collection<Ignite> walNodes = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            // Start pushing requests.
+            Collection<Ignite> walNodes = new ArrayList<>();
 
-        walNodes.add(srv1);
-        walNodes.add(srv2);
-        walNodes.add(srv3);
-        walNodes.add(cli);
+            walNodes.add(srv1);
+            walNodes.add(srv2);
+            walNodes.add(srv3);
+            walNodes.add(cli);
 
-        final AtomicBoolean done = new AtomicBoolean();
+            final AtomicBoolean done = new AtomicBoolean();
 
-        final CountDownLatch latch = new CountDownLatch(5);
+            final CountDownLatch latch = new CountDownLatch(5);
 
-        for (Ignite node : walNodes) {
-            final Ignite node0 = node;
+            for (Ignite node : walNodes) {
+                final Ignite node0 = node;
 
+                Thread t = new Thread(new Runnable() {
+                    @Override public void run() {
+                        checkConcurrentOperations(done, node0);
+
+                        latch.countDown();
+                    }
+                });
+
+                t.setName("wal-load-" + node0.name());
+
+                t.start();
+            }
+
+            // Do some cache loading in the mean time.
             Thread t = new Thread(new Runnable() {
                 @Override public void run() {
-                    checkConcurrentOperations(done, node0);
+                    int i = 0;
+
+                    while (!done.get())
+                        cache.put(i, i++);
 
                     latch.countDown();
                 }
             });
 
-            t.setName("wal-load-" + node0.name());
+            t.setName("cache-load");
 
             t.start();
+
+            Thread.sleep(20_000);
+
+            done.set(true);
+
+            latch.await();
+
+            X.println(">>> Iteration finished: " + i);
         }
-
-        // Do some cache loading in the mean time.
-        Thread t = new Thread(new Runnable() {
-            @Override public void run() {
-                int i = 0;
-
-                while (!done.get())
-                    cache.put(1, 1);
-
-                latch.countDown();
-            }
-        });
-
-        t.setName("cache-load");
-
-        t.start();
-
-        Thread.sleep(20_000);
-
-        done.set(true);
-
-        System.out.println("FINISHED");
-
-        latch.await();
     }
 
     /**
