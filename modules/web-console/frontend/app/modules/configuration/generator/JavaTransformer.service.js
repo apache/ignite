@@ -17,7 +17,9 @@
 
 import AbstractTransformer from './AbstractTransformer';
 import StringBuilder from './StringBuilder';
+import VersionService from 'app/services/Version.service';
 
+const versionService = new VersionService();
 const STORE_FACTORY = ['org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory'];
 
 // Descriptors for generation of demo data.
@@ -884,12 +886,13 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
      * Build Java startup class with configuration.
      *
      * @param {Bean} cfg
+     * @param available Function to check target version of generated source to appropriate for generation.
      * @param pkg Package name.
      * @param {String} clsName Class name for generate factory class otherwise generate code snippet.
      * @param {Array.<Object>} clientNearCaches Is client node.
      * @returns {StringBuilder}
      */
-    static igniteConfiguration(cfg, pkg, clsName, clientNearCaches) {
+    static igniteConfiguration(cfg, available, pkg, clsName, clientNearCaches) {
         const sb = new StringBuilder();
 
         sb.append(`package ${pkg};`);
@@ -903,7 +906,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
             imports.push('org.apache.ignite.configuration.NearCacheConfiguration');
 
             _.forEach(clientNearCaches, (cache) => {
-                const nearCacheBean = this.generator.cacheNearClient(cache);
+                const nearCacheBean = this.generator.cacheNearClient(cache, available);
 
                 nearCacheBean.cacheName = cache.name;
 
@@ -1045,7 +1048,9 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
         const clientNearCaches = client ? _.filter(cluster.caches, (cache) =>
             cache.cacheMode === 'PARTITIONED' && _.get(cache, 'clientNearConfiguration.enabled')) : [];
 
-        return this.igniteConfiguration(cfg, pkg, clsName, clientNearCaches);
+        const available = versionService.since.bind(versionService, targetVer.ignite);
+
+        return this.igniteConfiguration(cfg, available, pkg, clsName, clientNearCaches);
     }
 
     /**
