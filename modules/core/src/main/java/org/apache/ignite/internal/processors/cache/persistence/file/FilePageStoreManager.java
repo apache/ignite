@@ -182,16 +182,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    public void resetAllocatedSize() {
-        for (CacheStoreHolder holder : idxCacheStores.values()) {
-            holder.idxStore.resetAllocatedSize();
-
-            for (FilePageStore partStore : holder.partStores)
-                partStore.resetAllocatedSize();
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void initializeForCache(CacheGroupDescriptor grpDesc, StoredCacheData cacheData)
         throws IgniteCheckedException {
         int grpId = grpDesc.groupId();

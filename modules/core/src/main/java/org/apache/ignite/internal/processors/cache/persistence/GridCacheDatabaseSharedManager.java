@@ -1092,8 +1092,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      *
      */
     private void resetTotalMemoryPagesMetricToStoreSize() {
-        cctx.pageStore().resetAllocatedSize();
-
         Map<String, Set<Integer>> grpsByRegions = new HashMap<>();
 
         for (Object ctx : cctx.cacheContexts()) {

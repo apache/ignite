@@ -305,24 +305,6 @@ public class FilePageStore implements PageStore {
         }
     }
 
-    /**
-     *
-     */
-    public void resetAllocatedSize() {
-        lock.writeLock().lock();
-
-        try {
-            if (inited)
-                allocated.set(fileIO.size());
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public void read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
         init();

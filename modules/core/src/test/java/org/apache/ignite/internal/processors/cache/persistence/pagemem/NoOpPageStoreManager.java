@@ -195,9 +195,4 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     @Override public long pagesAllocated(int grpId) {
         return 0;
     }
-
-    /** {@inheritDoc} */
-    @Override public void resetAllocatedSize() {
-        // No-op.
-    }
 }
