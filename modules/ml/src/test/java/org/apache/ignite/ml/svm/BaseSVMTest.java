@@ -34,7 +34,7 @@ public class BaseSVMTest extends GridCommonAbstractTest { // TODO: copypasted fr
     private static final int NODE_COUNT = 4;
 
     /** Separator. */
-    private static final String SEPARATOR = "\t";
+    private static final String SEPARATOR = ",";
 
     /** Path to the Iris dataset. */
     static final String DATASET_PATH = "datasets/knn/titanic.txt";

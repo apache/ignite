@@ -39,10 +39,10 @@ public class SVMLinearClassificationModel implements Model<Vector, Double>, Expo
     private int amountOfIterations = 20;
 
     /** Multiplier of the objects's vector required to make prediction.  */
-    private final Vector weights;
+    private Vector weights;
 
     /** Intercept of the linear regression model */
-    private final double intercept;
+    private double intercept;
 
     public SVMLinearClassificationModel(Vector weights, double intercept) {
         this.weights = weights;
@@ -63,12 +63,24 @@ public class SVMLinearClassificationModel implements Model<Vector, Double>, Expo
 
     /** {@inheritDoc} */
     @Override public Double apply(Vector input) {
-        return input.dot(weights) + intercept;
+        final double result = input.dot(weights) + intercept;
+        if(isKeepingRawLabels)
+            return result;
+        else
+            return Math.signum(result);
     }
 
     /**  {@inheritDoc} */
     @Override public <P> void saveModel(Exporter<SVMLinearClassificationModel, P> exporter, P path) {
 
+    }
+
+    public void setWeights(Vector weights) {
+        this.weights = weights;
+    }
+
+    public void setIntercept(double intercept) {
+        this.intercept = intercept;
     }
 
     public int getAmountOfIterations() {
@@ -92,6 +104,30 @@ public class SVMLinearClassificationModel implements Model<Vector, Double>, Expo
     }
 
     public double getRegularization() {
-        return 1.0;
+        return 0.2;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        if (weights.size() < 10) {
+            StringBuilder builder = new StringBuilder();
+
+            for (int i = 0; i < weights.size(); i++) {
+                double nextItem = i == weights.size() - 1 ? intercept : weights.get(i + 1);
+
+                builder.append(String.format("%.4f", Math.abs(weights.get(i))))
+                    .append("*x")
+                    .append(i)
+                    .append(nextItem > 0 ? " + " : " - ");
+            }
+
+            builder.append(String.format("%.4f", Math.abs(intercept)));
+            return builder.toString();
+        }
+
+        return "LinearRegressionModel{" +
+            "weights=" + weights +
+            ", intercept=" + intercept +
+            '}';
     }
 }

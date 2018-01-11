@@ -22,17 +22,19 @@ import org.apache.ignite.ml.Trainer;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledDatasetTestTrainPair;
 import org.apache.ignite.ml.structures.preprocessing.LabellingMachine;
+import org.apache.ignite.ml.structures.preprocessing.Normalizer;
 
 /** Tests behaviour of KNNClassificationTest. */
 public class SVMTest extends BaseSVMTest {
     /** */
-    public void testPredictOnIrisDataset() {
+    public void testPredictOnTitanicDataset() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         LabeledDataset dataset = loadDatasetFromTxt(DATASET_PATH, false);
 
-        System.out.println(dataset.rowSize());
+        // Normalize dataset
+        Normalizer.normalizeWithMiniMax(dataset);
 
-        // Random splitting of iris data as 70% train and 30% test datasets
+        // Random splitting of the given data as 70% train and 30% test datasets
         LabeledDatasetTestTrainPair split = new LabeledDatasetTestTrainPair(dataset, 0.3);
 
         System.out.println("\n>>> Amount of observations in train dataset " + split.train().rowSize());
@@ -63,7 +65,50 @@ public class SVMTest extends BaseSVMTest {
         }
 
         System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
-        System.out.println("\n>>> Accuracy " + amountOfErrors / (double)test.rowSize());
+        System.out.println("\n>>> Prediction percentage " + (1 - amountOfErrors / (double)test.rowSize()));
+
+    }
+
+    /** */
+    public void testPredictOnIdealIrisDataset() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+        LabeledDataset dataset = loadDatasetFromTxt("datasets/knn/iris_binary.txt", false);
+
+        // Normalize dataset
+        Normalizer.normalizeWithMiniMax(dataset);
+
+        // Random splitting of the given data as 70% train and 30% test datasets
+        LabeledDatasetTestTrainPair split = new LabeledDatasetTestTrainPair(dataset, 0.3);
+
+        System.out.println("\n>>> Amount of observations in train dataset " + split.train().rowSize());
+        System.out.println("\n>>> Amount of observations in test dataset " + split.test().rowSize());
+
+        LabeledDataset test = split.test();
+        LabeledDataset train = split.train();
+
+        System.out.println("\n>>> Create new linear regression trainer object.");
+        Trainer<SVMLinearClassificationModel, LabeledDataset> trainer = new SVMLinearClassificationTrainer();
+
+        System.out.println("\n>>> Perform the training to get the model.");
+        SVMLinearClassificationModel mdl = trainer.train(train);
+
+        System.out.println("\n>>> SVM classification model: " + mdl);
+
+        // Clone labels
+        final double[] labels = test.labels();
+
+        // Save predicted classes to test dataset
+        LabellingMachine.assignLabels(test, mdl);
+
+        // Calculate amount of errors on test dataset
+        int amountOfErrors = 0;
+        for (int i = 0; i < test.rowSize(); i++) {
+            if (test.label(i) != labels[i])
+                amountOfErrors++;
+        }
+
+        System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
+        System.out.println("\n>>> Prediction percentage " + (1 - amountOfErrors / (double)test.rowSize()));
 
     }
 }
