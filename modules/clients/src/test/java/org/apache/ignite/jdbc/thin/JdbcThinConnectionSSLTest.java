@@ -58,8 +58,8 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     private static final String TRUST_KEY_STORE_PATH = U.getIgniteHome() +
         "/modules/clients/src/test/keystore/trust.jks";
 
-    /** Ssl context factory. */
-    private static Factory<SSLContext> sslContextFactory;
+    /** SSL context factory. */
+    private static Factory<SSLContext> sslCtxFactory;
 
     /** Set SSL context factory to client listener. */
     private static boolean setSslCtxFactoryToCli;
@@ -84,9 +84,9 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
             new ClientConnectorConfiguration()
                 .setSslEnabled(true)
                 .setUseIgniteSslContextFactory(setSslCtxFactoryToIgnite)
-                .setSslContextFactory(setSslCtxFactoryToCli ? sslContextFactory : null));
+                .setSslContextFactory(setSslCtxFactoryToCli ? sslCtxFactory : null));
 
-        cfg.setSslContextFactory(setSslCtxFactoryToIgnite ? sslContextFactory : null);
+        cfg.setSslContextFactory(setSslCtxFactoryToIgnite ? sslCtxFactory : null);
 
         return cfg;
     }
@@ -96,7 +96,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
      */
     public void testConnection() throws Exception {
         setSslCtxFactoryToCli = true;
-        sslContextFactory = getTestSslContextFactory();
+        sslCtxFactory = getTestSslContextFactory();
 
         startGrids(1);
 
@@ -119,7 +119,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
      */
     public void testConnectionUseIgniteFactory() throws Exception {
         setSslCtxFactoryToIgnite = true;
-        sslContextFactory = getTestSslContextFactory();
+        sslCtxFactory = getTestSslContextFactory();
 
         startGrids(1);
 
@@ -143,7 +143,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     public void testDefaultContext() throws Exception {
         setSslCtxFactoryToCli = true;
         // Factory return default SSL context
-        sslContextFactory = new Factory<SSLContext>() {
+        sslCtxFactory = new Factory<SSLContext>() {
             @Override public SSLContext create() {
                 try {
                     return SSLContext.getDefault();
@@ -180,7 +180,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
      */
     public void testContextFactory() throws Exception {
         setSslCtxFactoryToCli = true;
-        sslContextFactory = getTestSslContextFactory();
+        sslCtxFactory = getTestSslContextFactory();
 
         startGrids(1);
 
@@ -198,7 +198,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
      */
     public void testSslServerAndPlainClient() throws Exception {
         setSslCtxFactoryToCli = true;
-        sslContextFactory = getTestSslContextFactory();
+        sslCtxFactory = getTestSslContextFactory();
 
         startGrids(1);
 
