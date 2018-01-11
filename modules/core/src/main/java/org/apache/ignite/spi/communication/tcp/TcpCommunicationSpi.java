@@ -92,9 +92,9 @@ import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.nio.GridShmemCommunicationClient;
 import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
 import org.apache.ignite.internal.util.nio.compress.BlockingCompressionHandler;
+import org.apache.ignite.internal.util.nio.compress.CompressionType;
 import org.apache.ignite.internal.util.nio.compress.GridCompressionMeta;
 import org.apache.ignite.internal.util.nio.compress.GridNioCompressionFilter;
-import org.apache.ignite.internal.util.nio.compress.LZ4Engine;
 import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
@@ -302,6 +302,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * {@code "Math.max(4, Runtime.getRuntime().availableProcessors() / 2)"}.
      */
     public static final int DFLT_SELECTORS_CNT = Math.max(4, Runtime.getRuntime().availableProcessors() / 2);
+
+    /** */
+    public static final CompressionType DFLT_COMPRESSION_TYPE = CompressionType.LZ4;
 
     /**
      * Version when client is ready to wait to connect to server (could be needed when client tries to open connection
@@ -1104,6 +1107,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** Count of selectors to use in TCP server. */
     private int selectorsCnt = DFLT_SELECTORS_CNT;
 
+    /** */
+    private CompressionType compressionType = DFLT_COMPRESSION_TYPE;
+
     /**
      * Defines how many non-blocking {@code selector.selectNow()} should be made before
      * falling into {@code selector.select(long)} in NIO server. Long value. Default is {@code 0}.
@@ -1150,7 +1156,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * @return {@code True} if network compressing enabled.
      */
     private boolean isNetworkCompressingEnabled() {
-        return ignite.configuration().isNetworkCompressionEnabled();
+        return compressionType != CompressionType.NO_COMPRESSION;
     }
 
     /**
@@ -1611,6 +1617,19 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      */
     public int getSelectorsCount() {
         return selectorsCnt;
+    }
+
+    /** */
+    @IgniteSpiConfiguration(optional = true)
+    public TcpCommunicationSpi setCompressionType(CompressionType compressionType) {
+        this.compressionType = compressionType;
+
+        return this;
+    }
+
+    /** */
+    public CompressionType getCompressionType() {
+        return compressionType;
     }
 
     /**
@@ -2303,8 +2322,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                 if (isNetworkCompressingEnabled()) {
                     GridNioCompressionFilter compressFilter =
-                        new GridNioCompressionFilter(
-                            true, ByteOrder.nativeOrder(), log);
+                        new GridNioCompressionFilter(compressionType, true, ByteOrder.nativeOrder(), log);
 
                     compressFilter.directMode(true);
 
@@ -3182,7 +3200,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         if (isNetworkCompressingEnabled()) {
                             meta.put(COMPRESSION_META.ordinal(), compressMeta = new GridCompressionMeta());
 
-                            compressMeta.compressionEngine(new LZ4Engine());
+                            compressMeta.compressionEngine(GridNioCompressionFilter.createEngine(compressionType));
                         }
 
                         Integer handshakeConnIdx = connIdx;

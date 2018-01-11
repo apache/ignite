@@ -32,6 +32,7 @@ import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
 import org.apache.ignite.internal.client.marshaller.optimized.GridClientOptimizedMarshaller;
 import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
 import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
+import org.apache.ignite.internal.util.nio.compress.CompressionType;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.security.SecurityCredentials;
@@ -65,7 +66,7 @@ public class GridClientConfiguration {
     public static final boolean DFLT_TCP_NODELAY = true;
 
     /** Default flag setting for NET_COMPRESSION option. */
-    public static final boolean DFLT_NET_COMPRESSION = true;
+    public static final CompressionType DFLT_COMPRESSION_TYPE = CompressionType.LZ4;
 
     /** List of servers to connect to. */
     private Collection<String> srvs = Collections.emptySet();
@@ -110,7 +111,7 @@ public class GridClientConfiguration {
     private long pingTimeout = DFLT_PING_TIMEOUT;
 
     /** Network compression. */
-    private boolean netCompression = DFLT_NET_COMPRESSION;
+    private CompressionType compressionType = DFLT_COMPRESSION_TYPE;
 
     /** Default balancer. */
     private GridClientLoadBalancer balancer = new GridClientRandomBalancer();
@@ -160,7 +161,7 @@ public class GridClientConfiguration {
         routers = cfg.getRouters();
         srvs = cfg.getServers();
         sslCtxFactory = cfg.getSslContextFactory();
-        netCompression = cfg.isNetCompressionEnabled();
+        compressionType = cfg.getCompressionType();
         tcpNoDelay = cfg.isTcpNoDelay();
         topRefreshFreq = cfg.getTopologyRefreshFrequency();
         daemon = cfg.isDaemon();
@@ -360,18 +361,18 @@ public class GridClientConfiguration {
      *
      * @return Network compression flag.
      */
-    public boolean isNetCompressionEnabled() {
-        return netCompression;
+    public CompressionType getCompressionType() {
+        return compressionType;
     }
 
     /**
      * Enables/disables network compression.
      *
-     * @param netCompression {@code true} if network compressing is enabled, {@code false} otherwise.
+     * @param compressionType {@code true} if network compressing is enabled, {@code false} otherwise.
      * @return {@code this} for chaining.
      */
-    public GridClientConfiguration setNetComressionEnabled(boolean netCompression) {
-        this.netCompression = netCompression;
+    public GridClientConfiguration setCompressionType(CompressionType compressionType) {
+        this.compressionType = compressionType;
 
         return this;
     }
@@ -743,7 +744,7 @@ public class GridClientConfiguration {
         String tcpNoDelay = in.getProperty(prefix + "tcp.noDelay");
         String topRefreshFreq = in.getProperty(prefix + "topology.refresh");
 
-        String netCompression = in.getProperty(prefix + "netCompression");
+        String compressionType = in.getProperty(prefix + "compressionType");
 
         String sslEnabled = in.getProperty(prefix + "ssl.enabled");
 
@@ -799,8 +800,8 @@ public class GridClientConfiguration {
         if (!F.isEmpty(topRefreshFreq))
             setTopologyRefreshFrequency(Long.parseLong(topRefreshFreq));
 
-        if (!F.isEmpty(netCompression))
-            setNetComressionEnabled(Boolean.parseBoolean(netCompression));
+        if (!F.isEmpty(compressionType))
+            setCompressionType(Enum.valueOf(CompressionType.class, compressionType));
 
         //
         // SSL configuration section

@@ -123,9 +123,6 @@ public class IgniteConfiguration {
     /** Default message send retries count. */
     public static final int DFLT_SEND_RETRY_CNT = 3;
 
-    /** Default message send retries count. */
-    public static final boolean DFLT_NET_COMPRESSION = true;
-
     /** Default discovery startup delay in milliseconds (value is {@code 60,000ms}). */
     public static final long DFLT_DISCOVERY_STARTUP_DELAY = 60000;
 
@@ -299,9 +296,6 @@ public class IgniteConfiguration {
 
     /** Message send retries delay. */
     private int sndRetryCnt = DFLT_SEND_RETRY_CNT;
-
-    /** Whether or not nio compress is enabled. */
-    private boolean netCompression = DFLT_NET_COMPRESSION;
 
     /** Metrics history time. */
     private int metricsHistSize = DFLT_METRICS_HISTORY_SIZE;
@@ -579,7 +573,6 @@ public class IgniteConfiguration {
         segResolvers = cfg.getSegmentationResolvers();
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
-        netCompression = cfg.isNetworkCompressionEnabled();
         sqlConnCfg = cfg.getSqlConnectorConfiguration();
         sslCtxFactory = cfg.getSslContextFactory();
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
@@ -1474,34 +1467,6 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setNetworkSendRetryCount(int sndRetryCnt) {
         this.sndRetryCnt = sndRetryCnt;
-
-        return this;
-    }
-
-    /**
-     * Returns {@code true} if network compression is enabled, {@code false} otherwise.
-     * <p>
-     * If not provided, then default value
-     * {@link #DFLT_NET_COMPRESSION} is used.
-     *
-     * @return Network compression flag.
-     * @see #DFLT_NET_COMPRESSION
-     */
-    public boolean isNetworkCompressionEnabled() {
-        return netCompression;
-    }
-
-    /**
-     * Enables/disables network compression.
-     * <p>
-     * If not provided, then default value
-     * {@link #DFLT_NET_COMPRESSION} is used.
-     *
-     * @param netCompressionEnabled {@code true} if network compressing is enabled, {@code false} otherwise.
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setNetworkCompressionEnabled(boolean netCompressionEnabled) {
-        this.netCompression = netCompressionEnabled;
 
         return this;
     }

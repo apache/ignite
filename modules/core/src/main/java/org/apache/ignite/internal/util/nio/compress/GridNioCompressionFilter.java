@@ -47,6 +47,9 @@ public class GridNioCompressionFilter extends GridNioFilterAdapter {
     /** Whether direct mode is used. */
     private boolean directMode;
 
+    /** */
+    private final CompressionType compressionType;
+
     /**
      * Creates compress filter.
      *
@@ -54,12 +57,13 @@ public class GridNioCompressionFilter extends GridNioFilterAdapter {
      * @param order Byte order.
      * @param log Logger to use.
      */
-    public GridNioCompressionFilter(boolean directBuf, ByteOrder order, IgniteLogger log) {
+    public GridNioCompressionFilter(CompressionType compressionType, boolean directBuf, ByteOrder order, IgniteLogger log) {
         super("Compress filter");
 
         this.log = log;
         this.directBuf = directBuf;
         this.order = order;
+        this.compressionType = compressionType;
     }
 
     /**
@@ -74,6 +78,25 @@ public class GridNioCompressionFilter extends GridNioFilterAdapter {
      */
     public boolean directMode() {
         return directMode;
+    }
+
+    /**
+     * @return New instance of compression engine.
+     */
+    public static CompressionEngine createEngine(CompressionType compressionType) throws IOException {
+        switch (compressionType) {
+            case LZ4:
+                return new LZ4Engine();
+
+            case ZSTD:
+                return new ZstdEngine();
+
+            case DEFALTER:
+                return new DeflaterEngine();
+
+            default:
+                throw new IOException("Wrong CompressionType argument: " + compressionType);
+        }
     }
 
     /** {@inheritDoc} */

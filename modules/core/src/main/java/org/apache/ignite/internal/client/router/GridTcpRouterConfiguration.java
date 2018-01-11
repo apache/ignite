@@ -20,10 +20,12 @@ package org.apache.ignite.internal.client.router;
 import java.net.Socket;
 import java.util.Collection;
 import java.util.Collections;
+import net.jpountz.lz4.LZ4Factory;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
+import org.apache.ignite.internal.util.nio.compress.CompressionType;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
@@ -57,7 +59,7 @@ public class GridTcpRouterConfiguration {
     public static final boolean DFLT_TCP_NODELAY = true;
 
     /** Default nodelay. */
-    public static final boolean DFLT_NET_COMPRESSION = false;
+    public static final CompressionType DFLT_COMPRESSION_TYPE = CompressionType.LZ4;
 
     /** Host. */
     private String host = DFLT_TCP_HOST;
@@ -73,7 +75,7 @@ public class GridTcpRouterConfiguration {
     private boolean noDelay = DFLT_TCP_NODELAY;
 
     /** Network compression. */
-    private boolean netCompression = DFLT_NET_COMPRESSION;
+    private CompressionType compressionType = DFLT_COMPRESSION_TYPE;
 
     /** Idle timeout. */
     private long idleTimeout = ConnectorConfiguration.DFLT_IDLE_TIMEOUT;
@@ -146,12 +148,12 @@ public class GridTcpRouterConfiguration {
      * Returns {@code true} if network compressing is enabled, {@code false} otherwise.
      *
      * If not provided, then default value
-     * {@link #DFLT_NET_COMPRESSION} is used.
+     * {@link #DFLT_COMPRESSION_TYPE} is used.
      *
      * @return Network compression flag.
      */
-    public boolean isNetCompressionEnabled() {
-        return netCompression;
+    public CompressionType getCompressionType() {
+        return compressionType;
     }
 
     /**
@@ -279,13 +281,13 @@ public class GridTcpRouterConfiguration {
      * Enables/disables network compression.
      * <p>
      * If not provided, then default value
-     * {@link #DFLT_NET_COMPRESSION} is used.
+     * {@link #DFLT_COMPRESSION_TYPE} is used.
      *
-     * @param netCompression {@code true} if network compressing is enabled, {@code false} otherwise.
+     * @param compressionType {@code true} if network compressing is enabled, {@code false} otherwise.
      * @return {@code this} for chaining.
      */
-    public GridTcpRouterConfiguration setNetCompressionEnabled(boolean netCompression) {
-        this.netCompression = netCompression;
+    public GridTcpRouterConfiguration setCompressionType(CompressionType compressionType) {
+        this.compressionType = compressionType;
 
         return this;
     }

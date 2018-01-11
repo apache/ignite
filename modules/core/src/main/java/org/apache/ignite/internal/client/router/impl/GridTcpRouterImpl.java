@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioServerListener;
+import org.apache.ignite.internal.util.nio.compress.CompressionType;
 import org.apache.ignite.internal.util.nio.compress.GridNioCompressionFilter;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -151,7 +152,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
         }
 
         for (int port = cfg.getPort(), last = port + cfg.getPortRange(); port <= last; port++) {
-            if (startTcpServer(hostAddr, port, lsnr, parser, cfg.isNoDelay(), cfg.isNetCompressionEnabled(),
+            if (startTcpServer(hostAddr, port, lsnr, parser, cfg.isNoDelay(), cfg.getCompressionType(),
                 sslCtx, cfg.isSslClientAuth(), cfg.isSslClientAuth())) {
                 if (log.isInfoEnabled())
                     log.info("TCP router successfully started for endpoint: " + hostAddr.getHostAddress() + ":" + port);
@@ -244,7 +245,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
      * @param lsnr Server message listener.
      * @param parser Server message parser.
      * @param tcpNoDelay Flag indicating whether TCP_NODELAY flag should be set for accepted connections.
-     * @param netCompression Flag indicating whether network compression enabled.
+     * @param compressionType Flag indicating whether network compression enabled.
      * @param sslCtx SSL context in case if SSL is enabled.
      * @param wantClientAuth Whether client will be requested for authentication.
      * @param needClientAuth Whether client is required to be authenticated.
@@ -252,7 +253,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
      *      server was unable to start.
      */
     private boolean startTcpServer(InetAddress hostAddr, int port, GridNioServerListener<GridClientMessage> lsnr,
-        GridNioParser parser, boolean tcpNoDelay, boolean netCompression, @Nullable SSLContext sslCtx, boolean wantClientAuth,
+        GridNioParser parser, boolean tcpNoDelay, CompressionType compressionType, @Nullable SSLContext sslCtx, boolean wantClientAuth,
         boolean needClientAuth) {
         try {
             // This name is required to be unique in order to avoid collisions with
@@ -263,8 +264,8 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
 
             filterArrayList.add(new GridNioCodecFilter(parser, log, false));
 
-            if (netCompression) {
-                GridNioCompressionFilter compressFilter = new GridNioCompressionFilter(false, ByteOrder.nativeOrder(), log);
+            if (compressionType != CompressionType.NO_COMPRESSION) {
+                GridNioCompressionFilter compressFilter = new GridNioCompressionFilter(compressionType, false, ByteOrder.nativeOrder(), log);
 
                 filterArrayList.add(compressFilter);
             }

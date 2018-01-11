@@ -35,6 +35,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.benchmarks.jmh.cache.JmhCacheAbstractBenchmark;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
+import org.apache.ignite.internal.util.nio.compress.CompressionType;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.messaging.MessagingListenActor;
 import org.openjdk.jmh.annotations.AuxCounters;
@@ -74,12 +75,16 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
     boolean isCompress = false;
 
     /** */
+//    @Param({"NO_COMPRESSION", "LZ4", "ZSTD", "DEFALTER"})
+    private CompressionType compressionType = CompressionType.LZ4;
+
+    /** */
     @Param({"false", "true"})
     boolean isSsl = false;
 
     /** {@inheritDoc} */
-    @Override protected final boolean isCompress() {
-        return isCompress;
+    @Override protected final CompressionType compressionType() {
+        return compressionType;
     }
 
     /** {@inheritDoc} */

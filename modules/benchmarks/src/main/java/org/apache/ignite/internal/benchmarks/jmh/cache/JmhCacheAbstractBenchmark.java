@@ -28,7 +28,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
 import org.apache.ignite.internal.benchmarks.jmh.tcp.GridTestUtils;
+import org.apache.ignite.internal.util.nio.compress.CompressionType;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.openjdk.jmh.annotations.Scope;
@@ -129,8 +131,8 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
     }
 
     /** */
-    protected boolean isCompress() {
-        return false;
+    protected CompressionType compressionType() {
+        return CompressionType.NO_COMPRESSION;
     }
 
     /**
@@ -165,7 +167,9 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
         if (isSsl())
             cfg.setSslContextFactory(GridTestUtils.sslFactory());
 
-        cfg.setNetworkCompressionEnabled(isCompress());
+        TcpCommunicationSpi tcpSpi = new TcpCommunicationSpi();
+        tcpSpi.setCompressionType(compressionType());
+        cfg.setCommunicationSpi(tcpSpi);
 
         return cfg;
     }
