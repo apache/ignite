@@ -250,25 +250,23 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         long cntrsPageId;
 
                         if (grp.sharedGroup()) {
+                            long initCntrPageId = io.getCountersPageId(partMetaPageAddr);
 
-                            final Map<Integer, Long> sizes = store.cacheSizes();
+                            Map<Integer, Long> newSizes = store.cacheSizes();
+                            Map<Integer, Long> prevSizes = readSharedGroupCacheSizes(pageMem, grpId, initCntrPageId);
 
-                            long initCntrPage = io.getCountersPageId(partMetaPageAddr);
-                            final Map<Integer, Long> existingSizes = readCounters(pageMem, grpId, partMetaPageAddr, io);
+                            if (prevSizes != null && prevSizes.equals(newSizes))
+                                cntrsPageId = initCntrPageId; // Preventing modification of sizes pages for store
+                            else {
+                                cntrsPageId = writeSharedGroupCacheSizes(pageMem, grpId, initCntrPageId,
+                                    store.partId(), newSizes);
 
-                            //todo remove
-                            if (existingSizes != null && existingSizes.equals(sizes))
-                                System.err.println("Preventing modification: " + store.name() + " for part " + store.partId() + " actual " + sizes);
+                                if (initCntrPageId == 0 && cntrsPageId != 0) {
+                                    io.setCountersPageId(partMetaPageAddr, cntrsPageId);
 
-                            if (existingSizes == null || !existingSizes.equals(sizes)) {
-                                final T2<Long, Boolean> objects = writeCounters(pageMem, store, grpId, sizes, io,
-                                    partMetaPageAddr, store.partId());
-
-                                cntrsPageId = objects.get1();
-                                changed |= objects.get2();
+                                    changed = true;
+                                }
                             }
-                            else
-                                cntrsPageId = initCntrPage;
                         }
                         else
                             cntrsPageId = 0L;
@@ -341,21 +339,22 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /**
-     * @param pageMem
-     * @param grpId
-     * @param partMetaPageAddr partition meta page address.
-     * @param io meta page IO.
-     * @return Cache sizes if store belongs to group containing multiple caches and sizes are available in memory.
-     * @throws IgniteCheckedException
+     * Loads cache sizes for all caches in shared group.
+     *
+     * @param pageMem page memory to perform operations on pages.
+     * @param grpId Cache group ID.
+     * @param cntrsPageId Counters page ID, if zero is provided that means no counters page exist.
+     * @return Cache sizes if store belongs to group containing multiple caches and sizes are available in memory. May
+     * return null if counter page does not exist.
+     * @throws IgniteCheckedException If page memory operation failed.
      */
-    private Map<Integer, Long> readCounters(PageSupport pageMem,
-        int grpId, long partMetaPageAddr, PagePartitionMetaIO io) throws IgniteCheckedException {
-        long cntrsPageId = io.getCountersPageId(partMetaPageAddr);
+    @Nullable private static Map<Integer, Long> readSharedGroupCacheSizes(PageSupport pageMem, int grpId,
+        long cntrsPageId) throws IgniteCheckedException {
 
         if (cntrsPageId == 0L)
             return null;
 
-        Map<Integer, Long>  cacheSizes = new HashMap<>();
+        Map<Integer, Long> cacheSizes = new HashMap<>();
 
         long nextId = cntrsPageId;
 
@@ -389,27 +388,30 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         return cacheSizes;
     }
 
-    private T2<Long, Boolean> writeCounters(PageMemory pageMem, CacheDataStore store, int grpId,
-        Map<Integer, Long> sizes,
-        PagePartitionMetaIO io, long partMetaPageAddr, int partId) throws IgniteCheckedException {
-
-        boolean changed = false;
-        long cntrsPageId = io.getCountersPageId(partMetaPageAddr);
+    /**
+     * Saves cache sizes for all caches in shared group. Unconditionally marks pages as dirty.
+     *
+     * @param pageMem page memory to perform operations on pages.
+     * @param grpId Cache group ID.
+     * @param cntrsPageId Counters page ID, if zero is provided that means no counters page exist.
+     * @param partId Partition ID.
+     * @param sizes Cache sizes of all caches in group. Not null.
+     * @return new counter page Id. Same as {@code cntrsPageId} or new value if cache size pages were initialized.
+     * @throws IgniteCheckedException if page memory operation failed.
+     */
+    private static long writeSharedGroupCacheSizes(PageMemory pageMem, int grpId,
+        long cntrsPageId, int partId, Map<Integer, Long> sizes) throws IgniteCheckedException {
         byte[] data = serializeCacheSizes(sizes);
 
         int items = data.length / 12;
         boolean init = cntrsPageId == 0;
 
-        if (init && !sizes.isEmpty()) {
+        if (init && !sizes.isEmpty())
             cntrsPageId = pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
-
-            io.setCountersPageId(partMetaPageAddr, cntrsPageId);
-
-            changed = true;
-        }
 
         long nextId = cntrsPageId;
         int written = 0;
+
         while (written != items) {
             final long curId = nextId;
             final long curPage = pageMem.acquirePage(grpId, curId);
@@ -422,24 +424,24 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 assert curAddr != 0;
 
                 try {
-                    PagePartitionCountersIO partMetaIo;
+                    PagePartitionCountersIO partCntrIo;
 
                     if (init) {
-                        partMetaIo = PagePartitionCountersIO.VERSIONS.latest();
+                        partCntrIo = PagePartitionCountersIO.VERSIONS.latest();
 
-                        partMetaIo.initNewPage(curAddr, curId, pageSize);
+                        partCntrIo.initNewPage(curAddr, curId, pageSize);
                     }
                     else
-                        partMetaIo = PageIO.getPageIO(curAddr);
+                        partCntrIo = PageIO.getPageIO(curAddr);
 
-                    written += partMetaIo.writeCacheSizes(pageSize, curAddr, data, written);
+                    written += partCntrIo.writeCacheSizes(pageSize, curAddr, data, written);
 
-                    nextId = partMetaIo.getNextCountersPageId(curAddr);
+                    nextId = partCntrIo.getNextCountersPageId(curAddr);
 
-                    if(written != items && (init = nextId == 0)) {
+                    if (written != items && (init = nextId == 0)) {
                         //allocate new counters page
-                        nextId = pageMem.allocatePage(grpId, store.partId(), PageIdAllocator.FLAG_DATA);
-                        partMetaIo.setNextCountersPageId(curAddr, nextId);
+                        nextId = pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
+                        partCntrIo.setNextCountersPageId(curAddr, nextId);
                     }
                 }
                 finally {
@@ -452,7 +454,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
         }
 
-        return new T2<>(cntrsPageId, changed);
+        return cntrsPageId;
     }
 
     /**
@@ -505,10 +507,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /**
-     * @param cacheSizes Cache sizes.
-     * @return Serialized cache sizes
+     * @param cacheSizes Cache sizes: cache Id in shared group mapped to its size. Not null.
+     * @return Serialized cache sizes or 0-byte length array if map was empty.
      */
-    private byte[] serializeCacheSizes(Map<Integer, Long> cacheSizes) {
+    private static byte[] serializeCacheSizes(Map<Integer, Long> cacheSizes) {
         // Item size = 4 bytes (cache ID) + 8 bytes (cache size) = 12 bytes
         byte[] data = new byte[cacheSizes.size() * 12];
         long off = GridUnsafe.BYTE_ARR_OFF;
@@ -1097,7 +1099,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                 Map<Integer, Long> cacheSizes = null;
 
                                 if (grp.sharedGroup())
-                                    cacheSizes = readCounters(pageMem, grpId, pageAddr, io);
+                                    cacheSizes = readSharedGroupCacheSizes(pageMem, grpId, io.getCountersPageId(pageAddr));
 
                                 delegate0.init(io.getSize(pageAddr), io.getUpdateCounter(pageAddr), cacheSizes);
 
