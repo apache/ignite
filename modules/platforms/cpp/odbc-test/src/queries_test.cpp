@@ -1446,6 +1446,10 @@ BOOST_AUTO_TEST_CASE(TestKeyVal)
     ret = SQLFetch(stmt);
     BOOST_CHECK(ret == SQL_NO_DATA);
 
+    ret = SQLFreeStmt(stmt, SQL_CLOSE);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
     SQLCHAR requestStar[] = "SELECT _key, _val, * FROM ComplexType";
 
     ret = SQLExecDirect(stmt, requestStar, SQL_NTS);
