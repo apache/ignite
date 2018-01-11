@@ -77,6 +77,9 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
     /** Client. */
     protected static final String CLI = "cli";
 
+    /** Client 2. */
+    protected static final String CLI_2 = "cli_2";
+
     /** Node attribute for filtering. */
     protected static final String FILTER_ATTR = "FILTER";
 
