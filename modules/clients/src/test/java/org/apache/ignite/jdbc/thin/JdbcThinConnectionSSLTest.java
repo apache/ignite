@@ -54,6 +54,10 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     private static final String SRV_KEY_STORE_PATH = U.getIgniteHome() +
         "/modules/clients/src/test/keystore/server.jks";
 
+    /** Trust key store path. */
+    private static final String TRUST_KEY_STORE_PATH = U.getIgniteHome() +
+        "/modules/clients/src/test/keystore/trust.jks";
+
     /** Ssl context factory. */
     private static Factory<SSLContext> sslContextFactory;
 
@@ -100,7 +104,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
             try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?useSSL=true" +
                 "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
                 "&sslClientCertificateKeyStorePassword=123456" +
-                "&sslTrustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
+                "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
                 "&sslTrustCertificateKeyStorePassword=123456")) {
                 checkConnection(conn);
             }
@@ -123,7 +127,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
             try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?useSSL=true" +
                 "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
                 "&sslClientCertificateKeyStorePassword=123456" +
-                "&sslTrustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
+                "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
                 "&sslTrustCertificateKeyStorePassword=123456")) {
                 checkConnection(conn);
             }
@@ -152,7 +156,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
 
         System.setProperty("javax.net.ssl.keyStore", CLI_KEY_STORE_PATH);
         System.setProperty("javax.net.ssl.keyStorePassword", "123456");
-        System.setProperty("javax.net.ssl.trustStore", SRV_KEY_STORE_PATH);
+        System.setProperty("javax.net.ssl.trustStore", TRUST_KEY_STORE_PATH);
         System.setProperty("javax.net.ssl.trustStorePassword", "123456");
 
         startGrids(1);
@@ -226,7 +230,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
                     DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?useSSL=true" +
                         "&sslClientCertificateKeyStoreUrl=invalid_client_keystore_path" +
                         "&sslClientCertificateKeyStorePassword=123456" +
-                        "&sslTrustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
+                        "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
                         "&sslTrustCertificateKeyStorePassword=123456");
 
                     return null;
@@ -238,7 +242,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
                     DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?useSSL=true" +
                         "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
                         "&sslClientCertificateKeyStorePassword=invalid_cli_passwd" +
-                        "&sslTrustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
+                        "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
                         "&sslTrustCertificateKeyStorePassword=123456");
 
                     return null;
@@ -262,7 +266,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
                     DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?useSSL=true" +
                         "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
                         "&sslClientCertificateKeyStorePassword=123456" +
-                        "&sslTrustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
+                        "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
                         "&sslTrustCertificateKeyStorePassword=invalid_trust_passwd");
 
                     return null;
@@ -275,7 +279,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
                         "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
                         "&sslClientCertificateKeyStorePassword=123456" +
                         "&sslClientCertificateKeyStoreType=INVALID" +
-                        "&sslTrustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
+                        "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
                         "&sslTrustCertificateKeyStorePassword=123456");
 
                     return null;
@@ -287,7 +291,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
                     DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?useSSL=true" +
                         "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
                         "&sslClientCertificateKeyStorePassword=123456" +
-                        "&sslTrustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
+                        "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
                         "&sslTrustCertificateKeyStoreType=INVALID" +
                         "&sslTrustCertificateKeyStorePassword=123456");
 
@@ -322,9 +326,9 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     private static Factory<SSLContext> getTestSslContextFactory() {
         SslContextFactory factory = new SslContextFactory();
 
-        factory.setKeyStoreFilePath(CLI_KEY_STORE_PATH);
+        factory.setKeyStoreFilePath(SRV_KEY_STORE_PATH);
         factory.setKeyStorePassword("123456".toCharArray());
-        factory.setTrustStoreFilePath(SRV_KEY_STORE_PATH);
+        factory.setTrustStoreFilePath(TRUST_KEY_STORE_PATH);
         factory.setTrustStorePassword("123456".toCharArray());
 
         return factory;
