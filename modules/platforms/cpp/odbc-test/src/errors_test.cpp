@@ -103,7 +103,7 @@ BOOST_AUTO_TEST_CASE(TestConnectFail)
     BOOST_REQUIRE(dbc != NULL);
 
     // Connect string
-    SQLCHAR connectStr[] = "DRIVER={Apache Ignite};ADDRESS=127.0.0.1:9999;SCHEMA=cache";
+    SQLCHAR connectStr[] = "DRIVER={Apache Ignite};ADDRESS=127.0.0.1:1111;SCHEMA=cache";
 
     SQLCHAR outstr[ODBC_BUFFER_SIZE];
     SQLSMALLINT outstrlen;
