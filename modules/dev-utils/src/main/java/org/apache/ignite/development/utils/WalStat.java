@@ -96,7 +96,7 @@ public class WalStat {
         // if (idx == 8 || idx == 9)
         //    System.out.println(idx + ":" + type);
         computeStatIfAbsent(type, record, pageSnapshotTypes);
-        computeStatIfAbsent(PageIdUtils.partId(pageId), record, pageSnapshotPart);
+        // computeStatIfAbsent(PageIdUtils.partId(pageId), record, pageSnapshotPart);
         computeStatIfAbsent(idx, record, pageSnapshotIndexes);
         computeStatIfAbsent(fullPageId.groupId(), record, pageSnapshotCacheGroups);
     }
@@ -145,7 +145,7 @@ public class WalStat {
         printMap(sb, "Data Record Operations", dataRecordOperation);
 
         printMap(sb, "Page Snapshot Page Types", pageSnapshotTypes);
-        printMap(sb, "Page Snapshot Partitions", pageSnapshotPart);
+        //printMap(sb, "Page Snapshot Partitions", pageSnapshotPart);
         printMap(sb, "Page Snapshot Indexes", pageSnapshotIndexes);
         printMap(sb, "Page Snapshot Cache Groups", pageSnapshotCacheGroups);
 
