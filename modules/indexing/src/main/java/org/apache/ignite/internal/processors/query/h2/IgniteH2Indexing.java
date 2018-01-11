@@ -168,6 +168,7 @@ import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Insert;
+import org.h2.command.dml.NoOperation;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
 import org.h2.index.Index;
@@ -806,6 +807,27 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         desc.table().addColumns(cols, ifColNotExists);
+
+        clearCachedQueries();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void dynamicDropColumn(String schemaName, String tblName, List<String> cols, boolean ifTblExists,
+        boolean ifColExists) throws IgniteCheckedException {
+        // Locate table.
+        H2Schema schema = schemas.get(schemaName);
+
+        H2TableDescriptor desc = (schema != null ? schema.tableByName(tblName) : null);
+
+        if (desc == null) {
+            if (!ifTblExists)
+                throw new IgniteCheckedException("Table not found in internal H2 database [schemaName=" + schemaName +
+                    ",tblName=" + tblName + ']');
+            else
+                return;
+        }
+
+        desc.table().dropColumns(cols, ifColExists);
 
         clearCachedQueries();
     }
@@ -1953,13 +1975,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             try {
                                 res.add(ddlProc.runDdlStatement(sqlQry, prepared));
 
-                                continue;
-                            }
-                            catch (IgniteCheckedException e) {
-                                throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + sqlQry + ']', e);
-                            }
+                            continue;
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + sqlQry + ']', e);
                         }
                     }
+if (prepared instanceof NoOperation) {
+                        QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(
+                            Collections.singletonList(Collections.singletonList(0L)), null, false);
+
+                        resCur.fieldsMeta(UPDATE_RESULT_META);
+
+                        res.add(resCur);
+
+                        continue;
+                    }                }
 
                     assert twoStepQry != null;
 

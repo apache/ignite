@@ -1238,6 +1238,75 @@ public class QueryUtils {
     }
 
     /**
+     * Checks if given column can be removed from table using its {@link QueryEntity}.
+     *
+     * @param entity Query entity.
+     * @param fieldName Name of the field of the key or value object.
+     * @param colName Name of the column.
+     * @return {@code null} if it's OK to remove the column and exception otherwise.
+     */
+    public static SchemaOperationException validateDropColumn(QueryEntity entity, String fieldName, String colName) {
+        if (F.eq(fieldName, entity.getKeyFieldName()) || KEY_FIELD_NAME.equalsIgnoreCase(fieldName))
+            return new SchemaOperationException("Cannot drop column \"" + colName +
+                "\" because it represents an entire cache key");
+
+        if (F.eq(fieldName, entity.getValueFieldName()) || VAL_FIELD_NAME.equalsIgnoreCase(fieldName))
+            return new SchemaOperationException("Cannot drop column \"" + colName +
+                "\" because it represents an entire cache value");
+
+        Set<String> keyFields = entity.getKeyFields();
+
+        if (keyFields != null && keyFields.contains(fieldName))
+            return new SchemaOperationException("Cannot drop column \"" + colName +
+                "\" because it is a part of a cache key");
+
+        Collection<QueryIndex> indexes = entity.getIndexes();
+
+        if (indexes != null) {
+            for (QueryIndex idxDesc : indexes) {
+                if (idxDesc.getFields().containsKey(fieldName))
+                    return new SchemaOperationException("Cannot drop column \"" + colName +
+                        "\" because an index exists (\"" + idxDesc.getName() + "\") that uses the column.");
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Checks if given column can be removed from the table using its {@link GridQueryTypeDescriptor}.
+     *
+     * @param type Type descriptor.
+     * @param colName Name of the column.
+     * @return {@code null} if it's OK to remove the column and exception otherwise.
+     */
+    public static SchemaOperationException validateDropColumn(GridQueryTypeDescriptor type, String colName) {
+        if (F.eq(colName, type.keyFieldName()) || KEY_FIELD_NAME.equalsIgnoreCase(colName))
+            return new SchemaOperationException("Cannot drop column \"" + colName +
+                "\" because it represents an entire cache key");
+
+        if (F.eq(colName, type.valueFieldName()) || VAL_FIELD_NAME.equalsIgnoreCase(colName))
+            return new SchemaOperationException("Cannot drop column \"" + colName +
+                "\" because it represents an entire cache value");
+
+        GridQueryProperty prop = type.property(colName);
+
+        if (prop != null && prop.key())
+            return new SchemaOperationException("Cannot drop column \"" + colName +
+                "\" because it is a part of a cache key");
+
+        Collection<GridQueryIndexDescriptor> indexes = type.indexes().values();
+
+        for (GridQueryIndexDescriptor idxDesc : indexes) {
+            if (idxDesc.fields().contains(colName))
+                return new SchemaOperationException("Cannot drop column \"" + colName +
+                    "\" because an index exists (\"" + idxDesc.name() + "\") that uses the column.");
+        }
+
+        return null;
+    }
+
+    /**
      * Private constructor.
      */
     private QueryUtils() {

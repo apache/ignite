@@ -384,6 +384,25 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     }
 
     /**
+     * Removes a property with specified name.
+     *
+     * @param name Name of a property to remove.
+     */
+    public void removeProperty(String name) throws IgniteCheckedException {
+        GridQueryProperty prop = props.remove(name);
+
+        if (prop == null)
+            throw new IgniteCheckedException("Property with name '" + name + "' does not exist.");
+
+        if (validateProps != null)
+            validateProps.remove(prop);
+
+        uppercaseProps.remove(name.toUpperCase());
+
+        fields.remove(name);
+    }
+
+    /**
      * @param schemaName Schema name.
      */
     public void schemaName(String schemaName) {
