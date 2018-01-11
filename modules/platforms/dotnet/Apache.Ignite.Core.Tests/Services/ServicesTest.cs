@@ -292,7 +292,6 @@ namespace Apache.Ignite.Core.Tests.Services
 
             // Check proxy properties
             Assert.IsNotNull(prx);
-            Assert.AreEqual(prx.GetType(), svc.GetType());
             Assert.AreEqual(prx.ToString(), svc.ToString());
             Assert.AreEqual(17, prx.TestProperty);
             Assert.IsTrue(prx.Initialized);
@@ -375,7 +374,6 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(1, desc.AffinityKey);
             Assert.AreEqual(1, desc.MaxPerNodeCount);
             Assert.AreEqual(1, desc.TotalCount);
-            Assert.AreEqual(typeof(TestIgniteServiceSerializable), desc.Type);
             Assert.AreEqual(Grid1.GetCluster().GetLocalNode().Id, desc.OriginNodeId);
 
             var top = desc.TopologySnapshot;
@@ -747,11 +745,6 @@ namespace Apache.Ignite.Core.Tests.Services
             // Verify decriptor
             var descriptor = Services.GetServiceDescriptors().Single(x => x.Name == javaSvcName);
             Assert.AreEqual(javaSvcName, descriptor.Name);
-            Assert.Throws<ServiceInvocationException>(() =>
-            {
-                // ReSharper disable once UnusedVariable
-                var type = descriptor.Type;
-            });
 
             var svc = Services.GetServiceProxy<IJavaService>(javaSvcName, false);
             var binSvc = Services.WithKeepBinary().WithServerKeepBinary()
@@ -952,7 +945,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Test service interface for proxying.
         /// </summary>
-        private interface ITestIgniteService
+        public interface ITestIgniteService
         {
             int TestProperty { get; set; }
 
@@ -982,7 +975,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Test service interface for proxy usage.
         /// Has some of the original interface members with different signatures.
         /// </summary>
-        private interface ITestIgniteServiceProxyInterface
+        public interface ITestIgniteServiceProxyInterface
         {
             /** */
             Guid NodeId { get; }
@@ -1199,7 +1192,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Java service proxy interface.
         /// </summary>
         [SuppressMessage("ReSharper", "InconsistentNaming")]
-        private interface IJavaService
+        public interface IJavaService
         {
             /** */
             bool isCancelled();
@@ -1315,7 +1308,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Interop class.
         /// </summary>
-        private class PlatformComputeBinarizable
+        public class PlatformComputeBinarizable
         {
             /** */
             public int Field { get; set; }
