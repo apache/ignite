@@ -18,6 +18,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.math.BigDecimal;
 import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Collections;
@@ -68,6 +69,14 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
         final boolean touch) {
         return putEntryIfObsoleteOrAbsent(null, ctx, topVer, key, create, touch);
     }
+
+    private BigDecimal bd = new BigDecimal(0);
+
+    private Object mux = new Object();
+
+    private GridCacheEntryEx mapEntry;
+
+    private GridCacheMapEntry mapEntry2;
 
     protected final GridCacheMapEntry putEntryIfObsoleteOrAbsent(
         @Nullable CacheMapHolder hld,
@@ -154,9 +163,12 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
             sizeChange = 0;
 
             if (doomed != null) {
-                synchronized (doomed) {
+                doomed.lockEntry();
+                try {
                     if (!doomed.deleted())
                         sizeChange--;
+                } finally {
+                    doomed.unlockEntry();
                 }
 
                 if (ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
@@ -284,9 +296,12 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
                     false);
             }
 
-            synchronized (entry) {
+            entry.lockEntry();
+            try {
                 if (!entry.deleted())
                     decrementPublicSize(hld, entry);
+            } finally {
+                entry.unlockEntry();
             }
         }
 
