@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Cluster
         /// </summary>
         /// <returns>All node attributes.</returns>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
-        [Obsolete]
+        [Obsolete("Use Attributes property.")]
         IDictionary<string, object> GetAttributes();
 
         /// <summary>
