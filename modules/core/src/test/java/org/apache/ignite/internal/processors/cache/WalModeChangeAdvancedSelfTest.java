@@ -48,7 +48,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
         deleteWorkFiles();
@@ -120,6 +120,85 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         assertEquals(cache1.size(), 30);
         assertEquals(cache2.size(), 0);
+    }
+
+    /**
+     * Test simple node join.
+     *
+     * @throws Exception If failed.
+     */
+    public void testJoin() throws Exception {
+        checkJoin(false);
+    }
+
+    /**
+     * Test simple node join when operations is performed from coordinator.
+     *
+     * @throws Exception If failed.
+     */
+    public void testJoinCoordinator() throws Exception {
+        checkJoin(true);
+    }
+
+    /**
+     * Check node join behavior.
+     *
+     * @param crdFiltered {@code True} if first node is coordinator.
+     * @throws Exception If failed.
+     */
+    private void checkJoin(boolean crdFiltered) throws Exception {
+        // Start node and disable WAL.
+        Ignite srv = startGrid(config(SRV_1, false, crdFiltered));
+
+        srv.active(true);
+
+        srv.getOrCreateCache(cacheConfig(PARTITIONED));
+        assertForAllNodes(CACHE_NAME, true);
+
+        if (!crdFiltered) {
+            srv.cluster().walDisable(CACHE_NAME);
+            assertForAllNodes(CACHE_NAME, false);
+        }
+
+        // Start other nodes.
+        startGrid(config(SRV_2, false, false));
+        assertForAllNodes(CACHE_NAME, false);
+
+        if (crdFiltered) {
+            srv.cluster().walDisable(CACHE_NAME);
+            assertForAllNodes(CACHE_NAME, false);
+        }
+
+        startGrid(config(SRV_3, false, !crdFiltered));
+        assertForAllNodes(CACHE_NAME, false);
+
+        startGrid(config(CLI, true, false));
+        assertForAllNodes(CACHE_NAME, false);
+
+        // Stop nodes and restore WAL state on the first node.
+        stopGrid(SRV_2, true);
+        stopGrid(SRV_3, true);
+        stopGrid(CLI, true);
+
+        if (!crdFiltered) {
+            srv.cluster().walEnable(CACHE_NAME);
+            assertForAllNodes(CACHE_NAME, true);
+        }
+
+        // Start other nodes again.
+        startGrid(config(SRV_2, false, false));
+        assertForAllNodes(CACHE_NAME, true);
+
+        if (crdFiltered) {
+            srv.cluster().walEnable(CACHE_NAME);
+            assertForAllNodes(CACHE_NAME, true);
+        }
+
+        startGrid(config(SRV_3, false, !crdFiltered));
+        assertForAllNodes(CACHE_NAME, true);
+
+        startGrid(config(CLI, true, false));
+        assertForAllNodes(CACHE_NAME, true);
     }
 
     /**
