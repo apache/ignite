@@ -26,7 +26,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ThreadLocalRandom8;
@@ -51,9 +50,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
     /** */
     private volatile boolean stop = false;
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -72,26 +69,21 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setName("dfltMemPlc")
                 .setPersistenceEnabled(true)
-                /*.setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU) TODO: fix NPE on start */)
+            )
             .setPageSize(PAGE_SIZE)
             .setConcurrencyLevel(1)
             .setWalMode(WALMode.LOG_ONLY)
-            .setWalFsyncDelayNanos(0)
-            .setFileIOFactory(new AsyncFileIOFactory());
+            .setWalFsyncDelayNanos(0);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         deleteWorkFiles();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
@@ -103,7 +95,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
     /**
      * Tests interruptions on WAL write.
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
     public void testInterruptsOnWALWrite() throws Exception {
         final Ignite ignite = startGrid();
@@ -134,6 +126,8 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
             workers[i].setName("writer-" + i);
             workers[i].setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
                 @Override public void uncaughtException(Thread t, Throwable e) {
+                    log.error("Worker thread error", e);
+
                     fail.compareAndSet(null, e);
                 }
             });
