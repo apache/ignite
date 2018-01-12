@@ -28,7 +28,10 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Test for cache entities count metrics calculated by different implementation gets the same result.
+ * This test checks that entries count metrics, calculated by method
+ * {@link org.apache.ignite.internal.processors.cache.CacheMetricsImpl#getEntriesStat()} (which uses one iteration
+ * over local partitions to get all set of metrics), have the same values as metrics, calculated by individual methods
+ * (which use iteration over local partition per each method call).
  */
 public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
     /** Grid count. */
