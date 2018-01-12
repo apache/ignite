@@ -204,13 +204,15 @@ public abstract class GridAbstractTest extends TestCase {
         if (BINARY_MARSHALLER)
             GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
 
-        Thread timer = new Thread(new GridTestClockTimer(), "ignite-clock-for-tests");
+        if (GridTestClockTimer.startTestTimer()) {
+            Thread timer = new Thread(new GridTestClockTimer(), "ignite-clock-for-tests");
 
-        timer.setDaemon(true);
+            timer.setDaemon(true);
 
-        timer.setPriority(10);
+            timer.setPriority(10);
 
-        timer.start();
+            timer.start();
+        }
     }
 
     /** */

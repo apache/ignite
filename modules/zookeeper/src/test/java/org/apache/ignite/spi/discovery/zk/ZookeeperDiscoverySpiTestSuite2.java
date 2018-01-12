@@ -29,8 +29,15 @@ import org.apache.ignite.internal.ClusterNodeMetricsUpdateTest;
 import org.apache.ignite.internal.IgniteClientReconnectCacheTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryTransactionalSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicMultiNodeFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedNodeRestartTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedAtomicMultiNodeFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedNodeRestartSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicOnheapMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedMultiJvmFullApiSelfTest;
 import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -50,6 +57,8 @@ public class ZookeeperDiscoverySpiTestSuite2 extends TestSuite {
     public static TestSuite suite() throws Exception {
         System.setProperty("zookeeper.forceSync", "false");
 
+        System.setProperty("H2_JDBC_CONNECTIONS", "500"); // For multi-jvm tests.
+
         testingCluster = createTestingCluster(3);
 
         testingCluster.start();
@@ -66,6 +75,15 @@ public class ZookeeperDiscoverySpiTestSuite2 extends TestSuite {
         suite.addTestSuite(GridCachePartitionedNodeRestartTest.class);
         suite.addTestSuite(GridCacheReplicatedNodeRestartSelfTest.class);
         suite.addTestSuite(ClusterNodeMetricsUpdateTest.class);
+
+        suite.addTestSuite(GridCachePartitionedMultiNodeFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedMultiNodeFullApiSelfTest.class);
+
+        suite.addTestSuite(GridCacheAtomicMultiNodeFullApiSelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedAtomicMultiNodeFullApiSelfTest.class);
+
+        suite.addTestSuite(GridCacheAtomicMultiJvmFullApiSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedMultiJvmFullApiSelfTest.class);
 
         return suite;
     }
