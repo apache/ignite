@@ -58,12 +58,12 @@ public class ZookeeperDiscoverySpiTestSuite2 extends TestSuite {
         TestSuite suite = new TestSuite("ZookeeperDiscoverySpi Test Suite");
 
         suite.addTestSuite(ZookeeperDiscoverySuitePreprocessorTest.class);
-        //suite.addTestSuite(GridEventConsumeSelfTest.class);
+        suite.addTestSuite(GridEventConsumeSelfTest.class);
         suite.addTestSuite(IgniteClientReconnectCacheTest.class);
-//        suite.addTestSuite(IgniteCachePutRetryAtomicSelfTest.class);
-//        suite.addTestSuite(IgniteCachePutRetryTransactionalSelfTest.class);
-//        suite.addTestSuite(GridCachePartitionedNodeRestartTest.class);
-//        suite.addTestSuite(GridCacheReplicatedNodeRestartSelfTest.class);
+        suite.addTestSuite(IgniteCachePutRetryAtomicSelfTest.class);
+        suite.addTestSuite(IgniteCachePutRetryTransactionalSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedNodeRestartTest.class);
+        suite.addTestSuite(GridCacheReplicatedNodeRestartSelfTest.class);
 
         return suite;
     }

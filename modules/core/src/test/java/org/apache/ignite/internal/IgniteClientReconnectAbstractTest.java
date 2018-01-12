@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -279,8 +280,17 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
 
         log.info("Block reconnect.");
 
-        for (Ignite client : clients)
-            spi(client).writeLatch = new CountDownLatch(1);
+        List<DiscoverySpiTestListener> blockLsnrs = new ArrayList<>();
+
+        for (Ignite client : clients) {
+            DiscoverySpiTestListener lsnr = new DiscoverySpiTestListener();
+
+            lsnr.startBlockJoin();
+
+            blockLsnrs.add(lsnr);
+
+            spi0(client).setInternalListener(lsnr);
+        }
 
         IgnitePredicate<Event> p = new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
@@ -312,8 +322,8 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
 
         log.info("Allow reconnect.");
 
-        for (Ignite client : clients)
-            spi(client).writeLatch.countDown();
+        for (DiscoverySpiTestListener blockLsnr : blockLsnrs)
+            blockLsnr.stopBlockJoin();
 
         waitReconnectEvent(log, reconnectLatch);
 
