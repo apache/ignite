@@ -1479,7 +1479,8 @@ export default class IgniteConfigurationGenerator {
                 .boolProperty('cacheSanityCheckEnabled');
         }
 
-        cfg.boolProperty('lateAffinityAssignment');
+        if (available(['1.0.0', '2.1.0']))
+            cfg.boolProperty('lateAffinityAssignment');
 
         return cfg;
     }
@@ -1509,30 +1510,34 @@ export default class IgniteConfigurationGenerator {
 
     // Generate marshaller group.
     static clusterMarshaller(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
-        const kind = _.get(cluster.marshaller, 'kind');
-        const settings = _.get(cluster.marshaller, kind);
+        if (available(['1.0.0', '2.1.0'])) {
+            const kind = _.get(cluster.marshaller, 'kind');
+            const settings = _.get(cluster.marshaller, kind);
 
-        let bean;
+            let bean;
 
-        switch (kind) {
-            case 'OptimizedMarshaller':
-                bean = new Bean('org.apache.ignite.marshaller.optimized.OptimizedMarshaller', 'marshaller', settings)
-                    .intProperty('poolSize')
-                    .intProperty('requireSerializable');
+            switch (kind) {
+                case 'OptimizedMarshaller':
+                    if (available(['1.0.0', '2.0.0'])) {
+                        bean = new Bean('org.apache.ignite.marshaller.optimized.OptimizedMarshaller', 'marshaller', settings)
+                            .intProperty('poolSize')
+                            .intProperty('requireSerializable');
+                    }
 
-                break;
+                    break;
 
-            case 'JdkMarshaller':
-                bean = new Bean('org.apache.ignite.marshaller.jdk.JdkMarshaller', 'marshaller', settings);
+                case 'JdkMarshaller':
+                    bean = new Bean('org.apache.ignite.marshaller.jdk.JdkMarshaller', 'marshaller', settings);
 
-                break;
+                    break;
 
-            default:
+                default:
                 // No-op.
-        }
+            }
 
-        if (bean)
-            cfg.beanProperty('marshaller', bean);
+            if (bean)
+                cfg.beanProperty('marshaller', bean);
+        }
 
         cfg.intProperty('marshalLocalJobs');
 
