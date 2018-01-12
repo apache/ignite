@@ -226,6 +226,8 @@ public abstract class AbstractWalRecordsIterator
 
             ptr.length(rec.size());
 
+            rec.position(ptr);
+
             // cast using diamond operator here can break compile for 7
             return new IgniteBiTuple<>((WALPointer)ptr, postProcessRecord(rec));
         }
@@ -260,7 +262,7 @@ public abstract class AbstractWalRecordsIterator
         @NotNull final Exception e,
         @Nullable final FileWALPointer ptr) {
         if (log.isInfoEnabled())
-            log.info("Stopping WAL iteration due to an exception: " + e.getMessage());
+            log.info("Stopping WAL iteration due to an exception: " + e.getMessage() + ", ptr=" + ptr);
     }
 
     /**

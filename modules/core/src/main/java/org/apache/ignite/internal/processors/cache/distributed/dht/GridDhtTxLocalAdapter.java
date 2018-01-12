@@ -474,13 +474,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             IgniteTxEntry existing = entry(e.txKey());
 
             if (existing != null) {
-                // Must keep NOOP operation if received READ because it means that the lock was sent to a backup node.
-                if (e.op() == READ) {
-                    if (existing.op() != NOOP)
-                        existing.op(e.op());
-                }
-                else
-                    existing.op(e.op()); // Absolutely must set operation, as default is DELETE.
+                existing.op(e.op()); // Absolutely must set operation, as default is DELETE.
 
                 existing.value(e.value(), e.hasWriteValue(), e.hasReadValue());
                 existing.entryProcessors(e.entryProcessors());
