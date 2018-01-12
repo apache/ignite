@@ -33,7 +33,7 @@ import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFun
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.util.MatrixUtil;
-import org.apache.ignite.ml.nn.LossFunctions;
+import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalculator;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;

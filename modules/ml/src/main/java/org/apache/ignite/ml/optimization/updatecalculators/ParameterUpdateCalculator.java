@@ -26,11 +26,11 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
  * Interface for classes encapsulating parameters updateCache logic.
  *
  * @param <M> Type of model to be updated.
- * @param <P> Type of parameters needed for this updater.
+ * @param <P> Type of parameters needed for this update calculator.
  */
 public interface ParameterUpdateCalculator<M, P> {
     /**
-     * Initializes the updater.
+     * Initializes the update calculator.
      *
      * @param mdl Model to be trained.
      * @param loss Loss function.
@@ -38,7 +38,7 @@ public interface ParameterUpdateCalculator<M, P> {
     P init(M mdl, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss);
 
     /**
-     * Calculate new updateCache.
+     * Calculate new update.
      *
      * @param mdl Model to be updated.
      * @param updaterParameters Updater parameters to updateCache.
