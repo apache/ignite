@@ -131,6 +131,7 @@ namespace Apache.Ignite.Core.Tests
                 "-assembly=test-2.dll"
                 );
 
+            Assert.IsTrue(proc.Alive);
             Assert.IsTrue(_grid.WaitTopology(2));
 
             var cfg = RemoteConfig();
@@ -151,6 +152,7 @@ namespace Apache.Ignite.Core.Tests
                 "-J-DOPT2"
                 );
 
+            Assert.IsTrue(proc.Alive);
             Assert.IsTrue(_grid.WaitTopology(2));
 
             var cfg = RemoteConfig();
@@ -171,6 +173,7 @@ namespace Apache.Ignite.Core.Tests
                 "-J-Xmx607m"
                 );
 
+            Assert.IsTrue(proc.Alive);
             Assert.IsTrue(_grid.WaitTopology(2));
 
             var minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
@@ -193,6 +196,7 @@ namespace Apache.Ignite.Core.Tests
                 "-JvmMaxMemoryMB=863"
                 );
 
+            Assert.IsTrue(proc.Alive);
             Assert.IsTrue(_grid.WaitTopology(2));
 
             var minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
@@ -216,6 +220,7 @@ namespace Apache.Ignite.Core.Tests
 
             var proc = new IgniteProcess("-jvmClasspath=" + TestUtils.CreateTestClasspath());
 
+            Assert.IsTrue(proc.Alive);
             Assert.IsTrue(_grid.WaitTopology(2));
 
             var minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
@@ -233,6 +238,7 @@ namespace Apache.Ignite.Core.Tests
             proc = new IgniteProcess("-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-J-Xms605m", "-J-Xmx706m");
 
+            Assert.IsTrue(proc.Alive);
             Assert.IsTrue(_grid.WaitTopology(2));
 
             minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
@@ -257,6 +263,7 @@ namespace Apache.Ignite.Core.Tests
                 "-JvmMaxMemoryMB=256"
                 );
 
+            Assert.IsTrue(proc.Alive);
             Assert.IsTrue(_grid.WaitTopology(2));
 
             // Raw JVM options (Xms/Xmx) should override custom options
@@ -277,6 +284,7 @@ namespace Apache.Ignite.Core.Tests
 
             var proc = new IgniteProcess("-jvmClasspath=" + TestUtils.CreateTestClasspath());
 
+            Assert.IsTrue(proc.Alive);
             Assert.IsTrue(_grid.WaitTopology(2));
 
             var remoteCfg = RemoteConfig();
@@ -296,6 +304,7 @@ namespace Apache.Ignite.Core.Tests
             var proc = new IgniteProcess("-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-configFileName=config\\ignite-dotnet-cfg.xml");
 
+            Assert.IsTrue(proc.Alive);
             Assert.IsTrue(_grid.WaitTopology(2));
 
             var remoteCfg = RemoteConfig();
