@@ -103,6 +103,7 @@ namespace Apache.Ignite.Core.Tests
                 "-jvmClasspath=" + TestUtils.CreateTestClasspath()
                 );
 
+            Assert.IsTrue(proc.Alive);
             Assert.IsTrue(_grid.WaitTopology(2));
 
             var cfg = RemoteConfig();
