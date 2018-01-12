@@ -35,7 +35,7 @@ public class MLPGroupUpdateTrainingData<U> {
     /**
      * Count of steps which should be done by each of parallel trainings before sending it's update for combining with
      * other parallel trainings updates.
-     **/
+     */
     private final int stepsCnt;
 
     /**
@@ -46,12 +46,12 @@ public class MLPGroupUpdateTrainingData<U> {
 
     /**
      * Supplier of batches in the form of (inputs, groundTruths).
-     **/
+     */
     private final IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier;
 
     /**
      * Loss function.
-     **/
+     */
     private final IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
 
     /** Error tolerance. */
