@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
-import java.util.UUID;
+import java.util.List;
 
 /**
  *
@@ -27,53 +27,27 @@ class ZkDiscoveryNodeJoinEventData extends ZkDiscoveryEventData {
     private static final long serialVersionUID = 0L;
 
     /** */
-    final long joinedInternalId;
-
-    /** */
-    final UUID nodeId;
-
-    /** */
-    final int joinDataPartCnt;
+    final List<ZkJoinedNodeEvtData> joinedNodes;
 
     /** */
     final int dataForJoinedPartCnt;
 
-    /** */
-    final int secSubjPartCnt;
-
-    /** */
-    final UUID joinDataPrefixId;
-
-    /** */
-    transient ZkJoiningNodeData joiningNodeData;
-
     /**
      * @param evtId Event ID.
      * @param topVer Topology version.
-     * @param nodeId Joined node ID.
-     * @param joinedInternalId Joined node internal ID.
-     * @param joinDataPrefixId Join data unique prefix.
-     * @param joinDataPartCnt Join data part count.
+     * @param joinedNodes Joined nodes data.
      * @param dataForJoinedPartCnt Data for joined part count.
-     * @param secSubjPartCnt Security subject part count.
      */
-    ZkDiscoveryNodeJoinEventData(long evtId,
+    ZkDiscoveryNodeJoinEventData(
+        long evtId,
         long topVer,
-        UUID nodeId,
-        long joinedInternalId,
-        UUID joinDataPrefixId,
-        int joinDataPartCnt,
-        int dataForJoinedPartCnt,
-        int secSubjPartCnt)
+        List<ZkJoinedNodeEvtData> joinedNodes,
+        int dataForJoinedPartCnt)
     {
         super(evtId, ZK_EVT_NODE_JOIN, topVer);
 
-        this.nodeId = nodeId;
-        this.joinedInternalId = joinedInternalId;
-        this.joinDataPrefixId = joinDataPrefixId;
-        this.joinDataPartCnt = joinDataPartCnt;
+        this.joinedNodes = joinedNodes;
         this.dataForJoinedPartCnt = dataForJoinedPartCnt;
-        this.secSubjPartCnt = secSubjPartCnt;
     }
 
     /** {@inheritDoc} */
@@ -81,6 +55,6 @@ class ZkDiscoveryNodeJoinEventData extends ZkDiscoveryEventData {
         return "ZkDiscoveryNodeJoinEventData [" +
             "evtId=" + eventId() +
             ", topVer=" + topologyVersion() +
-            ", node=" + nodeId + ']';
+            ", nodes=" + joinedNodes + ']';
     }
 }

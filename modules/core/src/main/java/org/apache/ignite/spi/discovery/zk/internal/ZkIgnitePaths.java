@@ -314,11 +314,11 @@ class ZkIgnitePaths {
     }
 
     /**
-     * @param evtId Event ID.
+     * @param topVer Event topology version.
      * @return Event zk path.
      */
-    String joinEventSecuritySubjectPath(long evtId) {
-        return evtsPath + "/s-" + evtId;
+    String joinEventSecuritySubjectPath(long topVer) {
+        return evtsPath + "/s-" + topVer;
     }
 
     /**

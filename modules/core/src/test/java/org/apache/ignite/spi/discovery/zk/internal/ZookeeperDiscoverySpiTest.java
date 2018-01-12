@@ -380,8 +380,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
                     throw new IgniteException("Failed to create directory for test Zookeeper server: " + file.getAbsolutePath());
             }
 
-
-            specs.add(new InstanceSpec(file, -1, -1, -1, true, -1, 1000, -1));
+            specs.add(new InstanceSpec(file, -1, -1, -1, true, -1, 1000, 10_000));
         }
 
         return new TestingCluster(specs);
@@ -1451,6 +1450,41 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
                     int threadIdx = idx.getAndIncrement();
 
                     clientModeThreadLocal(threadIdx == srvIdx || ThreadLocalRandom.current().nextBoolean());
+
+                    startGrid(threadIdx);
+
+                    return null;
+                }
+            }, NODES, "start-node");
+
+            waitForTopology(NODES);
+
+            stopAllGrids();
+
+            checkEventsConsistency();
+
+            evts.clear();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConcurrentStart() throws Exception {
+        final int NODES = 20;
+
+        for (int i = 0; i < 3; i++) {
+            info("Iteration: " + i);
+
+            final AtomicInteger idx = new AtomicInteger();
+
+            final CyclicBarrier b = new CyclicBarrier(NODES);
+
+            GridTestUtils.runMultiThreaded(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    b.await();
+
+                    int threadIdx = idx.getAndIncrement();
 
                     startGrid(threadIdx);
 

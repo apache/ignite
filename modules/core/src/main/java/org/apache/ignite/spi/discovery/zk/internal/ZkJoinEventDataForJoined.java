@@ -20,6 +20,7 @@ package org.apache.ignite.spi.discovery.zk.internal;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -32,28 +33,51 @@ class ZkJoinEventDataForJoined implements Serializable {
     private final List<ZookeeperClusterNode> top;
 
     /** */
-    private final Map<Integer, Serializable> discoData;
+    private final Map<Long, byte[]> discoData;
+
+    /** */
+    private final Map<Long, Long> dupDiscoData;
 
     /**
      * @param top Topology.
      * @param discoData Discovery data.
      */
-    ZkJoinEventDataForJoined(List<ZookeeperClusterNode> top, Map<Integer, Serializable> discoData) {
+    ZkJoinEventDataForJoined(List<ZookeeperClusterNode> top, Map<Long, byte[]> discoData, @Nullable Map<Long, Long> dupDiscoData) {
+        assert top != null;
+        assert discoData != null && !discoData.isEmpty();
+
         this.top = top;
         this.discoData = discoData;
+        this.dupDiscoData = dupDiscoData;
+    }
+
+    byte[] discoveryDataForNode(long nodeOrder) {
+        assert discoData != null;
+
+        byte[] dataBytes = discoData.get(nodeOrder);
+
+        if (dataBytes != null)
+            return dataBytes;
+
+        assert dupDiscoData != null;
+
+        Long dupDataNode = dupDiscoData.get(nodeOrder);
+
+        assert dupDataNode != null;
+
+        dataBytes = discoData.get(dupDataNode);
+
+        assert dataBytes != null;
+
+        return dataBytes;
     }
 
     /**
      * @return Current topology.
      */
     List<ZookeeperClusterNode> topology() {
-        return top;
-    }
+        assert top != null;
 
-    /**
-     * @return Discovery data.
-     */
-    Map<Integer, Serializable> discoveryData() {
-        return discoData;
+        return top;
     }
 }
