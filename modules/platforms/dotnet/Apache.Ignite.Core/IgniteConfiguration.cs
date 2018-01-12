@@ -1227,6 +1227,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         public IEventStorageSpi EventStorageSpi { get; set; }
 
+#pragma warning disable 618
         /// <summary>
         /// Gets or sets the page memory configuration.
         /// <see cref="MemoryConfiguration"/> for more details.
@@ -1235,6 +1236,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         [Obsolete("Use DataStorageConfiguration.")]
         public MemoryConfiguration MemoryConfiguration { get; set; }
+#pragma warning restore 618
 
         /// <summary>
         /// Gets or sets the data storage configuration.
@@ -1337,11 +1339,13 @@ namespace Apache.Ignite.Core
             set { _queryThreadPoolSize = value; }
         }
 
+#pragma warning disable 618
         /// <summary>
         /// Gets or sets the SQL connector configuration (for JDBC and ODBC).
         /// </summary>
         [Obsolete("Use ClientConnectorConfiguration instead.")]
         public SqlConnectorConfiguration SqlConnectorConfiguration { get; set; }
+#pragma warning restore 618
 
         /// <summary>
         /// Gets or sets the client connector configuration (for JDBC, ODBC, and thin clients).
@@ -1367,6 +1371,7 @@ namespace Apache.Ignite.Core
             set { _longQueryWarningTimeout = value; }
         }
 
+#pragma warning disable 618
         /// <summary>
         /// Gets or sets the persistent store configuration.
         /// <para />
@@ -1374,6 +1379,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         [Obsolete("Use DataStorageConfiguration.")]
         public PersistentStoreConfiguration PersistentStoreConfiguration { get; set; }
+#pragma warning restore 618
 
         /// <summary>
         /// Gets or sets a value indicating whether grid should be active on start.
