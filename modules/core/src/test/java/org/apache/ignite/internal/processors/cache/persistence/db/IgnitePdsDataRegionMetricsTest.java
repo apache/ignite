@@ -18,15 +18,19 @@
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.DataRegionMetrics;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -47,6 +51,9 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
     /** */
     private static final long DFLT_REGION_MAX_SIZE = 40 << 20;
+
+    /** */
+    private static final int ITERATIONS = 5;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -86,46 +93,56 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
     /** */
     public void testMemoryUsageGrowth() throws Exception {
-        Ignite node = startGrid(0);
+        for (int iter = 0; iter < ITERATIONS; iter++) {
+            final IgniteEx node = startGrid(0);
 
-        node.active(true);
+            node.active(true);
 
-        DataRegionMetrics m = getDfltRegionMetrics();
+            DataRegionMetrics m = getDfltRegionMetrics();
 
-        assert m.getTotalAllocatedPages() >= m.getPhysicalMemoryPages();
+            assert m.getTotalAllocatedPages() >= m.getPhysicalMemoryPages();
 
-        IgniteCache<String,String> cache = node.getOrCreateCache(DEFAULT_CACHE_NAME);
+            final IgniteCache<String, String> cache = node.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        Map<String, String> map = new HashMap<>();
+            final Set<Integer> grpIds = new HashSet<>();
 
-        while (m.getTotalAllocatedPages() * DFLT_PAGE_SIZE < 0.9 * DFLT_REGION_MAX_SIZE) {
-            for (int i = 0; i < 500; i++)
-                map.put(UUID.randomUUID().toString(), UUID.randomUUID().toString());
+            for (Object ctx : node.context().cache().context().cacheContexts()) {
+                CacheGroupContext grp = ((GridCacheContext)ctx).group();
+                if (DFLT_DATA_REG_DEFAULT_NAME.equals(grp.dataRegion().config().getName()))
+                    grpIds.add(grp.groupId());
+            }
 
-            cache.putAll(map);
+            Map<String, String> map = new HashMap<>();
 
-            DataRegionMetrics mNext = getDfltRegionMetrics();
+            while (m.getTotalAllocatedPages() * DFLT_PAGE_SIZE < DFLT_REGION_MAX_SIZE * iter / ITERATIONS) {
+                for (int i = 0; i < 500; i++)
+                    map.put(UUID.randomUUID().toString(), UUID.randomUUID().toString());
 
-            assert mNext.getTotalAllocatedPages() > m.getTotalAllocatedPages();
-            assert mNext.getPhysicalMemoryPages() > m.getPhysicalMemoryPages();
-            assert mNext.getTotalAllocatedPages() >= mNext.getPhysicalMemoryPages();
+                cache.putAll(map);
 
-            m = mNext;
+                final DataRegionMetrics mNext = getDfltRegionMetrics();
 
-            map.clear();
+                boolean storageMatches = GridTestUtils.waitForCondition(new PA() {
+                    @Override public boolean apply() {
+                        long pagesInStore = 0;
+
+                        for (int grpId : grpIds)
+                            pagesInStore += node.context().cache().context().pageStore().pagesAllocated(grpId);
+
+                        return mNext.getTotalAllocatedPages() == pagesInStore;
+                    }
+                }, 100);
+
+                assert mNext.getTotalAllocatedPages() > m.getTotalAllocatedPages();
+                assert mNext.getPhysicalMemoryPages() > m.getPhysicalMemoryPages();
+                assert mNext.getTotalAllocatedPages() >= mNext.getPhysicalMemoryPages();
+                assert storageMatches;
+
+                m = mNext;
+            }
+
+            node.close();
         }
-
-        long ts = System.currentTimeMillis();
-
-        do {
-            for (int i = 0; i < 500; i++)
-                cache.get(UUID.randomUUID().toString());
-        } while (System.currentTimeMillis() - ts < 5000);
-
-        DataRegionMetrics mLast = getDfltRegionMetrics();
-
-        assert mLast.getTotalAllocatedPages() == m.getTotalAllocatedPages();
-        assert mLast.getPhysicalMemoryPages() == m.getPhysicalMemoryPages();
     }
 
     /** */
@@ -134,6 +151,6 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
             if (DFLT_DATA_REG_DEFAULT_NAME.equals(m.getName()))
                 return m;
 
-        throw new AssertionError("No metrics found for default data region");
+        throw new RuntimeException("No metrics found for default data region");
     }
 }
