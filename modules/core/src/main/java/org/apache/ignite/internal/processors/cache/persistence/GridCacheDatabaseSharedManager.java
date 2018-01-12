@@ -2178,7 +2178,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             if (PageIO.getType(pageAddr) == PageIO.T_PART_META) {
                                 PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
 
-                                return GridDhtPartitionState.fromOrdinal((int)io.getPartitionState(pageAddr));
+                                GridDhtPartitionState state = GridDhtPartitionState.fromOrdinal((int)io.getPartitionState(pageAddr));
+
+                                if (state == null)
+                                    state = GridDhtPartitionState.MOVING;
+
+                                return state;
                             }
                         }
                         finally {
