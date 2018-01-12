@@ -59,6 +59,7 @@ Full Ignite.NET solution can be built, developed, and tested with Mono.
 
 Requirements:
 * Mono with 4.0 assemblies: sudo apt-get install mono-devel mono-reference-assemblies-4.0
+* NuGet: sudo apt-get install nuget
 * JDK: sudo apt-get install default-jdk
 * Maven: sudo apt-get install maven
 * IDE: Not required. Rider is recommended, MonoDevelop also works.
@@ -66,3 +67,4 @@ Requirements:
 Getting started:
 * Build Java and .NET:
   ./xbuild.sh
+* Run tests: TODO
