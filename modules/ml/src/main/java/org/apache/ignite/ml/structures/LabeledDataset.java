@@ -149,7 +149,7 @@ public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> {
      * @return Label.
      */
     public double label(int idx) {
-        LabeledVector labeledVector = (LabeledVector)data[idx];
+        LabeledVector labeledVector = data[idx];
 
         if(labeledVector!=null)
             return (double)labeledVector.label();
@@ -182,7 +182,7 @@ public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> {
      * @param lb The given label.
      */
     public void setLabel(int idx, double lb) {
-        LabeledVector labeledVector = data[idx];
+        LabeledVector<Vector, Double> labeledVector = data[idx];
 
         if(labeledVector != null)
             labeledVector.setLabel(lb);
