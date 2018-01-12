@@ -991,7 +991,7 @@ public abstract class GridAbstractTest extends TestCase {
 
         DiscoverySpi discoverySpi = locNode.configuration().getDiscoverySpi();
 
-        if (!(discoverySpi instanceof TcpDiscoverySpi)) {
+        if (discoverySpi != null && !(discoverySpi instanceof TcpDiscoverySpi)) {
             try {
                 // Clone added to support ZookeeperDiscoverySpi.
                 Method m = discoverySpi.getClass().getDeclaredMethod("cloneSpiConfiguration");
