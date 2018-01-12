@@ -914,7 +914,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @return true if dirty pages can be processed in parallel&striped manner.
      */
     public static boolean isParallelDirtyPages() {
-        return IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DIRTY_PAGES_PARALLEL, false);
+        return IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DIRTY_PAGES_PARALLEL, true);
     }
 
     /** {@inheritDoc} */
