@@ -489,7 +489,7 @@ public class GridSqlQueryParser {
     private static final String PARAM_WRAP_KEY = "WRAP_KEY";
 
     /** */
-    public static final String PARAM_WRAP_VALUE = "WRAP_VAL";
+    public static final String PARAM_WRAP_VALUE = "WRAP_VALUE";
 
     /** Data region name. */
     public static final String PARAM_DATA_REGION = "DATA_REGION";

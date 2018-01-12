@@ -33,9 +33,9 @@ import java.util.LinkedList;
 import java.util.Set;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.ASC;
-import static org.apache.ignite.internal.sql.SqlKeyword.BACKUPS;
 import static org.apache.ignite.internal.sql.SqlKeyword.DESC;
 import static org.apache.ignite.internal.sql.SqlKeyword.IF;
+import static org.apache.ignite.internal.sql.SqlKeyword.INLINE_SIZE;
 import static org.apache.ignite.internal.sql.SqlKeyword.ON;
 import static org.apache.ignite.internal.sql.SqlKeyword.PARALLEL;
 import static org.apache.ignite.internal.sql.SqlParserUtils.error;
@@ -210,7 +210,7 @@ public class SqlCreateIndexCommand implements SqlCommand {
         do {
             parseIndexColumn(lex);
         }
-        while (!skipCommaOrRightParenthesis(lex));
+        while (skipCommaOrRightParenthesis(lex) == SqlLexerTokenType.COMMA);
     }
 
     /**
@@ -263,15 +263,15 @@ public class SqlCreateIndexCommand implements SqlCommand {
             if (nextTok.tokenType() == SqlLexerTokenType.DEFAULT) {
                 switch (nextTok.token()) {
                     case PARALLEL: {
-                        SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+                        SqlParserUtils.checkAndSkipParamNameAndOptEquals(lex, parsedParams);
 
                         parallel = SqlParserUtils.parseInt(lex);
 
                         continue;
                     }
 
-                    case BACKUPS: {
-                        SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+                    case INLINE_SIZE: {
+                        SqlParserUtils.checkAndSkipParamNameAndOptEquals(lex, parsedParams);
 
                         inlineSize = SqlParserUtils.parseInt(lex);
 
@@ -283,7 +283,7 @@ public class SqlCreateIndexCommand implements SqlCommand {
                 }
             }
 
-            throw errorUnexpectedToken(nextTok, PARALLEL, BACKUPS);
+            throw errorUnexpectedToken(nextTok, PARALLEL, INLINE_SIZE);
         }
     }
 

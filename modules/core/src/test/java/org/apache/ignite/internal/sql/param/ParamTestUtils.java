@@ -21,6 +21,7 @@ import com.google.common.base.Optional;
 import junit.framework.TestCase;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
 import org.apache.ignite.internal.sql.SqlKeyword;
+import org.apache.ignite.internal.sql.SqlParserCreateTableSelfTest;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.jetbrains.annotations.NotNull;
 
@@ -31,14 +32,10 @@ import java.util.List;
 import static org.apache.ignite.internal.sql.SqlKeyword.DEFAULT;
 import static org.apache.ignite.internal.sql.param.TestParamDef.Syntax.KEY_EQ_VAL;
 import static org.apache.ignite.internal.sql.param.TestParamDef.Syntax.KEY_SPACE_VAL;
-import static org.apache.ignite.internal.sql.param.TestParamDef.Syntax.KEY_WITH_OPT_NO;
-import static org.apache.ignite.internal.sql.param.TestParamDef.Syntax.VAL;
+import static org.apache.ignite.internal.sql.param.TestParamDef.Syntax.KEY_ONLY;
 
 /** Contains utilily methods for testing SQL parameters. */
 public final class ParamTestUtils {
-
-    /** A string to test bad boolean value parameter. Side note: purple smurfs don't play ping-pong. */
-    private static final String BAD_BOOLEAN_VALUE = "Gnip_gnop";
 
     /** Creates SQL statement with given parameters.
      *
@@ -76,17 +73,13 @@ public final class ParamTestUtils {
         TestParamDef.SpecifiedValue<T> sval = (TestParamDef.SpecifiedValue<T>) param.val();
 
         switch (param.syntax()) {
-            case KEY_WITH_OPT_NO:
-                TestCase.assertTrue(param.def() instanceof BoolTestParamDef);
+            case KEY_ONLY:
                 TestCase.assertNotNull(sval.fieldValue());
 
                 if ((Boolean) sval.fieldValue())
                     return " " + param.def().cmdParamName();
                 else
-                    return " " + ((BoolTestParamDef) param.def()).falseKeyword();
-
-            case VAL:
-                return " " + sval.cmdValue();
+                    return "";
 
             case KEY_EQ_VAL:
                 return " " + param.def().cmdParamName() + SqlLexerTokenType.EQUALS.asChar() + sval.cmdValue();
@@ -149,7 +142,7 @@ public final class ParamTestUtils {
         if (missingVal.isPresent())
             params.add(new TestParamDef.MissingValue<>(missingVal.get()));
 
-        EnumSet<TestParamDef.Syntax> syntaxes = EnumSet.of(VAL, KEY_EQ_VAL, KEY_SPACE_VAL);
+        EnumSet<TestParamDef.Syntax> syntaxes = EnumSet.of(KEY_EQ_VAL, KEY_SPACE_VAL);
 
         if (dfltVal.isPresent())
             params.add(new TestParamDef.ValidValue<>(DEFAULT, dfltVal.get(), syntaxes));
@@ -221,49 +214,41 @@ public final class ParamTestUtils {
      *
      * @param trueKeyword The keyword that specifies true value.
      * @param fldName The corresponding field name in the {@link SqlCommand} subclass.
-     * @param dfltVal The default value to test (when parameter is specified with {@link SqlKeyword#DEFAULT} value
-     *      or empty if the default value shall not be tested.
      * @param missingVal What value to expect if the parameter is missing.
      *      Empty if the missing value shall not be tested.
      * @return List of parameter value definitions.
      */
-    @NotNull public static TestParamDef<Boolean> makeBasicBoolDef(String trueKeyword, String falseKeyword,
-        String fldName, Optional<Boolean> dfltVal, Optional<Boolean> missingVal) {
+    @NotNull public static TestParamDef<Boolean> makeBasicBoolDef(String trueKeyword,
+        String fldName, Optional<Boolean> missingVal) {
 
-        return new BoolTestParamDef(trueKeyword, falseKeyword, fldName,
-            ParamTestUtils.makeBoolTestValues(dfltVal, missingVal));
+        return new TestParamDef<>(trueKeyword, fldName, Boolean.class, ParamTestUtils.makeBoolTestValues(missingVal));
     }
 
     /**
      * Creates a basic list of values to test boolean parameter with.
      *
-     * @param dfltVal The default value to test (when parameter is specified with {@link SqlKeyword#DEFAULT} value
-     *      or empty if the default value shall not be tested.
      * @param missingVal What value to expect if the parameter is missing.
      *      Empty if the missing value shall not be tested.
      * @return List of parameter value definitions.
      */
     @NotNull public static List<TestParamDef.Value<Boolean>> makeBoolTestValues(
-        Optional<Boolean> dfltVal, Optional<Boolean> missingVal) {
+        Optional<Boolean> missingVal) {
 
         List<TestParamDef.Value<Boolean>> params = new LinkedList<>();
 
         if (missingVal.isPresent())
             params.add(new TestParamDef.MissingValue<>(missingVal.get()));
 
-        if (dfltVal.isPresent())
-            params.add(new TestParamDef.ValidValue<>(DEFAULT, dfltVal.get(), EnumSet.of(KEY_EQ_VAL)));
+        EnumSet<TestParamDef.Syntax> trueSyntaxes = EnumSet.of(KEY_ONLY, KEY_SPACE_VAL, KEY_EQ_VAL);
+        EnumSet<TestParamDef.Syntax> falseSyntaxes = EnumSet.of(KEY_SPACE_VAL, KEY_EQ_VAL);
 
-        EnumSet<TestParamDef.Syntax> syntaxes = EnumSet.of(KEY_WITH_OPT_NO, KEY_EQ_VAL);
+        params.add(new TestParamDef.ValidValue<>("true", true, trueSyntaxes));
+        params.add(new TestParamDef.ValidValue<>("false", false, falseSyntaxes));
+        params.add(new TestParamDef.ValidValue<>("1", true, trueSyntaxes));
+        params.add(new TestParamDef.ValidValue<>("0", false, falseSyntaxes));
 
-        params.add(new TestParamDef.ValidValue<>("true", true, syntaxes));
-        params.add(new TestParamDef.ValidValue<>("false", false, syntaxes));
-        params.add(new TestParamDef.ValidValue<>("1", true, syntaxes));
-        params.add(new TestParamDef.ValidValue<>("0", false, syntaxes));
-
-        params.add(new TestParamDef.InvalidValue<Boolean>(BAD_BOOLEAN_VALUE,
-            "re:.*Unexpected token: \"" + BAD_BOOLEAN_VALUE.toUpperCase()
-                + "\".*expected:.*one of.*TRUE, FALSE.*",
+        params.add(new TestParamDef.InvalidValue<Boolean>("Gnip_gnop",
+            "Unexpected token: \"GNIP_GNOP\" (expected: \"TRUE\", \"FALSE\", \"1\", \"0\")",
             EnumSet.of(KEY_EQ_VAL)));
 
         return params;
@@ -272,5 +257,39 @@ public final class ParamTestUtils {
     /** Prevents instance creation. */
     private ParamTestUtils() {
         // Prevent instance creation
+    }
+
+    /**
+     * Creates {@link SqlParserCreateTableSelfTest#DEFAULT_PARAM_VALS} list by taking defaults from
+     * {@link SqlParserCreateTableSelfTest#PARAM_TESTS}.
+     *
+     * @param paramTests Tests for parameters.
+     * @return List with default parameter values.
+     */
+    @SuppressWarnings("unchecked")
+    public static List<TestParamDef.DefValPair<?>> createDefaultParamVals(List<TestParamDef<?>> paramTests) {
+
+        List<TestParamDef.DefValPair<?>> defParamVals = new LinkedList<>();
+
+        for (TestParamDef<?> def : paramTests) {
+
+            TestParamDef.Value<?> missingVal = null;
+
+            for (TestParamDef.Value<?> val : def.testValues()) {
+
+                if (val instanceof TestParamDef.MissingValue) {
+                    if (missingVal != null)
+                        TestCase.assertEquals("Two or more different missing values",
+                            missingVal.fieldValue(), val.fieldValue());
+                    else
+                        missingVal = val;
+                }
+            }
+
+            if (missingVal != null)
+                defParamVals.add(new TestParamDef.DefValPair(def, missingVal, KEY_EQ_VAL));
+        }
+
+        return defParamVals;
     }
 }

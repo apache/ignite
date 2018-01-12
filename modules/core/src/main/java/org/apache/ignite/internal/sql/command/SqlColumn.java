@@ -24,19 +24,19 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class SqlColumn {
     /** Column name. */
-    private final String name;
+    private String name;
 
     /** Column type. */
-    private final SqlColumnType typ;
+    private SqlColumnType typ;
 
     /** Scale. */
-    private final Integer scale;
+    private Integer scale;
 
     /** Precision. */
-    private final Integer precision;
+    private Integer precision;
 
     /** Is column nullable. */
-    private final Boolean isNullable;
+    private Boolean isNullable;
 
     /**
      * Constructs the object.
@@ -67,7 +67,7 @@ public class SqlColumn {
      * @param precision Precision.
      */
     public SqlColumn(String name, SqlColumnType typ, Integer precision, Boolean isNullable) {
-        this(name, typ, 0, precision, isNullable);
+        this(name, typ, null, precision, isNullable);
     }
 
     /**
@@ -94,11 +94,18 @@ public class SqlColumn {
         return name;
     }
 
+    public void name(String name) {
+        this.name = name;
+    }
     /**
      * @return Type.
      */
     public SqlColumnType type() {
         return typ;
+    }
+
+    public void typ(SqlColumnType typ) {
+        this.typ = typ;
     }
 
     /**
@@ -108,11 +115,19 @@ public class SqlColumn {
         return scale;
     }
 
+    public void scale(Integer scale) {
+        this.scale = scale;
+    }
+
     /**
      * @return Precision.
      */
     public Integer precision() {
         return precision;
+    }
+
+    public void precision(Integer precision) {
+        this.precision = precision;
     }
 
     /**
@@ -122,6 +137,10 @@ public class SqlColumn {
      */
     public Boolean isNullable() {
         return isNullable;
+    }
+
+    public void isNullable(boolean isNullable) {
+        this.isNullable = isNullable;
     }
 
     /** {@inheritDoc} */

@@ -33,7 +33,6 @@ import java.net.MulticastSocket;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1725,8 +1724,17 @@ public final class GridTestUtils {
         return false;
     }
 
-    /** FIXME SHQ */
-    public static void runWithAlteredProperty(RunnableThrowingClosure lambda,
+    /**
+     * Temporarily sets a system property to a specified value, executes the lambda and restores
+     * the property to its original state.
+     *
+     * @param propName The property name.
+     * @param propValue The property value.
+     * @param lambda Lambda to execute.
+     * @return Value returned by lambda.
+     * @throws Exception Passes the exception from lambda or any exception thrown from property accessors.
+     */
+    public static <T> T runWithAlteredProperty(Callable<T> lambda,
         String propName, @Nullable String propValue) throws Exception {
 
         String oldVal = System.getProperty(propName);
@@ -1737,7 +1745,7 @@ public final class GridTestUtils {
             System.clearProperty(propName);
 
         try {
-            lambda.run();
+            return lambda.call();
         }
         finally {
             if (oldVal != null)
@@ -1748,28 +1756,16 @@ public final class GridTestUtils {
     }
 
     /**
-     * Runnable that accepts a {@link Connection} and can throw an exception.
+     * Temporarily enables or disables fallback to H2 on SQL command processing, executes the lambda and restores
+     * the fallback setting.
+     *
+     * @param isDisabled disable (true) or enable (false) fallback to H2.
+     * @param lambda Lambda to execute.
+     * @return Value returned by lambda.
+     * @throws Exception Passes the exception from lambda or any exception thrown from property accessors.
      */
-    public interface RunnableThrowingClosure {
-        /**
-         * @throws Exception On error.
-         */
-        void run() throws Exception;
-    }
-
-    /** FIXME SHQ */
-    public static void runWithH2FallbackDisabled(RunnableThrowingClosure lambda) throws Exception {
-        runWithH2FallbackDisabled(true, lambda);
-    }
-
-    /** FIXME SHQ */
-    public static void runWithH2FallbackEnabled(RunnableThrowingClosure lambda) throws Exception {
-        runWithH2FallbackDisabled(false, lambda);
-    }
-
-    /** FIXME SHQ */
-    public static void runWithH2FallbackDisabled(boolean isDisabled, RunnableThrowingClosure lambda) throws Exception {
-        GridTestUtils.runWithAlteredProperty(lambda,
+    public static <T> T runWithH2FallbackDisabled(boolean isDisabled, Callable<T> lambda) throws Exception {
+        return GridTestUtils.runWithAlteredProperty(lambda,
             IGNITE_SQL_PARSER_H2_FALLBACK_DISABLED, isDisabled ? "TRUE" : "FALSE");
     }
 

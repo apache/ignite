@@ -63,14 +63,11 @@ import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.GridStringBuilder;
-import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.h2.jdbc.JdbcSQLException;
 import org.h2.value.DataType;
-
-import static com.sun.tools.javadoc.Main.execute;
 
 /**
  * Tests for CREATE/DROP TABLE.
@@ -511,8 +508,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     private void doTestCustomNames(final String cacheName, final String keyTypeName, final String valTypeName,
         final boolean useInternalCmd) throws Exception {
 
-        GridTestUtils.runWithH2FallbackDisabled(useInternalCmd, new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(useInternalCmd, new Callable<Void>() {
+            @Override public Void call() {
 
                 GridStringBuilder b = new GridStringBuilder("CREATE TABLE \"NameTest\" (id int primary key, x varchar) ");
 
@@ -586,6 +583,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 BinaryObject exVal = client().binary().builder(e.getValueType()).setField("X", "a").build();
 
                 assertEquals(exVal, val);
+
+                return null;
             }
         });
     }
@@ -721,8 +720,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         final String... additionalParams)
         throws Exception {
 
-        GridTestUtils.runWithH2FallbackDisabled(useInternalCmd, new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(useInternalCmd, new Callable<Void>() {
+            @Override public Void call() throws Exception {
 
                 String cacheGrpParamName = useLegacyCacheGrpParamName ? "cacheGroup" : "cache_group";
 
@@ -818,6 +817,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
                     assertEqualsCollections(F.asList("id", "city"), pkColNames);
                 }
+
+                return null;
             }
         });
     }
@@ -835,7 +836,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testNegativeBackupsInternal() {
         assertCreateTableWithParamsThrows("bAckUPs = -5  ",
-            "Number of backups should be positive [val=-5]", true);
+            "Number of backups should be positive: -5", true);
     }
 
     /**
@@ -867,7 +868,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testEmptyAtomicityInternal() {
         assertCreateTableWithParamsThrows("AtomicitY=  ",
-            "re:Unexpected end of command.*expected:.*one of.*TRANSACTIONAL, ATOMIC", true);
+            "re:Unexpected end of command.*expected:.*TRANSACTIONAL.*ATOMIC", true);
     }
 
     /**
@@ -883,7 +884,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testInvalidAtomicityInternal() {
         assertCreateTableWithParamsThrows("atomicity=InvalidValue",
-            "re:Unexpected token:.*INVALIDVALUE.*expected:.*one of.*TRANSACTIONAL, ATOMIC", true);
+            "re:Unexpected token:.*INVALIDVALUE.*expected:.*TRANSACTIONAL.*ATOMIC", true);
     }
 
     /**
@@ -899,7 +900,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testEmptyCacheGroupInternal() {
         assertCreateTableWithParamsThrows("cache_group=",
-            "re:Unexpected end of command.*expected:.*optionally quoted cache group name",
+            "Unexpected end of command (expected: \"[string]\")",
             true);
     }
 
@@ -916,7 +917,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testEmptyWriteSyncModeInternal() {
         assertCreateTableWithParamsThrows("write_synchronization_mode=",
-            "re: Unexpected end of command.*expected.*one of.*FULL_SYNC, FULL_ASYNC, PRIMARY_SYNC",
+            "re:Unexpected end of command.*expected.*FULL_SYNC.*FULL_ASYNC.*PRIMARY_SYNC",
             true);
     }
 
@@ -934,7 +935,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testInvalidWriteSyncModeInternal() {
         assertCreateTableWithParamsThrows("write_synchronization_mode=invalid",
-            "re:Unexpected token:.*INVALID.*expected:.*one of.*FULL_SYNC, FULL_ASYNC, PRIMARY_SYNC",
+            "re:Unexpected token:.*INVALID.*expected:.*FULL_SYNC.*FULL_ASYNC.*PRIMARY_SYNC",
             true);
     }
 
@@ -945,8 +946,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testCreateTableIfNotExists() throws Exception {
 
-        GridTestUtils.runWithH2FallbackEnabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(false, new Callable<Void>() {
+            @Override public Void call() {
 
                 execute("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
                     " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
@@ -955,6 +956,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 execute("CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
                     " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
                     "\"template=cache\"");
+
+                return null;
             }
         });
     }
@@ -966,8 +969,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testInternalCreateTableIfNotExists() throws Exception {
 
-        GridTestUtils.runWithH2FallbackDisabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(true, new Callable<Void>() {
+            @Override public Void call() throws Exception {
 
                 execute("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
                     " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) " +
@@ -976,6 +979,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 execute("CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
                     " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) " +
                     "template=\"cache\"");
+
+                return null;
             }
         });
     }
@@ -987,8 +992,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testCreateExistingTable() throws Exception {
 
-        GridTestUtils.runWithH2FallbackEnabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(false, new Callable<Void>() {
+            @Override public Void call() throws Exception {
 
                 try {
                     execute("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
@@ -1008,6 +1013,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 finally {
                     execute("DROP TABLE \"Person\"");
                 }
+
+                return null;
             }
         });
     }
@@ -1019,8 +1026,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testInternalCreateExistingTable() throws Exception {
 
-        GridTestUtils.runWithH2FallbackDisabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(true, new Callable<Void>() {
+            @Override public Void call() throws Exception {
 
                 try {
                     execute("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
@@ -1040,6 +1047,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 finally {
                     execute("DROP TABLE \"Person\"");
                 }
+
+                return null;
             }
         });
     }
@@ -1050,9 +1059,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testDropTable() throws Exception {
 
-        GridTestUtils.runWithH2FallbackEnabled(new GridTestUtils.RunnableThrowingClosure() {
-
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(false, new Callable<Void>() {
+            @Override public Void call() throws Exception {
 
                 try {
                     execute("CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
@@ -1072,6 +1080,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
                     assertNull(desc);
                 }
+
+                return null;
             }
         });
     }
@@ -1082,8 +1092,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testInternalDropTable() throws Exception {
 
-        GridTestUtils.runWithH2FallbackDisabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(true, new Callable<Void>() {
+            @Override public Void call() throws Exception {
 
                 try {
                     execute("CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
@@ -1103,6 +1113,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
                     assertNull(desc);
                 }
+
+                return null;
             }
         });
     }
@@ -1114,8 +1126,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testCacheSelfDrop() throws Exception {
 
-        GridTestUtils.runWithH2FallbackEnabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(false, new Callable<Void>() {
+            @Override public Void call() throws Exception {
 
                 try {
                     execute("CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
@@ -1137,6 +1149,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 finally {
                     execute("DROP TABLE \"Person\"");
                 }
+
+                return null;
             }
         });
     }
@@ -1148,8 +1162,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testCacheSelfDropInternal() throws Exception {
 
-        GridTestUtils.runWithH2FallbackDisabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(true, new Callable<Void>() {
+            @Override public Void call() throws Exception {
 
                 try {
                     execute("CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
@@ -1170,6 +1184,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 finally {
                     execute("DROP TABLE \"Person\"");
                 }
+
+                return null;
             }
         });
     }
@@ -1222,8 +1238,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testDestroyDynamicSqlCache() throws Exception {
 
-        GridTestUtils.runWithH2FallbackEnabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(false, new Callable<Void>() {
+            @Override public Void call() {
 
                 execute("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
                     " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
@@ -1237,6 +1253,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                         }
                     }, CacheException.class,
                     "Only cache created with cache API may be removed with direct call to destroyCache");
+
+                return null;
             }
         });
     }
@@ -1248,8 +1266,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testDestroyDynamicSqlCacheInternal() throws Exception {
 
-        GridTestUtils.runWithH2FallbackDisabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(true, new Callable<Void>() {
+            @Override public Void call() {
 
                 execute("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
                     " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) " +
@@ -1263,6 +1281,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                         }
                     }, CacheException.class,
                     "Only cache created with cache API may be removed with direct call to destroyCache");
+
+                return null;
             }
         });
     }
@@ -1275,8 +1295,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testSqlFlagCompatibilityCheck() throws Exception {
 
-        GridTestUtils.runWithH2FallbackEnabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(false, new Callable<Void>() {
+            @Override public Void call() {
 
                 execute("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar, \"name\" varchar, \"surname\" varchar, " +
                     "\"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH \"template=cache\"");
@@ -1291,6 +1311,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                     }
                 }, IgniteException.class, "Cache configuration mismatch (local cache was created via Ignite API, while " +
                     "remote cache was created via CREATE TABLE): SQL_PUBLIC_Person");
+
+                return null;
             }
         });
     }
@@ -1303,8 +1325,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testSqlFlagCompatibilityCheckInternal() throws Exception {
 
-        GridTestUtils.runWithH2FallbackDisabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(true, new Callable<Void>() {
+            @Override public Void call() {
 
                 execute("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar, \"name\" varchar, \"surname\" varchar, " +
                     "\"age\" int, PRIMARY KEY (\"id\", \"city\")) template=\"cache\"");
@@ -1319,6 +1341,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                     }
                 }, IgniteException.class, "Cache configuration mismatch (local cache was created via Ignite API, while " +
                     "remote cache was created via CREATE TABLE): SQL_PUBLIC_Person");
+
+                return null;
             }
         });
     }
@@ -1388,8 +1412,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void checkAffinityKey(final boolean useInternalCmd) throws Exception {
 
-        GridTestUtils.runWithH2FallbackDisabled(useInternalCmd, new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(useInternalCmd, new Callable<Void>() {
+            @Override public Void call() throws Exception {
 
                 try {
                     if (useInternalCmd)
@@ -1458,6 +1482,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                     execute("drop table \"City\"");
                     execute("drop table \"Person2\"");
                 }
+
+                return null;
             }
         });
     }
@@ -1487,21 +1513,21 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     @SuppressWarnings({"ThrowableNotThrown", "unchecked"})
     public void checkDataRegion(final boolean useInternalCmd) throws Exception {
-        GridTestUtils.runWithH2FallbackDisabled(useInternalCmd, new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(useInternalCmd, new Callable<Void>() {
+            @Override public Void call() {
 
                 try {
                     // Empty region name.
                     if (useInternalCmd)
-                        GridTestUtils.assertThrows(log, new Callable<Void>() {
+                        GridTestUtils.assertThrows(log, new Callable<Object>() {
                             @Override public Void call() throws Exception {
                                 execute("CREATE TABLE TEST_DATA_REGION (name varchar primary key, code int) data_region=");
 
                                 return null;
                             }
-                        }, IgniteSQLException.class, "re:Unexpected end of command.*expected.*optionally quoted data region");
+                        }, IgniteSQLException.class, "Unexpected end of command (expected: \"[string]\")");
                     else
-                        GridTestUtils.assertThrows(log, new Callable<Void>() {
+                        GridTestUtils.assertThrows(log, new Callable<Object>() {
                             @Override public Void call() throws Exception {
                                 execute("CREATE TABLE TEST_DATA_REGION (name varchar primary key, code int) WITH \"data_region=\"");
 
@@ -1523,8 +1549,10 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                     assertEquals(DATA_REGION_NAME, ccfg.getDataRegionName());
                 }
                 finally {
-                    execute("DROP TABLE TEST_DATA_REGION");
+                    execute("DROP TABLE IF EXISTS TEST_DATA_REGION");
                 }
+
+                return null;
             }
         });
     }
@@ -1534,8 +1562,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testAffinityKeyCaseSensitivity() throws Exception {
-        GridTestUtils.runWithH2FallbackEnabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(false, new Callable<Void>() {
+            @Override public Void call() {
 
                 try {
                     execute("CREATE TABLE \"A\" (\"name\" varchar primary key, \"code\" int) WITH wrap_key,wrap_value," +
@@ -1596,6 +1624,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
                     execute("drop table e");
                 }
+
+                return null;
             }
         });
     }
@@ -1606,8 +1636,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testAffinityKeyCaseSensitivityInternal() throws Exception {
 
-        GridTestUtils.runWithH2FallbackDisabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(true, new Callable<Void>() {
+            @Override public Void call() throws Exception {
 
                 try {
                     execute("CREATE TABLE \"A\" (\"name\" varchar primary key, \"code\" int) wrap_key wrap_value " +
@@ -1625,10 +1655,14 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
                     assertAffinityCacheConfiguration("C", "NAME");
 
-                    execute("CREATE TABLE \"D\" (\"name\" varchar primary key, \"code\" int) wrap_key wrap_value " +
-                        "affinity_key=NAME");
+                    GridTestUtils.assertThrows(null, new Callable<Object>() {
+                            @Override public Object call() throws Exception {
+                                execute("CREATE TABLE \"D\" (\"name\" varchar primary key, \"code\" int) " +
+                                    "wrap_key wrap_value affinity_key=NAME");
 
-                    assertAffinityCacheConfiguration("D", "name");
+                                return null;
+                            }
+                        }, IgniteSQLException.class, "Affinity key column with given name not found: NAME");
 
                     // Error arises because user has specified case sensitive affinity column name
                     GridTestUtils.assertThrows(null, new Callable<Object>() {
@@ -1638,7 +1672,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
                             return null;
                         }
-                    }, IgniteSQLException.class, "Affinity key column with given name not found: Name");
+                        }, IgniteSQLException.class, "Affinity key column with given name not found: Name");
 
                     // Error arises because user declares case insensitive affinity column name while having two 'name'
                     // columns whose names are equal in ignore case.
@@ -1649,7 +1683,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
                             return null;
                         }
-                    }, IgniteSQLException.class, "Ambiguous affinity column name, use single quotes for case sensitivity: NAME");
+                        }, IgniteSQLException.class, "Affinity key column with given name not found: NAME");
 
                     execute("CREATE TABLE \"E\" (\"name\" varchar, \"Name\" int, val int, primary key(\"name\", " +
                         "\"Name\")) wrap_key wrap_value affinity_key=\"Name\"");
@@ -1668,6 +1702,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
                     execute("drop table if exists e");
                 }
+
+                return null;
             }
         });
     }
@@ -1677,8 +1713,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testAffinityKeyNotKeyColumn() throws Exception {
-        GridTestUtils.runWithH2FallbackEnabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(false, new Callable<Void>() {
+            @Override public Void call() {
 
                 // Error arises because user has specified case sensitive affinity column name
                 GridTestUtils.assertThrows(null, new Callable<Object>() {
@@ -1688,6 +1724,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                         return null;
                     }
                 }, IgniteSQLException.class, "Affinity key column must be one of key columns: code");
+
+                return null;
             }
         });
     }
@@ -1697,8 +1735,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testAffinityKeyNotKeyColumnInternal() throws Exception {
-        GridTestUtils.runWithH2FallbackDisabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(true, new Callable<Void>() {
+            @Override public Void call() {
 
                 // Error arises because user has specified case sensitive affinity column name
                 GridTestUtils.assertThrows(null, new Callable<Object>() {
@@ -1707,7 +1745,9 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
                         return null;
                     }
-                }, IgniteSQLException.class, "Affinity key column must be one of key columns: code");
+                }, IgniteSQLException.class, "Affinity key column with given name not found: CODE");
+
+                return null;
             }
         });
     }
@@ -1717,8 +1757,9 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testAffinityKeyNotFound() throws Exception {
-        GridTestUtils.runWithH2FallbackEnabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(false, new Callable<Void>() {
+            @Override public Void call() {
+
                 // Error arises because user has specified case sensitive affinity column name
                 GridTestUtils.assertThrows(null, new Callable<Object>() {
                     @Override public Object call() throws Exception {
@@ -1727,6 +1768,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                         return null;
                     }
                 }, IgniteSQLException.class, "Affinity key column with given name not found: missing");
+
+                return null;
             }
         });
     }
@@ -1736,8 +1779,9 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testAffinityKeyNotFoundInternal() throws Exception {
-        GridTestUtils.runWithH2FallbackDisabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(true, new Callable<Void>() {
+            @Override public Void call() {
+
                 // Error arises because user has specified case sensitive affinity column name
                 GridTestUtils.assertThrows(null, new Callable<Object>() {
                     @Override public Object call() throws Exception {
@@ -1746,6 +1790,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                         return null;
                     }
                 }, IgniteSQLException.class, "Affinity key column with given name not found: MISSING");
+
+                return null;
             }
         });
     }
@@ -1812,8 +1858,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void checkQueryLocalWithRecreate(final boolean useInternalCmd) throws Exception {
 
-        GridTestUtils.runWithH2FallbackDisabled(useInternalCmd, new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(useInternalCmd, new Callable<Void>() {
+            @Override public Void call() throws Exception {
 
                 try {
                     if (useInternalCmd)
@@ -1849,6 +1895,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 finally {
                     execute("DROP TABLE A");
                 }
+
+                return null;
             }
         });
     }
@@ -1857,8 +1905,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test that it's impossible to create tables with same name regardless of key/value wrapping settings.
      */
     public void testWrappedAndUnwrappedKeyTablesInteroperability() throws Exception {
-        GridTestUtils.runWithH2FallbackEnabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(false, new Callable<Void>() {
+            @Override public Void call() {
 
                 execute("create table a (id int primary key, x varchar)");
 
@@ -1927,6 +1975,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 finally {
                     execute("drop table a");
                 }
+
+                return null;
             }
         });
     }
@@ -1935,8 +1985,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test that it's impossible to create tables with same name regardless of key/value wrapping settings.
      */
     public void testWrappedAndUnwrappedKeyTablesInteroperabilityInternal() throws Exception {
-        GridTestUtils.runWithH2FallbackDisabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(true, new Callable<Void>() {
+            @Override public Void call() throws Exception {
 
                 execute("create table a (id int primary key, x varchar)");
 
@@ -2006,6 +2056,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 finally {
                     execute("drop table a");
                 }
+
+                return null;
             }
         });
     }
@@ -2014,8 +2066,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test that it's possible to create tables with matching key and/or value primitive types.
      */
     public void testDynamicTablesInteroperability() throws Exception {
-        GridTestUtils.runWithH2FallbackEnabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(false, new Callable<Void>() {
+            @Override public Void call() {
 
                 try {
                     execute("create table a (id int primary key, x varchar) with \"wrap_value=false\"");
@@ -2035,6 +2087,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
                     execute("drop table d");
                 }
+
+                return null;
             }
         });
     }
@@ -2043,8 +2097,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test that it's possible to create tables with matching key and/or value primitive types.
      */
     public void testDynamicTablesInteroperabilityInternal() throws Exception {
-        GridTestUtils.runWithH2FallbackDisabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(true, new Callable<Void>() {
+            @Override public Void call() {
                 try {
                     execute("create table a (id int primary key, x varchar) wrap_value=false");
 
@@ -2063,6 +2117,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
                     execute("drop table d");
                 }
+
+                return null;
             }
         });
     }
@@ -2071,14 +2127,16 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test that when key or value has more than one column, wrap=false is forbidden.
      */
     public void testWrappingAlwaysOnWithComplexObjects() throws Exception {
-        GridTestUtils.runWithH2FallbackEnabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(false, new Callable<Void>() {
+            @Override public Void call() {
 
                 assertDdlCommandThrows("create table a (id int, x varchar, c long, primary key(id, c)) with \"wrap_key=false\"",
                     "WRAP_KEY cannot be false when composite primary key exists.");
 
                 assertDdlCommandThrows("create table a (id int, x varchar, c long, primary key(id)) with \"wrap_value=false\"",
-                    "WRAP_VAL cannot be false when multiple non-primary key columns exist.");
+                    "WRAP_VALUE cannot be false when multiple non-primary key columns exist.");
+
+                return null;
             }
         });
     }
@@ -2087,14 +2145,16 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test that when key or value has more than one column, wrap=false is forbidden.
      */
     public void testWrappingAlwaysOnWithComplexObjectsInternal() throws Exception {
-        GridTestUtils.runWithH2FallbackDisabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(true, new Callable<Void>() {
+            @Override public Void call() {
 
                 assertDdlCommandThrows("create table a (id int, x varchar, c long, primary key(id, c)) wrap_key=false",
                     "WRAP_KEY cannot be false when composite primary key exists.");
 
                 assertDdlCommandThrows("create table a (id int, x varchar, c long, primary key(id)) wrap_value=false",
-                    "WRAP_VAL cannot be false when multiple non-primary key columns exist.");
+                    "WRAP_VALUE cannot be false when multiple non-primary key columns exist.");
+
+                return null;
             }
         });
     }
@@ -2173,8 +2233,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     private void doTestKeyValueWrap(final boolean wrapKey, final boolean wrapVal, final boolean useInternalCmd)
         throws Exception {
 
-        GridTestUtils.runWithH2FallbackEnabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(false, new Callable<Void>() {
+            @Override public Void call() throws Exception {
 
                 try {
                     String sql;
@@ -2246,6 +2306,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 finally {
                     execute("DROP TABLE IF EXISTS T");
                 }
+
+                return null;
             }
         });
     }
@@ -2317,8 +2379,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @param useInternalCmd Use internal CREATE TABLE command
      */
     private void createTableWithParams(final String params, final boolean useInternalCmd) throws Exception {
-        GridTestUtils.runWithH2FallbackDisabled(useInternalCmd, new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(useInternalCmd, new Callable<Void>() {
+            @Override public Void call() throws Exception {
 
                 if (useInternalCmd)
                     execute("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar" +
@@ -2328,6 +2390,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                     execute("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar" +
                         ", \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
                         "\"template=cache," + params + '"');
+
+                return null;
             }
         });
     }
@@ -2339,8 +2403,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testCreateTableInNonPublicSchema() throws Exception {
-        GridTestUtils.runWithH2FallbackEnabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(false, new Callable<Void>() {
+            @Override public Void call() {
 
                 GridTestUtils.assertThrows(null, new Callable<Object>() {
                     @Override public Object call() throws Exception {
@@ -2351,6 +2415,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                         return null;
                     }
                 }, IgniteSQLException.class, "CREATE TABLE can only be executed on PUBLIC schema.");
+
+                return null;
             }
         });
     }
@@ -2362,8 +2428,9 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testInternalCreateTableInNonPublicSchema() throws Exception {
-        GridTestUtils.runWithH2FallbackDisabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(true, new Callable<Void>() {
+            @Override public Void call() {
+
                 GridTestUtils.assertThrows(null, new Callable<Object>() {
                     @Override public Object call() throws Exception {
 
@@ -2374,6 +2441,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                         return null;
                     }
                 }, IgniteSQLException.class, "CREATE TABLE can only be executed on PUBLIC schema.");
+
+                return null;
             }
         });
     }
@@ -2459,8 +2528,9 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws AssertionError If failed.
      */
     public void testReservedColumnNamesInternal() throws Exception {
-        GridTestUtils.runWithH2FallbackDisabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(true, new Callable<Void>() {
+            @Override public Void call() {
+
                 assertDdlCommandThrows(
                     "CREATE TABLE tbl (_KEY INT)",
                     "Direct specification of _KEY and _VAL columns is forbidden");
@@ -2468,6 +2538,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 assertDdlCommandThrows(
                     "CREATE TABLE tbl (_val INT)",
                     "Direct specification of _KEY and _VAL columns is forbidden");
+
+                return null;
             }
         });
     }
@@ -2478,8 +2550,9 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @throws AssertionError If failed.
      */
     public void testPrimaryKeyColumnsInternal() throws Exception {
-        GridTestUtils.runWithH2FallbackDisabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(true, new Callable<Void>() {
+            @Override public Void call() {
+
                 assertDdlCommandThrows(
                     "CREATE TABLE tbl (a INT)",
                     "No PRIMARY KEY columns specified");
@@ -2487,6 +2560,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 assertDdlCommandThrows(
                     "CREATE TABLE tbl (a INT, b VARCHAR, PRIMARY KEY (a, b))",
                     "Table must have at least one non PRIMARY KEY column.");
+
+                return null;
             }
         });
     }
@@ -2498,8 +2573,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testCreateTableWrapParamsInternal() throws Exception {
 
-        GridTestUtils.runWithH2FallbackDisabled(new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(true, new Callable<Void>() {
+            @Override public Void call() {
 
                 assertDdlCommandThrows(
                     "CREATE TABLE tbl (a INT, b LONG, c VARCHAR, PRIMARY KEY (a)) NO_WRAP_KEY KEY_TYPE KeyType",
@@ -2507,11 +2582,13 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
                 assertDdlCommandThrows(
                     "CREATE TABLE tbl (a INT, b LONG, c VARCHAR, d INT, PRIMARY KEY (a, b, c)) WRAP_KEY NO_WRAP_VALUE VALUE_TYPE ValueType",
-                    "WRAP_VAL cannot be false when VALUE_TYPE is set.");
+                    "WRAP_VALUE cannot be false when VALUE_TYPE is set.");
 
                 assertDdlCommandThrows(
                     "CREATE TABLE tbl (a INT, b LONG, c VARCHAR, d INT, PRIMARY KEY (a, b)) KEY_TYPE KvType VALUE_TYPE KvType",
                     "Key and value type names should be different for CREATE TABLE: KVTYPE");
+
+                return null;
             }
         });
     }

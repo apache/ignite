@@ -36,6 +36,16 @@ import java.util.concurrent.Callable;
 @SuppressWarnings("ThrowableNotThrown")
 public abstract class SqlParserAbstractSelfTest extends GridCommonAbstractTest {
     /**
+     * Parse statement. May throw.
+     *
+     * @param schemaName The schema name
+     * @param sql SQL statement.
+     */
+    protected static SqlCommand parse(String schemaName, String sql) {
+        return new SqlParser(schemaName, sql).nextCommand();
+    }
+
+    /**
      * Make sure that parse error occurs.
      *
      * @param schema Schema.
@@ -45,7 +55,7 @@ public abstract class SqlParserAbstractSelfTest extends GridCommonAbstractTest {
     protected static void assertParseError(final String schema, final String sql, String msgRe) {
         GridTestUtils.assertThrows(null, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                new SqlParser(schema, sql).nextCommand();
+                parse(schema, sql);
 
                 return null;
             }
@@ -76,10 +86,10 @@ public abstract class SqlParserAbstractSelfTest extends GridCommonAbstractTest {
                 if (!val.supportedSyntaxes().contains(syn))
                     continue;
 
-                try {
-                    String sql = ParamTestUtils.makeSqlWithParams(cmdPrefix,
-                        new TestParamDef.DefValPair<>(paramDef, val, syn));
+                String sql = ParamTestUtils.makeSqlWithParams(cmdPrefix,
+                    new TestParamDef.DefValPair<>(paramDef, val, syn));
 
+                try {
                     if (val instanceof TestParamDef.InvalidValue)
 
                         assertParseError(schema, sql, ((TestParamDef.InvalidValue)val).errorMsgFragment());
@@ -87,16 +97,16 @@ public abstract class SqlParserAbstractSelfTest extends GridCommonAbstractTest {
                     else {
                         X.println("Checking command: " + sql);
 
-                        SqlCommand cmd = new SqlParser(schema, sql).nextCommand();
+                        SqlCommand cmd = parse(schema, sql);
 
-                        checkField(cmd, paramDef, val);
+                        checkCmdField(cmd, paramDef, val);
 
                         if (otherParamVals != null) {
 
                             for (TestParamDef.DefValPair<?> otherParamDefVal : otherParamVals) {
 
                                 if (!otherParamDefVal.def().cmdFieldName().equals(paramDef.cmdFieldName()))
-                                    checkField(cmd,
+                                    checkCmdField(cmd,
                                         (TestParamDef<Object>)otherParamDefVal.def(),
                                         (TestParamDef.Value<Object>)otherParamDefVal.val());
                             }
@@ -105,7 +115,7 @@ public abstract class SqlParserAbstractSelfTest extends GridCommonAbstractTest {
                 }
                 catch (Exception | AssertionError e) {
                     throw new AssertionError(
-                        "When testing " + paramDef + " with expected value " + val + "\n" + e.getMessage(), e);
+                        "When testing " + paramDef + " with expected value '" + val + "'\nStatement: " + sql + "\n: Exception: " + e.getMessage(), e);
                 }
             }
         }
@@ -123,7 +133,7 @@ public abstract class SqlParserAbstractSelfTest extends GridCommonAbstractTest {
      * @throws InvocationTargetException If the getter cannot be called.
      * @throws IllegalAccessException If we don't have access to the getter.
      */
-    protected <T> void checkField(SqlCommand cmd, TestParamDef<T> def, TestParamDef.Value<T> val)
+    protected <T> void checkCmdField(SqlCommand cmd, TestParamDef<T> def, TestParamDef.Value<T> val)
         throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 
         assert def.testValues().contains(val);

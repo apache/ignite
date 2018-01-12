@@ -26,7 +26,6 @@ import java.util.List;
 
 import static org.apache.ignite.internal.sql.param.TestParamDef.Syntax.KEY_EQ_VAL;
 import static org.apache.ignite.internal.sql.param.TestParamDef.Syntax.KEY_SPACE_VAL;
-import static org.apache.ignite.internal.sql.param.TestParamDef.Syntax.VAL;
 
 /** Defines a parameter to test in {@link org.apache.ignite.internal.sql} tests.*/
 public class TestParamDef<T> {
@@ -97,10 +96,7 @@ public class TestParamDef<T> {
     /** Parameter syntax variant in SQL command. */
     public enum Syntax {
         /** Syntax: {@code [no]key} (no value, key optionally prefixed with "no"). */
-        KEY_WITH_OPT_NO,
-
-        /** Syntax: {@code value} (no key). */
-        VAL,
+        KEY_ONLY,
 
         /** Syntax: {@code key=value}. */
         KEY_EQ_VAL,
@@ -152,7 +148,7 @@ public class TestParamDef<T> {
 
         /** Creates a value for a missing parameter case (when parameter is not specified in the command). */
         public MissingValue(T fldVal) {
-            super(fldVal, EnumSet.of(VAL));
+            super(fldVal, EnumSet.of(KEY_EQ_VAL, KEY_SPACE_VAL));
         }
 
         /** {@inheritDoc} */

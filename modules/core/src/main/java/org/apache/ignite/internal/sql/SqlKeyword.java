@@ -159,12 +159,6 @@ public class SqlKeyword {
     /** Keyword: NOT. */
     public static final String NOT = "NOT";
 
-    /** Keyword: NO_WRAP_KEY. */
-    public static final String NO_WRAP_KEY = "NO_WRAP_KEY";
-
-    /** Keyword: NO_WRAP_VALUE. */
-    public static final String NO_WRAP_VALUE = "NO_WRAP_VALUE";
-
     /** Keyword: NUMBER. */
     public static final String NUMBER = "NUMBER";
 
@@ -243,6 +237,9 @@ public class SqlKeyword {
     /** Keyword: VARCHAR_CASESENSITIVE. */
     public static final String VARCHAR_CASESENSITIVE = "VARCHAR_CASESENSITIVE";
 
+    /** Keyword: VARYING */
+    public static final String VARYING = "VARYING";
+
     /** Keyword: WRAP_KEY. */
     public static final String WRAP_KEY = "WRAP_KEY";
 
@@ -254,7 +251,6 @@ public class SqlKeyword {
 
     /** Keyword: YEAR. */
     public static final String YEAR = "YEAR";
-
 
     /** All keywords. */
     private static final HashSet<String> KEYWORDS;

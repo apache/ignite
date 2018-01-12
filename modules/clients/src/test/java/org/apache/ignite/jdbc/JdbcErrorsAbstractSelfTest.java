@@ -30,6 +30,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Callable;
 import javax.cache.Cache;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
@@ -38,7 +39,6 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -553,8 +553,8 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * @throws SQLException if failed.
      */
     public void checkNotNullRestrictionReadThroughCacheStore(final boolean useInternalCmd) throws Exception {
-        GridTestUtils.runWithH2FallbackDisabled(useInternalCmd, new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(useInternalCmd, new Callable<Void>() {
+            @Override public Void call() throws Exception {
 
                 checkErrorState(new ConnClosure() {
                     @Override public void run(Connection conn) throws Exception {
@@ -569,6 +569,8 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                         }
                     }
                 }, "0A000");
+
+                return null;
             }
         });
     }
@@ -600,8 +602,8 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * @throws SQLException if failed.
      */
     public void checkNotNullRestrictionCacheInterceptor(final boolean useInternalCmd) throws Exception {
-        GridTestUtils.runWithH2FallbackDisabled(useInternalCmd, new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(useInternalCmd, new Callable<Void>() {
+            @Override public Void call() throws Exception {
 
                 checkErrorState(new ConnClosure() {
                     @Override public void run(Connection conn) throws Exception {
@@ -616,6 +618,8 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                         }
                     }
                 }, "0A000");
+
+                return null;
             }
         });
     }

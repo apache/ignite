@@ -199,109 +199,6 @@ public class DdlStatementsProcessor {
     }
 
     /**
-     * Post-processes the {@link SqlCreateTableCommand} by checking and setting default values
-     * or combinations of parameters to proper values (semantic processing).
-     *
-     * @param cmd The command to fix.
-     */
-    private void postProcessCreateTableCmd(SqlCreateTableCommand cmd) {
-
-        // Template name
-
-        if (F.isEmpty(cmd.templateName()))
-            cmd.templateName(QueryUtils.TEMPLATE_PARTITIONED);
-
-        // Columns
-
-        Map<String, SqlColumn> cols = cmd.columns();
-
-        if (cols.containsKey(QueryUtils.KEY_FIELD_NAME.toUpperCase()) ||
-            cols.containsKey(QueryUtils.VAL_FIELD_NAME.toUpperCase()))
-            throw new IgniteSQLException("Direct specification of _KEY and _VAL columns is forbidden",
-                IgniteQueryErrorCode.PARSING);
-
-        if (F.isEmpty(cmd.primaryKeyColumnNames()))
-            throw new IgniteSQLException("No PRIMARY KEY columns specified");
-
-        int keyColsNum = cmd.primaryKeyColumnNames().size();
-        int valColsNum = cols.size() - keyColsNum;
-
-        if (valColsNum == 0)
-            throw new IgniteSQLException("Table must have at least one non PRIMARY KEY column.",
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-        // Key wrapping.
-
-        Boolean wrapKey = cmd.wrapKey();
-
-        if (wrapKey != null && !wrapKey) {
-            if (keyColsNum > 1) {
-                throw new IgniteSQLException(WRAP_KEY + " cannot be false when composite primary key exists.",
-                    IgniteQueryErrorCode.PARSING);
-            }
-
-            if (!F.isEmpty(cmd.keyTypeName())) {
-                throw new IgniteSQLException(WRAP_KEY + " cannot be false when " + KEY_TYPE + " is set.",
-                    IgniteQueryErrorCode.PARSING);
-            }
-        }
-
-        boolean wrapKey0 = (cmd.wrapKey() != null && cmd.wrapKey()) || !F.isEmpty(cmd.keyTypeName()) || keyColsNum > 1;
-
-        cmd.wrapKey(wrapKey0);
-
-        // Value wrapping.
-
-        Boolean wrapVal = cmd.wrapValue();
-
-        if (wrapVal != null && !wrapVal) {
-            if (valColsNum > 1) {
-                throw new IgniteSQLException(WRAP_VAL + " cannot be false when multiple non-primary key " +
-                    "columns exist.", IgniteQueryErrorCode.PARSING);
-            }
-
-            if (!F.isEmpty(cmd.valueTypeName())) {
-                throw new IgniteSQLException(WRAP_VAL + " cannot be false when " + VAL_TYPE + " is set.",
-                    IgniteQueryErrorCode.PARSING);
-            }
-
-            cmd.wrapValue(false);
-        }
-        else
-            cmd.wrapValue(true); // By default value is always wrapped to allow for ALTER TABLE ADD COLUMN commands.
-
-        // Key & value type names
-
-        if (!F.isEmpty(cmd.valueTypeName()) && F.eq(cmd.keyTypeName(), cmd.valueTypeName()))
-            throw new IgniteSQLException("Key and value type names " +
-                "should be different for CREATE TABLE: " + cmd.valueTypeName(), IgniteQueryErrorCode.PARSING);
-
-        // Affinity key
-
-        String affinityKey = cmd.affinityKey();
-        if (affinityKey == null) {
-            if (cmd.primaryKeyColumnNames().size() == 1 && cmd.wrapKey())
-                cmd.affinityKey(cmd.primaryKeyColumnNames().iterator().next());
-        }
-        else {
-            if (!cmd.columns().containsKey(affinityKey))
-                throw new IgniteSQLException("Affinity key column with given name not found: " + affinityKey);
-
-            if (!cmd.primaryKeyColumnNames().contains(affinityKey))
-                throw new IgniteSQLException("Affinity key column must be one of key columns: " + affinityKey);
-        }
-
-        // Backups
-
-        if (cmd.backups() == null)
-            cmd.backups(0);
-        else {
-            if (cmd.backups() < 0)
-                throw new IgniteSQLException("Number of backups should be positive: " + cmd.backups());
-        }
-    }
-
-    /**
      * Drops a table taking parameters from {@link SqlDropTableCommand}.
      *
      * @param cmd The command to take parameters from.
@@ -323,8 +220,7 @@ public class DdlStatementsProcessor {
 
         if (tbl == null) {
             if (!cmd.ifExists())
-                throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
-                    cmd.tableName());
+                throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd.tableName());
         }
         else
             ctx.query().dynamicTableDrop(tbl.cacheName(), cmd.tableName(), cmd.ifExists());
@@ -338,6 +234,8 @@ public class DdlStatementsProcessor {
      * @throws SchemaOperationException If a table or a particular column cannot be found.
      */
     private IgniteInternalFuture makeFutureForCreateIndex(SqlCreateIndexCommand cmd) throws SchemaOperationException {
+        postProcessCreateIndexCmd(cmd);
+
         IgniteInternalFuture fut;
 
         GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
@@ -369,22 +267,35 @@ public class DdlStatementsProcessor {
 
         newIdx.setFields(flds);
 
+        newIdx.setInlineSize(cmd.inlineSize());
+
+        fut = ctx.query().dynamicIndexCreate(tbl.cacheName(), cmd.schemaName(), typeDesc.tableName(),
+            newIdx, cmd.ifNotExists(), cmd.parallel());
+
+        return fut;
+    }
+
+    /**
+     * Post-processes the {@link SqlCreateIndexCommand} by checking and setting default values
+     * or combinations of parameters to proper values (semantic processing).
+     *
+     * @param cmd The command to fix.
+     */
+    void postProcessCreateIndexCmd(SqlCreateIndexCommand cmd) throws SchemaOperationException {
         Integer inlineSize = cmd.inlineSize();
 
         if (inlineSize != null && inlineSize < 0)
-            throw new IgniteSQLException("Illegal inline size value. Should be positive: " + inlineSize);
+            throw new SchemaOperationException("Illegal inline size value. Should be positive: " + inlineSize);
 
-        newIdx.setInlineSize(inlineSize != null ? inlineSize : QueryIndex.DFLT_INLINE_SIZE);
+        cmd.inlineSize(inlineSize != null ? inlineSize : QueryIndex.DFLT_INLINE_SIZE);
 
         Integer parallel = cmd.parallel();
 
         if (parallel != null && parallel < 0)
-            throw new IgniteSQLException("Illegal parallel value. Should be positive: " + parallel);
+            throw new SchemaOperationException("Illegal parallel value. Should be positive: " + parallel);
 
-        fut = ctx.query().dynamicIndexCreate(tbl.cacheName(), cmd.schemaName(), typeDesc.tableName(),
-            newIdx, cmd.ifNotExists(), parallel);
-
-        return fut;
+        if (parallel == null)
+            cmd.parallel(0);
     }
 
     /**
@@ -805,6 +716,108 @@ public class DdlStatementsProcessor {
     }
 
     /**
+     * Post-processes the {@link SqlCreateTableCommand} by checking and setting default values
+     * or combinations of parameters to proper values (semantic processing).
+     *
+     * @param cmd The command to fix.
+     */
+    private void postProcessCreateTableCmd(SqlCreateTableCommand cmd) throws SchemaOperationException {
+
+        // Template name
+
+        if (F.isEmpty(cmd.templateName()))
+            cmd.templateName(QueryUtils.TEMPLATE_PARTITIONED);
+
+        // Columns
+
+        Map<String, SqlColumn> cols = cmd.columns();
+
+        if (cols.containsKey(QueryUtils.KEY_FIELD_NAME.toUpperCase()) ||
+            cols.containsKey(QueryUtils.VAL_FIELD_NAME.toUpperCase()))
+            throw new SchemaOperationException("Direct specification of _KEY and _VAL columns is forbidden");
+
+        if (F.isEmpty(cmd.primaryKeyColumnNames()))
+            throw new SchemaOperationException("No PRIMARY KEY columns specified");
+
+        for (String pkColName : cmd.primaryKeyColumnNames()) {
+            if (!cols.containsKey(pkColName))
+                throw new SchemaOperationException("Column specified as PRIMARY KEY is not defined: " + pkColName);
+        }
+
+        int keyColsNum = cmd.primaryKeyColumnNames().size();
+        int valColsNum = cols.size() - keyColsNum;
+
+        if (valColsNum == 0)
+            throw new SchemaOperationException("Table must have at least one non PRIMARY KEY column.");
+
+        for (SqlColumn col : cols.values()) {
+            if (col.isNullable() == null)
+                col.isNullable(true);
+        }
+
+        // Key wrapping.
+
+        Boolean wrapKey = cmd.wrapKey();
+
+        if (wrapKey != null && !wrapKey) {
+            if (keyColsNum > 1)
+                throw new SchemaOperationException(WRAP_KEY + " cannot be false when composite primary key exists.");
+
+            if (!F.isEmpty(cmd.keyTypeName()))
+                throw new SchemaOperationException(WRAP_KEY + " cannot be false when " + KEY_TYPE + " is set.");
+        }
+
+        boolean wrapKey0 = (cmd.wrapKey() != null && cmd.wrapKey()) || !F.isEmpty(cmd.keyTypeName()) || keyColsNum > 1;
+
+        cmd.wrapKey(wrapKey0);
+
+        // Value wrapping.
+
+        Boolean wrapVal = cmd.wrapValue();
+
+        if (wrapVal != null && !wrapVal) {
+            if (valColsNum > 1)
+                throw new SchemaOperationException(
+                    WRAP_VAL + " cannot be false when multiple non-primary key columns exist.");
+
+            if (!F.isEmpty(cmd.valueTypeName()))
+                throw new SchemaOperationException(WRAP_VAL + " cannot be false when " + VAL_TYPE + " is set.");
+
+            cmd.wrapValue(false);
+        }
+        else
+            cmd.wrapValue(true); // By default value is always wrapped to allow for ALTER TABLE ADD COLUMN commands.
+
+        // Key & value type names
+
+        if (!F.isEmpty(cmd.valueTypeName()) && F.eq(cmd.keyTypeName(), cmd.valueTypeName()))
+            throw new SchemaOperationException(
+                "Key and value type names should be different for CREATE TABLE: " + cmd.valueTypeName());
+
+        // Affinity key
+
+        String affinityKey = cmd.affinityKey();
+        if (affinityKey == null) {
+            if (cmd.primaryKeyColumnNames().size() == 1 && cmd.wrapKey())
+                cmd.affinityKey(cmd.primaryKeyColumnNames().iterator().next());
+        }
+        else {
+            if (!cmd.columns().containsKey(affinityKey))
+                throw new SchemaOperationException("Affinity key column with given name not found: " + affinityKey);
+
+            if (!cmd.primaryKeyColumnNames().contains(affinityKey))
+                throw new SchemaOperationException("Affinity key column must be one of key columns: " + affinityKey);
+        }
+
+        // Backups
+
+        if (cmd.backups() == null)
+            cmd.backups(0);
+        else if (cmd.backups() < 0)
+            throw new SchemaOperationException("Number of backups should be positive: " + cmd.backups());
+    }
+
+    /**
      * Convert this statement to query entity and do Ignite specific sanity checks on the way.
      * @return Query entity mimicking this SQL statement.
      */
@@ -839,10 +852,10 @@ public class DdlStatementsProcessor {
         if (!F.isEmpty(cmd.valueTypeName()))
             valTypeName = cmd.valueTypeName();
 
-        boolean wrapKey = cmd.wrapKey() != null ? cmd.wrapKey() : false;
-        boolean wrapVal = cmd.wrapValue() != null ? cmd.wrapValue() : true;
+        assert cmd.wrapKey() != null;
+        assert cmd.wrapValue() != null;
 
-        if (wrapKey)
+        if (cmd.wrapKey())
             res.setKeyFields(cmd.primaryKeyColumnNames());
         else {
             SqlColumn pkCol = cmd.columns().get(cmd.primaryKeyColumnNames().iterator().next());
@@ -854,7 +867,7 @@ public class DdlStatementsProcessor {
 
         res.setKeyType(keyTypeName);
 
-        if (!wrapVal) {
+        if (!cmd.wrapValue()) {
             SqlColumn valCol = null;
 
             for (Map.Entry<String, SqlColumn> e : cmd.columns().entrySet()) {

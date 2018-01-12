@@ -19,6 +19,7 @@ package org.apache.ignite.internal.sql.command;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerToken;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
@@ -99,6 +100,8 @@ import static org.apache.ignite.internal.sql.SqlParserUtils.parseInt;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdentifier;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipCommaOrRightParenthesis;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipKeywords;
+import static org.apache.ignite.internal.sql.SqlParserUtils.skipOptionalKeywords;
+import static org.apache.ignite.internal.sql.SqlParserUtils.skipOptionalToken;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipToken;
 
 /**
@@ -408,7 +411,7 @@ public class SqlCreateTableCommand implements SqlCommand {
         do {
             parseColumnOrConstraint(lex);
         }
-        while (!skipCommaOrRightParenthesis(lex));
+        while (skipCommaOrRightParenthesis(lex) == SqlLexerTokenType.COMMA);
     }
 
     /**
@@ -441,27 +444,25 @@ public class SqlCreateTableCommand implements SqlCommand {
 
             String typTok = lex.token();
 
-            Boolean nullableOpt = parseNullableClause(lex);
-
-            boolean isNullable = (nullableOpt != null) ? nullableOpt : true;
+            Boolean isNullable = parseNullableClause(lex);
 
             switch (typTok) {
                 case BIT:
                 case BOOL:
                 case BOOLEAN:
-                    col = new SqlColumn(name, SqlColumnType.BOOLEAN, 0, 0, isNullable);
+                    col = new SqlColumn(name, SqlColumnType.BOOLEAN, null, null, isNullable);
 
                     break;
 
                 case TINYINT:
-                    col = new SqlColumn(name, SqlColumnType.BYTE, 0, 0, isNullable);
+                    col = new SqlColumn(name, SqlColumnType.BYTE, null, null, isNullable);
 
                     break;
 
                 case INT2:
                 case SMALLINT:
                 case YEAR:
-                    col = new SqlColumn(name, SqlColumnType.SHORT, 0, 0, isNullable);
+                    col = new SqlColumn(name, SqlColumnType.SHORT, null, null, isNullable);
 
                     break;
 
@@ -470,37 +471,34 @@ public class SqlCreateTableCommand implements SqlCommand {
                 case INTEGER:
                 case MEDIUMINT:
                 case SIGNED:
-                    col = new SqlColumn(name, SqlColumnType.INT, 0, 0, isNullable);
+                    col = new SqlColumn(name, SqlColumnType.INT, null, null, isNullable);
 
                     break;
 
                 case BIGINT:
                 case INT8:
                 case LONG:
-                    col = new SqlColumn(name, SqlColumnType.LONG, 0, 0, isNullable);
+                    col = new SqlColumn(name, SqlColumnType.LONG, null, null, isNullable);
 
                     break;
 
                 case FLOAT4:
                 case REAL:
-                    col = new SqlColumn(name, SqlColumnType.FLOAT, 0, 0, isNullable);
+                    col = new SqlColumn(name, SqlColumnType.FLOAT, null, null, isNullable);
 
                     break;
 
                 case DOUBLE: {
-                    SqlLexerToken next = lex.lookAhead();
+                    skipOptionalKeywords(lex, PRECISION);
 
-                    if (matchesKeyword(next, PRECISION))
-                        lex.shift();
-
-                    col = new SqlColumn(name, SqlColumnType.DOUBLE, 0, 0, isNullable);
+                    col = new SqlColumn(name, SqlColumnType.DOUBLE, null, null, isNullable);
 
                     break;
                 }
 
                 case FLOAT:
                 case FLOAT8:
-                    col = new SqlColumn(name, SqlColumnType.DOUBLE, 0, 0, isNullable);
+                    col = new SqlColumn(name, SqlColumnType.DOUBLE, null, null, isNullable);
 
                     break;
 
@@ -508,15 +506,18 @@ public class SqlCreateTableCommand implements SqlCommand {
                 case DECIMAL:
                 case NUMBER:
                 case NUMERIC: {
-                    skipToken(lex, SqlLexerTokenType.PARENTHESIS_LEFT);
+                    Integer scale = null;
+                    Integer precision = null;
 
-                    int scale = parseInt(lex);
-                    int precision = 0;
+                    if (skipOptionalToken(lex, SqlLexerTokenType.PARENTHESIS_LEFT)) {
 
-                    if (!skipCommaOrRightParenthesis(lex)) {
-                        precision = parseInt(lex);
+                        scale = parseInt(lex);
 
-                        skipToken(lex, SqlLexerTokenType.PARENTHESIS_RIGHT);
+                        if (skipCommaOrRightParenthesis(lex) == SqlLexerTokenType.COMMA) {
+                            precision = parseInt(lex);
+
+                            skipToken(lex, SqlLexerTokenType.PARENTHESIS_RIGHT);
+                        }
                     }
 
                     col = new SqlColumn(name, SqlColumnType.DECIMAL, scale, precision, isNullable);
@@ -527,9 +528,18 @@ public class SqlCreateTableCommand implements SqlCommand {
                 case CHAR:
                 case CHARACTER:
                 case NCHAR: {
-                    int precision = parseStringPrecision(lex);
+                    if (skipOptionalKeywords(lex, SqlKeyword.VARYING)) {
 
-                    col = new SqlColumn(name, SqlColumnType.CHAR, precision, isNullable);
+                        Integer precision = parseStringLength(lex, false);
+
+                        col = new SqlColumn(name, SqlColumnType.VARCHAR, precision, isNullable);
+
+                    }
+                    else {
+                        Integer precision = parseStringLength(lex, false);
+
+                        col = new SqlColumn(name, SqlColumnType.CHAR, precision, isNullable);
+                    }
 
                     break;
                 }
@@ -540,7 +550,8 @@ public class SqlCreateTableCommand implements SqlCommand {
                 case VARCHAR:
                 case VARCHAR2:
                 case VARCHAR_CASESENSITIVE: {
-                    int precision = parseStringPrecision(lex);
+
+                    Integer precision = parseStringLength(lex, false);
 
                     col = new SqlColumn(name, SqlColumnType.VARCHAR, precision, isNullable);
 
@@ -548,24 +559,24 @@ public class SqlCreateTableCommand implements SqlCommand {
                 }
 
                 case DATE:
-                    col = new SqlColumn(name, SqlColumnType.DATE, 0, 0, isNullable);
+                    col = new SqlColumn(name, SqlColumnType.DATE, null, null, isNullable);
 
                     break;
 
                 case TIME:
-                    col = new SqlColumn(name, SqlColumnType.TIME, 0, 0, isNullable);
+                    col = new SqlColumn(name, SqlColumnType.TIME, null, null, isNullable);
 
                     break;
 
                 case DATETIME:
                 case SMALLDATETIME:
                 case TIMESTAMP:
-                    col = new SqlColumn(name, SqlColumnType.TIMESTAMP, 0, 0, isNullable);
+                    col = new SqlColumn(name, SqlColumnType.TIMESTAMP, null, null, isNullable);
 
                     break;
 
                 case UUID:
-                    col = new SqlColumn(name, SqlColumnType.UUID, 0, 0, isNullable);
+                    col = new SqlColumn(name, SqlColumnType.UUID, null, null, isNullable);
 
                     break;
             }
@@ -573,7 +584,7 @@ public class SqlCreateTableCommand implements SqlCommand {
             if (col != null) {
                 addColumn(lex, col);
 
-                if (matchesKeyword(lex.lookAhead(), PRIMARY)) {
+                if (skipOptionalKeywords(lex, PRIMARY, KEY)) {
 
                     if (pkColNames != null)
                         throw error(lex, "PRIMARY KEY is already defined.");
@@ -581,10 +592,6 @@ public class SqlCreateTableCommand implements SqlCommand {
                     pkColNames = new HashSet<>();
 
                     pkColNames.add(col.name());
-
-                    lex.shift();
-
-                    skipKeywords(lex, KEY);
                 }
 
                 return;
@@ -603,19 +610,11 @@ public class SqlCreateTableCommand implements SqlCommand {
     @Nullable private Boolean parseNullableClause(SqlLexer lex) {
         Boolean isNullable = null;
 
-        if (matchesKeyword(lex.lookAhead(), NOT)) {
-
-            lex.shift();
-            skipKeywords(lex, NULL);
-
+        if (skipOptionalKeywords(lex, NOT, NULL))
             isNullable = false;
 
-        } else if (matchesKeyword(lex.lookAhead(), NULL)) {
-
-            lex.shift();
-
+        else if (skipOptionalKeywords(lex, NULL))
             isNullable = true;
-        }
 
         return isNullable;
     }
@@ -657,7 +656,7 @@ public class SqlCreateTableCommand implements SqlCommand {
             if (!pkColNames.add(pkColName))
                 throw error(lex, "Duplicate PK column name: " + pkColName);
         }
-        while (!skipCommaOrRightParenthesis(lex));
+        while (skipCommaOrRightParenthesis(lex) == SqlLexerTokenType.COMMA);
     }
 
     /**
@@ -666,18 +665,18 @@ public class SqlCreateTableCommand implements SqlCommand {
      * @param lex Lexer.
      * @return Precision.
      */
-    private static int parseStringPrecision(SqlLexer lex) {
-        SqlLexerToken next = lex.lookAhead();
+    private static Integer parseStringLength(SqlLexer lex, boolean isMandatory) {
+        Integer res = null;
 
-        int res = Integer.MAX_VALUE;
-
-        if (next.tokenType() == SqlLexerTokenType.PARENTHESIS_LEFT) {
-            lex.shift();
+        if (skipOptionalToken(lex, SqlLexerTokenType.PARENTHESIS_LEFT)) {
 
             res = parseInt(lex);
 
             skipToken(lex, SqlLexerTokenType.PARENTHESIS_RIGHT);
         }
+        else if (isMandatory)
+            throw error(lex.lookAhead(), "field length is mandatory for this type");
+
 
         return res;
     }
@@ -697,87 +696,87 @@ public class SqlCreateTableCommand implements SqlCommand {
             if (nextTok.tokenType() == SqlLexerTokenType.DEFAULT) {
                 switch (nextTok.token()) {
                     case TEMPLATE:
-                        SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+                        SqlParserUtils.checkAndSkipParamNameAndOptEquals(lex, parsedParams);
 
                         templateName = SqlParserUtils.parseString(lex);
 
                         continue;
 
                     case BACKUPS:
-                        SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+                        SqlParserUtils.checkAndSkipParamNameAndOptEquals(lex, parsedParams);
 
                         backups = SqlParserUtils.parseInt(lex);
 
                         continue;
 
                     case ATOMICITY:
-                        SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+                        SqlParserUtils.checkAndSkipParamNameAndOptEquals(lex, parsedParams);
 
                         atomicityMode = SqlParserUtils.parseEnum(lex, CacheAtomicityMode.class);
 
                         continue;
 
                     case WRITE_SYNCHRONIZATION_MODE:
-                        SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+                        SqlParserUtils.checkAndSkipParamNameAndOptEquals(lex, parsedParams);
 
                         writeSyncMode = SqlParserUtils.parseEnum(lex, CacheWriteSynchronizationMode.class);
 
                         continue;
 
                     case CACHE_GROUP:
-                        SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+                        SqlParserUtils.checkAndSkipParamNameAndOptEquals(lex, parsedParams);
 
                         cacheGrp = SqlParserUtils.parseString(lex);
 
                         continue;
 
                     case AFFINITY_KEY:
-                        SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+                        SqlParserUtils.checkAndSkipParamNameAndOptEquals(lex, parsedParams);
 
                         affinityKey = SqlParserUtils.parseString(lex);
 
                         continue;
 
                     case DATA_REGION:
-                        SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+                        SqlParserUtils.checkAndSkipParamNameAndOptEquals(lex, parsedParams);
 
                         dataRegionName = SqlParserUtils.parseString(lex);
 
                         continue;
 
                     case CACHE_NAME:
-                        SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+                        SqlParserUtils.checkAndSkipParamNameAndOptEquals(lex, parsedParams);
 
                         cacheName = SqlParserUtils.parseString(lex);
 
                         continue;
 
                     case KEY_TYPE:
-                        SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+                        SqlParserUtils.checkAndSkipParamNameAndOptEquals(lex, parsedParams);
 
-                        keyTypeName = SqlParserUtils.parseString(lex);
+                        keyTypeName = SqlParserUtils.parseIdentifier(lex);
 
                         continue;
 
                     case VAL_TYPE:
-                        SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+                        SqlParserUtils.checkAndSkipParamNameAndOptEquals(lex, parsedParams);
 
-                        valTypeName = SqlParserUtils.parseString(lex);
+                        valTypeName = SqlParserUtils.parseIdentifier(lex);
 
                         continue;
 
                     case WRAP_KEY: {
-                        SqlParserUtils.ParamFormat paramFmt = SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+                        boolean hasEqSign = SqlParserUtils.checkAndSkipParamNameAndOptEquals(lex, parsedParams);
 
-                        wrapKey = SqlParserUtils.tryParseBoolean(lex, paramFmt);
+                        wrapKey = SqlParserUtils.tryParseBoolean(lex, hasEqSign);
 
                         continue;
                     }
 
                     case WRAP_VAL: {
-                        SqlParserUtils.ParamFormat paramFmt = SqlParserUtils.checkAndSkipParamName(lex, parsedParams);
+                        boolean hasEqSign = SqlParserUtils.checkAndSkipParamNameAndOptEquals(lex, parsedParams);
 
-                        wrapKey = SqlParserUtils.tryParseBoolean(lex, paramFmt);
+                        wrapVal = SqlParserUtils.tryParseBoolean(lex, hasEqSign);
 
                         continue;
                     }
@@ -785,10 +784,10 @@ public class SqlCreateTableCommand implements SqlCommand {
                     default:
                         // fallthrough
                 }
-
-                throw errorUnexpectedToken(nextTok, TEMPLATE, BACKUPS, ATOMICITY, WRITE_SYNCHRONIZATION_MODE,
-                    CACHE_GROUP, AFFINITY_KEY, DATA_REGION, CACHE_NAME, KEY_TYPE, VAL_TYPE, WRAP_KEY, WRAP_VAL);
             }
+
+            throw errorUnexpectedToken(nextTok, TEMPLATE, BACKUPS, ATOMICITY, WRITE_SYNCHRONIZATION_MODE,
+                CACHE_GROUP, AFFINITY_KEY, DATA_REGION, CACHE_NAME, KEY_TYPE, VAL_TYPE, WRAP_KEY, WRAP_VAL);
         }
     }
 

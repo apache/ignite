@@ -22,6 +22,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import javax.cache.CacheException;
+
+import com.google.common.base.Joiner;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
@@ -680,16 +682,21 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
         initialize(mode, atomicityMode, near);
 
-        try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(true)){
-            checkNoIndexIsCreatedForInlineSize(-2, IgniteQueryErrorCode.PARSING);
-            checkNoIndexIsCreatedForInlineSize(Integer.MIN_VALUE, IgniteQueryErrorCode.PARSING);
+        GridTestUtils.runWithH2FallbackDisabled(true, new Callable<Void>() {
+            @Override public Void call() throws Exception {
 
-            checkIndexCreatedForInlineSize(0);
-            loadInitialData();
-            checkIndexCreatedForInlineSize(1);
-            loadInitialData();
-            checkIndexCreatedForInlineSize(Integer.MAX_VALUE);
-        }
+                checkNoIndexIsCreatedForInlineSize(-2, IgniteQueryErrorCode.UNKNOWN);
+                checkNoIndexIsCreatedForInlineSize(Integer.MIN_VALUE, IgniteQueryErrorCode.UNKNOWN);
+
+                checkIndexCreatedForInlineSize(0);
+                loadInitialData();
+                checkIndexCreatedForInlineSize(1);
+                loadInitialData();
+                checkIndexCreatedForInlineSize(Integer.MAX_VALUE);
+
+                return null;
+            }
+        });
     }
 
     /**
@@ -800,16 +807,21 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
 
         initialize(mode, atomicityMode, near);
 
-        try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(true)){
-            checkNoIndexIsCreatedForParallelism(-2, IgniteQueryErrorCode.PARSING);
-            checkNoIndexIsCreatedForParallelism(Integer.MIN_VALUE, IgniteQueryErrorCode.PARSING);
+        GridTestUtils.runWithH2FallbackDisabled(true, new Callable<Void>() {
+            @Override public Void call() throws Exception {
 
-            checkIndexCreatedForParallelism(0);
-            loadInitialData();
-            checkIndexCreatedForParallelism(1);
-            loadInitialData();
-            checkIndexCreatedForParallelism(5);
-        }
+                checkNoIndexIsCreatedForParallelism(-2, IgniteQueryErrorCode.UNKNOWN);
+                checkNoIndexIsCreatedForParallelism(Integer.MIN_VALUE, IgniteQueryErrorCode.UNKNOWN);
+
+                checkIndexCreatedForParallelism(0);
+                loadInitialData();
+                checkIndexCreatedForParallelism(1);
+                loadInitialData();
+                checkIndexCreatedForParallelism(5);
+
+                return null;
+            }
+        });
     }
 
     /**
@@ -1373,7 +1385,8 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
             int code = cause0.statusCode();
 
             assertEquals("Unexpected error code [expected=" + expCode + ", actual=" + code +
-                ", msg=" + cause.getMessage() + ']', expCode, code);
+                ", msg=" + cause.getMessage() + "]\n" + Joiner.on("\n").join(e.getStackTrace()),
+                expCode, code);
 
             if (msg != null)
                 assertEquals("Unexpected error message [expected=" + msg + ", actual=" + cause0.getMessage() + ']',

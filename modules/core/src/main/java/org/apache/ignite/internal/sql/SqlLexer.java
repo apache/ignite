@@ -154,6 +154,7 @@ public class SqlLexer implements SqlLexerToken {
                 case ';':
                 case '(':
                 case ')':
+                case '=':
                     token0 = Character.toString(c);
                     tokenTyp0 = SqlLexerTokenType.forChar(c);
 

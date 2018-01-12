@@ -727,34 +727,43 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkNotNullCheckDmlInsertValues(CacheAtomicityMode atomicityMode, boolean useInternalCmd) throws Exception {
-        try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(useInternalCmd)) {
+    private void checkNotNullCheckDmlInsertValues(final CacheAtomicityMode atomicityMode, final boolean useInternalCmd)
+        throws Exception {
 
-            executeSql("CREATE TABLE test(id INT PRIMARY KEY, name VARCHAR NOT NULL) "
+        GridTestUtils.runWithH2FallbackDisabled(useInternalCmd, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+
+                try {
+                    executeSql("CREATE TABLE test(id INT PRIMARY KEY, name VARCHAR NOT NULL) "
                         + (useInternalCmd ? "atomicity=" + atomicityMode.name() + ""
-                                          : "WITH \"atomicity=" + atomicityMode.name() + "\""));
+                        : "WITH \"atomicity=" + atomicityMode.name() + "\""));
 
-            GridTestUtils.assertThrows(log(), new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    executeSql("INSERT INTO test(id, name) " +
-                        "VALUES (1, 'ok'), (2, NULLIF('a', 'a')), (3, 'ok')");
+                    GridTestUtils.assertThrows(log(), new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            executeSql("INSERT INTO test(id, name) " +
+                                "VALUES (1, 'ok'), (2, NULLIF('a', 'a')), (3, 'ok')");
+
+                            return null;
+                        }
+                    }, IgniteSQLException.class, ERR_MSG);
+
+                    List<List<?>> result = executeSql("SELECT id, name FROM test ORDER BY id");
+
+                    assertEquals(0, result.size());
+
+                    executeSql("INSERT INTO test(id, name) VALUES (1, 'ok'), (2, 'ok2'), (3, 'ok3')");
+
+                    result = executeSql("SELECT id, name FROM test ORDER BY id");
+
+                    assertEquals(3, result.size());
 
                     return null;
                 }
-            }, IgniteSQLException.class, ERR_MSG);
-
-            List<List<?>> result = executeSql("SELECT id, name FROM test ORDER BY id");
-
-            assertEquals(0, result.size());
-
-            executeSql("INSERT INTO test(id, name) VALUES (1, 'ok'), (2, 'ok2'), (3, 'ok3')");
-
-            result = executeSql("SELECT id, name FROM test ORDER BY id");
-
-            assertEquals(3, result.size());
-        } finally {
-            executeSql("DROP TABLE test");
-        }
+                finally {
+                    executeSql("DROP TABLE test");
+                }
+            }
+        });
     }
 
     /** */
@@ -931,118 +940,151 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     /** Check create table fails with NOT NULL field and read-through. */
     public void testReadThroughRestrictionCreateTable() throws Exception {
 
-        try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(false)) {
+        GridTestUtils.runWithH2FallbackDisabled(false, new Callable<Void>() {
+            @Override public Void call() {
 
-            GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return executeSql("CREATE TABLE test(id INT PRIMARY KEY, name char NOT NULL) " +
-                        "WITH \"template=" + CACHE_READ_THROUGH + "\"");
-                }
-            }, IgniteSQLException.class, READ_THROUGH_ERR_MSG);
-        }
+                GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return executeSql("CREATE TABLE test(id INT PRIMARY KEY, name char NOT NULL) " +
+                            "WITH \"template=" + CACHE_READ_THROUGH + "\"");
+                    }
+                }, IgniteSQLException.class, READ_THROUGH_ERR_MSG);
+
+                return null;
+            }
+        });
     }
 
     /** Check create table fails with NOT NULL field and read-through. */
     public void testReadThroughRestrictionCreateTableInternal() throws Exception {
 
-        try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(true)) {
+        GridTestUtils.runWithH2FallbackDisabled(true, new Callable<Void>() {
+            @Override public Void call() {
 
-            GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return executeSql("CREATE TABLE test(id INT PRIMARY KEY, name char NOT NULL) " +
-                        "template=\"" + CACHE_READ_THROUGH + "\"");
-                }
-            }, IgniteSQLException.class, READ_THROUGH_ERR_MSG);
-        }
+                GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return executeSql("CREATE TABLE test(id INT PRIMARY KEY, name char NOT NULL) " +
+                            "template=\"" + CACHE_READ_THROUGH + "\"");
+                    }
+                }, IgniteSQLException.class, READ_THROUGH_ERR_MSG);
+
+                return null;
+            }
+        });
     }
 
     /** Check create table fails with NOT NULL field and cache interceptor. */
     public void testInterceptorRestrictionCreateTable() throws Exception {
 
-        try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(false)) {
+        GridTestUtils.runWithH2FallbackDisabled(false, new Callable<Void>() {
+            @Override public Void call() {
 
-            GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return executeSql("CREATE TABLE test(id INT PRIMARY KEY, name char NOT NULL) " +
-                        "WITH \"template=" + CACHE_INTERCEPTOR + "\"");
-                }
-            }, IgniteSQLException.class, INTERCEPTOR_ERR_MSG);
-        }
+                GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return executeSql("CREATE TABLE test(id INT PRIMARY KEY, name char NOT NULL) " +
+                            "WITH \"template=" + CACHE_INTERCEPTOR + "\"");
+                    }
+                }, IgniteSQLException.class, INTERCEPTOR_ERR_MSG);
+
+                return null;
+            }
+        });
     }
 
     /** Check create table fails with NOT NULL field and cache interceptor. */
     public void testInterceptorRestrictionCreateTableInternal() throws Exception {
 
-        try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(true)) {
+        GridTestUtils.runWithH2FallbackDisabled(true, new Callable<Void>() {
+            @Override public Void call() {
 
-            GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return executeSql("CREATE TABLE test(id INT PRIMARY KEY, name char NOT NULL) " +
-                        " template=\"" + CACHE_INTERCEPTOR + "\"");
-                }
-            }, IgniteSQLException.class, INTERCEPTOR_ERR_MSG);
-        }
+                GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return executeSql("CREATE TABLE test(id INT PRIMARY KEY, name char NOT NULL) " +
+                            " template=\"" + CACHE_INTERCEPTOR + "\"");
+                    }
+                }, IgniteSQLException.class, INTERCEPTOR_ERR_MSG);
+
+                return null;
+            }
+        });
     }
 
     /** Check alter table fails with NOT NULL field and read-through. */
     public void testReadThroughRestrictionAlterTable() throws Exception {
 
-        try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(false)) {
+        GridTestUtils.runWithH2FallbackDisabled(false, new Callable<Void>() {
+            @Override public Void call() throws Exception {
 
-            executeSql("CREATE TABLE test(id INT PRIMARY KEY, age INT) " +
-                "WITH \"template=" + CACHE_READ_THROUGH + "\"");
+                executeSql("CREATE TABLE test(id INT PRIMARY KEY, age INT) " +
+                    "WITH \"template=" + CACHE_READ_THROUGH + "\"");
 
-            GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return executeSql("ALTER TABLE test ADD COLUMN name char NOT NULL");
-                }
-            }, IgniteSQLException.class, READ_THROUGH_ERR_MSG);
-        }
+                GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return executeSql("ALTER TABLE test ADD COLUMN name char NOT NULL");
+                    }
+                }, IgniteSQLException.class, READ_THROUGH_ERR_MSG);
+
+                return null;
+            }
+        });
     }
 
     /** Check alter table fails with NOT NULL field and read-through. */
     public void testReadThroughRestrictionAlterTableInternal() throws Exception {
 
-        try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(true)) {
+        GridTestUtils.runWithH2FallbackDisabled(true, new Callable<Void>() {
+            @Override public Void call() throws Exception {
 
-            executeSql("CREATE TABLE test(id INT PRIMARY KEY, age INT) template=\"" + CACHE_READ_THROUGH + "\"");
+                executeSql("CREATE TABLE test(id INT PRIMARY KEY, age INT) template=\"" + CACHE_READ_THROUGH + "\"");
 
-            GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return executeSql("ALTER TABLE test ADD COLUMN name char NOT NULL");
-                }
-            }, IgniteSQLException.class, READ_THROUGH_ERR_MSG);
-        }
+                GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return executeSql("ALTER TABLE test ADD COLUMN name char NOT NULL");
+                    }
+                }, IgniteSQLException.class, READ_THROUGH_ERR_MSG);
+
+                return null;
+            }
+        });
     }
 
     /** Check alter table fails with NOT NULL field and cache interceptor. */
     public void testInterceptorRestrictionAlterTable() throws Exception {
 
-        try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(false)) {
+        GridTestUtils.runWithH2FallbackDisabled(false, new Callable<Void>() {
+            @Override public Void call() throws Exception {
 
-            executeSql("CREATE TABLE test(id INT PRIMARY KEY, age INT) " +
-                "WITH \"template=" + CACHE_INTERCEPTOR + "\"");
+                executeSql("CREATE TABLE test(id INT PRIMARY KEY, age INT) " +
+                    "WITH \"template=" + CACHE_INTERCEPTOR + "\"");
 
-            GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return executeSql("ALTER TABLE test ADD COLUMN name char NOT NULL");
-                }
-            }, IgniteSQLException.class, INTERCEPTOR_ERR_MSG);
-        }
+                GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return executeSql("ALTER TABLE test ADD COLUMN name char NOT NULL");
+                    }
+                }, IgniteSQLException.class, INTERCEPTOR_ERR_MSG);
+
+                return null;
+            }
+        });
     }
 
+    /** Check alter table fails with NOT NULL field and cache interceptor. */
     public void testInterceptorRestrictionAlterTableInternal() throws Exception {
 
-        try (H2FallbackTempDisabler disabler = new H2FallbackTempDisabler(true)) {
+        GridTestUtils.runWithH2FallbackDisabled(true, new Callable<Void>() {
+            @Override public Void call() throws Exception {
 
-            executeSql("CREATE TABLE test(id INT PRIMARY KEY, age INT) template=\"" + CACHE_INTERCEPTOR + "\"");
+                executeSql("CREATE TABLE test(id INT PRIMARY KEY, age INT) template=\"" + CACHE_INTERCEPTOR + "\"");
 
-            GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return executeSql("ALTER TABLE test ADD COLUMN name char NOT NULL");
-                }
-            }, IgniteSQLException.class, INTERCEPTOR_ERR_MSG);
-        }
+                GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        return executeSql("ALTER TABLE test ADD COLUMN name char NOT NULL");
+                    }
+                }, IgniteSQLException.class, INTERCEPTOR_ERR_MSG);
+
+                return null;
+            }
+        });
     }
 
     /** */

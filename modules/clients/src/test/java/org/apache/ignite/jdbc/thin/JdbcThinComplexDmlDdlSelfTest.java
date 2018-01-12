@@ -28,12 +28,13 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
+
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
-import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -157,8 +158,8 @@ public class JdbcThinComplexDmlDdlSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void checkCreateSelect(final boolean useInternalCmd) throws Exception {
 
-        GridTestUtils.runWithH2FallbackDisabled(useInternalCmd, new GridTestUtils.RunnableThrowingClosure() {
-            @Override public void run() throws Exception {
+        GridTestUtils.runWithH2FallbackDisabled(useInternalCmd, new Callable<Void>() {
+            @Override public Void call() throws Exception {
 
                 GridTestUtils.assertThrows(null, new IgniteCallable<Object>() {
                     @Override public Object call() throws Exception {
@@ -261,6 +262,8 @@ public class JdbcThinComplexDmlDdlSelfTest extends GridCommonAbstractTest {
                 assert cnt[0] == 34 : "Invalid rows count";
 
                 sql(new UpdateChecker(0), "DROP INDEX idx");
+
+                return null;
             }
         });
     }

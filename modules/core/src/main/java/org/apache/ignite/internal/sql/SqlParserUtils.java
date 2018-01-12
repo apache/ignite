@@ -21,6 +21,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.sql.command.SqlQualifiedName;
 import org.apache.ignite.internal.util.typedef.F;
 
+import java.util.Arrays;
 import java.util.Set;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.EXISTS;
@@ -33,10 +34,6 @@ import static org.apache.ignite.internal.sql.SqlLexerTokenType.PARENTHESIS_RIGHT
  * Parser utility methods.
  */
 public class SqlParserUtils {
-
-    public enum ParamFormat {
-        KEY_SPACE_VAL, KEY_EQ_VAL
-    }
 
     /**
      * Parse IF EXISTS statement.
@@ -85,18 +82,16 @@ public class SqlParserUtils {
      * @param lex Lexer.
      * @return {@code True} if right parenthesis is found.
      */
-    public static boolean skipCommaOrRightParenthesis(SqlLexer lex) {
+    public static SqlLexerTokenType skipCommaOrRightParenthesis(SqlLexer lex, String... additionalExpTokens) {
         if (lex.shift()) {
             switch (lex.tokenType()) {
                 case COMMA:
-                    return false;
-
                 case PARENTHESIS_RIGHT:
-                    return true;
+                    return lex.tokenType();
             }
         }
 
-        throw errorUnexpectedToken(lex, COMMA.asString(), PARENTHESIS_RIGHT.asString());
+        throw errorUnexpectedToken0(lex, concatArrays(new String[] { COMMA.asString(), PARENTHESIS_RIGHT.asString() }, additionalExpTokens));
     }
 
     /**
@@ -207,7 +202,7 @@ public class SqlParserUtils {
     }
 
     /**
-     * Skip token if it matches expected keyword sequence.
+     * Skips token if it matches expected keyword sequence.
      *
      * @param lex Lexer.
      * @param expKeywords Expected keywords
@@ -217,6 +212,29 @@ public class SqlParserUtils {
             if (!lex.shift() || !matchesKeyword(lex, keyword))
                 throw errorUnexpectedToken(lex, keyword);
         }
+    }
+
+    /**
+     * Skips keywords if they match expected keyword sequence. If the {@code firstKeyword} matches, the
+     * {@code furtherKeywords} are ought to match the input. The method returns {@code true} in this case.
+     * If the first keyword doesn't match, further are not checked and {@code false} is returned.
+     *
+     * @param lex The lexer.
+     * @param firstKeyword The first keyword.
+     * @param furtherKeywords Further keywords, which are mandatory if the first one was matched.
+     */
+    public static boolean skipOptionalKeywords(SqlLexer lex, String firstKeyword, String... furtherKeywords) {
+        if (!matchesKeyword(lex.lookAhead(), firstKeyword))
+            return false;
+
+        lex.shift();
+
+        for (String keyword : furtherKeywords) {
+            if (!lex.shift() || !matchesKeyword(lex, keyword))
+                throw errorUnexpectedToken(lex, keyword);
+        }
+
+        return true;
     }
 
     /**
@@ -246,15 +264,6 @@ public class SqlParserUtils {
         }
         else
             return false;
-    }
-
-    /**
-     * Skips next token if it's an equal sign.
-     *
-     * @param lex Lexer.
-     */
-    public static boolean skipOptionalEqSign(SqlLexer lex) {
-        return skipOptionalToken(lex, SqlLexerTokenType.EQUALS);
     }
 
     /**
@@ -347,6 +356,7 @@ public class SqlParserUtils {
      */
     public static SqlParseException errorUnexpectedToken(SqlLexerToken token, String firstExpToken,
         String... expTokens) {
+
         if (F.isEmpty(expTokens))
             return errorUnexpectedToken0(token, firstExpToken);
         else {
@@ -358,6 +368,12 @@ public class SqlParserUtils {
 
             throw errorUnexpectedToken0(token, expTokens0);
         }
+    }
+
+    public static <T> T[] concatArrays(T[] a, T[] b) {
+        T[] result = Arrays.copyOf(a, a.length + b.length);
+        System.arraycopy(b, 0, result, a.length, b.length);
+        return result;
     }
 
     /**
@@ -402,63 +418,67 @@ public class SqlParserUtils {
         throw errorUnexpectedToken(lex, "[string]");
     }
 
-    public static ParamFormat checkAndSkipParamName(SqlLexer lex, Set<String> parsedParams) {
-        lex.shift();
+    public static boolean checkAndSkipParamNameAndOptEquals(SqlLexer lex, Set<String> parsedParams) {
+        if (!lex.shift())
+            throw error(lex, "End of command encountered");
 
         String paramName = lex.token();
 
         if (!parsedParams.add(paramName))
             throw error(lex, "Only one " + paramName + " clause may be specified.");
 
-        return skipOptionalToken(lex, SqlLexerTokenType.EQUALS) ? ParamFormat.KEY_EQ_VAL : ParamFormat.KEY_SPACE_VAL;
+        return skipOptionalToken(lex, SqlLexerTokenType.EQUALS);
     }
 
     public static <T extends Enum<T>> T parseEnum(SqlLexer lex, Class<T> enumCls) {
-        lex.shift();
+        if (!lex.shift())
+            throw errorUnexpectedToken0(lex, enumValuesList(enumCls));
 
         try {
             return Enum.valueOf(enumCls, lex.token().trim().toUpperCase());
         }
         catch (IllegalArgumentException e) {
-            throw errorUnexpectedToken(lex, "[" + enumValuesList(enumCls) + "]");
+            throw errorUnexpectedToken0(lex, enumValuesList(enumCls));
         }
     }
 
-    private static <E extends Enum<E>> String enumValuesList(Class<E> enumCls) {
-
+    private static <E extends Enum<E>> String[] enumValuesList(Class<E> enumCls) {
         E[] enumVals = enumCls.getEnumConstants();
+        String[] strValues = new String[enumVals.length];
 
-        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < enumVals.length; i++)
+            strValues[i] = String.valueOf(enumVals[i]);
 
-        for (int i = 0; i < enumVals.length - 2; i++)
-            sb.append(String.valueOf(enumVals[i])).append(", ");
-
-        sb.append(", or ").append(enumVals[enumVals.length - 1]);
-
-        return sb.toString();
+        return strValues;
     }
 
-    public static Boolean tryParseBoolean(SqlLexer lex, ParamFormat paramFmt) {
-        Boolean val = null;
+    public static Boolean tryParseBoolean(SqlLexer lex, boolean hasEqSign) {
+        Boolean val = matchBooleanValue(lex.lookAhead());
 
-        SqlLexerToken token = lex.lookAhead();
+        if (val != null) {
+            lex.shift();
+            return val;
+        }
 
-        if (token.tokenType() == SqlLexerTokenType.QUOTED || token.tokenType() == SqlLexerTokenType.DEFAULT) {
+        if (hasEqSign)
+            throw errorUnexpectedToken0(lex.lookAhead(), "TRUE", "FALSE", "1", "0");
+
+        return true;
+    }
+
+    private static Boolean matchBooleanValue(SqlLexerToken token) {
+        if (token.tokenType() == SqlLexerTokenType.QUOTED ||
+            token.tokenType() == SqlLexerTokenType.DEFAULT) {
+
             String valStr = token.token().toUpperCase();
 
             if (F.eq(valStr, "TRUE") || F.eq(valStr, "1"))
-                val = true;
+                return true;
             else if (F.eq(valStr, "FALSE") || F.eq(valStr, "0"))
-                val = false;
-
-            if (val != null)
-                lex.shift();
+                return false;
         }
 
-        if (val == null && paramFmt == ParamFormat.KEY_EQ_VAL)
-            throw errorUnexpectedToken(lex, "[boolean]");
-
-        return val;
+        return null;
     }
 
     /**
