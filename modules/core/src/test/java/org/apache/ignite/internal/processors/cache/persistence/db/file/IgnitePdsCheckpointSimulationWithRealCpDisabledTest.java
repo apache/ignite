@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.DummyPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageIdCollection;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesStripedConcurrentHashSet;
@@ -559,7 +560,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
             ig.context().cache().context().database().checkpointReadUnlock();
         }
 
-        PagesStripedConcurrentHashSet[] cpPages = mem.beginCheckpoint();
+        PageIdCollection[] cpPages = mem.beginCheckpoint();
 
         ig.context().cache().context().database().checkpointReadLock();
 
@@ -854,7 +855,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         while (checkpoints > 0) {
             Map<FullPageId, Integer> snapshot = null;
 
-            PagesStripedConcurrentHashSet[] pageIds;
+            PageIdCollection[] pageIds;
 
             updLock.writeLock().lock();
 
@@ -888,59 +889,56 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
                 long write = 0;
 
-                for (PagesStripedConcurrentHashSet concurrentHashSet : pageIds) {
-                    for (Set<FullPageId> next : concurrentHashSet) {
-                        for (FullPageId fullId : next) {
-                            long cpStart = System.nanoTime();
+                for (PageIdCollection concurrentHashSet : pageIds) {
+                    for (FullPageId fullId : concurrentHashSet) {
+                        long cpStart = System.nanoTime();
 
-                            Integer tag = mem.getForCheckpoint(fullId, tmpBuf, null);
+                        Integer tag = mem.getForCheckpoint(fullId, tmpBuf, null);
 
-                            if (tag == null)
-                                continue;
+                        if (tag == null)
+                            continue;
 
-                            long cpEnd = System.nanoTime();
+                        long cpEnd = System.nanoTime();
 
-                            cp += cpEnd - cpStart;
+                        cp += cpEnd - cpStart;
 
-                            Integer state = snapshot.get(fullId);
+                        Integer state = snapshot.get(fullId);
 
-                            if (allocated.contains(fullId) && state != -1) {
-                                tmpBuf.rewind();
+                        if (allocated.contains(fullId) && state != -1) {
+                            tmpBuf.rewind();
 
-                                Integer first = null;
+                            Integer first = null;
 
-                                for (int i = PageIO.COMMON_HEADER_END; i < mem.pageSize(); i++) {
-                                    int val = tmpBuf.get(i) & 0xFF;
+                            for (int i = PageIO.COMMON_HEADER_END; i < mem.pageSize(); i++) {
+                                int val = tmpBuf.get(i) & 0xFF;
 
-                                    if (first == null)
-                                        first = val;
+                                if (first == null)
+                                    first = val;
 
-                                    // Avoid string concat.
-                                    if (first != val)
-                                        assertEquals("Corrupted buffer at position [pageId=" + fullId + ", pos=" + i + ']',
-                                            (int)first, val);
+                                // Avoid string concat.
+                                if (first != val)
+                                    assertEquals("Corrupted buffer at position [pageId=" + fullId + ", pos=" + i + ']',
+                                        (int)first, val);
 
-                                    // Avoid string concat.
-                                    if (state != val)
-                                        assertEquals("Invalid value at position [pageId=" + fullId + ", pos=" + i + ']',
-                                            (int)state, val);
-                                }
+                                // Avoid string concat.
+                                if (state != val)
+                                    assertEquals("Invalid value at position [pageId=" + fullId + ", pos=" + i + ']',
+                                        (int)state, val);
                             }
-
-                            tmpBuf.rewind();
-
-                            long writeStart = System.nanoTime();
-
-                            storeMgr.write(cacheId, fullId.pageId(), tmpBuf, tag);
-
-                            long writeEnd = System.nanoTime();
-
-                            write += writeEnd - writeStart;
-
-                            tmpBuf.rewind();
                         }
-                    }
 
+                        tmpBuf.rewind();
+
+                        long writeStart = System.nanoTime();
+
+                        storeMgr.write(cacheId, fullId.pageId(), tmpBuf, tag);
+
+                        long writeEnd = System.nanoTime();
+
+                        write += writeEnd - writeStart;
+
+                        tmpBuf.rewind();
+                    }
                 }
 
                 long syncStart = System.currentTimeMillis();

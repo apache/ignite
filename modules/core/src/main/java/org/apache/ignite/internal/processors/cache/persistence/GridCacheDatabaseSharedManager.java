@@ -110,6 +110,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageIdCollection;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesStripedConcurrentHashSet;
@@ -1814,13 +1815,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         Collection<DataRegion> memPolicies = context().database().dataRegions();
 
-        List<IgniteBiTuple<PageMemory, PagesStripedConcurrentHashSet[]>> cpEntities = new ArrayList<>(memPolicies.size());
+        Collection<IgniteBiTuple<PageMemory, PageIdCollection[]>> cpEntities = new ArrayList<>(memPolicies.size());
 
         for (DataRegion memPlc : memPolicies) {
             if (memPlc.config().isPersistenceEnabled()) {
                 PageMemoryEx pageMem = (PageMemoryEx)memPlc.pageMemory();
 
-                cpEntities.add(new IgniteBiTuple<PageMemory, PagesStripedConcurrentHashSet[]>(pageMem, pageMem.beginCheckpoint()));
+                cpEntities.add(new IgniteBiTuple<PageMemory, PageIdCollection[]>(pageMem, pageMem.beginCheckpoint()));
             }
         }
 
@@ -1831,29 +1832,27 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         int cpPagesCnt = 0;
 
-        for (IgniteBiTuple<PageMemory, PagesStripedConcurrentHashSet[]> e : cpEntities) {
+        for (IgniteBiTuple<PageMemory, PageIdCollection[]> e : cpEntities) {
             PageMemoryEx pageMem = (PageMemoryEx)e.get1();
 
-            PagesStripedConcurrentHashSet[] cpPages = e.get2();
+            PageIdCollection[] cpPages = e.get2();
 
-            for (PagesStripedConcurrentHashSet set : cpPages) {
-                for (Set<FullPageId> innerSet : set) {
-                    for (FullPageId fullId : innerSet) {
+            for (PageIdCollection innerSet : cpPages) {
+                for (FullPageId fullId : innerSet) {
 
-                        cpPagesCnt++;
+                    cpPagesCnt++;
+                    tmpWriteBuf.rewind();
+
+                    Integer tag = pageMem.getForCheckpoint(fullId, tmpWriteBuf, null);
+
+                    if (tag != null) {
                         tmpWriteBuf.rewind();
 
-                        Integer tag = pageMem.getForCheckpoint(fullId, tmpWriteBuf, null);
+                        PageStore store = storeMgr.writeInternal(fullId.groupId(), fullId.pageId(), tmpWriteBuf, tag, true);
 
-                        if (tag != null) {
-                            tmpWriteBuf.rewind();
+                        tmpWriteBuf.rewind();
 
-                            PageStore store = storeMgr.writeInternal(fullId.groupId(), fullId.pageId(), tmpWriteBuf, tag, true);
-
-                            tmpWriteBuf.rewind();
-
-                            updStores.add(store);
-                        }
+                        updStores.add(store);
                     }
                 }
             }
@@ -1866,7 +1865,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         long fsync = U.currentTimeMillis();
 
-        for (IgniteBiTuple<PageMemory, PagesStripedConcurrentHashSet[]> e : cpEntities)
+        for (IgniteBiTuple<PageMemory, PageIdCollection[]> e : cpEntities)
             ((PageMemoryEx)e.get1()).finishCheckpoint();
 
         writeCheckpointEntry(
@@ -2118,7 +2117,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         if (asyncCheckpointer != null) {
                             CountDownFuture wrCompleteFut;
 
-                            if (persistenceCfg.getCheckpointWriteOrder() == CheckpointWriteOrder.SEQUENTIAL) {
+                            if (persistenceCfg.getCheckpointWriteOrder() == CheckpointWriteOrder.SEQUENTIAL
+                                && PageMemoryImpl.isParallelDirtyPages()) {
                                 if (log.isInfoEnabled())
                                     log.info(String.format("Activated parallel page sort for [pages=%d]", chp.pagesSize()));
 

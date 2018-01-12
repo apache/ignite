@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageIdCollection;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesStripedConcurrentHashSet;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -312,7 +313,7 @@ public class IgnitePdsRecoveryAfterFileCorruptionTest extends GridCommonAbstract
             }
         }
 
-        PagesStripedConcurrentHashSet[] pageIds = mem.beginCheckpoint();
+        PageIdCollection[] pageIds = mem.beginCheckpoint();
 
         info("Acquired pages for checkpoint: " + PagesStripedConcurrentHashSet.size(pageIds));
 

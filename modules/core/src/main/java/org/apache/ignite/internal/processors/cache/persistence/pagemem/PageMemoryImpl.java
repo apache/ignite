@@ -36,6 +36,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -64,7 +65,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
@@ -738,7 +738,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         FullPageId fullPageId = new FullPageId(pageId, cacheId);
 
-        PagesStripedConcurrentHashSet pages0 = seg.segCheckpointPages;
+        PageIdCollection pages0 = seg.segCheckpointPages;
 
         if (pages0 != null)
             pages0.remove(fullPageId);
@@ -877,8 +877,8 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
-    @Override public PagesStripedConcurrentHashSet[] beginCheckpoint() throws IgniteException {
-        PagesStripedConcurrentHashSet[] sets = new PagesStripedConcurrentHashSet[segments.length];
+    @Override public PageIdCollection[] beginCheckpoint() throws IgniteException {
+        PageIdCollection[] sets = new PageIdCollection[segments.length];
 
         for (int i = 0; i < segments.length; i++) {
             Segment seg = segments[i];
@@ -897,11 +897,24 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /**
-     * @return striped concurrent Hash/Skip list set for isolated storage of dirty pages for same page store file.
+     * @return regular or striped concurrent Hash/Skip list set for isolated storage of dirty pages for same page store
+     * file.
      */
-    //todo option
-    private PagesStripedConcurrentHashSet createPagesSet() {
-        return false ? new PagesStripedConcurrentHashSet() : new PagesStripedConcurrentSkipListSet();
+    private PageIdCollection createPagesSet() {
+        if(isParallelDirtyPages()) {
+            return IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DIRTY_PAGES_SORTED_STORAGE, false)
+                ? new PagesStripedConcurrentSkipListSet()
+                : new PagesStripedConcurrentHashSet();
+        }
+        else
+            return new PagesGridConcurrentHashSet();
+    }
+
+    /**
+     * @return true if dirty pages can be processed in parallel&striped manner.
+     */
+    public static boolean isParallelDirtyPages() {
+        return IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DIRTY_PAGES_PARALLEL, false);
     }
 
     /** {@inheritDoc} */
@@ -1400,7 +1413,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     boolean isInCheckpoint(FullPageId pageId) {
         Segment seg = segment(pageId.groupId(), pageId.pageId());
 
-        PagesStripedConcurrentHashSet pages0 = seg.segCheckpointPages;
+        PageIdCollection pages0 = seg.segCheckpointPages;
 
         return pages0 != null && pages0.contains(pageId);
     }
@@ -1412,7 +1425,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     boolean clearCheckpoint(FullPageId fullPageId) {
         Segment seg = segment(fullPageId.groupId(), fullPageId.pageId());
 
-        PagesStripedConcurrentHashSet pages0 = seg.segCheckpointPages;
+        PageIdCollection pages0 = seg.segCheckpointPages;
 
         assert pages0 != null;
 
@@ -1726,10 +1739,10 @@ public class PageMemoryImpl implements PageMemoryEx {
         private long memPerTbl;
 
         /** Pages marked as dirty since the last checkpoint. */
-        private PagesStripedConcurrentHashSet segDirtyPages = createPagesSet();
+        private PageIdCollection segDirtyPages = createPagesSet();
 
         /** Pages under current checkpoint. */
-        private volatile PagesStripedConcurrentHashSet segCheckpointPages;
+        private volatile PageIdCollection segCheckpointPages;
 
         /** Maximum allowed dirty pages in segment before checkpoint start. */
         private final int maxDirtyPages;
@@ -1863,7 +1876,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             if (PageHeader.isAcquired(absPtr))
                 return false;
 
-            PagesStripedConcurrentHashSet cpPages = segCheckpointPages;
+            PageIdCollection cpPages = segCheckpointPages;
 
             clearRowCache(fullPageId, absPtr);
 

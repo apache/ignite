@@ -21,16 +21,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.SortedSet;
 import org.apache.ignite.configuration.CheckpointWriteOrder;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageIdCollection;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesStripedConcurrentHashSet;
 
 /**
@@ -95,16 +94,19 @@ public class CheckpointScope {
      * Adds several striped sets of pages from data region.
      * @param sets dirty pages collections from region (array with sets from all segments).
      */
-    public void addDataRegionCpPages(PagesStripedConcurrentHashSet[] sets) {
+    public void addDataRegionCpPages(PageIdCollection[] sets) {
         StripedMultiSetCollector pagesByBucket = new StripedMultiSetCollector();
 
-        for (PagesStripedConcurrentHashSet setToAdd : sets) {
-            for (int idx = 0; idx < PagesStripedConcurrentHashSet.BUCKETS_COUNT; idx++) {
-                Set<FullPageId> setForBucket = setToAdd.getOptionalSetForBucket(idx);
+        for (PageIdCollection setToAdd : sets) {
+            if(setToAdd instanceof PagesStripedConcurrentHashSet) {
+                for (int idx = 0; idx < PagesStripedConcurrentHashSet.BUCKETS_COUNT; idx++) {
+                    Set<FullPageId> setForBucket = ((PagesStripedConcurrentHashSet)setToAdd).getOptionalSetForBucket(idx);
 
-                if (setForBucket != null)
-                    pagesByBucket.getOrCreateBucket(idx).add(setForBucket);
-            }
+                    if (setForBucket != null)
+                        pagesByBucket.getOrCreateBucket(idx).add(setForBucket);
+                }
+            } else
+                pagesByBucket.getOrCreateBucket(0).add(setToAdd);
         }
 
         regionsPages.add(pagesByBucket);
@@ -210,7 +212,7 @@ public class CheckpointScope {
         /**
          * Not merged sets for same bucket, but from different segments.
          */
-        private Collection<Set<FullPageId>> unmergedSets = new ArrayList<>(EXPECTED_SEGMENTS_COUNT);
+        private Collection<Collection<FullPageId>> unmergedSets = new ArrayList<>(EXPECTED_SEGMENTS_COUNT);
 
         /**
          * @return overall size of contained sets.
@@ -218,7 +220,7 @@ public class CheckpointScope {
         public int size() {
             int size = 0;
 
-            for (Set<FullPageId> next : unmergedSets) {
+            for (Collection<FullPageId> next : unmergedSets) {
                 size += next.size();
             }
 
@@ -229,22 +231,22 @@ public class CheckpointScope {
          * Appends next set to this collector, this method does not merge sets for performance reasons.
          * @param set data to add
          */
-        public void add(Set<FullPageId> set) {
+        public void add(Collection<FullPageId> set) {
             unmergedSets.add(set);
         }
 
         /**
-         * @return Returns {@code true} if all sets are presorted.
-         * @param comparator
+         * @param comp comparator used for sorting collection.
+         * @return Returns {@code true} if all sets are presorted using specific comparator instance.
          */
-        public boolean isSorted(Comparator<FullPageId> comparator) {
-            for (Set<FullPageId> next : unmergedSets) {
+        public boolean isSorted(Comparator<FullPageId> comp) {
+            for (Collection<FullPageId> next : unmergedSets) {
                 if (!(next instanceof SortedSet))
                     return false;
 
                 SortedSet sortedSet = (SortedSet)next;
 
-                if (sortedSet.comparator() != comparator)
+                if (sortedSet.comparator() != comp)
                     return false;
             }
             return true;

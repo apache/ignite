@@ -102,7 +102,7 @@ public interface PageMemoryEx extends PageMemory {
      * @return Arrays of collections of dirty page IDs, number of elements is the same with segments count.
      * @throws IgniteException If checkpoint has been already started and was not finished.
      */
-    public PagesStripedConcurrentHashSet[] beginCheckpoint() throws IgniteException;
+    public PageIdCollection[] beginCheckpoint() throws IgniteException;
 
     /**
      * Finishes checkpoint operation.

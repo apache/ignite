@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import java.util.AbstractSet;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -33,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * Inner set for buckets in this implementation is not sorted (hash) set.
  */
-public class PagesStripedConcurrentHashSet implements Iterable<Set<FullPageId>> {
+public class PagesStripedConcurrentHashSet extends AbstractSet<FullPageId> implements PageIdCollection {
     /** Buckets count. */
     public static final int BUCKETS_COUNT = 16;
 
@@ -47,7 +48,8 @@ public class PagesStripedConcurrentHashSet implements Iterable<Set<FullPageId>> 
      * @param id Page ID to add to set.
      * @return {@code true} if add operation was successful.
      */
-    public boolean add(FullPageId id) {
+    @Override public boolean add(FullPageId id) {
+        assert id != null : "Null elements not supported";
         Set<FullPageId> set = getOrCreateSetForBucket(getBucketIndex(id));
 
         assert set != null : "Inner set was concurrently destroyed";
@@ -65,6 +67,11 @@ public class PagesStripedConcurrentHashSet implements Iterable<Set<FullPageId>> 
         Set<FullPageId> set = getOptionalSetForBucket(getBucketIndex(id));
 
         return set != null && set.remove(id);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean remove(Object o) {
+        return o instanceof FullPageId && remove((FullPageId)o);
     }
 
     /**
@@ -127,10 +134,15 @@ public class PagesStripedConcurrentHashSet implements Iterable<Set<FullPageId>> 
         return set != null && set.contains(id);
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean contains(Object o) {
+        return o instanceof FullPageId && contains((FullPageId)o);
+    }
+
     /**
      * @return the number of elements in this set.
      */
-    public int size() {
+    @Override public int size() {
         int sz = 0;
 
         for (int i = 0; i < BUCKETS_COUNT; i++) {
@@ -145,7 +157,7 @@ public class PagesStripedConcurrentHashSet implements Iterable<Set<FullPageId>> 
     }
 
     /** {@inheritDoc} */
-    @Override public Iterator<Set<FullPageId>> iterator() {
+    @Override public Iterator<FullPageId> iterator() {
         return new FullPageIdsIterator();
     }
 
@@ -155,12 +167,10 @@ public class PagesStripedConcurrentHashSet implements Iterable<Set<FullPageId>> 
      * @param id page to find.
      * @return true if page is contained at least in one set in this array.
      */
-    public static boolean contains(PagesStripedConcurrentHashSet[] pages, FullPageId id) {
-        for (PagesStripedConcurrentHashSet bucketSet : pages) {
-            for (Set<FullPageId> innerSet : bucketSet) {
-                if (innerSet.contains(id))
-                    return true;
-            }
+    public static boolean contains(PageIdCollection[] pages, FullPageId id) {
+        for (PageIdCollection bucketSet : pages) {
+            if (bucketSet.contains(id))
+                return true;
         }
         return false;
     }
@@ -169,13 +179,11 @@ public class PagesStripedConcurrentHashSet implements Iterable<Set<FullPageId>> 
      * @param pages sets array.
      * @return overall size.
      */
-    public static int size(PagesStripedConcurrentHashSet[] pages) {
+    public static int size(PageIdCollection[] pages) {
         int size = 0;
 
-        for (PagesStripedConcurrentHashSet bucketSet : pages) {
-            for (Set<FullPageId> innerSet : bucketSet) {
-                size += innerSet.size();
-            }
+        for (PageIdCollection bucketSet : pages) {
+            size += bucketSet.size();
         }
 
         return size;
@@ -184,12 +192,15 @@ public class PagesStripedConcurrentHashSet implements Iterable<Set<FullPageId>> 
     /**
      * Iterator over all sets in buckets. Not created (empty) sets are skipped.
      */
-    private class FullPageIdsIterator implements Iterator<Set<FullPageId>> {
-        /** Next index. */
-        private int nextIdx;
+    private class FullPageIdsIterator implements Iterator<FullPageId> {
+        /** Next set index. */
+        private int nextSetIdx;
 
-        /** Next set of pages. */
-        private Set<FullPageId> nextSet;
+        /** Next set of pages iterator. */
+        private Iterator<FullPageId> curSetIter;
+
+        /** Next page peeked. */
+        private FullPageId nextElement;
 
         /**
          * Creates iterator.
@@ -199,35 +210,50 @@ public class PagesStripedConcurrentHashSet implements Iterable<Set<FullPageId>> 
         }
 
         /**
-         * Try to advance to next bucket.
+         * Switch to next element of iterator
          */
         private void advance() {
-            while (nextIdx < buckets.length()) {
-                Set<FullPageId> part = getOptionalSetForBucket(nextIdx);
+            while (true) {
+                nextElement = curSetIter.hasNext() ? curSetIter.next() : null;
 
-                if (part != null) {
-                    nextSet = part;
+                if (nextElement != null)
+                    return;
+                else {
+                    advanceSet();
+
+                    if (curSetIter == null)
+                        return;
+                }
+            }
+        }
+        /**
+         * Try to advance to next bucket.
+         */
+        private void advanceSet() {
+            curSetIter = null;
+            while (nextSetIdx < buckets.length()) {
+                Set<FullPageId> bucket = getOptionalSetForBucket(nextSetIdx);
+
+                nextSetIdx++;
+                if (bucket != null) {
+                    curSetIter = bucket.iterator();
+
                     return;
                 }
-
-                nextIdx++;
             }
         }
 
         /** {@inheritDoc} */
         @Override public boolean hasNext() {
-            return nextSet != null;
+            return nextElement != null;
         }
 
         /** {@inheritDoc} */
-        @Override public Set<FullPageId> next() {
-            if (nextSet == null)
+        @Override public FullPageId next() {
+            if (nextElement == null)
                 throw new NoSuchElementException();
 
-            Set<FullPageId> retVal = nextSet;
-
-            nextSet = null;
-            nextIdx++;
+            FullPageId retVal = nextElement;
 
             advance();
 
