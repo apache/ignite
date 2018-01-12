@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -111,7 +112,7 @@ public class PagesStripedConcurrentHashSet implements Iterable<Set<FullPageId>> 
         final int partId = PageIdUtils.partId(id.pageId());
         final int hash = grpId + partId * 31;
 
-        return hash % BUCKETS_COUNT;
+        return U.safeAbs(hash) % BUCKETS_COUNT;
     }
 
     /**
