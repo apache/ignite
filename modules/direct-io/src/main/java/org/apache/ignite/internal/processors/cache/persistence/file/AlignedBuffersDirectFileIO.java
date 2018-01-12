@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
@@ -414,6 +415,11 @@ public class AlignedBuffersDirectFileIO implements FileIO {
     /** {@inheritDoc} */
     @Override public void write(byte[] buf, int off, int len) throws IOException {
         write(ByteBuffer.wrap(buf, off, len));
+    }
+
+    /** {@inheritDoc} */
+    @Override public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
+        throw new UnsupportedOperationException("AsynchronousFileChannel doesn't support mmap.");
     }
 
     /** {@inheritDoc} */
