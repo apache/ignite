@@ -27,6 +27,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.ClusterNodeMetricsUpdateTest;
 import org.apache.ignite.internal.IgniteClientReconnectCacheTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerAtomicTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheLockPartitionOnAffinityRunTxCacheOpTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryTransactionalSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicMultiNodeFullApiSelfTest;
@@ -36,8 +38,8 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCa
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedNodeRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicMultiJvmFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicOnheapMultiJvmFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryAsyncFailoverAtomicSelfTest;
 import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -68,12 +70,19 @@ public class ZookeeperDiscoverySpiTestSuite2 extends TestSuite {
         TestSuite suite = new TestSuite("ZookeeperDiscoverySpi Test Suite");
 
         suite.addTestSuite(ZookeeperDiscoverySuitePreprocessorTest.class);
+
+        suite.addTestSuite(IgniteCacheEntryListenerAtomicTest.class);
+
         suite.addTestSuite(GridEventConsumeSelfTest.class);
+
         suite.addTestSuite(IgniteClientReconnectCacheTest.class);
+
         suite.addTestSuite(IgniteCachePutRetryAtomicSelfTest.class);
         suite.addTestSuite(IgniteCachePutRetryTransactionalSelfTest.class);
+
         suite.addTestSuite(GridCachePartitionedNodeRestartTest.class);
         suite.addTestSuite(GridCacheReplicatedNodeRestartSelfTest.class);
+
         suite.addTestSuite(ClusterNodeMetricsUpdateTest.class);
 
         suite.addTestSuite(GridCachePartitionedMultiNodeFullApiSelfTest.class);
@@ -81,6 +90,10 @@ public class ZookeeperDiscoverySpiTestSuite2 extends TestSuite {
 
         suite.addTestSuite(GridCacheAtomicMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedAtomicMultiNodeFullApiSelfTest.class);
+
+        suite.addTestSuite(CacheContinuousQueryAsyncFailoverAtomicSelfTest.class);
+
+        suite.addTestSuite(IgniteCacheLockPartitionOnAffinityRunTxCacheOpTest.class);
 
         suite.addTestSuite(GridCacheAtomicMultiJvmFullApiSelfTest.class);
         suite.addTestSuite(GridCachePartitionedMultiJvmFullApiSelfTest.class);
@@ -104,7 +117,7 @@ public class ZookeeperDiscoverySpiTestSuite2 extends TestSuite {
         if (spi instanceof TcpDiscoverySpi)
             zkSpi.setClientReconnectDisabled(((TcpDiscoverySpi)spi).isClientReconnectDisabled());
 
-        zkSpi.setSessionTimeout(20_000);
+        zkSpi.setSessionTimeout(30_000);
         zkSpi.setZkConnectionString(testingCluster.getConnectString());
 
         cfg.setDiscoverySpi(zkSpi);

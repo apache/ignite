@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.curator.utils.PathUtils;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
@@ -431,7 +432,22 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
             sesTimeout = ignite.configuration().getFailureDetectionTimeout().intValue();
 
         assertParameter(sesTimeout > 0, "sessionTimeout > 0");
+
         A.notNullOrEmpty(zkConnectionString, "zkConnectionString can not be empty");
+
+        A.notNullOrEmpty(zkRootPath, "zkRootPath can not be empty");
+
+        zkRootPath = zkRootPath.trim();
+
+        if (zkRootPath.endsWith("/"))
+            zkRootPath = zkRootPath.substring(0, zkRootPath.length() - 1);
+
+        try {
+            PathUtils.validatePath(zkRootPath);
+        }
+        catch (IllegalArgumentException e) {
+            throw new IgniteSpiException("zkRootPath is invalid: " + zkRootPath, e);
+        }
 
         ZookeeperClusterNode locNode = initLocalNode();
 

@@ -212,13 +212,6 @@ public class ZookeeperDiscoveryImpl {
         IgniteDiscoverySpiInternalListener internalLsnr) {
         assert locNode.id() != null && locNode.isLocal() : locNode;
 
-        zkRootPath = zkRootPath.trim();
-
-        if (zkRootPath.endsWith(ZkIgnitePaths.PATH_SEPARATOR))
-            zkRootPath = zkRootPath.substring(0, zkRootPath.length() - 1);
-
-        ZkIgnitePaths.validatePath(zkRootPath);
-
         MarshallerUtils.setNodeName(marsh, igniteInstanceName);
 
         zkPaths = new ZkIgnitePaths(zkRootPath);

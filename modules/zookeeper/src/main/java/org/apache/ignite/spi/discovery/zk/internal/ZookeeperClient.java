@@ -297,7 +297,6 @@ public class ZookeeperClient implements Watcher {
                 onZookeeperError(connStartTime, e);
             }
         }
-
     }
 
     /**
