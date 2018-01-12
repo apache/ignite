@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.util;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -26,10 +28,11 @@ import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import org.apache.ignite.IgniteSystemProperties;
-import sun.misc.JavaNioAccess;
-import sun.misc.SharedSecrets;
+import org.jetbrains.annotations.NotNull;
 import sun.misc.Unsafe;
-import sun.nio.ch.DirectBuffer;
+
+import static org.apache.ignite.internal.util.IgniteUtils.jdkVersion;
+import static org.apache.ignite.internal.util.IgniteUtils.majorJavaVersion;
 
 /**
  * <p>Wrapper for {@link sun.misc.Unsafe} class.</p>
@@ -52,9 +55,6 @@ import sun.nio.ch.DirectBuffer;
 public abstract class GridUnsafe {
     /** */
     public static final ByteOrder NATIVE_BYTE_ORDER = ByteOrder.nativeOrder();
-
-    /** Direct byte buffer factory. */
-    private static final JavaNioAccess nioAccess = SharedSecrets.getJavaNioAccess();
 
     /** Unsafe. */
     private static final Unsafe UNSAFE = unsafe();
@@ -102,6 +102,24 @@ public abstract class GridUnsafe {
     /** {@link java.nio.Buffer#address} field offset. */
     private static final long DIRECT_BUF_ADDR_OFF = bufferAddressOffset();
 
+    /** Cleaner code for direct {@code java.nio.ByteBuffer}. */
+    private static final DirectBufferCleaner DIRECT_BUF_CLEANER =
+        majorJavaVersion(jdkVersion()) < 9
+            ? new ReflectiveDirectBufferCleaner()
+            : new UnsafeDirectBufferCleaner();
+
+    /** */
+    private static final Base64Encoder BASE64_ENC =
+        majorJavaVersion(jdkVersion()) < 8
+            ? new LegacyBase64Encoder()
+            : new Base64EncoderImpl();
+
+    /** JavaNioAccess object. */
+    private static final Object JAVA_NIO_ACCESS_OBJ = javaNioAccessObject();
+
+    /** JavaNioAccess#newDirectByteBuffer method. */
+    private static final Method NEW_DIRECT_BUF_MTD = newDirectBufferMethod();
+
     /**
      * Ensure singleton.
      */
@@ -115,13 +133,18 @@ public abstract class GridUnsafe {
      * @return Byte buffer wrapping the given memory.
      */
     public static ByteBuffer wrapPointer(long ptr, int len) {
-        ByteBuffer buf = nioAccess.newDirectByteBuffer(ptr, len, null);
+        try {
+            ByteBuffer buf = (ByteBuffer)NEW_DIRECT_BUF_MTD.invoke(JAVA_NIO_ACCESS_OBJ, ptr, len, null);
 
-        assert buf instanceof DirectBuffer;
+            assert buf.isDirect();
 
-        buf.order(NATIVE_BYTE_ORDER);
+            buf.order(NATIVE_BYTE_ORDER);
 
-        return buf;
+            return buf;
+        }
+        catch (ReflectiveOperationException e) {
+            throw new RuntimeException("JavaNioAccess#newDirectByteBuffer() method is unavailable.", e);
+        }
     }
 
     /**
@@ -1344,6 +1367,32 @@ public abstract class GridUnsafe {
     }
 
     /**
+     * Invokes some method on {@code sun.misc.Unsafe} instance.
+     *
+     * @param mtd Method.
+     * @param args Arguments.
+     */
+    public static Object invoke(Method mtd, Object... args) {
+        try {
+            return mtd.invoke(UNSAFE, args);
+        }
+        catch (IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException("Unsafe invocation failed [cls=" + UNSAFE.getClass() + ", mtd=" + mtd + ']', e);
+        }
+    }
+
+    /**
+     * Cleans direct {@code java.nio.ByteBuffer}
+     *
+     * @param buf Direct buffer.
+     */
+    public static void cleanDirectBuffer(ByteBuffer buf) {
+        assert buf.isDirect();
+
+        DIRECT_BUF_CLEANER.clean(buf);
+    }
+
+    /**
      * Returns unaligned flag.
      */
     private static boolean unaligned() {
@@ -1406,6 +1455,57 @@ public abstract class GridUnsafe {
         });
 
         return UNSAFE.objectFieldOffset(addrField);
+    }
+
+    /**
+     * Returns {@code JavaNioAccess} instance from private API for corresponding Java version.
+     *
+     * @return {@code JavaNioAccess} instance for corresponding Java version.
+     * @throws RuntimeException If getting access to the private API is failed.
+     */
+    private static Object javaNioAccessObject() {
+        String pkgName = miscPackage();
+
+        try {
+            Class<?> cls = Class.forName(pkgName + ".misc.SharedSecrets");
+
+            Method mth = cls.getMethod("getJavaNioAccess");
+
+            return mth.invoke(null);
+        }
+        catch (ReflectiveOperationException e) {
+            throw new RuntimeException(pkgName + ".misc.JavaNioAccess class is unavailable.", e);
+        }
+    }
+
+    /**
+     * Returns reference to {@code JavaNioAccess.newDirectByteBuffer} method
+     * from private API for corresponding Java version.
+     *
+     * @return Reference to {@code JavaNioAccess.newDirectByteBuffer} method
+     * @throws RuntimeException If getting access to the private API is failed.
+     */
+    private static Method newDirectBufferMethod() {
+
+        try {
+            Class<?> cls = JAVA_NIO_ACCESS_OBJ.getClass();
+
+            Method mtd = cls.getMethod("newDirectByteBuffer", long.class, int.class, Object.class);
+
+            mtd.setAccessible(true);
+
+            return mtd;
+        }
+        catch (ReflectiveOperationException e) {
+            throw new RuntimeException(miscPackage() + ".JavaNioAccess#newDirectByteBuffer() method is unavailable.", e);
+        }
+    }
+
+    /** */
+    @NotNull private static String miscPackage() {
+        int javaVer = majorJavaVersion(jdkVersion());
+
+        return javaVer < 9 ? "sun" : "jdk.internal";
     }
 
     /**
@@ -1710,5 +1810,15 @@ public abstract class GridUnsafe {
             UNSAFE.putByte(addr + 1, (byte)(val >> 8));
             UNSAFE.putByte(addr, (byte)(val));
         }
+    }
+
+    /**
+     * Encodes bytes into Base64 string.
+     *
+     * @param msg Message to encode.
+     * @return Encoded message.
+     */
+    public static String encodeBase64(byte[] msg) {
+        return BASE64_ENC.encode(msg);
     }
 }

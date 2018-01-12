@@ -26,8 +26,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import sun.nio.ch.DirectBuffer;
 
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.ByteBuffer.allocateDirect;
@@ -376,7 +376,7 @@ public class SegmentedRingByteBuffer {
      */
     public void free() {
         if (mode == DIRECT || mode == MAPPED)
-            ((DirectBuffer)buf).cleaner().clean();
+            GridUnsafe.cleanDirectBuffer(buf);
     }
 
     /**

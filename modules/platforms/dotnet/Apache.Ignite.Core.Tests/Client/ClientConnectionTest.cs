@@ -114,7 +114,6 @@ namespace Apache.Ignite.Core.Tests.Client
             Assert.Throws<ArgumentNullException>(() => Ignition.StartClient(new IgniteClientConfiguration()));
         }
 
-#if !NETCOREAPP2_0
         /// <summary>
         /// Tests the incorrect protocol version error.
         /// </summary>
@@ -135,7 +134,6 @@ namespace Apache.Ignite.Core.Tests.Client
                                 "Client version: -1.-1.-1. Server version: 1.0.0", ex.Message);
             }
         }
-#endif
 
         /// <summary>
         /// Tests that connector can be disabled.
@@ -268,6 +266,40 @@ namespace Apache.Ignite.Core.Tests.Client
                 var baseEx = ex.GetBaseException();
                 Assert.IsNotNull((object) (baseEx as SocketException) ?? baseEx as ObjectDisposedException, 
                     ex.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Tests the <see cref="ClientConnectorConfiguration.IdleTimeout"/> property.
+        /// </summary>
+        [Test]
+        [Category(TestUtils.CategoryIntensive)]
+        public void TestIdleTimeout()
+        {
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                ClientConnectorConfiguration = new ClientConnectorConfiguration
+                {
+                    IdleTimeout = TimeSpan.FromMilliseconds(100)
+                }
+            };
+
+            var ignite = Ignition.Start(cfg);
+            Assert.AreEqual(100, ignite.GetConfiguration().ClientConnectorConfiguration.IdleTimeout.TotalMilliseconds);
+
+            using (var client = StartClient())
+            {
+                var cache = client.GetOrCreateCache<int, int>("foo");
+                cache[1] = 1;
+                Assert.AreEqual(1, cache[1]);
+                
+                Thread.Sleep(90);
+                Assert.AreEqual(1, cache[1]);
+                
+                // Idle check frequency is 2 seconds.
+                Thread.Sleep(4000);
+                var ex = Assert.Throws<SocketException>(() => cache.Get(1));
+                Assert.AreEqual(SocketError.ConnectionAborted, ex.SocketErrorCode);
             }
         }
 

@@ -122,7 +122,10 @@ import org.apache.ignite.internal.processors.cache.index.H2DynamicIndexingComple
 import org.apache.ignite.internal.processors.cache.index.H2DynamicIndexingComplexServerTransactionalReplicatedTest;
 import org.apache.ignite.internal.processors.cache.index.H2DynamicTableSelfTest;
 import org.apache.ignite.internal.processors.cache.index.H2ConnectionLeaksSelfTest;
+import org.apache.ignite.internal.processors.cache.index.H2RowCachePageEvictionTest;
+import org.apache.ignite.internal.processors.cache.index.H2RowCacheSelfTest;
 import org.apache.ignite.internal.processors.cache.index.LongIndexNameTest;
+import org.apache.ignite.internal.processors.cache.index.OptimizedMarshallerIndexNameTest;
 import org.apache.ignite.internal.processors.cache.index.SchemaExchangeSelfTest;
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalAtomicQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalFieldsQuerySelfTest;
@@ -133,6 +136,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteCacheQueryCacheDe
 import org.apache.ignite.internal.processors.cache.query.IndexingSpiQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.query.IndexingSpiQueryTxSelfTest;
 import org.apache.ignite.internal.processors.client.ClientConnectorConfigurationValidationSelfTest;
+import org.apache.ignite.internal.processors.query.IgniteSqlDefaultValueTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlDistributedJoinSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlParameterizedQueryTest;
@@ -236,7 +240,6 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheLargeResultSelfTest.class);
         suite.addTestSuite(GridCacheQueryInternalKeysSelfTest.class);
         suite.addTestSuite(IgniteSqlBigIntegerKeyTest.class);
-
         suite.addTestSuite(IgniteCacheOffheapEvictQueryTest.class);
         suite.addTestSuite(IgniteCacheOffheapIndexScanTest.class);
 
@@ -372,8 +375,14 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheQuerySqlFieldInlineSizeSelfTest.class);
         suite.addTestSuite(IgniteSqlParameterizedQueryTest.class);
         suite.addTestSuite(H2ConnectionLeaksSelfTest.class);
-
         suite.addTestSuite(IgniteCheckClusterStateBeforeExecuteQueryTest.class);
+        suite.addTestSuite(OptimizedMarshallerIndexNameTest.class);
+
+        suite.addTestSuite(IgniteSqlDefaultValueTest.class);
+
+        // H2 Rows on-heap cache
+        suite.addTestSuite(H2RowCacheSelfTest.class);
+        suite.addTestSuite(H2RowCachePageEvictionTest.class);
 
         return suite;
     }
