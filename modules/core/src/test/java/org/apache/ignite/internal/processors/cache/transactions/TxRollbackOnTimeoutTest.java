@@ -400,7 +400,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
         final AtomicBoolean stop = new AtomicBoolean();
 
-        final long seed = System.currentTimeMillis();
+        final long seed = 1515777127119L; //System.currentTimeMillis();
 
         final Random r = new Random(seed);
 
@@ -418,7 +418,6 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         final LongAdder8 cntr1 = new LongAdder8();
         final LongAdder8 cntr2 = new LongAdder8();
         final LongAdder8 cntr3 = new LongAdder8();
-        final LongAdder8 cntr4 = new LongAdder8();
 
         final IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
@@ -427,8 +426,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
                     Ignite node = nodeId == GRID_CNT || nearCacheEnabled() ? client : grid(nodeId);
 
-                    TransactionConcurrency conc = TC_VALS[r.nextInt(TC_VALS.length)];
-                    TransactionIsolation isolation = TI_VALS[r.nextInt(TI_VALS.length)];
+                    TransactionConcurrency conc = PESSIMISTIC; // TC_VALS[r.nextInt(TC_VALS.length)];
+                    TransactionIsolation isolation = REPEATABLE_READ; // TI_VALS[r.nextInt(TI_VALS.length)];
 
                     int k = r.nextInt(threadsCnt);
 
@@ -449,6 +448,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
                         tx.commit();
 
+                        log.info("Transaction is committed");
+
                         cntr1.add(1);
                     }
                     catch (TransactionOptimisticException | InterruptedException e) {
@@ -457,25 +458,14 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                     catch (TransactionTimeoutException e) {
                         cntr2.add(1);
                     }
-                    catch (TransactionRollbackException e) {
-                        cntr4.add(1);
-                    }
                     catch (CacheException e) {
-                        final boolean isTimeout = X.hasCause(e, TransactionTimeoutException.class);
-
-                        if (!isTimeout) {
-                            log.error("Exception", e);
-
-                            fail("");
-                        }
-
-                        assertTrue(isTimeout);
+                        assertTrue(X.hasCause(e, TransactionTimeoutException.class));
 
                         cntr2.add(1);
                     }
                 }
             }
-        }, threadsCnt, "tx-async-thread");
+        }, 1, "tx-async-thread");
 
         sleep(DURATION);
 
@@ -488,11 +478,10 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         log.info("Tx test stats: started=" + cntr0.sum() +
             ", completed=" + cntr1.sum() +
             ", failed=" + cntr3.sum() +
-            ", rolledBack=" + cntr4.sum() +
             ", timedOut=" + cntr2.sum());
 
         assertEquals("Expected finished count same as started count", cntr0.sum(), cntr1.sum() + cntr2.sum() +
-            cntr3.sum() + cntr4.sum());
+            cntr3.sum());
     }
 
     /**

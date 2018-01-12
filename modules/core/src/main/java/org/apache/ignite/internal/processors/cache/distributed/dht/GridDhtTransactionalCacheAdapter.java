@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -93,10 +92,6 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTING;
  */
 @SuppressWarnings("unchecked")
 public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCacheAdapter<K, V> {
-    public static final AtomicInteger lockReplyCntr = new AtomicInteger();
-
-    public static final AtomicInteger lockReplyCntr2 = new AtomicInteger();
-
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -831,6 +826,10 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             filter,
             skipStore,
             keepBinary);
+
+        if (fut.isDone())
+            return fut;
+
         for (KeyCacheObject key : keys) {
             try {
                 while (true) {
@@ -867,8 +866,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         }
 
         if (!fut.isDone()) {
-            lockReplyCntr.incrementAndGet();
-
             ctx.mvcc().addFuture(fut);
 
             // Handle race with async rollback.
@@ -880,8 +877,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             fut.map();
         }
-        else
-            lockReplyCntr2.incrementAndGet();
 
         return fut;
     }

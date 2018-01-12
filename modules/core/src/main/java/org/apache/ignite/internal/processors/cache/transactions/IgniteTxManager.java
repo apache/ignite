@@ -1323,11 +1323,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     idMap.remove(ver);
 
             // 8. Remove Near-2-DHT mappings.
-            if (tx instanceof GridCacheMappedVersion) {
-                log.info("Removing mapped 2 ver=" + ((GridCacheMappedVersion)tx).mappedVersion());
-
+            if (tx instanceof GridCacheMappedVersion)
                 mappedVers.remove(((GridCacheMappedVersion)tx).mappedVersion());
-            }
 
             // 9. Clear context.
             resetContext();
