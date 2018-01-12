@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -61,9 +60,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
+import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -76,11 +77,10 @@ import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import sun.misc.JavaNioAccess;
-import sun.misc.SharedSecrets;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
+import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
 
 /**
  * Page header structure is described by the following diagram.
@@ -196,9 +196,6 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** */
     private IgniteWriteAheadLogManager walMgr;
 
-    /** Direct byte buffer factory. */
-    private JavaNioAccess nioAccess;
-
     /** */
     private final IgniteLogger log;
 
@@ -293,8 +290,6 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             regions.add(reg);
         }
-
-        nioAccess = SharedSecrets.getJavaNioAccess();
 
         int regs = regions.size();
 
@@ -1188,10 +1183,22 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /**
      * @param absPtr Absolute pointer to read lock.
+     * @param fullId Full page ID.
      * @param force Force flag.
      * @return Pointer to the page read buffer.
      */
     private long readLockPage(long absPtr, FullPageId fullId, boolean force) {
+        return readLockPage(absPtr, fullId, force, true);
+    }
+
+    /**
+     * @param absPtr Absolute pointer to read lock.
+     * @param fullId Full page ID.
+     * @param force Force flag.
+     * @param touch Update page timestamp.
+     * @return Pointer to the page read buffer.
+     */
+    private long readLockPage(long absPtr, FullPageId fullId, boolean force, boolean touch) {
         int tag = force ? -1 : PageIdUtils.tag(fullId.pageId());
 
         boolean locked = rwLock.readLock(absPtr + PAGE_LOCK_OFFSET, tag);
@@ -1199,7 +1206,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         if (!locked)
             return 0;
 
-        PageHeader.writeTimestamp(absPtr, U.currentTimeMillis());
+        if (touch)
+            PageHeader.writeTimestamp(absPtr, U.currentTimeMillis());
 
         assert GridUnsafe.getInt(absPtr + PAGE_OVERHEAD + 4) == 0; //TODO GG-11480
 
@@ -1364,19 +1372,6 @@ public class PageMemoryImpl implements PageMemoryEx {
      */
     boolean isPageReadLocked(long absPtr) {
         return rwLock.isReadLocked(absPtr + PAGE_LOCK_OFFSET);
-    }
-
-    /**
-     * @param ptr Pointer to wrap.
-     * @param len Memory location length.
-     * @return Wrapped buffer.
-     */
-    ByteBuffer wrapPointer(long ptr, int len) {
-        ByteBuffer buf = nioAccess.newDirectByteBuffer(ptr, len, null);
-
-        buf.order(ByteOrder.nativeOrder());
-
-        return buf;
     }
 
     /**
@@ -1845,6 +1840,8 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             Collection<FullPageId> cpPages = segCheckpointPages;
 
+            clearRowCache(fullPageId, absPtr);
+
             if (isDirty(absPtr)) {
                 // Can evict a dirty page only if should be written by a checkpoint.
                 // These pages does not have tmp buffer.
@@ -1876,6 +1873,44 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 // Page was not modified, ok to evict.
                 return true;
+            }
+        }
+
+        /**
+         * @param fullPageId Full page ID to remove all links placed on the page from row cache.
+         * @param absPtr Absolute pointer of the page to evict.
+         * @throws IgniteCheckedException On error.
+         */
+        private void clearRowCache(FullPageId fullPageId, long absPtr) throws IgniteCheckedException {
+            assert writeLock().isHeldByCurrentThread();
+
+            if (ctx.kernalContext().query() == null || !ctx.kernalContext().query().moduleEnabled())
+                return;
+
+            long pageAddr = readLockPage(absPtr, fullPageId, true, false);
+
+            try {
+                if (PageIO.getType(pageAddr) != PageIO.T_DATA)
+                    return;
+
+                final GridQueryRowCacheCleaner cleaner = ctx.kernalContext().query()
+                    .getIndexing().rowCacheCleaner(fullPageId.groupId());
+
+                if (cleaner == null)
+                    return;
+
+                DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
+
+                io.forAllItems(pageAddr, new DataPageIO.CC<Void>() {
+                    @Override public Void apply(long link) {
+                        cleaner.remove(link);
+
+                        return null;
+                    }
+                });
+            }
+            finally {
+                readUnlockPage(absPtr);
             }
         }
 

@@ -16,13 +16,18 @@
  */
 
 import template from './template.pug';
+import {CSV} from 'app/services/CSV';
 
 export default {
     template,
     controller: class {
-        static $inject = ['$scope', 'uiGridGroupingConstants', 'uiGridExporterService', 'uiGridExporterConstants'];
+        static $inject = ['$scope', 'uiGridGroupingConstants', 'uiGridExporterService', 'uiGridExporterConstants', CSV.name];
 
-        constructor($scope, uiGridGroupingConstants, uiGridExporterService, uiGridExporterConstants) {
+        /**
+         * @param {CSV} CSV
+         */
+        constructor($scope, uiGridGroupingConstants, uiGridExporterService, uiGridExporterConstants, CSV) {
+            this.CSV = CSV;
             Object.assign(this, { uiGridGroupingConstants, uiGridExporterService, uiGridExporterConstants });
         }
 
@@ -42,7 +47,7 @@ export default {
                 data.push(values);
             });
 
-            const csvContent = this.uiGridExporterService.formatAsCsv(columnHeaders, data, this.gridApi.grid.options.exporterCsvColumnSeparator);
+            const csvContent = this.uiGridExporterService.formatAsCsv(columnHeaders, data, this.CSV.getSeparator());
             this.uiGridExporterService.downloadFile(this.gridApi.grid.options.exporterCsvFilename, csvContent, this.gridApi.grid.options.exporterOlderExcelCompatibility);
         }
     },
