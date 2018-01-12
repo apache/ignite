@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -39,7 +40,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.configuration.DataPageEvictionMode.RANDOM_2_LRU;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 
 /** */
 public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
@@ -54,6 +54,15 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
     /** */
     private static final int ITERATIONS = 5;
+
+    /** */
+    private static final int BATCHES = 5;
+
+    /** */
+    private static final int BATCH_SIZE_LOW = 100;
+
+    /** */
+    private static final int BATCH_SIZE_HIGH = 1000;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -91,16 +100,26 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         super.afterTest();
     }
 
+    /** {@inheritDoc} */
+    protected long getTestTimeout() {
+        return 15 * 60 * 1000;
+    }
+
     /** */
     public void testMemoryUsageGrowth() throws Exception {
+        DataRegionMetrics initMetrics = null;
+
         for (int iter = 0; iter < ITERATIONS; iter++) {
             final IgniteEx node = startGrid(0);
 
             node.active(true);
 
-            DataRegionMetrics m = getDfltRegionMetrics();
+            DataRegionMetrics currMetrics = getDfltRegionMetrics();
 
-            assert m.getTotalAllocatedPages() >= m.getPhysicalMemoryPages();
+            if (initMetrics == null)
+                initMetrics = currMetrics;
+
+            assert currMetrics.getTotalAllocatedPages() >= currMetrics.getPhysicalMemoryPages();
 
             final IgniteCache<String, String> cache = node.getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -114,13 +133,17 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
             Map<String, String> map = new HashMap<>();
 
-            while (m.getTotalAllocatedPages() * DFLT_PAGE_SIZE < DFLT_REGION_MAX_SIZE * iter / ITERATIONS) {
-                for (int i = 0; i < 500; i++)
+            for (int batch = 0; batch < BATCHES; batch++) {
+                int nPuts = BATCH_SIZE_LOW + ThreadLocalRandom.current().nextInt(BATCH_SIZE_HIGH - BATCH_SIZE_LOW);
+
+                for (int i = 0; i < nPuts; i++)
                     map.put(UUID.randomUUID().toString(), UUID.randomUUID().toString());
 
                 cache.putAll(map);
 
-                final DataRegionMetrics mNext = getDfltRegionMetrics();
+                currMetrics = getDfltRegionMetrics();
+
+                final DataRegionMetrics finalCurrMetrics = currMetrics;
 
                 boolean storageMatches = GridTestUtils.waitForCondition(new PA() {
                     @Override public boolean apply() {
@@ -129,17 +152,16 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
                         for (int grpId : grpIds)
                             pagesInStore += node.context().cache().context().pageStore().pagesAllocated(grpId);
 
-                        return mNext.getTotalAllocatedPages() == pagesInStore;
+                        return finalCurrMetrics.getTotalAllocatedPages() == pagesInStore;
                     }
                 }, 100);
 
-                assert mNext.getTotalAllocatedPages() > m.getTotalAllocatedPages();
-                assert mNext.getPhysicalMemoryPages() > m.getPhysicalMemoryPages();
-                assert mNext.getTotalAllocatedPages() >= mNext.getPhysicalMemoryPages();
+                assert currMetrics.getTotalAllocatedPages() >= currMetrics.getPhysicalMemoryPages();
                 assert storageMatches;
-
-                m = mNext;
             }
+
+            assert currMetrics.getPhysicalMemoryPages() > initMetrics.getPhysicalMemoryPages();
+            assert currMetrics.getTotalAllocatedPages() > initMetrics.getTotalAllocatedPages();
 
             node.close();
         }
