@@ -1153,9 +1153,11 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
         final Random rnd = new Random();
 
+        final int consumeCnt = tcpDiscovery() ? CONSUME_CNT : CONSUME_CNT / 2;
+
         IgniteInternalFuture<?> starterFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                for (int i = 0; i < CONSUME_CNT; i++) {
+                for (int i = 0; i < consumeCnt; i++) {
                     int idx = rnd.nextInt(GRID_CNT);
 
                     try {
@@ -1165,7 +1167,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                             @Override public boolean apply(UUID uuid, Event evt) {
                                 return true;
                             }
-                        }, null, EVT_JOB_STARTED).get(10_000);
+                        }, null, EVT_JOB_STARTED).get(3000);
 
                         started.add(consumeId);
 
