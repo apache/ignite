@@ -67,6 +67,7 @@ public class ZookeeperDiscoverySpiTestSuite2 extends TestSuite {
 
         return suite;
     }
+
     /**
      * Called via reflection by {@link org.apache.ignite.testframework.junits.GridAbstractTest}.
      *

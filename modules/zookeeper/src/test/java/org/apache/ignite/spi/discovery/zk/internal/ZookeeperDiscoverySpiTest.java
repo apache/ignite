@@ -109,6 +109,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
+import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiTestSuite2;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.zookeeper.KeeperException;
@@ -145,7 +146,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     /** */
     private static TestingCluster zkCluster;
 
-    /** */
+    /** To run test with real local ZK. */
     private static final boolean USE_TEST_CLUSTER = true;
 
     /** */
@@ -359,50 +360,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         System.setProperty(ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_TIMEOUT, "1000");
     }
 
-    /**
-     * @param instances Number of instances.
-     * @return Cluster.
-     */
-    private static TestingCluster createTestingCluster(int instances) {
-        String tmpDir = System.getProperty("java.io.tmpdir");
-
-        List<InstanceSpec> specs = new ArrayList<>();
-
-        for (int i = 0; i < instances; i++) {
-            File file = new File(tmpDir, "apacheIgniteTestZk-" + i);
-
-            if (file.isDirectory())
-                deleteRecursively0(file);
-            else {
-                if (!file.mkdirs())
-                    throw new IgniteException("Failed to create directory for test Zookeeper server: " + file.getAbsolutePath());
-            }
-
-            specs.add(new InstanceSpec(file, -1, -1, -1, true, -1, 1000, 10_000));
-        }
-
-        return new TestingCluster(specs);
-    }
-
-    /**
-     * @param file Directory to delete.
-     */
-    private static void deleteRecursively0(File file) {
-        File[] files = file.listFiles();
-
-        if (files == null)
-            return;
-
-        for (File f : files) {
-            if (f.isDirectory())
-                deleteRecursively0(f);
-            else {
-                if (!f.delete())
-                    throw new IgniteException("Failed to delete file: " + f.getAbsolutePath());
-            }
-        }
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopZkCluster();
@@ -447,7 +404,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         super.beforeTest();
 
         if (USE_TEST_CLUSTER && zkCluster == null) {
-            zkCluster = createTestingCluster(ZK_SRVS);
+            zkCluster = ZookeeperDiscoverySpiTestSuite2.createTestingCluster(ZK_SRVS);
 
             zkCluster.start();
         }
@@ -1070,7 +1027,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             assertTrue(l.await(10, TimeUnit.SECONDS));
         }
         finally {
-            zkCluster = createTestingCluster(ZK_SRVS);
+            zkCluster = ZookeeperDiscoverySpiTestSuite2.createTestingCluster(ZK_SRVS);
 
             zkCluster.start();
         }
@@ -1107,7 +1064,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         finally {
             zkCluster.close();
 
-            zkCluster = createTestingCluster(ZK_SRVS);
+            zkCluster = ZookeeperDiscoverySpiTestSuite2.createTestingCluster(ZK_SRVS);
 
             zkCluster.start();
         }
@@ -1142,7 +1099,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         finally {
             zkCluster.close();
 
-            zkCluster = createTestingCluster(ZK_SRVS);
+            zkCluster = ZookeeperDiscoverySpiTestSuite2.createTestingCluster(ZK_SRVS);
 
             zkCluster.start();
         }
@@ -1866,14 +1823,28 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTopologyChangeMultithreaded_RestartZk() throws Exception {
-        topologyChangeWithRestarts(true, false);
+        try {
+            topologyChangeWithRestarts(true, false);
+        }
+        finally {
+            zkCluster.stop();
+
+            zkCluster = null;
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTopologyChangeMultithreaded_RestartZk_CloseClients() throws Exception {
-        topologyChangeWithRestarts(true, true);
+        try {
+            topologyChangeWithRestarts(true, true);
+        }
+        finally {
+            zkCluster.stop();
+
+            zkCluster = null;
+        }
     }
 
     /**
@@ -3619,7 +3590,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         sesTimeout = 30_000;
 
-        zkCluster = createTestingCluster(3);
+        zkCluster = ZookeeperDiscoverySpiTestSuite2.createTestingCluster(3);
 
         try {
             final AtomicInteger idx = new AtomicInteger();
