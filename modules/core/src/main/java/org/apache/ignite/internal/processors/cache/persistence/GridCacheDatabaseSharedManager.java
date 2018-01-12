@@ -63,6 +63,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CheckpointWriteOrder;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -727,8 +728,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             super.checkRegionEvictionProperties(regCfg, dbCfg);
 
         if (regCfg.getPageEvictionMode() != DataPageEvictionMode.DISABLED)
-            U.warn(log, "Page eviction mode for [" + regCfg.getName() + "] memory region is ignored " +
-                "because Ignite Native Persistence is enabled");
+            U.warn(log, "Page eviction mode set for [" + regCfg.getName() + "] data will have no effect" +
+                " because the oldest pages are evicted automatically if Ignite persistence is enabled.");
     }
 
     /** {@inheritDoc} */
@@ -878,8 +879,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         @Override public void apply(IgniteInternalFuture igniteInternalFut) {
                             idxRebuildFuts.remove(cacheId, rebuildFut);
 
-                            log().info("Finished indexes rebuilding for cache: [name=" + cacheCtx.config().getName()
-                                + ", grpName=" + cacheCtx.config().getGroupName());
+                            CacheConfiguration ccfg = cacheCtx.config();
+
+                            if (ccfg != null) {
+                                log().info("Finished indexes rebuilding for cache: [name=" + ccfg.getName()
+                                    + ", grpName=" + ccfg.getGroupName());
+                            }
                         }
                     });
                 }

@@ -308,6 +308,13 @@
                                                                         <xs:sequence>
                                                                             <xs:element name="queryField" maxOccurs="unbounded">
                                                                                 <xs:complexType>
+                                                                                    <xs:all>
+                                                                                        <xs:element name="defaultValue" minOccurs="0">
+                                                                                            <xs:annotation>
+                                                                                                <xs:documentation>Default field value.</xs:documentation>
+                                                                                            </xs:annotation>
+                                                                                        </xs:element>
+                                                                                    </xs:all>
                                                                                     <xs:attribute name="name" type="xs:string" use="required">
                                                                                         <xs:annotation>
                                                                                             <xs:documentation>Cache name.</xs:documentation>
@@ -1442,6 +1449,11 @@
                                 <xs:documentation>SQL connector thread pool size.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
+                        <xs:attribute name="idleTimeout" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Idle timeout for client connections on the server side. If no packets come within idle timeout, the connection is closed by the server. Zero or negative for no timeout.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="persistentStoreConfiguration" minOccurs="0">
@@ -1829,6 +1841,11 @@
                         <xs:attribute name="concurrencyLevel" type="xs:int">
                             <xs:annotation>
                                 <xs:documentation>Number of concurrent segments in Ignite internal page mapping tables.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walAutoArchiveAfterInactivity" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Inactivity time after which to run WAL segment auto archiving.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>

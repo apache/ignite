@@ -92,6 +92,7 @@ import ModelNormalizer from './services/ModelNormalizer.service.js';
 import UnsavedChangesGuard from './services/UnsavedChangesGuard.service';
 import Clusters from './services/Clusters';
 import Caches from './services/Caches';
+import {CSV} from './services/CSV';
 
 import AngularStrapTooltip from './services/AngularStrapTooltip.decorator';
 import AngularStrapSelect from './services/AngularStrapSelect.decorator';
@@ -263,6 +264,7 @@ angular.module('ignite-console', [
 .service('IgniteActivitiesUserDialog', IgniteActivitiesUserDialog)
 .service('Clusters', Clusters)
 .service('Caches', Caches)
+.service(CSV.name, CSV)
 // Controllers.
 .controller(...resetPassword)
 .controller(...profile)
@@ -300,7 +302,16 @@ angular.module('ignite-console', [
     $root.gettingStarted = gettingStarted;
 }])
 .run(['$rootScope', 'AgentManager', ($root, agentMgr) => {
-    $root.$on('user', () => agentMgr.connect());
+    let lastUser;
+
+    $root.$on('user', (e, user) => {
+        if (lastUser)
+            return;
+
+        lastUser = user;
+
+        agentMgr.connect();
+    });
 }])
 .run(['$transitions', ($transitions) => {
     $transitions.onSuccess({ }, (trans) => {

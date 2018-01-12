@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 
 /**
  * Interface to perform file I/O operations.
@@ -76,52 +77,54 @@ public interface FileIO extends AutoCloseable {
     /**
      * Reads a up to {@code length} bytes from this file into the {@code buffer}.
      *
-     * @param buffer Destination byte array.
-     * @param offset The start offset in array {@code b}
+     * @param buf Destination byte array.
+     * @param off The start offset in array {@code b}
      *               at which the data is written.
-     * @param length Maximum number of bytes read.
+     * @param len Maximum number of bytes read.
      *
      * @return Number of read bytes.
      *
      * @throws IOException If some I/O error occurs.
      */
-    public int read(byte[] buffer, int offset, int length) throws IOException;
+    public int read(byte[] buf, int off, int len) throws IOException;
 
     /**
      * Writes a sequence of bytes to this file from the {@code sourceBuffer}.
      *
-     * @param sourceBuffer Source buffer.
+     * @param srcBuf Source buffer.
      *
      * @return Number of written bytes.
      *
      * @throws IOException If some I/O error occurs.
      */
-    public int write(ByteBuffer sourceBuffer) throws IOException;
+    public int write(ByteBuffer srcBuf) throws IOException;
 
     /**
      * Writes a sequence of bytes to this file from the {@code sourceBuffer}
      * starting from specified file {@code position}
      *
-     * @param sourceBuffer Source buffer.
+     * @param srcBuf Source buffer.
      * @param position Starting file position.
      *
      * @return Number of written bytes.
      *
      * @throws IOException If some I/O error occurs.
      */
-    public int write(ByteBuffer sourceBuffer, long position) throws IOException;
+    public int write(ByteBuffer srcBuf, long position) throws IOException;
 
     /**
      * Writes {@code length} bytes from the {@code buffer}
      * starting at offset {@code off} to this file.
      *
-     * @param buffer Source byte array.
-     * @param offset Start offset in the {@code buffer}.
-     * @param length Number of bytes to write.
+     * @param buf Source byte array.
+     * @param off Start offset in the {@code buffer}.
+     * @param len Number of bytes to write.
      *
      * @throws IOException If some I/O error occurs.
      */
-    public void write(byte[] buffer, int offset, int length) throws IOException;
+    public void write(byte[] buf, int off, int len) throws IOException;
+
+    public MappedByteBuffer map(int maxWalSegmentSize) throws IOException;
 
     /**
      * Forces any updates of this file to be written to the storage

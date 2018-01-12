@@ -58,6 +58,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "sizeLong",  // 	IGNITE-6563
             "sizeLongAsync",  // IGNITE-6563
             "localSizeLong",  // IGNITE-6563
+            "enableStatistics"  // IGNITE-7276
         };
 
         /// <summary>

@@ -756,9 +756,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public boolean isStatisticsEnabled() {
-        CacheConfiguration ccfg = cctx.config();
-
-        return ccfg != null && ccfg.isStatisticsEnabled();
+        return cctx.statisticsEnabled();
     }
 
     /** {@inheritDoc} */

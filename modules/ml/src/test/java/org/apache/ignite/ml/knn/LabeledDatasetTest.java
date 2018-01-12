@@ -22,16 +22,19 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.ml.math.ExternalizableTest;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.NoDataException;
 import org.apache.ignite.ml.math.exceptions.knn.EmptyFileException;
 import org.apache.ignite.ml.math.exceptions.knn.FileParsingException;
 import org.apache.ignite.ml.structures.LabeledDataset;
+import org.apache.ignite.ml.structures.LabeledDatasetTestTrainPair;
 import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
 
 /** Tests behaviour of KNNClassificationTest. */
-public class LabeledDatasetTest extends BaseKNNTest {
+public class LabeledDatasetTest extends BaseKNNTest implements ExternalizableTest<LabeledDataset> {
     /** */
     private static final String KNN_IRIS_TXT = "datasets/knn/iris.txt";
 
@@ -87,7 +90,7 @@ public class LabeledDatasetTest extends BaseKNNTest {
         assertEquals(dataset.colSize(), 2);
         assertEquals(dataset.rowSize(), 6);
 
-        final LabeledVector<Vector, Double> row = dataset.getRow(0);
+        final LabeledVector<Vector, Double> row = (LabeledVector<Vector, Double>)dataset.getRow(0);
 
         assertEquals(row.features().get(0), 1.0);
         assertEquals(row.label(), 1.0);
@@ -201,8 +204,82 @@ public class LabeledDatasetTest extends BaseKNNTest {
 
         Path path = Paths.get(this.getClass().getClassLoader().getResource(IRIS_MISSED_DATA).toURI());
 
-        LabeledDataset training = LabeledDataset.loadTxt(path, ",", false, false);
+        LabeledDataset training = LabeledDatasetLoader.loadFromTxtFile(path, ",", false, false);
 
         assertEquals(training.features(2).get(1), 0.0);
+    }
+
+    /** */
+    public void testSplitting() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+        double[][] mtx =
+            new double[][] {
+                {1.0, 1.0},
+                {1.0, 2.0},
+                {2.0, 1.0},
+                {-1.0, -1.0},
+                {-1.0, -2.0},
+                {-2.0, -1.0}};
+        double[] lbs = new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0};
+
+        LabeledDataset training = new LabeledDataset(mtx, lbs);
+
+        LabeledDatasetTestTrainPair split1 = new LabeledDatasetTestTrainPair(training, 0.67);
+
+        assertEquals(4, split1.test().rowSize());
+        assertEquals(2, split1.train().rowSize());
+
+        LabeledDatasetTestTrainPair split2 = new LabeledDatasetTestTrainPair(training, 0.65);
+
+        assertEquals(3, split2.test().rowSize());
+        assertEquals(3, split2.train().rowSize());
+
+        LabeledDatasetTestTrainPair split3 = new LabeledDatasetTestTrainPair(training, 0.4);
+
+        assertEquals(2, split3.test().rowSize());
+        assertEquals(4, split3.train().rowSize());
+
+        LabeledDatasetTestTrainPair split4 = new LabeledDatasetTestTrainPair(training, 0.3);
+
+        assertEquals(1, split4.test().rowSize());
+        assertEquals(5, split4.train().rowSize());
+    }
+
+    /** */
+    public void testLabels() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+        double[][] mtx =
+            new double[][] {
+                {1.0, 1.0},
+                {1.0, 2.0},
+                {2.0, 1.0},
+                {-1.0, -1.0},
+                {-1.0, -2.0},
+                {-2.0, -1.0}};
+        double[] lbs = new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0};
+
+        LabeledDataset dataset = new LabeledDataset(mtx, lbs);
+        final double[] labels = dataset.labels();
+        for (int i = 0; i < lbs.length; i++)
+            assertEquals(lbs[i], labels[i]);
+    }
+
+    @Override public void testExternalization() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+        double[][] mtx =
+            new double[][] {
+                {1.0, 1.0},
+                {1.0, 2.0},
+                {2.0, 1.0},
+                {-1.0, -1.0},
+                {-1.0, -2.0},
+                {-2.0, -1.0}};
+        double[] lbs = new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0};
+
+        LabeledDataset dataset = new LabeledDataset(mtx, lbs);
+        this.externalizeTest(dataset);
     }
 }

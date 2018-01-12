@@ -36,14 +36,14 @@ import org.apache.ignite.ml.structures.LabeledVector;
  * </ul>
  */
 public class KNNMultipleLinearRegression extends KNNModel {
-    /** {@inheritDoc} */
+    /** */
     public KNNMultipleLinearRegression(int k, DistanceMeasure distanceMeasure, KNNStrategy stgy,
         LabeledDataset training) {
         super(k, distanceMeasure, stgy, training);
     }
 
     /** {@inheritDoc} */
-    @Override public Double predict(Vector v) {
+    @Override public Double apply(Vector v) {
         LabeledVector[] neighbors = findKNearestNeighbors(v, true);
 
         return predictYBasedOn(neighbors, v);

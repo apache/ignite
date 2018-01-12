@@ -214,4 +214,8 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         checkNoCaches(SRVS);
     }
+
+    @Override public void testActivateFailover3() throws Exception {
+        super.testActivateFailover3();
+    }
 }

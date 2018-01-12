@@ -25,6 +25,7 @@ import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
@@ -157,6 +158,14 @@ public final class IgniteSystemProperties {
      * Setting to {@code true} enables writing sensitive information in {@code toString()} output.
      */
     public static final String IGNITE_TO_STRING_INCLUDE_SENSITIVE = "IGNITE_TO_STRING_INCLUDE_SENSITIVE";
+
+    /** Maximum length for {@code toString()} result. */
+    public static final String IGNITE_TO_STRING_MAX_LENGTH = "IGNITE_TO_STRING_MAX_LENGTH";
+
+    /**
+     * Limit collection (map, array) elements number to output.
+     */
+    public static final String IGNITE_TO_STRING_COLLECTION_LIMIT = "IGNITE_TO_STRING_COLLECTION_LIMIT";
 
     /**
      * If this property is set to {@code true} (default) and Ignite is launched
@@ -751,11 +760,22 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_WAL_SERIALIZER_VERSION = "IGNITE_WAL_SERIALIZER_VERSION";
 
     /**
+     * Property that indicates should be mapped byte buffer used or not.
+     * Possible values: {@code true} and {@code false}.
+     */
+    public static final String IGNITE_WAL_MMAP = "IGNITE_WAL_MMAP";
+
+    /**
      * When set to {@code true}, Data store folders are generated only by consistent id, and no consistent ID will be
      * set based on existing data store folders. This option also enables compatible folder generation mode as it was
      * before 2.3.
      */
     public static final String IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID = "IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID";
+
+    /**
+     * If this property is set to {@code true} enable logging in {@link GridClient}.
+     */
+    public static final String IGNITE_GRID_CLIENT_LOG_ENABLED = "IGNITE_GRID_CLIENT_LOG_ENABLED";
 
     /**
      * When set to {@code true}, direct IO may be enabled. Direct IO enabled only if JAR file with corresponding

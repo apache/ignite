@@ -551,7 +551,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
                 // Entry not found, do not continue search if topology did not change and there is no store.
                 if (!cctx.readThroughConfigured() && (topStable || partitionOwned(part))) {
-                    if (!skipVals && cctx.config().isStatisticsEnabled())
+                    if (!skipVals && cctx.statisticsEnabled())
                         cache.metrics0().onRead(false);
 
                     return true;
