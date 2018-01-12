@@ -323,7 +323,7 @@
       <Project>{5b571661-17f4-4f29-8c7d-0edb38ca9b55}</Project>
       <Name>Apache.Ignite.Linq</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Apache.Ignite.log4net\Apache.Ignite.Log4Net.csproj">
+    <ProjectReference Include="..\Apache.Ignite.Log4Net\Apache.Ignite.Log4Net.csproj">
       <Project>{6F82D669-382E-4435-8092-68C4440146D8}</Project>
       <Name>Apache.Ignite.Log4Net</Name>
     </ProjectReference>
