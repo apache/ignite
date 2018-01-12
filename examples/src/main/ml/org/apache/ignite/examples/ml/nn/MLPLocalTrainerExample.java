@@ -25,7 +25,7 @@ import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.nn.Activators;
-import org.apache.ignite.ml.nn.LocalBatchTrainerInput;
+import org.apache.ignite.ml.trainers.local.LocalBatchTrainerInput;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;

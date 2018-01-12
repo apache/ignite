@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.nn.trainers.local;
+package org.apache.ignite.ml.trainers.local;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -27,7 +27,6 @@ import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFun
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.util.MatrixUtil;
-import org.apache.ignite.ml.nn.LocalBatchTrainerInput;
 import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalculator;
 
 /**
