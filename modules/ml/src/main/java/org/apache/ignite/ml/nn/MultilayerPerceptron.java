@@ -444,11 +444,6 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
     }
 
     /** {@inheritDoc} */
-    @Override public MultilayerPerceptron withParameters(Vector vector) {
-        return Utils.copy(this).setParameters(vector);
-    }
-
-    /** {@inheritDoc} */
     @Override public int parametersCount() {
         return architecture().parametersCount();
     }

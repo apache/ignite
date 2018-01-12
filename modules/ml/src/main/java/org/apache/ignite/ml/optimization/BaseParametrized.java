@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.optimization;
 
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.util.Utils;
 
 /**
  * Base interface for parametrized models.
@@ -44,7 +45,9 @@ interface BaseParametrized<M extends BaseParametrized<M>> {
      *
      * @param vector Parameters vector.
      */
-    M withParameters(Vector vector);
+    default M withParameters(Vector vector) {
+        return Utils.copy(this).setParameters(vector);
+    }
 
     /**
      * Get count of parameters of this model.
