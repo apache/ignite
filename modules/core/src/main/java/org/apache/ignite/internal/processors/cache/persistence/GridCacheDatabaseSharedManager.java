@@ -56,7 +56,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -3388,8 +3387,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (entry == null)
                 throw new IgniteCheckedException("Checkpoint entry was removed: " + cpTs);
 
-            entry.initIfNeeded(cctx);
-
             return entry;
         }
 
@@ -3519,7 +3516,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private UUID cpId;
 
         /** */
-        private GroupStateLazyStore groupStateLazyStore;
+        private volatile WeakReference<GroupStateLazyStore> groupStateLazyStore;
 
         /**
          * Checkpoint entry constructor.
@@ -3539,7 +3536,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         ) {
             this.cpTs = cpTs;
             this.cpMark = cpMark;
-            this.groupStateLazyStore = new GroupStateLazyStore(cacheGrpStates);
+            this.groupStateLazyStore = new WeakReference<>(new GroupStateLazyStore(cacheGrpStates));
         }
 
         /**
@@ -3584,23 +3581,24 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @return Partition counter or {@code null} if not found.
          */
         private Long partitionCounter(GridCacheSharedContext cctx, int grpId, int part) {
+            GroupStateLazyStore store = groupStateLazyStore.get();
+
             Map<Integer, CacheState> state;
 
             try {
-                state = groupStateLazyStore.initIfNeeded(cctx, cpMark);
+                if (store == null) {
+                    store = new GroupStateLazyStore();
+
+                    groupStateLazyStore = new WeakReference<>(store);
+                }
+
+                store.initIfNeeded(cctx, cpMark);
             }
             catch (IgniteCheckedException ignored) {
                 return null;
             }
 
-            return groupStateLazyStore.partitionCounter(state, grpId, part);
-        }
-
-        /**
-         * @throws IgniteCheckedException If failed to read WAL entry.
-         */
-        private void initIfNeeded(GridCacheSharedContext cctx) throws IgniteCheckedException {
-
+            return store.partitionCounter(grpId, part);
         }
 
         /**
@@ -3611,11 +3609,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             private static final AtomicIntegerFieldUpdater<GroupStateLazyStore> initGuardUpdater =
                 AtomicIntegerFieldUpdater.newUpdater(GroupStateLazyStore.class, "initGuard");
 
-            /** */
-            private final RefQueue refQueue;
-
             /** Cache states. Initialized lazily. */
-            private WeakReference<Map<Integer, CacheState>> weakCacheGrpStates;
+            private Map<Integer, CacheState> cacheGrpStates;
+
+            /** */
+            private volatile CountDownLatch latch;
 
             /** */
             @SuppressWarnings("unused")
@@ -3623,6 +3621,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             /** Initialization exception. */
             private IgniteCheckedException initEx;
+
+            /**
+             * Default constructor.
+             */
+            private GroupStateLazyStore() {
+                this(null);
+            }
 
             /**
              * @param cacheGrpStates Cache group state.
@@ -3633,26 +3638,27 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 if (cacheGrpStates != null) {
                     initGuard = 1;
 
-                    latch = new CountDownLatch(0);
+                    this.latch = new CountDownLatch(0);
                 }
                 else
-                    latch = new CountDownLatch(1);
+                    this.latch = new CountDownLatch(1);
 
-                this.refQueue = new RefQueue(this, latch);
-                this.weakCacheGrpStates = new WeakReference<>(cacheGrpStates, refQueue);
+                this.cacheGrpStates = cacheGrpStates;
             }
 
             /**
-             * @param grpState Group state.
+             *
              * @param grpId Group id.
              * @param part Partition id.
              * @return Partition counter.
              */
-            private Long partitionCounter(Map<Integer, CacheState> grpState, int grpId, int part) {
-                if (initEx != null || grpState == null)
+            private Long partitionCounter(int grpId, int part) {
+                assert initGuard != 0 : initGuard;
+
+                if (initEx != null || cacheGrpStates == null)
                     return null;
 
-                CacheState state = grpState.get(grpId);
+                CacheState state = cacheGrpStates.get(grpId);
 
                 if (state != null) {
                     long cntr = state.counterByPartition(part);
@@ -3673,83 +3679,35 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 GridCacheSharedContext cctx,
                 WALPointer ptr
             ) throws IgniteCheckedException {
-                Map<Integer, CacheState> state;
+                if (initGuardUpdater.compareAndSet(this, 0, 1)) {
+                    try (WALIterator it = cctx.wal().replay(ptr)) {
+                        if (it.hasNextX()) {
+                            IgniteBiTuple<WALPointer, WALRecord> tup = it.nextX();
 
-                while (true) {
-                    if ((state = weakCacheGrpStates.get()) != null && initGuard != 0)
-                        return state;
+                            CheckpointRecord rec = (CheckpointRecord)tup.get2();
 
-                    CountDownLatch latch = refQueue.latch;
-
-                    if (initGuardUpdater.compareAndSet(this, 0, 1)) {
-                        try (WALIterator it = cctx.wal().replay(ptr)) {
-                            if (it.hasNextX()) {
-                                IgniteBiTuple<WALPointer, WALRecord> tup = it.nextX();
-
-                                CheckpointRecord rec = (CheckpointRecord)tup.get2();
-
-                                state = rec.cacheGroupStates();
-
-                                weakCacheGrpStates = new WeakReference<>(state, refQueue);
-                            }
-                            else
-                                initEx = new IgniteCheckedException(
-                                    "Failed to find checkpoint record at the given WAL pointer: " + ptr);
+                            cacheGrpStates = rec.cacheGroupStates();
                         }
-                        catch (IgniteCheckedException e) {
-                            initEx = e;
-                        }
-                        finally {
-                            refQueue.reInitLatch();
-
-                            latch.countDown();
-                        }
-
-                        return state;
+                        else
+                            initEx = new IgniteCheckedException(
+                                "Failed to find checkpoint record at the given WAL pointer: " + ptr);
                     }
-                    else {
-                        if (initEx != null)
-                            throw initEx;
-
-                        U.await(latch, 100, TimeUnit.MILLISECONDS);
+                    catch (IgniteCheckedException e) {
+                        initEx = e;
                     }
+                    finally {
+                        latch.countDown();
+                    }
+
+                    return cacheGrpStates;
                 }
-            }
+                else {
+                    U.await(latch);
 
-            /**
-             *
-             */
-            private static class RefQueue extends ReferenceQueue<Map<Integer, CacheState>> {
-                /** */
-                private final GroupStateLazyStore groupStateLazyStore;
+                    if (initEx != null)
+                        throw initEx;
 
-                /** */
-                private volatile CountDownLatch latch;
-
-                /**
-                 * @param groupStateLazyStore Group state lazy store.
-                 * @param latch Init latch.
-                 */
-                private RefQueue(GroupStateLazyStore groupStateLazyStore, CountDownLatch latch) {
-                    this.groupStateLazyStore = groupStateLazyStore;
-                    this.latch = latch;
-                }
-
-                /** {@inheritDoc} */
-                @Override public Reference remove() throws InterruptedException {
-                    Reference ref = super.remove();
-
-                    if (ref == groupStateLazyStore.weakCacheGrpStates)
-                        initGuardUpdater.set(groupStateLazyStore, 0);
-
-                    return ref;
-                }
-
-                /**
-                 * Re-init latch.
-                 */
-                private void reInitLatch() {
-                    latch = new CountDownLatch(1);
+                    return cacheGrpStates;
                 }
             }
         }
