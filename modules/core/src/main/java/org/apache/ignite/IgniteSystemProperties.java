@@ -785,10 +785,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DIRTY_PAGES_PARALLEL = "IGNITE_DIRTY_PAGES_PARALLEL";
 
     /**
-     * Save dirty pages in pre sorted storage.
-     * Settings this to {@code false} switches to hashcode based non sorted storage and parallel quick sort at checkpoint start.
-     * This options has no effect if {@link #IGNITE_DIRTY_PAGES_PARALLEL} set to {@code false}. Default value
-     * is {@code false}.
+     * Save dirty pages in pre-sorted storage. {@code True} value enables always sorted striped storage of dirty pages.
+     * No sorting is performed during checkpoint start, only sorted collections are merged into one, and page write
+     * starts. Settings this to {@code false} switches to hashcode based non sorted storage, and parallel quick sort at
+     * checkpoint start. This options has no effect if {@link #IGNITE_DIRTY_PAGES_PARALLEL} set to {@code false}.
+     * Default value is {@code false}.
      */
     public static final String IGNITE_DIRTY_PAGES_SORTED_STORAGE = "IGNITE_DIRTY_PAGES_SORTED_STORAGE";
 
