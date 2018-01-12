@@ -812,7 +812,9 @@ public class ZookeeperDiscoveryImpl {
             List<String> dirs = new ArrayList<>();
 
             for (String dir : requiredDirs) {
-                if (!createdDirs.contains(dir))
+                String dir0 = dir.substring(zkPaths.clusterDir.length() + 1);
+
+                if (!createdDirs.contains(dir0))
                     dirs.add(dir);
             }
 
