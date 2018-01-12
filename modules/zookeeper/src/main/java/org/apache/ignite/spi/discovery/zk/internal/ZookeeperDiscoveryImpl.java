@@ -1558,6 +1558,12 @@ public class ZookeeperDiscoveryImpl {
         if (log.isInfoEnabled())
             log.info("Process alive nodes change [alives=" + aliveNodes.size() + "]");
 
+        if (rtState.updateAlives) {
+            aliveNodes = rtState.zkClient.getChildren(zkPaths.aliveNodesDir);
+
+            rtState.updateAlives = false;
+        }
+
         TreeMap<Long, String> alives = new TreeMap<>();
 
         for (String child : aliveNodes) {
@@ -1625,10 +1631,16 @@ public class ZookeeperDiscoveryImpl {
             handleProcessedEventsOnNodesFail(failedNodes);
     }
 
-   private void generateJoinEvents(TreeMap<Long, ZookeeperClusterNode> curTop,
+    /**
+     * @param curTop Current topology.
+     * @param alives Alive znodes.
+     * @param MAX_NEW_EVTS Max event to process.
+     * @throws Exception If failed.
+     */
+    private void generateJoinEvents(TreeMap<Long, ZookeeperClusterNode> curTop,
         TreeMap<Long, String> alives,
         final int MAX_NEW_EVTS) throws Exception
-   {
+    {
        ZkBulkJoinContext joinCtx = new ZkBulkJoinContext();
 
        for (Map.Entry<Long, String> e : alives.entrySet()) {
@@ -1668,7 +1680,7 @@ public class ZookeeperDiscoveryImpl {
 
        if (joinCtx.nodes() > 0)
            generateBulkJoinEvent(curTop, joinCtx);
-   }
+    }
 
     /**
      * @param curTop Current topology.
@@ -1869,13 +1881,13 @@ public class ZookeeperDiscoveryImpl {
     }
 
     /**
+     * @param joinCtx Joined nodes context.
      * @param curTop Current nodes.
      * @param internalId Joined node internal ID.
      * @param aliveNodePath Joined node path.
      * @throws Exception If failed.
-     * @return {@code True} if new join event was added.
      */
-    private boolean processJoinOnCoordinator(
+    private void processJoinOnCoordinator(
         ZkBulkJoinContext joinCtx,
         TreeMap<Long, ZookeeperClusterNode> curTop,
         long internalId,
@@ -1906,8 +1918,6 @@ public class ZookeeperDiscoveryImpl {
                     validateRes.secSubjZipBytes);
 
                 watchAliveNodeData(aliveNodePath);
-
-                return true;
             }
             else {
                 ZkInternalJoinErrorMessage joinErr = new ZkInternalJoinErrorMessage(
@@ -1915,16 +1925,12 @@ public class ZookeeperDiscoveryImpl {
                     validateRes.err);
 
                 processJoinError(aliveNodePath, nodeId, prefixId, joinErr);
-
-                return false;
             }
         }
         else {
             assert data instanceof ZkInternalJoinErrorMessage : data;
 
             processJoinError(aliveNodePath, nodeId, prefixId, (ZkInternalJoinErrorMessage)data);
-
-            return false;
         }
     }
 
@@ -2507,6 +2513,8 @@ public class ZookeeperDiscoveryImpl {
                 deleteAliveNode(failedNode.internalId());
 
                 handleProcessedEventsOnNodesFail(Collections.singletonList(failedNode));
+
+                rtState.updateAlives = true;
             }
         }
     }
@@ -2518,9 +2526,10 @@ public class ZookeeperDiscoveryImpl {
     private void deleteAliveNode(long internalId) throws Exception {
         for (String child : rtState.zkClient.getChildren(zkPaths.aliveNodesDir)) {
             if (ZkIgnitePaths.aliveInternalId(child) == internalId) {
-                rtState.zkClient.deleteIfExistsAsync(zkPaths.aliveNodesDir + "/" + child);
+                // Need use sync delete to do not process again join of this node again.
+                rtState.zkClient.deleteIfExists(zkPaths.aliveNodesDir + "/" + child, -1);
 
-                break;
+                return;
             }
         }
     }
@@ -2571,7 +2580,7 @@ public class ZookeeperDiscoveryImpl {
         assert !rtState.crd;
 
         // Need keep processed custom events since they contain message object which is needed to create ack.
-        if (rtState.evtsData != null) {
+        if (!locNode.isClient() && rtState.evtsData != null) {
             for (Map.Entry<Long, ZkDiscoveryEventData> e : rtState.evtsData.evts.entrySet()) {
                 ZkDiscoveryEventData evtData = e.getValue();
 

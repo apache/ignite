@@ -30,6 +30,8 @@ public class ZookeeperDiscoverySpiTestSuite1 extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
+        System.setProperty("zookeeper.forceSync", "false");
+
         TestSuite suite = new TestSuite("ZookeeperDiscoverySpi Test Suite");
 
         suite.addTestSuite(ZookeeperClientTest.class);

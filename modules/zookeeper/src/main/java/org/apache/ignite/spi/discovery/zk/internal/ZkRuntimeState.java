@@ -86,6 +86,9 @@ class ZkRuntimeState {
     /** Timeout callback to update processed events counter. */
     ZkTimeoutObject procEvtsUpdateTo;
 
+    /** */
+    boolean updateAlives;
+
     /**
      * @param prevJoined {@code True} if joined topology before reconnect attempt.
      */
