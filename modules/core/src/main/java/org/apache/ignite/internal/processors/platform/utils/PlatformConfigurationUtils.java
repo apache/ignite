@@ -1600,7 +1600,10 @@ public class PlatformConfigurationUtils {
                 .setTcpNoDelay(in.readBoolean())
                 .setMaxOpenCursorsPerConnection(in.readInt())
                 .setThreadPoolSize(in.readInt())
-                .setIdleTimeout(in.readLong());
+                .setIdleTimeout(in.readLong())
+                .setThinClientEnabled(in.readBoolean())
+                .setOdbcEnabled(in.readBoolean())
+                .setJdbcEnabled(in.readBoolean());
     }
 
     /**
@@ -1623,6 +1626,10 @@ public class PlatformConfigurationUtils {
             w.writeInt(cfg.getMaxOpenCursorsPerConnection());
             w.writeInt(cfg.getThreadPoolSize());
             w.writeLong(cfg.getIdleTimeout());
+
+            w.writeBoolean(cfg.isThinClientEnabled());
+            w.writeBoolean(cfg.isOdbcEnabled());
+            w.writeBoolean(cfg.isJdbcEnabled());
         } else {
             w.writeBoolean(false);
         }

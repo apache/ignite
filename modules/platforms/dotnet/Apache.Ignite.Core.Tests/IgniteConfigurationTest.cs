@@ -595,6 +595,9 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(ClientConnectorConfiguration.DefaultTcpNoDelay, cfg.TcpNoDelay);
             Assert.AreEqual(ClientConnectorConfiguration.DefaultThreadPoolSize, cfg.ThreadPoolSize);
             Assert.AreEqual(ClientConnectorConfiguration.DefaultIdleTimeout, cfg.IdleTimeout);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultThinClientEnabled, cfg.ThinClientEnabled);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultJdbcEnabled, cfg.JdbcEnabled);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultOdbcEnabled, cfg.OdbcEnabled);
         }
 
         /// <summary>
