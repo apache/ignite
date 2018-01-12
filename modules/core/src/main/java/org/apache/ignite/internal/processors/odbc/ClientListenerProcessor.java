@@ -115,22 +115,10 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 GridNioFilter[] filters = makeFilters();
 
                 int maxOpenCursors = cliConnCfg.getMaxOpenCursorsPerConnection();
+                long idleTimeout = cliConnCfg.getIdleTimeout();
 
                 for (int port = cliConnCfg.getPort(); port <= portTo && port <= 65535; port++) {
                     try {
-                        GridNioFilter[] filters = new GridNioFilter[] {
-                            new GridNioAsyncNotifyFilter(ctx.igniteInstanceName(), execSvc, log) {
-                                @Override public void onSessionOpened(GridNioSession ses)
-                                    throws IgniteCheckedException {
-                                    proceedSessionOpened(ses);
-                                }
-                            },
-                            new GridNioCodecFilter(new ClientListenerBufferedParser(), log, false)
-                        };
-
-                        int maxOpenCursors = cliConnCfg.getMaxOpenCursorsPerConnection();
-                        long idleTimeout = cliConnCfg.getIdleTimeout();
-
                         GridNioServer<byte[]> srv0 = GridNioServer.<byte[]>builder()
                             .address(hostAddr)
                             .port(port)
