@@ -15,34 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml;
+package org.apache.ignite.ml.svm;
 
-import org.apache.ignite.ml.clustering.ClusteringTestSuite;
-import org.apache.ignite.ml.knn.KNNTestSuite;
-import org.apache.ignite.ml.math.MathImplMainTestSuite;
-import org.apache.ignite.ml.nn.MLPTestSuite;
-import org.apache.ignite.ml.regressions.RegressionsTestSuite;
-import org.apache.ignite.ml.svm.SVMTestSuite;
-import org.apache.ignite.ml.trainers.group.TrainersGroupTestSuite;
-import org.apache.ignite.ml.trees.DecisionTreesTestSuite;
+import org.apache.ignite.ml.regressions.linear.BlockDistributedLinearRegressionQRTrainerTest;
+import org.apache.ignite.ml.regressions.linear.BlockDistributedLinearRegressionSGDTrainerTest;
+import org.apache.ignite.ml.regressions.linear.DistributedLinearRegressionQRTrainerTest;
+import org.apache.ignite.ml.regressions.linear.DistributedLinearRegressionSGDTrainerTest;
+import org.apache.ignite.ml.regressions.linear.LinearRegressionModelTest;
+import org.apache.ignite.ml.regressions.linear.LocalLinearRegressionQRTrainerTest;
+import org.apache.ignite.ml.regressions.linear.LocalLinearRegressionSGDTrainerTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Test suite for all module tests.
+ * Test suite for all tests located in org.apache.ignite.ml.regressions.* package.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    MathImplMainTestSuite.class,
-    RegressionsTestSuite.class,
-    SVMTestSuite.class,
-    ClusteringTestSuite.class,
-    DecisionTreesTestSuite.class,
-    KNNTestSuite.class,
-    LocalModelsTest.class,
-    MLPTestSuite.class,
-    TrainersGroupTestSuite.class
+    LocalLinearSVMClassificationSCDATrainerTest.class,
+    SVMModelTest.class
 })
-public class IgniteMLTestSuite {
+public class SVMTestSuite {
     // No-op.
 }

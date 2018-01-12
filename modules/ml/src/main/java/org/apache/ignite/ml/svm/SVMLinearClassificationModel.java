@@ -24,24 +24,22 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Vector;
 
 /**
- * Base class for linear classification models.
+ * Base class for SVM linear classification model.
  */
 public class SVMLinearClassificationModel implements Model<Vector, Double>, Exportable<SVMLinearClassificationModel>, Serializable {
-    /** Output label format. -1 and +1 for false value and raw distances from the separating hyperplane otherwise.*/
+    /** Output label format. -1 and +1 for false value and raw distances from the separating hyperplane otherwise. */
     private boolean isKeepingRawLabels = false;
 
     /** Threshold to assign +1 label to the observation if raw value more than this threshold.*/
     private double threshold = 0.0;
 
-    // private IgniteFunction regularization = L_one;
-
-    /** Amount of iterations */
-    private int amountOfIterations = 20;
+    /** Regularization parameter. */
+    private double lambda = 1.0;
 
     /** Multiplier of the objects's vector required to make prediction.  */
     private Vector weights;
 
-    /** Intercept of the linear regression model */
+    /** Intercept of the linear regression model. */
     private double intercept;
 
     public SVMLinearClassificationModel(Vector weights, double intercept) {
@@ -56,8 +54,27 @@ public class SVMLinearClassificationModel implements Model<Vector, Double>, Expo
     }
 
     /** */
-    public SVMLinearClassificationModel withAmountOfIterations(int amountOfIterations){
-        this.amountOfIterations = amountOfIterations;
+    public SVMLinearClassificationModel withLambda(double lambda){
+        assert lambda > 0.0;
+        this.lambda = lambda;
+        return this;
+    }
+
+    /** */
+    public SVMLinearClassificationModel withThreshold(double threshold){
+        this.threshold = threshold;
+        return this;
+    }
+
+    /** */
+    public SVMLinearClassificationModel withWeights(Vector weights) {
+        this.weights = weights;
+        return this;
+    }
+
+    /** */
+    public SVMLinearClassificationModel withIntercept(double intercept) {
+        this.intercept = intercept;
         return this;
     }
 
@@ -70,41 +87,34 @@ public class SVMLinearClassificationModel implements Model<Vector, Double>, Expo
             return Math.signum(result);
     }
 
-    /**  {@inheritDoc} */
-    @Override public <P> void saveModel(Exporter<SVMLinearClassificationModel, P> exporter, P path) {
-
+    /** */
+    public double lambda() {
+        return lambda;
     }
 
-    public void setWeights(Vector weights) {
-        this.weights = weights;
-    }
-
-    public void setIntercept(double intercept) {
-        this.intercept = intercept;
-    }
-
-    public int getAmountOfIterations() {
-        return amountOfIterations;
-    }
-
+    /** */
     public boolean isKeepingRawLabels() {
         return isKeepingRawLabels;
     }
 
-    public double getThreshold() {
+    /** */
+    public double threshold() {
         return threshold;
     }
 
-    public Vector getWeights() {
+    /** */
+    public Vector weights() {
         return weights;
     }
 
-    public double getIntercept() {
+    /** */
+    public double intercept() {
         return intercept;
     }
 
-    public double getRegularization() {
-        return 0.2;
+    /**  {@inheritDoc} */
+    @Override public <P> void saveModel(Exporter<SVMLinearClassificationModel, P> exporter, P path) {
+
     }
 
     /** {@inheritDoc} */

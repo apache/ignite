@@ -27,7 +27,7 @@ import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Base class for decision trees test.
+ * Base class for SVM tests.
  */
 public class BaseSVMTest extends GridCommonAbstractTest { // TODO: copypasted from BaseKNN  test, refactor it later
     /** Count of nodes. */
