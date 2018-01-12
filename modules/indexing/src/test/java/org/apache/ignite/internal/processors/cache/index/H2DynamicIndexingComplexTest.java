@@ -110,7 +110,7 @@ public abstract class H2DynamicIndexingComplexTest extends DynamicIndexAbstractS
     /** Do test. */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void checkOperations(final boolean useInternalCmd) throws Exception {
-        GridTestUtils.runWithH2FallbackDisabled(true, new Callable<Void>() {
+        GridTestUtils.runWithH2FallbackDisabled(useInternalCmd, new Callable<Void>() {
             @Override public Void call() {
 
                 try {
@@ -233,7 +233,7 @@ public abstract class H2DynamicIndexingComplexTest extends DynamicIndexAbstractS
 
                 }
                 finally {
-                    executeSql("DROP TABLE city");
+                    executeSql("DROP TABLE IF EXISTS city");
                 }
 
                 return null;

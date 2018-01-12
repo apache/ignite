@@ -71,6 +71,8 @@ public final class GridArrays {
         if (idx > 0)
             System.arraycopy(arr, 0, res, 0, idx);
 
+        res[idx] = o;
+
         if (idx < arr.length)
             System.arraycopy(arr, idx, res, idx + 1, arr.length - idx);
 

@@ -2577,11 +2577,11 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             @Override public Void call() {
 
                 assertDdlCommandThrows(
-                    "CREATE TABLE tbl (a INT, b LONG, c VARCHAR, PRIMARY KEY (a)) NO_WRAP_KEY KEY_TYPE KeyType",
+                    "CREATE TABLE tbl (a INT, b LONG, c VARCHAR, PRIMARY KEY (a)) WRAP_KEY=0 KEY_TYPE KeyType",
                     "WRAP_KEY cannot be false when KEY_TYPE is set.");
 
                 assertDdlCommandThrows(
-                    "CREATE TABLE tbl (a INT, b LONG, c VARCHAR, d INT, PRIMARY KEY (a, b, c)) WRAP_KEY NO_WRAP_VALUE VALUE_TYPE ValueType",
+                    "CREATE TABLE tbl (a INT, b LONG, c VARCHAR, d INT, PRIMARY KEY (a, b, c)) WRAP_KEY WRAP_VALUE=0 VALUE_TYPE ValueType",
                     "WRAP_VALUE cannot be false when VALUE_TYPE is set.");
 
                 assertDdlCommandThrows(
