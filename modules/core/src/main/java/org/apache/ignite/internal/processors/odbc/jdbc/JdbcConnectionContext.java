@@ -43,7 +43,7 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
     /** Version 2.3.1: added "multiple statements query" feature. */
     public static final ClientListenerProtocolVersion VER_2_3_0 = ClientListenerProtocolVersion.create(2, 3, 0);
 
-    /** Version 2.4.0: transactional SQL introduced. */
+    /** Version 2.4.0: adds default values for columns feature. */
     public static final ClientListenerProtocolVersion VER_2_4_0 = ClientListenerProtocolVersion.create(2, 4, 0);
 
     /** Current version. */
