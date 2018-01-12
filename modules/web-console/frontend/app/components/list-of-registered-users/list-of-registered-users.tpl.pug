@@ -45,8 +45,7 @@ include /app/helpers/jade/mixins
                     required: false,
                     options: '$ctrl.actionOptions'
                 })
-                button.btn-ignite.btn-ignite--primary-outline(ng-click='$ctrl.exportCsv()' bs-tooltip='' data-title='Export table to CSV' data-placement='top')
-                    svg(ignite-icon='csv')
+                grid-export(grid-api='$ctrl.gridApi')
                 form.ui-grid-settings-dateperiod(name=form novalidate)
                     -var form = 'admin'
                     +ignite-form-field-datepicker('Period: from', '$ctrl.params.startDate', '"startDate"', null, '$ctrl.params.endDate')

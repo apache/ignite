@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.util.tostring;
 
+import java.util.Arrays;
+
 /**
  * Basic string builder over circular buffer.
  */
@@ -43,6 +45,16 @@ public class CircularStringBuilder {
         assert capacity > 0 : "Can't allocate CircularStringBuilder with capacity: " + capacity;
 
         value = new char[capacity];
+    }
+
+    /**
+     * Reset internal builder state
+     */
+    public void reset() {
+        Arrays.fill(value,(char)0);
+        finishAt = -1;
+        full = false;
+        skipped = 0;
     }
 
     /**
@@ -108,6 +120,8 @@ public class CircularStringBuilder {
                 skipped += full ? objStrLen : objStrLen - firstPart;
 
                 finishAt = finishAt + objStrLen - value.length;
+
+                full = true;
             }
             else {
                 // Whole string fin into remaining part of value array
@@ -117,8 +131,6 @@ public class CircularStringBuilder {
 
                 finishAt += objStrLen;
             }
-
-            full = full || finishAt + objStrLen >= value.length - 1;
         }
 
         return this;

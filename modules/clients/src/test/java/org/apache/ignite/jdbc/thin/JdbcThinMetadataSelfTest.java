@@ -200,11 +200,15 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
             assertEquals("PERSON", rs.getString("TABLE_NAME"));
 
+            assertFalse(rs.next());
+
             rs = meta.getTables("", "org", "%", new String[]{"TABLE"});
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
             assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
+
+            assertFalse(rs.next());
 
             rs = meta.getTables("", "pers", "%", null);
             assertNotNull(rs);
@@ -212,11 +216,15 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
             assertEquals("PERSON", rs.getString("TABLE_NAME"));
 
+            assertFalse(rs.next());
+
             rs = meta.getTables("", "org", "%", null);
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
             assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
+
+            assertFalse(rs.next());
 
             rs = meta.getTables("", "PUBLIC", "", new String[]{"WRONG"});
             assertFalse(rs.next());

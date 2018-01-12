@@ -28,8 +28,11 @@ class SBLengthLimit {
     /** */
     private static final int MAX_TO_STR_LEN = IgniteSystemProperties.getInteger(IGNITE_TO_STRING_MAX_LENGTH, 10_000);
 
-    /** Length of tail part of message */
+    /** Length of tail part of message. */
     private static final int TAIL_LEN = MAX_TO_STR_LEN / 10 * 2;
+
+    /** Length of head part of message. */
+    private static final int HEAD_LEN = MAX_TO_STR_LEN - TAIL_LEN;
 
     /** */
     private int len;
@@ -55,23 +58,25 @@ class SBLengthLimit {
     void onWrite(SBLimitedLength sb, int writtenLen) {
         len += writtenLen;
 
-// TODO IGNITE-7195
-//        if (len > MAX_TO_STR_LEN && sb.getTail() == null) {
-//            CircularStringBuilder tail = new CircularStringBuilder(TAIL_LEN);
-//
-//            tail.append(sb.impl().substring(MAX_TO_STR_LEN - TAIL_LEN));
-//
-//            sb.setTail(tail);
-//            sb.setLength(MAX_TO_STR_LEN - TAIL_LEN);
-//        }
+        if (overflowed(sb) && (sb.getTail() == null || sb.getTail().length() == 0)) {
+            CircularStringBuilder tail = getTail();
+
+            int newSbLen = Math.min(sb.length(), HEAD_LEN + 1);
+            tail.append(sb.impl().substring(newSbLen));
+
+            sb.setTail(tail);
+            sb.setLength(newSbLen);
+        }
+    }
+
+    CircularStringBuilder getTail() {
+        return new CircularStringBuilder(TAIL_LEN);
     }
 
     /**
      * @return {@code True} if reached limit.
      */
-    boolean overflowed() {
-        // TODO IGNITE-7195
-        return false;
-        //return len > MAX_TO_STR_LEN;
+    boolean overflowed(SBLimitedLength sb) {
+        return sb.impl().length() > HEAD_LEN;
     }
 }
