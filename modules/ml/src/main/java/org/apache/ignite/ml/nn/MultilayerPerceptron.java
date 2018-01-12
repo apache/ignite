@@ -36,6 +36,7 @@ import org.apache.ignite.ml.nn.architecture.TransformationLayerArchitecture;
 import org.apache.ignite.ml.nn.initializers.MLPInitializer;
 import org.apache.ignite.ml.nn.initializers.RandomInitializer;
 import org.apache.ignite.ml.optimization.SmoothParametrized;
+import org.apache.ignite.ml.util.Utils;
 
 import static org.apache.ignite.ml.math.util.MatrixUtil.elementWiseTimes;
 
@@ -440,6 +441,11 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
         }
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public MultilayerPerceptron withParameters(Vector vector) {
+        return Utils.copy(this).setParameters(vector);
     }
 
     /** {@inheritDoc} */

@@ -40,6 +40,13 @@ interface BaseParametrized<M extends BaseParametrized<M>> {
     M setParameters(Vector vector);
 
     /**
+     * Return new model with given parameters vector.
+     *
+     * @param vector Parameters vector.
+     */
+    M withParameters(Vector vector);
+
+    /**
      * Get count of parameters of this model.
      *
      * @return Count of parameters of this model.
