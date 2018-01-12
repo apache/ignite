@@ -22,6 +22,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,9 +39,11 @@ public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage 
     private final UUID opId;
 
     /** Group ID. */
+    @GridToStringExclude
     private int grpId;
 
     /** Group deployment ID. */
+    @GridToStringExclude
     private IgniteUuid grpDepId;
 
     /** Message that should be processed through exchange thread. */
@@ -125,5 +128,10 @@ public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage 
     @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
         DiscoCache discoCache) {
         return discoCache.copy(topVer, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(WalStateAbstractMessage.class, this);
     }
 }

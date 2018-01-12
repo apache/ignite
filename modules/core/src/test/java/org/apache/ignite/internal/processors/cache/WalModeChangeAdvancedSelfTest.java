@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.X;
 
 import java.util.ArrayList;
@@ -208,10 +209,8 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      * @throws Exception If failed.
      */
     public void testCoordinatorMigration() throws Exception {
-        final AtomicInteger IDX = new AtomicInteger();
-
-        startGrid(config("srv-" + IDX.get(), false, false));
-        startGrid(config("srv-" + IDX.incrementAndGet(), false, false));
+        startGrid(config(SRV_1, false, false));
+        startGrid(config(SRV_2, false, false));
 
         Ignite cli = startGrid(config(CLI, true, false));
 
@@ -221,20 +220,31 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         final AtomicInteger restartCnt = new AtomicInteger();
 
+        final int restarts = 20;
+
         Thread t = new Thread(new Runnable() {
             @Override public void run() {
-                String victimName = "srv-" + (IDX.get() - 1);
-                String newName = "srv-" + IDX.incrementAndGet();
+                boolean firstOrSecond = true;
 
-                try {
-                    stopGrid(victimName);
-                    startGrid(config(newName, false, false));
-                }
-                catch (Exception e) {
-                    throw new RuntimeException();
-                }
+                while (restartCnt.get() < restarts) {
+                    String victimName = firstOrSecond ? SRV_1 : SRV_2;
 
-                restartCnt.incrementAndGet();
+                    firstOrSecond = !firstOrSecond;
+
+                    try {
+                        stopGrid(victimName);
+                        startGrid(config(victimName, false, false));
+
+                        Thread.sleep(500);
+                    }
+                    catch (Exception e) {
+                        throw new RuntimeException();
+                    }
+
+                    X.println("Finished restart: " + restartCnt.get());
+
+                    restartCnt.incrementAndGet();
+                }
             }
         });
 
@@ -242,13 +252,18 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         boolean state = true;
 
-        while (restartCnt.get() < 20 && !Thread.currentThread().isInterrupted()) {
-            if (state)
-                cli.cluster().walDisable(CACHE_NAME);
-            else
-                cli.cluster().walEnable(CACHE_NAME);
+        while (restartCnt.get() < restarts && !Thread.currentThread().isInterrupted()) {
+            try {
+                if (state)
+                    cli.cluster().walDisable(CACHE_NAME);
+                else
+                    cli.cluster().walEnable(CACHE_NAME);
 
-            state = !state;
+                state = !state;
+            }
+            catch (IgniteException e) {
+                // Possible disconnect, re-try.
+            }
         }
     }
 
@@ -351,5 +366,10 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
         catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    // TODO: Remove.
+    @Override protected long getTestTimeout() {
+        return Long.MAX_VALUE;
     }
 }

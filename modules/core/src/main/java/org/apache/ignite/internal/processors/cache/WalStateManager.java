@@ -17,19 +17,24 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteFuture;
@@ -38,15 +43,26 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
+import sun.awt.image.ImageWatched;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InvalidObjectException;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_WAL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
@@ -59,7 +75,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     private static final int HIST_SIZE = 1000;
 
     /** ID history for discovery messages. */
-    private final GridBoundedConcurrentLinkedHashSet<IgniteUuid> discoMsgIdHist =
+    private final GridBoundedConcurrentLinkedHashSet<T2<UUID, Boolean>> discoMsgIdHist =
         new GridBoundedConcurrentLinkedHashSet<>(HIST_SIZE);
 
     /** History of already completed operations. */
@@ -99,6 +115,10 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     /** Disconnected flag. */
     private boolean disconnected;
 
+    private final LinkedList<Object> allDisco = new LinkedList<>();
+
+    private static final Set<WalStateManager> MGRS = new GridConcurrentHashSet<>();
+
     /**
      * Constructor.
      *
@@ -120,8 +140,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
         if (srv) {
             ioLsnr = new GridMessageListener() {
-                @Override
-                public void onMessage(UUID nodeId, Object msg, byte plc) {
+                @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                     if (msg instanceof WalStateAckMessage) {
                         WalStateAckMessage msg0 = (WalStateAckMessage) msg;
 
@@ -136,37 +155,49 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         }
         else
             ioLsnr = null;
-
     }
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         if (srv)
             cctx.kernalContext().io().addMessageListener(TOPIC_WAL, ioLsnr);
+
+        MGRS.add(this);
     }
 
     /** {@inheritDoc} */
     @Override protected void stop0(boolean cancel) {
         if (srv)
             cctx.kernalContext().io().removeMessageListener(TOPIC_WAL, ioLsnr);
+
+        MGRS.remove(this);
     }
+
+    private boolean logDisco;
 
     /**
      * Callback invoked when caches info is collected inside cache processor start routine. Discovery is not
      * active at this point.
-     *
-     * @throws IgniteCheckedException If failed.
      */
-    public void onCachesInfoCollected() throws IgniteCheckedException {
+    public void onCachesInfoCollected() {
         if (!srv)
             return;
+
+        System.out.println(">> ON_CACHE_INFO_COLLECTED " + cctx.igniteInstanceName());
 
         synchronized (mux) {
             // Process top pending requests.
             for (CacheGroupDescriptor grpDesc : cacheProcessor().cacheGroupDescriptors().values()) {
+                for (WalStateProposeMessage proposes : grpDesc.walChangeRequests())
+                    allDisco.addLast(proposes);
+
                 WalStateProposeMessage msg = grpDesc.nextWalChangeRequest();
 
                 if (msg != null) {
+                    System.out.println("COLLECTED PROPOSE [node=" + cctx.igniteInstanceName() + ", msg=" + msg + ']');
+
+                    logDisco = true;
+
                     if (log.isDebugEnabled())
                         log.debug("Processing WAL state message on start: " + msg);
 
@@ -187,6 +218,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                     addResult(res);
                 }
             }
+
+            allDisco.addFirst(true);
         }
     }
 
@@ -337,7 +370,14 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         if (isDuplicate(msg))
             return;
 
+//        if (logDisco)
+//            System.out.println("DISCO PROPSOSE " + cctx.igniteInstanceName() + " " + msg);
+
+//        U.debug("Received propose [node=" + cctx.localNodeId() + ", msg=" + msg + ']');
+
         synchronized (mux) {
+            allDisco.addFirst(msg);
+
             if (disconnected)
                 return;
 
@@ -392,16 +432,17 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             return false;
         }
 
-        CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
-
-        assert grpDesc != null;
-
-        // If there are no pending WAL change requests and mode matches, then ignore and complete.
-        if (!grpDesc.hasWalChangeRequests() && grpDesc.walEnabled() == msg.enable()) {
-            complete(userFut, false);
-
-            return false;
-        }
+        // TODO: This invariant is invalid for newly joined node?
+//        CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
+//
+//        assert grpDesc != null;
+//
+//        // If there are no pending WAL change requests and mode matches, then ignore and complete.
+//        if (!grpDesc.hasWalChangeRequests() && grpDesc.walEnabled() == msg.enable()) {
+//            complete(userFut, false);
+//
+//            return false;
+//        }
 
         return true;
     }
@@ -621,7 +662,12 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         if (isDuplicate(msg))
             return;
 
+//        if (logDisco)
+//            System.out.println("DISCO FINISH " + cctx.igniteInstanceName() + " " + msg);
+
         synchronized (mux) {
+            allDisco.addFirst(msg);
+
             if (disconnected)
                 return;
 
@@ -638,8 +684,11 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             // Clear pending data.
             WalStateResult res = ress.remove(msg.operationId());
 
-            if (res == null && srv)
+            if (res == null && srv) {
                 U.warn(log, "Received finish message for unknown operation (will ignore): " + msg.operationId());
+
+                System.out.println("UNKNOWN FINISH MESSAGE " + cctx.igniteInstanceName() + " " + msg);
+            }
 
             procs.remove(msg.operationId());
 
@@ -653,8 +702,15 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 // Remove now-outdated message from the queue.
                 WalStateProposeMessage oldProposeMsg = grpDesc.nextWalChangeRequest();
 
+                // TODO: Remove when fixed
+                if (oldProposeMsg == null) {
+                    dumpDisco();
+
+                    System.out.println("NO PROPOSE MESSAGE FOUND " + cctx.igniteInstanceName() + " " + msg);
+                }
+
                 assert oldProposeMsg != null;
-                assert F.eq(oldProposeMsg.operationId(), msg.operationId());
+                assert F.eq(oldProposeMsg.operationId(), msg.operationId()) : "Old [" + oldProposeMsg + ", cur=" + msg;
 
                 grpDesc.removeWalChangeRequest();
 
@@ -777,7 +833,17 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @return {@code True} if this is a duplicate.
      */
     private boolean isDuplicate(WalStateAbstractMessage msg) {
-        if (!discoMsgIdHist.add(msg.id())) {
+        T2<UUID, Boolean> key;
+
+        if (msg instanceof WalStateProposeMessage)
+            key = new T2<>(msg.operationId(), true);
+        else {
+            assert msg instanceof WalStateFinishMessage;
+
+            key = new T2<>(msg.operationId(), false);
+        }
+
+        if (!discoMsgIdHist.add(key)) {
             U.warn(log, "Received duplicate WAL mode change discovery message (will ignore): " + msg);
 
             return true;
@@ -848,6 +914,39 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             addResult(res);
 
             onCompletedLocally(res);
+        }
+    }
+
+    public static void dumpDisco() {
+        for (WalStateManager mgr : MGRS)
+            mgr.dumpDisco0();
+    }
+
+    private static final String DUMP_BASE_PATH = "C:/Personal/disco/";
+
+    public void dumpDisco0() {
+        ArrayList<Object> evts;
+
+        synchronized (mux) {
+            evts = new ArrayList<>(allDisco.size());
+
+            evts.addAll(allDisco);
+        }
+
+        File file = new File(DUMP_BASE_PATH + cctx.igniteInstanceName());
+
+        file.delete();
+
+        try (FileOutputStream fos = new FileOutputStream(file)) {
+            try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos))) {
+                for (Object evt : evts) {
+                    bw.write(evt.toString());
+                    bw.newLine();
+                }
+            }
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 }

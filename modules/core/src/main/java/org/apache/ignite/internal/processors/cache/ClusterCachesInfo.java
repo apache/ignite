@@ -993,6 +993,8 @@ class ClusterCachesInfo {
         ctx.discovery().cleanCachesAndGroups();
 
         for (CacheGroupData grpData : cachesData.cacheGroups().values()) {
+            System.out.println(">> GROUP_1 " + ctx.igniteInstanceName() + " " + grpData.groupId() + " " + grpData.walChangeRequests());
+
             CacheGroupDescriptor grpDesc = new CacheGroupDescriptor(
                 grpData.config(),
                 grpData.groupName(),
@@ -1007,6 +1009,8 @@ class ClusterCachesInfo {
 
             if (locCacheGrps.containsKey(grpDesc.groupId())) {
                 CacheGroupDescriptor locGrpCfg = locCacheGrps.get(grpDesc.groupId());
+
+                System.out.println(">> GROUP_1 merge with old=" + locGrpCfg.walChangeRequests() + ", new=" + grpDesc.walChangeRequests());
 
                 grpDesc.mergeWith(locGrpCfg);
             }
@@ -1517,6 +1521,8 @@ class ClusterCachesInfo {
         Map<String, Integer> caches = Collections.singletonMap(startedCacheCfg.getName(), cacheId);
 
         boolean persistent = CU.isPersistentCache(startedCacheCfg, ctx.config().getDataStorageConfiguration());
+
+        System.out.println(">> GROUP_2 " + ctx.igniteInstanceName() + " " + startedCacheCfg.getGroupName());
 
         CacheGroupDescriptor grpDesc = new CacheGroupDescriptor(
             startedCacheCfg,

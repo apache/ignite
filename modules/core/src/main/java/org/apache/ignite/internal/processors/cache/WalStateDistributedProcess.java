@@ -150,7 +150,7 @@ public class WalStateDistributedProcess {
             else {
                 if (!F.eq(curChanged, changed)) {
                     return new WalStateFinishMessage(msg.operationId(), msg.groupId(), msg.groupDeploymentId(),
-                        false, "Operation result is unknown because nodes reported different result (please " +
+                        false, "Operation result is unknown because nodes reported different results (please " +
                         "re-try operation).");
                 }
             }

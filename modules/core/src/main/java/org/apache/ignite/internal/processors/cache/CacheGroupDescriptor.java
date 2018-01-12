@@ -168,7 +168,7 @@ public class CacheGroupDescriptor {
     public boolean addWalChangeRequest(WalStateProposeMessage msg) {
         boolean first = !hasWalChangeRequests();
 
-        walChangeReqs.add(msg);
+        walChangeReqs.addLast(msg);
 
         return first;
     }

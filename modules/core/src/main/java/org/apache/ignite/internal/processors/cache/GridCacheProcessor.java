@@ -678,8 +678,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             cachesInfo.onStart(discoData);
 
-            sharedCtx.walState().onCachesInfoCollected();
-
             if (log.isDebugEnabled())
                 log.debug("Started cache processor.");
         }
@@ -844,8 +842,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         });
 
-        for (int i = 0, size = syncFuts.size(); i < size; i++)
+        for (int i = 0, size = syncFuts.size(); i < size; i++) {
+
+
             syncFuts.get(i).get();
+        }
     }
 
     /**
@@ -2404,6 +2405,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
         cachesInfo.onGridDataReceived(data);
+
+        sharedCtx.walState().onCachesInfoCollected();
     }
 
     /**
