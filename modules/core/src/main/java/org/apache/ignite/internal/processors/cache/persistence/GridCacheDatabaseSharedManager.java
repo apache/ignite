@@ -3512,7 +3512,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** Checkpoint end mark. */
         private WALPointer cpMark;
 
-        /** Checkpoint ID. Initialized lazily. */
+        /** Checkpoint ID. */
         private UUID cpId;
 
         /** */
