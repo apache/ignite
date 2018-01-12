@@ -14,8 +14,11 @@ Building binaries:
   build.bat -skipCodeAnalysis
 Resulting binaries will be in bin folder, and NuGet packages in nupkg folder.
 
-Running built binaries: resulting "bin" folder in self contained, you can copy it anywhere and run
+Running built binaries: resulting "bin" folder is self contained, you can copy it anywhere and run
   bin\Apache.Ignite.exe  
+  
+Running examples and Apache.Ignite.exe from project directories:
+  Set IGNITE_NATIVE_TEST_CLASSPATH environment variable to "true"
 
 
 Cross-Platform Support
