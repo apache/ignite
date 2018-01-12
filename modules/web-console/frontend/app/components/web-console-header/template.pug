@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.wch-notification(ng-show='$ctrl.UserNotifications.message' ng-bind-html='$ctrl.UserNotifications.message')
+.wch-notification(ng-show='$ctrl.UserNotifications.isShown && $ctrl.UserNotifications.message' ng-bind-html='$ctrl.UserNotifications.message')
 
 .wch-notification(ng-show='$root.user.becomeUsed')
     | You are currently viewing user #[strong {{$root.user.firstName}} {{$root.user.lastName}}] as administrator. #[a(ng-click='$root.revertIdentity()') Revert to your identity?]
