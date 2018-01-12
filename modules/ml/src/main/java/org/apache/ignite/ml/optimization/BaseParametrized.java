@@ -15,13 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.nn.updaters;
+package org.apache.ignite.ml.optimization;
 
-import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.Vector;
 
 /**
- * Interface for models which are smooth functions of their parameters.
+ * Base interface for parametrized models.
+ *
+ * @param <M> Model class.
  */
-public interface SmoothParametrized<M extends SmoothParametrized<M>> extends BaseSmoothParametrized<M>, Model<Matrix, Matrix> {
+interface BaseParametrized<M extends BaseParametrized<M>> {
+    /**
+     * Get parameters vector.
+     *
+     * @return Parameters vector.
+     */
+    Vector parameters();
+
+    /**
+     * Set parameters.
+     *
+     * @param vector Parameters vector.
+     */
+    M setParameters(Vector vector);
+
+    /**
+     * Get count of parameters of this model.
+     *
+     * @return Count of parameters of this model.
+     */
+    int parametersCount();
 }
