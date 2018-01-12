@@ -24,7 +24,7 @@ export default {
         static $inject = ['$rootScope', '$scope', '$state', 'IgniteBranding', 'UserNotifications'];
 
         static connectedClustersUnvisibleStates = [
-            '403', '404'
+            '403', '404', 'signin'
         ];
 
         constructor($rootScope, $scope, $state, branding, UserNotifications) {
