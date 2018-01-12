@@ -22,6 +22,8 @@ import javax.management.MBeanRegistrationException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -80,6 +82,17 @@ public class GridMBeanDisableSelfTest extends GridCommonAbstractTest {
 
                     }
                 }, MBeanRegistrationException.class);
+        }
+    }
+
+    /** Check that a cache can be started when MBeans are disabled. */
+    public void testCacheStart() throws Exception {
+        try (
+            Ignite ignite = startGrid(0);
+            IgniteCache<String, String> cache = ignite.getOrCreateCache("MyCache")
+        ) {
+            cache.put("foo", "bar");
+            assertEquals("bar", cache.get("foo"));
         }
     }
 
