@@ -27,15 +27,14 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
 import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 import org.junit.After;
+
 import static org.junit.Assert.*;
+
 import org.junit.Before;
 import org.junit.Test;
 
-
 /**
- *
  * Initialize Gene and Chromosome Test
- *
  */
 
 public class GAGridInitializePopulationTest {
@@ -43,7 +42,6 @@ public class GAGridInitializePopulationTest {
     private Ignite ignite = null;
     private GAGrid gaGrid = null;
     private GAConfiguration gaConfig = null;
-
 
     @Before
     public void initialize() {
@@ -72,8 +70,7 @@ public class GAGridInitializePopulationTest {
     }
 
     @Test
-    public void testInitializeGenes()
-    {
+    public void testInitializeGenes() {
 
         try {
             IgniteCache<Long, Gene> geneCache = ignite.cache(GAGridConstants.GENE_CACHE);
@@ -89,20 +86,18 @@ public class GAGridInitializePopulationTest {
             Long count = new Long(0);
 
             for (List row : res) {
-                count  = (Long) row.get(0);
+                count = (Long)row.get(0);
             }
             assertEquals(83, count.longValue());
         }
 
-        catch (Exception e)
-        {
+        catch (Exception e) {
             System.out.println(e);
         }
     }
 
     @Test
-    public void testInitializePopulation()
-    {
+    public void testInitializePopulation() {
         try {
 
             IgniteCache<Long, Chromosome> populationCache = ignite.cache(GAGridConstants.POPULATION_CACHE);
@@ -119,17 +114,15 @@ public class GAGridInitializePopulationTest {
             Long count = new Long(0);
 
             for (List row : res) {
-                count  = (Long) row.get(0);
+                count = (Long)row.get(0);
             }
             assertEquals(500, count.longValue());
         }
 
-        catch (Exception e)
-        {
+        catch (Exception e) {
             System.out.println(e);
         }
     }
-
 
     /**
      * Helper routine to initialize Gene pool
@@ -139,10 +132,10 @@ public class GAGridInitializePopulationTest {
     private List<Gene> getGenePool() {
         List<Gene> list = new ArrayList();
 
-        char[] chars = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
+        char[] chars = {
+            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
             't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
-            'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '1', '2', '3','4', '5', '6', '7', '8', '!','"','#','$','%','&','(',')','*','+','-','.','/',':',';','<','=','>','?','@','[',']','^'};
-
+            'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '1', '2', '3', '4', '5', '6', '7', '8', '!', '"', '#', '$', '%', '&', '(', ')', '*', '+', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', ']', '^'};
 
         for (int i = 0; i < chars.length; i++) {
             Gene gene = new Gene(new Character(chars[i]));

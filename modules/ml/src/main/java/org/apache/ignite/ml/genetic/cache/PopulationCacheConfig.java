@@ -29,7 +29,6 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  * Cache configuration for GAGridConstants.POPULATION_CACHE
  *
  * cache population of chromosomes (ie: potential solutions)
- *
  */
 
 public class PopulationCacheConfig {

@@ -26,12 +26,10 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
  *
  * <p>
  *
- * Gene is a container for a POJO that developer will implement.
- * <br/>
+ * Gene is a container for a POJO that developer will implement. <br/>
  *
- * For the Movie Fitness example, the Movie object is the POJO contained within Gene.
- * <br/>
- * NOTE: Gene resides in cache: 'geneCache'. This cache is replicated.
+ * For the Movie Fitness example, the Movie object is the POJO contained within Gene. <br/> NOTE: Gene resides in cache:
+ * 'geneCache'. This cache is replicated.
  *
  *
  * </p>

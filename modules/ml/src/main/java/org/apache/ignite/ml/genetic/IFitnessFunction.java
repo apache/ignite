@@ -22,8 +22,7 @@ import java.util.List;
 /**
  * Fitness function are used to determine how optimal a particular solution is relative to other solutions.
  *
- * <p>
- * The evaluate() method should be implemented for this interface. The fitness function is provided list of Genes.
+ * <p> The evaluate() method should be implemented for this interface. The fitness function is provided list of Genes.
  *
  * The evaluate method should return a positive double value that reflects fitness score.
  *

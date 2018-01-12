@@ -24,13 +24,11 @@ import java.util.StringTokenizer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 
-
 import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.GAGrid;
 import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
 import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
-
 
 /**
  * This example demonstrates how to use the GAGrid framework.
@@ -43,13 +41,9 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  *
  * mvn exec:java -Dexec.mainClass="org.apache.ignite.examples.ml.genetic.movie.MovieGAExample" -DGENRES=Action,Comedy
  *
- * <p>
- * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p>
- * <p>
- * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will start node
- * with {@code examples/config/example-ignite.xml} configuration.</p>
- *
+ * <p> Remote nodes should always be started with special configuration file which enables P2P class loading: {@code
+ * 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p> <p> Alternatively you can run {@link ExampleNodeStartup}
+ * in another JVM which will start node with {@code examples/config/example-ignite.xml} configuration.</p>
  */
 
 public class MovieGAExample {
@@ -63,9 +57,9 @@ public class MovieGAExample {
      * Specify value for -DGENRES JVM system variable
      *
      * @param args Command line arguments, none required.
-    */
+     */
 
-    public static void main(String args[] ) {
+    public static void main(String args[]) {
         System.setProperty("IGNITE_QUIET", "false");
 
         List genres = new ArrayList();
@@ -76,19 +70,17 @@ public class MovieGAExample {
         sbErrorMessage.append(" ");
         sbErrorMessage.append("IE: -DGENRES=Action,Comedy,Romance");
 
-        if (sGenres==null)
-        {
-        	System.out.println(sbErrorMessage);
-        	System.exit(1);
+        if (sGenres == null) {
+            System.out.println(sbErrorMessage);
+            System.exit(1);
         }
 
-         StringTokenizer st = new StringTokenizer(sGenres, ",");
+        StringTokenizer st = new StringTokenizer(sGenres, ",");
 
-          while (st.hasMoreElements())
-           {
-              String genre = st.nextToken();
-              genres.add(genre);
-           }
+        while (st.hasMoreElements()) {
+            String genre = st.nextToken();
+            genres.add(genre);
+        }
 
         // Create GAConfiguration
         gaConfig = new GAConfiguration();
@@ -113,9 +105,8 @@ public class MovieGAExample {
 
         try {
 
-			 //Create an Ignite instance as you would in any other use case.
-		     ignite = Ignition.start("examples/config/example-ignite.xml");
-
+            //Create an Ignite instance as you would in any other use case.
+            ignite = Ignition.start("examples/config/example-ignite.xml");
 
             MovieTerminateCriteria termCriteria = new MovieTerminateCriteria(ignite);
 
@@ -129,12 +120,12 @@ public class MovieGAExample {
             Ignition.stop(true);
             ignite = null;
 
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             System.out.println(e);
         }
 
     }
-
 
     private static List<Gene> getGenePool() {
         List list = new ArrayList();

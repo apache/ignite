@@ -33,7 +33,6 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 
 /**
  * Responsible for applying mutation on respective Chromosome based on mutation Rate
- *
  */
 public class MutateJob extends ComputeJobAdapter {
 

@@ -29,7 +29,6 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  * Cache configuration for GAGridConstants.GENE_CACHE
  *
  * cache maintains full population of genes.
- *
  */
 
 public class GeneCacheConfig {

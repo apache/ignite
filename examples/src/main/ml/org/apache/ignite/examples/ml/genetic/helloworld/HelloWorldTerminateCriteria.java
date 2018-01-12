@@ -29,31 +29,29 @@ import org.apache.ignite.ml.genetic.utils.GAGridUtils;
 
 /**
  * Represents the terminate condition for HelloWorld Genetic algorithm
- * 
- * Class terminates Genetic algorithm when fitnessScore > 10 
- * 
  *
+ * Class terminates Genetic algorithm when fitnessScore > 10
  */
 public class HelloWorldTerminateCriteria implements ITerminateCriteria {
 
     private IgniteLogger igniteLogger = null;
     private Ignite ignite = null;
-    
+
     /**
-     * 
      * @param ignite
      */
     public HelloWorldTerminateCriteria(Ignite ignite) {
         this.ignite = ignite;
         this.igniteLogger = ignite.log();
     }
-    
-   /**
-    *  @param fittestChromosome  Most fit chromosome at for the nth generation
-    *  @param averageFitnessScore  Average fitness score as of the nth generation
-    *  @param currentGeneration  Current generation
-    */
-    public boolean isTerminationConditionMet(Chromosome fittestChromosome, double averageFitnessScore, int currentGeneration) {
+
+    /**
+     * @param fittestChromosome Most fit chromosome at for the nth generation
+     * @param averageFitnessScore Average fitness score as of the nth generation
+     * @param currentGeneration Current generation
+     */
+    public boolean isTerminationConditionMet(Chromosome fittestChromosome, double averageFitnessScore,
+        int currentGeneration) {
         boolean isTerminate = true;
 
         igniteLogger.info("##########################################################################################");
@@ -67,22 +65,21 @@ public class HelloWorldTerminateCriteria implements ITerminateCriteria {
         if (!(fittestChromosome.getFitnessScore() > 10)) {
             isTerminate = false;
         }
-        
+
         return isTerminate;
     }
-    
-    
+
     /**
      * Helper to print Phrase
-     * 
+     *
      * @param genes
      */
     private void printPhrase(List<Gene> genes) {
-        
+
         StringBuffer sbPhrase = new StringBuffer();
-        
+
         for (Gene gene : genes) {
-            sbPhrase.append(((Character) gene.getValue()).toString());
+            sbPhrase.append(((Character)gene.getValue()).toString());
         }
         igniteLogger.info(sbPhrase.toString());
     }

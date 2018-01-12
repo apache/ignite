@@ -43,7 +43,6 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 
 /**
  * Responsible for performing truncate selection.
- *
  */
 
 public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolean> {
@@ -70,7 +69,8 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
     }
 
     /**
-     *  Retrieve a chromosome
+     * Retrieve a chromosome
+     *
      * @param key
      * @return Chromosome
      */
@@ -96,7 +96,7 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
     }
 
     /**
-     *  Return a List of Lists containing keys
+     * Return a List of Lists containing keys
      *
      * @return List of List<Key>
      */

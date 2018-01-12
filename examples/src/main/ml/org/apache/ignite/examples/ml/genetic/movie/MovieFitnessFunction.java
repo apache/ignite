@@ -29,23 +29,21 @@ import org.apache.ignite.ml.genetic.IFitnessFunction;
  * This example demonstrates how to create a IFitnessFunction
  *
  * Your IFitness function will vary depending on your particular use case.
- * 
+ *
  * For this fitness function, we simply want to calculate the value of
- * 
+ *
  * an individual solution relative to other solutions.
- * 
- * 
+ *
+ *
  * To do this, we simply increase fitness score by number of times
- * 
+ *
  * genre is found in list of movies.
- * 
+ *
  * In addition, we increase score by fictional IMDB rating.
- * 
+ *
  * If there are duplicate movies in selection, we automatically apply a '0'
- * 
+ *
  * fitness score.
- * 
- * 
  */
 
 public class MovieFitnessFunction implements IFitnessFunction {
@@ -53,8 +51,7 @@ public class MovieFitnessFunction implements IFitnessFunction {
     private List<String> generes = null;
 
     /**
-     * 
-     * @param List<String>  genres
+     * @param List<String> genres
      */
     public MovieFitnessFunction(List<String> generes) {
         this.generes = generes;
@@ -70,10 +67,11 @@ public class MovieFitnessFunction implements IFitnessFunction {
         int badSolution = 1;
 
         for (int i = 0; i < genes.size(); i++) {
-            Movie movie = (Movie) genes.get(i).getValue();
+            Movie movie = (Movie)genes.get(i).getValue();
             if (dups.contains(movie.getName())) {
                 badSolution = 0;
-            } else {
+            }
+            else {
                 dups.add(movie.getName());
             }
             double genreScore = getGenreScore(movie);
@@ -87,7 +85,7 @@ public class MovieFitnessFunction implements IFitnessFunction {
 
     /**
      * helper to calculate genre score
-     * 
+     *
      * @param movie
      * @return double
      */

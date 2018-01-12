@@ -27,7 +27,6 @@ import org.apache.ignite.ml.genetic.Chromosome;
  * Implement this interface for your respective use case.
  *
  * </p>
- *
  */
 public interface ITerminateCriteria {
     /**

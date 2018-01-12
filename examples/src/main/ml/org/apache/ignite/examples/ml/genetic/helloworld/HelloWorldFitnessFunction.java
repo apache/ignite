@@ -25,20 +25,19 @@ import org.apache.ignite.ml.genetic.IFitnessFunction;
  * This example demonstrates how to create a IFitnessFunction
  *
  * Your IFitness function will vary depending on your particular use case.
- * 
+ *
  * For this fitness function, we simply want to calculate the value of
- * 
+ *
  * an individual solution relative to other solutions.
- * 
- * 
+ *
+ *
  * To do this, we simply increase fitness score by '1' for each character
- * 
+ *
  * that is correct position.
- * 
+ *
  * For our solution, our genetic algorithm will continue until
- * 
+ *
  * we achieve a fitness score of '11', as 'HELLO WORLD' contains '11' characters.
- * 
  */
 
 public class HelloWorldFitnessFunction implements IFitnessFunction {
@@ -56,7 +55,7 @@ public class HelloWorldFitnessFunction implements IFitnessFunction {
         double matches = 0;
 
         for (int i = 0; i < genes.size(); i++) {
-            if (((Character) (genes.get(i).getValue())).equals(targetString.charAt(i))) {
+            if (((Character)(genes.get(i).getValue())).equals(targetString.charAt(i))) {
                 matches = matches + 1;
             }
         }

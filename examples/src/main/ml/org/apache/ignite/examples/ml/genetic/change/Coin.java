@@ -20,23 +20,22 @@ package org.apache.ignite.examples.ml.genetic.change;
 import java.io.Serializable;
 
 /**
- * 
  * POJO to model a coin
- *
  */
 public class Coin implements Serializable {
 
     public static enum CoinType {
-                                 PENNY, QUARTER, NICKEL, DIME
-    };
+        PENNY, QUARTER, NICKEL, DIME
+    }
 
-    /** number of coins*/
+    ;
+
+    /** number of coins */
     private int numberOfCoins = 0;
 
     private CoinType coinType = null;
 
     /**
-     *
      * @param coinType
      * @param numberOfCoins
      */
@@ -46,7 +45,8 @@ public class Coin implements Serializable {
     }
 
     /**
-     *  Retrieve the number of coins
+     * Retrieve the number of coins
+     *
      * @return int
      */
     public int getNumberOfCoins() {
@@ -54,7 +54,8 @@ public class Coin implements Serializable {
     }
 
     /**
-     *  Set the number of coins
+     * Set the number of coins
+     *
      * @param numberOfCoins
      */
     public void setNumberOfCoins(int numberOfCoins) {
@@ -71,7 +72,7 @@ public class Coin implements Serializable {
     }
 
     /**
-     *  Set Coin type
+     * Set Coin type
      *
      * @param coinType
      */
@@ -79,9 +80,9 @@ public class Coin implements Serializable {
         this.coinType = coinType;
     }
 
-	@Override
-	public String toString() {
-		return "Coin [numberOfCoins=" + numberOfCoins + ", coinType=" + coinType + "]";
-	}
+    @Override
+    public String toString() {
+        return "Coin [numberOfCoins=" + numberOfCoins + ", coinType=" + coinType + "]";
+    }
 
 }

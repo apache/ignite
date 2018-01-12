@@ -40,8 +40,8 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  *
  * <p>
  *
- * CrossOverTask leverages  Ignite's data affinity capabilities for routing CrossOverJobs to primary <br/>
- * IgniteNode where 'parent' chromosomes reside.
+ * CrossOverTask leverages  Ignite's data affinity capabilities for routing CrossOverJobs to primary <br/> IgniteNode
+ * where 'parent' chromosomes reside.
  *
  * </p>
  */

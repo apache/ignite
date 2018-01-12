@@ -20,10 +20,7 @@ package org.apache.ignite.examples.ml.genetic.movie;
 import java.util.List;
 
 /**
- *
- *  POJO to model a movie.
- *
- *
+ * POJO to model a movie.
  */
 
 public class Movie {

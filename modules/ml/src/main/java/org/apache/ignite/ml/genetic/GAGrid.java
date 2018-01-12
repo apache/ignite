@@ -50,7 +50,7 @@ public class GAGrid {
     private Ignite ignite = null;
     /** Population cache */
     private IgniteCache<Long, Chromosome> populationCache = null;
-    /**  Gene cache */
+    /** Gene cache */
     private IgniteCache<Long, Gene> geneCache = null;
     /** population keys */
     private List<Long> populationKeys = new ArrayList();
@@ -271,7 +271,7 @@ public class GAGrid {
     /**
      * initialize the Gene pool
      */
-     void initializeGenePopulation() {
+    void initializeGenePopulation() {
         geneCache.clear();
 
         List<Gene> genePool = config.getGenePool();
@@ -284,7 +284,7 @@ public class GAGrid {
     /**
      * Initialize the population of Chromosomes
      */
-     void initializePopulation() {
+    void initializePopulation() {
         int populationSize = config.getPopulationSize();
         populationCache.clear();
 
@@ -299,7 +299,7 @@ public class GAGrid {
     /**
      * initialize the population of Chromosomes based on GAConfiguration
      */
-     void intializePopulation() {
+    void intializePopulation() {
         int populationSize = config.getPopulationSize();
         populationCache.clear();
 
@@ -448,8 +448,7 @@ public class GAGrid {
         return selectedKeys;
     }
 
-    List<Long> getPopulationKeys()
-    {
+    List<Long> getPopulationKeys() {
         return populationKeys;
     }
 }

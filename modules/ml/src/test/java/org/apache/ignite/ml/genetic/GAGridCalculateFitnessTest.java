@@ -27,13 +27,14 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
 import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 import org.junit.After;
+
 import static org.junit.Assert.*;
+
 import org.junit.Before;
 import org.junit.Test;
 
 /**
- *  Calculate Fitness Test
- *
+ * Calculate Fitness Test
  */
 public class GAGridCalculateFitnessTest {
 
@@ -42,7 +43,7 @@ public class GAGridCalculateFitnessTest {
     private GAConfiguration gaConfig = null;
 
     /**
-     *  Setup test
+     * Setup test
      */
     @Before
     public void initialize() {
@@ -77,15 +78,14 @@ public class GAGridCalculateFitnessTest {
     }
 
     /**
-     *  Test Calculate Fitness
+     * Test Calculate Fitness
      */
 
     @Test
-    public void testCalculateFitness()
-    {
+    public void testCalculateFitness() {
         try {
 
-           List<Long> chromosomeKeys =  gaGrid.getPopulationKeys();
+            List<Long> chromosomeKeys = gaGrid.getPopulationKeys();
 
             Boolean boolValue = this.ignite.compute().execute(new FitnessTask(this.gaConfig), chromosomeKeys);
 
@@ -101,18 +101,16 @@ public class GAGridCalculateFitnessTest {
             Long count = new Long(0);
 
             for (List row : res) {
-                count  = (Long) row.get(0);
+                count = (Long)row.get(0);
             }
 
             assertEquals(500, count.longValue());
         }
 
-        catch (Exception e)
-        {
+        catch (Exception e) {
             System.out.println(e);
         }
     }
-
 
     /**
      * Helper routine to initialize Gene pool
@@ -122,10 +120,10 @@ public class GAGridCalculateFitnessTest {
     private List<Gene> getGenePool() {
         List<Gene> list = new ArrayList();
 
-        char[] chars = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
+        char[] chars = {
+            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
             't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
-            'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '1', '2', '3','4', '5', '6', '7', '8', '!','"','#','$','%','&','(',')','*','+','-','.','/',':',';','<','=','>','?','@','[',']','^'};
-
+            'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '1', '2', '3', '4', '5', '6', '7', '8', '!', '"', '#', '$', '%', '&', '(', ')', '*', '+', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', ']', '^'};
 
         for (int i = 0; i < chars.length; i++) {
             Gene gene = new Gene(new Character(chars[i]));

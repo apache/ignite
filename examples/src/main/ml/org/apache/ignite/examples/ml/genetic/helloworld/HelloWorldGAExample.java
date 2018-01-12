@@ -23,7 +23,6 @@ import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 
-
 import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.GAGrid;
 import org.apache.ignite.ml.genetic.Gene;
@@ -41,23 +40,18 @@ import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
  *
  * mvn exec:java -Dexec.mainClass="org.apache.ignite.examples.ml.genetic.helloworld.HelloWorldGAExample"
  *
- * <p>
- * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p>
- * <p>
- * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will start node
- * with {@code examples/config/example-ignite.xml} configuration.</p>
+ * <p> Remote nodes should always be started with special configuration file which enables P2P class loading: {@code
+ * 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p> <p> Alternatively you can run {@link ExampleNodeStartup}
+ * in another JVM which will start node with {@code examples/config/example-ignite.xml} configuration.</p>
  */
 
 public class HelloWorldGAExample {
-    private static  Ignite ignite = null;
+    private static Ignite ignite = null;
     private static GAGrid gaGrid = null;
     private static GAConfiguration gaConfig = null;
 
-    public static void main (String args[])
-    {
-       System.setProperty("IGNITE_QUIET", "false");
-
+    public static void main(String args[]) {
+        System.setProperty("IGNITE_QUIET", "false");
 
         try {
 
@@ -94,13 +88,12 @@ public class HelloWorldGAExample {
             Ignition.stop(true);
             ignite = null;
 
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             System.out.println(e);
         }
 
     }
-
-
 
     /**
      * Helper routine to initialize Gene pool
@@ -112,8 +105,9 @@ public class HelloWorldGAExample {
     private static List<Gene> getGenePool() {
         List<Gene> list = new ArrayList();
 
-        char[] chars = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
-            'T', 'U', 'V', 'W', 'X', 'Y', 'Z', ' ' };
+        char[] chars = {
+            'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+            'T', 'U', 'V', 'W', 'X', 'Y', 'Z', ' '};
 
         for (int i = 0; i < chars.length; i++) {
             Gene gene = new Gene(new Character(chars[i]));

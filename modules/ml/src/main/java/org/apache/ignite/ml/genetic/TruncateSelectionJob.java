@@ -33,7 +33,6 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 
 /**
  * Responsible for performing truncate selection
- *
  */
 public class TruncateSelectionJob extends ComputeJobAdapter {
 

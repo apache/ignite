@@ -28,9 +28,7 @@ import org.apache.ignite.ml.genetic.parameter.ITerminateCriteria;
 import org.apache.ignite.ml.genetic.utils.GAGridUtils;
 
 /**
- * 
  * Terminate Condition implementation for OptimizeMakeChangeGATest <br/>
- * 
  */
 public class OptimizeMakeChangeTerminateCriteria implements ITerminateCriteria {
 
@@ -38,7 +36,6 @@ public class OptimizeMakeChangeTerminateCriteria implements ITerminateCriteria {
     private Ignite ignite = null;
 
     /**
-     * 
      * @param ignite
      */
     public OptimizeMakeChangeTerminateCriteria(Ignite ignite) {
@@ -47,9 +44,9 @@ public class OptimizeMakeChangeTerminateCriteria implements ITerminateCriteria {
     }
 
     /**
-     *  @param fittestChromosome  Most fit chromosome at for the nth generation
-     *  @param averageFitnessScore  Average fitness score as of the nth generation
-     *  @param currentGeneration  Current generation
+     * @param fittestChromosome Most fit chromosome at for the nth generation
+     * @param averageFitnessScore Average fitness score as of the nth generation
+     * @param currentGeneration Current generation
      */
     public boolean isTerminationConditionMet(Chromosome fittestChromosome, double averageFitnessScore,
         int currentGeneration) {
@@ -72,13 +69,13 @@ public class OptimizeMakeChangeTerminateCriteria implements ITerminateCriteria {
 
     /**
      * Helper to print change detail
-     * 
+     *
      * @param genes
      */
     private void printCoins(List<Gene> genes) {
         for (Gene gene : genes) {
-            igniteLogger.info("Coin Type: " + ((Coin) gene.getValue()).getCoinType().toString());
-            igniteLogger.info("Number of Coins: " + ((Coin) gene.getValue()).getNumberOfCoins());
+            igniteLogger.info("Coin Type: " + ((Coin)gene.getValue()).getCoinType().toString());
+            igniteLogger.info("Number of Coins: " + ((Coin)gene.getValue()).getNumberOfCoins());
         }
 
     }

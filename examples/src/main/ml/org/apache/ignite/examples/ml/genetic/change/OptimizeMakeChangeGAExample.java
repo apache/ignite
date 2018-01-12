@@ -24,7 +24,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 
-
 import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.GAGrid;
 import org.apache.ignite.ml.genetic.Gene;
@@ -32,24 +31,22 @@ import org.apache.ignite.ml.genetic.parameter.ChromosomeCriteria;
 import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
 import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 
-
 /**
  * This example demonstrates how to use the GAGrid framework. <br/>
  *
  * This example is inspired by JGAP's "Minimize Make Change" example. <br/>
  *
- * In this example, the objective is to calculate the minimum number of coins that equal user specified amount of change
+ * In this example, the objective is to calculate the minimum number of coins that equal user specified amount of
+ * change
  *
  * ie: -DAMOUNTCHANGE
  *
- * mvn exec:java -Dexec.mainClass="org.apache.ignite.examples.ml.genetic.change.OptimizeMakeChangeGAExample" -DAMOUNTCHANGE=75
+ * mvn exec:java -Dexec.mainClass="org.apache.ignite.examples.ml.genetic.change.OptimizeMakeChangeGAExample"
+ * -DAMOUNTCHANGE=75
  *
- * <p>
- * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p>
- * <p>
- * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will start node
- * with {@code examples/config/example-ignite.xml} configuration.</p>
+ * <p> Remote nodes should always be started with special configuration file which enables P2P class loading: {@code
+ * 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p> <p> Alternatively you can run {@link ExampleNodeStartup}
+ * in another JVM which will start node with {@code examples/config/example-ignite.xml} configuration.</p>
  */
 
 public class OptimizeMakeChangeGAExample {
@@ -57,7 +54,7 @@ public class OptimizeMakeChangeGAExample {
     private static GAGrid gaGrid = null;
     private static GAConfiguration gaConfig = null;
 
-    private static String sAmountChange=null;
+    private static String sAmountChange = null;
 
     private static IgniteLogger logger = null;
 
@@ -67,25 +64,23 @@ public class OptimizeMakeChangeGAExample {
      * Specify value for -DAMOUNTCHANGE JVM system variable
      *
      * @param args Command line arguments, none required.
-    */
-    public static void main (String args[] ) {
+     */
+    public static void main(String args[]) {
         System.setProperty("IGNITE_QUIET", "false");
 
-         sAmountChange= System.getProperty("AMOUNTCHANGE");
+        sAmountChange = System.getProperty("AMOUNTCHANGE");
 
         StringBuffer sbErrorMessage = new StringBuffer();
         sbErrorMessage.append("AMOUNTCHANGE System property not set. Please provide a valid value between 1 and 99. ");
         sbErrorMessage.append(" ");
         sbErrorMessage.append("IE: -DAMOUNTCHANGE=75");
 
-
         try {
 
             //Create an Ignite instance as you would in any other use case.
-		    ignite = Ignition.start("examples/config/example-ignite.xml");
+            ignite = Ignition.start("examples/config/example-ignite.xml");
 
             logger = ignite.log();
-
 
             // Create GAConfiguration
             gaConfig = new GAConfiguration();
@@ -138,27 +133,23 @@ public class OptimizeMakeChangeGAExample {
             // initialize GAGrid
             gaGrid = new GAGrid(gaConfig, ignite);
 
+            logger.info("##########################################################################################");
 
-        	logger.info("##########################################################################################");
+            logger.info("Calculating optimal set of coins where amount of change is " + sAmountChange);
 
-        	logger.info("Calculating optimal set of coins where amount of change is " + sAmountChange);
-
-        	logger.info("##########################################################################################");
-
+            logger.info("##########################################################################################");
 
             Chromosome fittestChromosome = gaGrid.evolve();
 
             Ignition.stop(true);
             ignite = null;
 
-
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             System.out.println(e);
         }
 
     }
-
-
 
     /**
      * Helper routine to initialize Gene pool
@@ -167,7 +158,7 @@ public class OptimizeMakeChangeGAExample {
      *
      * @return List<Gene>
      */
-    private static  List<Gene> getGenePool() {
+    private static List<Gene> getGenePool() {
         List<Gene> list = new ArrayList();
 
         Gene quarterGene1 = new Gene(new Coin(Coin.CoinType.QUARTER, 3));

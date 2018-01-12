@@ -37,8 +37,8 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  *
  * <p>
  *
- * It relies on the GAConfiguration.getCrossOverRate() to determine probability rate of
- * crossover for pair of chromosome.
+ * It relies on the GAConfiguration.getCrossOverRate() to determine probability rate of crossover for pair of
+ * chromosome.
  *
  * <br/>
  *

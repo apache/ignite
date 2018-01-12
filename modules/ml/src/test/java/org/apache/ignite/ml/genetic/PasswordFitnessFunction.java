@@ -20,41 +20,38 @@ package org.apache.ignite.ml.genetic;
 import java.util.List;
 
 /**
- *  PasswordFitnessFunction evaluates randomly generated passwords giving higher score
- *  to passwords with more special characters.
- *
+ * PasswordFitnessFunction evaluates randomly generated passwords giving higher score to passwords with more special
+ * characters.
  */
 public class PasswordFitnessFunction implements IFitnessFunction {
 
     @Override
     public double evaluate(List<Gene> genes) {
 
-        double specialCharCount=0;
-        double lowerCaseCount=0;
-        double upperCaseCount=0;
+        double specialCharCount = 0;
+        double lowerCaseCount = 0;
+        double upperCaseCount = 0;
 
         double fitness = 0;
-        double specialCharScore=2;
+        double specialCharScore = 2;
 
         for (int i = 0; i < genes.size(); i++) {
 
             Character aCharacter = (Character)(genes.get(i).getValue());
-            if (Character.isUpperCase(aCharacter.charValue()))
-            {
+            if (Character.isUpperCase(aCharacter.charValue())) {
                 upperCaseCount = upperCaseCount + 1;
             }
 
-            else if (Character.isLowerCase(aCharacter.charValue()))
-            {
+            else if (Character.isLowerCase(aCharacter.charValue())) {
                 lowerCaseCount = lowerCaseCount + 1;
             }
-            else{
-                specialCharCount=specialCharCount + 1;
+            else {
+                specialCharCount = specialCharCount + 1;
             }
         }
 
         specialCharCount = specialCharScore * specialCharCount;
-        fitness = upperCaseCount + lowerCaseCount + specialCharCount ;
+        fitness = upperCaseCount + lowerCaseCount + specialCharCount;
         return fitness;
     }
 }

@@ -29,10 +29,8 @@ import org.apache.ignite.ml.genetic.utils.GAGridUtils;
 
 /**
  * Represents the terminate condition for Movie Genetic algorithm  <br/>
- * 
- * Class terminates Genetic algorithm when fitnessScore > 32  <br/>
- *  
  *
+ * Class terminates Genetic algorithm when fitnessScore > 32  <br/>
  */
 
 public class MovieTerminateCriteria implements ITerminateCriteria {
@@ -41,7 +39,6 @@ public class MovieTerminateCriteria implements ITerminateCriteria {
     private Ignite ignite = null;
 
     /**
-     * 
      * @param ignite
      */
     public MovieTerminateCriteria(Ignite ignite) {
@@ -51,9 +48,9 @@ public class MovieTerminateCriteria implements ITerminateCriteria {
     }
 
     /**
-     *  @param fittestChromosome  Most fit chromosome at for the nth generation
-     *  @param averageFitnessScore  Average fitness score as of the nth generation
-     *  @param currentGeneration  Current generation
+     * @param fittestChromosome Most fit chromosome at for the nth generation
+     * @param averageFitnessScore Average fitness score as of the nth generation
+     * @param currentGeneration Current generation
      */
     public boolean isTerminationConditionMet(Chromosome fittestChromosome, double averageFitnessScore,
         int currentGeneration) {
@@ -66,7 +63,6 @@ public class MovieTerminateCriteria implements ITerminateCriteria {
         printMovies(GAGridUtils.getGenesForChromosome(ignite, fittestChromosome));
         igniteLogger.info("##########################################################################################");
 
-
         if (!(fittestChromosome.getFitnessScore() > 32)) {
             isTerminate = false;
         }
@@ -76,16 +72,16 @@ public class MovieTerminateCriteria implements ITerminateCriteria {
 
     /**
      * Helper to print change detail
-     * 
+     *
      * @param genes
      */
     private void printMovies(List<Gene> genes) {
         for (Gene gene : genes) {
-            igniteLogger.info("Name: " + ((Movie) gene.getValue()).getName().toString());
-            igniteLogger.info("Genres: " + ((Movie) gene.getValue()).getGenre().toString());
-            igniteLogger.info("IMDB Rating: " + ((Movie) gene.getValue()).getImdbRating());
+            igniteLogger.info("Name: " + ((Movie)gene.getValue()).getName().toString());
+            igniteLogger.info("Genres: " + ((Movie)gene.getValue()).getGenre().toString());
+            igniteLogger.info("IMDB Rating: " + ((Movie)gene.getValue()).getImdbRating());
         }
 
     }
-    
+
 }

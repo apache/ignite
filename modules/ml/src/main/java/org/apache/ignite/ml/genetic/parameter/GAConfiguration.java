@@ -37,7 +37,6 @@ import org.apache.ignite.ml.genetic.IFitnessFunction;
  * More selectionMethods will be introduced in future releases.
  *
  * </p>
- *
  */
 public class GAConfiguration {
 

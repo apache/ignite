@@ -37,7 +37,6 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 
 /**
  * GA Grid Helper routines
- *
  */
 public class GAGridUtils {
 

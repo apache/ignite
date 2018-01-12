@@ -46,7 +46,6 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  *
  * MutateTask leverages Ignite's data affinity capabilities for routing MutateJobs to primary IgniteNode where <br/>
  * chromosomes reside.<br/>
- *
  */
 public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
 

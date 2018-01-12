@@ -33,7 +33,6 @@ import org.apache.ignite.ml.genetic.utils.GAGridUtils;
 
 /**
  * Responsible for providing custom SQL functions to retrieve optimization results
- *
  */
 public class GAGridFunction {
 
