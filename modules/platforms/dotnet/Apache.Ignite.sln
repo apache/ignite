@@ -43,7 +43,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.NLog", "Apach
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.AspNet.Tests", "Apache.Ignite.AspNet.Tests\Apache.Ignite.AspNet.Tests.csproj", "{18EA4C71-A11D-4AB1-8042-418F7559D84F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Log4Net", "Apache.Ignite.log4net\Apache.Ignite.Log4Net.csproj", "{6F82D669-382E-4435-8092-68C4440146D8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.Log4Net", "Apache.Ignite.Log4Net\Apache.Ignite.Log4Net.csproj", "{6F82D669-382E-4435-8092-68C4440146D8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apache.Ignite.EntityFramework", "Apache.Ignite.EntityFramework\Apache.Ignite.EntityFramework.csproj", "{C558518A-C1A0-4224-AAA9-A8688474B4DC}"
 EndProject
