@@ -272,13 +272,7 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
         List<Ignite> clients, Ignite srv,
         @Nullable Runnable disconnectedC)
         throws Exception {
-        if (!tcpDiscovery()) {
-            reconnectClients(log, clients, disconnectedC);
-
-            return;
-        }
-
-        final TestTcpDiscoverySpi srvSpi = spi(srv);
+        final IgniteDiscoverySpi srvSpi = spi0(srv);
 
         final CountDownLatch disconnectLatch = new CountDownLatch(clients.size());
         final CountDownLatch reconnectLatch = new CountDownLatch(clients.size());

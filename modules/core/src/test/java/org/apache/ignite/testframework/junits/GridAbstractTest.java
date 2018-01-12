@@ -99,7 +99,6 @@ import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiTest;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
@@ -158,6 +157,9 @@ public abstract class GridAbstractTest extends TestCase {
     private static final int DFLT_TOP_WAIT_TIMEOUT = 2000;
 
     /** */
+    private static final String ZK_DISCOVERY = "org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi";
+
+    /** */
     private static final transient Map<Class<?>, TestCounters> tests = new ConcurrentHashMap<>();
 
     /** */
@@ -197,10 +199,6 @@ public abstract class GridAbstractTest extends TestCase {
      *
      */
     static {
-        // TODO ZK
-        System.setProperty("TEST_ZK", "true");
-        //System.setProperty(ZOOKEEPER_CLIENT_CNXN_SOCKET, ZkTestClientCnxnSocketNIO.class.getName());
-
         System.setProperty(IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "10000");
         System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "false");
         System.setProperty(IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY, "1");
@@ -996,6 +994,7 @@ public abstract class GridAbstractTest extends TestCase {
 
         if (!(discoverySpi instanceof TcpDiscoverySpi)) {
             try {
+                // Clone added to support ZookeeperDiscoverySpi.
                 Method m = discoverySpi.getClass().getDeclaredMethod("cloneSpiConfiguration");
 
                 m.setAccessible(true);
@@ -2269,34 +2268,6 @@ public abstract class GridAbstractTest extends TestCase {
         assertFalse("There are no nodes", nodes.isEmpty());
 
         return nodes.get(0).configuration().getDiscoverySpi() instanceof TcpDiscoverySpi;
-    }
-
-    /** */
-    private static final String ZK_DISCOVERY = "org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi";
-
-    /**
-     * @param log Log.
-     * @param client Node to reconnect.
-     * @throws Exception If failed.
-     */
-    protected static void reconnectClient(IgniteLogger log, Ignite client) throws Exception {
-        reconnectClients(log, Collections.singletonList(client), null);
-    }
-
-    /**
-     * @param log Log.
-     * @param clients Nodes to reconnect.
-     * @throws Exception If failed.
-     */
-    protected static void reconnectClients(IgniteLogger log, List<Ignite> clients, @Nullable Runnable disconnectedC) throws Exception {
-        List<Ignite> nodes = G.allGrids();
-
-        assertFalse("There are no nodes", nodes.isEmpty());
-
-        if (nodes.get(0).configuration().getDiscoverySpi().getClass().getName().equals(ZK_DISCOVERY))
-            ZookeeperDiscoverySpiTest.reconnectClientNodes(log, clients, disconnectedC, false);
-        else
-            fail("Reconnect is not supported");
     }
 
     /**

@@ -26,7 +26,6 @@ import org.apache.curator.test.TestingCluster;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteClientReconnectCacheTest;
-import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryTransactionalSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedNodeRestartTest;
@@ -48,8 +47,6 @@ public class ZookeeperDiscoverySpiTestSuite2 extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        IgnitionEx.TEST_ZK = false;
-
         System.setProperty("zookeeper.forceSync", "false");
 
         testingCluster = createTestingCluster(3);
@@ -61,12 +58,12 @@ public class ZookeeperDiscoverySpiTestSuite2 extends TestSuite {
         TestSuite suite = new TestSuite("ZookeeperDiscoverySpi Test Suite");
 
         suite.addTestSuite(ZookeeperDiscoverySuitePreprocessorTest.class);
-        suite.addTestSuite(GridEventConsumeSelfTest.class);
+        //suite.addTestSuite(GridEventConsumeSelfTest.class);
         suite.addTestSuite(IgniteClientReconnectCacheTest.class);
-        suite.addTestSuite(IgniteCachePutRetryAtomicSelfTest.class);
-        suite.addTestSuite(IgniteCachePutRetryTransactionalSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedNodeRestartTest.class);
-        suite.addTestSuite(GridCacheReplicatedNodeRestartSelfTest.class);
+//        suite.addTestSuite(IgniteCachePutRetryAtomicSelfTest.class);
+//        suite.addTestSuite(IgniteCachePutRetryTransactionalSelfTest.class);
+//        suite.addTestSuite(GridCachePartitionedNodeRestartTest.class);
+//        suite.addTestSuite(GridCacheReplicatedNodeRestartSelfTest.class);
 
         return suite;
     }

@@ -357,8 +357,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         System.setProperty(ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_TIMEOUT, "1000");
-
-        IgnitionEx.TEST_ZK = false;
     }
 
     /**
