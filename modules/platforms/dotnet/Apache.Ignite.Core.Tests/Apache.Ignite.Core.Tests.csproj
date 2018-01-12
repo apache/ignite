@@ -492,7 +492,7 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   
   <Target Name="AfterBuild">
-    <Copy SourceFiles="$(SolutionDir)Apache.Ignite\bin\$(ConfigurationName)\Apache.Ignite.exe*" DestinationFolder="$(ProjectDir)$(OutDir)" SkipUnchangedFiles="false" />
+    <Copy SourceFiles="$(SolutionDir)Apache.Ignite\bin\$(ConfigurationName)\Apache.Ignite.exe;$(SolutionDir)Apache.Ignite\bin\$(ConfigurationName)\Apache.Ignite.exe.config" DestinationFolder="$(ProjectDir)$(OutDir)" SkipUnchangedFiles="false" />
   </Target>
 
   
