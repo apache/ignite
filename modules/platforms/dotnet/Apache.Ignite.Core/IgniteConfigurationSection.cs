@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core
         {
             IgniteArgumentCheck.NotNull(reader, "reader");
 
-            IgniteConfiguration = IgniteConfigurationXmlSerializer.Deserialize(reader);
+            IgniteConfiguration = IgniteConfigurationXmlSerializer.Deserialize<IgniteConfiguration>(reader);
         }
 
         /// <summary>

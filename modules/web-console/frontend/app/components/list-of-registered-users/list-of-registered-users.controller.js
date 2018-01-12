@@ -91,7 +91,11 @@ export default class IgniteListOfRegisteredUsersCtrl {
             user.adminChanging = true;
 
             AdminData.toggleAdmin(user)
-                .finally(() => user.adminChanging = false);
+                .finally(() => {
+                    $ctrl._updateSelected();
+
+                    user.adminChanging = false;
+                });
         };
 
         const showActivities = () => {
@@ -259,10 +263,6 @@ export default class IgniteListOfRegisteredUsersCtrl {
             this.gridApi.grid.refreshRows()
                 .then(() => this.selected.length && this._updateSelected());
         }
-    }
-
-    exportCsv() {
-        this.gridApi.exporter.csvExport('visible', 'visible');
     }
 
     groupByUser() {

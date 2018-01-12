@@ -384,8 +384,8 @@ namespace Apache.Ignite.Core.Impl.Services
 
             var platform = GetServiceDescriptors().Cast<ServiceDescriptor>().Single(x => x.Name == name).Platform;
 
-            return new ServiceProxy<T>((method, args) =>
-                InvokeProxyMethod(javaProxy, method, args, platform)).GetTransparentProxy();
+            return ServiceProxyFactory<T>.CreateProxy((method, args) =>
+                InvokeProxyMethod(javaProxy, method, args, platform));
         }
 
         /// <summary>

@@ -260,7 +260,8 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
             pstmt.executeBatch();
 
             fail("BatchUpdateException must be thrown");
-        } catch(BatchUpdateException e) {
+        }
+        catch(BatchUpdateException e) {
             int [] updCnts = e.getUpdateCounts();
 
             assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
@@ -268,7 +269,7 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
             for (int i = 0; i < BATCH_SIZE; ++i)
                 assertEquals("Invalid update count",1, updCnts[i]);
 
-            if (!e.getMessage().contains("Failed to execute SQL query.")) {
+            if (!e.getMessage().contains("Value conversion failed")) {
                 log.error("Invalid exception: ", e);
 
                 fail();

@@ -143,7 +143,7 @@ class SplitDataGenerator<V extends Vector> {
 
         DecisionTreeModel mdl = trainer.train(new MatrixColumnDecisionTreeTrainerInput(m, catFeaturesInfo));
 
-        byRegion.keySet().forEach(k -> mdl.predict(byRegion.get(k).get(0).features()));
+        byRegion.keySet().forEach(k -> mdl.apply(byRegion.get(k).get(0).features()));
     }
 
     /**

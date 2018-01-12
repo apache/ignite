@@ -24,7 +24,6 @@ namespace Apache.Ignite.Core
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
-    using System.Text;
     using System.Xml;
     using System.Xml.Serialization;
     using Apache.Ignite.Core.Binary;
@@ -1153,9 +1152,6 @@ namespace Apache.Ignite.Core
         /// <param name="rootElementName">Name of the root element.</param>
         public void ToXml(XmlWriter writer, string rootElementName)
         {
-            IgniteArgumentCheck.NotNull(writer, "writer");
-            IgniteArgumentCheck.NotNullOrEmpty(rootElementName, "rootElementName");
-
             IgniteConfigurationXmlSerializer.Serialize(this, writer, rootElementName);
         }
 
@@ -1164,19 +1160,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         public string ToXml()
         {
-            var sb = new StringBuilder();
-
-            var settings = new XmlWriterSettings
-            {
-                Indent = true
-            };
-
-            using (var xmlWriter = XmlWriter.Create(sb, settings))
-            {
-                ToXml(xmlWriter, "igniteConfiguration");
-            }
-
-            return sb.ToString();
+            return IgniteConfigurationXmlSerializer.Serialize(this, "igniteConfiguration");
         }
 
         /// <summary>
@@ -1186,9 +1170,7 @@ namespace Apache.Ignite.Core
         /// <returns>Deserialized instance.</returns>
         public static IgniteConfiguration FromXml(XmlReader reader)
         {
-            IgniteArgumentCheck.NotNull(reader, "reader");
-
-            return IgniteConfigurationXmlSerializer.Deserialize(reader);
+            return IgniteConfigurationXmlSerializer.Deserialize<IgniteConfiguration>(reader);
         }
 
         /// <summary>
@@ -1196,20 +1178,9 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="xml">Xml string.</param>
         /// <returns>Deserialized instance.</returns>
-        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
-        [SuppressMessage("Microsoft.Usage", "CA2202: Do not call Dispose more than one time on an object")]
         public static IgniteConfiguration FromXml(string xml)
         {
-            IgniteArgumentCheck.NotNullOrEmpty(xml, "xml");
-
-            using (var stringReader = new StringReader(xml))
-            using (var xmlReader = XmlReader.Create(stringReader))
-            {
-                // Skip XML header.
-                xmlReader.MoveToContent();
-
-                return FromXml(xmlReader);
-            }
+            return IgniteConfigurationXmlSerializer.Deserialize<IgniteConfiguration>(xml);
         }
 
         /// <summary>
