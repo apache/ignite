@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -1219,6 +1220,19 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                 if (delegate0 != null)
                     delegate0.updateInitialCounter(cntr);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setRowCacheCleaner(GridQueryRowCacheCleaner rowCacheCleaner) {
+            try {
+                CacheDataStore delegate0 = init0(true);
+
+                if (delegate0 != null)
+                    delegate0.setRowCacheCleaner(rowCacheCleaner);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

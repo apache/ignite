@@ -20,17 +20,18 @@ package org.apache.ignite.ml.nn;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
 
 /**
  * Interface for classes containing input parameters for LocalBatchTrainer.
  */
 public interface LocalBatchTrainerInput<M extends Model<Matrix, Matrix>> {
     /**
-     * Get next batch in form of matrix of inputs and matrix of outputs.
+     * Get supplier of next batch in form of matrix of inputs and matrix of outputs.
      *
-     * @return Next batch.
+     * @return Supplier of next batch.
      */
-    IgniteBiTuple<Matrix, Matrix> getBatch();
+    IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier();
 
     /**
      * Model to train.

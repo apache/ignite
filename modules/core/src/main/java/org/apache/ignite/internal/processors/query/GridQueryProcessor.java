@@ -876,7 +876,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         try {
-            onCacheStop0(cctx.name(), removeIdx);
+            onCacheStop0(cctx, removeIdx);
         }
         finally {
             busyLock.leaveBusy();
@@ -1626,7 +1626,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 cacheNames.add(CU.mask(cacheName));
             }
             catch (IgniteCheckedException | RuntimeException e) {
-                onCacheStop0(cacheName, true);
+                onCacheStop0(cctx, true);
 
                 throw e;
             }
@@ -1637,12 +1637,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * Unregister cache.<p>
      * Use with {@link #busyLock} where appropriate.
      *
-     * @param cacheName Cache name.
-     * @param rmvIdx If {@code true}, will remove index.
+     * @param cctx Cache context.
+     * @param destroy Destroy flag.
      */
-    public void onCacheStop0(String cacheName, boolean rmvIdx) {
+    public void onCacheStop0(GridCacheContext cctx, boolean destroy) {
         if (idx == null)
             return;
+
+        String cacheName = cctx.name();
 
         synchronized (stateMux) {
             // Clear types.
@@ -1678,7 +1680,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             // Notify indexing.
             try {
-                idx.unregisterCache(cacheName, rmvIdx);
+                idx.unregisterCache(cctx, destroy);
             }
             catch (Exception e) {
                 U.error(log, "Failed to clear indexing on cache unregister (will ignore): " + cacheName, e);
@@ -2422,7 +2424,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         for (QueryField col : cols) {
             try {
                 props.add(new QueryBinaryProperty(ctx, col.name(), null, Class.forName(col.typeName()),
-                    false, null, !col.isNullable()));
+                    false, null, !col.isNullable(), null));
             }
             catch (ClassNotFoundException e) {
                 throw new SchemaOperationException("Class not found for new property: " + col.typeName());
