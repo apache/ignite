@@ -188,6 +188,9 @@ public class ZookeeperDiscoveryImpl {
     /** */
     private final AtomicReference<ZkCommunicationErrorProcessFuture> commErrProcFut = new AtomicReference<>();
 
+    /** */
+    private long prevSavedEvtsTopVer;
+
     /**
      * @param spi Discovery SPI.
      * @param igniteInstanceName Instance name.
@@ -2058,8 +2061,19 @@ public class ZookeeperDiscoveryImpl {
 
         long time = System.currentTimeMillis() - start;
 
-        if (log.isInfoEnabled()) {
-            log.info("Discovery coordinator saved new topology events [topVer=" + rtState.evtsData.topVer +
+        if (prevSavedEvtsTopVer != rtState.evtsData.topVer) {
+            if (log.isInfoEnabled()) {
+                log.info("Discovery coordinator saved new topology events [topVer=" + rtState.evtsData.topVer +
+                    ", size=" + evtsBytes.length +
+                    ", evts=" + rtState.evtsData.evts.size() +
+                    ", lastEvt=" + rtState.evtsData.evtIdGen +
+                    ", saveTime=" + time + ']');
+            }
+
+            prevSavedEvtsTopVer = rtState.evtsData.topVer;
+        }
+        else if (log.isDebugEnabled()) {
+            log.debug("Discovery coordinator saved new topology events [topVer=" + rtState.evtsData.topVer +
                 ", size=" + evtsBytes.length +
                 ", evts=" + rtState.evtsData.evts.size() +
                 ", lastEvt=" + rtState.evtsData.evtIdGen +
