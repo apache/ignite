@@ -93,7 +93,7 @@ public class MLPGroupTrainerTest extends GridCommonAbstractTest {
             }
         }
 
-        int totalCnt = 100;
+        int totalCnt = 20;
         int failCnt = 0;
         double maxFailRatio = 0.3;
         MLPGroupUpdateTrainer<RPropParameterUpdate> trainer = MLPGroupUpdateTrainer.getDefault(ignite).
@@ -104,7 +104,7 @@ public class MLPGroupTrainerTest extends GridCommonAbstractTest {
         for (int i = 0; i < totalCnt; i++) {
 
             MLPGroupUpdateTrainerCacheInput trainerInput = new MLPGroupUpdateTrainerCacheInput(conf,
-                new RandomInitializer(rnd), 6, cache, 4);
+                new RandomInitializer(new Random(123L)), 6, cache, 4, new Random(123L));
 
             MultilayerPerceptron mlp = trainer.train(trainerInput);
 

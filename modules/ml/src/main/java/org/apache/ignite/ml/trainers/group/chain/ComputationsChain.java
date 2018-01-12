@@ -229,7 +229,7 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> {
     }
 
     /**
-     * Combine two this chain to other: feed this chain as input to other, pass same context as second argument to both chains
+     * Combine this chain with other: feed this chain as input to other, pass same context as second argument to both chains
      * process method.
      *
      * @param next Next chain.

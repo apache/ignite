@@ -227,8 +227,7 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
         UUID uuid = ctx.trainingUUID();
 
         return () -> {
-            MLPGroupUpdateTrainingData<U> data = MLPGroupUpdateTrainerDataCache
-                .getOrCreate(Ignition.localIgnite()).get(uuid);
+            MLPGroupUpdateTrainingData<U> data = MLPGroupUpdateTrainerDataCache.getOrCreate(Ignition.localIgnite()).get(uuid);
             return new MLPGroupUpdateTrainingContext<>(data, prevUpdate);
         };
     }

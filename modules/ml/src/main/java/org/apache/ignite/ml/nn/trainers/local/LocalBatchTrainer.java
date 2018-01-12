@@ -83,7 +83,7 @@ public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P>
         M mdl = data.mdl();
         double err;
 
-        ParameterUpdateCalculator<? super M, P> updater = updaterSupplier.get();
+        ParameterUpdateCalculator<M, P> updater = updaterSupplier.get();
 
         P updaterParams = updater.init(mdl, loss);
 
