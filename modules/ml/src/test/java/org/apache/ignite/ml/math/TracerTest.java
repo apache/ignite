@@ -81,9 +81,7 @@ public class TracerTest {
         return mtx;
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testAsciiVectorTracer() {
         Vector vec = makeRandomVector(20);
@@ -93,9 +91,7 @@ public class TracerTest {
         Tracer.showAscii(vec, "%.3g");
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testAsciiMatrixTracer() {
         Matrix mtx = makeRandomMatrix(10, 10);
@@ -105,9 +101,7 @@ public class TracerTest {
         Tracer.showAscii(mtx, "%.3g");
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     @Ignore("Can not run on TeamCity yet, see IGNITE-5725")
     public void testHtmlVectorTracer() throws IOException {
@@ -120,12 +114,10 @@ public class TracerTest {
         Tracer.showHtml(vec1, COLOR_MAPPER);
 
         // Default color mapping with sorted vector.
-        Tracer.showHtml(vec1.sort());
+        Tracer.showHtml(vec1.copy().sort());
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     @Ignore("Can not run on TeamCity yet, see IGNITE-5725")
     public void testHtmlMatrixTracer() throws IOException {
@@ -141,6 +133,38 @@ public class TracerTest {
         mtx2.assign((x, y) -> (double)(x * y) / MAX);
 
         Tracer.showHtml(mtx2);
+    }
+
+    /** */
+    @Test
+    public void testHtmlVectorTracerWithAsciiFallback() throws IOException {
+        Vector vec1 = makeRandomVector(1000);
+
+        // Default color mapping.
+        Tracer.showHtml(vec1, true);
+
+        // Custom color mapping.
+        Tracer.showHtml(vec1, COLOR_MAPPER, true);
+
+        // Default color mapping with sorted vector.
+        Tracer.showHtml(vec1.copy().sort(), true);
+    }
+
+    /** */
+    @Test
+    public void testHtmlMatrixTracerWithAsciiFallback() throws IOException {
+        Matrix mtx1 = makeRandomMatrix(100, 100);
+
+        // Custom color mapping.
+        Tracer.showHtml(mtx1, COLOR_MAPPER, true);
+
+        Matrix mtx2 = new DenseLocalOnHeapMatrix(100, 100);
+
+        double MAX = (double)(mtx2.rowSize() * mtx2.columnSize());
+
+        mtx2.assign((x, y) -> (double)(x * y) / MAX);
+
+        Tracer.showHtml(mtx2, true);
     }
 
     /** */
