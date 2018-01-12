@@ -69,7 +69,7 @@ public class SqlKeyword {
     /** Keyword: CREATE. */
     public static final String CREATE = "CREATE";
 
-    /** Data region name. */
+    /** Keywords: DATA_REGION. */
     public static final String DATA_REGION = "DATA_REGION";
 
     /** Keyword: DATE. */
