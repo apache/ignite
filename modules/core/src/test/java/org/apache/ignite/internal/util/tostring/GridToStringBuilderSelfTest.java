@@ -161,6 +161,62 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         for (Object val : vals)
             testArr(val, limit);
 
+        byte[] byteArr = new byte[1];
+        byteArr[0] = 1;
+        assertEquals(Arrays.toString(byteArr), GridToStringBuilder.arrayToString(byteArr.getClass(), byteArr));
+        byteArr = Arrays.copyOf(byteArr, 101);
+        assertTrue("Can't find \"... and 1 more\" in overflowed array string!",
+            GridToStringBuilder.arrayToString(byteArr.getClass(), byteArr).contains("... and 1 more"));
+
+        boolean[] boolArr = new boolean[1];
+        boolArr[0] = true;
+        assertEquals(Arrays.toString(boolArr), GridToStringBuilder.arrayToString(boolArr.getClass(), boolArr));
+        boolArr = Arrays.copyOf(boolArr, 101);
+        assertTrue("Can't find \"... and 1 more\" in overflowed array string!",
+            GridToStringBuilder.arrayToString(boolArr.getClass(), boolArr).contains("... and 1 more"));
+
+        short[] shortArr = new short[1];
+        shortArr[0] = 100;
+        assertEquals(Arrays.toString(shortArr), GridToStringBuilder.arrayToString(shortArr.getClass(), shortArr));
+        shortArr = Arrays.copyOf(shortArr, 101);
+        assertTrue("Can't find \"... and 1 more\" in overflowed array string!",
+            GridToStringBuilder.arrayToString(shortArr.getClass(), shortArr).contains("... and 1 more"));
+
+        int[] intArr = new int[1];
+        intArr[0] = 10000;
+        assertEquals(Arrays.toString(intArr), GridToStringBuilder.arrayToString(intArr.getClass(), intArr));
+        intArr = Arrays.copyOf(intArr, 101);
+        assertTrue("Can't find \"... and 1 more\" in overflowed array string!",
+            GridToStringBuilder.arrayToString(intArr.getClass(), intArr).contains("... and 1 more"));
+
+        long[] longArr = new long[1];
+        longArr[0] = 10000000;
+        assertEquals(Arrays.toString(longArr), GridToStringBuilder.arrayToString(longArr.getClass(), longArr));
+        longArr = Arrays.copyOf(longArr, 101);
+        assertTrue("Can't find \"... and 1 more\" in overflowed array string!",
+            GridToStringBuilder.arrayToString(longArr.getClass(), longArr).contains("... and 1 more"));
+
+        float[] floatArr = new float[1];
+        floatArr[0] = 1.f;
+        assertEquals(Arrays.toString(floatArr), GridToStringBuilder.arrayToString(floatArr.getClass(), floatArr));
+        floatArr = Arrays.copyOf(floatArr, 101);
+        assertTrue("Can't find \"... and 1 more\" in overflowed array string!",
+            GridToStringBuilder.arrayToString(floatArr.getClass(), floatArr).contains("... and 1 more"));
+
+        double[] doubleArr = new double[1];
+        doubleArr[0] = 1.;
+        assertEquals(Arrays.toString(doubleArr), GridToStringBuilder.arrayToString(doubleArr.getClass(), doubleArr));
+        doubleArr = Arrays.copyOf(doubleArr, 101);
+        assertTrue("Can't find \"... and 1 more\" in overflowed array string!",
+            GridToStringBuilder.arrayToString(doubleArr.getClass(), doubleArr).contains("... and 1 more"));
+
+        char[] charArr = new char[1];
+        charArr[0] = 'a';
+        assertEquals(Arrays.toString(charArr), GridToStringBuilder.arrayToString(charArr.getClass(), charArr));
+        charArr = Arrays.copyOf(charArr, 101);
+        assertTrue("Can't find \"... and 1 more\" in overflowed array string!",
+            GridToStringBuilder.arrayToString(charArr.getClass(), charArr).contains("... and 1 more"));
+
         Map<String, String> strMap = new TreeMap<>();
         List<String> strList = new ArrayList<>(limit+1);
 
