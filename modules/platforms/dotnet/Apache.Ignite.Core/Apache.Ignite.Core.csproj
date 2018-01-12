@@ -13,7 +13,7 @@
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition="$(MSBuildBinPath.ToLower().Contains('mono'))">
-    <NoWarn>1580,1574,618,1635,675</NoWarn>
+    <NoWarn>1580,1574,618,1635,675,414</NoWarn>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
