@@ -204,11 +204,30 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
     }
 
     /**
-     * Test coordinator node migration.
+     * Test server restart (non-coordinator).
      *
      * @throws Exception If failed.
      */
-    public void testCoordinatorMigration() throws Exception {
+    public void testServerRestartNonCoordinator() throws Exception {
+        checkNodeRestart(false);
+    }
+
+    /**
+     * Test server restart (coordinator).
+     *
+     * @throws Exception If failed.
+     */
+    public void _testServerRestartCoordinator() throws Exception {
+        checkNodeRestart(true);
+    }
+
+    /**
+     * Test coordinator node migration.
+     *
+     * @param failCrd Whether to fail coordinator nodes.
+     * @throws Exception If failed.
+     */
+    public void checkNodeRestart(boolean failCrd) throws Exception {
         startGrid(config(SRV_1, false, false));
         startGrid(config(SRV_2, false, false));
 
@@ -227,9 +246,15 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
                 boolean firstOrSecond = true;
 
                 while (restartCnt.get() < restarts) {
-                    String victimName = firstOrSecond ? SRV_1 : SRV_2;
+                    String victimName;
 
-                    firstOrSecond = !firstOrSecond;
+                    if (failCrd) {
+                        victimName = firstOrSecond ? SRV_1 : SRV_2;
+
+                        firstOrSecond = !firstOrSecond;
+                    }
+                    else
+                        victimName = SRV_2;
 
                     try {
                         stopGrid(victimName);
@@ -241,14 +266,35 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
                         throw new RuntimeException();
                     }
 
+                    restartCnt.incrementAndGet();
+
                     X.println("Finished restart: " + restartCnt.get());
 
-                    restartCnt.incrementAndGet();
+                    WalStateManager.dumpDisco();
                 }
             }
         });
 
         t.start();
+
+        Thread watchDog = new Thread(new Runnable() {
+            @Override public void run() {
+                try {
+                    while (true) {
+                        Thread.sleep(5000);
+
+                        for (WalStateManager mgr : WalStateManager.MGRS) {
+                            System.out.println("MGR DUMP " + mgr.cctx.igniteInstanceName() + " " + mgr.ress + " " + mgr.procs);
+                        }
+                    }
+                }
+                catch (Exception e) {
+
+                }
+            }
+        });
+
+        watchDog.start();
 
         boolean state = true;
 

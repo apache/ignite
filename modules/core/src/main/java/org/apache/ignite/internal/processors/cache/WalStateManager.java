@@ -24,11 +24,14 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -64,6 +67,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListSet;
 
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_WAL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 
@@ -86,10 +91,10 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     private final Map<UUID, GridFutureAdapter<Boolean>> userFuts = new HashMap<>();
 
     /** Finished results awaiting discovery finish message. */
-    private final Map<UUID, WalStateResult> ress = new HashMap<>();
+    public final Map<UUID, WalStateResult> ress = new HashMap<>();
 
     /** Active distributed processes. */
-    private final Map<UUID, WalStateDistributedProcess> procs = new HashMap<>();
+    public final Map<UUID, WalStateDistributedProcess> procs = new HashMap<>();
 
     /** Pending results created on cache processor start based on available discovery data. */
     private final Collection<WalStateResult> initialRess = new LinkedList<>();
@@ -117,7 +122,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
     private final LinkedList<Object> allDisco = new LinkedList<>();
 
-    private static final Set<WalStateManager> MGRS = new GridConcurrentHashSet<>();
+    public static final Set<WalStateManager> MGRS = new GridConcurrentHashSet<>();
 
     /**
      * Constructor.
@@ -557,8 +562,10 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
                 Collection<UUID> srvNodeIds = new ArrayList<>(srvNodes.size());
 
-                for (ClusterNode srvNode : srvNodes)
-                    srvNodeIds.add(srvNode.id());
+                for (ClusterNode srvNode : srvNodes) {
+                    if (cctx.discovery().alive(srvNode))
+                        srvNodeIds.add(srvNode.id());
+                }
 
                 WalStateDistributedProcess proc = new WalStateDistributedProcess(res.message(), srvNodeIds);
 
@@ -741,22 +748,37 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     /**
      * Handle node leave event.
      *
-     * @param node Node that has left the grid.
+     * @param nodeId Node ID.
      */
-    public void onNodeLeft(ClusterNode node) {
+    public void onNodeLeft(UUID nodeId) {
         if (!srv)
             return;
 
         synchronized (mux) {
-            // If coordinator is not initialized, then no local result was processed so far, safe to exit.
-            if (crdNode == null)
-                return;
+            if (crdNode == null) {
+                assert ress.isEmpty();
+                assert procs.isEmpty();
 
-            if (F.eq(crdNode.id(), node.id())) {
+                return;
+            }
+
+            if (F.eq(crdNode.id(), nodeId)) {
+                // Coordinator exited, re-send to new, or initialize new distirbuted processes.
                 crdNode = null;
 
                 for (WalStateResult res : ress.values())
                     onCompletedLocally(res);
+            }
+            else if (F.eq(cctx.localNodeId(), crdNode.id())) {
+                // Notify distributed processes on node leave.
+                for (Map.Entry<UUID, WalStateDistributedProcess> procEntry : procs.entrySet()) {
+                    UUID opId = procEntry.getKey();
+                    WalStateDistributedProcess proc = procEntry.getValue();
+
+                    proc.onNodeLeft(nodeId);
+
+                    sendFinishMessageIfNeeded(proc);
+                }
             }
         }
     }

@@ -363,7 +363,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else if (task instanceof WalStateNodeLeaveExchangeTask) {
             WalStateNodeLeaveExchangeTask task0 = (WalStateNodeLeaveExchangeTask)task;
 
-            sharedCtx.walState().onNodeLeft(task0.node());
+            sharedCtx.walState().onNodeLeft(task0.node().id());
         }
         else
             U.warn(log, "Unsupported custom exchange task: " + task);
