@@ -25,27 +25,27 @@ public class SqlLexerLookAheadToken implements SqlLexerToken {
     private final String sql;
 
     /** Token. */
-    private final String tok;
+    private final String token;
 
     /** Token position. */
-    private final int tokPos;
+    private final int tokenPos;
 
     /** Token type. */
-    private final SqlLexerTokenType tokTyp;
+    private final SqlLexerTokenType tokenTyp;
 
     /**
      * Constructor.
      *
      * @param sql Original SQL.
-     * @param tok Token.
-     * @param tokPos Token position.
-     * @param tokTyp Token type.
+     * @param token Token.
+     * @param tokenPos Token position.
+     * @param tokenTyp Token type.
      */
-    public SqlLexerLookAheadToken(String sql, String tok, int tokPos, SqlLexerTokenType tokTyp) {
+    public SqlLexerLookAheadToken(String sql, String token, int tokenPos, SqlLexerTokenType tokenTyp) {
         this.sql = sql;
-        this.tok = tok;
-        this.tokPos = tokPos;
-        this.tokTyp = tokTyp;
+        this.token = token;
+        this.tokenPos = tokenPos;
+        this.tokenTyp = tokenTyp;
     }
 
     /** {@inheritDoc} */
@@ -55,21 +55,21 @@ public class SqlLexerLookAheadToken implements SqlLexerToken {
 
     /** {@inheritDoc} */
     @Override public String token() {
-        return tok;
+        return token;
     }
 
     /** {@inheritDoc} */
     @Override public char tokenFirstChar() {
-        return tok.charAt(0);
+        return token.charAt(0);
     }
 
     /** {@inheritDoc} */
     @Override public int tokenPosition() {
-        return tokPos;
+        return tokenPos;
     }
 
     /** {@inheritDoc} */
     @Override public SqlLexerTokenType tokenType() {
-        return tokTyp;
+        return tokenTyp;
     }
 }

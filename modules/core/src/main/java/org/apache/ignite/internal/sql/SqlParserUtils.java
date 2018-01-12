@@ -19,9 +19,9 @@ package org.apache.ignite.internal.sql;
 
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.sql.command.SqlQualifiedName;
+import org.apache.ignite.internal.util.GridArrays;
 import org.apache.ignite.internal.util.typedef.F;
 
-import java.util.Arrays;
 import java.util.Set;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.EXISTS;
@@ -91,7 +91,7 @@ public class SqlParserUtils {
             }
         }
 
-        throw errorUnexpectedToken0(lex, concatArrays(new String[] { COMMA.asString(), PARENTHESIS_RIGHT.asString() }, additionalExpTokens));
+        throw errorUnexpectedToken0(lex, GridArrays.concatArrays(new String[] { COMMA.asString(), PARENTHESIS_RIGHT.asString() }, additionalExpTokens));
     }
 
     /**
@@ -359,21 +359,8 @@ public class SqlParserUtils {
 
         if (F.isEmpty(expTokens))
             return errorUnexpectedToken0(token, firstExpToken);
-        else {
-            String[] expTokens0 = new String[expTokens.length + 1];
-
-            expTokens0[0] = firstExpToken;
-
-            System.arraycopy(expTokens, 0, expTokens0, 1, expTokens.length);
-
-            throw errorUnexpectedToken0(token, expTokens0);
-        }
-    }
-
-    public static <T> T[] concatArrays(T[] a, T[] b) {
-        T[] result = Arrays.copyOf(a, a.length + b.length);
-        System.arraycopy(b, 0, result, a.length, b.length);
-        return result;
+        else
+            throw errorUnexpectedToken0(token, GridArrays.insert(expTokens, 0, firstExpToken));
     }
 
     /**
@@ -410,6 +397,12 @@ public class SqlParserUtils {
         throw error(token, msg.toString());
     }
 
+    /**
+     * Parses a string specified with or without quotes.
+     *
+     * @param lex The lexer.
+     * @return The parsed string.
+     */
     public static String parseString(SqlLexer lex) {
         if (lex.shift() &&
             (lex.tokenType() == SqlLexerTokenType.DEFAULT || lex.tokenType() == SqlLexerTokenType.QUOTED))
@@ -418,6 +411,14 @@ public class SqlParserUtils {
         throw errorUnexpectedToken(lex, "[string]");
     }
 
+    /**
+     * Takes a parameter name from the next token, checks that the parameter is not yet in {@code parsedParams}
+     * set and skips over a equals sign, if it is specified.
+     *
+     * @param lex The lexer.
+     * @param parsedParams The set of already parsed parameters (for duplicate checking).
+     * @return {@code true}, if there was equals sign specified after the parameter name, {@code false} otherwise.
+     */
     public static boolean checkAndSkipParamNameAndOptEquals(SqlLexer lex, Set<String> parsedParams) {
         if (!lex.shift())
             throw error(lex, "End of command encountered");
@@ -430,6 +431,14 @@ public class SqlParserUtils {
         return skipOptionalToken(lex, SqlLexerTokenType.EQUALS);
     }
 
+    /**
+     * Parses enum value. Letter case is ignored (by converting to the upper case).
+     *
+     * @param lex The lexer.
+     * @param enumCls Enum class to take allowed values from.
+     * @param <T> The enum class.
+     * @return The parsed enum value.
+     */
     public static <T extends Enum<T>> T parseEnum(SqlLexer lex, Class<T> enumCls) {
         if (!lex.shift())
             throw errorUnexpectedToken0(lex, enumValuesList(enumCls));
@@ -442,6 +451,11 @@ public class SqlParserUtils {
         }
     }
 
+    /**
+     * Returns list of enum values converted to strings.
+     *
+     * @return List of enum values converted to strings.
+     */
     private static <E extends Enum<E>> String[] enumValuesList(Class<E> enumCls) {
         E[] enumVals = enumCls.getEnumConstants();
         String[] strValues = new String[enumVals.length];
@@ -452,7 +466,24 @@ public class SqlParserUtils {
         return strValues;
     }
 
-    public static Boolean tryParseBoolean(SqlLexer lex, boolean hasEqSign) {
+    /**
+     * Tries to parse a boolean parameter value.
+     *
+     * <p>The boolean value can be specified using one of 3 formats:
+     *
+     * <ul>
+     *     <li>parameter name only</li>
+     *     <li>name&lt;space&gt;value</li>
+     *     <li>name=value</li>
+     * </ul>
+     *
+     * <p>By the time of calling this method, the parameter name and optional equals sign shall be already parsed.
+     *
+     * @param lex The lexer.
+     * @param hasEqSign The equals sign was specified.
+     * @return The value of the boolean parameter.
+     */
+    public static boolean tryParseBoolean(SqlLexer lex, boolean hasEqSign) {
         Boolean val = matchBooleanValue(lex.lookAhead());
 
         if (val != null) {
@@ -466,6 +497,12 @@ public class SqlParserUtils {
         return true;
     }
 
+    /**
+     * Matches a boolean value in the token.
+     *
+     * @param token The token to parse.
+     * @return The parsed boolean value or null if the value was not recognized.
+     */
     private static Boolean matchBooleanValue(SqlLexerToken token) {
         if (token.tokenType() == SqlLexerTokenType.QUOTED ||
             token.tokenType() == SqlLexerTokenType.DEFAULT) {
