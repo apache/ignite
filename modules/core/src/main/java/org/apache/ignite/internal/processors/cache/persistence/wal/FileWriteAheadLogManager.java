@@ -1906,10 +1906,35 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     while (iter.hasNextX())
                         iter.nextX();
                 }
+
+                RecordSerializer ser = new RecordSerializerFactoryImpl(cctx).createSerializer(segmentSerializerVer);
+
+                ByteBuffer heapBuf = prepareSwitchSegmentRecordBuffer(nextSegment, ser);
+
+                zos.write(heapBuf.array());
             }
             finally {
                 release(new FileWALPointer(nextSegment, 0, 0));
             }
+        }
+
+        /**
+         * @param nextSegment Segment index.
+         * @param ser Record Serializer.
+         */
+        @NotNull private ByteBuffer prepareSwitchSegmentRecordBuffer(long nextSegment, RecordSerializer ser)
+            throws IgniteCheckedException {
+            SwitchSegmentRecord switchRecord = new SwitchSegmentRecord();
+
+            int switchRecordSize = ser.size(switchRecord);
+            switchRecord.size(switchRecordSize);
+
+            switchRecord.position(new FileWALPointer(nextSegment, 0, switchRecordSize));
+
+            ByteBuffer heapBuf = ByteBuffer.allocate(switchRecordSize);
+
+            ser.writeRecord(switchRecord, heapBuf);
+            return heapBuf;
         }
 
         /**
@@ -2244,6 +2269,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          */
         public String getAbsolutePath() {
             return file.getAbsolutePath();
+        }
+
+        /**
+         * @return True if segment is ZIP compressed.
+         */
+        public boolean isCompressed() {
+            return file.getName().endsWith(".zip");
         }
     }
 
