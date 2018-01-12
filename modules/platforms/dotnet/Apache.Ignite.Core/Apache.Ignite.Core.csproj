@@ -274,7 +274,7 @@
     <Compile Include="Common\IgniteFutureCancelledException.cs" />
     <Compile Include="Common\IgniteGuid.cs" />
     <Compile Include="Common\Package-Info.cs" />
-    <Compile Include="Impl\Binary\IO\IBinaryStreamProcessor.cs" />
+    <Compile Include="Impl\Binary\Io\IBinaryStreamProcessor.cs" />
     <Compile Include="Impl\Binary\Metadata\BinaryField.cs" />
     <Compile Include="Impl\Binary\SerializableSerializer.cs" />
     <Compile Include="Impl\Binary\BinaryWriterExtensions.cs" />
@@ -474,8 +474,8 @@
     <Compile Include="Impl\Messaging\MessageListenerHolder.cs" />
     <Compile Include="Impl\Messaging\Messaging.cs" />
     <Compile Include="Impl\MemoryInfo.cs" />
-    <Compile Include="Impl\Binary\IO\IBinaryStream.cs" />
-    <Compile Include="Impl\Binary\IO\BinaryHeapStream.cs" />
+    <Compile Include="Impl\Binary\Io\IBinaryStream.cs" />
+    <Compile Include="Impl\Binary\Io\BinaryHeapStream.cs" />
     <Compile Include="Impl\Binary\IBinaryTypeDescriptor.cs" />
     <Compile Include="Impl\Binary\IBinaryWriteAware.cs" />
     <Compile Include="Impl\Binary\Metadata\IBinaryTypeHandler.cs" />
