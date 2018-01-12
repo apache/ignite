@@ -73,6 +73,9 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     public static final String DFLT_ROOT_PATH = "/apacheIgnite";
 
     /** */
+    public static final long DFLT_JOIN_TIMEOUT = 0;
+
+    /** */
     @GridToStringInclude
     private String zkRootPath = DFLT_ROOT_PATH;
 
@@ -81,7 +84,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     private String zkConnectionString;
 
     /** */
-    private long joinTimeout = 30_000; // TODO ZK
+    private long joinTimeout = DFLT_JOIN_TIMEOUT;
 
     /** */
     @GridToStringInclude

@@ -790,24 +790,32 @@ public class ZookeeperDiscoveryImpl {
         try {
             ZookeeperClient client = rtState.zkClient;
 
-            if (client.exists(zkPaths.aliveNodesDir))
-                return; // This path is created last, assume all others dirs are created.
-
-            if (!client.exists(zkPaths.aliveNodesDir))
+            if (!client.exists(zkPaths.clusterDir)) {
                 createRootPathParents(zkPaths.clusterDir, client);
+
+                client.createIfNeeded(zkPaths.clusterDir, null, PERSISTENT);
+            }
+
+            List<String> createdDirs = client.getChildren(zkPaths.clusterDir);
+
+            String[] requiredDirs = {
+                zkPaths.evtsPath,
+                zkPaths.joinDataDir,
+                zkPaths.customEvtsDir,
+                zkPaths.customEvtsPartsDir,
+                zkPaths.customEvtsAcksDir,
+                zkPaths.aliveNodesDir};
 
             List<String> dirs = new ArrayList<>();
 
-            dirs.add(zkPaths.clusterDir);
-            dirs.add(zkPaths.evtsPath);
-            dirs.add(zkPaths.joinDataDir);
-            dirs.add(zkPaths.customEvtsDir);
-            dirs.add(zkPaths.customEvtsPartsDir);
-            dirs.add(zkPaths.customEvtsAcksDir);
-            dirs.add(zkPaths.aliveNodesDir);
+            for (String dir : requiredDirs) {
+                if (!createdDirs.contains(dir))
+                    dirs.add(dir);
+            }
 
             try {
-                client.createAll(dirs, PERSISTENT);
+                if (!dirs.isEmpty())
+                    client.createAll(dirs, PERSISTENT);
             }
             catch (KeeperException.NodeExistsException e) {
                 if (log.isDebugEnabled())
@@ -1664,6 +1672,11 @@ public class ZookeeperDiscoveryImpl {
            generateBulkJoinEvent(curTop, joinCtx);
    }
 
+    /**
+     * @param curTop Current topology.
+     * @param joinCtx Joined nodes context.
+     * @throws Exception If failed.
+     */
     private void generateBulkJoinEvent(TreeMap<Long, ZookeeperClusterNode> curTop, ZkBulkJoinContext joinCtx)
         throws Exception
     {
@@ -1741,12 +1754,21 @@ public class ZookeeperDiscoveryImpl {
         rtState.evtsData.addEvent(curTop.values(), evtData);
 
         if (log.isInfoEnabled()) {
-            log.info("Generated NODE_JOINED event [" +
-                "nodeCnt=" + nodeCnt +
-                ", dataForJoinedSize=" + dataForJoinedBytes.length +
-                ", dataForJoinedPartCnt=" + dataForJoinedPartCnt +
-                ", addDataTime=" + addDataTime +
-                ", evt=" + evtData + ']');
+            if (nodeCnt > 1) {
+                log.info("Generated NODE_JOINED bulk event [" +
+                    "nodeCnt=" + nodeCnt +
+                    ", dataForJoinedSize=" + dataForJoinedBytes.length +
+                    ", dataForJoinedPartCnt=" + dataForJoinedPartCnt +
+                    ", addDataTime=" + addDataTime +
+                    ", evt=" + evtData + ']');
+            }
+            else {
+                log.info("Generated NODE_JOINED event [" +
+                    "dataForJoinedSize=" + dataForJoinedBytes.length +
+                    ", dataForJoinedPartCnt=" + dataForJoinedPartCnt +
+                    ", addDataTime=" + addDataTime +
+                    ", evt=" + evtData + ']');
+            }
         }
 
         saveAndProcessNewEvents();
@@ -3471,6 +3493,9 @@ public class ZookeeperDiscoveryImpl {
 //                    log.debug("Failed to clean local node's join data on stop: " + e);
 //            }
 //        }
+
+        if (rtState.zkClient.connected())
+            rtState.zkClient.close();
 
         if (clientReconnect && clientReconnectEnabled) {
             assert locNode.isClient() : locNode;

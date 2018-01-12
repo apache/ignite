@@ -2439,11 +2439,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         if (rslvr != null) {
             if (!supportsCommunicationErrorResolve(commSpi))
-                throw new IgniteCheckedException("CommunicationFailureResolver is configured, but communication SPI does not support communication" +
+                throw new IgniteCheckedException("CommunicationFailureResolver is configured, but CommunicationSpi does not support communication" +
                     "problem resolve: " + commSpi.getClass().getName());
 
             if (!supportsCommunicationErrorResolve(discoverySpi))
-                throw new IgniteCheckedException("CommunicationFailureResolver is configured, but discovery SPI does not support communication" +
+                throw new IgniteCheckedException("CommunicationFailureResolver is configured, but DiscoverySpi does not support communication" +
                     "problem resolve: " + discoverySpi.getClass().getName());
         }
         else {
