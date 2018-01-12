@@ -29,6 +29,10 @@ import org.apache.ignite.internal.ClusterNodeMetricsUpdateTest;
 import org.apache.ignite.internal.IgniteClientReconnectCacheTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerAtomicTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLockPartitionOnAffinityRunTxCacheOpTest;
+import org.apache.ignite.internal.processors.cache.datastructures.IgniteClientDataStructuresTest;
+import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedNodeRestartTxSelfTest;
+import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedSequenceApiSelfTest;
+import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedSequenceApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryTransactionalSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicMultiNodeFullApiSelfTest;
@@ -37,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePar
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedAtomicMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedNodeRestartSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicMultiJvmFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedMultiJvmFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryAsyncFailoverAtomicSelfTest;
@@ -94,6 +99,13 @@ public class ZookeeperDiscoverySpiTestSuite2 extends TestSuite {
         suite.addTestSuite(CacheContinuousQueryAsyncFailoverAtomicSelfTest.class);
 
         suite.addTestSuite(IgniteCacheLockPartitionOnAffinityRunTxCacheOpTest.class);
+
+        suite.addTestSuite(GridCachePartitionedNodeRestartTxSelfTest.class);
+        suite.addTestSuite(IgniteClientDataStructuresTest.class);
+        suite.addTestSuite(GridCacheReplicatedSequenceApiSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedSequenceApiSelfTest.class);
+
+        suite.addTestSuite(IgniteCacheReplicatedQuerySelfTest.class);
 
         suite.addTestSuite(GridCacheAtomicMultiJvmFullApiSelfTest.class);
         suite.addTestSuite(GridCachePartitionedMultiJvmFullApiSelfTest.class);
