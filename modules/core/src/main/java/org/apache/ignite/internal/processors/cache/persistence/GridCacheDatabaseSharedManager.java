@@ -3536,6 +3536,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         ) {
             this.cpTs = cpTs;
             this.cpMark = cpMark;
+            this.cpId = cpId;
             this.groupStateLazyStore = new WeakReference<>(new GroupStateLazyStore(cacheGrpStates));
         }
 
