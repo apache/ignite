@@ -97,7 +97,7 @@
   </ItemGroup>  
 	
   <Target Name="AfterBuild">
-    <Copy SourceFiles="@(SqlCeFiles_x86)" DestinationFolder="(TargetDir)x86" SkipUnchangedFiles="true" />
-    <Copy SourceFiles="@(SqlCeFiles_amd64)" DestinationFolder="(TargetDir)amd64" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(SqlCeFiles_x86)" DestinationFolder="$(TargetDir)x86" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(SqlCeFiles_amd64)" DestinationFolder="$(TargetDir)amd64" SkipUnchangedFiles="true" />
   </Target>  
 </Project>
