@@ -40,9 +40,8 @@ public class GridCachePartitionedClientOnlyNoPrimaryFullApiSelfTest extends Grid
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        // TODO ZK
-        // ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-        // cfg.setClientMode(true);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
+        cfg.setClientMode(true);
 
         return cfg;
     }

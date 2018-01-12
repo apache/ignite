@@ -95,15 +95,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
         initStoreStrategy();
 
-        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
-
-        if (cfg.isClientMode() != null && cfg.isClientMode()) {
-            startGridsMultiThreaded(1, cnt);
-
-            startGrid(getTestIgniteInstanceName(0), cfg, null);
-        }
-        else
-            startGrids(cnt);
+        startGrids(cnt);
 
         awaitPartitionMapExchange();
     }

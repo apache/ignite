@@ -596,16 +596,15 @@ public class IgniteConfiguration {
     }
 
     /**
-     * TODO ZK
-     * @return
+     * @return Communication failure resovler.
      */
     public CommunicationFailureResolver getCommunicationFailureResolver() {
         return commFailureRslvr;
     }
 
     /**
-     * TODO ZK
-     * @param commFailureRslvr
+     * @param commFailureRslvr Communication failure resovler.
+     * @return {@code this} instance.
      */
     public IgniteConfiguration setCommunicationFailureResolver(CommunicationFailureResolver commFailureRslvr) {
         this.commFailureRslvr = commFailureRslvr;

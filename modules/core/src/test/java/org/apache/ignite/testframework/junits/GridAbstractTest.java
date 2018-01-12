@@ -157,9 +157,6 @@ public abstract class GridAbstractTest extends TestCase {
     private static final int DFLT_TOP_WAIT_TIMEOUT = 2000;
 
     /** */
-    private static final String ZK_DISCOVERY = "org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi";
-
-    /** */
     private static final transient Map<Class<?>, TestCounters> tests = new ConcurrentHashMap<>();
 
     /** */

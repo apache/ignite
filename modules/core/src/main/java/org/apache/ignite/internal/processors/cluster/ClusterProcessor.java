@@ -432,7 +432,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
             return;
 
         try {
-            ClusterNodeMetrics metrics = U.unmarshal(ctx.config().getMarshaller(), metricsBytes, null);
+            ClusterNodeMetrics metrics = U.unmarshalZip(ctx.config().getMarshaller(), metricsBytes, null);
 
             assert node instanceof IgniteClusterNode : node;
 
@@ -469,7 +469,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
             ClusterNodeMetrics metrics = new ClusterNodeMetrics(locNode.metrics(), locNode.cacheMetrics());
 
             try {
-                byte[] metricsBytes = U.marshal(ctx.config().getMarshaller(), metrics);
+                byte[] metricsBytes = U.zip(U.marshal(ctx.config().getMarshaller(), metrics));
 
                 allNodesMetrics.put(ctx.localNodeId(), metricsBytes);
             }
@@ -503,7 +503,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
             ClusterNodeMetrics metrics = new ClusterNodeMetrics(metricsProvider.metrics(), metricsProvider.cacheMetrics());
 
             try {
-                byte[] metricsBytes = U.marshal(ctx.config().getMarshaller(), metrics);
+                byte[] metricsBytes = U.zip(U.marshal(ctx.config().getMarshaller(), metrics));
 
                 ClusterMetricsUpdateMessage msg = new ClusterMetricsUpdateMessage(metricsBytes);
 
@@ -783,12 +783,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
-            try {
-                ctx.pools().poolForPolicy(GridIoPolicy.SYSTEM_POOL).execute(this);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to submit metrics update task: " + e, e);
-            }
+            ctx.getSystemExecutorService().execute(this);
         }
     }
 }

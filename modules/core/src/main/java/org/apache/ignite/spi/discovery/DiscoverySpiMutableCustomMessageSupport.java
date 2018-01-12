@@ -25,7 +25,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * TODO ZK
+ * This annotation is for all implementations of {@link DiscoverySpi} that support
+ * topology mutable {@link DiscoverySpiCustomMessage}s.
  */
 @Documented
 @Inherited

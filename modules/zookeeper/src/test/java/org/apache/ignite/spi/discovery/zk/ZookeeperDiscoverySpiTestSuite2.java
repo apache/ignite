@@ -25,6 +25,7 @@ import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.ClusterNodeMetricsUpdateTest;
 import org.apache.ignite.internal.IgniteClientReconnectCacheTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryTransactionalSelfTest;
@@ -64,6 +65,7 @@ public class ZookeeperDiscoverySpiTestSuite2 extends TestSuite {
         suite.addTestSuite(IgniteCachePutRetryTransactionalSelfTest.class);
         suite.addTestSuite(GridCachePartitionedNodeRestartTest.class);
         suite.addTestSuite(GridCacheReplicatedNodeRestartSelfTest.class);
+        suite.addTestSuite(ClusterNodeMetricsUpdateTest.class);
 
         return suite;
     }

@@ -26,8 +26,7 @@ public class GridTestClockTimer implements Runnable {
      */
     public GridTestClockTimer() {
         synchronized (IgniteUtils.mux) {
-            // TODO ZK
-            // assert IgniteUtils.gridCnt == 0 : IgniteUtils.gridCnt;
+            assert IgniteUtils.gridCnt == 0 : IgniteUtils.gridCnt;
 
             IgniteUtils.gridCnt++; // To prevent one more timer thread start from IgniteUtils.onGridStart.
         }
