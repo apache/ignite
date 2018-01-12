@@ -42,17 +42,7 @@ public class SqlParserUtils {
      * @return {@code True} if statement is found.
      */
     public static boolean parseIfExists(SqlLexer lex) {
-        SqlLexerToken token = lex.lookAhead();
-
-        if (matchesKeyword(token, IF)) {
-            lex.shift();
-
-            skipKeywords(lex, EXISTS);
-
-            return true;
-        }
-
-        return false;
+        return skipOptionalKeywords(lex, IF, EXISTS);
     }
 
     /**
@@ -62,18 +52,7 @@ public class SqlParserUtils {
      * @return {@code True} if statement is found.
      */
     public static boolean parseIfNotExists(SqlLexer lex) {
-        SqlLexerToken token = lex.lookAhead();
-
-        if (matchesKeyword(token, IF)) {
-            lex.shift();
-
-            skipKeywords(lex, NOT);
-            skipKeywords(lex, EXISTS);
-
-            return true;
-        }
-
-        return false;
+        return skipOptionalKeywords(lex, IF, NOT, EXISTS);
     }
 
     /**
@@ -91,7 +70,8 @@ public class SqlParserUtils {
             }
         }
 
-        throw errorUnexpectedToken0(lex, GridArrays.concatArrays(new String[] { COMMA.asString(), PARENTHESIS_RIGHT.asString() }, additionalExpTokens));
+        throw errorUnexpectedToken0(lex,
+            GridArrays.append(additionalExpTokens, COMMA.asString(), PARENTHESIS_RIGHT.asString()));
     }
 
     /**

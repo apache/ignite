@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 
-import com.google.common.base.Joiner;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
@@ -1385,8 +1384,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
             int code = cause0.statusCode();
 
             assertEquals("Unexpected error code [expected=" + expCode + ", actual=" + code +
-                ", msg=" + cause.getMessage() + "]\n" + Joiner.on("\n").join(e.getStackTrace()),
-                expCode, code);
+                ", msg=" + cause.getMessage() + ']', expCode, code);
 
             if (msg != null)
                 assertEquals("Unexpected error message [expected=" + msg + ", actual=" + cause0.getMessage() + ']',

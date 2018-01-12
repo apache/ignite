@@ -143,7 +143,8 @@ public class SqlCreateIndexCommand implements SqlCommand {
     }
 
     /**
-     * @param val Inline size.
+     * Sets the inline size.
+     * @param val The inline size.
      */
     public void inlineSize(Integer val) {
         inlineSize = val;
@@ -187,7 +188,7 @@ public class SqlCreateIndexCommand implements SqlCommand {
     }
 
     /**
-     * Pasrse index name.
+     * Parse index name.
      *
      * @param lex Lexer.
      * @return Index name.

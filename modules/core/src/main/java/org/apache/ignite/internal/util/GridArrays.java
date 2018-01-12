@@ -54,11 +54,11 @@ public final class GridArrays {
     }
 
     /**
-     * Insert element to the array at the given index. Grows the array if needed.
+     * Inserts element to the array at the given index. Grows the array if needed.
      *
      * @param arr Array.
      * @param idx Index.
-     * @param o Object.
+     * @param o New element.
      * @return The array extended.
      */
     @SuppressWarnings("unchecked")
@@ -77,6 +77,17 @@ public final class GridArrays {
             System.arraycopy(arr, idx, res, idx + 1, arr.length - idx);
 
         return res;
+    }
+
+    /**
+     * Appends elements to the array.
+     *
+     * @param arr The source array.
+     * @param newElems Elements to append.
+     * @return The array extended.
+     */
+    public static <T> T[] append(T[] arr, T... newElems) {
+        return concat(arr, newElems);
     }
 
     /**
@@ -148,7 +159,7 @@ public final class GridArrays {
      * @param <T> Array element type.
      * @return Concatenation of the both arguments.
      */
-    public static <T> T[] concatArrays(T[] a, T[] b) {
+    public static <T> T[] concat(T[] a, T[] b) {
         T[] result = Arrays.copyOf(a, a.length + b.length);
         System.arraycopy(b, 0, result, a.length, b.length);
         return result;

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.sql.command;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * SQL column.
@@ -30,13 +31,13 @@ public class SqlColumn {
     private SqlColumnType typ;
 
     /** Scale. */
-    private Integer scale;
+    private @Nullable Integer scale;
 
     /** Precision. */
-    private Integer precision;
+    private @Nullable Integer precision;
 
     /** Is column nullable. */
-    private Boolean isNullable;
+    private @Nullable Boolean isNullable;
 
     /**
      * Constructs the object.
@@ -53,10 +54,10 @@ public class SqlColumn {
      *
      * @param name Name.
      * @param typ Type.
-     * @param precision Precision.
+     * @param length Precision.
      */
-    public SqlColumn(String name, SqlColumnType typ, Integer precision) {
-        this(name, typ, null, precision, null);
+    public SqlColumn(String name, SqlColumnType typ, @Nullable Integer length) {
+        this(name, typ, null, length, null);
     }
 
     /**
@@ -66,7 +67,7 @@ public class SqlColumn {
      * @param typ Type.
      * @param precision Precision.
      */
-    public SqlColumn(String name, SqlColumnType typ, Integer precision, Boolean isNullable) {
+    public SqlColumn(String name, SqlColumnType typ, @Nullable Integer precision, @Nullable Boolean isNullable) {
         this(name, typ, null, precision, isNullable);
     }
 
@@ -79,7 +80,9 @@ public class SqlColumn {
      * @param scale Scale.
      * @param isNullable Is nullable.
      */
-    public SqlColumn(String name, SqlColumnType typ, Integer scale, Integer precision, Boolean isNullable) {
+    public SqlColumn(String name, SqlColumnType typ, @Nullable Integer scale, @Nullable Integer precision,
+        Boolean isNullable) {
+
         this.name = name;
         this.typ = typ;
         this.scale = scale;
@@ -88,59 +91,83 @@ public class SqlColumn {
     }
 
     /**
-     * @return Name.
+     * Returns column name.
+     * @return The column name.
      */
     public String name() {
         return name;
     }
 
+    /**
+     * Sets the column name.
+     * @param name The column name.
+     */
     public void name(String name) {
         this.name = name;
     }
+
     /**
-     * @return Type.
+     * Returns column type.
+     * @return The column type.
      */
     public SqlColumnType type() {
         return typ;
     }
 
+    /**
+     * Sets the column type.
+     * @param typ The column type.
+     */
     public void typ(SqlColumnType typ) {
         this.typ = typ;
     }
 
     /**
-     * @return Scale.
+     * Returns the scale.
+     * @return The scale.
      */
-    public Integer scale() {
+    public @Nullable Integer scale() {
         return scale;
     }
 
-    public void scale(Integer scale) {
+    /**
+     * Sets the scale.
+     * @param scale The scale.
+     */
+    public void scale(@Nullable Integer scale) {
         this.scale = scale;
     }
 
     /**
-     * @return Precision.
+     * Returns the precision.
+     * @return precision.
      */
-    public Integer precision() {
+    public @Nullable Integer precision() {
         return precision;
     }
 
-    public void precision(Integer precision) {
+    /**
+     * Sets the precision.
+     * @param precision The precision.
+     */
+    public void precision(@Nullable Integer precision) {
         this.precision = precision;
     }
 
     /**
      * Returns true if column is nullable.
-     *
      * @return true if column is nullable.
      */
-    public Boolean isNullable() {
+    public @Nullable Boolean isNullable() {
         return isNullable;
     }
 
-    public void isNullable(boolean isNullable) {
-        this.isNullable = isNullable;
+    /**
+     * Sets the nullable flag.
+     * @param isNullable The nullable flag.
+     */
+    public void isNullable(@Nullable Boolean isNullable) {
+        isNullable = isNullable;
     }
 
     /** {@inheritDoc} */
