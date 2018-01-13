@@ -1142,7 +1142,8 @@ const defineSchema = (mongoose) => {
     const NotificationsSchema = new Schema({
         owner: {type: ObjectId, ref: 'Account'},
         date: Date,
-        message: String
+        message: String,
+        isShown: Boolean
     });
 
     // Define Notifications model.

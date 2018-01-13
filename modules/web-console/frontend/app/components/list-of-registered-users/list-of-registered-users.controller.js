@@ -91,7 +91,11 @@ export default class IgniteListOfRegisteredUsersCtrl {
             user.adminChanging = true;
 
             AdminData.toggleAdmin(user)
-                .finally(() => user.adminChanging = false);
+                .finally(() => {
+                    $ctrl._updateSelected();
+
+                    user.adminChanging = false;
+                });
         };
 
         const showActivities = () => {
