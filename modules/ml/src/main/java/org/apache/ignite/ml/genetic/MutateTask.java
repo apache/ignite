@@ -137,7 +137,7 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
      * @return
      */
     private long selectGene(int k) {
-        if (config.getChromosomeCritiera() == null) {
+        if (config.getChromosomeCriteria() == null) {
             return (selectAnyGene());
         }
         else {
@@ -156,7 +156,7 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
 
         StringBuffer sbSqlClause = new StringBuffer("_val like '");
         sbSqlClause.append("%");
-        sbSqlClause.append(config.getChromosomeCritiera().getCriteria().get(k));
+        sbSqlClause.append(config.getChromosomeCriteria().getCriteria().get(k));
         sbSqlClause.append("%'");
 
         IgniteCache<Long, Gene> cache = ignite.cache(GAGridConstants.GENE_CACHE);

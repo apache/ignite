@@ -43,7 +43,7 @@ public class GAConfiguration {
     private GAGridConstants.SELECTION_METHOD selectionMethod = null;
 
     /** Criteria used to describe a chromosome */
-    private ChromosomeCriteria chromosomeCritiera = null;
+    private ChromosomeCriteria chromosomeCriteria = null;
     /**
      * Percentage of most fit chromosomes to be maintained and utilized to copy into new population.
      *
@@ -118,18 +118,18 @@ public class GAConfiguration {
      *
      * @return ChromosomeCriteria
      */
-    public ChromosomeCriteria getChromosomeCritiera() {
-        return chromosomeCritiera;
+    public ChromosomeCriteria getChromosomeCriteria() {
+        return chromosomeCriteria;
     }
 
     /**
      * set value for ChromosomeCriteria
      *
-     * @param chromosomeCritiera
+     * @param chromosomeCriteria
      */
 
-    public void setChromosomeCritiera(ChromosomeCriteria chromosomeCritiera) {
-        this.chromosomeCritiera = chromosomeCritiera;
+    public void setChromosomeCriteria(ChromosomeCriteria chromosomeCriteria) {
+        this.chromosomeCriteria = chromosomeCriteria;
     }
 
     /**
