@@ -15,17 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.trainers;
+package org.apache.ignite.ml.optimization;
 
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.optimization.util.SparseDistributedMatrixMapReducerTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
-/** Trainer interface. */
-public interface Trainer<M extends Model, T> {
-    /**
-     * Train the model based on provided data.
-     *
-     * @param data Data for training.
-     * @return Trained model.
-     */
-    public M train(T data);
+/**
+ * Test suite for group trainer tests.
+ */
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GradientDescentTest.class,
+    SparseDistributedMatrixMapReducerTest.class
+})
+public class OptimizationTestSuite {
 }
