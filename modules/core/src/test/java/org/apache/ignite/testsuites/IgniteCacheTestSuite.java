@@ -25,6 +25,7 @@ import org.apache.ignite.cache.IgniteWarmupClosureSelfTest;
 import org.apache.ignite.cache.affinity.AffinityClientNodeSelfTest;
 import org.apache.ignite.cache.affinity.AffinityHistoryCleanupTest;
 import org.apache.ignite.cache.affinity.fair.FairAffinityDynamicCacheSelfTest;
+import org.apache.ignite.cache.affinity.fair.FairAffinityFunctionBackupFilterRecheckTest;
 import org.apache.ignite.cache.affinity.fair.FairAffinityFunctionNodesSelfTest;
 import org.apache.ignite.cache.affinity.fair.FairAffinityFunctionSelfTest;
 import org.apache.ignite.cache.affinity.fair.FairAffinityNodesRestart;
@@ -245,6 +246,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(AffinityClientNodeSelfTest.class);
         suite.addTestSuite(LocalAffinityFunctionTest.class);
         suite.addTestSuite(AffinityHistoryCleanupTest.class);
+        suite.addTestSuite(FairAffinityFunctionBackupFilterRecheckTest.class);
 
         // Swap tests.
         suite.addTestSuite(GridCacheSwapPreloadSelfTest.class);
