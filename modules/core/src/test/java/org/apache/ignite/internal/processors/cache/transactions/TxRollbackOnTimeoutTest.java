@@ -36,11 +36,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheObjectsReleaseFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -56,7 +53,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionOptimisticException;
-import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jsr166.LongAdder8;
 
@@ -400,7 +396,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
         final AtomicBoolean stop = new AtomicBoolean();
 
-        final long seed = 1515777127119L; //System.currentTimeMillis();
+        final long seed = System.currentTimeMillis();
 
         final Random r = new Random(seed);
 
@@ -426,8 +422,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
                     Ignite node = nodeId == GRID_CNT || nearCacheEnabled() ? client : grid(nodeId);
 
-                    TransactionConcurrency conc = PESSIMISTIC; // TC_VALS[r.nextInt(TC_VALS.length)];
-                    TransactionIsolation isolation = REPEATABLE_READ; // TI_VALS[r.nextInt(TI_VALS.length)];
+                    TransactionConcurrency conc = TC_VALS[r.nextInt(TC_VALS.length)];
+                    TransactionIsolation isolation = TI_VALS[r.nextInt(TI_VALS.length)];
 
                     int k = r.nextInt(threadsCnt);
 
@@ -448,8 +444,6 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
                         tx.commit();
 
-                        log.info("Transaction is committed");
-
                         cntr1.add(1);
                     }
                     catch (TransactionOptimisticException | InterruptedException e) {
@@ -465,15 +459,13 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                     }
                 }
             }
-        }, 1, "tx-async-thread");
+        }, threadsCnt, "tx-async-thread");
 
         sleep(DURATION);
 
         stop.set(true);
 
-        log.info("Waiting for tx threads to stop...");
-
-        fut.get();
+        fut.get(10_000);
 
         log.info("Tx test stats: started=" + cntr0.sum() +
             ", completed=" + cntr1.sum() +
