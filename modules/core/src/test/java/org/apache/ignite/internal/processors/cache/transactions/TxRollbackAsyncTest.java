@@ -445,12 +445,12 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     public void testSequentialRollback() throws Exception {
         Ignite client = startClient();
 
-        for (int i = 1; i < GRID_CNT; i++)
+        for (int i = 0; i < GRID_CNT; i++)
             testSequentialRollback0(grid(0), grid(i), false);
 
         testSequentialRollback0(grid(0), client, false);
 
-        for (int i = 1; i < GRID_CNT; i++)
+        for (int i = 0; i < GRID_CNT; i++)
             testSequentialRollback0(grid(0), grid(i), true);
 
         testSequentialRollback0(grid(0), client, true);
