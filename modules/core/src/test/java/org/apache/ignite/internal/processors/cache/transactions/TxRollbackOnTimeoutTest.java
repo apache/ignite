@@ -465,7 +465,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
         stop.set(true);
 
-        fut.get();
+        fut.get(10_000);
 
         log.info("Tx test stats: started=" + cntr0.sum() +
             ", completed=" + cntr1.sum() +
