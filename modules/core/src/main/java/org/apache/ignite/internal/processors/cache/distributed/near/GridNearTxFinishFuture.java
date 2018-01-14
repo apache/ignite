@@ -1039,7 +1039,13 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
          */
         void onNearFinishResponse(GridNearTxFinishResponse res) {
             if (res.error() != null)
-                onDone(res.error());
+                if (res.error() instanceof IgniteTxRollbackCheckedException) {
+                    log.warning("A transaction was not finished cleanly", res.error());
+
+                    onDone(tx);
+                }
+                else
+                    onDone(res.error());
             else
                 onDone(tx);
         }

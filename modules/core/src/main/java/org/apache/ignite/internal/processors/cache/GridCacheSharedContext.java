@@ -964,9 +964,10 @@ public class GridCacheSharedContext<K, V> {
 
         final GridNearTxLocal locTx = txMgr.userTx();
 
-        // Rolled back from tx control thread.
+        // {@code True) if rolling back from tx control thread.
         boolean clearThreadMap = locTx == tx;
 
+        // Check if rolling back from thread different from thread of control.
         if (!clearThreadMap) {
             if (!tx.state(MARKED_ROLLBACK) && tx.state() != MARKED_ROLLBACK)
                 throw new IgniteCheckedException("Illegal transaction state for rollback: " + CU.txString(tx));
