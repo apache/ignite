@@ -330,6 +330,9 @@ public class FairAffinityFunction implements AffinityFunction {
         // Per tier pending partitions.
         Map<Integer, Queue<Integer>> pendingParts = new HashMap<>();
 
+        for (int i = 0; i < assignment.size(); i++)
+            assignment.set(i, applyAffinityBackupFilterNodes(assignment.get(i)));
+
         FullAssignmentMap fullMap = new FullAssignmentMap(tiers, assignment, topSnapshot, neighborhoodMap);
 
         for (int tier = 0; tier < tiers; tier++) {
@@ -367,6 +370,22 @@ public class FairAffinityFunction implements AffinityFunction {
         }
 
         return fullMap.assignments;
+    }
+
+    private List<ClusterNode> applyAffinityBackupFilterNodes(List<ClusterNode> nodes) {
+        if(affinityBackupFilter == null || nodes.size() == 1)
+            return nodes;
+
+        ArrayList<ClusterNode> newList = new ArrayList<>(nodes.size());
+
+        newList.add(nodes.get(0));
+
+        for (int i = 1; i < nodes.size(); i++) {
+            if(affinityBackupFilter.apply(nodes.get(i), newList))
+                newList.add(nodes.get(i));
+        }
+
+        return newList;
     }
 
     /** {@inheritDoc} */
@@ -537,8 +556,28 @@ public class FairAffinityFunction implements AffinityFunction {
                 } while (i != idx);
             }
 
+            if (!assigned && (!exclNeighbors || exclNeighbors && allowNeighbors)) {
+                log.warning("Failed to find assignable node for partition. Partition is assigned ignoring affinity backup filter.");
+
+                do {
+                    ClusterNode node = topSnapshot.get(i);
+
+                    if (fullMap.assign(part, tier, node, pendingMap, false, allowNeighbors, true)) {
+                        it.remove();
+
+                        assigned = true;
+                    }
+
+                    i = (i + 1) % topSnapshot.size();
+
+                    if (assigned)
+                        idx = i;
+                } while (i != idx);
+            }
+
             if (!assigned && (!exclNeighbors || exclNeighbors && allowNeighbors))
                 throw new IllegalStateException("Failed to find assignable node for partition.");
+
         }
     }
 
@@ -846,9 +885,33 @@ public class FairAffinityFunction implements AffinityFunction {
             Map<Integer, Queue<Integer>> pendingParts, boolean force,
             boolean allowNeighbors)
         {
+            return assign(part, tier, node, pendingParts,force, allowNeighbors, false);
+        }
+
+        /**
+         * Tries to assign partition to given node on specified tier. If force is false, assignment will succeed
+         * only if this partition is not already assigned to a node. If force is true, then assignment will succeed
+         * only if partition is not assigned to a tier with number less than passed in. Assigned partition from
+         * greater tier will be moved to pending queue.
+         *
+         * @param part Partition to assign.
+         * @param tier Tier number to assign.
+         * @param node Node to move partition to.
+         * @param pendingParts per tier pending partitions map.
+         * @param force Force flag.
+         * @param allowNeighbors Allow neighbors nodes for partition.
+         * @param ignoreFilter assign partition ignoring backup affinity filter.
+         * @return {@code True} if assignment succeeded.
+         */
+        boolean assign(int part,
+            int tier,
+            ClusterNode node,
+            Map<Integer, Queue<Integer>> pendingParts, boolean force,
+            boolean allowNeighbors, boolean ignoreFilter)
+        {
             UUID nodeId = node.id();
 
-            if (isAssignable(part, tier, node, allowNeighbors)) {
+            if (isAssignable(part, tier, node, allowNeighbors, ignoreFilter)) {
                 tierMaps[tier].get(nodeId).add(part);
 
                 fullMap.get(nodeId).add(part);
@@ -929,15 +992,17 @@ public class FairAffinityFunction implements AffinityFunction {
          * @param tier Tier.
          * @param node Node.
          * @param allowNeighbors Allow neighbors.
+         * @param ignoreFilter ignore backup filter
          * @return {@code true} if the partition is assignable to the node.
          */
-        private boolean isAssignable(int part, int tier, final ClusterNode node, boolean allowNeighbors) {
+        private boolean isAssignable(int part, int tier, final ClusterNode node, boolean allowNeighbors,
+            boolean ignoreFilter) {
             if (containsPartition(part, node))
                 return false;
 
             if (exclNeighbors)
                 return allowNeighbors || !neighborsContainPartition(node, part);
-            else if (affinityBackupFilter != null) {
+            else if (!ignoreFilter && affinityBackupFilter != null) {
                 List<ClusterNode> assignment = assignments.get(part);
 
                 if (assignment.isEmpty())
