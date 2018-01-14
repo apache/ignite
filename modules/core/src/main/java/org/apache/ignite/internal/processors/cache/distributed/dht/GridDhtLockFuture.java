@@ -253,8 +253,21 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
             log = U.logger(cctx.kernalContext(), logRef, GridDhtLockFuture.class);
         }
 
-        if (tx != null && !tx.updateLockFuture(null, this))
-            onError(tx.rollbackException());
+        if (tx != null) {
+            while(true) {
+                IgniteInternalFuture<Boolean> fut = tx.lockFut;
+
+                if (fut != null) {
+                    if (fut == GridDhtTxLocalAdapter.ROLLBACK_FUT)
+                        onError(tx.rollbackException());
+
+                    return;
+                }
+
+                if (tx.updateLockFuture(null, this))
+                    return;
+            }
+        }
     }
 
     /** {@inheritDoc} */

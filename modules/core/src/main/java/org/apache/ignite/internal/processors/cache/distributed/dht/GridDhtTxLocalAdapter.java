@@ -82,7 +82,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private static final IgniteInternalFuture<Boolean> ROLLBACK_FUT = new GridFutureAdapter<>();
+    protected static final IgniteInternalFuture<Boolean> ROLLBACK_FUT = new GridFutureAdapter<>();
 
     /** Lock future updater. */
     private static final AtomicReferenceFieldUpdater<GridDhtTxLocalAdapter, IgniteInternalFuture> LOCK_FUT_UPD =
@@ -861,6 +861,14 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      */
     public boolean updateLockFuture(IgniteInternalFuture<Boolean> oldFut, IgniteInternalFuture<Boolean> newFut) {
         return LOCK_FUT_UPD.compareAndSet(this, oldFut, newFut);
+    }
+
+    /**
+     *
+     * @return {@code True} if tx is ro
+     */
+    public boolean isRollingBack() {
+        return lockFut == ROLLBACK_FUT;
     }
 
     /**

@@ -1015,7 +1015,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * @return {@code True} if state changed.
      */
     @SuppressWarnings({"TooBroadScope"})
-    protected final boolean state(TransactionState state, boolean timedOut, @Nullable TransactionState[] holder) {
+    protected boolean state(TransactionState state, boolean timedOut, @Nullable TransactionState[] holder) {
         boolean valid = false;
 
         TransactionState prev;
