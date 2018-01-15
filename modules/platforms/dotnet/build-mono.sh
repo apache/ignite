@@ -26,4 +26,4 @@ mvn clean package -DskipTests -Dmaven.javadoc.skip=true -Plgpl,-examples,-clean-
 popd
 
 nuget restore Apache.Ignite.sln
-msbuild Apache.Ignite.sln
+msbuild Apache.Ignite.sln /p:RunCodeAnalysis=false
