@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
+    using Apache.Ignite.Core.Tests.Client.Cache;
     using Apache.Ignite.Core.Tests.Memory;
     using NUnit.ConsoleRunner;
 
@@ -32,6 +33,12 @@ namespace Apache.Ignite.Core.Tests
             Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
             Debug.AutoFlush = true;
 
+            if (args.Length == 1 && args[0] == "-mono")
+            {
+                // We do not support non-default AppDomain on Mono, so NUnit does not work.
+                // Just make sure that basic functionality works.
+                RunBasicTest();
+            }
             if (args.Length == 2)
             {
                 //Debugger.Launch();
@@ -49,6 +56,22 @@ namespace Apache.Ignite.Core.Tests
 
             //TestAll(typeof (AffinityFunctionTest));
             //TestAllInAssembly();
+        }
+
+        /// <summary>
+        /// Runs some basic tests.
+        /// </summary>
+        private static void RunBasicTest()
+        {
+            var test = new LinqTest();
+            Console.WriteLine("Starting client LINQ test...");
+
+            test.FixtureSetUp();
+            test.TestSetUp();
+            test.TestBasicQueries();
+
+            Console.WriteLine("Test passed.");
+            Environment.Exit(0);
         }
 
         private static int TestOne(Type testClass, string method)
