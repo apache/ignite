@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Tests
     using System.Linq;
     using System.Reflection;
     using Apache.Ignite.Core.Tests.Cache;
-    using Apache.Ignite.Core.Tests.Cache.Query;
     using Apache.Ignite.Core.Tests.Cache.Query.Linq;
     using Apache.Ignite.Core.Tests.Client.Cache;
     using Apache.Ignite.Core.Tests.Compute;
