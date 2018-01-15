@@ -36,7 +36,6 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.benchmarks.jmh.cache.JmhCacheAbstractBenchmark;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.internal.util.nio.compress.CompressionType;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.messaging.MessagingListenActor;
 import org.openjdk.jmh.annotations.AuxCounters;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -50,7 +49,6 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.results.BenchmarkResult;
 import org.openjdk.jmh.results.RunResult;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
@@ -71,11 +69,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
     static Ignite receiver = null;
 
     /** */
-    @Param({"false", "true"})
-    boolean isCompress = false;
-
-    /** */
-//    @Param({"NO_COMPRESSION", "LZ4", "ZSTD", "DEFALTER"})
+    @Param({"NO_COMPRESSION", "LZ4", "ZSTD", "DEFLATER"})
     private CompressionType compressionType = CompressionType.LZ4;
 
     /** */
@@ -99,10 +93,10 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         public IoSendReceiveBaselineState() {
             super();
 
-            msg = new Object();
+            msg = new byte[0];
 
-            receiver.message().localListen(null, new MessagingListenActor<Object>() {
-                @Override protected void receive(UUID nodeId, Object rcvMsg) throws Throwable {
+            receiver.message().localListen(null, new MessagingListenActor<byte[]>() {
+                @Override protected void receive(UUID nodeId, byte[] rcvMsg) throws Throwable {
                     latch.get().countDown();
                 }
             });
@@ -153,7 +147,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
     @State(Scope.Benchmark)
     public static class IoSendReceiveSizeState extends IoState {
         /** */
-        @Param({"1000", "10000", "100000", "1000000"})
+        @Param({"100", "1000", "2000", "3000", "5000", "10000", "20000", "30000", "40000", "60000", "100000"})
         int size = 1000;
 
         /** */
@@ -220,7 +214,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
     @State(Scope.Benchmark)
     public static class IoSendReceiveSizeGoodState extends IoState {
         /** */
-        @Param({"1000", "10000", "100000", "1000000"})
+        @Param({"100", "1000", "2000", "3000", "5000", "10000", "20000", "30000", "40000", "60000", "100000"})
         int size = 1000;
 
         /** */
@@ -301,7 +295,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         TreeMap<Integer, EnumMap<Type, Result>> sizedNiceResults = new TreeMap<>();
 
         for (RunResult result : results) {
-            Type type = Type.getType(result.getParams().getParam("isCompress"),
+            Type type = Type.getType(result.getParams().getParam("compressionType"),
                 result.getParams().getParam("isSsl"));
 
             double val = result.getPrimaryResult().getScore();
@@ -354,14 +348,19 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
             }
         }
 
+        System.out.println("Latency:");
+        System.out.println("||Type||Time||NetFootprint||");
         for (Entry<Type, Result> entry : baseline.entrySet()) {
-            System.out.println("Latency:" + U.nl() + "\tType = " + entry.getKey() + U.nl() + "\tTime = " +
-                entry.getValue().val + " ± " + entry.getValue().error +
-                U.nl() + "\tNet footprint = " + baselineStat.get(entry.getKey()).avgSize);
+            System.out.println("|" + entry.getKey() + "|" +
+                entry.getValue().val + "±" + entry.getValue().error + "|" +
+                baselineStat.get(entry.getKey()).avgSize + "|");
         }
 
-        printThroughput(sizedResults, baselineStat, baseline, "bad case");
-        printThroughput(sizedNiceResults, baselineStat, baseline, "good case");
+        System.out.println("Throughput worst case");
+        printThroughput(sizedResults, baselineStat, baseline);
+
+        System.out.println("Throughput real case");
+        printThroughput(sizedNiceResults, baselineStat, baseline);
     }
 
     /** */
@@ -376,13 +375,14 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
 
     /** */
     private static void printThroughput(Map<Integer, EnumMap<Type, Result>> results, EnumMap<Type, Result> baselineStat,
-        EnumMap<Type, Result> baseline, String name) {
+        EnumMap<Type, Result> baseline) {
 
         DecimalFormat df = new DecimalFormat("#0.00");
 
         for (Entry<Integer, EnumMap<Type, Result>> entry : results.entrySet()) {
             int size = entry.getKey();
 
+            System.out.println("||Type||MsgSize||MsgPerSecond||RealMbitsPerSecond||EffectiveMbitsPerSecond||CompressionRatio||");
             for (Entry<Type, Result> resultEntry : entry.getValue().entrySet()) {
                 double statTime = baselineStat.get(resultEntry.getKey()).val - baseline.get(resultEntry.getKey()).val;
 
@@ -395,17 +395,12 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
 
                 double avgSize = Math.round(resultEntry.getValue().avgSize);
 
-                System.out.println("Throughput " + name + ". Type = " + resultEntry.getKey() +
-                    ". Message size = " + size +
-                    U.nl() + "\tMessage/s = " + df.format(1.0E6 / val) + " ∈ [" +
-                    df.format(1.0E6 / (val + error)) + " : " + df.format(1.0E6 / (val - error)) + "]" +
-                    U.nl() + "\tReal Mbit/s = " + df.format(avgSize / val * 8) + " ∈ [" +
-                    df.format(avgSize / (val + error) * 8) + " : " +
-                    df.format(avgSize / (val - error) * 8) + "]" +
-                    U.nl() + "\tEffective Mbit/s = " + df.format(size / val * 8) + " ∈ [" +
-                    df.format(size / (val + error) * 8) + " : " +
-                    df.format(size / (val - error) * 8) + "]" +
-                    U.nl() + "\tCompression rate = " + df.format(size / (avgSize - baselineAvgSize)));
+                System.out.println("|" + resultEntry.getKey() + "|" +
+                     size + "|" +
+                    df.format(1.0E6 / val) + " ∈ [" + df.format(1.0E6 / (val + error)) + " : " + df.format(1.0E6 / (val - error)) + "]" + "|" +
+                    df.format(avgSize / val * 8) + " ∈ [" + df.format(avgSize / (val + error) * 8) + " : " + df.format(avgSize / (val - error) * 8) + "]" + "|" +
+                    df.format(size / val * 8) + " ∈ [" + df.format(size / (val + error) * 8) + " : " + df.format(size / (val - error) * 8) + "]" + "|" +
+                    df.format(size / (avgSize - baselineAvgSize)) + "|");
             }
         }
     }
@@ -415,23 +410,41 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         /** */
         No,
         /** */
-        Compression,
+        LZ4,
+        /** */
+        ZSTD,
+        /** */
+        Deflater,
         /** */
         Ssl,
         /** */
-        CompressionSsl;
+        SslLZ4,
+        /** */
+        SslZSTD,
+        /** */
+        SslDeflater;
 
         /** */
         private static Type getType(String comp0, String ssl0) {
-            boolean comp = Boolean.valueOf(comp0);
+            CompressionType comp = Enum.valueOf(CompressionType.class, comp0);
             boolean ssl = Boolean.valueOf(ssl0);
 
-            if (comp && ssl)
-                return CompressionSsl;
-            if (comp && !ssl)
-                return Compression;
-            if (!comp && ssl)
+            if (comp == CompressionType.NO_COMPRESSION && ssl)
                 return Ssl;
+            if (comp == CompressionType.NO_COMPRESSION && !ssl)
+                return No;
+            if (comp == CompressionType.LZ4 && !ssl)
+                return LZ4;
+            if (comp == CompressionType.LZ4 && ssl)
+                return SslLZ4;
+            if (comp == CompressionType.ZSTD && !ssl)
+                return ZSTD;
+            if (comp == CompressionType.ZSTD && ssl)
+                return SslZSTD;
+            if (comp == CompressionType.DEFLATER && !ssl)
+                return Deflater;
+            if (comp == CompressionType.DEFLATER && ssl)
+                return SslDeflater;
 
             return No;
         }
