@@ -381,8 +381,6 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         final RuntimeException ex = new RuntimeException("Record reading problem occurred at file pointer [" + ptr + "]:" + e.getMessage(), e);
 
         ex.printStackTrace();
-        if (!workDir)
-            throw ex;
     }
 
     /** {@inheritDoc} */

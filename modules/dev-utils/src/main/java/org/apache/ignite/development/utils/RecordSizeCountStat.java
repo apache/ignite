@@ -21,7 +21,7 @@ package org.apache.ignite.development.utils;
  */
 public class RecordSizeCountStat {
     /** Size. */
-    private long size;
+    private long size = -1;
     /** Count. */
     private int cnt;
 
@@ -29,14 +29,20 @@ public class RecordSizeCountStat {
      * @param size record size
      */
     public void occurrence(int size) {
-        this.size += size;
+        if (size >= 0) {
+            if (this.size < 0)
+                this.size = 0;
+
+            this.size += size;
+        }
+
         cnt++;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return size +
+        return (size >= 0 ? size : "") +
             "\t " + cnt +
-            "\t " + (size / cnt);
+            "\t " + ((size >= 0) ? (size / cnt) : "");
     }
 }

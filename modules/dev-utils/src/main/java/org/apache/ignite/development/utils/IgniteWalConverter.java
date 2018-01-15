@@ -72,11 +72,12 @@ public class IgniteWalConverter {
             while (stIt.hasNextX()) {
                 IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
 
+                final WALPointer pointer = next.get1();
                 final WALRecord record = next.get2();
                 final WALRecord.RecordType type = record.type();
 
                 if (stat != null)
-                    stat.registerRecord(type, record);
+                    stat.registerRecord(type, record, pointer, true);
 
                 if (printRecords)
                     System.out.println("[W] " + record);
@@ -90,9 +91,11 @@ public class IgniteWalConverter {
                 while (stIt.hasNextX()) {
                     IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
 
+                    final WALPointer pointer = next.get1();
                     final WALRecord record = next.get2();
+
                     if (stat != null)
-                        stat.registerRecord(record.type(), record);
+                        stat.registerRecord(record.type(), record, pointer, false);
 
                     if (printRecords)
                         System.out.println("[A] " + record);

@@ -20,16 +20,21 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
 import sun.nio.ch.DirectBuffer;
 
@@ -37,11 +42,24 @@ import sun.nio.ch.DirectBuffer;
  * Statistic for overall WAL file
  */
 public class WalStat {
+    /** Segments source */
+    private final Map<String, RecordSizeCountStat> segmentsSourceProcessed = new TreeMap<>();
+
+    /** Segments processed */
+    private final Map<String, RecordSizeCountStat> segmentsProcessed = new TreeMap<>();
+
     /** Rec type sizes. */
     private final Map<String, RecordSizeCountStat> recTypeSizes = new TreeMap<>();
 
-    /** Data Record: operation performed */
-    private final Map<String, RecordSizeCountStat> dataRecordOperation = new TreeMap<>();
+
+    /** Data Record: entries count */
+    private final Map<Integer, RecordSizeCountStat> dataRecordEntriesCnt = new TreeMap<>();
+
+    /** Data Entry: operation performed */
+    private final Map<String, RecordSizeCountStat> dataEntryOperation = new TreeMap<>();
+
+    /** Data Entry: cache groups. */
+    private final Map<Integer, RecordSizeCountStat> dataEntryCacheId = new TreeMap<>();
 
     /** Tx Record: action */
     private final Map<String, RecordSizeCountStat> txRecordAct = new TreeMap<>();
@@ -56,10 +74,10 @@ public class WalStat {
     private final Map<String, RecordSizeCountStat> pageSnapshotTypes = new TreeMap<>();
 
     /** Page snapshot indexes. */
-    private final Map<Integer, RecordSizeCountStat> pageSnapshotIndexes = new TreeMap<>();
+    private final Map<String, RecordSizeCountStat> pageSnapshotIndexes = new TreeMap<>();
 
     /** Page snapshot cache groups. */
-    private final Map<Integer, RecordSizeCountStat> pageSnapshotCacheGroups = new TreeMap<>();
+    private final Map<Integer, RecordSizeCountStat> pageSnapshotCacheGrp = new TreeMap<>();
 
     /**
      * @param key
@@ -68,17 +86,25 @@ public class WalStat {
      * @param <K>
      */
     private <K> void computeStatIfAbsent(K key, WALRecord record, Map<K, RecordSizeCountStat> map) {
+        final int size = record.size();
+        computeStatIfAbsent(key, map, size);
+    }
+
+    private <K> void computeStatIfAbsent(K key, Map<K, RecordSizeCountStat> map, int size) {
         final RecordSizeCountStat val = map.get(key);
         final RecordSizeCountStat recordStat = val == null ? new RecordSizeCountStat() : val;
-        recordStat.occurrence(record.size());
+        recordStat.occurrence(size);
         map.put(key, recordStat);
     }
 
     /**
      * @param type
      * @param record
+     * @param walPointer
+     * @param workDir
      */
-    void registerRecord(WALRecord.RecordType type, WALRecord record) {
+    void registerRecord(WALRecord.RecordType type, WALRecord record,
+        WALPointer walPointer, boolean workDir) {
         if (type == WALRecord.RecordType.PAGE_RECORD)
             registerPageSnapshot((PageSnapshot)record);
         else if (type == WALRecord.RecordType.DATA_RECORD)
@@ -87,6 +113,15 @@ public class WalStat {
             registerTxRecord((TxRecord)record);
 
         computeStatIfAbsent(type.toString(), record, recTypeSizes);
+
+        if (walPointer instanceof FileWALPointer) {
+            final FileWALPointer fPtr = (FileWALPointer)walPointer;
+
+            final long segment = fPtr.index();
+
+            computeStatIfAbsent(Long.toString(segment), record, segmentsProcessed);
+            computeStatIfAbsent(workDir ? "work" : "archive", record, segmentsSourceProcessed);
+        }
     }
 
     /**
@@ -120,16 +155,28 @@ public class WalStat {
 
         final String type = getType(record);
         computeStatIfAbsent(type, record, pageSnapshotTypes);
-        computeStatIfAbsent(idx, record, pageSnapshotIndexes);
-        computeStatIfAbsent(fullPageId.groupId(), record, pageSnapshotCacheGroups);
+
+        final String idxAsStr = idx <= 100 ? Integer.toString(idx) : ">100";
+        computeStatIfAbsent(idxAsStr, record, pageSnapshotIndexes);
+        computeStatIfAbsent(fullPageId.groupId(), record, pageSnapshotCacheGrp);
     }
 
     /**
      * @param record
      */
     private void registerDataRecord(DataRecord record) {
-        if (!record.writeEntries().isEmpty())
-            computeStatIfAbsent(record.writeEntries().get(0).op().toString(), record, dataRecordOperation);
+        final List<DataEntry> dataEntries = record.writeEntries();
+        if (!dataEntries.isEmpty()) {
+            for (DataEntry next : dataEntries) {
+                computeStatIfAbsent(next.op().toString(), dataEntryOperation, -1);
+
+                computeStatIfAbsent(next.cacheId(), dataEntryCacheId, -1);
+
+                final GridCacheVersion version = next.nearXidVersion();
+            }
+        }
+
+        computeStatIfAbsent(dataEntries.size(), record, dataRecordEntriesCnt);
     }
 
     /**
@@ -163,17 +210,22 @@ public class WalStat {
     @Override public String toString() {
         final StringBuilder sb = new StringBuilder();
 
+        printSizeCountMap(sb, "WAL Segments: sources", segmentsSourceProcessed);
+        printSizeCountMap(sb, "WAL Segments: processed", segmentsProcessed);
+
         printSizeCountMap(sb, "Record type", recTypeSizes);
 
         printSizeCountMap(sb, "Tx Record: Action", txRecordAct);
         printSizeCountMap(sb, "Tx Record: Primary nodes count", txRecordPrimNodesCnt);
         printSizeCountMap(sb, "Tx Record: Nodes count", txRecordNodesCnt);
 
-        printSizeCountMap(sb, "Data Record Operations", dataRecordOperation);
+        printSizeCountMap(sb, "Data Record: Entries count", dataRecordEntriesCnt);
+        printSizeCountMap(sb, "Data Entry: Operations", dataEntryOperation);
+        printSizeCountMap(sb, "Data Entry: Cache ID", dataEntryCacheId);
 
-        printSizeCountMap(sb, "Page Snapshot Page Types", pageSnapshotTypes);
-        printSizeCountMap(sb, "Page Snapshot Indexes", pageSnapshotIndexes);
-        printSizeCountMap(sb, "Page Snapshot Cache Groups", pageSnapshotCacheGroups);
+        printSizeCountMap(sb, "Page Snapshot: Page Types", pageSnapshotTypes);
+        printSizeCountMap(sb, "Page Snapshot: Indexes", pageSnapshotIndexes);
+        printSizeCountMap(sb, "Page Snapshot: Cache Groups", pageSnapshotCacheGrp);
 
         return sb.toString();
     }
