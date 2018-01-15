@@ -123,6 +123,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
 /**
  * File WAL manager.
  */
+@SuppressWarnings("IfMayBeConditional")
 public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter implements IgniteWriteAheadLogManager {
     /** {@link MappedByteBuffer#force0(java.io.FileDescriptor, long, long)}. */
     private static final Method force0 = findNonPublicMethod(
@@ -1156,7 +1157,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     break;
                 }
-                catch (ClosedByInterruptException e) {
+                catch (ClosedByInterruptException ignore) {
                     interrupted = true;
 
                     Thread.interrupted();
@@ -1564,7 +1565,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     try {
                         wait();
                     }
-                    catch (InterruptedException e) {
+                    catch (InterruptedException ignore) {
                         interrupted.set(true);
                     }
                 }
@@ -1574,7 +1575,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     try {
                         wait();
                     }
-                    catch (InterruptedException e) {
+                    catch (InterruptedException ignore) {
                         interrupted.set(true);
                     }
 
@@ -1858,7 +1859,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (handle != null)
                         handle.invalidateEnvironment(e);
                 }
-                catch (InterruptedException e) {
+                catch (InterruptedException ignore) {
                     Thread.currentThread().interrupt();
                 }
             }
@@ -1962,7 +1963,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private Map<Long, GridFutureAdapter<Void>> decompressionFutures = new HashMap<>();
 
         /** Segments queue. */
-        private PriorityBlockingQueue<Long> segmentsQueue = new PriorityBlockingQueue<>();
+        private final PriorityBlockingQueue<Long> segmentsQueue = new PriorityBlockingQueue<>();
 
         /** Byte array for draining data. */
         private byte[] arr = new byte[BUF_SIZE];
@@ -2002,7 +2003,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         decompressionFutures.remove(segmentToDecompress).onDone();
                     }
                 }
-                catch (InterruptedException e){
+                catch (InterruptedException ignore) {
                     Thread.currentThread().interrupt();
                 }
                 catch (IOException e) {
@@ -2579,7 +2580,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (!needFsync(ptr))
                         return;
 
-                    if (fsyncDelay > 0 && !this.stop.get()) {
+                    if (fsyncDelay > 0 && !stop.get()) {
                         // Delay fsync to collect as many updates as possible: trade latency for throughput.
                         U.await(fsync, fsyncDelay, TimeUnit.NANOSECONDS);
 
@@ -2590,7 +2591,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 flushOrWait(ptr);
 
-                if (this.stop.get())
+                if (stop.get())
                     return;
 
                 if (lastFsyncPos != written) {
@@ -2668,9 +2669,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          */
         private boolean close(boolean rollOver) throws IgniteCheckedException, StorageException {
             if (stop.compareAndSet(false, true)) {
-                try {
-                    lock.lock();
+                lock.lock();
 
+                try {
                     flushOrWait(null);
 
                     try {
@@ -2714,7 +2715,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             try {
                                 fileIO.close();
                             }
-                            catch (IOException e) {
+                            catch (IOException ignore) {
                                 // No-op.
                             }
                         }
@@ -2765,9 +2766,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
 
         /**
-         * @throws IgniteCheckedException If failed.
+         *
          */
-        private void awaitNext() throws IgniteCheckedException {
+        private void awaitNext() {
             lock.lock();
 
             try {
@@ -2817,7 +2818,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @return Safely reads current position of the file channel as String. Will return "null" if channel is null.
          */
         private String safePosition() {
-            FileIO io = this.fileIO;
+            FileIO io = fileIO;
 
             if (io == null)
                 return "null";
@@ -3078,7 +3079,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /**
      * WAL writer worker.
      */
-    class WALWriter extends Thread {
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    private class WALWriter extends Thread {
         /** Unconditional flush. */
         private static final long UNCONDITIONAL_FLUSH = -1L;
 
