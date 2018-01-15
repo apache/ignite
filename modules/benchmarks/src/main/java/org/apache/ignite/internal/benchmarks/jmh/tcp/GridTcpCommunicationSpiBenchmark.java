@@ -60,8 +60,8 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
  * Tests for SPI compression and SSL.
  */
 @Warmup(iterations = 15)
-@Measurement(iterations = 20)
-@Fork(1)
+@Measurement(iterations = 10)
+@Fork(5)
 @Threads(1)
 public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark {
     /** */
@@ -301,57 +301,55 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         TreeMap<Integer, EnumMap<Type, Result>> sizedNiceResults = new TreeMap<>();
 
         for (RunResult result : results) {
-            for (BenchmarkResult benchmarkResult : result.getBenchmarkResults()) {
-                Type type = Type.getType(benchmarkResult.getParams().getParam("isCompress"),
-                    benchmarkResult.getParams().getParam("isSsl"));
+            Type type = Type.getType(result.getParams().getParam("isCompress"),
+                result.getParams().getParam("isSsl"));
 
-                double val = benchmarkResult.getPrimaryResult().getScore();
-                double error = benchmarkResult.getPrimaryResult().getScoreError();
+            double val = result.getPrimaryResult().getScore();
+            double error = result.getPrimaryResult().getScoreError();
 
-                if (benchmarkResult.getPrimaryResult().getLabel().equals("sendAndReceiveBaseline")) {
-                    baseline.put(type, new Result(val, error, 0));
+            if (result.getPrimaryResult().getLabel().equals("sendAndReceiveBaseline")) {
+                baseline.put(type, new Result(val, error, 0));
 
-                    continue;
+                continue;
+            }
+
+            double avgSize = result.getSecondaryResults().get("sentBytes").getScore() /
+                result.getSecondaryResults().get("sentMessages").getScore();
+
+            switch (result.getPrimaryResult().getLabel()) {
+                case "sendAndReceiveStatBaseline":
+                    baselineStat.put(type, new Result(val, error, avgSize));
+
+                    break;
+                case "sendAndReceiveSize": {
+                    int size = Integer.valueOf(result.getParams().getParam("size"));
+
+                    EnumMap<Type, Result> map = sizedResults.get(size);
+
+                    if (map == null) {
+                        map = new EnumMap<>(Type.class);
+
+                        sizedResults.put(size, map);
+                    }
+
+                    map.put(type, new Result(val, error, avgSize));
+
+                    break;
                 }
+                case "sendAndReceiveSizeGood": {
+                    int size = Integer.valueOf(result.getParams().getParam("size"));
 
-                double avgSize = benchmarkResult.getSecondaryResults().get("sentBytes").getScore() /
-                    benchmarkResult.getSecondaryResults().get("sentMessages").getScore();
+                    EnumMap<Type, Result> map = sizedNiceResults.get(size);
 
-                switch (benchmarkResult.getPrimaryResult().getLabel()) {
-                    case "sendAndReceiveStatBaseline":
-                        baselineStat.put(type, new Result(val, error, avgSize));
+                    if (map == null) {
+                        map = new EnumMap<>(Type.class);
 
-                        break;
-                    case "sendAndReceiveSize": {
-                        int size = Integer.valueOf(benchmarkResult.getParams().getParam("size"));
-
-                        EnumMap<Type, Result> map = sizedResults.get(size);
-
-                        if (map == null) {
-                            map = new EnumMap<>(Type.class);
-
-                            sizedResults.put(size, map);
-                        }
-
-                        map.put(type, new Result(val, error, avgSize));
-
-                        break;
+                        sizedNiceResults.put(size, map);
                     }
-                    case "sendAndReceiveSizeGood": {
-                        int size = Integer.valueOf(benchmarkResult.getParams().getParam("size"));
 
-                        EnumMap<Type, Result> map = sizedNiceResults.get(size);
+                    map.put(type, new Result(val, error, avgSize));
 
-                        if (map == null) {
-                            map = new EnumMap<>(Type.class);
-
-                            sizedNiceResults.put(size, map);
-                        }
-
-                        map.put(type, new Result(val, error, avgSize));
-
-                        break;
-                    }
+                    break;
                 }
             }
         }
@@ -367,6 +365,16 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
     }
 
     /** */
+    private static double sqrtSum(double... xs) {
+        double sum = 0.0;
+
+        for (double x: xs)
+            sum += (x*x);
+
+        return Math.sqrt(sum);
+    }
+
+    /** */
     private static void printThroughput(Map<Integer, EnumMap<Type, Result>> results, EnumMap<Type, Result> baselineStat,
         EnumMap<Type, Result> baseline, String name) {
 
@@ -378,10 +386,14 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
             for (Entry<Type, Result> resultEntry : entry.getValue().entrySet()) {
                 double statTime = baselineStat.get(resultEntry.getKey()).val - baseline.get(resultEntry.getKey()).val;
 
-                double baselineAvgSize = baselineStat.get(resultEntry.getKey()).avgSize;
+                double baselineAvgSize = Math.round(baselineStat.get(resultEntry.getKey()).avgSize);
                 double val = resultEntry.getValue().val - statTime;
-                double error = resultEntry.getValue().error;
-                double avgSize = resultEntry.getValue().avgSize;
+
+                double error = val* sqrtSum(resultEntry.getValue().error/resultEntry.getValue().val,
+                    baselineStat.get(resultEntry.getKey()).error/baselineStat.get(resultEntry.getKey()).val,
+                    baseline.get(resultEntry.getKey()).error/baseline.get(resultEntry.getKey()).val);
+
+                double avgSize = Math.round(resultEntry.getValue().avgSize);
 
                 System.out.println("Throughput " + name + ". Type = " + resultEntry.getKey() +
                     ". Message size = " + size +
