@@ -24,7 +24,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -77,6 +80,13 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(memCfg);
 
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>()
+            .setName(DEFAULT_CACHE_NAME)
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setBackups(2);
+
+        cfg.setCacheConfiguration(ccfg);
+
         return cfg;
     }
 
@@ -102,7 +112,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testMemoryUsageGrowth() throws Exception {
+    public void testMemoryUsageSingleNode() throws Exception {
         DataRegionMetrics initMetrics = null;
 
         for (int iter = 0; iter < ITERATIONS; iter++) {
@@ -110,7 +120,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
             node.active(true);
 
-            DataRegionMetrics currMetrics = getDfltRegionMetrics();
+            DataRegionMetrics currMetrics = getDfltRegionMetrics(node);
 
             if (initMetrics == null)
                 initMetrics = currMetrics;
@@ -119,13 +129,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
             final IgniteCache<String, String> cache = node.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-            final Set<Integer> grpIds = new HashSet<>();
-
-            for (Object ctx : node.context().cache().context().cacheContexts()) {
-                CacheGroupContext grp = ((GridCacheContext)ctx).group();
-                if (DFLT_DATA_REG_DEFAULT_NAME.equals(grp.dataRegion().config().getName()))
-                    grpIds.add(grp.groupId());
-            }
+            final Set<Integer> grpIds = getDfltRegGroupIds(node);
 
             Map<String, String> map = new HashMap<>();
 
@@ -137,23 +141,9 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
                 cache.putAll(map);
 
-                currMetrics = getDfltRegionMetrics();
+                currMetrics = getDfltRegionMetrics(node);
 
-                final DataRegionMetrics finalCurrMetrics = currMetrics;
-
-                boolean storageMatches = GridTestUtils.waitForCondition(new PA() {
-                    @Override public boolean apply() {
-                        long pagesInStore = 0;
-
-                        for (int grpId : grpIds)
-                            pagesInStore += node.context().cache().context().pageStore().pagesAllocated(grpId);
-
-                        return finalCurrMetrics.getTotalAllocatedPages() == pagesInStore;
-                    }
-                }, 100);
-
-                assert currMetrics.getTotalAllocatedPages() >= currMetrics.getPhysicalMemoryPages();
-                assert storageMatches;
+                checkMetricsConsistency(node, currMetrics, grpIds);
             }
 
             assert currMetrics.getPhysicalMemoryPages() > initMetrics.getPhysicalMemoryPages();
@@ -164,11 +154,84 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private DataRegionMetrics getDfltRegionMetrics() {
-        for (DataRegionMetrics m : grid(0).dataRegionMetrics())
+    public void testMemoryUsageMultipleNodes() throws Exception {
+        IgniteEx node0 = startGrid(0);
+
+        IgniteEx node1 = startGrid(1);
+
+        node0.active(true);
+
+        final IgniteCache<String, String> cache = node0.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        Map<String, String> map = new HashMap<>();
+
+        int nPuts = BATCH_SIZE_LOW + ThreadLocalRandom.current().nextInt(BATCH_SIZE_HIGH - BATCH_SIZE_LOW);
+
+        for (int i = 0; i < nPuts; i++)
+            map.put(UUID.randomUUID().toString(), UUID.randomUUID().toString());
+
+        cache.putAll(map);
+
+        checkMetricsConsistency(node0, getDfltRegionMetrics(node0), getDfltRegGroupIds(node0));
+        checkMetricsConsistency(node1, getDfltRegionMetrics(node1), getDfltRegGroupIds(node1));
+
+        IgniteEx node2 = startGrid(2);
+
+        awaitPartitionMapExchange();
+
+        checkMetricsConsistency(node0, getDfltRegionMetrics(node0), getDfltRegGroupIds(node0));
+        checkMetricsConsistency(node1, getDfltRegionMetrics(node1), getDfltRegGroupIds(node1));
+        checkMetricsConsistency(node2, getDfltRegionMetrics(node2), getDfltRegGroupIds(node2));
+
+        node1.close();
+
+        awaitPartitionMapExchange();
+
+        checkMetricsConsistency(node0, getDfltRegionMetrics(node0), getDfltRegGroupIds(node0));
+        checkMetricsConsistency(node2, getDfltRegionMetrics(node2), getDfltRegGroupIds(node2));
+    }
+
+    /** */
+    private DataRegionMetrics getDfltRegionMetrics(Ignite node) {
+        for (DataRegionMetrics m : node.dataRegionMetrics())
             if (DFLT_DATA_REG_DEFAULT_NAME.equals(m.getName()))
                 return m;
 
         throw new RuntimeException("No metrics found for default data region");
+    }
+
+    /** */
+    private static Set<Integer> getDfltRegGroupIds(IgniteEx node) {
+        Set<Integer> grpIds = new HashSet<>();
+
+        for (Object ctx : node.context().cache().context().cacheContexts()) {
+            CacheGroupContext grp = ((GridCacheContext)ctx).group();
+            if (DFLT_DATA_REG_DEFAULT_NAME.equals(grp.dataRegion().config().getName()))
+                grpIds.add(grp.groupId());
+        }
+
+        return grpIds;
+    }
+
+    /** */
+    private static void checkMetricsConsistency (
+        final IgniteEx node,
+        final DataRegionMetrics m,
+        final Set<Integer> grpIds
+    ) throws Exception
+    {
+        boolean storageMatches = GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                long pagesInStore = 0;
+
+                for (int grpId : grpIds)
+                    pagesInStore += node.context().cache().context().pageStore().pagesAllocated(grpId);
+
+                return m.getTotalAllocatedPages() == pagesInStore;
+            }
+        }, 100);
+
+        assert m.getTotalAllocatedPages() >= m.getPhysicalMemoryPages();
+        assert storageMatches;
     }
 }
