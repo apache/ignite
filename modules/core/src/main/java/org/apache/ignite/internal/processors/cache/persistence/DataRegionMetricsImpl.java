@@ -231,14 +231,6 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     }
 
     /**
-     * Resets totalAllocatedPages counter.
-     */
-    public void resetTotalAllocatedPages() {
-        if (metricsEnabled)
-            totalAllocatedPages.reset();
-    }
-
-    /**
      *
      */
     private void updateAllocationRateMetrics(long n) {
