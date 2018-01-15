@@ -18,7 +18,10 @@ package org.apache.ignite.development.utils;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -36,14 +39,21 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.transactions.TransactionState;
 import sun.nio.ch.DirectBuffer;
 
 /**
  * Statistic for overall WAL file
  */
 public class WalStat {
+    /** Display max: top lines before merging other values */
+    public static final int DISPLAY_MAX = 80;
+
+    /** Tx stat. */
+    private TxWalStat txStat = new TxWalStat();
+
     /** Segments source */
-    private final Map<String, RecordSizeCountStat> segmentsSourceProcessed = new TreeMap<>();
+    private final Map<String, RecordSizeCountStat> segmentsSrcProcessed = new TreeMap<>();
 
     /** Segments processed */
     private final Map<String, RecordSizeCountStat> segmentsProcessed = new TreeMap<>();
@@ -51,9 +61,11 @@ public class WalStat {
     /** Rec type sizes. */
     private final Map<String, RecordSizeCountStat> recTypeSizes = new TreeMap<>();
 
-
     /** Data Record: entries count */
     private final Map<Integer, RecordSizeCountStat> dataRecordEntriesCnt = new TreeMap<>();
+
+    /** Data Record: is under TX */
+    private final Map<Boolean, RecordSizeCountStat> dataRecordUnderTx = new TreeMap<>();
 
     /** Data Entry: operation performed */
     private final Map<String, RecordSizeCountStat> dataEntryOperation = new TreeMap<>();
@@ -79,6 +91,9 @@ public class WalStat {
     /** Page snapshot cache groups. */
     private final Map<Integer, RecordSizeCountStat> pageSnapshotCacheGrp = new TreeMap<>();
 
+    /** Page snapshot: partition ID. */
+    private final Map<Integer, RecordSizeCountStat> pageSnapshotPartId = new TreeMap<>();
+
     /**
      * @param key
      * @param record
@@ -90,6 +105,12 @@ public class WalStat {
         computeStatIfAbsent(key, map, size);
     }
 
+    /**
+     * @param key
+     * @param map
+     * @param size Negative value of size means size is unknown for current row.
+     * @param <K>
+     */
     private <K> void computeStatIfAbsent(K key, Map<K, RecordSizeCountStat> map, int size) {
         final RecordSizeCountStat val = map.get(key);
         final RecordSizeCountStat recordStat = val == null ? new RecordSizeCountStat() : val;
@@ -120,7 +141,7 @@ public class WalStat {
             final long segment = fPtr.index();
 
             computeStatIfAbsent(Long.toString(segment), record, segmentsProcessed);
-            computeStatIfAbsent(workDir ? "work" : "archive", record, segmentsSourceProcessed);
+            computeStatIfAbsent(workDir ? "work" : "archive", record, segmentsSrcProcessed);
         }
     }
 
@@ -128,20 +149,40 @@ public class WalStat {
      * @param txRecord
      */
     private void registerTxRecord(TxRecord txRecord) {
-        computeStatIfAbsent(txRecord.state().toString(), txRecord, txRecordAct);
+        final TransactionState state = txRecord.state();
 
+        computeStatIfAbsent(state.toString(), txRecord, txRecordAct);
+
+        int totalNodes = 0;
         final Map<Short, Collection<Short>> map = txRecord.participatingNodes();
         if (map != null) {
-            computeStatIfAbsent(map.keySet().size(), txRecord, txRecordPrimNodesCnt);
+            computeStatIfAbsent(map.size(), txRecord, txRecordPrimNodesCnt);
 
-            final HashSet<Object> set = new HashSet<>();
+            final HashSet<Object> set = new HashSet<>(150);
 
             for (Map.Entry<Short, Collection<Short>> next : map.entrySet()) {
                 set.add(next.getKey());
                 set.addAll(next.getValue());
             }
 
-            computeStatIfAbsent(set.size(), txRecord, txRecordNodesCnt);
+            totalNodes = set.size();
+
+            computeStatIfAbsent(totalNodes, txRecord, txRecordNodesCnt);
+        }
+
+        final GridCacheVersion ver = txRecord.nearXidVersion();
+        if (ver != null) {
+            switch (state) {
+                case PREPARING:
+                case PREPARED:
+                    txStat.start(ver, map != null ? map.size() : 0, totalNodes);
+                    break;
+                case COMMITTED:
+                    txStat.close(ver, true);
+                    break;
+                default:
+                    txStat.close(ver, false);
+            }
         }
     }
 
@@ -159,6 +200,9 @@ public class WalStat {
         final String idxAsStr = idx <= 100 ? Integer.toString(idx) : ">100";
         computeStatIfAbsent(idxAsStr, record, pageSnapshotIndexes);
         computeStatIfAbsent(fullPageId.groupId(), record, pageSnapshotCacheGrp);
+
+        final int partId = PageIdUtils.partId(pageId);
+        computeStatIfAbsent(partId, record, pageSnapshotPartId);
     }
 
     /**
@@ -167,13 +211,19 @@ public class WalStat {
     private void registerDataRecord(DataRecord record) {
         final List<DataEntry> dataEntries = record.writeEntries();
         if (!dataEntries.isEmpty()) {
+            boolean underTx = false;
             for (DataEntry next : dataEntries) {
-                computeStatIfAbsent(next.op().toString(), dataEntryOperation, -1);
+                final int size = dataEntries.size() > 1 ? -1 : record.size();
+                computeStatIfAbsent(next.op().toString(), dataEntryOperation, size);
 
-                computeStatIfAbsent(next.cacheId(), dataEntryCacheId, -1);
+                computeStatIfAbsent(next.cacheId(), dataEntryCacheId, size);
 
-                final GridCacheVersion version = next.nearXidVersion();
+                txStat.entry(next);
+
+                underTx |= next.nearXidVersion() != null;
             }
+
+            computeStatIfAbsent(underTx, record, dataRecordUnderTx);
         }
 
         computeStatIfAbsent(dataEntries.size(), record, dataRecordEntriesCnt);
@@ -210,7 +260,7 @@ public class WalStat {
     @Override public String toString() {
         final StringBuilder sb = new StringBuilder();
 
-        printSizeCountMap(sb, "WAL Segments: sources", segmentsSourceProcessed);
+        printSizeCountMap(sb, "WAL Segments: sources", segmentsSrcProcessed);
         printSizeCountMap(sb, "WAL Segments: processed", segmentsProcessed);
 
         printSizeCountMap(sb, "Record type", recTypeSizes);
@@ -220,12 +270,17 @@ public class WalStat {
         printSizeCountMap(sb, "Tx Record: Nodes count", txRecordNodesCnt);
 
         printSizeCountMap(sb, "Data Record: Entries count", dataRecordEntriesCnt);
+        printSizeCountMap(sb, "Data Record: Under TX", dataRecordUnderTx);
+
         printSizeCountMap(sb, "Data Entry: Operations", dataEntryOperation);
         printSizeCountMap(sb, "Data Entry: Cache ID", dataEntryCacheId);
 
         printSizeCountMap(sb, "Page Snapshot: Page Types", pageSnapshotTypes);
         printSizeCountMap(sb, "Page Snapshot: Indexes", pageSnapshotIndexes);
         printSizeCountMap(sb, "Page Snapshot: Cache Groups", pageSnapshotCacheGrp);
+        printSizeCountMap(sb, "Page Snapshot: Partition ID", pageSnapshotPartId);
+
+        sb.append(txStat.toString());
 
         return sb.toString();
     }
@@ -239,8 +294,30 @@ public class WalStat {
         sb.append(mapName).append(": \n");
         sb.append("key\tsize\tcount\tavg.size");
         sb.append("\n");
-        for (Map.Entry<?, RecordSizeCountStat> next : map.entrySet()) {
-            sb.append(next.getKey()).append("\t").append(next.getValue()).append("\t");
+
+        final ArrayList<? extends Map.Entry<?, RecordSizeCountStat>> entries = new ArrayList<>(map.entrySet());
+        Collections.sort(entries, new Comparator<Map.Entry<?, RecordSizeCountStat>>() {
+            @Override public int compare(Map.Entry<?, RecordSizeCountStat> o1, Map.Entry<?, RecordSizeCountStat> o2) {
+                return -Integer.compare(o1.getValue().getCount(), o2.getValue().getCount());
+            }
+        });
+
+        RecordSizeCountStat others = new RecordSizeCountStat();
+        int otherRecords = 0;
+        int cnt = 0;
+        for (Map.Entry<?, RecordSizeCountStat> next : entries) {
+            if (cnt < DISPLAY_MAX) {
+                sb.append(next.getKey()).append("\t").append(next.getValue()).append("\t");
+                sb.append("\n");
+            }
+            else {
+                otherRecords++;
+                others.add(next.getValue());
+            }
+            cnt++;
+        }
+        if (otherRecords > 0) {
+            sb.append("... other ").append(otherRecords).append(" values").append("\t").append(others).append("\t");
             sb.append("\n");
         }
         sb.append("\n");

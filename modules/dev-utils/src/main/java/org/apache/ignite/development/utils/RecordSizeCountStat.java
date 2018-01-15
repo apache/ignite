@@ -26,7 +26,8 @@ public class RecordSizeCountStat {
     private int cnt;
 
     /**
-     * @param size record size
+     * @param size record size. Negative value means size is unknown for current occurrence. Any negative value resets
+     * accumulated statistics.
      */
     public void occurrence(int size) {
         if (size >= 0) {
@@ -34,6 +35,10 @@ public class RecordSizeCountStat {
                 this.size = 0;
 
             this.size += size;
+        }
+        else {
+            if (this.size > 0)
+                this.size = -1;
         }
 
         cnt++;
@@ -43,6 +48,26 @@ public class RecordSizeCountStat {
     @Override public String toString() {
         return (size >= 0 ? size : "") +
             "\t " + cnt +
-            "\t " + ((size >= 0) ? (size / cnt) : "");
+            "\t " + ((size >= 0) ? size / cnt : "");
+    }
+
+    private double averageD() {
+        return 1.0 * size / cnt;
+    }
+
+    public String averageStr() {
+        if(cnt==0)
+            return "";
+
+        return String.format("%.2f", averageD());
+    }
+
+    public int getCount() {
+        return cnt;
+    }
+
+    public void add(RecordSizeCountStat value) {
+        this.cnt+=value.cnt;
+        this.size+=value.size;
     }
 }
