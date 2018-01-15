@@ -68,6 +68,9 @@ public class VisorDataRegionConfiguration extends VisorDataTransferObject {
     /** Enable Ignite Native Persistence. */
     private boolean persistenceEnabled;
 
+    /** Temporary buffer size for checkpoints in bytes. */
+    private long checkpointPageBufSize;
+
     /**
      * Default constructor.
      */
@@ -94,6 +97,7 @@ public class VisorDataRegionConfiguration extends VisorDataTransferObject {
         metricsSubIntervalCount = plc.getMetricsSubIntervalCount();
         metricsRateTimeInterval = plc.getMetricsRateTimeInterval();
         persistenceEnabled = plc.isPersistenceEnabled();
+        checkpointPageBufSize = plc.getCheckpointPageBufferSize();
     }
 
     /**
@@ -188,6 +192,13 @@ public class VisorDataRegionConfiguration extends VisorDataTransferObject {
         return persistenceEnabled;
     }
 
+    /**
+     * @return Amount of memory allocated for a checkpoint temporary buffer in bytes.
+     */
+    public long getCheckpointPageBufferSize() {
+        return checkpointPageBufSize;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
@@ -201,6 +212,7 @@ public class VisorDataRegionConfiguration extends VisorDataTransferObject {
         out.writeInt(metricsSubIntervalCount);
         out.writeLong(metricsRateTimeInterval);
         out.writeBoolean(persistenceEnabled);
+        out.writeLong(checkpointPageBufSize);
     }
 
     /** {@inheritDoc} */
@@ -216,6 +228,7 @@ public class VisorDataRegionConfiguration extends VisorDataTransferObject {
         metricsSubIntervalCount = in.readInt();
         metricsRateTimeInterval = in.readLong();
         persistenceEnabled = in.readBoolean();
+        checkpointPageBufSize = in.readLong();
     }
 
     /** {@inheritDoc} */

@@ -43,6 +43,11 @@
                     </fileSet>
 
                     <fileSet>
+                        <directory>${basedir}/target/licenses</directory>
+                        <outputDirectory>include/licenses</outputDirectory>
+                    </fileSet>
+
+                    <fileSet>
                         <directory>bin</directory>
                         <outputDirectory>/</outputDirectory>
                     </fileSet>

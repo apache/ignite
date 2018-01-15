@@ -141,6 +141,14 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * Test that {@code CREATE TABLE} actually creates new cache, H2 table and type descriptor on all nodes.
+     * @throws Exception if failed.
+     */
+    public void testCreateTableWithCacheGroupAndLegacyParamName() throws Exception {
+        doTestCreateTable(CACHE_NAME, "MyGroup", null, null, true);
+    }
+
+    /**
      * Test that {@code CREATE TABLE} actually creates new cache from template,
      * H2 table and type descriptor on all nodes.
      * @throws Exception if failed.
@@ -483,11 +491,29 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @param additionalParams Supplemental parameters to append to {@code CREATE TABLE} SQL.
      */
     private void doTestCreateTable(String tplCacheName, String cacheGrp, CacheMode cacheMode,
-        CacheWriteSynchronizationMode writeSyncMode, String... additionalParams) {
+        CacheWriteSynchronizationMode writeSyncMode, String... additionalParams) throws SQLException {
+        doTestCreateTable(tplCacheName, cacheGrp, cacheMode, writeSyncMode, false, additionalParams);
+    }
+
+    /**
+     * Test that {@code CREATE TABLE} with given template cache name actually creates new cache,
+     * H2 table and type descriptor on all nodes, optionally with cache type check.
+     * @param tplCacheName Template cache name.
+     * @param cacheGrp Cache group name, or {@code null} if no group is set.
+     * @param cacheMode Expected cache mode, or {@code null} if no check is needed.
+     * @param writeSyncMode Expected write sync mode, or {@code null} if no check is needed.
+     * @param useLegacyCacheGrpParamName Whether legacy (harder-to-read) cache group param name should be used.
+     * @param additionalParams Supplemental parameters to append to {@code CREATE TABLE} SQL.
+     */
+    private void doTestCreateTable(String tplCacheName, String cacheGrp, CacheMode cacheMode,
+        CacheWriteSynchronizationMode writeSyncMode, boolean useLegacyCacheGrpParamName, String... additionalParams)
+        throws SQLException {
+        String cacheGrpParamName = useLegacyCacheGrpParamName ? "cacheGroup" : "cache_group";
+
         String sql = "CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
             (F.isEmpty(tplCacheName) ? "" : "\"template=" + tplCacheName + "\",") + "\"backups=10,atomicity=atomic\"" +
-            (F.isEmpty(cacheGrp) ? "" : ",\"cacheGroup=" + cacheGrp + '"');
+            (F.isEmpty(cacheGrp) ? "" : ",\"" + cacheGrpParamName + '=' + cacheGrp + '"');
 
         for (String p : additionalParams)
             sql += ",\"" + p + "\"";
@@ -522,30 +548,48 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             if (writeSyncMode != null)
                 assertEquals(writeSyncMode, cacheDesc.cacheConfiguration().getWriteSynchronizationMode());
 
-            QueryTypeDescriptorImpl desc = typeExisting(node, cacheName, "Person");
+            List<String> colNames = new ArrayList<>(5);
 
-            assertEquals(Object.class, desc.keyClass());
-            assertEquals(Object.class, desc.valueClass());
+            List<Class<?>> colTypes = new ArrayList<>(5);
 
-            assertTrue(desc.valueTypeName(), desc.valueTypeName().contains("Person"));
+            List<String> pkColNames = new ArrayList<>(2);
 
-            assertTrue(desc.keyTypeName(), desc.keyTypeName().startsWith(desc.valueTypeName()));
-            assertTrue(desc.keyTypeName(), desc.keyTypeName().endsWith("KEY"));
+            try (Connection c = connect(node)) {
+                try (ResultSet rs = c.getMetaData().getColumns(null, QueryUtils.DFLT_SCHEMA, "Person", null)) {
+                    for (int j = 0; j < 5; j++) {
+                        assertTrue(rs.next());
 
-            assertEquals(
-                F.asList("id", "city", "name", "surname", "age"),
-                new ArrayList<>(desc.fields().keySet())
-            );
+                        colNames.add(rs.getString("COLUMN_NAME"));
 
-            assertProperty(desc, "id", Integer.class, true);
-            assertProperty(desc, "city", String.class, true);
-            assertProperty(desc, "name", String.class, false);
-            assertProperty(desc, "surname", String.class, false);
-            assertProperty(desc, "age", Integer.class, false);
+                        try {
+                            colTypes.add(Class.forName(DataType.getTypeClassName(DataType
+                                .convertSQLTypeToValueType(rs.getInt("DATA_TYPE")))));
+                        }
+                        catch (ClassNotFoundException e) {
+                            throw new AssertionError(e);
+                        }
+                    }
 
-            GridH2Table tbl = ((IgniteH2Indexing)node.context().query().getIndexing()).dataTable("PUBLIC", "Person");
+                    assertFalse(rs.next());
+                }
 
-            assertNotNull(tbl);
+                try (ResultSet rs = c.getMetaData().getPrimaryKeys(null, QueryUtils.DFLT_SCHEMA, "Person")) {
+                    for (int j = 0; j < 2; j++) {
+                        assertTrue(rs.next());
+
+                        pkColNames.add(rs.getString("COLUMN_NAME"));
+                    }
+
+                    assertFalse(rs.next());
+                }
+            }
+
+            assertEqualsCollections(F.asList("id", "city", "name", "surname", "age"), colNames);
+
+            assertEqualsCollections(F.<Class<?>>asList(Integer.class, String.class, String.class, String.class,
+                Integer.class), colTypes);
+
+            assertEqualsCollections(F.asList("id", "city"), pkColNames);
         }
     }
 
@@ -582,7 +626,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * Test that attempting to omit mandatory value of CACHEGROUP parameter yields an error.
      */
     public void testEmptyCacheGroup() {
-        assertCreateTableWithParamsThrows("cachegroup=", "Parameter value cannot be empty: CACHEGROUP");
+        assertCreateTableWithParamsThrows("cache_group=", "Parameter value cannot be empty: CACHE_GROUP");
     }
 
     /**
@@ -817,7 +861,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     public void testAffinityKey() throws Exception {
         execute("CREATE TABLE \"City\" (\"name\" varchar primary key, \"code\" int) WITH wrap_key,wrap_value," +
-            "\"affinityKey='name'\"");
+            "\"affinity_key='name'\"");
 
         assertAffinityCacheConfiguration("City", "name");
 
@@ -830,7 +874,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         // We need unique name for this table to avoid conflicts with existing binary metadata.
         execute("CREATE TABLE \"Person2\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
-            "wrap_key,wrap_value,\"template=cache,affinityKey='city'\"");
+            "wrap_key,wrap_value,\"template=cache,affinity_key='city'\"");
 
         assertAffinityCacheConfiguration("Person2", "city");
 
@@ -903,22 +947,22 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testAffinityKeyCaseSensitivity() {
         execute("CREATE TABLE \"A\" (\"name\" varchar primary key, \"code\" int) WITH wrap_key,wrap_value," +
-            "\"affinityKey='name'\"");
+            "\"affinity_key='name'\"");
 
         assertAffinityCacheConfiguration("A", "name");
 
         execute("CREATE TABLE \"B\" (name varchar primary key, \"code\" int) WITH wrap_key,wrap_value," +
-            "\"affinityKey=name\"");
+            "\"affinity_key=name\"");
 
         assertAffinityCacheConfiguration("B", "NAME");
 
         execute("CREATE TABLE \"C\" (name varchar primary key, \"code\" int) WITH wrap_key,wrap_value," +
-            "\"affinityKey=NamE\"");
+            "\"affinity_key=NamE\"");
 
         assertAffinityCacheConfiguration("C", "NAME");
 
         execute("CREATE TABLE \"D\" (\"name\" varchar primary key, \"code\" int) WITH wrap_key,wrap_value," +
-            "\"affinityKey=NAME\"");
+            "\"affinity_key=NAME\"");
 
         assertAffinityCacheConfiguration("D", "name");
 
@@ -926,7 +970,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 execute("CREATE TABLE \"E\" (name varchar primary key, \"code\" int) WITH wrap_key,wrap_value," +
-                    "\"affinityKey='Name'\"");
+                    "\"affinity_key='Name'\"");
 
                 return null;
             }
@@ -937,7 +981,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 execute("CREATE TABLE \"E\" (\"name\" varchar, \"Name\" int, val int, primary key(\"name\", " +
-                    "\"Name\")) WITH \"affinityKey=name\"");
+                    "\"Name\")) WITH \"affinity_key=name\"");
 
                 return null;
             }
@@ -967,7 +1011,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         // Error arises because user has specified case sensitive affinity column name
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                execute("CREATE TABLE \"E\" (name varchar primary key, \"code\" int) WITH \"affinityKey=code\"");
+                execute("CREATE TABLE \"E\" (name varchar primary key, \"code\" int) WITH \"affinity_key=code\"");
 
                 return null;
             }
@@ -982,7 +1026,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         // Error arises because user has specified case sensitive affinity column name
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                execute("CREATE TABLE \"E\" (name varchar primary key, \"code\" int) WITH \"affinityKey=missing\"");
+                execute("CREATE TABLE \"E\" (name varchar primary key, \"code\" int) WITH \"affinity_key=missing\"");
 
                 return null;
             }

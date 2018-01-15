@@ -320,10 +320,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.IsTrue(proc.Join(30000, out exitCode));
                 Assert.AreEqual(-1, exitCode);
 
-                lock (reader.List)
-                {
-                    Assert.AreEqual(err, reader.List.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)));
-                }
+                Assert.AreEqual(err, reader.GetOutput().FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)));
             };
 
             checkError("blabla", "ERROR: Apache.Ignite.Core.Common.IgniteException: Missing argument value: " +
@@ -476,19 +473,6 @@ namespace Apache.Ignite.Core.Tests
             /// Maximum JVM memory (Xms).
             /// </summary>
             public int JvmMaxMemoryMb { get; set; }
-        }
-
-        private class ListDataReader : IIgniteProcessOutputReader
-        {
-            public readonly List<string> List = new List<string>();
-
-            public void OnOutput(System.Diagnostics.Process proc, string data, bool err)
-            {
-                lock (List)
-                {
-                    List.Add(data);
-                }
-            }
         }
     }
 }

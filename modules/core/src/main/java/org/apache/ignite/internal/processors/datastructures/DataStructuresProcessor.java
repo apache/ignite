@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -55,6 +56,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheType;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
@@ -72,6 +74,7 @@ import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPR;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -662,6 +665,24 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         });
     }
 
+    public void suspend(String cacheName) {
+        for (Map.Entry<GridCacheInternalKey, GridCacheRemovable> e : dsMap.entrySet()) {
+            String cacheName0 = ATOMICS_CACHE_NAME + "@" + e.getKey().groupName();
+
+            if (cacheName0.equals(cacheName))
+                e.getValue().suspend();
+        }
+    }
+
+    public void restart(IgniteInternalCache cache) {
+        for (Map.Entry<GridCacheInternalKey, GridCacheRemovable> e : dsMap.entrySet()) {
+            String cacheName0 = ATOMICS_CACHE_NAME + "@" + e.getKey().groupName();
+
+            if (cacheName0.equals(cache.name()))
+                e.getValue().restart(cache);
+        }
+    }
+
     /**
      * Gets an atomic reference from cache or creates one if it's not cached.
      *
@@ -952,6 +973,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         assert name != null;
         assert type.isCollection() : type;
+        assert !create || cfg != null;
 
         if (grpName == null) {
             if (cfg != null && cfg.getGroupName() != null)
@@ -960,17 +982,23 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 grpName = DEFAULT_DS_GROUP_NAME;
         }
 
-        assert !create || cfg != null;
-
         final String metaCacheName = ATOMICS_CACHE_NAME + "@" + grpName;
 
         IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> metaCache0 = ctx.cache().cache(metaCacheName);
 
         if (metaCache0 == null) {
-            if (!create)
-                return null;
+            CacheConfiguration ccfg = null;
 
-            ctx.cache().dynamicStartCache(metaCacheConfiguration(cfg, metaCacheName, grpName),
+            if (!create) {
+                DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(metaCacheName);
+
+                if (desc == null)
+                    return null;
+            }
+            else
+                ccfg = metaCacheConfiguration(cfg, metaCacheName, grpName);
+
+            ctx.cache().dynamicStartCache(ccfg,
                 metaCacheName,
                 null,
                 CacheType.DATA_STRUCTURES,

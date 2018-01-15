@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Tests
 
             var grid = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = "config\\cache-binarizables.xml",
+                SpringConfigUrl = "Config\\cache-binarizables.xml",
                 BinaryConfiguration = binaryConfiguration
             });
 
@@ -132,7 +132,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsNotNull(ex.InnerException);
             Assert.IsTrue(ex.InnerException.Message.StartsWith(
                 "Open generic types (Type.IsGenericTypeDefinition == true) are not allowed in BinaryConfiguration: " +
-                "System.Collections.Generic.List`1, mscorlib"));
+                "System.Collections.Generic.List`1"));
 
             // Pass open generic type name.
             cfg.BinaryConfiguration = new BinaryConfiguration {Types = new[] {typeof(IList<>).AssemblyQualifiedName}};
@@ -142,7 +142,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsNotNull(ex.InnerException);
             Assert.IsTrue(ex.InnerException.Message.StartsWith(
                 "Open generic types (Type.IsGenericTypeDefinition == true) are not allowed in BinaryConfiguration: " +
-                "System.Collections.Generic.IList`1, mscorlib"));
+                "System.Collections.Generic.IList`1"));
 
             // Pass interface.
             cfg.BinaryConfiguration = new BinaryConfiguration(typeof(ICollection));
@@ -152,7 +152,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsNotNull(ex.InnerException);
             Assert.IsTrue(ex.InnerException.Message.StartsWith(
                 "Abstract types and interfaces are not allowed in BinaryConfiguration: " +
-                "System.Collections.ICollection, mscorlib"));
+                "System.Collections.ICollection"));
         }
 
         /// <summary>

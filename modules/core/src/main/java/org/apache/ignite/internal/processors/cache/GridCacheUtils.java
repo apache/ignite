@@ -66,10 +66,14 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
@@ -84,6 +88,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -1046,6 +1051,7 @@ public class GridCacheUtils {
         cache.setAtomicityMode(TRANSACTIONAL);
         cache.setWriteSynchronizationMode(FULL_SYNC);
 
+        cache.setEvictionPolicyFactory(null);
         cache.setEvictionPolicy(null);
         cache.setCacheStoreFactory(null);
         cache.setNodeFilter(CacheConfiguration.ALL_NODES);
@@ -1677,6 +1683,101 @@ public class GridCacheUtils {
     }
 
     /**
+     * Creates closure that saves initial value to backup partition.
+     * <p>
+     * Useful only when store with readThrough is used. In situation when
+     * get() on backup node returns successful result, it's expected that
+     * localPeek() will be successful as well. But it doesn't true when
+     * primary node loaded value from local store, in this case backups
+     * will remain non-initialized.
+     * <br>
+     * To meet that requirement the value requested from primary should
+     * be saved on backup during get().
+     * </p>
+     *
+     * @param topVer Topology version.
+     * @param log Logger.
+     * @param cctx Cache context.
+     * @param key Key.
+     * @param expiryPlc Expiry policy.
+     * @param readThrough Read through.
+     * @param skipVals Skip values.
+     */
+    @Nullable public static BackupPostProcessingClosure createBackupPostProcessingClosure(
+        final AffinityTopologyVersion topVer,
+        final IgniteLogger log,
+        final GridCacheContext cctx,
+        final @Nullable KeyCacheObject key,
+        final @Nullable IgniteCacheExpiryPolicy expiryPlc,
+        boolean readThrough,
+        boolean skipVals
+    ) {
+        if (!readThrough || skipVals ||
+            (key != null && !cctx.affinity().backupsByKey(key, topVer).contains(cctx.localNode())))
+            return null;
+
+        return new BackupPostProcessingClosure() {
+            private void process(KeyCacheObject key, CacheObject val, GridCacheVersion ver, GridDhtCacheAdapter colocated) {
+                while (true) {
+                    GridCacheEntryEx entry = null;
+
+                    try {
+                        entry = colocated.entryEx(key, topVer);
+
+                        entry.initialValue(
+                            val,
+                            ver,
+                            expiryPlc == null ? 0 : expiryPlc.forCreate(),
+                            expiryPlc == null ? 0 : toExpireTime(expiryPlc.forCreate()),
+                            false,
+                            topVer,
+                            GridDrType.DR_BACKUP,
+                            true);
+
+                        break;
+                    }
+                    catch (GridCacheEntryRemovedException ignore) {
+                        if (log.isDebugEnabled())
+                            log.debug("Got removed entry during postprocessing (will retry): " +
+                                entry);
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Error saving backup value: " + entry, e);
+                    }
+                    catch (GridDhtInvalidPartitionException ignored) {
+                        break;
+                    }
+                    finally {
+                        if (entry != null)
+                            cctx.evicts().touch(entry, topVer);
+                    }
+                }
+            }
+
+            @Override public void apply(CacheObject val, GridCacheVersion ver) {
+                process(key, val, ver, cctx.dht());
+            }
+
+            @Override public void apply(Collection<GridCacheEntryInfo> infos) {
+                if (!F.isEmpty(infos)) {
+                    GridCacheAffinityManager aff = cctx.affinity();
+                    ClusterNode locNode = cctx.localNode();
+
+                    GridDhtCacheAdapter colocated = cctx.cache().isNear()
+                        ? ((GridNearCacheAdapter)cctx.cache()).dht()
+                        : cctx.dht();
+
+                    for (GridCacheEntryInfo info : infos) {
+                        // Save backup value.
+                        if (aff.backupsByKey(info.key(), topVer).contains(locNode))
+                            process(info.key(), info.value(), info.version(), colocated);
+                    }
+                }
+            }
+        };
+    }
+
+    /**
      * Checks if cache configuration belongs to persistent cache.
      *
      * @param ccfg Cache configuration.
@@ -1685,6 +1786,21 @@ public class GridCacheUtils {
     public static boolean isPersistentCache(CacheConfiguration ccfg, DataStorageConfiguration dsCfg) {
         if (dsCfg == null)
             return false;
+
+        // Special handling for system cache is needed.
+        if (isSystemCache(ccfg.getName())) {
+            if (dsCfg.getDefaultDataRegionConfiguration().isPersistenceEnabled())
+                return true;
+
+            if (dsCfg.getDataRegionConfigurations() != null) {
+                for (DataRegionConfiguration drConf : dsCfg.getDataRegionConfigurations()) {
+                    if (drConf.isPersistenceEnabled())
+                        return true;
+                }
+            }
+
+            return false;
+        }
 
         String regName = ccfg.getDataRegionName();
 
@@ -1701,14 +1817,22 @@ public class GridCacheUtils {
         return false;
     }
 
+
     /**
      * @return {@code true} if persistence is enabled for at least one data region, {@code false} if not.
      */
     public static boolean isPersistenceEnabled(IgniteConfiguration cfg) {
-        if (cfg.getDataStorageConfiguration() == null)
+        return isPersistenceEnabled(cfg.getDataStorageConfiguration());
+    }
+
+    /**
+     * @return {@code true} if persistence is enabled for at least one data region, {@code false} if not.
+     */
+    public static boolean isPersistenceEnabled(DataStorageConfiguration cfg) {
+        if (cfg == null)
             return false;
 
-        DataRegionConfiguration dfltReg = cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration();
+        DataRegionConfiguration dfltReg = cfg.getDefaultDataRegionConfiguration();
 
         if (dfltReg == null)
             return false;
@@ -1716,7 +1840,7 @@ public class GridCacheUtils {
         if (dfltReg.isPersistenceEnabled())
             return true;
 
-        DataRegionConfiguration[] regCfgs = cfg.getDataStorageConfiguration().getDataRegionConfigurations();
+        DataRegionConfiguration[] regCfgs = cfg.getDataRegionConfigurations();
 
         if (regCfgs == null)
             return false;
@@ -1727,5 +1851,12 @@ public class GridCacheUtils {
         }
 
         return false;
+    }
+
+    /**
+     *
+     */
+    public interface BackupPostProcessingClosure extends IgniteInClosure<Collection<GridCacheEntryInfo>>,
+        IgniteBiInClosure<CacheObject, GridCacheVersion>{
     }
 }

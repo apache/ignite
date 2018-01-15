@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
-    using Apache.Ignite.Core.Impl;
     using NUnit.Framework;
     using DataPageEvictionMode = Apache.Ignite.Core.Configuration.DataPageEvictionMode;
 
@@ -32,7 +31,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     public class PersistenceTest
     {
         /** Temp dir for WAL. */
-        private readonly string _tempDir = IgniteUtils.GetTempDirectoryName();
+        private readonly string _tempDir = TestUtils.GetTempDirectoryName();
 
         /// <summary>
         /// Tears down the test.
@@ -135,14 +134,12 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /// <summary>
-        /// Checks the data storage metrics.
+        /// Checks that data storage metrics reflect some write operations.
         /// </summary>
         private static void CheckDataStorageMetrics(IIgnite ignite)
         {
-            // Check metrics.
             var metrics = ignite.GetDataStorageMetrics();
             Assert.Greater(metrics.WalLoggingRate, 0);
-            Assert.Greater(metrics.WalWritingRate, 0);
             Assert.Greater(metrics.WalFsyncTimeAverage, 0);
         }
 

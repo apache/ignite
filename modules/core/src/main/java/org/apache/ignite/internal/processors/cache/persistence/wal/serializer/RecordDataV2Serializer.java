@@ -24,15 +24,18 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
-import org.apache.ignite.internal.processors.cache.persistence.wal.RecordDataSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 
 /**
  * Record data V2 serializer.
  */
 public class RecordDataV2Serializer implements RecordDataSerializer {
+    /** Length of HEADER record data. */
+    static final int HEADER_RECORD_DATA_SIZE = /*Magic*/8 + /*Version*/4;
+
     /** V1 data serializer delegate. */
     private final RecordDataV1Serializer delegateSerializer;
 
@@ -47,12 +50,15 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
 
     /** {@inheritDoc} */
     @Override public int size(WALRecord record) throws IgniteCheckedException {
-        if (record instanceof HeaderRecord)
-            throw new UnsupportedOperationException("Getting size of header records is forbidden since version 2 of serializer");
-
         switch (record.type()) {
+            case HEADER_RECORD:
+                return HEADER_RECORD_DATA_SIZE;
+
             case DATA_RECORD:
                 return delegateSerializer.size(record) + 8/*timestamp*/;
+
+            case SNAPSHOT:
+                return 8 + 1;
 
             default:
                 return delegateSerializer.size(record);
@@ -76,6 +82,12 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
 
                 return new DataRecord(entries, timeStamp);
 
+            case SNAPSHOT:
+                long snpId = in.readLong();
+                byte full = in.readByte();
+
+                return new SnapshotRecord(snpId, full == 1);
+
             default:
                 return delegateSerializer.readRecord(type, in);
         }
@@ -95,6 +107,14 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
 
                 for (DataEntry dataEntry : dataRec.writeEntries())
                     RecordDataV1Serializer.putDataEntry(buf, dataEntry);
+
+                break;
+
+            case SNAPSHOT:
+                SnapshotRecord snpRec = (SnapshotRecord)record;
+
+                buf.putLong(snpRec.getSnapshotId());
+                buf.put(snpRec.isFull() ? (byte)1 : 0);
 
                 break;
 

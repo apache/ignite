@@ -43,6 +43,8 @@ LINQ Provider for Apache Ignite
 
 Query distributed in-memory data in a strongly-typed manner and with IDE support!
 All Ignite SQL features are supported: distributed joins, groupings, aggregates, field queries, and more.
+
+Supports .NET 4+ and .NET Core 2.0+.
             
 More info: https://apacheignite-net.readme.io/
         </description>
@@ -55,6 +57,9 @@ More info: https://apacheignite-net.readme.io/
         </dependencies>    
     </metadata>
     <files>
+	    <file src="bin\$configuration$\Apache.Ignite.Linq.dll" target="lib\net40" />
+		<file src="bin\$configuration$\Apache.Ignite.Linq.xml" target="lib\net40" />
+
         <!-- LINQPad samples -->
         <file src="NuGet\LINQPad\*.*" target="linqpad-samples" />
     </files>

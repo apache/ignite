@@ -70,7 +70,7 @@ public interface DataRegionMetricsMXBean extends DataRegionMetrics {
     @Override public float getLargeEntriesPagesPercentage();
 
     /** {@inheritDoc} */
-    @MXBeanDescription("Percentage of space that is still free and can be filled in.")
+    @MXBeanDescription("The percentage of the used space.")
     @Override public float getPagesFillFactor();
 
     /** {@inheritDoc} */

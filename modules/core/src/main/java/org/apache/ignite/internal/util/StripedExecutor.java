@@ -22,34 +22,36 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.BlockingQueue;
+import java.util.Random;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
+import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
  * Striped executor.
  */
 public class StripedExecutor implements ExecutorService {
+    /** */
+    private static final int SPIN_CNT = 2048;
+
     /** Stripes. */
     private final Stripe[] stripes;
 
@@ -76,12 +78,11 @@ public class StripedExecutor implements ExecutorService {
      * @param log Logger.
      * @param stealTasks {@code True} to steal tasks.
      */
-    public StripedExecutor(int cnt, String igniteInstanceName, String poolName, final IgniteLogger log, boolean stealTasks) {
+    public StripedExecutor(int cnt, String igniteInstanceName, String poolName, final IgniteLogger log,
+        boolean stealTasks) {
         A.ensure(cnt > 0, "cnt > 0");
 
-        boolean success = false;
-
-        stripes = new Stripe[cnt];
+        stripes = stealTasks ? StealingStripe.create(igniteInstanceName, poolName, log, cnt) : new Stripe[cnt];
 
         completedCntrs = new long[cnt];
 
@@ -89,17 +90,12 @@ public class StripedExecutor implements ExecutorService {
 
         this.log = log;
 
+        boolean success = false;
+
         try {
-            for (int i = 0; i < cnt; i++) {
-                stripes[i] = stealTasks ? new StripeConcurrentQueue(
-                    igniteInstanceName,
-                    poolName,
-                    i,
-                    log, stripes) : new StripeConcurrentQueue(
-                        igniteInstanceName,
-                        poolName,
-                        i,
-                        log);
+            if(!stealTasks) {
+                for (int i = 0; i < cnt; i++)
+                    stripes[i] = new MpscQueueBasedStripe(igniteInstanceName, poolName, i, log);
             }
 
             for (int i = 0; i < cnt; i++)
@@ -409,7 +405,7 @@ public class StripedExecutor implements ExecutorService {
     /**
      * Stripe.
      */
-    private static abstract class Stripe implements Runnable {
+    private abstract static class Stripe implements Runnable {
         /** */
         private final String igniteInstanceName;
 
@@ -440,7 +436,7 @@ public class StripedExecutor implements ExecutorService {
          * @param idx Stripe index.
          * @param log Logger.
          */
-        public Stripe(
+        Stripe(
             String igniteInstanceName,
             String poolName,
             int idx,
@@ -493,10 +489,8 @@ public class StripedExecutor implements ExecutorService {
         /** {@inheritDoc} */
         @Override public void run() {
             while (!stopping) {
-                Runnable cmd;
-
                 try {
-                    cmd = take();
+                    Runnable cmd = take();
 
                     if (cmd != null) {
                         active = true;
@@ -552,52 +546,79 @@ public class StripedExecutor implements ExecutorService {
         }
     }
 
-    /**
-     * Stripe.
-     */
-    private static class StripeConcurrentQueue extends Stripe {
+    /** */
+    private static final class StealingStripe extends Stripe {
         /** */
         private static final int IGNITE_TASKS_STEALING_THRESHOLD =
             IgniteSystemProperties.getInteger(
                 IgniteSystemProperties.IGNITE_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD, 4);
 
-        /** Queue. */
-        private final Queue<Runnable> queue;
+        /** */
+        @GridToStringExclude
+        private final Deque<Runnable>[] queues;
 
         /** */
         @GridToStringExclude
-        private final Stripe[] others;
+        private final IgniteRunnable unpark;
 
         /** */
-        private volatile boolean parked;
+        @GridToStringExclude
+        private Random rnd;
 
-        /**
-         * @param igniteInstanceName Ignite instance name.
-         * @param poolName Pool name.
-         * @param idx Stripe index.
-         * @param log Logger.
-         */
-        StripeConcurrentQueue(
-            String igniteInstanceName,
-            String poolName,
-            int idx,
-            IgniteLogger log
-        ) {
-            this(igniteInstanceName, poolName, idx, log, null);
+        /** */
+        private final Deque<Runnable> queue;
+
+        /** */
+        private final AtomicBoolean parked = new AtomicBoolean();
+
+        /** */
+        @SuppressWarnings("unchecked")
+        static Stripe[] create(String igniteInstanceName, String poolName, IgniteLogger log, final int poolSize) {
+            final StealingStripe[] stripes = new StealingStripe[poolSize];
+            Deque<Runnable>[] queues = new Deque[poolSize];
+
+            IgniteRunnable unpark = new IgniteRunnable() {
+                @Override public void run() {
+                    int init = ThreadLocalRandom.current().nextInt(poolSize);
+
+                    for (int cur = init;;) {
+                        AtomicBoolean parked = stripes[cur].parked;
+
+                        if (parked.get() && parked.compareAndSet(true, false)) {
+                            LockSupport.unpark(stripes[cur].thread);
+
+                            break;
+                        }
+
+                        if ((cur = (cur + 1) % poolSize) == init)
+                            break;
+                    }
+                }
+            };
+
+            for (int i = 0; i < poolSize; i++) {
+                queues[i] = new ConcurrentLinkedDeque8<>();
+                stripes[i] = new StealingStripe(i, igniteInstanceName, poolName, log, queues, unpark);
+            }
+
+            return stripes;
         }
 
         /**
+         * @param idx Stripe index.
          * @param igniteInstanceName Ignite instance name.
          * @param poolName Pool name.
-         * @param idx Stripe index.
          * @param log Logger.
+         * @param queues Other queues to steal tasks from.
+         * @param unpark Unpark callback, unparks random parked stripe from the pool.
          */
-        StripeConcurrentQueue(
+        private StealingStripe(
+            int idx,
             String igniteInstanceName,
             String poolName,
-            int idx,
             IgniteLogger log,
-            Stripe[] others
+            Deque<Runnable>[] queues,
+            IgniteRunnable unpark
         ) {
             super(
                 igniteInstanceName,
@@ -605,73 +626,62 @@ public class StripedExecutor implements ExecutorService {
                 idx,
                 log);
 
-            this.others = others;
+            this.queues = queues;
+            this.unpark = unpark;
 
-            this.queue = others == null ? new ConcurrentLinkedQueue<Runnable>() : new ConcurrentLinkedDeque<Runnable>();
+            queue = queues[idx];
         }
 
         /** {@inheritDoc} */
         @Override Runnable take() throws InterruptedException {
-            Runnable r;
+            Runnable task;
 
-            for (int i = 0; i < 2048; i++) {
-                r = queue.poll();
-
-                if (r != null)
-                    return r;
+            for (int i = 0; i < SPIN_CNT; i++) {
+                if ((task = queue.poll()) != null)
+                    return task;
             }
 
-            parked = true;
+            for (;;) {
+                parked.set(true);
 
-            try {
-                for (;;) {
-                    r = queue.poll();
+                if ((task = queue.poll()) != null) {
+                    parked.set(false);
 
-                    if (r != null)
-                        return r;
+                    return task;
+                }
 
-                    if(others != null) {
-                        int len = others.length;
-                        int init = ThreadLocalRandom.current().nextInt(len);
-                        int cur = init;
+                int len = queues.length, init = random().nextInt(len);
 
-                        while (true) {
-                            if(cur != idx) {
-                                Deque<Runnable> queue = (Deque<Runnable>) ((StripeConcurrentQueue) others[cur]).queue;
+                for (int cur = init;;) {
+                    if(cur != idx) {
+                        Deque<Runnable> queue = queues[cur];
 
-                                if(queue.size() > IGNITE_TASKS_STEALING_THRESHOLD && (r = queue.pollLast()) != null)
-                                    return r;
-                            }
+                        if(queue.size() > IGNITE_TASKS_STEALING_THRESHOLD && (task = queue.pollLast()) != null) {
+                            parked.set(false);
 
-                            if ((cur = (cur + 1) % len) == init)
-                                break;
+                            return task;
                         }
                     }
 
-                    LockSupport.park();
-
-                    if (Thread.interrupted())
-                        throw new InterruptedException();
+                    if ((cur = (cur + 1) % len) == init)
+                        break;
                 }
-            }
-            finally {
-                parked = false;
+
+                LockSupport.park();
+
+                if (Thread.interrupted())
+                    throw new InterruptedException();
             }
         }
 
         /** {@inheritDoc} */
-        void execute(Runnable cmd) {
+        @Override void execute(Runnable cmd) {
             queue.add(cmd);
 
-            if (parked)
+            if (parked.get() && parked.compareAndSet(true, false))
                 LockSupport.unpark(thread);
-
-            if(others != null && queueSize() > IGNITE_TASKS_STEALING_THRESHOLD) {
-                for (Stripe other : others) {
-                    if(((StripeConcurrentQueue)other).parked)
-                        LockSupport.unpark(other.thread);
-                }
-            }
+            else if(queue.size() > IGNITE_TASKS_STEALING_THRESHOLD)
+                unpark.run();
         }
 
         /** {@inheritDoc} */
@@ -684,18 +694,24 @@ public class StripedExecutor implements ExecutorService {
             return queue.size();
         }
 
+        /** */
+        private Random random() {
+            return rnd == null ? rnd = ThreadLocalRandom.current() : rnd;
+        }
+
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(StripeConcurrentQueue.class, this, super.toString());
+            return S.toString(StealingStripe.class, this, super.toString());
         }
     }
 
-    /**
-     * Stripe.
-     */
-    private static class StripeConcurrentQueueNoPark extends Stripe {
-        /** Queue. */
-        private final Queue<Runnable> queue = new ConcurrentLinkedQueue<>();
+    /** */
+    private static final class MpscQueueBasedStripe extends Stripe {
+        /** */
+        private final AtomicBoolean parked = new AtomicBoolean();
+
+        /** */
+        private final MpscQueue<Runnable> queue = new MpscQueue<>();
 
         /**
          * @param igniteInstanceName Ignite instance name.
@@ -703,82 +719,41 @@ public class StripedExecutor implements ExecutorService {
          * @param idx Stripe index.
          * @param log Logger.
          */
-        public StripeConcurrentQueueNoPark(
-            String igniteInstanceName,
-            String poolName,
-            int idx,
-            IgniteLogger log
-        ) {
-            super(igniteInstanceName,
-                poolName,
-                idx,
-                log);
+        private MpscQueueBasedStripe(String igniteInstanceName, String poolName, int idx, IgniteLogger log) {
+            super(igniteInstanceName, poolName, idx, log);
         }
 
         /** {@inheritDoc} */
-        @Override Runnable take() {
-            for (;;) {
-                Runnable r = queue.poll();
+        @Override void execute(Runnable cmd) {
+            queue.offer(cmd);
 
-                if (r != null)
-                    return r;
-            }
-        }
-
-        /** {@inheritDoc} */
-        void execute(Runnable cmd) {
-            queue.add(cmd);
-        }
-
-        /** {@inheritDoc} */
-        @Override int queueSize() {
-            return queue.size();
-        }
-
-        /** {@inheritDoc} */
-        @Override String queueToString() {
-            return String.valueOf(queue);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(StripeConcurrentQueueNoPark.class, this, super.toString());
-        }
-    }
-
-    /**
-     * Stripe.
-     */
-    private static class StripeConcurrentBlockingQueue extends Stripe {
-        /** Queue. */
-        private final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
-
-        /**
-         * @param igniteInstanceName Ignite instance name.
-         * @param poolName Pool name.
-         * @param idx Stripe index.
-         * @param log Logger.
-         */
-        public StripeConcurrentBlockingQueue(
-            String igniteInstanceName,
-            String poolName,
-            int idx,
-            IgniteLogger log
-        ) {
-            super(igniteInstanceName,
-                poolName,
-                idx,
-                log);
+            if (parked.get() && parked.compareAndSet(true, false))
+                LockSupport.unpark(thread);
         }
 
         /** {@inheritDoc} */
         @Override Runnable take() throws InterruptedException {
-            return queue.take();
-        }
+            Runnable task;
 
-        /** {@inheritDoc} */
-        void execute(Runnable cmd) {
-            queue.add(cmd);
+            for (int i = 0; i < SPIN_CNT; i++) {
+                if ((task = queue.poll()) != null)
+                    return task;
+            }
+
+            for (;;) {
+                parked.set(true);
+
+                if ((task = queue.poll()) != null) {
+                    parked.set(false);
+
+                    return task;
+                }
+
+                LockSupport.park();
+
+                if (Thread.interrupted())
+                    throw new InterruptedException();
+            }
         }
 
         /** {@inheritDoc} */
@@ -789,11 +764,6 @@ public class StripedExecutor implements ExecutorService {
         /** {@inheritDoc} */
         @Override String queueToString() {
             return String.valueOf(queue);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(StripeConcurrentBlockingQueue.class, this, super.toString());
         }
     }
 }

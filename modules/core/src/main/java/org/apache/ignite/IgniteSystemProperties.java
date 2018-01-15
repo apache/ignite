@@ -25,6 +25,7 @@ import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
@@ -157,6 +158,14 @@ public final class IgniteSystemProperties {
      * Setting to {@code true} enables writing sensitive information in {@code toString()} output.
      */
     public static final String IGNITE_TO_STRING_INCLUDE_SENSITIVE = "IGNITE_TO_STRING_INCLUDE_SENSITIVE";
+
+    /** Maximum length for {@code toString()} result. */
+    public static final String IGNITE_TO_STRING_MAX_LENGTH = "IGNITE_TO_STRING_MAX_LENGTH";
+
+    /**
+     * Limit collection (map, array) elements number to output.
+     */
+    public static final String IGNITE_TO_STRING_COLLECTION_LIMIT = "IGNITE_TO_STRING_COLLECTION_LIMIT";
 
     /**
      * If this property is set to {@code true} (default) and Ignite is launched
@@ -452,6 +461,9 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE = "IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE";
 
+    /** Disable fallback to H2 SQL parser if the internal SQL parser fails to parse the statement. */
+    public static final String IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK = "IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK";
+
     /** Maximum size for affinity assignment history. */
     public static final String IGNITE_AFFINITY_HISTORY_SIZE = "IGNITE_AFFINITY_HISTORY_SIZE";
 
@@ -656,6 +668,12 @@ public final class IgniteSystemProperties {
     /** Ignite page memory concurrency level. */
     public static final String IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL = "IGNITE_OFFHEAP_LOCK_CONCURRENCY_LEVEL";
 
+    /**
+     * Start Ignite on versions of JRE 7 older than 1.7.0_71. For proper work it may require
+     * disabling JIT in some places.
+     */
+    public static final String IGNITE_FORCE_START_JAVA7 = "IGNITE_FORCE_START_JAVA7";
+
     /** Returns true for system properties only avoiding sending sensitive information. */
     private static final IgnitePredicate<Map.Entry<String, String>> PROPS_FILTER = new IgnitePredicate<Map.Entry<String, String>>() {
         @Override public boolean apply(final Map.Entry<String, String> entry) {
@@ -707,6 +725,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_ENABLE_FORCIBLE_NODE_KILL = "IGNITE_ENABLE_FORCIBLE_NODE_KILL";
 
     /**
+     *
+     */
+    public static final String IGNITE_WAL_ARCHIVE_COMPACT_SKIP_DELTA_RECORD = "IGNITE_WAL_ARCHIVE_COMPACT_SKIP_DELTA_RECORD";
+
+    /**
      * Tasks stealing will be started if tasks queue size per data-streamer thread exceeds this threshold.
      * <p>
      * Default value is {@code 4}.
@@ -737,11 +760,22 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_WAL_SERIALIZER_VERSION = "IGNITE_WAL_SERIALIZER_VERSION";
 
     /**
+     * Property that indicates should be mapped byte buffer used or not.
+     * Possible values: {@code true} and {@code false}.
+     */
+    public static final String IGNITE_WAL_MMAP = "IGNITE_WAL_MMAP";
+
+    /**
      * When set to {@code true}, Data store folders are generated only by consistent id, and no consistent ID will be
      * set based on existing data store folders. This option also enables compatible folder generation mode as it was
      * before 2.3.
      */
     public static final String IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID = "IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID";
+
+    /**
+     * If this property is set to {@code true} enable logging in {@link GridClient}.
+     */
+    public static final String IGNITE_GRID_CLIENT_LOG_ENABLED = "IGNITE_GRID_CLIENT_LOG_ENABLED";
 
     /**
      * Enforces singleton.

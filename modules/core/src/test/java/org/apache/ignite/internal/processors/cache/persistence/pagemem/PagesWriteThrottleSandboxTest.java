@@ -68,12 +68,12 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
         DataStorageConfiguration dbCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setMaxSize(4000L * 1024 * 1024)
+                .setCheckpointPageBufferSize(1000L * 1000 * 1000)
                 .setName("dfltDataRegion")
                 .setMetricsEnabled(true)
                 .setPersistenceEnabled(true))
             .setWalMode(WALMode.BACKGROUND)
             .setCheckpointFrequency(20_000)
-            .setCheckpointPageBufferSize(1000L * 1000 * 1000)
             .setWriteThrottlingEnabled(true);
 
         cfg.setDataStorageConfiguration(dbCfg);

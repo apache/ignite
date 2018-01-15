@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// <summary>
     /// Tests the persistent store. Uses the obsolete API. See <see cref="PersistenceTest"/> for the actual API.
     /// </summary>
+    [Category(TestUtils.CategoryIntensive)]
     public class PersistentStoreTestObsolete
     {
         /** Temp dir for WAL. */
@@ -60,7 +61,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                     WalStorePath = Path.Combine(_tempDir, "WalStore"),
                     WalArchivePath = Path.Combine(_tempDir, "WalArchive"),
                     MetricsEnabled = true
-                }
+                },
+                DataStorageConfiguration = null
             };
 
             const string cacheName = "persistentCache";
@@ -77,7 +79,6 @@ namespace Apache.Ignite.Core.Tests.Cache
                 // Check some metrics.
                 var metrics = ignite.GetPersistentStoreMetrics();
                 Assert.Greater(metrics.WalLoggingRate, 0);
-                Assert.Greater(metrics.WalWritingRate, 0);
                 Assert.Greater(metrics.WalFsyncTimeAverage, 0);
             }
 
@@ -116,7 +117,8 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                PersistentStoreConfiguration = new PersistentStoreConfiguration()
+                PersistentStoreConfiguration = new PersistentStoreConfiguration(),
+                DataStorageConfiguration = null
             };
 
             // Default config, inactive by default (IsActiveOnStart is ignored when persistence is enabled).

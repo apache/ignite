@@ -24,7 +24,6 @@ namespace Apache.Ignite.Core
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
-    using System.Text;
     using System.Xml;
     using System.Xml.Serialization;
     using Apache.Ignite.Core.Binary;
@@ -215,6 +214,11 @@ namespace Apache.Ignite.Core
         public const bool DefaultIsActiveOnStart = true;
 
         /// <summary>
+        /// Default value for <see cref="RedirectJavaConsoleOutput"/> property.
+        /// </summary>
+        public const bool DefaultRedirectJavaConsoleOutput = true;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class.
         /// </summary>
         public IgniteConfiguration()
@@ -222,6 +226,7 @@ namespace Apache.Ignite.Core
             JvmInitialMemoryMb = DefaultJvmInitMem;
             JvmMaxMemoryMb = DefaultJvmMaxMem;
             ClientConnectorConfigurationEnabled = DefaultClientConnectorConfigurationEnabled;
+            RedirectJavaConsoleOutput = DefaultRedirectJavaConsoleOutput;
         }
 
         /// <summary>
@@ -302,17 +307,7 @@ namespace Apache.Ignite.Core
             writer.WriteIntNullable(_queryThreadPoolSize);
 
             // Cache config
-            var caches = CacheConfiguration;
-
-            if (caches == null)
-                writer.WriteInt(0);
-            else
-            {
-                writer.WriteInt(caches.Count);
-
-                foreach (var cache in caches)
-                    cache.Write(writer);
-            }
+            writer.WriteCollectionRaw(CacheConfiguration);
 
             // Discovery config
             var disco = DiscoverySpi;
@@ -623,10 +618,7 @@ namespace Apache.Ignite.Core
             _queryThreadPoolSize = r.ReadIntNullable();
 
             // Cache config
-            var cacheCfgCount = r.ReadInt();
-            CacheConfiguration = new List<CacheConfiguration>(cacheCfgCount);
-            for (int i = 0; i < cacheCfgCount; i++)
-                CacheConfiguration.Add(new CacheConfiguration(r));
+            CacheConfiguration = r.ReadCollectionRaw(x => new CacheConfiguration(x));
 
             // Discovery config
             DiscoverySpi = r.ReadBoolean() ? new TcpDiscoverySpi(r) : null;
@@ -740,11 +732,6 @@ namespace Apache.Ignite.Core
 
             JvmInitialMemoryMb = (int) (binaryReader.ReadLong()/1024/2014);
             JvmMaxMemoryMb = (int) (binaryReader.ReadLong()/1024/2014);
-
-            // Local data (not from reader)
-            JvmDllPath = Process.GetCurrentProcess().Modules.OfType<ProcessModule>()
-                .Single(x => string.Equals(x.ModuleName, IgniteUtils.FileJvmDll, StringComparison.OrdinalIgnoreCase))
-                .FileName;
         }
 
         /// <summary>
@@ -763,6 +750,7 @@ namespace Apache.Ignite.Core
             IgniteHome = cfg.IgniteHome;
             JvmClasspath = cfg.JvmClasspath;
             JvmOptions = cfg.JvmOptions;
+            JvmDllPath = cfg.JvmDllPath;
             Assemblies = cfg.Assemblies;
             SuppressWarnings = cfg.SuppressWarnings;
             LifecycleHandlers = cfg.LifecycleHandlers;
@@ -773,6 +761,7 @@ namespace Apache.Ignite.Core
             AutoGenerateIgniteInstanceName = cfg.AutoGenerateIgniteInstanceName;
             PeerAssemblyLoadingMode = cfg.PeerAssemblyLoadingMode;
             LocalEventListeners = cfg.LocalEventListeners;
+            RedirectJavaConsoleOutput = cfg.RedirectJavaConsoleOutput;
 
             if (CacheConfiguration != null && cfg.CacheConfiguration != null)
             {
@@ -857,10 +846,9 @@ namespace Apache.Ignite.Core
         public string SpringConfigUrl { get; set; }
 
         /// <summary>
-        /// Path jvm.dll file. If not set, it's location will be determined
-        /// using JAVA_HOME environment variable.
-        /// If path is neither set nor determined automatically, an exception
-        /// will be thrown.
+        /// Path to jvm.dll (libjvm.so on Linux, libjvm.dylib on Mac) file.
+        /// If not set, it's location will be determined using JAVA_HOME environment variable.
+        /// If path is neither set nor determined automatically, an exception will be thrown.
         /// </summary>
         public string JvmDllPath { get; set; }
 
@@ -1164,9 +1152,6 @@ namespace Apache.Ignite.Core
         /// <param name="rootElementName">Name of the root element.</param>
         public void ToXml(XmlWriter writer, string rootElementName)
         {
-            IgniteArgumentCheck.NotNull(writer, "writer");
-            IgniteArgumentCheck.NotNullOrEmpty(rootElementName, "rootElementName");
-
             IgniteConfigurationXmlSerializer.Serialize(this, writer, rootElementName);
         }
 
@@ -1175,19 +1160,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         public string ToXml()
         {
-            var sb = new StringBuilder();
-
-            var settings = new XmlWriterSettings
-            {
-                Indent = true
-            };
-
-            using (var xmlWriter = XmlWriter.Create(sb, settings))
-            {
-                ToXml(xmlWriter, "igniteConfiguration");
-            }
-
-            return sb.ToString();
+            return IgniteConfigurationXmlSerializer.Serialize(this, "igniteConfiguration");
         }
 
         /// <summary>
@@ -1197,9 +1170,7 @@ namespace Apache.Ignite.Core
         /// <returns>Deserialized instance.</returns>
         public static IgniteConfiguration FromXml(XmlReader reader)
         {
-            IgniteArgumentCheck.NotNull(reader, "reader");
-
-            return IgniteConfigurationXmlSerializer.Deserialize(reader);
+            return IgniteConfigurationXmlSerializer.Deserialize<IgniteConfiguration>(reader);
         }
 
         /// <summary>
@@ -1207,20 +1178,9 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="xml">Xml string.</param>
         /// <returns>Deserialized instance.</returns>
-        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
-        [SuppressMessage("Microsoft.Usage", "CA2202: Do not call Dispose more than one time on an object")]
         public static IgniteConfiguration FromXml(string xml)
         {
-            IgniteArgumentCheck.NotNullOrEmpty(xml, "xml");
-
-            using (var stringReader = new StringReader(xml))
-            using (var xmlReader = XmlReader.Create(stringReader))
-            {
-                // Skip XML header.
-                xmlReader.MoveToContent();
-
-                return FromXml(xmlReader);
-            }
+            return IgniteConfigurationXmlSerializer.Deserialize<IgniteConfiguration>(xml);
         }
 
         /// <summary>
@@ -1433,5 +1393,21 @@ namespace Apache.Ignite.Core
         /// Gets or sets consistent globally unique node identifier which survives node restarts.
         /// </summary>
         public object ConsistentId { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether Java console output should be redirected
+        /// to <see cref="Console.Out"/> and <see cref="Console.Error"/>, respectively.
+        /// <para />
+        /// Default is <see cref="DefaultRedirectJavaConsoleOutput"/>.
+        /// <para />
+        /// Java code outputs valuable information to console. However, since that is Java console,
+        /// it is not possible to capture that output with standard .NET APIs (<see cref="Console.SetOut"/>).
+        /// As a result, many tools (IDEs, test runners) are not able to display Ignite console output in UI.
+        /// <para />
+        /// This property is enabled by default and redirects Java console output to standard .NET console.
+        /// It is recommended to disable this in production.
+        /// </summary>
+        [DefaultValue(DefaultRedirectJavaConsoleOutput)]
+        public bool RedirectJavaConsoleOutput { get; set; }
     }
 }

@@ -77,14 +77,46 @@ class ClientCacheRequest extends ClientRequest {
      * @return Cache.
      */
     protected IgniteCache rawCache(ClientConnectionContext ctx) {
-        DynamicCacheDescriptor cacheDesc = ctx.kernalContext().cache().cacheDescriptor(cacheId);
-
-        if (cacheDesc == null)
-            throw new IgniteClientException(ClientStatus.CACHE_DOES_NOT_EXIST, "Cache does not exist [cacheId= " +
-                cacheId + "]", null);
+        DynamicCacheDescriptor cacheDesc = cacheDescriptor(ctx);
 
         String cacheName = cacheDesc.cacheName();
 
         return ctx.kernalContext().grid().cache(cacheName);
+    }
+
+    /**
+     * Gets the cache descriptor.
+     *
+     * @param ctx Context.
+     * @return Cache descriptor.
+     */
+    protected DynamicCacheDescriptor cacheDescriptor(ClientConnectionContext ctx) {
+        return cacheDescriptor(ctx, cacheId);
+    }
+
+    /**
+     * Gets the cache descriptor.
+     *
+     * @param ctx Context.
+     * @param cacheId Cache id.
+     * @return Cache descriptor.
+     */
+    public static DynamicCacheDescriptor cacheDescriptor(ClientConnectionContext ctx, int cacheId) {
+        DynamicCacheDescriptor desc = ctx.kernalContext().cache().cacheDescriptor(cacheId);
+
+        if (desc == null)
+            throw new IgniteClientException(ClientStatus.CACHE_DOES_NOT_EXIST, "Cache does not exist [cacheId= " +
+                    cacheId + "]", null);
+
+        return desc;
+    }
+
+    /**
+     * Gets the cache id.
+     *
+     * @return Cache id.
+     */
+    protected int cacheId() {
+        return cacheId;
     }
 }

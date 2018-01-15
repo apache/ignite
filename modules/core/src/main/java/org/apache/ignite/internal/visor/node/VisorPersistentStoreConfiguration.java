@@ -103,7 +103,6 @@ public class VisorPersistentStoreConfiguration extends VisorDataTransferObject {
         persistenceStorePath = cfg.getStoragePath();
         checkpointingFreq = cfg.getCheckpointFrequency();
         lockWaitTime = cfg.getLockWaitTime();
-        checkpointingPageBufSize = cfg.getCheckpointPageBufferSize();
         checkpointingThreads = cfg.getCheckpointThreads();
         walHistSize = cfg.getWalHistorySize();
         walSegments = cfg.getWalSegments();
@@ -112,7 +111,7 @@ public class VisorPersistentStoreConfiguration extends VisorDataTransferObject {
         walArchivePath = cfg.getWalArchivePath();
         metricsEnabled = cfg.isMetricsEnabled();
         walMode = cfg.getWalMode();
-        tlbSize = cfg.getWalThreadLocalBufferSize();
+        tlbSize = cfg.getWalBufferSize();
         walFlushFreq = cfg.getWalFlushFrequency();
         walFsyncDelay = cfg.getWalFsyncDelayNanos();
         walRecordIterBuffSize = cfg.getWalRecordIteratorBufferSize();

@@ -635,7 +635,7 @@ namespace Apache.Ignite.Core.Tests
         /// <returns>New instance of message listener.</returns>
         public static IMessageListener<string> GetListener()
         {
-            return new MessageListener<string>(Listen);
+            return new RemoteListener();
         }
 
         /// <summary>
@@ -651,27 +651,29 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
-        /// Listen method.
+        /// Remote listener.
         /// </summary>
-        /// <param name="id">Originating node ID.</param>
-        /// <param name="msg">Message.</param>
-        private static bool Listen(Guid id, string msg)
+        private class RemoteListener : IMessageListener<string>
         {
-            try
+            /** <inheritdoc /> */
+            public bool Invoke(Guid nodeId, string message)
             {
-                LastNodeIds.Push(id);
-                ReceivedMessages.Push(msg);
+                try
+                {
+                    LastNodeIds.Push(nodeId);
+                    ReceivedMessages.Push(message);
 
-                ReceivedEvent.Signal();
+                    ReceivedEvent.Signal();
 
-                return ListenResult;
-            }
-            catch (Exception ex)
-            {
-                // When executed on remote nodes, these exceptions will not go to sender, 
-                // so we have to accumulate them.
-                Failures.Push(string.Format("Exception in Listen (msg: {0}, id: {1}): {2}", msg, id, ex));
-                throw;
+                    return ListenResult;
+                }
+                catch (Exception ex)
+                {
+                    // When executed on remote nodes, these exceptions will not go to sender, 
+                    // so we have to accumulate them.
+                    Failures.Push(string.Format("Exception in Listen (msg: {0}, id: {1}): {2}", message, nodeId, ex));
+                    throw;
+                }
             }
         }
     }

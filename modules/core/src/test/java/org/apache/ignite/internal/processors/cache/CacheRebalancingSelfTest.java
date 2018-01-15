@@ -23,6 +23,7 @@ import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -51,6 +52,7 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
         CacheConfiguration<Integer,Integer> rebalabceCacheCfg = new CacheConfiguration<>();
         rebalabceCacheCfg.setBackups(1);
         rebalabceCacheCfg.setName(REBALANCE_TEST_CACHE_NAME);
+        rebalabceCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME), rebalabceCacheCfg);
 

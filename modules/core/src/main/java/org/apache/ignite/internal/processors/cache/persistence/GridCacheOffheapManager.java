@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -922,6 +923,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         reuseRoot.pageId().pageId(),
                         reuseRoot.isAllocated()) {
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
+                            assert grp.shared().database().checkpointLockIsHeldByThread();
+                            
                             return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
                         }
                     };
@@ -938,6 +941,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         treeRoot.pageId().pageId(),
                         treeRoot.isAllocated()) {
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
+                            assert grp.shared().database().checkpointLockIsHeldByThread();
+
                             return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
                         }
                     };
@@ -1222,6 +1227,19 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
+        @Override public void setRowCacheCleaner(GridQueryRowCacheCleaner rowCacheCleaner) {
+            try {
+                CacheDataStore delegate0 = init0(true);
+
+                if (delegate0 != null)
+                    delegate0.setRowCacheCleaner(rowCacheCleaner);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
         @Override public void update(
             GridCacheContext cctx,
             KeyCacheObject key,
@@ -1233,13 +1251,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             CacheDataStore delegate = init0(false);
 
             delegate.update(cctx, key, val, ver, expireTime, oldRow);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void updateIndexes(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException {
-            CacheDataStore delegate = init0(false);
-
-            delegate.updateIndexes(cctx, key);
         }
 
         /** {@inheritDoc} */

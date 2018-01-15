@@ -35,7 +35,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
-import sun.misc.BASE64Encoder;
+
+import static org.apache.ignite.internal.util.GridUnsafe.encodeBase64;
 
 /**
  * Abstract protocol adapter.
@@ -106,11 +107,9 @@ public abstract class GridRestProtocolAdapter implements GridRestProtocol {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-1");
 
-            BASE64Encoder enc = new BASE64Encoder();
-
             md.update(s.getBytes(UTF_8));
 
-            String compHash = enc.encode(md.digest());
+            String compHash = encodeBase64(md.digest());
 
             return hash.equalsIgnoreCase(compHash);
         }

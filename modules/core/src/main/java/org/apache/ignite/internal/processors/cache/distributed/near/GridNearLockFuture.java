@@ -1315,7 +1315,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                                     inTx() ? tx.resolveTaskName() : null,
                                                     keepBinary);
 
-                                            if (cctx.cache().configuration().isStatisticsEnabled())
+                                            if (cctx.statisticsEnabled())
                                                 cctx.cache().metrics0().onRead(oldVal != null);
                                         }
 
@@ -1739,7 +1739,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                         inTx() ? tx.resolveTaskName() : null,
                                         keepBinary);
 
-                                if (cctx.cache().configuration().isStatisticsEnabled())
+                                if (cctx.statisticsEnabled())
                                     cctx.cache().metrics0().onRead(false);
                             }
 

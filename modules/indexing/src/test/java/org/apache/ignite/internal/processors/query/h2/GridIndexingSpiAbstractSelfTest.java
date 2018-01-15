@@ -560,6 +560,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                 @Override public boolean notNull() {
                     return false;
                 }
+
+                /** */
+                @Override public Object defaultValue() {
+                    return null;
+                }
             };
         }
 
@@ -652,6 +657,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
         /** {@inheritDoc} */
         @Override public void validateKeyAndValue(Object key, Object value) throws IgniteCheckedException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setDefaults(Object key, Object val) throws IgniteCheckedException {
             // No-op.
         }
     }

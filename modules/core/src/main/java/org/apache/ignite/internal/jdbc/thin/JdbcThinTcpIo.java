@@ -56,8 +56,11 @@ public class JdbcThinTcpIo implements AutoCloseable {
     /** Version 2.3.0. */
     private static final ClientListenerProtocolVersion VER_2_3_0 = ClientListenerProtocolVersion.create(2, 3, 0);
 
+    /** Version 2.4.0. */
+    private static final ClientListenerProtocolVersion VER_2_4_0 = ClientListenerProtocolVersion.create(2, 4, 0);
+
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_3_0;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_4_0;
 
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;
@@ -77,41 +80,8 @@ public class JdbcThinTcpIo implements AutoCloseable {
     /** Initial output for query close message. */
     private static final int QUERY_CLOSE_MSG_SIZE = 9;
 
-    /** Host. */
-    private final String host;
-
-    /** Port. */
-    private final int port;
-
-    /** Distributed joins. */
-    private final boolean distributedJoins;
-
-    /** Enforce join order. */
-    private final boolean enforceJoinOrder;
-
-    /** Collocated flag. */
-    private final boolean collocated;
-
-    /** Replicated only flag. */
-    private final boolean replicatedOnly;
-
-    /** Lazy execution query flag. */
-    private final boolean lazy;
-
-    /** Flag to automatically close server cursor. */
-    private final boolean autoCloseServerCursor;
-
-    /** Executes update queries on server nodes. */
-    private final boolean skipReducerOnUpdate;
-
-    /** Socket send buffer. */
-    private final int sockSndBuf;
-
-    /** Socket receive buffer. */
-    private final int sockRcvBuf;
-
-    /** TCP no delay flag. */
-    private final boolean tcpNoDelay;
+    /** Connection properties. */
+    private final ConnectionProperties connProps;
 
     /** Endpoint. */
     private IpcClientTcpEndpoint endpoint;
@@ -134,34 +104,10 @@ public class JdbcThinTcpIo implements AutoCloseable {
     /**
      * Constructor.
      *
-     * @param host Host.
-     * @param port Port.
-     * @param distributedJoins Distributed joins flag.
-     * @param enforceJoinOrder Enforce join order flag.
-     * @param collocated Collocated flag.
-     * @param replicatedOnly Replicated only flag.
-     * @param autoCloseServerCursor Flag to automatically close server cursors.
-     * @param lazy Lazy execution query flag.
-     * @param sockSndBuf Socket send buffer.
-     * @param sockRcvBuf Socket receive buffer.
-     * @param tcpNoDelay TCP no delay flag.
-     * @param skipReducerOnUpdate Executes update queries on ignite server nodes.
+     * @param connProps Connection properties.
      */
-    JdbcThinTcpIo(String host, int port, boolean distributedJoins, boolean enforceJoinOrder, boolean collocated,
-        boolean replicatedOnly, boolean autoCloseServerCursor, boolean lazy, int sockSndBuf, int sockRcvBuf,
-        boolean tcpNoDelay, boolean skipReducerOnUpdate) {
-        this.host = host;
-        this.port = port;
-        this.distributedJoins = distributedJoins;
-        this.enforceJoinOrder = enforceJoinOrder;
-        this.collocated = collocated;
-        this.replicatedOnly = replicatedOnly;
-        this.autoCloseServerCursor = autoCloseServerCursor;
-        this.lazy = lazy;
-        this.sockSndBuf = sockSndBuf;
-        this.sockRcvBuf = sockRcvBuf;
-        this.tcpNoDelay = tcpNoDelay;
-        this.skipReducerOnUpdate = skipReducerOnUpdate;
+    JdbcThinTcpIo(ConnectionProperties connProps) {
+        this.connProps = connProps;
     }
 
     /**
@@ -171,16 +117,16 @@ public class JdbcThinTcpIo implements AutoCloseable {
     public void start() throws SQLException, IOException {
         Socket sock = new Socket();
 
-        if (sockSndBuf != 0)
-            sock.setSendBufferSize(sockSndBuf);
+        if (connProps.getSocketSendBuffer() != 0)
+            sock.setSendBufferSize(connProps.getSocketSendBuffer());
 
-        if (sockRcvBuf != 0)
-            sock.setReceiveBufferSize(sockRcvBuf);
+        if (connProps.getSocketReceiveBuffer() != 0)
+            sock.setReceiveBufferSize(connProps.getSocketReceiveBuffer());
 
-        sock.setTcpNoDelay(tcpNoDelay);
+        sock.setTcpNoDelay(connProps.isTcpNoDelay());
 
         try {
-            sock.connect(new InetSocketAddress(host, port));
+            sock.connect(new InetSocketAddress(connProps.getHost(), connProps.getPort()));
 
             endpoint = new IpcClientTcpEndpoint(sock);
 
@@ -188,8 +134,8 @@ public class JdbcThinTcpIo implements AutoCloseable {
             in = new BufferedInputStream(endpoint.inputStream());
         }
         catch (IOException | IgniteCheckedException e) {
-            throw new SQLException("Failed to connect to server [host=" + host + ", port=" + port + ']',
-                SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+            throw new SQLException("Failed to connect to server [host=" + connProps.getHost() +
+                ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
         }
 
         handshake(CURRENT_VER);
@@ -214,13 +160,13 @@ public class JdbcThinTcpIo implements AutoCloseable {
 
         writer.writeByte(ClientListenerNioListener.JDBC_CLIENT);
 
-        writer.writeBoolean(distributedJoins);
-        writer.writeBoolean(enforceJoinOrder);
-        writer.writeBoolean(collocated);
-        writer.writeBoolean(replicatedOnly);
-        writer.writeBoolean(autoCloseServerCursor);
-        writer.writeBoolean(lazy);
-        writer.writeBoolean(skipReducerOnUpdate);
+        writer.writeBoolean(connProps.isDistributedJoins());
+        writer.writeBoolean(connProps.isEnforceJoinOrder());
+        writer.writeBoolean(connProps.isCollocated());
+        writer.writeBoolean(connProps.isReplicatedOnly());
+        writer.writeBoolean(connProps.isAutoCloseServerCursor());
+        writer.writeBoolean(connProps.isLazy());
+        writer.writeBoolean(connProps.isSkipReducerOnUpdate());
 
         send(writer.array());
 
@@ -257,8 +203,8 @@ public class JdbcThinTcpIo implements AutoCloseable {
 
             ClientListenerProtocolVersion srvProtocolVer = ClientListenerProtocolVersion.create(maj, min, maintenance);
 
-            if (VER_2_1_5.equals(srvProtocolVer))
-                handshake(VER_2_1_5);
+            if (VER_2_3_0.equals(srvProtocolVer) || VER_2_1_5.equals(srvProtocolVer))
+                handshake(srvProtocolVer);
             else if (VER_2_1_0.equals(srvProtocolVer))
                 handshake_2_1_0();
             else {
@@ -287,11 +233,11 @@ public class JdbcThinTcpIo implements AutoCloseable {
 
         writer.writeByte(ClientListenerNioListener.JDBC_CLIENT);
 
-        writer.writeBoolean(distributedJoins);
-        writer.writeBoolean(enforceJoinOrder);
-        writer.writeBoolean(collocated);
-        writer.writeBoolean(replicatedOnly);
-        writer.writeBoolean(autoCloseServerCursor);
+        writer.writeBoolean(connProps.isDistributedJoins());
+        writer.writeBoolean(connProps.isEnforceJoinOrder());
+        writer.writeBoolean(connProps.isCollocated());
+        writer.writeBoolean(connProps.isReplicatedOnly());
+        writer.writeBoolean(connProps.isAutoCloseServerCursor());
 
         send(writer.array());
 
@@ -434,59 +380,10 @@ public class JdbcThinTcpIo implements AutoCloseable {
     }
 
     /**
-     * @return Distributed joins flag.
+     * @return Connection properties.
      */
-    public boolean distributedJoins() {
-        return distributedJoins;
-    }
-
-    /**
-     * @return Enforce join order flag.
-     */
-    public boolean enforceJoinOrder() {
-        return enforceJoinOrder;
-    }
-
-    /**
-     * @return Collocated flag.
-     */
-    public boolean collocated() {
-        return collocated;
-    }
-
-    /**
-     * @return Replicated only flag.
-     */
-    public boolean replicatedOnly() {
-        return replicatedOnly;
-    }
-
-    /**
-     * @return Auto close server cursors flag.
-     */
-    public boolean autoCloseServerCursor() {
-        return autoCloseServerCursor;
-    }
-
-    /**
-     * @return Socket send buffer size.
-     */
-    public int socketSendBuffer() {
-        return sockSndBuf;
-    }
-
-    /**
-     * @return Socket receive buffer size.
-     */
-    public int socketReceiveBuffer() {
-        return sockRcvBuf;
-    }
-
-    /**
-     * @return TCP no delay flag.
-     */
-    public boolean tcpNoDelay() {
-        return tcpNoDelay;
+    public ConnectionProperties connectionProperties() {
+        return connProps;
     }
 
     /**
@@ -494,20 +391,6 @@ public class JdbcThinTcpIo implements AutoCloseable {
      */
     IgniteProductVersion igniteVersion() {
         return igniteVer;
-    }
-
-    /**
-     * @return Lazy query execution flag.
-     */
-    public boolean lazy() {
-        return lazy;
-    }
-
-    /**
-     * @return Server side update flag.
-     */
-    public boolean skipReducerOnUpdate() {
-        return skipReducerOnUpdate;
     }
 
     /**
@@ -524,9 +407,7 @@ public class JdbcThinTcpIo implements AutoCloseable {
      * @throws IOException On IO error in handshake.
      */
     public static JdbcThinTcpIo newIo(JdbcThinTcpIo io) throws SQLException, IOException {
-        JdbcThinTcpIo newIo = new JdbcThinTcpIo(io.host, io.port, io.distributedJoins, io.enforceJoinOrder,
-            io.collocated, io.replicatedOnly, io.autoCloseServerCursor, io.lazy,
-            io.sockSndBuf, io.sockRcvBuf, io.tcpNoDelay, io.skipReducerOnUpdate);
+        JdbcThinTcpIo newIo = new JdbcThinTcpIo(io.connProps);
 
         newIo.start();
 

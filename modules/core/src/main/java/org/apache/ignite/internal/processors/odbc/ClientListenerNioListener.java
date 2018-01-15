@@ -161,6 +161,11 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void onSessionIdleTimeout(GridNioSession ses) {
+        ses.close();
+    }
+
     /**
      * Perform handshake.
      *

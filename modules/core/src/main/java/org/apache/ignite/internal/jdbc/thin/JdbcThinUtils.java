@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
-import org.apache.ignite.configuration.ClientConnectorConfiguration;
-
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
@@ -37,6 +35,7 @@ import static java.sql.Types.TIME;
 import static java.sql.Types.TIMESTAMP;
 import static java.sql.Types.TINYINT;
 import static java.sql.Types.VARCHAR;
+import static org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl.PROP_PREFIX;
 
 /**
  * Utility methods for thin JDBC driver.
@@ -45,87 +44,11 @@ public class JdbcThinUtils {
     /** URL prefix. */
     public static final String URL_PREFIX = "jdbc:ignite:thin://";
 
-    /** Prefix for property names. */
-    public static final String PROP_PREFIX = "ignite.jdbc.";
-
     /** Port number property name. */
     public static final String PROP_PORT = PROP_PREFIX + "port";
 
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";
-
-    /** Parameter: distributed joins flag (SQL hint). */
-    public static final String PARAM_DISTRIBUTED_JOINS = "distributedJoins";
-
-    /** Parameter: enforce join order flag (SQL hint). */
-    public static final String PARAM_ENFORCE_JOIN_ORDER = "enforceJoinOrder";
-
-    /** Parameter: collocated flag (SQL hint). */
-    public static final String PARAM_COLLOCATED = "collocated";
-
-    /** Parameter: lazy query execution flag (SQL hint). */
-    public static final String PARAM_REPLICATED_ONLY = "replicatedOnly";
-
-    /** Parameter: replicated only flag (SQL hint). */
-    public static final String PARAM_LAZY = "lazy";
-
-    /** Parameter: socket send buffer. */
-    public static final String PARAM_SOCK_SND_BUF = "socketSendBuffer";
-
-    /** Parameter: socket receive buffer. */
-    public static final String PARAM_SOCK_RCV_BUF = "socketReceiveBuffer";
-
-    /** Parameter: TCP no-delay flag. */
-    public static final String PARAM_TCP_NO_DELAY = "tcpNoDelay";
-
-    /** Parameter: Automatically close server cursor. */
-    public static final String PARAM_AUTO_CLOSE_SERVER_CURSOR = "autoCloseServerCursor";
-
-    /** Parameter: execute update query in distributed mode on ignite server nodes. */
-    public static final String PARAM_SKIP_REDUCER_ON_UPDATE = "skipReducerOnUpdate";
-
-    /** Distributed joins property name. */
-    public static final String PROP_DISTRIBUTED_JOINS = PROP_PREFIX + PARAM_DISTRIBUTED_JOINS;
-
-    /** Transactions allowed property name. */
-    public static final String PROP_ENFORCE_JOIN_ORDER = PROP_PREFIX + PARAM_ENFORCE_JOIN_ORDER;
-
-    /** Collocated property name. */
-    public static final String PROP_COLLOCATED = PROP_PREFIX + PARAM_COLLOCATED;
-
-    /** Lazy property name. */
-    public static final String PROP_LAZY = PROP_PREFIX + PARAM_LAZY;
-
-    /** Replicated only property name. */
-    public static final String PROP_REPLICATED_ONLY = PROP_PREFIX + PARAM_REPLICATED_ONLY;
-
-    /** Socket send buffer property name. */
-    public static final String PROP_SOCK_SND_BUF = PROP_PREFIX + PARAM_SOCK_SND_BUF;
-
-    /** Socket receive buffer property name. */
-    public static final String PROP_SOCK_RCV_BUF = PROP_PREFIX + PARAM_SOCK_RCV_BUF;
-
-    /** TCP no delay property name. */
-    public static final String PROP_TCP_NO_DELAY = PROP_PREFIX + PARAM_TCP_NO_DELAY;
-
-    /** Automatically close server cursor. */
-    public static final String PROP_AUTO_CLOSE_SERVER_CURSORS = PROP_PREFIX + PARAM_AUTO_CLOSE_SERVER_CURSOR;
-
-    /** Executes update queries on ignite server nodes in distributed mode. */
-    public static final String PROP_SKIP_REDUCER_ON_UPDATE = PROP_PREFIX + PARAM_SKIP_REDUCER_ON_UPDATE;
-
-    /** Default port. */
-    public static final int DFLT_PORT = ClientConnectorConfiguration.DFLT_PORT;
-
-    /**
-     * Trim prefix from property.
-     *
-     * @param prop Property.
-     * @return Parameter name.
-     */
-    public static String trimPrefix(String prop) {
-        return prop.substring(PROP_PREFIX.length());
-    }
 
     /**
      * Converts Java class name to type from {@link Types}.
