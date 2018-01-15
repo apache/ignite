@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -197,6 +198,16 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         try {
             store = grp.offheap().createCacheDataStore(id);
+
+            // Inject row cache cleaner on store creation
+            // Used in case the cache with enabled SqlOnheapCache is single cache at the cache group
+            if (ctx.kernalContext().query().moduleEnabled()) {
+                GridQueryRowCacheCleaner cleaner = ctx.kernalContext().query().getIndexing()
+                    .rowCacheCleaner(grp.groupId());
+
+                if (store != null && cleaner != null)
+                    store.setRowCacheCleaner(cleaner);
+            }
         }
         catch (IgniteCheckedException e) {
             // TODO ignite-db

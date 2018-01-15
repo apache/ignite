@@ -1298,7 +1298,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="type">Type.</param>
         private unsafe void WritePrimitive<T>(T val, Type type)
         {
-            // .Net defines 14 primitive types. We support 12 - excluding IntPtr and UIntPtr.
+            // .NET defines 14 primitive types.
             // Types check sequence is designed to minimize comparisons for the most frequent types.
 
             if (type == typeof(int))
@@ -1335,6 +1335,16 @@ namespace Apache.Ignite.Core.Impl.Binary
             else if (type == typeof(ulong))
             {
                 var val0 = TypeCaster<ulong>.Cast(val);
+                WriteLongField(*(long*)&val0);
+            }
+            else if (type == typeof(IntPtr))
+            {
+                var val0 = TypeCaster<IntPtr>.Cast(val).ToInt64();
+                WriteLongField(val0);
+            }
+            else if (type == typeof(UIntPtr))
+            {
+                var val0 = TypeCaster<UIntPtr>.Cast(val).ToUInt64();
                 WriteLongField(*(long*)&val0);
             }
             else

@@ -1268,11 +1268,11 @@ void CheckMeta(char columns[n][k], SQLLEN columnsLen[n])
 
     if (schema == "\"cache\"")
     {
-        BOOST_CHECK_EQUAL(table, std::string("TestType"));
+        BOOST_CHECK_EQUAL(table, std::string("TESTTYPE"));
     }
     else if (schema == "\"cache2\"")
     {
-        BOOST_CHECK_EQUAL(table, std::string("ComplexType"));
+        BOOST_CHECK_EQUAL(table, std::string("COMPLEXTYPE"));
     }
     else
     {
