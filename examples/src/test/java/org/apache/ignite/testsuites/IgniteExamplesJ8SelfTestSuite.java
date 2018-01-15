@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.java.testsuites;
+package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.java.examples.BasicExamplesMultiNodeSelfTest;
-import org.apache.ignite.java.examples.BasicExamplesSelfTest;
-import org.apache.ignite.java.examples.CacheExamplesMultiNodeSelfTest;
-import org.apache.ignite.java.examples.CacheExamplesSelfTest;
-import org.apache.ignite.java.examples.EventsExamplesMultiNodeSelfTest;
-import org.apache.ignite.java.examples.EventsExamplesSelfTest;
-import org.apache.ignite.java.examples.MessagingExamplesSelfTest;
+import org.apache.ignite.examples.BasicExamplesMultiNodeSelfTest;
+import org.apache.ignite.examples.BasicExamplesSelfTest;
+import org.apache.ignite.examples.CacheExamplesMultiNodeSelfTest;
+import org.apache.ignite.examples.CacheExamplesSelfTest;
+import org.apache.ignite.examples.EventsExamplesMultiNodeSelfTest;
+import org.apache.ignite.examples.EventsExamplesSelfTest;
+import org.apache.ignite.examples.MessagingExamplesSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;

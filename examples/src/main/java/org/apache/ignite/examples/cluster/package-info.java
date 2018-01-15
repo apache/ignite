@@ -15,23 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.java.examples;
-
-//import org.apache.ignite.examples.java.misc.springbean.*;
-
-import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
-
 /**
- * Spring bean examples self test.
+ * <!-- Package description. -->
+ * Cluster group example.
  */
-public class SpringBeanExamplesSelfTest extends GridAbstractExamplesTest {
-    /**
-     * TODO: IGNITE-711 next example(s) should be implemented for java 8
-     * or testing method(s) should be removed if example(s) does not applicable for java 8.
-     *
-     * @throws Exception If failed.
-     */
-//    public void testSpringBeanHelloWorldExample() throws Exception {
-//        SpringBeanExample.main(EMPTY_ARGS);
-//    }
-}
+package org.apache.ignite.examples.cluster;

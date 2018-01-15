@@ -15,22 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.java.computegrid;
+package org.apache.ignite.examples.cluster;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.examples.ExampleNodeStartup;
-import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.examples.ExamplesUtils;
 
 /**
- * Demonstrates using of {@link IgniteCallable} job execution on the cluster.
- * <p>
- * This example takes a sentence composed of multiple words and counts number of non-space
- * characters in the sentence by having each compute job count characters in each individual
- * word.
+ * Demonstrates new functional APIs.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
@@ -38,7 +34,7 @@ import org.apache.ignite.lang.IgniteCallable;
  * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will start node
  * with {@code examples/config/example-ignite.xml} configuration.
  */
-public class ComputeCallableExample {
+public class ClusterGroupExample {
     /**
      * Executes example.
      *
@@ -47,29 +43,44 @@ public class ComputeCallableExample {
      */
     public static void main(String[] args) throws IgniteException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            System.out.println();
-            System.out.println(">>> Compute callable example started.");
-
-            Collection<IgniteCallable<Integer>> calls = new ArrayList<>();
-
-            // Iterate through all words in the sentence and create callable jobs.
-            for (String word : "Count characters using callable".split(" ")) {
-                calls.add(() -> {
-                    System.out.println();
-                    System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
-
-                    return word.length();
-                });
-            }
-
-            // Execute collection of callables on the ignite.
-            Collection<Integer> res = ignite.compute().call(calls);
-
-            int sum = res.stream().mapToInt(i -> i).sum();
+            if (!ExamplesUtils.checkMinTopologySize(ignite.cluster(), 2))
+                return;
 
             System.out.println();
-            System.out.println(">>> Total number of characters in the phrase is '" + sum + "'.");
-            System.out.println(">>> Check all nodes for output (this node is also part of the cluster).");
+            System.out.println("Compute example started.");
+
+            IgniteCluster cluster = ignite.cluster();
+
+            // Say hello to all nodes in the cluster, including local node.
+            sayHello(ignite, cluster);
+
+            // Say hello to all remote nodes.
+            sayHello(ignite, cluster.forRemotes());
+
+            // Pick random node out of remote nodes.
+            ClusterGroup randomNode = cluster.forRemotes().forRandom();
+
+            // Say hello to a random node.
+            sayHello(ignite, randomNode);
+
+            // Say hello to all nodes residing on the same host with random node.
+            sayHello(ignite, cluster.forHost(randomNode.node()));
+
+            // Say hello to all nodes that have current CPU load less than 50%.
+            sayHello(ignite, cluster.forPredicate(n -> n.metrics().getCurrentCpuLoad() < 0.5));
         }
+    }
+
+    /**
+     * Print 'Hello' message on remote nodes.
+     *
+     * @param ignite Ignite.
+     * @param grp Cluster group.
+     * @throws IgniteException If failed.
+     */
+    private static void sayHello(Ignite ignite, final ClusterGroup grp) throws IgniteException {
+        // Print out hello message on all cluster nodes.
+        ignite.compute(grp).broadcast(
+            () -> System.out.println(">>> Hello Node: " + grp.ignite().cluster().localNode().id()));
     }
 }
