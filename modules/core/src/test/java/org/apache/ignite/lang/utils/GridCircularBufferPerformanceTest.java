@@ -21,11 +21,11 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.internal.util.GridCircularBuffer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ConcurrentLinkedDeque8;
-import org.jsr166.LongAdder8;
 
 /**
  *
@@ -38,7 +38,7 @@ public class GridCircularBufferPerformanceTest extends GridCommonAbstractTest {
         int size = 256 * 1024;
 
         final GridCircularBuffer<Integer> buf = new GridCircularBuffer<>(size);
-        final LongAdder8 cnt = new LongAdder8();
+        final LongAdder cnt = new LongAdder();
         final AtomicBoolean finished = new AtomicBoolean();
 
         multithreadedAsync(new Callable<Object>() {
@@ -76,7 +76,7 @@ public class GridCircularBufferPerformanceTest extends GridCommonAbstractTest {
     public void testDequeueThroughput() throws Exception {
 
         final ConcurrentLinkedDeque8<Integer> buf = new ConcurrentLinkedDeque8<>();
-        final LongAdder8 cnt = new LongAdder8();
+        final LongAdder cnt = new LongAdder();
         final AtomicBoolean finished = new AtomicBoolean();
 
         multithreadedAsync(new Callable<Object>() {
@@ -120,7 +120,7 @@ public class GridCircularBufferPerformanceTest extends GridCommonAbstractTest {
         final int size = 256 * 1024;
 
         final ArrayBlockingQueue<Integer> buf = new ArrayBlockingQueue<>(size);
-        final LongAdder8 cnt = new LongAdder8();
+        final LongAdder cnt = new LongAdder();
         final AtomicBoolean finished = new AtomicBoolean();
 
         multithreadedAsync(new Callable<Object>() {
@@ -161,7 +161,7 @@ public class GridCircularBufferPerformanceTest extends GridCommonAbstractTest {
         final int size = 256 * 1024;
 
         final ArrayBlockingQueue<Integer> buf = new ArrayBlockingQueue<>(size);
-        final LongAdder8 cnt = new LongAdder8();
+        final LongAdder cnt = new LongAdder();
         final AtomicBoolean finished = new AtomicBoolean();
 
         multithreadedAsync(new Callable<Object>() {

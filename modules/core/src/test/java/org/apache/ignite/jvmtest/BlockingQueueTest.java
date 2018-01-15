@@ -25,7 +25,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.ignite.internal.util.GridTimer;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.jsr166.LongAdder8;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * Blocking queue performance benchmark.
@@ -109,7 +109,7 @@ public class BlockingQueueTest {
 
         X.println(">>> Starting test for: " + testName);
 
-        final LongAdder8 adder = new LongAdder8();
+        final LongAdder adder = new LongAdder();
 
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.datastreamer;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -28,7 +29,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -142,7 +142,7 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
             ldr.receiver(DataStreamerCacheUpdaters.<Integer, String>batchedSorted());
             ldr.autoFlushFrequency(0);
 
-            final LongAdder8 cnt = new LongAdder8();
+            final LongAdder cnt = new LongAdder();
 
             long start = U.currentTimeMillis();
 

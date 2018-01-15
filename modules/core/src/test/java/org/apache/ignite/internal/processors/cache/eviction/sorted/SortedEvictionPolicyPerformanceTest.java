@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.eviction.sorted;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -28,7 +29,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.LongAdder8;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -93,7 +93,7 @@ public class SortedEvictionPolicyPerformanceTest extends GridCommonAbstractTest 
      * Tests throughput.
      */
     public void testThroughput() throws Exception {
-        final LongAdder8 cnt = new LongAdder8();
+        final LongAdder cnt = new LongAdder();
         final AtomicBoolean finished = new AtomicBoolean();
 
         final int pPut = P_PUT;

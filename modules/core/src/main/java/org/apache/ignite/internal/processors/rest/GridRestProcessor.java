@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -75,7 +76,6 @@ import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.thread.IgniteThread;
-import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIENT;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
@@ -110,7 +110,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
     private final GridSpinReadWriteLock busyLock = new GridSpinReadWriteLock();
 
     /** Workers count. */
-    private final LongAdder8 workersCnt = new LongAdder8();
+    private final LongAdder workersCnt = new LongAdder();
 
     /** ClientId-SessionId map. */
     private final ConcurrentMap<UUID, UUID> clientId2SesId = new ConcurrentHashMap<>();

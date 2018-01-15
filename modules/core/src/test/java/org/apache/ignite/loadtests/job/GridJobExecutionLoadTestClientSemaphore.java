@@ -39,7 +39,7 @@ import org.apache.ignite.loadtests.util.GridCumulativeAverage;
 import org.apache.ignite.testframework.GridFileLock;
 import org.apache.ignite.testframework.GridLoadTestUtils;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.LongAdder8;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  *
@@ -55,7 +55,7 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
     private static Ignite g;
 
     /** Transaction count. */
-    private static LongAdder8 txCnt = new LongAdder8();
+    private static LongAdder txCnt = new LongAdder();
 
     /** Finish flag. */
     private static volatile boolean finish;

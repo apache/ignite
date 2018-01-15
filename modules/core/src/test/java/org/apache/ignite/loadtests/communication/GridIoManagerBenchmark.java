@@ -27,6 +27,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -43,7 +44,6 @@ import org.apache.ignite.loadtests.util.GridCumulativeAverage;
 import org.apache.ignite.testframework.GridLoadTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
-import org.jsr166.LongAdder8;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
@@ -75,7 +75,7 @@ public class GridIoManagerBenchmark {
     public static final int TEST_TOPIC = 1;
 
     /** */
-    private static final LongAdder8 msgCntr = new LongAdder8();
+    private static final LongAdder msgCntr = new LongAdder();
 
     /** */
     private static final Map<IgniteUuid, CountDownLatch> latches = new ConcurrentHashMap8<>();
