@@ -15,11 +15,11 @@ Ignite Fabric Maven Build Instructions
 
         mvn initialize -Pjavadoc
 
-4) Assembly Apache Ignite fabric:
+4) Assembly Apache Ignite:
 
         mvn initialize -Prelease
 
-Look for apache-ignite-fabric-<version>-bin.zip in ./target/bin directory.
+Look for apache-ignite-<version>-bin.zip in ./target/bin directory.
 
 
 Ignite Fabric with LGPL Maven Build Instructions
@@ -39,11 +39,11 @@ Ignite Fabric with LGPL Maven Build Instructions
 
         mvn initialize -Pjavadoc,lgpl
 
-4) Assembly Apache Ignite fabric with LGPL dependencies:
+4) Assembly Apache Ignite with LGPL dependencies:
 
-        mvn initialize -Prelease,lgpl -Dignite.edition=fabric-lgpl
+        mvn initialize -Prelease,lgpl -Dignite.edition=lgpl
 
-   Look for apache-ignite-fabric-lgpl-<version>-bin.zip in ./target/bin directory.
+   Look for apache-ignite-lgpl-<version>-bin.zip in ./target/bin directory.
 
 
 Ignite Hadoop Accelerator Maven Build Instructions
@@ -144,9 +144,9 @@ Ignite Release Instructions
 
 3) Deploy Ignite release candidate to maven repository and dev-svn, make tag:
 
-   3.1) Deploy Ignite to maven repository, prepares sources and fabric edition binaries.
+   3.1) Deploy Ignite to maven repository, prepares sources and binaries.
 
-                mvn deploy -Papache-release,gpg,all-java,all-scala,licenses,deploy-ignite-site -Dignite.edition=fabric -DskipTests
+                mvn deploy -Papache-release,gpg,all-java,all-scala,licenses,deploy-ignite-site -DskipTests
 
    3.2) Javadoc generation:
 

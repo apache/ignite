@@ -35,11 +35,6 @@
     <version>2.4.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <properties>
-        <!--fix <attachartifact>...< /> at apache-release profile if changed-->
-        <ignite.zip.pattern>${project.artifactId}-${ignite.edition}-${project.version}-bin</ignite.zip.pattern>
-    </properties>
-
     <scm>
         <url>https://git-wip-us.apache.org/repos/asf/ignite</url>
         <connection>scm:git:https://git-wip-us.apache.org/repos/asf/ignite</connection>
@@ -782,12 +777,38 @@
                     </execution>
                 </executions>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.8</version>
+                <executions>
+                    <execution>
+                        <id>zip-name</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <condition property="ignite.zip.pattern"
+                                           value="${project.artifactId}-${project.version}-bin"
+                                           else="${project.artifactId}-${ignite.edition}-${project.version}-bin">
+                                    <equals arg1="${ignite.edition}" arg2="ignite"/>
+                                </condition>
+                                <echo message="${ignite.zip.pattern}"/>
+                            </target>
+                            <exportAntProperties>true</exportAntProperties>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

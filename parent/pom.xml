@@ -34,7 +34,7 @@
     </parent>
 
     <properties>
-        <ignite.edition>fabric</ignite.edition>
+        <ignite.edition>ignite</ignite.edition>
         <hadoop.version>2.4.1</hadoop.version>
         <spark.hadoop.version>2.6.5</spark.hadoop.version>
         <spark.version>2.2.0</spark.version>
