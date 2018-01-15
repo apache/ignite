@@ -25,6 +25,8 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Convenience adapter to transform update existing values in streaming cache
@@ -52,10 +54,46 @@ public abstract class StreamTransformer<K, V> implements StreamReceiver<K, V>, E
      * @return Stream transformer.
      */
     public static <K, V> StreamTransformer<K, V> from(final CacheEntryProcessor<K, V, Object> ep) {
-        return new StreamTransformer<K, V>() {
-            @Override public Object process(MutableEntry<K, V> entry, Object... args) throws EntryProcessorException {
-                return ep.process(entry, args);
-            }
-        };
+        return new EntryProcessorWrapper<>(ep);
+    }
+
+    /**
+     * @param <K> Key type.
+     * @param <V> Value type.
+     */
+    private static class EntryProcessorWrapper<K, V> extends StreamTransformer<K,V> implements GridPeerDeployAware {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private CacheEntryProcessor<K, V, Object> ep;
+
+        /** */
+        private transient ClassLoader ldr;
+
+        /**
+         * @param ep Entry processor.
+         */
+        EntryProcessorWrapper(CacheEntryProcessor<K, V, Object> ep) {
+            this.ep = ep;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object process(MutableEntry<K, V> entry, Object... args) throws EntryProcessorException {
+            return ep.process(entry, args);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Class<?> deployClass() {
+            return ep.getClass();
+        }
+
+        /** {@inheritDoc} */
+        @Override public ClassLoader classLoader() {
+            if (ldr == null)
+                ldr = U.detectClassLoader(deployClass());
+
+            return ldr;
+        }
     }
 }
