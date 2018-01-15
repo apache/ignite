@@ -217,7 +217,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      *
      * @throws Exception If failed.
      */
-    public void _testServerRestartCoordinator() throws Exception {
+    public void testServerRestartCoordinator() throws Exception {
         checkNodeRestart(true);
     }
 

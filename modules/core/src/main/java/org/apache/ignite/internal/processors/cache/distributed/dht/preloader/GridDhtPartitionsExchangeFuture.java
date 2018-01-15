@@ -2590,6 +2590,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param msg Message with full partition info.
      */
     public void onReceivePartitionRequest(final ClusterNode node, final GridDhtPartitionsSingleRequest msg) {
+        System.out.println("RECEIVED SINGLE REQ " + cctx.igniteInstanceName() + " " + msg);
+
         assert !cctx.kernalContext().clientNode() || msg.restoreState();
         assert !node.isDaemon() && !CU.clientNode(node) : node;
 
@@ -2657,8 +2659,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                 }
 
                                 crd = node; // Do not allow to process FullMessage from old coordinator.
-
-                                System.out.println("CRD CHANGE 1 " + cctx.igniteInstanceName() + " " + crd.id());
                             }
                             else {
                                 if (log.isInfoEnabled()) {

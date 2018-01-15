@@ -164,6 +164,8 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
                     exchFut.exchangeId());
 
                 for (ClusterNode node : nodes) {
+                    System.out.println("SEND RESTORE STATE " + cctx.igniteInstanceName() + " " + node.isClient() + " " + req);
+
                     try {
                         GridDhtPartitionsSingleRequest sndReq = req;
 
