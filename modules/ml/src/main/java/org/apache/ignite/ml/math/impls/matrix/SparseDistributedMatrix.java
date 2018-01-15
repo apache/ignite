@@ -44,6 +44,9 @@ import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
  * You also need to call {@link #destroy()} to remove the underlying cache when you no longer need this
  * matrix.</p>
  * <p>
+ * This class is not intended for fast calculations (for example, matrix multiplication). If better performance
+ * is needed, {@link SparseBlockDistributedMatrix} should be used instead.</p>
+ * <p>
  * <b>Currently fold supports only commutative operations.<b/></p>
  */
 public class SparseDistributedMatrix extends AbstractMatrix implements StorageConstants {

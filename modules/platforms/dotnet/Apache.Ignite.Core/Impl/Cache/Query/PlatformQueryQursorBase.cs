@@ -54,6 +54,14 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
             _target = target;
         }
 
+        /// <summary>
+        /// Gets the target.
+        /// </summary>
+        public IPlatformTargetInternal Target
+        {
+            get { return _target; }
+        }
+
         /** <inheritdoc /> */
         protected override IList<T> GetAllInternal()
         {

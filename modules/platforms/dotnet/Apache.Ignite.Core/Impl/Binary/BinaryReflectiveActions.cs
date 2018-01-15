@@ -237,6 +237,24 @@ namespace Apache.Ignite.Core.Impl.Binary
                     ? GetRawReader(field, r => r.ReadDouble())
                     : GetReader(field, (f, r) => r.ReadDouble(f));
             }
+            else if (type == typeof(IntPtr))
+            {
+                writeAction = raw
+                    ? GetRawWriter<IntPtr>(field, (w, o) => w.WriteLong((long) o))
+                    : GetWriter<IntPtr>(field, (f, w, o) => w.WriteLong(f, (long) o));
+                readAction = raw
+                    ? GetRawReader(field, r => (IntPtr) r.ReadLong())
+                    : GetReader(field, (f, r) => (IntPtr) r.ReadLong(f));
+            }
+            else if (type == typeof(UIntPtr))
+            {
+                writeAction = raw
+                    ? GetRawWriter<UIntPtr>(field, (w, o) => w.WriteLong((long) o))
+                    : GetWriter<UIntPtr>(field, (f, w, o) => w.WriteLong(f, (long) o));
+                readAction = raw
+                    ? GetRawReader(field, r => (UIntPtr) r.ReadLong())
+                    : GetReader(field, (f, r) => (UIntPtr) r.ReadLong(f));
+            }
             else
             {
                 throw new IgniteException(string.Format("Unsupported primitive type '{0}' [Field={1}, " +
@@ -268,7 +286,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return;
             }
 
-            Type elemType = field.FieldType.GetElementType();
+            var elemType = field.FieldType.GetElementType();
+            Debug.Assert(elemType != null);
 
             if (elemType == typeof (bool))
             {
@@ -478,8 +497,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 !new[] {typeof(long), typeof(ulong)}.Contains(Enum.GetUnderlyingType(nullableType ?? type)))
             {
                 writeAction = raw
-                    ? GetRawWriter<object>(field, (w, o) => w.WriteEnum(o), true)
-                    : GetWriter<object>(field, (f, w, o) => w.WriteEnum(f, o), true);
+                    ? GetRawWriter<object>(field, (w, o) => w.WriteEnum(o))
+                    : GetWriter<object>(field, (f, w, o) => w.WriteEnum(f, o));
                 readAction = raw ? GetRawReader(field, MthdReadEnumRaw) : GetReader(field, MthdReadEnum);
             }
             else if (type == typeof(IDictionary) || type == typeof(Hashtable))
@@ -510,6 +529,21 @@ namespace Apache.Ignite.Core.Impl.Binary
                 writeAction = GetWriter<DateTime?>(field, (f, w, o) => w.WriteTimestamp(f, o));
                 readAction = GetReader(field, (f, r) => r.ReadTimestamp(f));
             }
+            else if (type.IsPointer)
+                unsafe
+                {
+                    // Expression trees do not work with pointers properly, use reflection.
+                    var fieldName = BinaryUtils.CleanFieldName(field.Name);
+                    writeAction = raw
+                        ? (BinaryReflectiveWriteAction) ((o, w) =>
+                            w.GetRawWriter().WriteLong((long) Pointer.Unbox(field.GetValue(o))))
+                        : ((o, w) => w.WriteLong(fieldName, (long) Pointer.Unbox(field.GetValue(o))));
+
+                    readAction = raw
+                        ? (BinaryReflectiveReadAction) ((o, r) =>
+                            field.SetValue(o, Pointer.Box((void*) r.GetRawReader().ReadLong(), field.FieldType)))
+                        : ((o, r) => field.SetValue(o, Pointer.Box((void*) r.ReadLong(fieldName), field.FieldType)));
+                }
             else
             {
                 writeAction = raw ? GetRawWriter(field, MthdWriteObjRaw) : GetWriter(field, MthdWriteObj);
@@ -561,8 +595,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Gets the reader with a specified write action.
         /// </summary>
         private static BinaryReflectiveWriteAction GetWriter<T>(FieldInfo field,
-            Expression<Action<string, IBinaryWriter, T>> write,
-            bool convertFieldValToObject = false)
+            Expression<Action<string, IBinaryWriter, T>> write)
         {
             Debug.Assert(field != null);
             Debug.Assert(field.DeclaringType != null);   // non-static
@@ -573,8 +606,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             var targetParamConverted = Expression.Convert(targetParam, field.DeclaringType);
             Expression fldExpr = Expression.Field(targetParamConverted, field);
 
-            if (convertFieldValToObject)
-                fldExpr = Expression.Convert(fldExpr, typeof (object));
+            if (field.FieldType != typeof(T))
+            {
+                fldExpr = Expression.Convert(fldExpr, typeof(T));
+            }
 
             // Call Writer method
             var writerParam = Expression.Parameter(typeof(IBinaryWriter));
@@ -589,8 +624,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Gets the reader with a specified write action.
         /// </summary>
         private static BinaryReflectiveWriteAction GetRawWriter<T>(FieldInfo field,
-            Expression<Action<IBinaryRawWriter, T>> write,
-            bool convertFieldValToObject = false)
+            Expression<Action<IBinaryRawWriter, T>> write)
         {
             Debug.Assert(field != null);
             Debug.Assert(field.DeclaringType != null);   // non-static
@@ -601,8 +635,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             var targetParamConverted = Expression.Convert(targetParam, field.DeclaringType);
             Expression fldExpr = Expression.Field(targetParamConverted, field);
 
-            if (convertFieldValToObject)
-                fldExpr = Expression.Convert(fldExpr, typeof (object));
+            if (field.FieldType != typeof(T))
+                fldExpr = Expression.Convert(fldExpr, typeof (T));
 
             // Call Writer method
             var writerParam = Expression.Parameter(typeof(IBinaryWriter));
@@ -677,7 +711,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             Expression readExpr = Expression.Invoke(read, fldNameParam, readerParam);
 
             if (typeof(T) != field.FieldType)
+            {
                 readExpr = Expression.Convert(readExpr, field.FieldType);
+            }
 
             // Assign field value
             var targetParam = Expression.Parameter(typeof(object));

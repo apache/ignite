@@ -181,6 +181,21 @@ public interface GridQueryIndexing {
         boolean ifColNotExists) throws IgniteCheckedException;
 
     /**
+     * Drop columns from dynamic table.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param cols Columns to drop.
+     * @param ifTblExists Ignore operation if target table does not exist (instead of throwing an error).
+     * @param ifColExists Ignore operation if column does not exist (instead of throwing an error) - is honored only
+     *     for single column case.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    public void dynamicDropColumn(String schemaName, String tblName, List<String> cols, boolean ifTblExists,
+        boolean ifColExists) throws IgniteCheckedException;
+
+    /**
      * Registers cache.
      *
      * @param cacheName Cache name.
@@ -194,11 +209,11 @@ public interface GridQueryIndexing {
     /**
      * Unregisters cache.
      *
-     * @param cacheName Cache name.
+     * @param cctx Cache context.
      * @param rmvIdx If {@code true}, will remove index.
      * @throws IgniteCheckedException If failed to drop cache schema.
      */
-    public void unregisterCache(String cacheName, boolean rmvIdx) throws IgniteCheckedException;
+    public void unregisterCache(GridCacheContext cctx, boolean rmvIdx) throws IgniteCheckedException;
 
     /**
      * Registers type if it was not known before or updates it otherwise.
@@ -310,4 +325,12 @@ public interface GridQueryIndexing {
      * @return {@code True} if insert.
      */
     public boolean isInsertStatement(PreparedStatement nativeStmt);
+
+    /**
+     * Return row cache cleaner.
+     *
+     * @param cacheGroupId Cache group id.
+     * @return Row cache cleaner.
+     */
+    public GridQueryRowCacheCleaner rowCacheCleaner(int cacheGroupId);
 }
