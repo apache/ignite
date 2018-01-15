@@ -846,6 +846,8 @@ public class DdlStatementsProcessor {
 
             res.addQueryField(col.name(), getSupportedTypeName(col.type()), null);
 
+            assert col.isNullable() != null;
+
             if (!col.isNullable()) {
                 if (notNullFields == null)
                     notNullFields = new HashSet<>();

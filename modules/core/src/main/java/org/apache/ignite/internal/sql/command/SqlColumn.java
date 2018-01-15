@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.sql.command;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -94,7 +95,7 @@ public class SqlColumn {
      * Returns column name.
      * @return The column name.
      */
-    public String name() {
+    public @NotNull String name() {
         return name;
     }
 
@@ -102,7 +103,7 @@ public class SqlColumn {
      * Sets the column name.
      * @param name The column name.
      */
-    public void name(String name) {
+    public void name(@NotNull String name) {
         this.name = name;
     }
 
@@ -110,7 +111,7 @@ public class SqlColumn {
      * Returns column type.
      * @return The column type.
      */
-    public SqlColumnType type() {
+    public @NotNull SqlColumnType type() {
         return typ;
     }
 
@@ -118,7 +119,7 @@ public class SqlColumn {
      * Sets the column type.
      * @param typ The column type.
      */
-    public void typ(SqlColumnType typ) {
+    public void typ(@NotNull SqlColumnType typ) {
         this.typ = typ;
     }
 
@@ -167,7 +168,7 @@ public class SqlColumn {
      * @param isNullable The nullable flag.
      */
     public void isNullable(@Nullable Boolean isNullable) {
-        isNullable = isNullable;
+        this.isNullable = isNullable;
     }
 
     /** {@inheritDoc} */
