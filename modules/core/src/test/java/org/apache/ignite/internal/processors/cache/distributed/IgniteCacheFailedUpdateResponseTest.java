@@ -84,6 +84,8 @@ public class IgniteCacheFailedUpdateResponseTest extends GridCommonAbstractTest 
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(LOCAL_IP_FINDER);
 
+        cfg.setMarshaller(null);
+
         return cfg;
     }
 
@@ -152,14 +154,14 @@ public class IgniteCacheFailedUpdateResponseTest extends GridCommonAbstractTest 
         }, exp, null);
 
         if (ATOMIC_CACHE.equals(cache.getName())) {
-            //noinspection ThrowableNotThrown
-            assertThrows(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    cache.invoke("1", new UpdateValueProcessor());
+            try {
+                cache.invoke("1", new UpdateValueProcessor());
 
-                    return null;
-                }
-            }, CachePartialUpdateException.class, null);
+                fail("Exception must be thrown");
+            }
+            catch (CachePartialUpdateException | EntryProcessorException e) {
+                e.printStackTrace(System.out);
+            }
         }
     }
 
@@ -188,14 +190,20 @@ public class IgniteCacheFailedUpdateResponseTest extends GridCommonAbstractTest 
         }, exp, null);
 
         if (ATOMIC_CACHE.equals(cache.getName())) {
-            //noinspection ThrowableNotThrown
-            assertThrows(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    cache.invokeAll(Collections.singleton("1"), new UpdateValueProcessor());
+            try {
+                Map<Object, EntryProcessorResult<Object>> resMap = cache.invokeAll(Collections.singleton("1"), new UpdateValueProcessor());
 
-                    return null;
-                }
-            }, CachePartialUpdateException.class, null);
+                EntryProcessorResult<Object> res = F.first(resMap.values());
+
+                assertNotNull(res);
+
+                res.get();
+
+                fail("Exception must be thrown");
+            }
+            catch (CachePartialUpdateException | EntryProcessorException e) {
+                e.printStackTrace(System.out);
+            }
         }
     }
 
