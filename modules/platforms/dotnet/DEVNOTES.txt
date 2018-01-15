@@ -3,7 +3,7 @@ Apache Ignite.NET Build Instructions (Windows)
 
 Requirements:
 * Windows (XP and up), Windows Server (2008 and up)
-* Oracle JDK 7 and above
+* Oracle JDK 8 and above
 * .NET Framework 4.0
 * PowerShell 3.0+
 * Visual Studio 2010+
@@ -39,8 +39,8 @@ Ignite.NET can be built, developed, and tested with .NET Core on Linux and macOS
 A subset of functionality and tests is available. See Apache.Ignite.DotNetCore.sln.
 
 Requirements:
-* .NET Core SDK: https://www.microsoft.com/net/download/linux
-* JDK: sudo apt-get install default-jdk
+* .NET Core SDK (2.1.4+): https://www.microsoft.com/net/download/linux
+* JDK 8+: sudo apt-get install default-jdk
 * Maven: sudo apt-get install maven
 * IDE: Not required. Rider is recommended. VSCode works, but has issues with tests.
 
