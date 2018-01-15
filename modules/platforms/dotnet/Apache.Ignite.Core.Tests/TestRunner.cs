@@ -73,13 +73,10 @@ namespace Apache.Ignite.Core.Tests
 
             var basicTests = new[]
             {
-                typeof(CachePartitionedTest),
                 typeof(ComputeApiTest),
-                typeof(CacheTest),
-                typeof(CacheTestAsync),
-                typeof(CacheQueriesTest),
                 typeof(CacheLinqTest),
-                typeof(LinqTest)
+                typeof(LinqTest),
+                typeof(PersistenceTest)
             };
 
             Environment.ExitCode = TestAll(basicTests, true);
@@ -112,10 +109,9 @@ namespace Apache.Ignite.Core.Tests
             {
                 "-noshadow",
                 "-domain:" + (sameDomain ? "None" : "Single"),
+                "-run:" + string.Join(",", testClass.Select(x => x.FullName)),
                 Assembly.GetAssembly(typeof(TestRunner)).Location
             };
-
-            args.AddRange(testClass.Select(x => "-run:" + x.FullName));
             
             return Runner.Main(args.ToArray());
         }
