@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.dml;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -38,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
 
@@ -53,8 +53,7 @@ public class DmlBatchSender {
     private final int size;
 
     /** Batches. */
-    private final Map<UUID, Map<Object, IgniteBiTuple<Integer, EntryProcessor<Object, Object, Boolean>>>> batches =
-        new HashMap<>();
+    private final Map<UUID, Batch> batches = new HashMap<>();
 
     /** Result count. */
     private long updateCnt;
@@ -91,6 +90,9 @@ public class DmlBatchSender {
      */
     public void add(Object key, EntryProcessor<Object, Object, Boolean> proc, int rowNum)
         throws IgniteCheckedException {
+        assert key != null;
+        assert proc != null;
+
         ClusterNode node = cctx.affinity().primaryByKey(key, AffinityTopologyVersion.NONE);
 
         if (node == null)
@@ -100,39 +102,31 @@ public class DmlBatchSender {
 
         UUID nodeId = node.id();
 
-        Map<Object, IgniteBiTuple<Integer, EntryProcessor<Object, Object, Boolean>>> batch = batches.get(nodeId);
+        Batch batch = batches.get(nodeId);
 
         if (batch == null) {
-            batch = new HashMap<>();
+            batch = new Batch();
 
             batches.put(nodeId, batch);
         }
 
         if (batch.containsKey(key)) { // Force cache update if duplicates found.
             sendBatch(batch);
-
-            batch.clear();
         }
 
-        batch.put(key, new IgniteBiTuple<>(rowNum, proc));
+        batch.put(key, rowNum, proc);
 
-        if (batch.size() >= size) {
+        if (batch.size() >= size)
             sendBatch(batch);
-
-            batch.clear();
-        }
     }
 
     /**
      * Flush any remaining entries.
      */
     public void flush() {
-        for (Map<Object, IgniteBiTuple<Integer, EntryProcessor<Object, Object, Boolean>>> batch : batches.values()) {
-            if (!batch.isEmpty()) {
+        for (Batch batch : batches.values()) {
+            if (!batch.isEmpty())
                 sendBatch(batch);
-
-                batch.clear();
-            }
         }
     }
 
@@ -180,8 +174,10 @@ public class DmlBatchSender {
      *
      * @param batch Batch.
      */
-    private void sendBatch(Map<Object, IgniteBiTuple<Integer, EntryProcessor<Object, Object, Boolean>>> batch) {
+    private void sendBatch(Batch batch) {
         DmlPageProcessingResult pageRes = processPage(cctx, batch);
+
+        batch.clear();
 
         updateCnt += pageRes.count();
 
@@ -201,27 +197,19 @@ public class DmlBatchSender {
     /**
      * Execute given entry processors and collect errors, if any.
      * @param cctx Cache context.
-     * @param rows Rows to process.
+     * @param batch Rows to process.
      * @return Triple [number of rows actually changed; keys that failed to update (duplicates or concurrently
      *     updated ones); chain of exceptions for all keys whose processing resulted in error, or null for no errors].
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    private DmlPageProcessingResult processPage(GridCacheContext cctx,
-        Map<Object, IgniteBiTuple<Integer, EntryProcessor<Object, Object, Boolean>>> rows) {
-        Map<Object, EntryProcessor<Object, Object, Boolean>> keysAndProcs = new HashMap<>();
-
-        for (Map.Entry<Object, IgniteBiTuple<Integer, EntryProcessor<Object, Object, Boolean>>> entry : rows.entrySet())
-            keysAndProcs.put(entry.getKey(), entry.getValue().get2());
-
+    private DmlPageProcessingResult processPage(GridCacheContext cctx, Batch batch) {
         Map<Object, EntryProcessorResult<Boolean>> res;
 
         try {
-            res = cctx.cache().invokeAll(keysAndProcs);
+            res = cctx.cache().invokeAll(batch.rowProcs);
         }
         catch (IgniteCheckedException e) {
-            for (IgniteBiTuple<Integer, EntryProcessor<Object, Object, Boolean>> val : rows.values()) {
-                Integer rowNum = val.get1();
-
+            for (Integer rowNum : batch.rowNumbers().values()) {
                 assert rowNum != null;
 
                 cntPerRow[rowNum] = Statement.EXECUTE_FAILED;
@@ -232,16 +220,16 @@ public class DmlBatchSender {
         }
 
         if (F.isEmpty(res)) {
-            countAllRows(rows);
+            countAllRows(batch.rowNums.values());
 
-            return new DmlPageProcessingResult(rows.size(), null, null);
+            return new DmlPageProcessingResult(batch.size(), null, null);
         }
 
-        DmlPageProcessingErrorResult splitRes = splitErrors(res, rows);
+        DmlPageProcessingErrorResult splitRes = splitErrors(res, batch);
 
         int keysCnt = splitRes.errorKeys().length;
 
-        return new DmlPageProcessingResult(rows.size() - keysCnt - splitRes.errorCount(), splitRes.errorKeys(),
+        return new DmlPageProcessingResult(batch.size() - keysCnt - splitRes.errorCount(), splitRes.errorKeys(),
             splitRes.error());
     }
 
@@ -250,14 +238,14 @@ public class DmlBatchSender {
      * processing yielded an exception.
      *
      * @param res Result of {@link GridCacheAdapter#invokeAll)}
+     * @param batch Batch.
      * @return pair [array of duplicated/concurrently modified keys, SQL exception for erroneous keys] (exception is
      * null if all keys are duplicates/concurrently modified ones).
      */
-    private DmlPageProcessingErrorResult splitErrors(Map<Object, EntryProcessorResult<Boolean>> res,
-        Map<Object, IgniteBiTuple<Integer, EntryProcessor<Object, Object, Boolean>>> rows) {
+    private DmlPageProcessingErrorResult splitErrors(Map<Object, EntryProcessorResult<Boolean>> res, Batch batch) {
         Set<Object> errKeys = new LinkedHashSet<>(res.keySet());
 
-        countAllRows(rows);
+        countAllRows(batch.rowNums.values());
 
         SQLException currSqlEx = null;
 
@@ -290,7 +278,7 @@ public class DmlBatchSender {
             finally {
                 Object key = e.getKey();
 
-                Integer rowNum = rows.get(key).get1();
+                Integer rowNum = batch.rowNumbers().get(key);
 
                 assert rowNum != null;
 
@@ -302,18 +290,110 @@ public class DmlBatchSender {
     }
 
     /**
-     * Updates counters as if all rows were successfully processed.
+     * Updates counters as if all rowNums were successfully processed.
      *
-     * @param rows Rows.
+     * @param rowNums Rows.
      */
-    private void countAllRows(Map<Object, IgniteBiTuple<Integer, EntryProcessor<Object, Object, Boolean>>> rows) {
-        for (IgniteBiTuple<Integer, EntryProcessor<Object, Object, Boolean>> val : rows.values()) {
-            Integer rowNum = val.get1();
-
+    private void countAllRows(Collection<Integer> rowNums) {
+        for (Integer rowNum : rowNums) {
             assert rowNum != null;
 
             if (cntPerRow[rowNum] > -1)
                 cntPerRow[rowNum]++;
+        }
+    }
+
+    /**
+     * Batch for update.
+     */
+    private static class Batch  {
+        /** Map from keys to row numbers. */
+        private Map<Object, Integer> rowNums = new HashMap<>();
+
+        /** Map from keys to entry processors. */
+        private Map<Object, EntryProcessor<Object, Object, Boolean>> rowProcs = new HashMap<>();
+
+        /**
+         * Checks if batch contains key.
+         *
+         * @param key Key.
+         * @return {@code True} if contains.
+         */
+        public boolean containsKey(Object key) {
+            boolean res = rowNums.containsKey(key);
+
+            assert res == rowProcs.containsKey(key);
+
+            return res;
+        }
+
+        /**
+         * Returns batch size.
+         *
+         * @return Batch size.
+         */
+        public int size() {
+            int res = rowNums.size();
+
+            assert res == rowProcs.size();
+
+            return res;
+        }
+
+        /**
+         * Adds row to batch.
+         *
+         * @param key Key.
+         * @param rowNum Row number.
+         * @param proc Entry processor.
+         * @return {@code True} if there was an entry associated with the given key.
+         */
+        public boolean put(Object key, Integer rowNum, EntryProcessor<Object, Object, Boolean> proc) {
+            Integer prevNum = rowNums.put(key, rowNum);
+            EntryProcessor prevProc = rowProcs.put(key, proc);
+
+            assert (prevNum == null) == (prevProc == null);
+
+            return prevNum != null;
+        }
+
+        /**
+         * Clears batch.
+         */
+        public void clear() {
+            assert rowNums.size() == rowProcs.size();
+
+            rowNums.clear();
+            rowProcs.clear();
+        }
+
+        /**
+         * Checks if batch is empty.
+         *
+         * @return {@code True} if empty.
+         */
+        public boolean isEmpty() {
+            assert rowNums.size() == rowProcs.size();
+
+            return rowNums.isEmpty();
+        }
+
+        /**
+         * Row numbers map getter.
+         *
+         * @return Row numbers map.
+         */
+        public Map<Object, Integer> rowNumbers() {
+            return rowNums;
+        }
+
+        /**
+         * Row processors map getter.
+         *
+         * @return Row processors map.
+         */
+        public Map<Object, EntryProcessor<Object, Object, Boolean>> rowProcessors() {
+            return rowProcs;
         }
     }
 }

@@ -21,6 +21,7 @@ import java.sql.BatchUpdateException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.concurrent.Callable;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
@@ -495,6 +496,273 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
 
             assertEquals("Invalid SQL state.", SqlStateCode.CONVERSION_FAILED, e.getSQLState());
             assertEquals("Invalid error code.", IgniteQueryErrorCode.CONVERSION_FAILED, e.getErrorCode());
+        }
+    }
+
+    /**
+     * @throws SQLException If failed.
+     */
+    public void testBatchMergePrepared() throws SQLException {
+        final int BATCH_SIZE = 10;
+
+        pstmt = conn.prepareStatement("merge into Person(_key, id, firstName, lastName, age) values " +
+            "(?, ?, ?, ?, ?)");
+
+        for (int i = 0; i < BATCH_SIZE; ++i) {
+            int paramCnt = 1;
+
+            pstmt.setString(paramCnt++, "p" + i);
+            pstmt.setInt(paramCnt++, i);
+            pstmt.setString(paramCnt++, "Name" + i);
+            pstmt.setString(paramCnt++, "Lastname" + i);
+            pstmt.setInt(paramCnt++, 20 + i);
+
+            pstmt.addBatch();
+        }
+
+        int [] updCnts = pstmt.executeBatch();
+
+        assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
+
+        for (int i = 0; i < BATCH_SIZE; ++i)
+            assertEquals("Invalid update count",1, updCnts[i]);
+    }
+
+    /**
+     * @throws SQLException If failed.
+     */
+    public void testBatchMergeExceptionPrepared() throws SQLException {
+        final int BATCH_SIZE = 7;
+
+        final int FAILED_IDX = 5;
+
+        pstmt = conn.prepareStatement("merge into Person(_key, id, firstName, lastName, age) values " +
+            "(?, ?, ?, ?, ?)");
+
+        assert FAILED_IDX + 2 == BATCH_SIZE;
+
+        for (int i = 0; i < FAILED_IDX; ++i) {
+            int paramCnt = 1;
+
+            pstmt.setString(paramCnt++, "p" + i);
+            pstmt.setInt(paramCnt++, i);
+            pstmt.setString(paramCnt++, "Name" + i);
+            pstmt.setString(paramCnt++, "Lastname" + i);
+            pstmt.setInt(paramCnt++, 20 + i);
+
+            pstmt.addBatch();
+        }
+
+        int paramCnt = 1;
+        pstmt.setString(paramCnt++, "p" + FAILED_IDX);
+        pstmt.setString(paramCnt++, "FAIL");
+        pstmt.setString(paramCnt++, "Name" + FAILED_IDX);
+        pstmt.setString(paramCnt++, "Lastname" + FAILED_IDX);
+        pstmt.setInt(paramCnt++, 20 + FAILED_IDX);
+
+        pstmt.addBatch();
+
+        paramCnt = 1;
+        pstmt.setString(paramCnt++, "p" + FAILED_IDX + 1);
+        pstmt.setInt(paramCnt++, FAILED_IDX + 1);
+        pstmt.setString(paramCnt++, "Name" + FAILED_IDX + 1);
+        pstmt.setString(paramCnt++, "Lastname" + FAILED_IDX + 1);
+        pstmt.setInt(paramCnt++, 20 + FAILED_IDX + 1);
+
+        pstmt.addBatch();
+
+        try {
+            int[] res = pstmt.executeBatch();
+
+            fail("BatchUpdateException must be thrown res=" + Arrays.toString(res));
+        }
+        catch(BatchUpdateException e) {
+            int [] updCnts = e.getUpdateCounts();
+
+            assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
+
+            for (int i = 0; i < BATCH_SIZE; ++i)
+                assertEquals("Invalid update count", i != FAILED_IDX ? 1 : Statement.EXECUTE_FAILED, updCnts[i]);
+
+            if (!e.getMessage().contains("Value conversion failed")) {
+                log.error("Invalid exception: ", e);
+
+                fail();
+            }
+
+            assertEquals("Invalid SQL state.", SqlStateCode.CONVERSION_FAILED, e.getSQLState());
+            assertEquals("Invalid error code.", IgniteQueryErrorCode.CONVERSION_FAILED, e.getErrorCode());
+        }
+    }
+
+    /**
+     * Populates table 'Person' with entities.
+     *
+     * @param size Number of entities.
+     * @throws SQLException If failed.
+     */
+    private void populateTable(int size) throws SQLException {
+        stmt.addBatch("insert into Person (_key, id, firstName, lastName, age) values "
+            + generateValues(0, size));
+
+        stmt.executeBatch();
+    }
+
+    /**
+     * @throws SQLException If failed.
+     */
+    public void testBatchUpdatePrepared() throws SQLException {
+        final int BATCH_SIZE = 10;
+
+        populateTable(BATCH_SIZE);
+
+        pstmt = conn.prepareStatement("update Person set age = 100 where id = ?;");
+
+        for (int i = 0; i < BATCH_SIZE; ++i) {
+            pstmt.setInt(1, i);
+
+            pstmt.addBatch();
+        }
+
+        int [] updCnts = pstmt.executeBatch();
+
+        assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
+
+        for (int i = 0; i < BATCH_SIZE; ++i)
+            assertEquals("Invalid update count",1, updCnts[i]);
+    }
+
+    /**
+     * @throws SQLException If failed.
+     */
+    public void testBatchUpdateExceptionPrepared() throws SQLException {
+        final int BATCH_SIZE = 7;
+
+        final int FAILED_IDX = 5;
+
+        populateTable(BATCH_SIZE);
+
+        pstmt = conn.prepareStatement("update Person set age = 100 where id = ?;");
+
+        assert FAILED_IDX + 2 == BATCH_SIZE;
+
+        for (int i = 0; i < FAILED_IDX; ++i) {
+            pstmt.setInt(1, i);
+
+            pstmt.addBatch();
+        }
+
+        pstmt.setString(1, "FAIL");
+
+        pstmt.addBatch();
+
+        pstmt.setInt(1, FAILED_IDX + 1);
+
+        pstmt.addBatch();
+
+        try {
+            int[] res = pstmt.executeBatch();
+
+            fail("BatchUpdateException must be thrown res=" + Arrays.toString(res));
+        }
+        catch(BatchUpdateException e) {
+            int [] updCnts = e.getUpdateCounts();
+
+            assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
+
+            for (int i = 0; i < BATCH_SIZE; ++i)
+                assertEquals("Invalid update count", i != FAILED_IDX ? 1 : Statement.EXECUTE_FAILED, updCnts[i]);
+
+            if (!e.getMessage().contains("Data conversion error converting \"FAIL\"")) {
+                log.error("Invalid exception: ", e);
+
+                fail();
+            }
+
+            assertEquals("Invalid SQL state.", SqlStateCode.INTERNAL_ERROR, e.getSQLState());
+            assertEquals("Invalid error code.", IgniteQueryErrorCode.UNKNOWN, e.getErrorCode());
+
+            //assertEquals("Invalid SQL state.", SqlStateCode.CONVERSION_FAILED, e.getSQLState());
+            //assertEquals("Invalid error code.", IgniteQueryErrorCode.CONVERSION_FAILED, e.getErrorCode());
+        }
+    }
+
+    /**
+     * @throws SQLException If failed.
+     */
+    public void testBatchDeletePrepared() throws SQLException {
+        final int BATCH_SIZE = 10;
+
+        populateTable(BATCH_SIZE);
+
+        pstmt = conn.prepareStatement("delete from Person where id = ?;");
+
+        for (int i = 0; i < BATCH_SIZE; ++i) {
+            pstmt.setInt(1, i);
+
+            pstmt.addBatch();
+        }
+
+        int [] updCnts = pstmt.executeBatch();
+
+        assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
+
+        for (int i = 0; i < BATCH_SIZE; ++i)
+            assertEquals("Invalid update count",1, updCnts[i]);
+    }
+
+    /**
+     * @throws SQLException If failed.
+     */
+    public void testBatchDeleteExceptionPrepared() throws SQLException {
+        final int BATCH_SIZE = 7;
+
+        final int FAILED_IDX = 5;
+
+        populateTable(BATCH_SIZE);
+
+        pstmt = conn.prepareStatement("delete from Person where id = ?;");
+
+        assert FAILED_IDX + 2 == BATCH_SIZE;
+
+        for (int i = 0; i < FAILED_IDX; ++i) {
+            pstmt.setInt(1, i);
+
+            pstmt.addBatch();
+        }
+
+        pstmt.setString(1, "FAIL");
+
+        pstmt.addBatch();
+
+        pstmt.setInt(1, FAILED_IDX + 1);
+
+        pstmt.addBatch();
+
+        try {
+            int[] res = pstmt.executeBatch();
+
+            fail("BatchUpdateException must be thrown res=" + Arrays.toString(res));
+        }
+        catch(BatchUpdateException e) {
+            int [] updCnts = e.getUpdateCounts();
+
+            assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
+
+            for (int i = 0; i < BATCH_SIZE; ++i)
+                assertEquals("Invalid update count", i != FAILED_IDX ? 1 : Statement.EXECUTE_FAILED, updCnts[i]);
+
+            if (!e.getMessage().contains("Data conversion error converting \"FAIL\"")) {
+                log.error("Invalid exception: ", e);
+
+                fail();
+            }
+
+            assertEquals("Invalid SQL state.", SqlStateCode.INTERNAL_ERROR, e.getSQLState());
+            assertEquals("Invalid error code.", IgniteQueryErrorCode.UNKNOWN, e.getErrorCode());
+
+            //assertEquals("Invalid SQL state.", SqlStateCode.CONVERSION_FAILED, e.getSQLState());
+            //assertEquals("Invalid error code.", IgniteQueryErrorCode.CONVERSION_FAILED, e.getErrorCode());
         }
     }
 

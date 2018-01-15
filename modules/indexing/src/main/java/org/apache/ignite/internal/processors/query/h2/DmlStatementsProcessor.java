@@ -21,6 +21,7 @@ import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -199,7 +200,6 @@ public class DmlStatementsProcessor {
 
         UpdatePlan plan = getPlanForStatement(schemaName, conn, prepared, fieldsQry, loc, null);
 
-        // TODO remove update mode restriction when other commands are implemented.
         if (plan.hasRows() && plan.mode() == UpdateMode.INSERT) {
             GridCacheContext<?, ?> cctx = plan.cacheContext();
 
@@ -220,15 +220,53 @@ public class DmlStatementsProcessor {
             // Fallback to previous mode.
             Collection<UpdateResult> ress = new ArrayList<>(argss.size());
 
+            SQLException batchException = null;
+
+            int[] cntPerRow = new int[argss.size()];
+
+            int cntr = 0;
+
             for (Object[] args : argss) {
                 SqlFieldsQueryEx qry0 = (SqlFieldsQueryEx)fieldsQry.copy();
 
                 qry0.clearBatchedArgs();
                 qry0.setArgs(args);
 
-                UpdateResult res = updateSqlFields(schemaName, conn, prepared, qry0, loc, filters, cancel);
+                UpdateResult res;
 
-                ress.add(res);
+                try {
+                    res = updateSqlFields(schemaName, conn, prepared, qry0, loc, filters, cancel);
+
+                    cntPerRow[cntr++] = (int)res.counter();
+
+                    ress.add(res);
+                }
+                catch (Exception e ) {
+                    String sqlState;
+
+                    int code;
+
+                    if (e instanceof IgniteSQLException) {
+                        sqlState = ((IgniteSQLException)e).sqlState();
+
+                        code = ((IgniteSQLException)e).statusCode();
+                    } else {
+                        sqlState = SqlStateCode.INTERNAL_ERROR;
+
+                        code = IgniteQueryErrorCode.UNKNOWN;
+                    }
+
+                    batchException = chainException(batchException, new SQLException(e.getMessage(), sqlState, code, e));
+
+                    cntPerRow[cntr++] = Statement.EXECUTE_FAILED;
+                }
+            }
+
+            if (batchException != null) {
+                BatchUpdateException e = new BatchUpdateException(batchException.getMessage(),
+                    batchException.getSQLState(), batchException.getErrorCode(), cntPerRow, batchException);
+
+                throw new IgniteCheckedException(e);
             }
 
             return ress;
@@ -798,7 +836,7 @@ public class DmlStatementsProcessor {
      * Execute INSERT statement plan.
      *
      * @param plan Plan to execute.
-     * @param cursor Cursor to take inserted data from.
+     * @param cursor Cursor to take inserted data from. I.e. list of batch arguments for each query.
      * @param pageSize Batch size for streaming, anything <= 0 for single page operations.
      * @return Number of items affected.
      * @throws IgniteCheckedException if failed, particularly in case of duplicate keys.

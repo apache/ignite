@@ -494,7 +494,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 if (qry != null) // then execute the previous sub-batch and create a new SqlFieldsQueryEx.
                     executeBatchedQuery(qry, updCntsAcc, firstErr);
 
-                qry = new SqlFieldsQueryEx(q.sql(), false, qryCnt);
+                qry = new SqlFieldsQueryEx(q.sql(), false);
 
                 qry.setDistributedJoins(distributedJoins);
                 qry.setEnforceJoinOrder(enforceJoinOrder);
@@ -530,10 +530,20 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private void executeBatchedQuery(SqlFieldsQueryEx qry, List<Integer> updCntsAcc,
         IgniteBiTuple<Integer, String> firstErr) {
-        List<FieldsQueryCursor<List<?>>> qryRes;
-
         try {
-            qryRes = ctx.query().querySqlFieldsNoCache(qry, true, true);
+            List<FieldsQueryCursor<List<?>>> qryRes = ctx.query().querySqlFieldsNoCache(qry, true, true);
+
+            for (FieldsQueryCursor<List<?>> cur : qryRes) {
+                assert !((QueryCursorImpl)cur).isQuery();
+
+                Iterator<List<?>> it = cur.iterator();
+
+                if (it.hasNext()) {
+                    int val = ((Long)it.next().get(0)).intValue();
+
+                    updCntsAcc.add(val);
+                }
+            }
         }
         catch (Exception e) {
             int code;
@@ -575,20 +585,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 firstErr.set(code, msg);
             else
                 U.error(log, "Failed to execute batch query [qry=" + qry +']', e);
-
-            return;
-        }
-
-        for (FieldsQueryCursor<List<?>> cur : qryRes) {
-            assert !((QueryCursorImpl)cur).isQuery();
-
-            Iterator<List<?>> it = cur.iterator();
-
-            if (it.hasNext()) {
-                int val = ((Long)it.next().get(0)).intValue();
-
-                updCntsAcc.add(val);
-            }
         }
     }
 

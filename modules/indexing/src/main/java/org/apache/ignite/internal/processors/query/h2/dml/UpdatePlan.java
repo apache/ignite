@@ -374,7 +374,10 @@ public final class UpdatePlan {
      * Extract rows from plan without performing any query.
      *
      * @param args Original query arguments.
-     * @return Rows from plan.
+     * @return {@link List} of rows from the plan for a single query.
+     * For example, if we have multiple args in a query: <br/>
+     * {@code INSERT INTO person VALUES (k1, v1), (k2, v2), (k3, v3);} <br/>
+     * we will get a {@link List} of {@link List} with items {@code {[k1, v1], [k2, v2], [k3, v3]}}.
      * @throws IgniteCheckedException if failed.
      */
     public List<List<?>> createRows(Object[] args) throws IgniteCheckedException {
@@ -384,23 +387,7 @@ public final class UpdatePlan {
 
         GridH2RowDescriptor desc = tbl.rowDescriptor();
 
-        for (List<DmlArgument> row : rows) {
-            List<Object> resRow = new ArrayList<>();
-
-            for (int j = 0; j < colNames.length; j++) {
-                Object colVal = row.get(j).get(args);
-
-                if (j == keyColIdx || j == valColIdx) {
-                    Class<?> colCls = j == keyColIdx ? desc.type().keyClass() : desc.type().valueClass();
-
-                    colVal = DmlUtils.convert(colVal, desc, colCls, colTypes[j]);
-                }
-
-                resRow.add(colVal);
-            }
-
-            res.add(resRow);
-        }
+        extractArgsValues(args, res, desc);
 
         return res;
     }
@@ -409,7 +396,17 @@ public final class UpdatePlan {
      * Extract rows from plan without performing any query.
      *
      * @param argss Batch of arguments.
-     * @return Rows from plan.
+     * @return {@link List} of rows from the plan for each query.
+     * For example, if we have a batch of queries with multiple args: <br/>
+     * <code>
+     * INSERT INTO person VALUES (k1, v1), (k2, v2), (k3, v3); <br/>
+     * INSERT INTO person VALUES (k4, v4), (k5, v5), (k6, v6);<br/>
+     * </code>
+     * we will get a {@link List} of {@link List} of {@link List} with items: <br/>
+     * <code>
+     * {[k1, v1], [k2, v2], [k3, v3]},<br/>
+     * {[k4, v4], [k5, v5], [k6, v6]}<br/>
+     *
      * @throws IgniteCheckedException If failed.
      */
     public List<List<List<?>>> createRows(List<Object[]> argss) throws IgniteCheckedException {

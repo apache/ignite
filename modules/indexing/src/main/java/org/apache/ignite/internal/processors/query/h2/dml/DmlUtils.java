@@ -125,13 +125,7 @@ public class DmlUtils {
      * @return {@code True} if batched.
      */
     public static boolean isBatched(SqlFieldsQuery qry) {
-        if (qry instanceof SqlFieldsQueryEx) {
-            SqlFieldsQueryEx qry0 = (SqlFieldsQueryEx)qry;
-
-            return qry0.isBatched();
-        }
-
-        return false;
+        return (qry instanceof SqlFieldsQueryEx) && ((SqlFieldsQueryEx)qry).isBatched();
     }
 
     /**

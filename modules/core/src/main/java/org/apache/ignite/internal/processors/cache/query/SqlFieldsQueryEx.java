@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * {@link SqlFieldsQuery} with experimental and internal features.
@@ -37,17 +38,6 @@ public final class SqlFieldsQueryEx extends SqlFieldsQuery {
 
     /** Batched arguments list. */
     private List<Object[]> batchedArgs;
-
-    /**
-     * @param sql SQL query.
-     * @param isQry Flag indicating whether this object denotes a query or an update operation.
-     * @param batchedArgsSize Estimated arguments batch size.
-     */
-    public SqlFieldsQueryEx(String sql, Boolean isQry, int batchedArgsSize) {
-        this(sql, isQry);
-
-        this.batchedArgs = new ArrayList<>(batchedArgsSize);
-    }
 
     /**
      * @param sql SQL query.
@@ -208,6 +198,6 @@ public final class SqlFieldsQueryEx extends SqlFieldsQuery {
      * @return {@code True} if batched.
      */
     public boolean isBatched() {
-        return this.batchedArgs != null && !this.batchedArgs.isEmpty();
+        return !F.isEmpty(batchedArgs);
     }
 }

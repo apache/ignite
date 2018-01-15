@@ -1029,7 +1029,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (e.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
                 throw new QueryCancelledException();
 
-            throw new IgniteCheckedException("Failed to execute SQL query.", e);
+            throw new IgniteCheckedException("Failed to execute SQL query. " + e.getMessage(), e);
         }
         finally {
             if (timeoutMillis > 0)
