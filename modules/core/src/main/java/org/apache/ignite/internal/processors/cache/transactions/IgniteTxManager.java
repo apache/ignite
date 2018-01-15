@@ -2315,14 +2315,15 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public void resumeTx(GridNearTxLocal tx) throws IgniteCheckedException {
         assert tx != null && !tx.system() : tx;
-        assert !threadMap.containsValue(tx) : tx;
-        assert !transactionMap(tx).containsValue(tx) : tx;
-        assert !haveSystemTxForThread(Thread.currentThread().getId());
 
         if (!tx.state(ACTIVE)) {
             throw new IgniteCheckedException("Trying to resume transaction with incorrect state "
                 + "[expected=" + SUSPENDED + ", actual=" + tx.state() + ']');
         }
+
+        assert !threadMap.containsValue(tx) : tx;
+        assert !transactionMap(tx).containsValue(tx) : tx;
+        assert !haveSystemTxForThread(Thread.currentThread().getId());
 
         long threadId = Thread.currentThread().getId();
 
