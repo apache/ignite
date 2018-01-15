@@ -16,20 +16,19 @@
  */
 
 ignite-list-of-registered-users {
-  display: block;
-}
+    display: block;
 
-.list-of-registered-users {
-  .ui-grid-settings--heading {
-    display: flex;
-  }
-  & > a {
-    display: inline-block;
-    margin: 10px;
-    margin-left: 0;
-
-    &.active {
-      font-weight: bold;
+    .ui-grid-settings--heading {
+        display: flex;
     }
-  }
+
+    & > a {
+        display: inline-block;
+        margin: 10px;
+        margin-left: 0;
+
+        &.active {
+            font-weight: bold;
+        }
+    }
 }
