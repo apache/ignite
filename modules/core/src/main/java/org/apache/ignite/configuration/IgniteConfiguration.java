@@ -2281,10 +2281,30 @@ public class IgniteConfiguration {
         return this;
     }
 
+    /**
+     * Get the flag indicating that cluster is enabled to activate automatically.
+     *
+     * If it is set to {@code true} and BaselineTopology is set as well than cluster activates automatically
+     * when all nodes from the BaselineTopology join the cluster.
+     *
+     * <p>
+     * Default value is {@link #DFLT_AUTO_ACTIVATION}.
+     * <p>
+     *
+     * @return Auto activation enabled flag value.
+     */
     public boolean isAutoActivationEnabled() {
         return autoActivation;
     }
 
+    /**
+     * Sets flag indicating whether the cluster is enabled to activate automatically.
+     * This value should be the same on all nodes in the cluster.
+     *
+     * @param autoActivation Auto activation enabled flag value.
+     * @return {@code this} instance.
+     * @see #isAutoActivationEnabled()
+     */
     public IgniteConfiguration setAutoActivationEnabled(boolean autoActivation) {
         this.autoActivation = autoActivation;
 

@@ -493,6 +493,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             );
     }
 
+    /** */
     private void readMetastore() throws IgniteCheckedException {
         try {
             DataStorageConfiguration memCfg = cctx.kernalContext().config().getDataStorageConfiguration();

@@ -25,7 +25,6 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList
  *
  */
 public class MetastorageRowStore {
-
     /** */
     private final FreeList freeList;
 

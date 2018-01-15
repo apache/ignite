@@ -465,6 +465,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         return exchActions != null && exchActions.deactivate();
     }
 
+    /** */
     public boolean changedBaseline() {
         return exchActions != null && exchActions.changedBaseline();
     }

@@ -24,7 +24,6 @@ import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
-import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.jetbrains.annotations.Nullable;
@@ -147,6 +146,7 @@ public interface GridComponent {
      */
     @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node);
 
+    /** */
     @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag.JoiningNodeDiscoveryData discoData);
 
     /**
