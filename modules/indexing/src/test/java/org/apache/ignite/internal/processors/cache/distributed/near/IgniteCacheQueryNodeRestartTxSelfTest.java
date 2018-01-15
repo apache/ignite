@@ -15,34 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.continuous;
+package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.util.UUID;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.transactions.Transaction;
+
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
- *
+ * Test for distributed queries with node restarts inside transactions.
  */
-public class StopRoutineAckDiscoveryMessage extends AbstractContinuousMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /**
-     * @param routineId Routine id.
-     */
-    public StopRoutineAckDiscoveryMessage(UUID routineId) {
-        super(routineId);
-    }
-
+public class IgniteCacheQueryNodeRestartTxSelfTest extends IgniteCacheQueryNodeRestartSelfTest2 {
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(StopRoutineAckDiscoveryMessage.class, this, "routineId", routineId());
+    @Override protected void runQuery(IgniteEx grid, Runnable qryRunnable) {
+        try(Transaction tx = grid.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            qryRunnable.run();
+        }
     }
 }
