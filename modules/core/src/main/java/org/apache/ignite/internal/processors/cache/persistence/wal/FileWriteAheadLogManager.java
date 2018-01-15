@@ -2441,8 +2441,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 if (this.stop.get())
                     return;
 
-                if (lastFsyncPos != written) {
-                    assert lastFsyncPos < written; // Fsync position must be behind.
+                long lastFsyncPos0 = lastFsyncPos;
+                long written0 = written;
+
+                if (lastFsyncPos0 != written0) {
+                    // Fsync position must be behind.
+                    assert lastFsyncPos0 < written0 : "lastFsyncPos=" + lastFsyncPos0 + ", written=" + written0;
 
                     boolean metricsEnabled = metrics.metricsEnabled();
 
