@@ -3638,13 +3638,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     groupStateLazyStore = new WeakReference<>(store);
                 }
 
-                store.initIfNeeded(cctx, cpMark);
+                state = store.initIfNeeded(cctx, cpMark);
             }
             catch (IgniteCheckedException ignored) {
                 return null;
             }
 
-            return store.partitionCounter(grpId, part);
+            return store.partitionCounter(state, grpId, part);
         }
 
         /**
@@ -3693,18 +3693,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             /**
-             *
+             * @param groupState Group state.
              * @param grpId Group id.
              * @param part Partition id.
              * @return Partition counter.
              */
-            private Long partitionCounter(int grpId, int part) {
+            private Long partitionCounter(Map<Integer, CacheState> groupState, int grpId, int part) {
                 assert initGuard != 0 : initGuard;
 
-                if (initEx != null || cacheGrpStates == null)
+                if (initEx != null || groupState == null)
                     return null;
 
-                CacheState state = cacheGrpStates.get(grpId);
+                CacheState state = groupState.get(grpId);
 
                 if (state != null) {
                     long cntr = state.counterByPartition(part);
