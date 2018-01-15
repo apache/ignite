@@ -28,67 +28,110 @@ import java.util.TreeSet;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
+/**
+ * Transactions statistics for WAL.
+ */
 public class TxWalStat {
-    public static final int DISPLAY_MAX = WalStat.DISPLAY_MAX;
-    /** Opened. */
-    private Map<GridCacheVersion, TxOccurrence> opened = new HashMap<>();
+    /** Maximum element in popular combinations discovery map before eviction. */
+    private static final int POPULAR_COMBINATION_MAP_MAX_SIZE = 50000;
 
-    private RecordSizeCountStat avgPrimaryNodes = new RecordSizeCountStat();
-    private RecordSizeCountStat avgTotalNodes = new RecordSizeCountStat();
+    /** Usages count, when evict prohibited from popular combinations discovery map. */
+    private static final int USAGES_CNT_EVICT_PROHIBITED = 10;
 
-    /** Tx: Entries updated */
+    /** Transactions in preparing/committing state. When commit is finished, TX is removed from this collection. */
+    private final Map<GridCacheVersion, TxOccurrence> opened = new HashMap<>();
+
+    /** Field for calculating average number of primary nodes involved in Tx. */
+    private final RecordSizeCountStat avgPrimaryNodes = new RecordSizeCountStat();
+
+    /** Field for calculating average number of total nodes involved in Tx. */
+    private final RecordSizeCountStat avgTotalNodes = new RecordSizeCountStat();
+
+    /** Tx statistics: Entries updated count -> count of such Txes. */
     private final Map<Integer, Integer> txEntriesUpdated = new TreeMap<>();
 
-    /** Tx: Caches Involved */
+    /** Tx statistics: Caches Involved  count -> count of such Txes.  */
     private final Map<Integer, Integer> txCachesInvolved = new TreeMap<>();
 
-    public static final int POPULAR_MAX = 1000;
-    public static final int USAGES_CNT_EVICT_PROHIBITED = 10;
+    /** Cache IDs combination involved in Tx. Popular combination search map, with possible eviction. */
+    private final LruMap<String> cacheIdsInTx = new LruMap<>(POPULAR_COMBINATION_MAP_MAX_SIZE,
+        USAGES_CNT_EVICT_PROHIBITED);
 
-    private LruMap<String> cacheIdsInTx = new LruMap<>(POPULAR_MAX, USAGES_CNT_EVICT_PROHIBITED);
-
-    private LruMap<String> cacheIdsWeightedNodesInTx = new LruMap<>(POPULAR_MAX,
+    /**
+     * Cache IDs combination involved in Tx, weighted using primary nodes in Tx. Used to search popular combinations
+     * mostly involved into highly distributive transactions.
+     */
+    private final LruMap<String> cacheIdsWeightedNodesInTx = new LruMap<>(POPULAR_COMBINATION_MAP_MAX_SIZE,
         USAGES_CNT_EVICT_PROHIBITED * 90);
-
-    private LruMap<String> cacheIdsWeightedTotalNodesInTx = new LruMap<>(POPULAR_MAX,
+    /**
+     * Cache IDs combination involved in Tx, weighted using total nodes in Tx. Used to search popular combinations
+     * mostly involved into highly distributive transactions.
+     */
+    private final LruMap<String> cacheIdsWeightedTotalNodesInTx = new LruMap<>(POPULAR_COMBINATION_MAP_MAX_SIZE,
         USAGES_CNT_EVICT_PROHIBITED * 150);
 
-    private <K> void computeStatIfAbsent(K key, Map<K, Integer> map) {
-        computeStatIfAbsent(key, map, 1);
+    /**
+     * @param key key (parameter) value found.
+     * @param map map to save increment.
+     * @param <K> type of key.
+     */
+    private static <K> void incrementStat(K key, Map<K, Integer> map) {
+        incrementStat(key, map, 1);
     }
 
-    private <K> void computeStatIfAbsent(K key, Map<K, Integer> map, int increment) {
-        final Integer val = map.get(key);
+    /**
+     * @param key key (parameter) value found.
+     * @param map map to save increment.
+     * @param increment value to increment statistic, 1 or weight of current occurrence.
+     * @param <K> type of key.
+     */
+    private static <K> void incrementStat(K key, Map<K, Integer> map, int increment) {
+        Integer val = map.get(key);
         int recordStat = val == null ? 0 : val;
+
         recordStat += increment;
         map.put(key, recordStat);
     }
 
-    public void start(GridCacheVersion nearXidVer, int nodes, int totalNodes) {
-        computeIfAbsent(nearXidVer, nodes, totalNodes);
+    /**
+     * Handles TX prepare: creates TX in {@link #opened} map.
+     * @param nearXidVer near Xid Version. Global transaction identifier within cluster, assigned by transaction
+     * coordinator.
+     * @param nodes primary nodes registered in prepare record.
+     * @param totalNodes all nodes (primary & backup) in prepare record.
+     */
+    void onTxPrepareStart(GridCacheVersion nearXidVer, int nodes, int totalNodes) {
+        txComputeIfAbsent(nearXidVer, nodes, totalNodes);
     }
 
     /**
-     * @param nearXidVer
-     * @param nodes
-     * @param totalNodes
-     * @return
+     * @param nearXidVer near Xid Version. Global transaction identifier within cluster, assigned by transaction
+     * coordinator.
+     * @param nodes primary nodes registered in prepare record.
+     * @param totalNodes all nodes (primary & backup) in prepare record.
+     * @return tx occurrence to accumulate entries into.
      */
-    private TxOccurrence computeIfAbsent(GridCacheVersion nearXidVer, int nodes, int totalNodes) {
+    private TxOccurrence txComputeIfAbsent(GridCacheVersion nearXidVer, int nodes, int totalNodes) {
         TxOccurrence occurrence = opened.get(nearXidVer);
+
         if (occurrence == null)
             occurrence = new TxOccurrence(nodes, totalNodes);
 
         opened.put(nearXidVer, occurrence);
+
         return occurrence;
     }
 
     /**
-     * @param nearXidVer
-     * @param commit
+     * Handles commit or rollback transaction. Finished statistics accumulation.
+     *
+     * @param nearXidVer near Xid Version. Global transaction identifier within cluster, assigned by transaction
+     * coordinator.
+     * @param commit tx committed, flag indicating TX successes.
      */
-    public void close(GridCacheVersion nearXidVer, boolean commit) {
+    void onTxEnd(GridCacheVersion nearXidVer, boolean commit) {
         TxOccurrence occurrence = opened.remove(nearXidVer);
+
         if (occurrence == null)
             return;
 
@@ -100,34 +143,41 @@ public class TxWalStat {
             avgTotalNodes.occurrence(occurrence.totalNodes);
         }
 
-        computeStatIfAbsent(occurrence.entriesUpdated, txEntriesUpdated);
+        incrementStat(occurrence.entriesUpdated, txEntriesUpdated);
 
-        computeStatIfAbsent(occurrence.caches.size(), txCachesInvolved);
+        incrementStat(occurrence.caches.size(), txCachesInvolved);
 
         if (!occurrence.caches.isEmpty()) {
             final String sortedCachesKey = occurrence.caches.toString();
 
-            computeStatIfAbsent(sortedCachesKey, cacheIdsInTx.map, 1);
+            incrementStat(sortedCachesKey, cacheIdsInTx.map, 1);
 
             if (occurrence.nodes > 0)
-                computeStatIfAbsent(sortedCachesKey, cacheIdsWeightedNodesInTx.map, occurrence.nodes);
+                incrementStat(sortedCachesKey, cacheIdsWeightedNodesInTx.map, occurrence.nodes);
 
             if (occurrence.totalNodes > 0)
-                computeStatIfAbsent(sortedCachesKey, cacheIdsWeightedTotalNodesInTx.map, occurrence.totalNodes);
+                incrementStat(sortedCachesKey, cacheIdsWeightedTotalNodesInTx.map, occurrence.totalNodes);
         }
     }
 
-    public void entry(DataEntry next) {
-        if (next.nearXidVersion() == null)
+    /**
+     * Handles Data entry from data record. Entries not under transaction are ignored.
+     *
+     * @param entry object updated.
+     */
+    void onDataEntry(DataEntry entry) {
+        final GridCacheVersion ver = entry.nearXidVersion();
+
+        if (ver == null)
             return;
 
-        computeIfAbsent(next.nearXidVersion(), -1, -1).entry(next);
+        txComputeIfAbsent(ver, -1, -1).onDataEntry(entry);
     }
 
     /**
-     * @param sb
-     * @param mapName
-     * @param map
+     * @param sb buffer.
+     * @param mapName display name of map.
+     * @param map values.
      */
     private void printSizeCountMap(StringBuilder sb, String mapName, Map<?, Integer> map) {
         sb.append(mapName).append(": \n");
@@ -135,6 +185,7 @@ public class TxWalStat {
         sb.append("\n");
 
         final List<? extends Map.Entry<?, Integer>> entries = new ArrayList<>(map.entrySet());
+
         Collections.sort(entries, new Comparator<Map.Entry<?, Integer>>() {
             @Override public int compare(Map.Entry<?, Integer> o1, Map.Entry<?, Integer> o2) {
                 return -Integer.compare(o1.getValue(), o2.getValue());
@@ -144,8 +195,9 @@ public class TxWalStat {
         int othersCnt = 0;
         int othersSum = 0;
         int cnt = 0;
+
         for (Map.Entry<?, Integer> next : entries) {
-            if (cnt < DISPLAY_MAX) {
+            if (cnt < WalStat.DISPLAY_MAX) {
                 sb.append(next.getKey()).append("\t").append(next.getValue()).append("\t");
                 sb.append("\n");
             }
@@ -155,10 +207,12 @@ public class TxWalStat {
             }
             cnt++;
         }
+
         if (othersCnt > 0) {
             sb.append("... other ").append(othersCnt).append(" values").append("\t").append(othersSum).append("\t");
             sb.append("\n");
         }
+
         sb.append("\n");
     }
 
@@ -183,42 +237,62 @@ public class TxWalStat {
         return sb.toString();
     }
 
-    private class TxOccurrence {
+    /**
+     * Tx in prepare or in commit state, used to accumulate statistic.
+     */
+    private static class TxOccurrence {
+        /** Primary nodes count from TX record. */
         private int nodes;
+        /** Primary + backup nodes count from TX record. */
+        private int totalNodes;
 
+        /** Count of entries updated under current transaction on current node. */
         private int entriesUpdated;
-        /** Caches. */
-        private TreeSet<Integer> caches = new TreeSet<>();
-        public int totalNodes;
 
-        public TxOccurrence(int nodes, int totalNodes) {
+        /** Sorted set of cache IDs updated during this transaction. */
+        private TreeSet<Integer> caches = new TreeSet<>();
+
+        /**
+         * @param nodes Primary nodes count from TX record.
+         * @param totalNodes Primary + backup nodes count from TX record.
+         */
+        TxOccurrence(int nodes, int totalNodes) {
             this.nodes = nodes;
             this.totalNodes = totalNodes;
         }
 
         /**
-         * @param nodes
+         * Handles data entry from data record.
+         * @param entry object updated.
          */
-        public void setNodes(int nodes) {
-            this.nodes = nodes;
-        }
-
-        /**
-         * @param next
-         */
-        public void entry(DataEntry next) {
+        void onDataEntry(DataEntry entry) {
             entriesUpdated++;
 
-            caches.add(next.cacheId());
+            caches.add(entry.cacheId());
         }
     }
 
-    private class LruMap<K> {
+    /**
+     * @param <K> key type parameter.
+     */
+    private static class LruMap<K> {
+        /** Max size of map after which eviction may start. */
         private int maxSize;
+
+        /**
+         * Evict prohibited boundary. If this number of usages is accumulate in eldest entry it will not be removed
+         * anyway.
+         */
         private int evictProhibited;
+        /**
+         * Evicted count. Number of entries removed during statistic accumulation. Zero value means all records were
+         * processed, created top (popular combination search) is totally correct. Non zero means top may be not
+         * correct.
+         */
         private int evicted;
 
-        LinkedHashMap<K, Integer> map = new LinkedHashMap<K, Integer>(16, 0.75F, false) {
+        /** Map with data. */
+        private Map<K, Integer> map = new LinkedHashMap<K, Integer>(16, 0.75F, false) {
             @Override protected boolean removeEldestEntry(Map.Entry<K, Integer> eldest) {
                 if (size() < maxSize)
                     return false;
@@ -232,7 +306,11 @@ public class TxWalStat {
             }
         };
 
-        public LruMap(int maxSize, int evictProhibited) {
+        /**
+         * @param maxSize Max size of map.
+         * @param evictProhibited usages count, when evict became prohibited.
+         */
+        LruMap(int maxSize, int evictProhibited) {
             this.maxSize = maxSize;
             this.evictProhibited = evictProhibited;
         }

@@ -17,19 +17,20 @@
 package org.apache.ignite.development.utils;
 
 /**
- * Statistic for record size
+ * Statistic for record size, used to accumulate information about several record and calculating average.
  */
 public class RecordSizeCountStat {
-    /** Size. */
+    /** Sum of sizes. */
     private long size = -1;
-    /** Count. */
+
+    /** Count of all records. */
     private int cnt;
 
     /**
      * @param size record size. Negative value means size is unknown for current occurrence. Any negative value resets
      * accumulated statistics.
      */
-    public void occurrence(int size) {
+    void occurrence(int size) {
         if (size >= 0) {
             if (this.size < 0)
                 this.size = 0;
@@ -51,23 +52,32 @@ public class RecordSizeCountStat {
             "\t " + ((size >= 0) ? size / cnt : "");
     }
 
+    /**
+     * @return average size of one record, as double.
+     */
     private double averageD() {
         return 1.0 * size / cnt;
     }
 
-    public String averageStr() {
-        if(cnt==0)
-            return "";
-
-        return String.format("%.2f", averageD());
+    /**
+     * @return average size of one record, printable version.
+     */
+    String averageStr() {
+        return cnt == 0 ? "" : String.format("%.2f", averageD());
     }
 
-    public int getCount() {
+    /**
+     * @return Count of all records.
+     */
+    int getCount() {
         return cnt;
     }
 
-    public void add(RecordSizeCountStat value) {
-        this.cnt+=value.cnt;
-        this.size+=value.size;
+    /**
+     * @param val other statistic value to reduce with.
+     */
+    void add(RecordSizeCountStat val) {
+        cnt += val.cnt;
+        size += val.size;
     }
 }

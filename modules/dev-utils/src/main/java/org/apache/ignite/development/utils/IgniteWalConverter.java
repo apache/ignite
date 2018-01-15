@@ -42,7 +42,7 @@ public class IgniteWalConverter {
     public static void main(String[] args) throws Exception {
         if (args.length < 2)
             throw new IllegalArgumentException("\nYou need to provide:\n" +
-                    "\t1. Size of pages (1024, 2048, etc).\n" +
+                    "\t1. Size of pages, which was selected for file store (1024, 2048, 4096, etc).\n" +
                     "\t2. Path to dir with wal files.\n" +
                     "\t3. (Optional) Path to dir with archive wal files.");
 
@@ -74,10 +74,9 @@ public class IgniteWalConverter {
 
                 final WALPointer pointer = next.get1();
                 final WALRecord record = next.get2();
-                final WALRecord.RecordType type = record.type();
 
                 if (stat != null)
-                    stat.registerRecord(type, record, pointer, true);
+                    stat.registerRecord(record, pointer, true);
 
                 if (printRecords)
                     System.out.println("[W] " + record);
@@ -95,7 +94,7 @@ public class IgniteWalConverter {
                     final WALRecord record = next.get2();
 
                     if (stat != null)
-                        stat.registerRecord(record.type(), record, pointer, false);
+                        stat.registerRecord(record, pointer, false);
 
                     if (printRecords)
                         System.out.println("[A] " + record);
