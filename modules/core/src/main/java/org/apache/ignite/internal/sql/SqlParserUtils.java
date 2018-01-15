@@ -19,7 +19,7 @@ package org.apache.ignite.internal.sql;
 
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.sql.command.SqlQualifiedName;
-import org.apache.ignite.internal.util.GridArrays;
+import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.typedef.F;
 
 import java.util.Set;
@@ -71,7 +71,7 @@ public class SqlParserUtils {
         }
 
         throw errorUnexpectedToken0(lex,
-            GridArrays.append(additionalExpTokens, COMMA.asString(), PARENTHESIS_RIGHT.asString()));
+            GridFunc.concat(additionalExpTokens, COMMA.asString(), PARENTHESIS_RIGHT.asString()));
     }
 
     /**
@@ -339,8 +339,15 @@ public class SqlParserUtils {
 
         if (F.isEmpty(expTokens))
             return errorUnexpectedToken0(token, firstExpToken);
-        else
-            throw errorUnexpectedToken0(token, GridArrays.insert(expTokens, 0, firstExpToken));
+        else {
+            String[] expTokens0 = new String[expTokens.length + 1];
+
+            expTokens0[0] = firstExpToken;
+
+            System.arraycopy(expTokens, 0, expTokens0, 1, expTokens.length);
+
+            throw errorUnexpectedToken0(token, expTokens0);
+        }
     }
 
     /**

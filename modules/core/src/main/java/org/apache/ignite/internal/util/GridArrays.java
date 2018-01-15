@@ -54,43 +54,6 @@ public final class GridArrays {
     }
 
     /**
-     * Inserts element to the array at the given index. Grows the array if needed.
-     *
-     * @param arr Array.
-     * @param idx Index.
-     * @param o New element.
-     * @return The array extended.
-     */
-    @SuppressWarnings("unchecked")
-    public static <T> T[] insert(T[] arr, int idx, T o) {
-        if (idx < 0 || idx > arr.length)
-            throw new IndexOutOfBoundsException();
-
-        T[] res = (T[]) Array.newInstance(arr.getClass().getComponentType(), arr.length + 1);
-
-        if (idx > 0)
-            System.arraycopy(arr, 0, res, 0, idx);
-
-        res[idx] = o;
-
-        if (idx < arr.length)
-            System.arraycopy(arr, idx, res, idx + 1, arr.length - idx);
-
-        return res;
-    }
-
-    /**
-     * Appends elements to the array.
-     *
-     * @param arr The source array.
-     * @param newElems Elements to append.
-     * @return The array extended.
-     */
-    public static <T> T[] append(T[] arr, T... newElems) {
-        return concat(arr, newElems);
-    }
-
-    /**
      * @param arr Array.
      * @param idx Index to remove.
      * @return Smaller array.
@@ -149,19 +112,5 @@ public final class GridArrays {
     public static void clearTail(Object[] arr, int fromIdx) {
         while (fromIdx < arr.length && arr[fromIdx] != null)
             arr[fromIdx++] = null;
-    }
-
-    /**
-     * Concatenates two arrays and returns the result.
-     *
-     * @param a The first array.
-     * @param b The second array.
-     * @param <T> Array element type.
-     * @return Concatenation of the both arguments.
-     */
-    public static <T> T[] concat(T[] a, T[] b) {
-        T[] result = Arrays.copyOf(a, a.length + b.length);
-        System.arraycopy(b, 0, result, a.length, b.length);
-        return result;
     }
 }
