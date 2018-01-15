@@ -362,8 +362,10 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
     /** */
     private static double sqrtSum(double... xs) {
         double sum = 0.0;
+
         for (double x: xs)
             sum += (x*x);
+
         return Math.sqrt(sum);
     }
 
