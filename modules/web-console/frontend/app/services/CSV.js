@@ -15,21 +15,8 @@
  * limitations under the License.
  */
 
-ignite-list-of-registered-users {
-  display: block;
-}
-
-.list-of-registered-users {
-  .ui-grid-settings--heading {
-    display: flex;
-  }
-  & > a {
-    display: inline-block;
-    margin: 10px;
-    margin-left: 0;
-
-    &.active {
-      font-weight: bold;
+export class CSV {
+    getSeparator() {
+        return (0.5).toLocaleString().includes(',') ? ';' : ',';
     }
-  }
 }
