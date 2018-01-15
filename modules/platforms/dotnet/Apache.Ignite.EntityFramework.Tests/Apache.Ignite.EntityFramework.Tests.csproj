@@ -92,8 +92,12 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   
   <ItemGroup>  
-    <SqlCeFiles_x86 Include="$(SolutionDir)packages\Microsoft.SqlServer.Compact.4.0.8876.1\NativeBinaries\x86\*.*" />  
-    <SqlCeFiles_amd64 Include="$(SolutionDir)packages\Microsoft.SqlServer.Compact.4.0.8876.1\NativeBinaries\amd64\*.*" />  
+    <SqlCeFiles_x86 Include="$(SolutionDir)packages\Microsoft.SqlServer.Compact.4.0.8876.1\NativeBinaries\x86\*.*">
+	  <InProject>false</InProject>
+	</SqlCeFiles_x86>
+    <SqlCeFiles_amd64 Include="$(SolutionDir)packages\Microsoft.SqlServer.Compact.4.0.8876.1\NativeBinaries\amd64\*.*">
+	  <InProject>false</InProject>
+	</SqlCeFiles_amd64>
   </ItemGroup>  
 	
   <Target Name="AfterBuild">
