@@ -65,7 +65,7 @@ public class GridClientConfiguration {
     /** Default flag setting for TCP_NODELAY option. */
     public static final boolean DFLT_TCP_NODELAY = true;
 
-    /** Default flag setting for NET_COMPRESSION option. */
+    /** Default flag setting for compression type option. */
     public static final CompressionType DFLT_COMPRESSION_TYPE = CompressionType.LZ4;
 
     /** List of servers to connect to. */
@@ -110,7 +110,7 @@ public class GridClientConfiguration {
     /** Ping timeout. */
     private long pingTimeout = DFLT_PING_TIMEOUT;
 
-    /** Network compression. */
+    /** Network compression type. */
     private CompressionType compressionType = DFLT_COMPRESSION_TYPE;
 
     /** Default balancer. */

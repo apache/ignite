@@ -17,13 +17,23 @@
 
 package org.apache.ignite.internal.util.nio.compress;
 
-/** */
+/**
+ * Network compression types.
+ * <p>
+ * The following compression types are supported:
+ * <ul>
+ * <li>{@link #NO_COMPRESSION}</li>
+ * <li>{@link #DEFLATER}</li>
+ * <li>{@link #ZSTD}</li>
+ * <li>{@link #LZ4}</li>
+ * </ul>
+ */
 public enum CompressionType {
     /** */
     NO_COMPRESSION,
 
     /** */
-    DEFALTER,
+    DEFLATER,
 
     /** */
     ZSTD,

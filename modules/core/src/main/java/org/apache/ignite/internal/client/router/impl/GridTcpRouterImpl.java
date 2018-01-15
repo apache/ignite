@@ -245,7 +245,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
      * @param lsnr Server message listener.
      * @param parser Server message parser.
      * @param tcpNoDelay Flag indicating whether TCP_NODELAY flag should be set for accepted connections.
-     * @param compressionType Flag indicating whether network compression enabled.
+     * @param compressionType Network compression type.
      * @param sslCtx SSL context in case if SSL is enabled.
      * @param wantClientAuth Whether client will be requested for authentication.
      * @param needClientAuth Whether client is required to be authenticated.

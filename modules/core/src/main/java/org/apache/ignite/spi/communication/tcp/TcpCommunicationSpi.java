@@ -303,7 +303,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      */
     public static final int DFLT_SELECTORS_CNT = Math.max(4, Runtime.getRuntime().availableProcessors() / 2);
 
-    /** */
+    /** Default network compression type. */
     public static final CompressionType DFLT_COMPRESSION_TYPE = CompressionType.LZ4;
 
     /**
@@ -1107,7 +1107,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** Count of selectors to use in TCP server. */
     private int selectorsCnt = DFLT_SELECTORS_CNT;
 
-    /** */
+    /** Network compression type. */
     private CompressionType compressionType = DFLT_COMPRESSION_TYPE;
 
     /**
@@ -1619,7 +1619,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         return selectorsCnt;
     }
 
-    /** */
+    /**
+     * Sets the network compression type.
+     * <p/>
+     * If not provided, default value is {@link #DFLT_COMPRESSION_TYPE}.
+     *
+     * @param compressionType Compression type.
+     * @return {@code this} for chaining.
+     */
     @IgniteSpiConfiguration(optional = true)
     public TcpCommunicationSpi setCompressionType(CompressionType compressionType) {
         this.compressionType = compressionType;
@@ -1627,7 +1634,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         return this;
     }
 
-    /** */
+    /**
+     * See {@link #setCompressionType(CompressionType)}.
+     *
+     * @return Network compression type.
+     */
     public CompressionType getCompressionType() {
         return compressionType;
     }

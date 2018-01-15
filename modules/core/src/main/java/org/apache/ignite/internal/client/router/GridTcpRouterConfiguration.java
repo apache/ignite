@@ -145,12 +145,12 @@ public class GridTcpRouterConfiguration {
     }
 
     /**
-     * Returns {@code true} if network compressing is enabled, {@code false} otherwise.
+     * Returns network compression type.
      *
      * If not provided, then default value
      * {@link #DFLT_COMPRESSION_TYPE} is used.
      *
-     * @return Network compression flag.
+     * @return Network compression type.
      */
     public CompressionType getCompressionType() {
         return compressionType;
@@ -278,12 +278,12 @@ public class GridTcpRouterConfiguration {
     }
 
     /**
-     * Enables/disables network compression.
+     * Set network compression type.
      * <p>
      * If not provided, then default value
      * {@link #DFLT_COMPRESSION_TYPE} is used.
      *
-     * @param compressionType {@code true} if network compressing is enabled, {@code false} otherwise.
+     * @param compressionType Compression type.
      * @return {@code this} for chaining.
      */
     public GridTcpRouterConfiguration setCompressionType(CompressionType compressionType) {

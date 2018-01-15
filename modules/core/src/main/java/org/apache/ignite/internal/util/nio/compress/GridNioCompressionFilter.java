@@ -91,7 +91,7 @@ public class GridNioCompressionFilter extends GridNioFilterAdapter {
             case ZSTD:
                 return new ZstdEngine();
 
-            case DEFALTER:
+            case DEFLATER:
                 return new DeflaterEngine();
 
             default:
