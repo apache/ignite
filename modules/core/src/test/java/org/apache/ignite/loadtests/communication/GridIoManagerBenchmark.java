@@ -26,6 +26,7 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -43,7 +44,6 @@ import org.apache.ignite.testframework.GridLoadTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.LongAdder8;
-import org.jsr166.ThreadLocalRandom8;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
@@ -93,7 +93,7 @@ public class GridIoManagerBenchmark {
      *
      */
     static {
-        ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         arrs = new byte[64][];
 
@@ -281,7 +281,7 @@ public class GridIoManagerBenchmark {
 
                 GridIoManager io = g.context().io();
 
-                Random rnd = ThreadLocalRandom8.current();
+                Random rnd = ThreadLocalRandom.current();
 
                 IgniteUuid msgId = IgniteUuid.randomUuid();
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.datastreamer;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -28,7 +29,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.LongAdder8;
-import org.jsr166.ThreadLocalRandom8;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -99,12 +99,12 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         for (int i = 0; i < vals.length; i++) {
-            int valLen = ThreadLocalRandom8.current().nextInt(128, 512);
+            int valLen = ThreadLocalRandom.current().nextInt(128, 512);
 
             StringBuilder sb = new StringBuilder();
 
             for (int j = 0; j < valLen; j++)
-                sb.append('a' + ThreadLocalRandom8.current().nextInt(20));
+                sb.append('a' + ThreadLocalRandom.current().nextInt(20));
 
             vals[i] = sb.toString();
 
@@ -171,7 +171,7 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
             multithreaded(new Callable<Object>() {
                 @SuppressWarnings("InfiniteLoopStatement")
                 @Override public Object call() throws Exception {
-                    ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                     while (true) {
                         int i = rnd.nextInt(ENTRY_CNT);

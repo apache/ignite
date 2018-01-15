@@ -29,7 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.LongAdder8;
-import org.jsr166.ThreadLocalRandom8;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * {@link SortedEvictionPolicy} performance test.
@@ -51,7 +51,7 @@ public class SortedEvictionPolicyPerformanceTest extends GridCommonAbstractTest 
     private static final int P_GET = 30;
 
     /** Rnd. */
-    private static final ThreadLocalRandom8 RND = ThreadLocalRandom8.current();
+    private static final ThreadLocalRandom RND = ThreadLocalRandom.current();
 
     /** Ignite. */
     private static Ignite ignite;

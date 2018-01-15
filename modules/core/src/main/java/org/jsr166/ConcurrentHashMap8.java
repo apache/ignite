@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 
 /**
@@ -637,7 +638,7 @@ public class ConcurrentHashMap8<K, V>
          */
         final void tryAwaitLock(Node[] tab, int i) {
             if (tab != null && i >= 0 && i < tab.length) { // sanity check
-                int r = ThreadLocalRandom8.current().nextInt(); // randomize spins
+                int r = ThreadLocalRandom.current().nextInt(); // randomize spins
                 int spins = MAX_SPINS, h;
                 while (tabAt(tab, i) == this && ((h = hash) & LOCKED) != 0) {
                     if (spins >= 0) {

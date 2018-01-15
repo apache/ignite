@@ -35,7 +35,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ThreadLocalRandom8;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -141,7 +141,7 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
 
                     log.info("Started [node=" + ignite.name() + ", left=" + latch.getCount() + ']');
 
-                    ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                     while (latch.getCount() > 0) {
                         Thread.sleep(1000);
