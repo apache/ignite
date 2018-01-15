@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.datastreamer;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -33,9 +34,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheServerNotFoundException;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -64,6 +68,7 @@ import org.apache.log4j.WriterAppender;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
  * Tests for {@code IgniteDataStreamerImpl}.
@@ -488,6 +493,25 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         }
 
         fail("Expected exception wasn't thrown");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheStartAndStreamOpenFromDifferentNodes() throws Exception {
+        final Ignite ignite0 = startGrids(2);
+        final Ignite ignite1 = grid(1);
+
+        final String cacheName = "testCache";
+
+        IgniteCache<Integer, Integer> cache = ignite0.getOrCreateCache(
+            new CacheConfiguration<Integer, Integer>().setName(cacheName));
+
+        try (IgniteDataStreamer<Integer, Integer> ldr = ignite1.dataStreamer(cacheName)) {
+            ldr.addData(0, 0);
+        }
+
+        assertEquals(Integer.valueOf(0), cache.get(0));
     }
 
     /**
