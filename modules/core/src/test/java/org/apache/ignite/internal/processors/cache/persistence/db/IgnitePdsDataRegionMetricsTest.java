@@ -47,10 +47,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final long INIT_REGION_MAX_SIZE = 10 << 20;
-
-    /** */
-    private static final long DFLT_REGION_MAX_SIZE = 40 << 20;
+    private static final long INIT_REGION_SIZE = 10 << 20;
 
     /** */
     private static final int ITERATIONS = 5;
@@ -73,8 +70,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
-                    .setInitialSize(INIT_REGION_MAX_SIZE)
-                    .setMaxSize(DFLT_REGION_MAX_SIZE)
+                    .setInitialSize(INIT_REGION_SIZE)
                     .setPersistenceEnabled(true)
                     .setMetricsEnabled(true)
                     .setPageEvictionMode(RANDOM_2_LRU));
