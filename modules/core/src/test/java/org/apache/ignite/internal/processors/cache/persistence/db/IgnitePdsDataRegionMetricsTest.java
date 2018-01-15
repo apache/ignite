@@ -50,7 +50,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     private static final long INIT_REGION_SIZE = 10 << 20;
 
     /** */
-    private static final int ITERATIONS = 5;
+    private static final int ITERATIONS = 3;
 
     /** */
     private static final int BATCHES = 5;
