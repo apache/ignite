@@ -462,6 +462,11 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean hasActiveCache(int cacheId) {
+        return activeCacheIds.contains(cacheId);
+    }
+
+    /** {@inheritDoc} */
     public String toString() {
         return S.toString(IgniteTxStateImpl.class, this, "txMap", allEntriesCopy());
     }

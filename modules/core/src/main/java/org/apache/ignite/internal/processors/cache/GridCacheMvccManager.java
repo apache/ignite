@@ -42,6 +42,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtGetFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -114,6 +115,9 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
     /** Pending data streamer futures. */
     private final GridConcurrentHashSet<DataStreamerFuture> dataStreamerFuts = new GridConcurrentHashSet<>();
+
+    /** Pending get futures. */
+    private final GridConcurrentHashSet<IgniteInternalFuture<?>> dhtGetFuts = new GridConcurrentHashSet<>();
 
     /** */
     private final ConcurrentMap<IgniteUuid, GridCacheFuture<?>> futs = new ConcurrentHashMap8<>();
@@ -500,6 +504,40 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         assert add;
 
         return fut;
+    }
+
+    /**
+     *
+     * @param fut
+     */
+    public void addDhtGetFuture(IgniteInternalFuture<?> fut) {
+        dhtGetFuts.add(fut);
+    }
+
+    /**
+     *
+     * @param fut
+     */
+    public void removeDhtGetFuture(IgniteInternalFuture<?> fut) {
+        dhtGetFuts.remove(fut);
+    }
+
+    /**
+     *
+     * @param cacheId
+     */
+    public IgniteInternalFuture<?> finishGet(Integer cacheId) {
+        GridCompoundFuture res = new CacheObjectsReleaseFuture<>("DhtGet", null);
+
+        for (IgniteInternalFuture<?> fut : dhtGetFuts) {
+            if (fut instanceof GridDhtGetFuture && (cacheId == null || ((GridDhtGetFuture)fut).cacheId() == cacheId) ) {
+                res.add(fut);
+            }
+        }
+
+        res.markInitialized();
+
+        return res;
     }
 
     /**

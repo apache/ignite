@@ -141,6 +141,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationReadyMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRequest;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultResponse;
@@ -186,6 +187,11 @@ public class GridIoMessageFactory implements MessageFactory {
             // -46 ... -51 - snapshot messages.
             case -61:
                 msg = new IgniteDiagnosticMessage();
+
+                break;
+
+            case -54:
+                msg = new SchemaOperationReadyMessage();
 
                 break;
 

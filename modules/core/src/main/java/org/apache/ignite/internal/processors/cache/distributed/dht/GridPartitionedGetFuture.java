@@ -611,6 +611,14 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         return Collections.emptyMap();
     }
 
+    /**
+     *
+     * @return Cache identifier.
+     */
+    public int cacheId() {
+        return cctx.cacheId();
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {

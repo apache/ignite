@@ -546,7 +546,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param topVer Topology version.
      * @return Future that will be completed when all ongoing transactions are finished.
      */
-    public IgniteInternalFuture<Boolean> finishTxs(AffinityTopologyVersion topVer) {
+    public IgniteInternalFuture<Boolean> finishTxs(Integer cacheId, AffinityTopologyVersion topVer) {
         GridCompoundFuture<IgniteInternalTx, Boolean> res =
             new CacheObjectsReleaseFuture<>(
                 "Tx",
@@ -562,8 +562,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 });
 
         for (IgniteInternalTx tx : txs()) {
-            if (needWaitTransaction(tx, topVer))
-                res.add(tx.finishFuture());
+            if (needWaitTransaction(tx, topVer)) {
+                if (cacheId == null || tx.txState().hasActiveCache(cacheId))
+                    res.add(tx.finishFuture());
+            }
         }
 
         res.markInitialized();

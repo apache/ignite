@@ -17,12 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.schema;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaAcknowledgeDiscoveryMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
@@ -56,6 +59,9 @@ public class SchemaOperationManager {
     /** Participants. */
     private Collection<UUID> nodeIds;
 
+    /** Participants that are ready. */
+    private Collection<UUID> readyNodeIds;
+
     /** Node results. */
     private Map<UUID, SchemaOperationException> nodeRess;
 
@@ -68,6 +74,9 @@ public class SchemaOperationManager {
     /** Coordinator finished flag. */
     private boolean crdFinished;
 
+    /** Cache identifier. */
+    private Integer cacheId;
+
     /**
      * Constructor.
      *
@@ -77,7 +86,7 @@ public class SchemaOperationManager {
      * @param crd Coordinator node.
      */
     public SchemaOperationManager(GridKernalContext ctx, GridQueryProcessor qryProc, SchemaOperationWorker worker,
-        @Nullable ClusterNode crd) {
+        @Nullable ClusterNode crd, @Nullable Integer cacheId) {
         assert !ctx.clientNode() || crd == null;
 
         this.ctx = ctx;
@@ -86,6 +95,7 @@ public class SchemaOperationManager {
 
         this.qryProc = qryProc;
         this.worker = worker;
+        this.cacheId = cacheId;
 
         synchronized (mux) {
             this.crd = crd;
@@ -99,6 +109,35 @@ public class SchemaOperationManager {
      */
     @SuppressWarnings("unchecked")
     public void start() {
+        qryProc.getIndexing().onBeforeSchemaChange();
+
+        if (crd == null)
+            return;
+
+        AffinityTopologyVersion nextTopVer = ctx.cache().context().exchange().readyAffinityVersion()
+            .nextMinorVersion();
+
+        IgniteInternalFuture<?> pfut = ctx.cache().context()
+            .partitionReleaseFuture(cacheId, nextTopVer);
+
+        if (pfut.isDone()) {
+            qryProc.sendReadyMessage(crd.id(), operationId());
+
+            return;
+        }
+
+        pfut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+            @Override public void apply(IgniteInternalFuture<?> future) {
+                qryProc.sendReadyMessage(crd.id(), operationId());
+            }
+        });
+    }
+
+    /**
+     * Map operation handling.
+     */
+    @SuppressWarnings("unchecked")
+    public void start0() {
         worker.start();
 
         synchronized (mux) {
@@ -107,6 +146,35 @@ public class SchemaOperationManager {
                     onLocalNodeFinished(fut);
                 }
             });
+        }
+    }
+
+    /**
+     *
+     * @param nodeId
+     */
+    public void onNodeReady(UUID nodeId) {
+        synchronized (mux) {
+            assert isLocalCoordinator();
+
+            if (readyNodeIds.contains(nodeId)) {
+                if (log.isDebugEnabled())
+                    log.debug("Received duplicate node ready message [opId=" + operationId() + ", nodeId=" + nodeId +
+                        ']');
+
+                return;
+            }
+
+            readyNodeIds.add(nodeId);
+
+            if (readyNodeIds.size() == nodeIds.size()) {
+                try {
+                    ctx.discovery().sendCustomEvent(new SchemaAcknowledgeDiscoveryMessage(worker.operation()));
+                }
+                catch (IgniteCheckedException e) {
+                    // No-op
+                }
+            }
         }
     }
 
@@ -248,6 +316,7 @@ public class SchemaOperationManager {
         if (isLocalCoordinator() && !crdMapped) {
             // Initialize local structures.
             nodeIds = new HashSet<>();
+            readyNodeIds = new HashSet<>();
             nodeRess = new HashMap<>();
 
             for (ClusterNode alive : ctx.discovery().aliveServerNodes())

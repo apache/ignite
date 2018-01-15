@@ -829,12 +829,39 @@ public class GridCacheSharedContext<K, V> {
      */
     @SuppressWarnings({"unchecked"})
     public IgniteInternalFuture<?> partitionReleaseFuture(AffinityTopologyVersion topVer) {
+        return partitionReleaseFuture(null, topVer);
+    }
+
+    /**
+     * Captures all ongoing operations that we need to wait before we can proceed to the next topology version.
+     * This method must be called only after
+     * {@link GridDhtPartitionTopology#updateTopologyVersion(GridDhtTopologyFuture, DiscoCache, long, boolean)}
+     * method is called so that all new updates will wait to switch to the new version.
+     * This method will capture:
+     * <ul>
+     *     <li>All non-released cache locks</li>
+     *     <li>All non-committed transactions (local and remote)</li>
+     *     <li>All pending atomic updates</li>
+     *     <li>All pending DataStreamer updates</li>
+     * </ul>
+     *
+     * Captured updates are wrapped in a future that will be completed once pending objects are released.
+     *
+     * @param cacheId Cache identifier.
+     * @param topVer Topology version.
+     * @return {@code true} if waiting was successful.
+     */
+    @SuppressWarnings({"unchecked"})
+    public IgniteInternalFuture<?> partitionReleaseFuture(Integer cacheId, AffinityTopologyVersion topVer) {
         GridCompoundFuture f = new CacheObjectsReleaseFuture("Partition", topVer);
 
         f.add(mvcc().finishExplicitLocks(topVer));
-        f.add(tm().finishTxs(topVer));
+        f.add(tm().finishTxs(cacheId, topVer));
         f.add(mvcc().finishAtomicUpdates(topVer));
         f.add(mvcc().finishDataStreamerUpdates(topVer));
+
+        if (cacheId != null)
+            f.add(mvcc().finishGet(cacheId));
 
         f.markInitialized();
 

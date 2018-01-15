@@ -333,4 +333,9 @@ public interface GridQueryIndexing {
      * @return Row cache cleaner.
      */
     public GridQueryRowCacheCleaner rowCacheCleaner(int cacheGroupId);
+
+    /**
+     * Perform schema change readiness checks.
+     */
+    public void onBeforeSchemaChange();
 }

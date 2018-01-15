@@ -289,6 +289,11 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean hasActiveCache(int cacheId) {
+        return cacheCtx.cacheId() == cacheId;
+    }
+
+    /** {@inheritDoc} */
     public String toString() {
         return S.toString(IgniteTxImplicitSingleStateImpl.class, this);
     }

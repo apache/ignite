@@ -180,4 +180,10 @@ public interface IgniteTxState {
      * @return {@code True} if transaction is empty.
      */
     public boolean empty();
+
+    /**
+     * @param cacheId Cache identifier to check.
+     * @return {@code true} if cacheId is amongst active caches.
+     */
+    public boolean hasActiveCache(int cacheId);
 }

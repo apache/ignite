@@ -61,12 +61,11 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectsReleaseFuture;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
@@ -82,7 +81,9 @@ import org.apache.ignite.internal.processors.query.schema.SchemaOperationExcepti
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationManager;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationWorker;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaAcknowledgeDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationReadyMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
@@ -227,6 +228,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     msg0.senderNodeId(nodeId);
 
                     processStatusMessage(msg0);
+                }
+                else if (msg instanceof SchemaOperationReadyMessage) {
+                    SchemaOperationReadyMessage msg0 = (SchemaOperationReadyMessage)msg;
+
+                    msg0.senderNodeId(nodeId);
+
+                    processReadyMessage(msg0);
                 }
                 else
                     U.warn(log, "Unsupported IO message: " + msg);
@@ -485,6 +493,40 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Called from discovery thread
+     *
+     * @param msg
+     */
+    private void onSchemaAcknowledgeDiscovery(SchemaAcknowledgeDiscoveryMessage msg) {
+        if (log.isDebugEnabled())
+            log.debug("Schema Ack Discovery from Discovery thread");
+
+        msg.exchange(true);
+    }
+
+    /**
+     *
+     * @param msg
+     */
+    public void onSchemaAcknowledge(SchemaAcknowledgeDiscoveryMessage msg) {
+        if (log.isDebugEnabled())
+            log.debug("Schema ack exchange");
+
+        synchronized (stateMux) {
+            if (disconnected)
+                return;
+
+            SchemaOperation curOp = schemaOps.get(msg.operation().schemaName());
+
+            assert curOp != null;
+            assert curOp.manager() != null;
+            //assert curOp.id() == msg.operation().id();
+
+            curOp.manager().start0();
+        }
+    }
+
+    /**
      * Process schema finish message from discovery thread.
      *
      * @param msg Message.
@@ -636,7 +678,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             new SchemaOperationWorker(ctx, this, msg.deploymentId(), op, nop, err, cacheRegistered, type);
 
         SchemaOperationManager mgr = new SchemaOperationManager(ctx, this, worker,
-            ctx.clientNode() ? null : coordinator());
+            ctx.clientNode() ? null : coordinator(), cacheDesc == null ? null : cacheDesc.cacheId());
 
         schemaOp.manager(mgr);
 
@@ -918,6 +960,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             boolean exchange = onSchemaProposeDiscovery(msg0);
 
             msg0.exchange(exchange);
+        }
+        else if (msg instanceof SchemaAcknowledgeDiscoveryMessage) {
+            SchemaAcknowledgeDiscoveryMessage msg0 = (SchemaAcknowledgeDiscoveryMessage)msg;
+
+            onSchemaAcknowledgeDiscovery(msg0);
         }
         else if (msg instanceof SchemaFinishDiscoveryMessage) {
             SchemaFinishDiscoveryMessage msg0 = (SchemaFinishDiscoveryMessage)msg;
@@ -2672,6 +2719,31 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Send ready message to coordinator node.
+     *
+     * @param destNodeId Destination node ID.
+     * @param opId Operation ID.
+     */
+    public void sendReadyMessage(UUID destNodeId, UUID opId) {
+        if (log.isDebugEnabled())
+            log.debug("Sending schema operation ready message [opId=" + opId + ", crdNode=" + destNodeId +
+                ']');
+
+        try {
+            SchemaOperationReadyMessage msg = new SchemaOperationReadyMessage(opId);
+
+            // Messages must go to dedicated schema pool. We cannot push them to query pool because in this case
+            // they could be blocked with other query requests.
+            ctx.io().sendToGridTopic(destNodeId, TOPIC_SCHEMA, msg, SCHEMA_POOL);
+        }
+        catch (IgniteCheckedException e) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to send schema ready response [opId=" + opId + ", destNodeId=" + destNodeId +
+                    ", err=" + e + ']');
+        }
+    }
+
+    /**
      * Process status message.
      *
      * @param msg Status message.
@@ -2710,6 +2782,49 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             if (log.isDebugEnabled())
                 log.debug("Received status message (added to pending set) [opId=" + msg.operationId() +
+                    ", sndNodeId=" + msg.senderNodeId() + ']');
+        }
+    }
+
+    /**
+     * Process ready message.
+     *
+     * @param msg Ready message.
+     */
+    private void processReadyMessage(SchemaOperationReadyMessage msg) {
+        synchronized (stateMux) {
+            if (completedOpIds.contains(msg.operationId())) {
+                // Received message from a node which joined topology in the middle of operation execution.
+                if (log.isDebugEnabled())
+                    log.debug("Received ready message for completed operation (will ignore) [" +
+                        "opId=" + msg.operationId() + ", sndNodeId=" + msg.senderNodeId() + ']');
+
+                return;
+            }
+
+            UUID opId = msg.operationId();
+
+            SchemaProposeDiscoveryMessage proposeMsg = activeProposals.get(opId);
+
+            if (proposeMsg != null) {
+                SchemaOperation op = schemaOps.get(proposeMsg.schemaName());
+
+                if (op != null && F.eq(op.id(), opId) && op.started() && coordinator().isLocal()) {
+                    if (log.isDebugEnabled())
+                        log.debug("Received ready message [opId=" + msg.operationId() +
+                            ", sndNodeId=" + msg.senderNodeId() + ']');
+
+                    op.manager().onNodeReady(msg.senderNodeId());
+
+                    return;
+                }
+            }
+
+            // Put to pending set if operation is not visible/ready yet.
+            //pendingMsgs.add(msg);
+
+            if (log.isDebugEnabled())
+                log.debug("Received ready message (added to pending set) [opId=" + msg.operationId() +
                     ", sndNodeId=" + msg.senderNodeId() + ']');
         }
     }
@@ -2822,6 +2937,36 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public static AffinityTopologyVersion getRequestAffinityTopologyVersion() {
         return requestTopVer.get();
+    }
+
+    /**
+     *
+     * @param ver
+     * @return
+     */
+    public IgniteInternalFuture<?> finishDdl(Integer cacheId, AffinityTopologyVersion ver) {
+        CacheObjectsReleaseFuture fut = null;
+
+        for (SchemaOperation op : schemaOps.values()) {
+            if (op != null && op.manager() != null) {
+                String cacheName = op.proposeMessage().operation().cacheName();
+
+                DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(cacheName);
+
+                if (cacheId == null || (desc != null && F.eq(desc.cacheId(), cacheId))) {
+
+                    if (fut == null)
+                        fut = new CacheObjectsReleaseFuture("DDL", ver);
+
+                    fut.add(op.manager().worker().future());
+                }
+            }
+        }
+
+        if (fut != null)
+            fut.markInitialized();
+
+        return fut;
     }
 
     /**

@@ -170,6 +170,27 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
      * Initializes future.
      */
     void init() {
+        cctx.mvcc().addDhtGetFuture(this);
+
+        IgniteInternalFuture<?> ddlFut = cctx.kernalContext().query().finishDdl(cctx.cacheId(), topVer);
+
+        if (ddlFut == null) {
+            init0();
+
+            return;
+        }
+
+        ddlFut.listen(new CI1<IgniteInternalFuture<?>>() {
+            @Override public void apply(IgniteInternalFuture<?> fut) {
+                init0();
+            }
+        });
+    }
+
+    /**
+     * Initializes future.
+     */
+    void init0() {
         GridDhtFuture<Object> fut = cctx.group().preloader().request(cctx, keys.keySet(), topVer);
 
         if (fut != null) {
@@ -232,6 +253,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
             // Release all partitions reserved by this future.
             if (parts != null)
                 cctx.topology().releasePartitions(parts);
+
+            cctx.mvcc().removeDhtGetFuture(this);
 
             return true;
         }
@@ -510,5 +533,13 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
      */
     private GridDhtCacheAdapter<K, V> cache() {
         return (GridDhtCacheAdapter<K, V>)cctx.cache();
+    }
+
+    /**
+     *
+     * @return Cache identifier.
+     */
+    public int cacheId() {
+        return cctx.cacheId();
     }
 }

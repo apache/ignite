@@ -2714,6 +2714,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void onBeforeSchemaChange() {
+        // No-op. Mainly for tests synchronizations now.
+        // TODO: make DDL operation readiness checks here
+    }
+
     /**
      * Closeable iterator.
      */

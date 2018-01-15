@@ -115,6 +115,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.SchemaExchangeWorkerTask;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaAcknowledgeDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
@@ -336,6 +337,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 SchemaProposeDiscoveryMessage msg0 = (SchemaProposeDiscoveryMessage)msg;
 
                 ctx.query().onSchemaPropose(msg0);
+            }
+            else if (msg instanceof SchemaAcknowledgeDiscoveryMessage) {
+                SchemaAcknowledgeDiscoveryMessage msg0 = (SchemaAcknowledgeDiscoveryMessage)msg;
+
+                ctx.query().onSchemaAcknowledge(msg0);
             }
             else
                 U.warn(log, "Unsupported schema discovery message: " + msg);

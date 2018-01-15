@@ -103,4 +103,9 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
     @Override public void onTxEnd(GridCacheSharedContext cctx, IgniteInternalTx tx, boolean commit) {
         assert false;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasActiveCache(int cacheId) {
+        return false;
+    }
 }

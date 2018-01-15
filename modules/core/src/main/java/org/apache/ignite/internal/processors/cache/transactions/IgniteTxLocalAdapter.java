@@ -1233,6 +1233,18 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      */
     protected final void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException {
         txState.addActiveCache(cacheCtx, recovery, this);
+
+        IgniteInternalFuture<?> dfut = cctx.kernalContext().query().finishDdl(cacheCtx.cacheId(), topVer);
+
+        if (dfut == null || dfut.isDone())
+            return;
+
+        try {
+            dfut.get();
+        }
+        catch (IgniteCheckedException e) {
+            // No-op
+        }
     }
 
     /**
