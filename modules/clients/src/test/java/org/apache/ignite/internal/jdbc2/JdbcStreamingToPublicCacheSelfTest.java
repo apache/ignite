@@ -20,6 +20,7 @@ package org.apache.ignite.internal.jdbc2;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Collections;
 import java.util.Properties;
@@ -43,12 +44,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 public class JdbcStreamingToPublicCacheSelfTest extends GridCommonAbstractTest {
     /** JDBC URL. */
     private static final String BASE_URL = CFG_URL_PREFIX + "cache=%s@modules/clients/src/test/config/jdbc-config.xml";
-
-    /** Connection. */
-    protected Connection conn;
-
-    /** */
-    protected transient IgniteLogger log;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -100,26 +95,20 @@ public class JdbcStreamingToPublicCacheSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param allowOverwrite Allow overwriting of existing keys.
      * @return Connection to use for the test.
      * @throws Exception if failed.
      */
-    private Connection createConnection(boolean allowOverwrite, String cacheName) throws Exception {
+    private Connection createConnection(String cacheName) throws Exception {
         Properties props = new Properties();
 
         props.setProperty(IgniteJdbcDriver.PROP_STREAMING, "true");
         props.setProperty(IgniteJdbcDriver.PROP_STREAMING_FLUSH_FREQ, "500");
-
-        if (allowOverwrite)
-            props.setProperty(IgniteJdbcDriver.PROP_STREAMING_ALLOW_OVERWRITE, "true");
 
         return DriverManager.getConnection(String.format(BASE_URL, cacheName), props);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        U.closeQuiet(conn);
-
         ignite(0).cache(DEFAULT_CACHE_NAME).clear();
 
         super.afterTest();
@@ -129,39 +118,37 @@ public class JdbcStreamingToPublicCacheSelfTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testStreamedInsert() throws Exception {
-        conn = createConnection(false, DEFAULT_CACHE_NAME);
+        try (Connection conn = createConnection(DEFAULT_CACHE_NAME)) {
+            conn.setSchema(null);
 
-        conn.setSchema(null);
+            Statement stmt = conn.createStatement();
 
-        Statement stmt = conn.createStatement();
-
-        stmt.execute("create table STREAM_TEST (ID int primary key, str_val varchar)");
-
-        for (int i = 10; i <= 100; i += 10)
-            ignite(0).cache(DEFAULT_CACHE_NAME).put(i, i * 100);
-
-        Connection conn2 = createConnection(false, "SQL_PUBLIC_STREAM_TEST");
-
-        PreparedStatement pstmt = conn2.prepareStatement("insert into STREAM_TEST(id, str_val) values (?, ?)");
-
-        for (int i = 1; i <= 100; i++) {
-            pstmt.setInt(1, i);
-            pstmt.setString(2, "val_" + i);
-
-            pstmt.executeUpdate();
+            stmt.execute("create table STREAM_TEST (ID int primary key, str_val varchar)");
         }
 
-        // Closing connection makes it wait for streamer close
-        // and thus for data load completion as well
-        conn.close();
-        conn2.close();
+        try (Connection conn = createConnection("SQL_PUBLIC_STREAM_TEST")) {
+            PreparedStatement pstmt = conn.prepareStatement("insert into STREAM_TEST(id, str_val) values (?, ?)");
 
-//        // Now let's check it's all there.
-//        for (int i = 1; i <= 100; i++) {
-//            if (i % 10 != 0)
-//                assertEquals(i, grid(0).cache(DEFAULT_CACHE_NAME).get(i));
-//            else // All that divides by 10 evenly should point to numbers 100 times greater - see above
-//                assertEquals(i * 100, grid(0).cache(DEFAULT_CACHE_NAME).get(i));
-//        }
+            for (int i = 1; i <= 100; i++) {
+                pstmt.setInt(1, i);
+                pstmt.setString(2, "val_" + i);
+
+                pstmt.executeUpdate();
+            }
+        }
+
+        try (Connection conn = createConnection("SQL_PUBLIC_STREAM_TEST")) {
+            ResultSet rs = conn.createStatement().executeQuery("select id, str_val from STREAM_TEST");
+
+            int cnt = 0;
+
+            while (rs.next()) {
+                assertEquals("val_" + rs.getInt(1), rs.getString(2));
+
+                cnt++;
+            }
+
+            assertEquals(100, cnt);
+        }
     }
 }

@@ -924,7 +924,7 @@ public class JdbcConnection implements Connection {
      * @throws SQLException On error.
      */
     PreparedStatement prepareNativeStatement(String sql) throws SQLException {
-        return ignite().context().query().prepareNativeStatement(schemaName(), sql);
+        return ignite().context().query().prepareNativeStatement(cacheName, sql);
     }
 
     /**
