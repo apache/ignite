@@ -1897,7 +1897,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     }
                 }
                 else {
-                    return new GridEmbeddedFuture<>(
+                    return new GridEmbeddedFuture<Map<K, V>, Boolean>(
                         fut,
                         plc2,
                         finClos);

@@ -445,15 +445,17 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     public void testSequentialRollback() throws Exception {
         Ignite client = startClient();
 
-        for (int i = 0; i < GRID_CNT; i++)
-            testSequentialRollback0(grid(0), grid(i), false);
+        testSequentialRollback0(grid(0), grid(0), false);
 
-        testSequentialRollback0(grid(0), client, false);
-
-        for (int i = 0; i < GRID_CNT; i++)
-            testSequentialRollback0(grid(0), grid(i), true);
-
-        testSequentialRollback0(grid(0), client, true);
+//        for (int i = 0; i < GRID_CNT; i++)
+//            testSequentialRollback0(grid(0), grid(i), false);
+//
+//        testSequentialRollback0(grid(0), client, false);
+//
+//        for (int i = 0; i < GRID_CNT; i++)
+//            testSequentialRollback0(grid(0), grid(i), true);
+//
+//        testSequentialRollback0(grid(0), client, true);
     }
 
     /**
@@ -470,7 +472,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         final CountDownLatch rollbackLatch = new CountDownLatch(1);
 
-        final int txCnt = 500;
+        final int txCnt = 1;
 
         final IgniteKernal k = (IgniteKernal)tryLockNode;
 
@@ -501,6 +503,8 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                     catch (Exception e) {
                         // Expected.
                     }
+
+                    System.out.println();
                 }
 
                 stop.set(true);
@@ -517,6 +521,12 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                 while(!stop.get()) {
                     for (Transaction tx : tryLockNode.transactions().localActiveTransactions()) {
+                        TransactionProxyImpl tx0 = (TransactionProxyImpl)tx;
+
+                        // Roll back only read transactions.
+                        if (!tx0.tx().writeMap().isEmpty())
+                            continue;
+
                         if (rolledBackVers.contains(tx.xid()))
                             fail("Rollback version is expected");
 

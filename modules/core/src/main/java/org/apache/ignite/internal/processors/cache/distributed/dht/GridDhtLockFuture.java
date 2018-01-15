@@ -68,6 +68,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
@@ -199,7 +200,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         boolean read,
         boolean needReturnVal,
         long timeout,
-        GridDhtTxLocalAdapter tx,
+        final GridDhtTxLocalAdapter tx,
         long threadId,
         long createTtl,
         long accessTtl,
@@ -260,6 +261,17 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                 if (fut != null) {
                     if (fut == GridDhtTxLocalAdapter.ROLLBACK_FUT)
                         onError(tx.rollbackException());
+                    else
+                        fut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
+                            @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                                try {
+                                    fut.get();
+                                }
+                                catch (IgniteCheckedException e) {
+                                    onError(e);
+                                }
+                            }
+                        });
 
                     return;
                 }
