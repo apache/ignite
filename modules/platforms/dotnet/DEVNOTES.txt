@@ -69,5 +69,6 @@ Requirements:
 
 Getting started:
 * Build Java and .NET:
-  ./xbuild.sh
-* Run tests: TODO
+  ./build-mono.sh
+* Run tests: 
+  mono Apache.Ignite.Core.Tests/bin/Debug/Apache.Ignite.Core.Tests.exe -basicTests
