@@ -61,7 +61,7 @@ Cross-Platform Development with Mono (Linux, macOS)
 Full Ignite.NET solution can be built, developed, and tested with Mono.
 
 Requirements:
-* Mono with 4.0 assemblies: sudo apt-get install mono-devel mono-reference-assemblies-4.0
+* Mono: http://www.mono-project.com/download/
 * NuGet: sudo apt-get install nuget
 * JDK: sudo apt-get install default-jdk
 * Maven: sudo apt-get install maven
