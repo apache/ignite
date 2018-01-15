@@ -60,11 +60,11 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
  * Operates over one directory, does not provide start and end boundaries
  */
 class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
+    /** Record buffer size */
+    public static final int DFLT_BUF_SIZE = 2 * 1024 * 1024;
+
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Record buffer size */
-    private static final int BUF_SIZE = 2 * 1024 * 1024;
 
     /**
      * WAL files directory. Should already contain 'consistent ID' as subfolder.
@@ -92,26 +92,26 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
     /**
      * Creates iterator in directory scan mode
-     *  @param walFilesDir Wal files directory. Should already contain node consistent ID as subfolder
+     * @param walFilesDir Wal files directory. Should already contain node consistent ID as subfolder
      * @param log Logger.
-     * @param sharedCtx Shared context. Cache processor is to be configured if Cache Object Key & Data Entry is
- * required.
+     * @param sharedCtx Shared context. Cache processor is to be configured if Cache Object Key & Data Entry is required.
      * @param ioFactory File I/O factory.
      * @param keepBinary  Keep binary. This flag disables converting of non primitive types
-     * (BinaryObjects will be used instead)
+     * @param bufSize Buffer size.
      */
     StandaloneWalRecordsIterator(
         @NotNull File walFilesDir,
         @NotNull IgniteLogger log,
         @NotNull GridCacheSharedContext sharedCtx,
         @NotNull FileIOFactory ioFactory,
-        boolean keepBinary
+        boolean keepBinary,
+        int bufSize
     ) throws IgniteCheckedException {
         super(log,
             sharedCtx,
             new RecordSerializerFactoryImpl(sharedCtx),
             ioFactory,
-            BUF_SIZE);
+            bufSize);
         this.keepBinary = keepBinary;
         init(walFilesDir, false, null);
         advance();
@@ -134,12 +134,13 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             @NotNull FileIOFactory ioFactory,
             boolean workDir,
             boolean keepBinary,
+            int bufSize,
             @NotNull File... walFiles) throws IgniteCheckedException {
         super(log,
             sharedCtx,
             new RecordSerializerFactoryImpl(sharedCtx),
             ioFactory,
-            BUF_SIZE);
+            bufSize);
 
         this.workDir = workDir;
         this.keepBinary = keepBinary;
