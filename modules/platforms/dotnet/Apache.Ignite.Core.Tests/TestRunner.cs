@@ -25,6 +25,9 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Tests.Memory;
     using NUnit.ConsoleRunner;
 
+    /// <summary>
+    /// Console test runner.
+    /// </summary>
     public static class TestRunner
     {
         [STAThread]
@@ -33,12 +36,14 @@ namespace Apache.Ignite.Core.Tests
             Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
             Debug.AutoFlush = true;
 
-            if (args.Length == 1 && args[0] == "-mono")
+            if (args.Length == 1 && args[0] == "-basicTests")
             {
                 // We do not support non-default AppDomain on Mono, so NUnit does not work.
                 // Just make sure that basic functionality works.
-                RunBasicTest();
+                RunBasicTests();
+                return;
             }
+
             if (args.Length == 2)
             {
                 //Debugger.Launch();
@@ -53,15 +58,14 @@ namespace Apache.Ignite.Core.Tests
             }
 
             TestOne(typeof(ConsoleRedirectTest), "TestMultipleDomains");
-
-            //TestAll(typeof (AffinityFunctionTest));
-            //TestAllInAssembly();
+            TestAll(typeof(LinqTest), true);
+            TestAllInAssembly();
         }
 
         /// <summary>
         /// Runs some basic tests.
         /// </summary>
-        private static void RunBasicTest()
+        private static void RunBasicTests()
         {
             var test = new LinqTest();
             Console.WriteLine("Starting client LINQ test...");
@@ -71,53 +75,52 @@ namespace Apache.Ignite.Core.Tests
             test.TestBasicQueries();
 
             Console.WriteLine("Test passed.");
-            Environment.Exit(0);
         }
 
-        private static int TestOne(Type testClass, string method)
+        /// <summary>
+        /// Runs specified test method.
+        /// </summary>
+        private static int TestOne(Type testClass, string method, bool sameDomain = false)
         {
             string[] args =
             {
-                "/noshadow",
-                "/run:" + testClass.FullName + "." + method,
+                "-noshadow",
+                "-domain:" + (sameDomain ? "None" : "Single"),
+                "-run:" + testClass.FullName + "." + method,
                 Assembly.GetAssembly(testClass).Location
             };
 
-            int returnCode = Runner.Main(args);
-
-            if (returnCode != 0)
-                Console.Beep();
-
-            return returnCode;
+            return Runner.Main(args);
         }
 
-        private static void TestAll(Type testClass)
+        /// <summary>
+        /// Runs all tests in specified class.
+        /// </summary>
+        private static int TestAll(Type testClass, bool sameDomain = false)
         {
             string[] args =
             {
-                "/noshadow",
-                "/run:" + testClass.FullName, Assembly.GetAssembly(testClass).Location
+                "-noshadow",
+                "-domain:" + (sameDomain ? "None" : "Single"),
+                "-run:" + testClass.FullName, Assembly.GetAssembly(testClass).Location
             };
 
-            int returnCode = Runner.Main(args);
-
-            if (returnCode != 0)
-                Console.Beep();
+            return Runner.Main(args);
         }
 
-        private static void TestAllInAssembly()
+        /// <summary>
+        /// Runs all tests in assembly.
+        /// </summary>
+        private static int TestAllInAssembly(bool sameDomain = false)
         {
             string[] args =
             {
-                "/noshadow",
+                "-noshadow",
+                "-domain:" + (sameDomain ? "None" : "Single"),
                 Assembly.GetAssembly(typeof(InteropMemoryTest)).Location
             };
 
-            int returnCode = Runner.Main(args);
-
-            if (returnCode != 0)
-                Console.Beep();
+            return Runner.Main(args);
         }
-
     }
 }
