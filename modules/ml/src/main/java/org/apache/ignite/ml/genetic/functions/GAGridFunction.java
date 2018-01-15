@@ -40,7 +40,7 @@ public class GAGridFunction {
     private GAConfiguration config = null;
 
     /**
-     * @param config
+     * @param config GA Configuration
      */
     public GAGridFunction(GAConfiguration config) {
         this.config = config;
@@ -49,7 +49,7 @@ public class GAGridFunction {
     /**
      * Retrieve solutions in descending order based on fitness score
      *
-     * @return SimpleResultSet
+     * @return Result set
      * @throws SQLException
      */
     @QuerySqlFunction
@@ -60,7 +60,7 @@ public class GAGridFunction {
     /**
      * Retrieve solutions in ascending order based on fitness score
      *
-     * @return SimpleResultSet
+     * @return Result set
      * @throws SQLException
      */
     @QuerySqlFunction
@@ -71,7 +71,7 @@ public class GAGridFunction {
     /**
      * Retrieve and individual solution by Chromosome key
      *
-     * @param key
+     * @param key Primary key of Chromosome
      * @return SimpleResultSet
      * @throws SQLException
      */
@@ -88,8 +88,8 @@ public class GAGridFunction {
     /**
      * Helper routine to return 'pivoted' results using the provided query param
      *
-     * @param query
-     * @return
+     * @param query Sql
+     * @return Result set
      */
     private static SimpleResultSet getChromosomes(String query) {
         Ignite ignite = Ignition.localIgnite();

@@ -63,8 +63,9 @@ public class CrossOverTask extends ComputeTaskAdapter<List<Long>, Boolean> {
     /**
      * Map Jobs to nodes using data affinity.
      *
-     * @param ClusterNode
-     * @param List<Long> primary keys for respective chromosomes
+     * @param nodes Cluster Nodes
+     * @param chromosomeKeys Primary keys for respective chromosomes
+     * @return A map of nodes to jobs.
      */
     public Map map(List<ClusterNode> nodes, List<Long> chromosomeKeys) throws IgniteException {
 
@@ -84,8 +85,8 @@ public class CrossOverTask extends ComputeTaskAdapter<List<Long>, Boolean> {
     /**
      * We return TRUE if success, else Exection is thrown.
      *
-     * @param List<ComputeJobResult>
-     * @return TRUE
+     * @param list ComputeJobResult
+     * @return Boolean value; if operationa was successful return true, otherwise Exception
      */
     public Boolean reduce(List<ComputeJobResult> list) throws IgniteException {
         // TODO Auto-generated method stub
@@ -93,8 +94,8 @@ public class CrossOverTask extends ComputeTaskAdapter<List<Long>, Boolean> {
     }
 
     /**
-     * @param ComputeJobResult res
-     * @param List<ComputeJobResult> rcvd
+     * @param res ComputeJobResult
+     * @param rcvd List of ComputeJobResult
      * @return ComputeJobResultPolicy
      */
     public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
@@ -112,9 +113,9 @@ public class CrossOverTask extends ComputeTaskAdapter<List<Long>, Boolean> {
      * Helper method to help assign ComputeJobs to respective ClusterNodes
      *
      * @param clusterNode
-     * @param keys
-     * @param map
-     * @return Map<ComputeJob, ClusterNode>
+     * @param keys Primary keys of Chromosomes
+     * @param map Nodes where jobs will be sent
+     * @return A map of ComputeJob/ClusterNode's
      */
 
     private Map<ComputeJob, ClusterNode> setupCrossOver(ClusterNode clusterNode, List<Long> keys,

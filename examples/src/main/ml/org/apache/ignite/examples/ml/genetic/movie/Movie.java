@@ -24,50 +24,103 @@ import java.util.List;
  */
 
 public class Movie {
-
+    /** name of movie */
     private String name;
+    /** genre of movie */
     private List genre;
+    /** rating of movie */
     private String rating;
 
+    /** IMDB rating */
     private double imdbRating;
+
+    /** year of movie */
     private String year;
 
+    /**
+     * Get the year
+     *
+     * @return Year
+     */
     public String getYear() {
         return year;
     }
 
+    /**
+     * Set the year
+     *
+     * @param year Year
+     */
     public void setYear(String year) {
         this.year = year;
     }
 
+    /**
+     * Get the IMDB rating
+     *
+     * @return IMDB rating
+     */
     public double getImdbRating() {
         return imdbRating;
     }
 
+    /**
+     * Set the IMDB rating
+     *
+     * @param imdbRating IMDB rating
+     */
     public void setImdbRating(double imdbRating) {
         this.imdbRating = imdbRating;
     }
 
+    /**
+     * Get the name of movie
+     *
+     * @return Name of movie
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * Set the name of movie
+     *
+     * @param name Movie name
+     */
     public void setName(String name) {
         this.name = name;
     }
 
+    /**
+     * @return
+     */
     public List getGenre() {
         return genre;
     }
 
+    /**
+     * Set the genre
+     *
+     * @param genre Genre of movie
+     */
     public void setGenre(List genre) {
         this.genre = genre;
     }
 
+    /**
+     * Get the rating of the movie
+     *
+     * @return Movie rating
+     */
     public String getRating() {
         return rating;
     }
 
+    /**
+     * Set the rating of the movie
+     *
+     * @param rating Movie rating
+     */
     public void setRating(String rating) {
         this.rating = rating;
     }

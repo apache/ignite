@@ -48,16 +48,16 @@ public class FitnessTask extends ComputeTaskAdapter<List<Long>, Boolean> {
     private GAConfiguration config = null;
 
     /**
-     * @param GAConfiguration config
+     * @param config GAConfiguration
      */
     public FitnessTask(GAConfiguration config) {
         this.config = config;
     }
 
     /**
-     * @param List<ClusterNode> nodes
-     * @param List<Long> chromosomeKeys
-     * @return Map<ComputeJob, ClusterNode>
+     * @param nodes List of ClusterNode
+     * @param chromosomeKeys List of chromosome keys
+     * @return Map of jobs to nodes
      */
     public Map map(List<ClusterNode> nodes, List<Long> chromosomeKeys) throws IgniteException {
 
@@ -77,8 +77,8 @@ public class FitnessTask extends ComputeTaskAdapter<List<Long>, Boolean> {
     }
 
     /**
-     * @param List<ComputeJobResult>
-     * @return Boolean
+     * @param list List of ComputeJobResult
+     * @return Boolean value
      */
     public Boolean reduce(List<ComputeJobResult> list) throws IgniteException {
 
@@ -86,8 +86,8 @@ public class FitnessTask extends ComputeTaskAdapter<List<Long>, Boolean> {
     }
 
     /**
-     * @param ComputeJobResult res
-     * @param List<ComputeJobResult> rcvd
+     * @param res ComputeJobResult
+     * @param rcvd List of ComputeJobResult
      * @return ComputeJobResultPolicy
      */
     public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {

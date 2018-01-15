@@ -45,33 +45,37 @@ public class Chromosome {
     /** array of gene keys. */
     private long[] genes;
 
+    /**
+     *
+     * @param genes Primary keys of Genes
+     */
     public Chromosome(long[] genes) {
         id = ID_GEN.incrementAndGet();
         this.genes = genes;
     }
 
     /**
-     * Return the fitnessScore
+     * Gets the fitnessScore
      *
-     * @return double
+     * @return This chromosome's fitness score
      */
     public double getFitnessScore() {
         return fitnessScore;
     }
 
     /**
-     * Set the fitnessScore
+     * Set the fitnessScore for this chromosome
      *
-     * @param double
+     * @param fitnessScore This chromosome's new fitness score
      */
     public void setFitnessScore(double fitnessScore) {
         this.fitnessScore = fitnessScore;
     }
 
     /**
-     * Retrieve gene keys (ie: primary keys) for this chromosome
+     * Gets the gene keys (ie: primary keys) for this chromosome
      *
-     * @return long[]
+     * @return This chromosome's genes
      */
     public long[] getGenes() {
         return genes;
@@ -80,16 +84,16 @@ public class Chromosome {
     /**
      * Set the gene keys (ie: primary keys)
      *
-     * @param genes
+     * @param genes This chromosome's new genes
      */
     public void setGenes(long[] genes) {
         this.genes = genes;
     }
 
     /**
-     * Return the id (primary key) for this chromosome
+     * Get the id (primary key) for this chromosome
      *
-     * @return Long
+     * @return This chromosome's primary key
      */
     public Long id() {
         return id;

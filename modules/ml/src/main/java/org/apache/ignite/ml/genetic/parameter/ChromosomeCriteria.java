@@ -26,19 +26,22 @@ import java.util.List;
  */
 public class ChromosomeCriteria {
 
+    /** List of criteria for a Chromosome */
     private List<String> criteria = new ArrayList();
 
     /**
      * Retrieve criteria
      *
-     * @return List<String>
+     * @return List of strings
      */
     public List getCriteria() {
         return criteria;
     }
 
     /**
-     * @param List<String> - Use format "name=value", ie: "coinType=QUARTER"
+     * Set criteria
+     *
+     * @param List of criteria to be applied for a Chromosome ;Use format "name=value", ie: "coinType=QUARTER"
      */
     public void setCriteria(List criteria) {
         this.criteria = criteria;

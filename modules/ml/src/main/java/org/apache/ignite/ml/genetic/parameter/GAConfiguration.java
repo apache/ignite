@@ -116,7 +116,7 @@ public class GAConfiguration {
     /**
      * retrieve the ChromosomeCriteria
      *
-     * @return ChromosomeCriteria
+     * @return Chromosome criteria
      */
     public ChromosomeCriteria getChromosomeCriteria() {
         return chromosomeCriteria;
@@ -125,7 +125,7 @@ public class GAConfiguration {
     /**
      * set value for ChromosomeCriteria
      *
-     * @param chromosomeCriteria
+     * @param chromosomeCriteria Chromosome criteria
      */
 
     public void setChromosomeCriteria(ChromosomeCriteria chromosomeCriteria) {
@@ -135,23 +135,25 @@ public class GAConfiguration {
     /**
      * Retrieve the chromosome length
      *
-     * @return int
+     * @return Size of Chromosome
      */
     public int getChromosomeLength() {
         return chromosomeLength;
     }
 
     /**
-     * @param chromosomeLength
+     * Set the Chromsome length
+     *
+     * @param chromosomeLength Size of Chromosome
      */
     public void setChromosomeLength(int chromosomeLength) {
         this.chromosomeLength = chromosomeLength;
     }
 
     /**
-     * Retrieve the cross over rate.
+     * Retrieve the cross over rate
      *
-     * @return double.
+     * @return Cross over rate
      */
     public double getCrossOverRate() {
         return crossOverRate;
@@ -160,16 +162,16 @@ public class GAConfiguration {
     /**
      * Set the cross over rate.
      *
-     * @param double.
+     * @param crossOverRate Cross over rate
      */
     public void setCrossOverRate(double crossOverRate) {
         this.crossOverRate = crossOverRate;
     }
 
     /**
-     * Retrieve the elitism count.
+     * Retrieve the elitism count
      *
-     * @return int.
+     * @return Elitism count
      */
     public int getElitismCount() {
         return elitismCount;
@@ -178,7 +180,7 @@ public class GAConfiguration {
     /**
      * Set the elitism count.
      *
-     * @return int
+     * @param elitismCount Elitism count
      */
     public void setElitismCount(int elitismCount) {
         this.elitismCount = elitismCount;
@@ -187,7 +189,7 @@ public class GAConfiguration {
     /**
      * Retrieve FITNESS_EVALUATER_TYPE
      *
-     * @return FITNESS_EVALUATER_TYPE
+     * @return Fitness Evaluator type
      */
     public GAGridConstants.FITNESS_EVALUATER_TYPE getFitnessEvaluator() {
         return fittnessEvaluator;
@@ -196,7 +198,7 @@ public class GAConfiguration {
     /**
      * Set value for FITNESS_EVALUATER_TYPE
      *
-     * @param FITNESS_EVALUATER_TYPE
+     * @param fittnessIndicator FITNESS_EVALUATER_TYPE
      */
     public void setFitnessEvaluator(GAGridConstants.FITNESS_EVALUATER_TYPE fittnessIndicator) {
         this.fittnessEvaluator = fittnessEvaluator;
@@ -205,7 +207,7 @@ public class GAConfiguration {
     /**
      * Retrieve IFitnessFunction
      *
-     * @return IFitnessFunction
+     * @return Fitness function
      */
     public IFitnessFunction getFitnessFunction() {
         return fitnessFunction;
@@ -214,16 +216,16 @@ public class GAConfiguration {
     /**
      * Set IFitnessFunction
      *
-     * @param IFitnessFunction
+     * @param fitnessFunction Fitness function
      */
     public void setFitnessFunction(IFitnessFunction fitnessFunction) {
         this.fitnessFunction = fitnessFunction;
     }
 
     /**
-     * Retrieve the gene pool.
+     * Retrieve the gene pool
      *
-     * @return List
+     * @return List of Genes
      */
     public List<Gene> getGenePool() {
         return (this.genePool);
@@ -235,7 +237,7 @@ public class GAConfiguration {
      * NOTE: When Apache Ignite is started the gene pool is utilized to initialize the distributed
      * GAGridConstants.GENE_CACHE.
      *
-     * @param genePool
+     * @param genePool List of Genes
      */
     public void setGenePool(List<Gene> genePool) {
         this.genePool = genePool;
@@ -244,7 +246,7 @@ public class GAConfiguration {
     /**
      * Retrieve the mutation rate.
      *
-     * @return double
+     * @return Mutation Rate
      */
     public double getMutationRate() {
         return mutationRate;
@@ -253,7 +255,7 @@ public class GAConfiguration {
     /**
      * Set the mutation rate.
      *
-     * @param double
+     * @param mutationRate Mutation Rate
      */
     public void setMutationRate(double mutationRate) {
         this.mutationRate = mutationRate;
@@ -262,7 +264,7 @@ public class GAConfiguration {
     /**
      * Retrieve the population size
      *
-     * @return int
+     * @return Population size
      */
 
     public int getPopulationSize() {
@@ -272,29 +274,34 @@ public class GAConfiguration {
     /**
      * Set the population size
      *
-     * @param int
+     * @param populationSize Size of population
      */
     public void setPopulationSize(int populationSize) {
         this.populationSize = populationSize;
     }
 
+    /**
+     * Get the selection method
+     *
+     * @return Selection method
+     */
     public GAGridConstants.SELECTION_METHOD getSelectionMethod() {
         return selectionMethod;
     }
 
     /**
-     * set the selectionMethod
+     * Set the selection method
      *
-     * @param seletionMethod
+     * @param seletionMethod Selection method
      */
     public void setSelectionMethod(GAGridConstants.SELECTION_METHOD selectionMethod) {
         this.selectionMethod = selectionMethod;
     }
 
     /**
-     * Retreive the termination criteria.
+     * Retreive the termination criteria
      *
-     * @return ITerminateCriteria.
+     * @return ITerminateCriteria
      */
     public ITerminateCriteria getTerminateCriteria() {
         return terminateCriteria;
@@ -303,7 +310,7 @@ public class GAConfiguration {
     /**
      * Set the termination criteria.
      *
-     * @param ITerminateCriteria.
+     * @param terminateCriteria ITerminateCriteria.
      */
     public void setTerminateCriteria(ITerminateCriteria terminateCriteria) {
         this.terminateCriteria = terminateCriteria;
@@ -312,7 +319,7 @@ public class GAConfiguration {
     /**
      * Retrieve truncateRate
      *
-     * @return double
+     * @return Truncate Rate
      */
     public double getTruncateRate() {
         return truncateRate;
@@ -321,7 +328,7 @@ public class GAConfiguration {
     /**
      * Set truncatePercentage
      *
-     * @param double
+     * @param truncateRate Truncate rate
      */
     public void setTruncateRate(double truncateRate) {
         this.truncateRate = truncateRate;

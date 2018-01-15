@@ -46,9 +46,9 @@ public class TruncateSelectionJob extends ComputeJobAdapter {
     private Ignite ignite = null;
 
     /**
-     * @param key
-     * @param mutatedGeneKeys primary keys of genes to be used in mutation
-     * @param mutationRate
+     * @param key Primary key of Chromosome to mutate
+     * @param mutatedGeneKeys Primary keys of genes to be used in mutation
+     * @param mutationRate Mutation rate
      */
     public TruncateSelectionJob(Long key, List<Long> mutatedGeneKeys) {
         this.key = key;
@@ -57,6 +57,8 @@ public class TruncateSelectionJob extends ComputeJobAdapter {
 
     /**
      * Perform mutation
+     *
+     * @return Boolean value
      */
     public Boolean execute() throws IgniteException {
         // TODO Auto-generated method stub

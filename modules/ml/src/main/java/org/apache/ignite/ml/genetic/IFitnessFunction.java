@@ -32,8 +32,8 @@ import java.util.List;
 public interface IFitnessFunction {
 
     /**
-     * @param genes - genes within an individual Chromosome
-     * @return double
+     * @param genes Genes within an individual Chromosome
+     * @return Fitness score
      */
     public double evaluate(List<Gene> genes);
 }

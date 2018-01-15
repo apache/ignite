@@ -56,8 +56,8 @@ public class GAGrid {
     private List<Long> populationKeys = new ArrayList();
 
     /**
-     * @param GAConfiguration
-     * @param Ignite
+     * @param config GAConfiguration
+     * @param ignite Ignite
      */
     public GAGrid(GAConfiguration config, Ignite ignite) {
         this.ignite = ignite;
@@ -77,7 +77,7 @@ public class GAGrid {
     /**
      * Calculate average fitness value
      *
-     * @return Double
+     * @return Average fitness score
      */
 
     private Double calculateAverageFitness() {
@@ -101,16 +101,16 @@ public class GAGrid {
     /**
      * Calculate fitness each Chromosome in population
      *
-     * @param chromosomeKeys
+     * @param chromosomeKeys List of chromosome primary keys
      */
     private void calculateFitness(List<Long> chromosomeKeys) {
         Boolean boolValue = this.ignite.compute().execute(new FitnessTask(this.config), chromosomeKeys);
     }
 
     /**
-     * @param fittestKeys -chromosomeKeys that will be copied from.
-     * @param selectedKeys - chromosomeKeys that will be overwritten evenly by fittestKeys
-     * @return
+     * @param fittestKeys List of chromosome keys that will be copied from
+     * @param selectedKeys List of chromosome keys that will be overwritten evenly by fittestKeys
+     * @return Boolean value
      */
     private Boolean copyFitterChromosomesToPopulation(List<Long> fittestKeys, List<Long> selectedKeys) {
         double truncatePercentage = this.config.getTruncateRate();
@@ -131,8 +131,8 @@ public class GAGrid {
     /**
      * create a Chromsome
      *
-     * @param numberOfGenes
-     * @return
+     * @param numberOfGenes Number of Genes in resepective Chromosome
+     * @return Chromosome
      */
     private Chromosome createChromosome(int numberOfGenes) {
         long[] genes = new long[numberOfGenes];
@@ -154,7 +154,7 @@ public class GAGrid {
     /**
      * Perform crossover
      *
-     * @param leastFitKeys
+     * @param leastFitKeys List of primary keys for Chromsomes that are considered 'least fit'
      */
     private void crossover(List<Long> leastFitKeys) {
         Boolean boolValue = this.ignite.compute().execute(new CrossOverTask(this.config), leastFitKeys);
@@ -163,7 +163,7 @@ public class GAGrid {
     /**
      * Evolve the population
      *
-     * @return Chromosome
+     * @return Fittest Chromosome
      */
     public Chromosome evolve() {
         // keep track of current generation
@@ -224,7 +224,7 @@ public class GAGrid {
     /**
      * helper routine to retrieve Chromosome keys in order of fittest
      *
-     * @return
+     * @return List of primary keys for chromosomes.
      */
     private List<Long> getChromosomesByFittest() {
         List<Long> orderChromKeysByFittest = new ArrayList();
@@ -255,8 +255,8 @@ public class GAGrid {
     }
 
     /**
-     * @param keys
-     * @return List of keys
+     * @param keys List of primary keys for respective Chromosomes
+     * @return List of keys for respective Chromosomes
      */
     private List<Long> getFittestKeysForTruncation(List<Long> keys) {
         double truncatePercentage = this.config.getTruncateRate();
@@ -314,7 +314,7 @@ public class GAGrid {
     /**
      * Perform mutation
      *
-     * @param leastFitKeys
+     * @param leastFitKeys List of primary keys for Chromosomes that are considered 'least fit'.
      */
     private void mutation(List<Long> leastFitKeys) {
         Boolean boolValue = this.ignite.compute().execute(new MutateTask(this.config), leastFitKeys);
@@ -323,7 +323,7 @@ public class GAGrid {
     /**
      * select a gene from the Gene pool
      *
-     * @return long
+     * @return Primary key of respective Gene
      */
     private long selectAnyGene() {
         int idx = selectRandomIndex(config.getGenePool().size());
@@ -337,7 +337,8 @@ public class GAGrid {
      *
      * As result, we are interested in least fit chromosomes.
      *
-     * @param keys
+     * @param keys List of primary keys for respective Chromsomes
+     * @return List of primary Keys for respective Chromosomes that are considered least fit
      */
     private List<Long> selectByElitism(List<Long> keys) {
         int elitismCount = this.config.getElitismCount();
@@ -364,8 +365,8 @@ public class GAGrid {
     }
 
     /**
-     * @param k - gene index in Chromosome.
-     * @return long
+     * @param k Gene index in Chromosome.
+     * @return Primary key of respective Gene chosen
      */
     private long selectGene(int k) {
         if (config.getChromosomeCriteria() == null) {
@@ -379,8 +380,8 @@ public class GAGrid {
     /**
      * method assumes ChromosomeCriteria is set.
      *
-     * @param k - gene index in Chromosome.
-     * @return long
+     * @param k Gene index in Chromosome
+     * @return Primary key of respective Gene
      */
     private long selectGeneByChromsomeCriteria(int k) {
         List<Gene> genes = new ArrayList();
@@ -406,8 +407,8 @@ public class GAGrid {
     }
 
     /**
-     * @param sizeOfGenePool
-     * @return int
+     * @param sizeOfGenePool Size of Gene pool
+     * @return Index
      */
     private int selectRandomIndex(int sizeOfGenePool) {
         Random randomGenerator = new Random();
@@ -416,12 +417,11 @@ public class GAGrid {
     }
 
     /**
-     * Select chromosomes.
+     * Select chromosomes
      *
-     * @param chromosomeKeys
-     * @return
+     * @param chromosomeKeys List of population primary keys for respective Chromsomes
+     * @return List of primary keys for respective Chromsomes
      */
-
     private List<Long> selection(List<Long> chromosomeKeys) {
         List<Long> selectedKeys = new ArrayList();
 
@@ -448,6 +448,11 @@ public class GAGrid {
         return selectedKeys;
     }
 
+    /**
+     * Get primary keys for Chromosomes
+     *
+     * @return List of Chromosome primary keys
+     */
     List<Long> getPopulationKeys() {
         return populationKeys;
     }

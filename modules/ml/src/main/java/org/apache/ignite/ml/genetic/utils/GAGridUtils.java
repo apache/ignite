@@ -43,8 +43,8 @@ public class GAGridUtils {
     /**
      * Retrieve chromosomes
      *
-     * @param ignite
-     * @param query
+     * @param ignite Ignite
+     * @param query Sql
      * @return List of Chromosomes
      */
     public static List<Chromosome> getChromosomes(Ignite ignite, String query) {
@@ -63,9 +63,9 @@ public class GAGridUtils {
     }
 
     /**
-     * @param ignite
-     * @param chromosome
-     * @return List<Gene>
+     * @param ignite Ignite
+     * @param chromosome Chromosome
+     * @return List of Genes
      */
     public static List<Gene> getGenesForChromosome(Ignite ignite, Chromosome chromosome) {
         List<Gene> genes = new ArrayList();
@@ -92,9 +92,9 @@ public class GAGridUtils {
     /**
      * Retrieve genes in order
      *
-     * @param ignite
-     * @param chromosome
-     * @return List<Gene>
+     * @param ignite Ignite
+     * @param chromosome Chromosome
+     * @return List of Genes
      */
 
     public static List<Gene> getGenesInOrderForChromosome(Ignite ignite, Chromosome chromosome) {

@@ -47,8 +47,8 @@ public class HelloWorldFitnessFunction implements IFitnessFunction {
     /**
      * Calculate fitness
      *
-     * @param genes
-     * @return double
+     * @param genes List of Genes
+     * @return Fitness value
      */
     public double evaluate(List<Gene> genes) {
 

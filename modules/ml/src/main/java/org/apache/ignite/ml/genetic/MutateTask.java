@@ -64,7 +64,7 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
     /**
      * choose mutated genes.
      *
-     * @return List<Long> - gene primary keys
+     * @return Gene primary keys
      */
     private List<Long> getMutatedGenes() {
         List<Long> mutatedGenes = new ArrayList();
@@ -79,8 +79,8 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
     }
 
     /**
-     * @param ClusterNode
-     * @param List<Long> - primary keys for respective chromosomes
+     * @param nodes List of ClusterNode
+     * @param chromosomeKeys Primary keys for respective chromosomes
      */
     public Map map(List<ClusterNode> nodes, List<Long> chromosomeKeys) throws IgniteException {
 
@@ -98,16 +98,16 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
     /**
      * We return TRUE if success, else Exection is thrown.
      *
-     * @param List<ComputeJobResult>
-     * @return TRUE
+     * @param list List of ComputeJobResult
+     * @return Boolean value
      */
     public Boolean reduce(List<ComputeJobResult> list) throws IgniteException {
         return Boolean.TRUE;
     }
 
     /**
-     * @param ComputeJobResult res
-     * @param List<ComputeJobResult> rcvd
+     * @param res ComputeJobResult
+     * @param rcvd List of ComputeJobResult
      * @return ComputeJobResultPolicy
      */
     public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
@@ -124,7 +124,7 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
     /**
      * select a gene from the Gene pool
      *
-     * @return
+     * @return Primary key of Gene
      */
     private long selectAnyGene() {
         int idx = selectRandomIndex(config.getGenePool().size());
@@ -133,8 +133,10 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
     }
 
     /**
-     * @param k - gene index in Chromosome.
-     * @return
+     * select a gene based from the Gene pool
+     *
+     * @param k Gene index in Chromosome.
+     * @return Primary key of Gene
      */
     private long selectGene(int k) {
         if (config.getChromosomeCriteria() == null) {
@@ -148,8 +150,8 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
     /**
      * method assumes ChromosomeCriteria is set.
      *
-     * @param k - gene index in Chromosome.
-     * @return long
+     * @param k Gene index in Chromosome.
+     * @return Primary key of Gene
      */
     private long selectGeneByChromsomeCriteria(int k) {
         List<Gene> genes = new ArrayList();
@@ -177,8 +179,8 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
     /**
      * select an index at random
      *
-     * @param sizeOfGenePool
-     * @return int - index
+     * @param sizeOfGenePool Size of gene pool
+     * @return Index of Gene to be selected
      */
     private int selectRandomIndex(int sizeOfGenePool) {
         Random randomGenerator = new Random();

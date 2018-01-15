@@ -38,7 +38,7 @@ public class HelloWorldTerminateCriteria implements ITerminateCriteria {
     private Ignite ignite = null;
 
     /**
-     * @param ignite
+     * @param ignite Ignite
      */
     public HelloWorldTerminateCriteria(Ignite ignite) {
         this.ignite = ignite;
@@ -49,6 +49,7 @@ public class HelloWorldTerminateCriteria implements ITerminateCriteria {
      * @param fittestChromosome Most fit chromosome at for the nth generation
      * @param averageFitnessScore Average fitness score as of the nth generation
      * @param currentGeneration Current generation
+     * @return Boolean value
      */
     public boolean isTerminationConditionMet(Chromosome fittestChromosome, double averageFitnessScore,
         int currentGeneration) {
@@ -72,7 +73,7 @@ public class HelloWorldTerminateCriteria implements ITerminateCriteria {
     /**
      * Helper to print Phrase
      *
-     * @param genes
+     * @param List of Genes
      */
     private void printPhrase(List<Gene> genes) {
 

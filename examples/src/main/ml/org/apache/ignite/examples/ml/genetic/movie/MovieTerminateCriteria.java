@@ -51,6 +51,7 @@ public class MovieTerminateCriteria implements ITerminateCriteria {
      * @param fittestChromosome Most fit chromosome at for the nth generation
      * @param averageFitnessScore Average fitness score as of the nth generation
      * @param currentGeneration Current generation
+     * @return Boolean value
      */
     public boolean isTerminationConditionMet(Chromosome fittestChromosome, double averageFitnessScore,
         int currentGeneration) {
@@ -73,7 +74,7 @@ public class MovieTerminateCriteria implements ITerminateCriteria {
     /**
      * Helper to print change detail
      *
-     * @param genes
+     * @param genes List of Genes
      */
     private void printMovies(List<Gene> genes) {
         for (Gene gene : genes) {

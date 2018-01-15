@@ -37,7 +37,7 @@ public class OptimizeMakeChangeFitnessFunction implements IFitnessFunction {
     int targetAmount = 0;
 
     /**
-     * @param targetAmount
+     * @param targetAmount Amount of change
      */
     public OptimizeMakeChangeFitnessFunction(int targetAmount) {
         this.targetAmount = targetAmount;
@@ -46,8 +46,8 @@ public class OptimizeMakeChangeFitnessFunction implements IFitnessFunction {
     /**
      * Calculate fitness
      *
-     * @param genes
-     * @return double
+     * @param genes Genes
+     * @return Fitness value
      */
     public double evaluate(List<Gene> genes) {
 
@@ -65,6 +65,12 @@ public class OptimizeMakeChangeFitnessFunction implements IFitnessFunction {
 
     }
 
+    /**
+     * Calculate amount of change
+     *
+     * @param genes Genes
+     * @return Amount of change
+     */
     private int getAmountOfChange(List<Gene> genes) {
         Gene quarterGene = (Gene)genes.get(0);
         Gene dimeGene = (Gene)genes.get(1);
@@ -82,8 +88,8 @@ public class OptimizeMakeChangeFitnessFunction implements IFitnessFunction {
     /**
      * Return the total number of coins
      *
-     * @param genes
-     * @return int
+     * @param genes Genes
+     * @return Number of coins
      */
     private int getTotalNumberOfCoins(List<Gene> genes) {
 

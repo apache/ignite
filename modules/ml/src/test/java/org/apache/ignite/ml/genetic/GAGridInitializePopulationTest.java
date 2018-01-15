@@ -127,7 +127,7 @@ public class GAGridInitializePopulationTest {
     /**
      * Helper routine to initialize Gene pool
      *
-     * @return List<Gene>
+     * @return List of Genes
      */
     private List<Gene> getGenePool() {
         List<Gene> list = new ArrayList();

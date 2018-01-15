@@ -60,7 +60,9 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
     private int numberOfCopies = 0;
 
     /**
-     * @param GAConfiguration
+     * @param config GAConfiguration
+     * @param fittestKeys List of long
+     * @param numberOfCopies Number of Copies
      */
     public TruncateSelectionTask(GAConfiguration config, List<Long> fittestKeys, int numberOfCopies) {
         this.config = config;
@@ -71,7 +73,7 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
     /**
      * Retrieve a chromosome
      *
-     * @param key
+     * @param key Primary key of chromosome
      * @return Chromosome
      */
     private Chromosome getChromosome(Long key) {
@@ -96,9 +98,9 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
     }
 
     /**
-     * Return a List of Lists containing keys
+     * Return a List of lists containing keys
      *
-     * @return List of List<Key>
+     * @return List of lists containing keys
      */
     private List<List<Long>> getEnhancedPopulation() {
         List<List<Long>> list = new ArrayList();
@@ -119,8 +121,9 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
     }
 
     /**
-     * @param ClusterNode
-     * @param List<Long> - primary keys for respective chromosomes
+     * @param nodes List of ClusterNode
+     * @param chromosomeKeys Primary keys for respective chromosomes
+     * @return Map of nodes to jobs
      */
     public Map map(List<ClusterNode> nodes, List<Long> chromosomeKeys) throws IgniteException {
         Map<ComputeJob, ClusterNode> map = new HashMap<>();
@@ -143,17 +146,17 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
     /**
      * We return TRUE if success, else Exception is thrown.
      *
-     * @param List<ComputeJobResult>
-     * @return TRUE
+     * @param list List of ComputeJobResult
+     * @return Boolean value
      */
-    public Boolean reduce(List<ComputeJobResult> arg0) throws IgniteException {
+    public Boolean reduce(List<ComputeJobResult> list) throws IgniteException {
         // TODO Auto-generated method stub
         return Boolean.TRUE;
     }
 
     /**
-     * @param ComputeJobResult res
-     * @param List<ComputeJobResult> rcvd
+     * @param res ComputeJobResult
+     * @param rcvd List of ComputeJobResult
      * @return ComputeJobResultPolicy
      */
     public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {

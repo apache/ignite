@@ -52,8 +52,8 @@ public class FitnessJob extends ComputeJobAdapter {
     private IFitnessFunction fitnessFuncton = null;
 
     /**
-     * @param key - Chromosome primary Key
-     * @param fitnessFunction
+     * @param key Chromosome primary Key
+     * @param fitnessFunction Fitness function defined by developer
      */
     public FitnessJob(Long key, IFitnessFunction fitnessFunction) {
         this.key = key;
@@ -64,6 +64,8 @@ public class FitnessJob extends ComputeJobAdapter {
      * Perform fitness operation utilizing IFitnessFunction
      *
      * Update chromosome's fitness value
+     *
+     * @return Fitness score
      */
     public Double execute() throws IgniteException {
 

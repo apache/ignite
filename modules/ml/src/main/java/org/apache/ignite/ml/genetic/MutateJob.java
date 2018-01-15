@@ -49,9 +49,9 @@ public class MutateJob extends ComputeJobAdapter {
     private double mutationRate;
 
     /**
-     * @param key
-     * @param mutatedGeneKeys primary keys of genes to be used in mutation
-     * @param mutationRate
+     * @param key Primary key of chromosome
+     * @param mutatedGeneKeys Primary keys of genes to be used in mutation
+     * @param mutationRate Mutation rate
      */
     public MutateJob(Long key, List<Long> mutatedGeneKeys, double mutationRate) {
         this.key = key;

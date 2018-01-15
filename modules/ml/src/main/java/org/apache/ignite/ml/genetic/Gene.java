@@ -63,7 +63,7 @@ public class Gene {
     }
 
     /**
-     * object Object  parameter.
+     * Set the Gene value
      *
      * @param object
      */
@@ -72,7 +72,7 @@ public class Gene {
     }
 
     /**
-     * @return primary key for Gene
+     * @return Primary key for Gene
      */
     public Long id() {
         return id;

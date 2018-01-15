@@ -51,14 +51,17 @@ public class MovieFitnessFunction implements IFitnessFunction {
     private List<String> generes = null;
 
     /**
-     * @param List<String> genres
+     * @param genres List of genres
      */
     public MovieFitnessFunction(List<String> generes) {
         this.generes = generes;
     }
 
     /**
-     * @param List<Gene> genes
+     * Calculate fitness score
+     *
+     * @param genes List of Genes
+     * @return Fitness score
      */
     public double evaluate(List<Gene> genes) {
 
@@ -86,8 +89,8 @@ public class MovieFitnessFunction implements IFitnessFunction {
     /**
      * helper to calculate genre score
      *
-     * @param movie
-     * @return double
+     * @param movie Move
+     * @return Genre score
      */
     private double getGenreScore(Movie movie) {
         double genreScore = 0;

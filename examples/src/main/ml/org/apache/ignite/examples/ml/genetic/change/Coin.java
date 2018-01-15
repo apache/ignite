@@ -36,8 +36,8 @@ public class Coin implements Serializable {
     private CoinType coinType = null;
 
     /**
-     * @param coinType
-     * @param numberOfCoins
+     * @param coinType Type of coin
+     * @param numberOfCoins Number of coins
      */
     public Coin(CoinType coinType, int numberOfCoins) {
         this.coinType = coinType;
@@ -47,7 +47,7 @@ public class Coin implements Serializable {
     /**
      * Retrieve the number of coins
      *
-     * @return int
+     * @return Number of coins
      */
     public int getNumberOfCoins() {
         return numberOfCoins;
@@ -56,7 +56,7 @@ public class Coin implements Serializable {
     /**
      * Set the number of coins
      *
-     * @param numberOfCoins
+     * @param numberOfCoins Number of coins
      */
     public void setNumberOfCoins(int numberOfCoins) {
         this.numberOfCoins = numberOfCoins;
@@ -65,7 +65,7 @@ public class Coin implements Serializable {
     /**
      * Retrieve Coin type
      *
-     * @return CoinType
+     * @return Coin type
      */
     public CoinType getCoinType() {
         return coinType;
@@ -74,7 +74,7 @@ public class Coin implements Serializable {
     /**
      * Set Coin type
      *
-     * @param coinType
+     * @param coinType Coin Type
      */
     public void setCoinType(CoinType coinType) {
         this.coinType = coinType;

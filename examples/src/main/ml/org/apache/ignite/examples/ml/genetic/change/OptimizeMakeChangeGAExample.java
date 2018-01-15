@@ -156,7 +156,7 @@ public class OptimizeMakeChangeGAExample {
      *
      * In typical usecase genes may be stored in database.
      *
-     * @return List<Gene>
+     * @return List of Genes
      */
     private static List<Gene> getGenePool() {
         List<Gene> list = new ArrayList();

@@ -36,7 +36,7 @@ public class OptimizeMakeChangeTerminateCriteria implements ITerminateCriteria {
     private Ignite ignite = null;
 
     /**
-     * @param ignite
+     * @param ignite Ignite
      */
     public OptimizeMakeChangeTerminateCriteria(Ignite ignite) {
         this.ignite = ignite;
@@ -47,6 +47,7 @@ public class OptimizeMakeChangeTerminateCriteria implements ITerminateCriteria {
      * @param fittestChromosome Most fit chromosome at for the nth generation
      * @param averageFitnessScore Average fitness score as of the nth generation
      * @param currentGeneration Current generation
+     * @return Boolean value
      */
     public boolean isTerminationConditionMet(Chromosome fittestChromosome, double averageFitnessScore,
         int currentGeneration) {
@@ -70,7 +71,7 @@ public class OptimizeMakeChangeTerminateCriteria implements ITerminateCriteria {
     /**
      * Helper to print change detail
      *
-     * @param genes
+     * @param genes List if Genes
      */
     private void printCoins(List<Gene> genes) {
         for (Gene gene : genes) {

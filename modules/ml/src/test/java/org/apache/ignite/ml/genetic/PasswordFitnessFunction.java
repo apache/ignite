@@ -25,6 +25,10 @@ import java.util.List;
  */
 public class PasswordFitnessFunction implements IFitnessFunction {
 
+    /**
+     * @param genes List of Genes within an individual Chromosome
+     * @return Fitness score
+     */
     @Override
     public double evaluate(List<Gene> genes) {
 

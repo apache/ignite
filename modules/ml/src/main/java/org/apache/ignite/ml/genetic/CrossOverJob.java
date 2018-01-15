@@ -66,9 +66,9 @@ public class CrossOverJob extends ComputeJobAdapter {
     private double crossOverRate;
 
     /**
-     * @param primary key for 1st chromosome
-     * @param primary key for 2nd chromosome
-     * @param crossOverRate
+     * @param key1 Primary key for 1st chromosome
+     * @param key2 Primary key for 2nd chromosome
+     * @param crossOverRate CrossOver rate
      */
     public CrossOverJob(Long key1, Long key2, double crossOverRate) {
         this.key1 = key1;
@@ -79,10 +79,10 @@ public class CrossOverJob extends ComputeJobAdapter {
     /**
      * helper routine to assist cross over
      *
-     * @param newKeySwapArrayForChrome
-     * @param updateIdx
-     * @param genekeys
-     * @return long[]
+     * @param newKeySwapArrayForChrome New gene keys to copy starting at updateIdx
+     * @param updateIdx Update Index
+     * @param genekeys Original gene Keys for a chromosome
+     * @return New Gene keys
      */
 
     private long[] crossOver(long[] newKeySwapArrayForChrome, int updateIdx, long[] genekeys) {

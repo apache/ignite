@@ -30,9 +30,10 @@ import org.apache.ignite.ml.genetic.Chromosome;
  */
 public interface ITerminateCriteria {
     /**
-     * @param fittestChromosome fittest chromosome as of the nth generation
-     * @param generation current number of generations
-     * @return boolean
+     * @param fittestChromosome Fittest chromosome as of the nth generation
+     * @param averageFitnessScore Average fitness score
+     * @param generation Current number of generations
+     * @return Boolean value to determine when to stop evolution
      */
     public boolean isTerminationConditionMet(Chromosome fittestChromosome, double averageFitnessScore, int generation);
 }

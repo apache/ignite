@@ -34,7 +34,7 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 public class GeneCacheConfig {
 
     /**
-     * @return CacheConfiguration<Long, Gene>
+     * @return Cache Configuration
      */
     public static CacheConfiguration<Long, Gene> geneCache() {
 
