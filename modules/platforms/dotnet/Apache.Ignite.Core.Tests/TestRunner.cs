@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
+    using Apache.Ignite.Core.Tests.Binary.Serializable;
     using Apache.Ignite.Core.Tests.Cache;
     using Apache.Ignite.Core.Tests.Cache.Query.Linq;
     using Apache.Ignite.Core.Tests.Client.Cache;
@@ -74,6 +75,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 typeof(ComputeApiTest),
                 typeof(CacheLinqTest),
+                typeof(SqlDmlTest),
                 typeof(LinqTest),
                 typeof(PersistenceTest)
             };
