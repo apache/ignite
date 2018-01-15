@@ -18,10 +18,15 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
+    using Apache.Ignite.Core.Tests.Cache;
+    using Apache.Ignite.Core.Tests.Cache.Query;
+    using Apache.Ignite.Core.Tests.Cache.Query.Linq;
     using Apache.Ignite.Core.Tests.Client.Cache;
+    using Apache.Ignite.Core.Tests.Compute;
     using Apache.Ignite.Core.Tests.Memory;
     using NUnit.ConsoleRunner;
 
@@ -38,9 +43,8 @@ namespace Apache.Ignite.Core.Tests
 
             if (args.Length == 1 && args[0] == "-basicTests")
             {
-                // We do not support non-default AppDomain on Mono, so NUnit does not work.
-                // Just make sure that basic functionality works.
                 RunBasicTests();
+                
                 return;
             }
 
@@ -57,9 +61,7 @@ namespace Apache.Ignite.Core.Tests
                 return;
             }
 
-            TestOne(typeof(ConsoleRedirectTest), "TestMultipleDomains");
-            TestAll(typeof(LinqTest), true);
-            TestAllInAssembly();
+            Environment.ExitCode = TestAllInAssembly();
         }
 
         /// <summary>
@@ -69,7 +71,18 @@ namespace Apache.Ignite.Core.Tests
         {
             Console.WriteLine(">>> Starting basic tests...");
 
-            Environment.ExitCode = TestAll(typeof(LinqTest), true);
+            var basicTests = new[]
+            {
+                typeof(CachePartitionedTest),
+                typeof(ComputeApiTest),
+                typeof(CacheTest),
+                typeof(CacheTestAsync),
+                typeof(CacheQueriesTest),
+                typeof(CacheLinqTest),
+                typeof(LinqTest)
+            };
+
+            Environment.ExitCode = TestAll(basicTests, true);
 
             Console.WriteLine(">>> Test run finished.");
         }
@@ -93,16 +106,18 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Runs all tests in specified class.
         /// </summary>
-        private static int TestAll(Type testClass, bool sameDomain = false)
+        private static int TestAll(IEnumerable<Type> testClass, bool sameDomain = false)
         {
-            string[] args =
+            var args = new List<string>
             {
                 "-noshadow",
                 "-domain:" + (sameDomain ? "None" : "Single"),
-                "-run:" + testClass.FullName, Assembly.GetAssembly(testClass).Location
+                Assembly.GetAssembly(typeof(TestRunner)).Location
             };
 
-            return Runner.Main(args);
+            args.AddRange(testClass.Select(x => "-run:" + x.FullName));
+            
+            return Runner.Main(args.ToArray());
         }
 
         /// <summary>
