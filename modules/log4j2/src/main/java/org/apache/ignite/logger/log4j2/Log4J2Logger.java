@@ -34,6 +34,8 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.logger.LoggerNodeIdAware;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
@@ -422,10 +424,15 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
 
     /** {@inheritDoc} */
     @Override public void trace(String msg) {
+        trace(null, msg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void trace(String marker, String msg) {
         if (!isTraceEnabled())
             warning("Logging at TRACE level without checking if TRACE level is enabled: " + msg);
 
-        impl.trace(msg);
+        impl.trace(getMarkerOrNull(marker), msg);
 
         if (consoleLog != null)
             consoleLog.trace(msg);
@@ -433,10 +440,15 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
 
     /** {@inheritDoc} */
     @Override public void debug(String msg) {
+        debug(null, msg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void debug(String marker, String msg) {
         if (!isDebugEnabled())
             warning("Logging at DEBUG level without checking if DEBUG level is enabled: " + msg);
 
-        impl.debug(msg);
+        impl.debug(getMarkerOrNull(marker), msg);
 
         if (consoleLog != null)
             consoleLog.debug(msg);
@@ -444,45 +456,49 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
 
     /** {@inheritDoc} */
     @Override public void info(String msg) {
+        info(null, msg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void info(String marker, String msg) {
         if (!isInfoEnabled())
             warning("Logging at INFO level without checking if INFO level is enabled: " + msg);
 
-        impl.info(msg);
+        impl.info(getMarkerOrNull(marker), msg);
 
         if (consoleLog != null)
             consoleLog.info(msg);
     }
 
     /** {@inheritDoc} */
-    @Override public void warning(String msg) {
-        impl.warn(msg);
+    @Override public void warning(String msg, @Nullable Throwable e) {
+        warning(null, msg, e);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void warning(String marker, String msg, @Nullable Throwable e) {
+        impl.warn(getMarkerOrNull(marker), msg, e);
 
         if (consoleLog != null)
             consoleLog.warn(msg);
     }
 
     /** {@inheritDoc} */
-    @Override public void warning(String msg, @Nullable Throwable e) {
-        impl.warn(msg, e);
-
-        if (consoleLog != null)
-            consoleLog.warn(msg, e);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void error(String msg) {
-        impl.error(msg);
-
-        if (consoleLog != null)
-            consoleLog.error(msg);
-    }
-
-    /** {@inheritDoc} */
     @Override public void error(String msg, @Nullable Throwable e) {
-        impl.error(msg, e);
+        error(null, msg, e);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void error(String marker, String msg, @Nullable Throwable e) {
+        impl.error(getMarkerOrNull(marker), msg, e);
 
         if (consoleLog != null)
             consoleLog.error(msg, e);
+    }
+
+    /** Returns Marker object for the specified name, or null if the name is null */
+    private Marker getMarkerOrNull(String marker) {
+        return marker != null ? MarkerManager.getMarker(marker) : null;
     }
 
     /** {@inheritDoc} */

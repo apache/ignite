@@ -611,6 +611,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_CACHE_VALIDATOR = "IGNITE_CACHE_VALIDATOR";
 
     /**
+     * When set to {@code true}, warnings that are intended for development environments and not for production
+     * (such as coding mistakes in code using Ignite) will not be logged.
+     */
+    public static final String IGNITE_DEV_ONLY_WARNINGS_DISABLED = "IGNITE_DEV_ONLY_WARNINGS_DISABLED";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
