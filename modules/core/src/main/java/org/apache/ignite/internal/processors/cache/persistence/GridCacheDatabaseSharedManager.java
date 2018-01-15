@@ -2334,7 +2334,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
                         int partId = part.id();
 
-                        if (partId < prevPartId)
+                        if (partId <= prevPartId)
                             throw new IllegalStateException("Broken order of GridDhtPartitionTopology" +
                                 ".currentLocalPartitions(): [prev=" + prevPartId + ", cur=" + partId + "]");
 
