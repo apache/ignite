@@ -67,14 +67,11 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static void RunBasicTests()
         {
-            var test = new LinqTest();
-            Console.WriteLine("Starting client LINQ test...");
+            Console.WriteLine(">>> Starting basic tests...");
 
-            test.FixtureSetUp();
-            test.TestSetUp();
-            test.TestBasicQueries();
+            Environment.ExitCode = TestAll(typeof(LinqTest), true);
 
-            Console.WriteLine("Test passed.");
+            Console.WriteLine(">>> Test run finished.");
         }
 
         /// <summary>
