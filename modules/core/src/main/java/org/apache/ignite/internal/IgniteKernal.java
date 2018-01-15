@@ -771,6 +771,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Ack various information.
         ackAsciiLogo();
         ackConfigUrl();
+
+        if (!log.isQuiet())
+            log.info(cfg.toString());
+
         ackDaemon();
         ackOsInfo();
         ackLanguageRuntime();
