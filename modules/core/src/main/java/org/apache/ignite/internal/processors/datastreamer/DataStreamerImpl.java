@@ -593,7 +593,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             throw e;
         }
         catch (Exception e) {
-            return new IgniteFinishedCacheFutureImpl<>(e);
+            throw new IgniteException(e);
         }
         finally {
             leaveBusy();
@@ -683,7 +683,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             val0 = cacheObjProc.toCacheObject(cacheObjCtx, val, true);
         }
         catch (Exception e) {
-            return new IgniteFinishedCacheFutureImpl<>(e);
+            throw new IgniteException(e);
         }
 
         return addDataInternal(Collections.singleton(new DataStreamerEntry(key0, val0)));
