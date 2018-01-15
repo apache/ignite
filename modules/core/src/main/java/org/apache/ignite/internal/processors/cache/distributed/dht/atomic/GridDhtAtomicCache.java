@@ -86,7 +86,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConfl
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridLongList;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.nio.GridNioBackPressureControl;
 import org.apache.ignite.internal.util.nio.GridNioMessageTracker;
@@ -2651,7 +2650,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             for (int i = 0; i < entries.size(); i++) {
                 GridDhtCacheEntry entry = entries.get(i);
 
-                assert Thread.holdsLock(entry);
+                assert entry.lockedByCurrentThread();
 
                 if (entry.obsolete()) {
                     assert req.operation() == DELETE : "Entry can become obsolete only after remove: " + entry;
@@ -2819,10 +2818,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             while (true) {
                 GridDhtCacheEntry entry = entryExx(key, topVer);
 
-                GridUnsafe.monitorEnter(entry);
+                entry.lockEntry();
 
                 if (entry.obsolete())
-                    GridUnsafe.monitorExit(entry);
+                    entry.unlockEntry();
                 else
                     return Collections.singletonList(entry);
             }
@@ -2845,13 +2844,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     if (entry == null)
                         continue;
 
-                    GridUnsafe.monitorEnter(entry);
+                    entry.lockEntry();
 
                     if (entry.obsolete()) {
                         // Unlock all locked.
                         for (int j = 0; j <= i; j++) {
                             if (locked.get(j) != null)
-                                GridUnsafe.monitorExit(locked.get(j));
+                                locked.get(j).unlockEntry();
                         }
 
                         // Clear entries.
@@ -2904,7 +2903,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             for (int i = 0; i < size; i++) {
                 GridCacheMapEntry entry = locked.get(i);
                 if (entry != null)
-                    GridUnsafe.monitorExit(entry);
+                    entry.unlockEntry();
             }
         }
 
