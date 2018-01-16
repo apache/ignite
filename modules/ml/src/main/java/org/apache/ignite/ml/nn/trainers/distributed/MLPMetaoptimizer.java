@@ -26,7 +26,7 @@ import org.apache.ignite.ml.trainers.group.Metaoptimizer;
 /** Meta-optimizer for multilayer perceptron. */
 public class MLPMetaoptimizer<P> implements Metaoptimizer<MLPGroupUpdateTrainerLocalContext,
     MLPGroupUpdateTrainingLoopData<P>, P, P, P, ArrayList<P>> {
-    /** */
+    /** Function used for reducing updates produced by parallel trainings. */
     private final IgniteFunction<List<P>, P> allUpdatesReducer;
 
     /** Construct metaoptimizer. */
