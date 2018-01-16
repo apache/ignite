@@ -48,6 +48,7 @@ import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -210,6 +211,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** Use mapped byte buffer. */
     private static boolean mmap = IgniteSystemProperties.getBoolean(IGNITE_WAL_MMAP, true);
+
+    /** {@link FileWriteHandle#written} atomic field updater. */
+    private static final AtomicLongFieldUpdater<FileWriteHandle> WRITTEN_UPD =
+        AtomicLongFieldUpdater.newUpdater(FileWriteHandle.class, "written");
 
     /** Interrupted flag. */
     private final ThreadLocal<Boolean> interrupted = new ThreadLocal<Boolean>() {
@@ -2367,7 +2372,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * Position in current file after the end of last written record (incremented after file channel write
          * operation)
          */
-        private volatile long written;
+        volatile long written;
 
         /** */
         private volatile long lastFsyncPos;
@@ -2477,8 +2482,20 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                         fillBuffer(buf, rec);
 
-                        if (mmap)
-                            written = seg.position();
+                        if (mmap) {
+                            // written field must grow only, but segment with greater position can be serialized
+                            // earlier than segment with smaller position.
+                            while (true) {
+                                long written0 = written;
+
+                                if (seg.position() > written0) {
+                                    if (WRITTEN_UPD.compareAndSet(this, written0, seg.position()))
+                                        break;
+                                }
+                                else
+                                    break;
+                            }
+                        }
 
                         return ptr;
                     }
@@ -2594,8 +2611,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 if (stop.get())
                     return;
 
-                if (lastFsyncPos != written) {
-                    assert lastFsyncPos < written; // Fsync position must be behind.
+                long lastFsyncPos0 = lastFsyncPos;
+                long written0 = written;
+
+                if (lastFsyncPos0 != written0) {
+                    // Fsync position must be behind.
+                    assert lastFsyncPos0 < written0 : "lastFsyncPos=" + lastFsyncPos0 + ", written=" + written0;
 
                     boolean metricsEnabled = metrics.metricsEnabled();
 
