@@ -79,7 +79,7 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @param tag Partition tag (growing 1-based partition file version).
      * @throws IgniteCheckedException If failed to handle partition destroy callback.
      */
-    public void onPartitionDestroyed(int grpId, int partId, int tag) throws IgniteCheckedException;
+    public long onPartitionDestroyed(int grpId, int partId, int tag) throws IgniteCheckedException;
 
     /**
      * Reads a page for the given cache ID. Cache ID may be {@code 0} if the page is a meta page.
