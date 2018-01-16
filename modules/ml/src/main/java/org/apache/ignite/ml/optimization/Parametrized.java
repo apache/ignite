@@ -15,14 +15,12 @@
  * limitations under the License.
  */
 
-import './style.scss';
+package org.apache.ignite.ml.optimization;
 
-import templateUrl from './template.tpl.pug';
-import controller from './controller';
-
-export default angular
-    .module('ignite-console.list-of-registered-users', [])
-    .component('igniteListOfRegisteredUsers', {
-        controller,
-        templateUrl
-    });
+/**
+ * Interface for parametrized models.
+ *
+ * @param <M> Type of model.
+ */
+public interface Parametrized<M extends Parametrized<M>> extends BaseParametrized<M> {
+}

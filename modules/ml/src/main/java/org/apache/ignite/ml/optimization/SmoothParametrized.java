@@ -15,44 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.nn.updaters;
+package org.apache.ignite.ml.optimization;
 
+import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
- * Interface for classes encapsulating parameters updateCache logic.
- *
- * @param <M> Type of model to be updated.
- * @param <P> Type of parameters needed for this updater.
+ * Interface for models which are smooth functions of their parameters.
  */
-public interface ParameterUpdateCalculator<M, P> {
+public interface SmoothParametrized<M extends Parametrized<M>> extends Parametrized<M>, Model<Matrix, Matrix> {
     /**
-     * Initializes the updater.
+     * Compose function in the following way: feed output of this model as input to second argument to loss function.
+     * After that we have a function g of three arguments: input, ground truth, parameters.
+     * If we consider function
+     * h(w) = 1 / M sum_{i=1}^{M} g(w, input_i, groundTruth_i),
+     * where M is number of entries in batch, we get function of one argument: parameters vector w.
+     * This function is being differentiated.
      *
-     * @param mdl Model to be trained.
      * @param loss Loss function.
+     * @param inputsBatch Batch of inputs.
+     * @param truthBatch Batch of ground truths.
+     * @return Gradient of h at current point in parameters space.
      */
-    P init(M mdl, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss);
-
-    /**
-     * Calculate new updateCache.
-     *
-     * @param mdl Model to be updated.
-     * @param updaterParameters Updater parameters to updateCache.
-     * @param iteration Current trainer iteration.
-     * @param inputs Inputs.
-     * @param groundTruth True values.
-     * @return Updated parameters.
-     */
-    P calculateNewUpdate(M mdl, P updaterParameters, int iteration, Matrix inputs, Matrix groundTruth);
-
-    /**
-     * Update given obj with this parameters.
-     *
-     * @param obj Object to be updated.
-     */
-    <M1 extends M> M1 update(M1 obj, P update);
+    Vector differentiateByParameters(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
+        Matrix inputsBatch, Matrix truthBatch);
 }

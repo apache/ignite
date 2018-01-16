@@ -304,6 +304,21 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
+        /// Tests the protocol mismatch behavior: attempt to connect to an HTTP endpoint.
+        /// </summary>
+        [Test]
+        public void TestProtocolMismatch()
+        {
+            using (Ignition.Start(TestUtils.GetTestConfiguration()))
+            {
+                // Connect to Ignite REST endpoint.
+                var cfg = new IgniteClientConfiguration {Host = "127.0.0.1", Port = 11211 };
+                var ex = Assert.Throws<SocketException>(() => Ignition.StartClient(cfg));
+                Assert.AreEqual(SocketError.ConnectionAborted, ex.SocketErrorCode);
+            }
+        }
+
+        /// <summary>
         /// Starts the client.
         /// </summary>
         private static IIgniteClient StartClient()

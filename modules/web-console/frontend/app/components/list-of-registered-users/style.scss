@@ -15,14 +15,20 @@
  * limitations under the License.
  */
 
-import './style.scss';
+ignite-list-of-registered-users {
+    display: block;
 
-import templateUrl from './template.tpl.pug';
-import controller from './controller';
+    .ui-grid-settings--heading {
+        display: flex;
+    }
 
-export default angular
-    .module('ignite-console.list-of-registered-users', [])
-    .component('igniteListOfRegisteredUsers', {
-        controller,
-        templateUrl
-    });
+    & > a {
+        display: inline-block;
+        margin: 10px;
+        margin-left: 0;
+
+        &.active {
+            font-weight: bold;
+        }
+    }
+}
