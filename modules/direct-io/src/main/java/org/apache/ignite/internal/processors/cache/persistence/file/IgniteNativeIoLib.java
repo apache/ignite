@@ -374,4 +374,17 @@ public class IgniteNativeIoLib {
      * @return On success, zero is returned.  On error, an error number is returned.
      */
     public static native int posix_fadvise(int fd, long offset, long len, int flag);
+
+    /**
+     * Causes regular file referenced by fd to be truncated to a size of precisely length bytes.
+     *
+     * If the file previously was larger than this size, the extra data is lost.
+     * If the file previously was shorter, it is extended, and the extended part reads as null bytes ('\0').
+     * The file offset is not changed.
+     *
+     * @param fd  file descriptor.
+     * @param len required length.
+     * @return On success, zero is returned. On error, -1 is returned, and errno is set appropriately.
+     */
+    public static native int ftruncate(int fd, long len);
 }

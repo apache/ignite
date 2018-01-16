@@ -459,7 +459,8 @@ public class AlignedBuffersDirectFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public void clear() throws IOException {
-        throw new UnsupportedOperationException("Not implemented");
+        if (IgniteNativeIoLib.ftruncate(fdCheckOpened(), 0) < 0)
+            throw new IOException(String.format("Error truncating file %s, got %s", file, getLastError()));
     }
 
     /** {@inheritDoc} */
