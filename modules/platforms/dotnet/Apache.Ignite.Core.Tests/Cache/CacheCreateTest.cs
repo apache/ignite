@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Tests cache creation.
         /// </summary>
         [Test]
-        public void TestCreateFromName()
+        public void TestCreateFromTemplate()
         {
             // Create a cache with random name
             var randomName = "template" + Guid.NewGuid();
@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Tests GetOrCreate.
         /// </summary>
         [Test]
-        public void TestGetOrCreateFromName()
+        public void TestGetOrCreateFromTemplate()
         {
             // Create a cache with random name
             var randomName = "template" + Guid.NewGuid();
@@ -81,6 +81,32 @@ namespace Apache.Ignite.Core.Tests.Cache
             var cache1 = Ignite.GetCache<int, int>(randomName);
 
             Assert.AreEqual(10, cache1.Get(1));
+        }
+
+        /// <summary>
+        /// Tests dynamic template creation.
+        /// </summary>
+        [Test]
+        public void TestDynamicTemplate()
+        {
+            var template = new CacheConfiguration
+            {
+                Name = "dynTempl*",
+                Backups = 7,
+                RebalanceBatchSize = 1234
+            };
+
+            Ignite.AddCacheConfiguration(template);
+            
+            // Register again.
+            // TODO: ??
+            Ignite.AddCacheConfiguration(template);
+
+            var cache = Ignite.CreateCache<int, int>("dynTempl1");
+            Assert.AreEqual(7, cache.GetConfiguration().Backups);
+            Assert.AreEqual(1234, cache.GetConfiguration().RebalanceBatchSize);
+            
+            // TODO
         }
 
         /// <summary>
