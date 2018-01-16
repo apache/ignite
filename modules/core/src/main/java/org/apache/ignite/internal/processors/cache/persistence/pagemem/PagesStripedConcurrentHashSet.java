@@ -206,6 +206,7 @@ public class PagesStripedConcurrentHashSet extends AbstractSet<FullPageId> imple
          * Creates iterator.
          */
         private FullPageIdsIterator() {
+            advanceSet();
             advance();
         }
 
