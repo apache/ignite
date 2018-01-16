@@ -25,10 +25,14 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 
 /**
- * Native sql that performs query operations
+ * Native sql benchmark that performs select operations
  */
 public class NativeSqlQueryRangeBenchmark extends AbstractNativeBenchmark {
-    /** {@inheritDoc} */
+    /**
+     * Benchmarked action that performs selects and validates results
+     *
+     * {@inheritDoc}
+     */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         long expRsSize;
 
@@ -59,8 +63,8 @@ public class NativeSqlQueryRangeBenchmark extends AbstractNativeBenchmark {
 
         long rsSize = 0;
 
-        try (FieldsQueryCursor<List<?>> cursor =
-                 ((IgniteEx)ignite()).context().query().querySqlFieldsNoCache(qry, false)) {
+        try (FieldsQueryCursor<List<?>> cursor = ((IgniteEx)ignite()).context().query()
+                .querySqlFieldsNoCache(qry, false)) {
 
             for (List<?> row : cursor) {
                 if ((Long)row.get(0) + 1 != (Long)row.get(1))

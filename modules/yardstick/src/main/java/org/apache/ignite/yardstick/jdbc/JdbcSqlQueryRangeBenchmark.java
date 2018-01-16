@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * JDBC benchmark that performs query operations
+ * JDBC benchmark that performs select operations
  */
 public class JdbcSqlQueryRangeBenchmark extends AbstractJdbcBenchmark {
     /** Statement with range. */
