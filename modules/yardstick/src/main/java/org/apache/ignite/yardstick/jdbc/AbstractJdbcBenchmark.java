@@ -19,16 +19,19 @@ package org.apache.ignite.yardstick.jdbc;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
 
+import static org.apache.ignite.yardstick.jdbc.JdbcUtils.fillData;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
@@ -89,6 +92,10 @@ abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
             else
                 url = args.jdbcUrl();
         }
+
+        fillData(cfg, (IgniteEx)ignite(), args.range());
+
+        ignite().close();
     }
 
     /** {@inheritDoc} */
@@ -116,5 +123,18 @@ abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
         conn.setSchema("PUBLIC");
 
         return conn;
+    }
+
+    protected final ThreadLocal<PreparedStatement> newStatement(final String sql){
+        return new ThreadLocal<PreparedStatement>(){
+            @Override protected PreparedStatement initialValue() {
+                try {
+                    return conn.get().prepareStatement(sql);
+                }
+                catch (SQLException e) {
+                    throw new IgniteException(e);
+                }
+            }
+        };
     }
 }

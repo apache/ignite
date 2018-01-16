@@ -18,32 +18,13 @@
 package org.apache.ignite.yardstick.jdbc;
 
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.IgniteEx;
-import org.yardstickframework.BenchmarkConfiguration;
-import org.yardstickframework.BenchmarkUtils;
-
-import static java.lang.String.format;
-import static org.apache.ignite.yardstick.jdbc.JdbcUtils.fillData;
 
 public class JdbcSqlInsertBenchmark extends AbstractJdbcBenchmark {
-    public static final String TABLE = "test_long";
 
-    private final ThreadLocal<PreparedStatement> singleInsert = newStatement(format("INSERT INTO %s (id, val) VALUES (?, ?)", TABLE));
-    private final ThreadLocal<PreparedStatement> singleDelete = newStatement(format("DELETE FROM %s WHERE id = ?", TABLE));
-
-
-    /** {@inheritDoc} */
-    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
-        super.setUp(cfg);
-
-        fillData(cfg, (IgniteEx)ignite(), args.range());
-
-        ignite().close();
-    }
+    private final ThreadLocal<PreparedStatement> singleInsert = newStatement("INSERT INTO test_long (id, val) VALUES (?, ?)");
+    private final ThreadLocal<PreparedStatement> singleDelete = newStatement("DELETE FROM test_long WHERE id = ?");
 
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
@@ -65,22 +46,8 @@ public class JdbcSqlInsertBenchmark extends AbstractJdbcBenchmark {
         }
         catch (Exception ign){
             // collision occurred, ignoring
-            BenchmarkUtils.println(cfg, "Collision occured. We're sorry, really :(");
         }
 
         return true;
-    }
-
-    private ThreadLocal<PreparedStatement> newStatement(final String sql){
-        return new ThreadLocal<PreparedStatement>(){
-            @Override protected PreparedStatement initialValue() {
-                try {
-                    return conn.get().prepareStatement(sql);
-                }
-                catch (SQLException e) {
-                    throw new IgniteException(e);
-                }
-            }
-        };
     }
 }

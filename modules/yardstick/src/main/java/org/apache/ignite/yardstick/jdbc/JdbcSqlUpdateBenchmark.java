@@ -18,33 +18,13 @@
 package org.apache.ignite.yardstick.jdbc;
 
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.IgniteEx;
-import org.yardstickframework.BenchmarkConfiguration;
-
-import static java.lang.String.format;
-import static org.apache.ignite.yardstick.jdbc.JdbcUtils.fillData;
 
 public class JdbcSqlUpdateBenchmark extends AbstractJdbcBenchmark {
-    public static final String TABLE = "test_long";
 
-    private final ThreadLocal<PreparedStatement> singleUpdate = newStatement(format("UPDATE %s SET val = (val + 1) WHERE id = ?", TABLE));
-    private final ThreadLocal<PreparedStatement> rangeUpdate = newStatement(format("UPDATE %s SET val = (val + 1) WHERE id BETWEEN ? AND ?", TABLE));
-
-    /** {@inheritDoc} */
-    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
-        super.setUp(cfg);
-
-        fillData(cfg, (IgniteEx)ignite(), args.range());
-
-        ignite().close();
-    }
+    private final ThreadLocal<PreparedStatement> singleUpdate = newStatement("UPDATE test_long SET val = (val + 1) WHERE id = ?");
+    private final ThreadLocal<PreparedStatement> rangeUpdate = newStatement("UPDATE test_long SET val = (val + 1) WHERE id BETWEEN ? AND ?");
 
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
@@ -71,21 +51,9 @@ public class JdbcSqlUpdateBenchmark extends AbstractJdbcBenchmark {
         int actualResSize = update.executeUpdate();
 
         if (actualResSize != expectedResSize)
-            throw new Exception("Invalid result set size [expected=" + actualResSize + ", expected=" + expectedResSize + ']');
+            throw new Exception("Invalid result set size [actual=" + actualResSize + ", expected=" + expectedResSize + ']');
 
         return true;
     }
 
-    private ThreadLocal<PreparedStatement> newStatement(final String sql){
-        return new ThreadLocal<PreparedStatement>(){
-            @Override protected PreparedStatement initialValue() {
-                try {
-                    return conn.get().prepareStatement(sql);
-                }
-                catch (SQLException e) {
-                    throw new IgniteException(e);
-                }
-            }
-        };
-    }
 }

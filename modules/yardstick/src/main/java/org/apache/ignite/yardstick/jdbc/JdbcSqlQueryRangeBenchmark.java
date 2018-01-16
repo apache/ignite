@@ -19,65 +19,21 @@ package org.apache.ignite.yardstick.jdbc;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.IgniteEx;
-import org.yardstickframework.BenchmarkConfiguration;
-
-import static org.apache.ignite.yardstick.jdbc.JdbcUtils.fillData;
-import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
  * JDBC benchmark that performs query operations
  */
 public class JdbcSqlQueryRangeBenchmark extends AbstractJdbcBenchmark {
     /** Statement with range. */
-    private ThreadLocal<PreparedStatement> stmtRange = new ThreadLocal<PreparedStatement>() {
-        @Override protected PreparedStatement initialValue() {
-            try {
-                return conn.get().prepareStatement("select id, val from test_long where id between ? and ?");
-            }
-            catch (SQLException e) {
-                throw new IgniteException(e);
-            }
-        }
-    };
+    private ThreadLocal<PreparedStatement> stmtRange = newStatement("SELECT id, val FROM test_long WHERE id BETWEEN ? AND ?");
 
     /** Statement full scan. */
-    private ThreadLocal<PreparedStatement> stmtFull = new ThreadLocal<PreparedStatement>() {
-        @Override protected PreparedStatement initialValue() {
-            try {
-                return conn.get().prepareStatement("select id, val from test_long");
-            }
-            catch (SQLException e) {
-                throw new IgniteException(e);
-            }
-        }
-    };
+    private ThreadLocal<PreparedStatement> stmtFull = newStatement("SELECT id, val FROM test_long");
 
     /** Statement full scan. */
-    private ThreadLocal<PreparedStatement> stmtSingle = new ThreadLocal<PreparedStatement>() {
-        @Override protected PreparedStatement initialValue() {
-            try {
-                return conn.get().prepareStatement("select id, val from test_long where id = ?");
-            }
-            catch (SQLException e) {
-                throw new IgniteException(e);
-            }
-        }
-    };
-
-    /** {@inheritDoc} */
-    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
-        super.setUp(cfg);
-
-        fillData(cfg, (IgniteEx)ignite(), args.range());
-
-        ignite().close();
-    }
+    private ThreadLocal<PreparedStatement> stmtSingle = newStatement("SELECT id, val FROM test_long WHERE id = ?");
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
