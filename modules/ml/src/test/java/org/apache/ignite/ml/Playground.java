@@ -29,7 +29,7 @@ import org.apache.ignite.ml.dlearn.context.cache.CacheDLearnContextFactory;
 import org.apache.ignite.ml.dlearn.context.cache.CacheDLearnPartition;
 import org.apache.ignite.ml.dlearn.dataset.DatasetMathUtils;
 import org.apache.ignite.ml.dlearn.part.LabeledDatasetDLearnPartition;
-import org.apache.ignite.ml.dlearn.part.cache.CacheLabeledDatasetDLearnPartitionTransformer;
+import org.apache.ignite.ml.dlearn.context.transformer.DLearnContextTransformers;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /** */
@@ -74,13 +74,13 @@ public class Playground extends GridCommonAbstractTest {
         // cache with specified transformation (it will be performed locally because partitions are on the same nodes).
         // In this case for every partition in upstream cache will be created labeled dataset partition and this new
         // partition will be filled with help of specified feature and label extractors.
+
         DLearnContext<LabeledDatasetDLearnPartition<Double>> datasetLearningCtx = cacheLearningCtx
             .transform(
-                new CacheLabeledDatasetDLearnPartitionTransformer<>(
+                DLearnContextTransformers.cacheToLabeledDataset(
                     (k, v) -> Arrays.copyOfRange(v, 1, v.length),      // specify feature extractor
-                    (k, v) -> v[0]                                          // specify label extractor
-                ),
-                LabeledDatasetDLearnPartition::new
+                    (k, v) -> v[0]                                           // specify label extractor
+                )
             );
 
         // Calculation of mean value. This calculation will be performed in map-reduce manner.
