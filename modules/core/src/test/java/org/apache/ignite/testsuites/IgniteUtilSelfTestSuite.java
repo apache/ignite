@@ -33,6 +33,7 @@ import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMapSelfTest;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemorySelfTest;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafePartitionedMapSelfTest;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeStripedLruSefTest;
+import org.apache.ignite.internal.util.tostring.CircularStringBuilderSelfTest;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilderSelfTest;
 import org.apache.ignite.lang.GridByteArrayListSelfTest;
 import org.apache.ignite.spi.discovery.ClusterMetricsSnapshotSerializeSelfTest;
@@ -47,6 +48,7 @@ import org.apache.ignite.util.GridQueueSelfTest;
 import org.apache.ignite.util.GridSpinReadWriteLockSelfTest;
 import org.apache.ignite.util.GridStringBuilderFactorySelfTest;
 import org.apache.ignite.util.mbeans.GridMBeanDisableSelfTest;
+import org.apache.ignite.util.mbeans.GridMBeanExoticNamesSelfTest;
 import org.apache.ignite.util.mbeans.GridMBeanSelfTest;
 
 /**
@@ -76,9 +78,11 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridQueueSelfTest.class);
         suite.addTestSuite(GridStringBuilderFactorySelfTest.class);
         suite.addTestSuite(GridToStringBuilderSelfTest.class);
+        suite.addTestSuite(CircularStringBuilderSelfTest.class);
         suite.addTestSuite(GridByteArrayListSelfTest.class);
         suite.addTestSuite(GridMBeanSelfTest.class);
         suite.addTestSuite(GridMBeanDisableSelfTest.class);
+        suite.addTestSuite(GridMBeanExoticNamesSelfTest.class);
         suite.addTestSuite(GridLongListSelfTest.class);
         suite.addTestSuite(GridIntListSelfTest.class);
         suite.addTestSuite(GridArraysSelfTest.class);

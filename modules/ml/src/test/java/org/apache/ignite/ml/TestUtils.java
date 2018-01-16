@@ -260,4 +260,15 @@ public class TestUtils {
     public static void checkIsInEpsilonNeighbourhood(Vector v1, Vector v2, double epsilon) {
         checkIsInEpsilonNeighbourhood(new Vector[] {v1}, new Vector[] {v2}, epsilon);
     }
+
+    /** */
+    public static boolean checkIsInEpsilonNeighbourhoodBoolean(Vector v1, Vector v2, double epsilon) {
+        try {
+            checkIsInEpsilonNeighbourhood(new Vector[] {v1}, new Vector[] {v2}, epsilon);
+        } catch (Throwable e) {
+            return false;
+        }
+
+        return true;
+    }
 }

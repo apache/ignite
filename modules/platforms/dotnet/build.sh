@@ -17,7 +17,7 @@
 #
 
 #
-# Builds Java and .NET
+# Builds Java and .NET with .NET Core
 #
 
 pushd .
