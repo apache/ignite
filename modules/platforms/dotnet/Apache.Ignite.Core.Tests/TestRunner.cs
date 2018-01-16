@@ -18,12 +18,21 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
+    using Apache.Ignite.Core.Tests.Binary.Serializable;
+    using Apache.Ignite.Core.Tests.Cache;
+    using Apache.Ignite.Core.Tests.Cache.Query.Linq;
+    using Apache.Ignite.Core.Tests.Client.Cache;
+    using Apache.Ignite.Core.Tests.Compute;
     using Apache.Ignite.Core.Tests.Memory;
     using NUnit.ConsoleRunner;
 
+    /// <summary>
+    /// Console test runner.
+    /// </summary>
     public static class TestRunner
     {
         [STAThread]
@@ -31,6 +40,13 @@ namespace Apache.Ignite.Core.Tests
         {
             Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
             Debug.AutoFlush = true;
+
+            if (args.Length == 1 && args[0] == "-basicTests")
+            {
+                RunBasicTests();
+                
+                return;
+            }
 
             if (args.Length == 2)
             {
@@ -45,56 +61,75 @@ namespace Apache.Ignite.Core.Tests
                 return;
             }
 
-            TestOne(typeof(ConsoleRedirectTest), "TestMultipleDomains");
-
-            //TestAll(typeof (AffinityFunctionTest));
-            //TestAllInAssembly();
+            Environment.ExitCode = TestAllInAssembly();
         }
 
-        private static int TestOne(Type testClass, string method)
+        /// <summary>
+        /// Runs some basic tests.
+        /// </summary>
+        private static void RunBasicTests()
+        {
+            Console.WriteLine(">>> Starting basic tests...");
+
+            var basicTests = new[]
+            {
+                typeof(ComputeApiTest),
+                typeof(CacheLinqTest),
+                typeof(SqlDmlTest),
+                typeof(LinqTest),
+                typeof(PersistenceTest)
+            };
+
+            Environment.ExitCode = TestAll(basicTests, true);
+
+            Console.WriteLine(">>> Test run finished.");
+        }
+
+        /// <summary>
+        /// Runs specified test method.
+        /// </summary>
+        private static int TestOne(Type testClass, string method, bool sameDomain = false)
         {
             string[] args =
             {
-                "/noshadow",
-                "/run:" + testClass.FullName + "." + method,
+                "-noshadow",
+                "-domain:" + (sameDomain ? "None" : "Single"),
+                "-run:" + testClass.FullName + "." + method,
                 Assembly.GetAssembly(testClass).Location
             };
 
-            int returnCode = Runner.Main(args);
-
-            if (returnCode != 0)
-                Console.Beep();
-
-            return returnCode;
+            return Runner.Main(args);
         }
 
-        private static void TestAll(Type testClass)
+        /// <summary>
+        /// Runs all tests in specified class.
+        /// </summary>
+        private static int TestAll(IEnumerable<Type> testClass, bool sameDomain = false)
         {
-            string[] args =
+            var args = new List<string>
             {
-                "/noshadow",
-                "/run:" + testClass.FullName, Assembly.GetAssembly(testClass).Location
+                "-noshadow",
+                "-domain:" + (sameDomain ? "None" : "Single"),
+                "-run:" + string.Join(",", testClass.Select(x => x.FullName)),
+                Assembly.GetAssembly(typeof(TestRunner)).Location
             };
-
-            int returnCode = Runner.Main(args);
-
-            if (returnCode != 0)
-                Console.Beep();
+            
+            return Runner.Main(args.ToArray());
         }
 
-        private static void TestAllInAssembly()
+        /// <summary>
+        /// Runs all tests in assembly.
+        /// </summary>
+        private static int TestAllInAssembly(bool sameDomain = false)
         {
             string[] args =
             {
-                "/noshadow",
+                "-noshadow",
+                "-domain:" + (sameDomain ? "None" : "Single"),
                 Assembly.GetAssembly(typeof(InteropMemoryTest)).Location
             };
 
-            int returnCode = Runner.Main(args);
-
-            if (returnCode != 0)
-                Console.Beep();
+            return Runner.Main(args);
         }
-
     }
 }
