@@ -41,7 +41,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Data streaming test.
  */
-public class JdbcStreamingToPublicCacheSelfTest extends GridCommonAbstractTest {
+public class JdbcStreamingToPublicCacheTest extends GridCommonAbstractTest {
     /** JDBC URL. */
     private static final String BASE_URL = CFG_URL_PREFIX + "cache=%s@modules/clients/src/test/config/jdbc-config.xml";
 
@@ -118,14 +118,14 @@ public class JdbcStreamingToPublicCacheSelfTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testStreamedInsert() throws Exception {
+        // Create table
         try (Connection conn = createConnection(DEFAULT_CACHE_NAME)) {
-            conn.setSchema(null);
-
             Statement stmt = conn.createStatement();
 
-            stmt.execute("create table STREAM_TEST (ID int primary key, str_val varchar)");
+            stmt.execute("create table PUBLIC.STREAM_TEST (ID int primary key, str_val varchar)");
         }
 
+        // Fill table with streaming
         try (Connection conn = createConnection("SQL_PUBLIC_STREAM_TEST")) {
             PreparedStatement pstmt = conn.prepareStatement("insert into STREAM_TEST(id, str_val) values (?, ?)");
 
@@ -137,6 +137,7 @@ public class JdbcStreamingToPublicCacheSelfTest extends GridCommonAbstractTest {
             }
         }
 
+        // Check table's data
         try (Connection conn = createConnection("SQL_PUBLIC_STREAM_TEST")) {
             ResultSet rs = conn.createStatement().executeQuery("select id, str_val from STREAM_TEST");
 
