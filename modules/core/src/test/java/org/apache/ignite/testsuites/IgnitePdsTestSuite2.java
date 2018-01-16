@@ -53,6 +53,19 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         // Integrity test.
         suite.addTestSuite(IgniteDataIntegrityTests.class);
+
+        addRealPageStoreTests(suite);
+
+        return suite;
+    }
+
+    /**
+     * Fills {@code suite} with PDS test subset, which operates with real page store and does actual disk operations.
+     *
+     * @param suite suite to add tests into.
+     */
+    public static void addRealPageStoreTests(TestSuite suite) {
+        // Integrity test.
         suite.addTestSuite(IgnitePdsRecoveryAfterFileCorruptionTest.class);
         suite.addTestSuite(IgnitePdsPageSizesTest.class);
 
@@ -95,7 +108,5 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgniteWalSerializerVersionTest.class);
 
         suite.addTestSuite(WalCompactionTest.class);
-
-        return suite;
     }
 }

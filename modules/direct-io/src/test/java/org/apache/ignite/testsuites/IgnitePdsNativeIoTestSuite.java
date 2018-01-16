@@ -32,6 +32,7 @@ public class IgnitePdsNativeIoTestSuite extends TestSuite {
         IgnitePdsTestSuite.addRealPageStoreTests(suite);
 
         suite.addTestSuite(IgniteNativeNoPersistenceTest.class);
+
         return suite;
     }
 }
