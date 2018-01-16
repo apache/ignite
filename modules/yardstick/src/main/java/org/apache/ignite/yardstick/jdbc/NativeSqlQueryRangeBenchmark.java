@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
@@ -72,15 +73,15 @@ public class NativeSqlQueryRangeBenchmark extends IgniteAbstractBenchmark {
 
         long rsSize = 0;
 
-        Iterator<List<?>> it = ((IgniteEx)ignite()).context().query().querySqlFieldsNoCache(qry, false).iterator();
+        try (FieldsQueryCursor<List<?>> cursor =
+                 ((IgniteEx)ignite()).context().query().querySqlFieldsNoCache(qry, false)) {
 
-        while (it.hasNext()) {
-            List<?> row = it.next();
+            for (List<?> row : cursor) {
+                if ((Long)row.get(0) + 1 != (Long)row.get(1))
+                    throw new Exception("Invalid result retrieved");
 
-            if ((Long)row.get(0) + 1 != (Long)row.get(1))
-                throw new Exception("Invalid result retrieved");
-
-            rsSize++;
+                rsSize++;
+            }
         }
 
         if (rsSize != expRsSize)

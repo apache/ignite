@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
@@ -74,17 +75,19 @@ public class NativeSqlUpdateRangeBenchmark extends IgniteAbstractBenchmark {
 
         long rsSize = 0;
 
-        // TODO: close cursor
-        Iterator<List<?>> it = ((IgniteEx)ignite()).context().query().querySqlFieldsNoCache(qry, false).iterator();
+        try (FieldsQueryCursor<List<?>> cursor =
+                 ((IgniteEx)ignite()).context().query().querySqlFieldsNoCache(qry, false)) {
 
-        List<?> cntRow = it.next();
-        rsSize = (Long)cntRow.get(0);
+            Iterator<List<?>> it = cursor.iterator();
+            List<?> cntRow = it.next();
+            rsSize = (Long)cntRow.get(0);
 
-        if (it.hasNext())
-            throw new Exception("Only one row expected on UPDATE query");
+            if (it.hasNext())
+                throw new Exception("Only one row expected on UPDATE query");
 
-        if (rsSize != expRsSize)
-            throw new Exception("Invalid result set size [rsSize=" + rsSize + ", expected=" + expRsSize + ']');
+            if (rsSize != expRsSize)
+                throw new Exception("Invalid result set size [rsSize=" + rsSize + ", expected=" + expRsSize + ']');
+        }
 
         return true;
     }
