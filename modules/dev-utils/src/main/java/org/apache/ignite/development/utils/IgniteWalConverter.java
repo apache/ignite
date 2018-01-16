@@ -18,6 +18,7 @@
 package org.apache.ignite.development.utils;
 
 import java.io.File;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -50,8 +51,8 @@ public class IgniteWalConverter {
         H2ExtrasInnerIO.register();
         H2ExtrasLeafIO.register();
 
-        boolean printRecords = false;
-        boolean printStat = true;
+        boolean printRecords = IgniteSystemProperties.getBoolean("PRINT_RECORDS", false);
+        boolean printStat = IgniteSystemProperties.getBoolean("PRINT_STAT", true);
 
         final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(new NullLogger(),
             Integer.parseInt(args[0]),
