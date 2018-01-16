@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             return new IgniteConfiguration(base.GetConfig())
             {
-                CacheConfiguration = new CacheConfiguration[]
+                CacheConfiguration = new []
                 {
                     new CacheConfiguration
                     {
