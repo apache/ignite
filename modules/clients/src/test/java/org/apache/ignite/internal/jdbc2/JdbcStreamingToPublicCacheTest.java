@@ -98,11 +98,13 @@ public class JdbcStreamingToPublicCacheTest extends GridCommonAbstractTest {
      * @return Connection to use for the test.
      * @throws Exception if failed.
      */
-    private Connection createConnection(String cacheName) throws Exception {
+    private Connection createConnection(String cacheName, boolean streaming) throws Exception {
         Properties props = new Properties();
 
-        props.setProperty(IgniteJdbcDriver.PROP_STREAMING, "true");
-        props.setProperty(IgniteJdbcDriver.PROP_STREAMING_FLUSH_FREQ, "500");
+        if (streaming) {
+            props.setProperty(IgniteJdbcDriver.PROP_STREAMING, "true");
+            props.setProperty(IgniteJdbcDriver.PROP_STREAMING_FLUSH_FREQ, "500");
+        }
 
         return DriverManager.getConnection(String.format(BASE_URL, cacheName), props);
     }
@@ -119,14 +121,14 @@ public class JdbcStreamingToPublicCacheTest extends GridCommonAbstractTest {
      */
     public void testStreamedInsert() throws Exception {
         // Create table
-        try (Connection conn = createConnection(DEFAULT_CACHE_NAME)) {
+        try (Connection conn = createConnection(DEFAULT_CACHE_NAME, false)) {
             Statement stmt = conn.createStatement();
 
             stmt.execute("create table PUBLIC.STREAM_TEST (ID int primary key, str_val varchar)");
         }
 
         // Fill table with streaming
-        try (Connection conn = createConnection("SQL_PUBLIC_STREAM_TEST")) {
+        try (Connection conn = createConnection("SQL_PUBLIC_STREAM_TEST", true)) {
             PreparedStatement pstmt = conn.prepareStatement("insert into STREAM_TEST(id, str_val) values (?, ?)");
 
             for (int i = 1; i <= 100; i++) {
@@ -138,7 +140,7 @@ public class JdbcStreamingToPublicCacheTest extends GridCommonAbstractTest {
         }
 
         // Check table's data
-        try (Connection conn = createConnection("SQL_PUBLIC_STREAM_TEST")) {
+        try (Connection conn = createConnection("SQL_PUBLIC_STREAM_TEST", false)) {
             ResultSet rs = conn.createStatement().executeQuery("select id, str_val from STREAM_TEST");
 
             int cnt = 0;
