@@ -81,4 +81,52 @@ public class GenericLinearSVMTrainerTest extends BaseSVMTest {
         TestUtils.assertEquals(-1, mdl.apply(new DenseLocalOnHeapVector(new double[] {100, 10})), precision);
         TestUtils.assertEquals(1, mdl.apply(new DenseLocalOnHeapVector(new double[] {10, 100})), precision);
     }
+
+    /**
+     * Test trainer on classification model y = x.
+     * Amount of generated points is increased 10 times.
+     */
+    @Test
+    public void testTrainWithTheLinearlySeparableCase10() {
+
+        ThreadLocalRandom rndX = ThreadLocalRandom.current();
+        ThreadLocalRandom rndY = ThreadLocalRandom.current();
+        for (int i = 0; i < size*10; i++) {
+            double x = rndX.nextDouble(-1000, 1000);
+            double y = rndY.nextDouble(-1000, 1000);
+            dataset.features(i).set(0, x);
+            dataset.features(i).set(1, y);
+            double lb =  y - x > 0 ? 1 : -1;
+            dataset.setLabel(i, lb);
+        }
+
+        SVMLinearClassificationModel mdl = trainer.train(dataset);
+
+        TestUtils.assertEquals(-1, mdl.apply(new DenseLocalOnHeapVector(new double[] {100, 10})), precision);
+        TestUtils.assertEquals(1, mdl.apply(new DenseLocalOnHeapVector(new double[] {10, 100})), precision);
+    }
+
+    /**
+     * Test trainer on classification model y = x.
+     * Amount of generated points is increased 100 times.
+     */
+    @Test
+    public void testTrainWithTheLinearlySeparableCase100() {
+
+        ThreadLocalRandom rndX = ThreadLocalRandom.current();
+        ThreadLocalRandom rndY = ThreadLocalRandom.current();
+        for (int i = 0; i < size*100; i++) {
+            double x = rndX.nextDouble(-1000, 1000);
+            double y = rndY.nextDouble(-1000, 1000);
+            dataset.features(i).set(0, x);
+            dataset.features(i).set(1, y);
+            double lb =  y - x > 0 ? 1 : -1;
+            dataset.setLabel(i, lb);
+        }
+
+        SVMLinearClassificationModel mdl = trainer.train(dataset);
+
+        TestUtils.assertEquals(-1, mdl.apply(new DenseLocalOnHeapVector(new double[] {100, 10})), precision);
+        TestUtils.assertEquals(1, mdl.apply(new DenseLocalOnHeapVector(new double[] {10, 100})), precision);
+    }
 }

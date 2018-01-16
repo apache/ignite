@@ -44,7 +44,7 @@ public class SVMTest extends BaseSVMTest {
         LabeledDataset train = split.train();
 
         System.out.println("\n>>> Create new linear regression trainer object.");
-        Trainer<SVMLinearClassificationModel, LabeledDataset> trainer = new SVMLinearClassificationTrainer();
+        Trainer<SVMLinearClassificationModel, LabeledDataset> trainer = new SVMLinearBinaryClassificationTrainer();
 
         System.out.println("\n>>> Perform the training to get the model.");
         SVMLinearClassificationModel mdl = trainer.train(train);
@@ -87,7 +87,7 @@ public class SVMTest extends BaseSVMTest {
         LabeledDataset train = split.train();
 
         System.out.println("\n>>> Create new linear regression trainer object.");
-        Trainer<SVMLinearClassificationModel, LabeledDataset> trainer = new SVMLinearClassificationTrainer();
+        Trainer<SVMLinearClassificationModel, LabeledDataset> trainer = new SVMLinearBinaryClassificationTrainer();
 
         System.out.println("\n>>> Perform the training to get the model.");
         SVMLinearClassificationModel mdl = trainer.train(train);

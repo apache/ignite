@@ -33,9 +33,6 @@ public class SVMLinearClassificationModel implements Model<Vector, Double>, Expo
     /** Threshold to assign +1 label to the observation if raw value more than this threshold.*/
     private double threshold = 0.0;
 
-    /** Regularization parameter. */
-    private double lambda = 1.0;
-
     /** Multiplier of the objects's vector required to make prediction.  */
     private Vector weights;
 
@@ -50,13 +47,6 @@ public class SVMLinearClassificationModel implements Model<Vector, Double>, Expo
     /** */
     public SVMLinearClassificationModel withRawLabels(boolean isKeepingRawLabels){
         this.isKeepingRawLabels = isKeepingRawLabels;
-        return this;
-    }
-
-    /** */
-    public SVMLinearClassificationModel withLambda(double lambda){
-        assert lambda > 0.0;
-        this.lambda = lambda;
         return this;
     }
 
@@ -85,11 +75,6 @@ public class SVMLinearClassificationModel implements Model<Vector, Double>, Expo
             return result;
         else
             return Math.signum(result);
-    }
-
-    /** */
-    public double lambda() {
-        return lambda;
     }
 
     /** */

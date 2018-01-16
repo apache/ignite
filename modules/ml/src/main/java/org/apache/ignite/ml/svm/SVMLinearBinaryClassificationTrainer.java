@@ -27,14 +27,22 @@ import org.jetbrains.annotations.NotNull;
 
 
 /**
- * Base class for SVM linear classification trainer with SDCA algorithm.
+ * Base class for a soft-margin SVM linear classification trainer based on the communication-efficient distributed dual coordinate
+ * ascent algorithm (CoCoA) with hinge-loss function.
+ * <p>
+ * This trainer takes input as Labeled Dataset with -1 and +1 labels for two classes and makes binary classification.
+ * </p>
+ * The paper about this algorithm could be found here https://arxiv.org/abs/1409.1458.
  */
-public class SVMLinearClassificationTrainer implements Trainer<SVMLinearClassificationModel, LabeledDataset> {
+public class SVMLinearBinaryClassificationTrainer implements Trainer<SVMLinearClassificationModel, LabeledDataset> {
     /** Amount of iterations. */
     private int amountOfIterations = 20;
 
     /** Amount of local SDCA iterations. */
     private int amountOfLocIterations = 50;
+
+    /** Regularization parameter. */
+    private double lambda = 0.2;
 
     /**
      * Returns model based on data
@@ -44,17 +52,15 @@ public class SVMLinearClassificationTrainer implements Trainer<SVMLinearClassifi
      */
     @Override public SVMLinearClassificationModel train(LabeledDataset data) {
 
-        Vector weights = initializeWeightsWithZeros(data.colSize());
-        double intercept = 0.0;
-
-        SVMLinearClassificationModel mdl = new SVMLinearClassificationModel(weights, intercept);
+        final int weightVectorSizeWithIntercept = data.colSize() + 1;
+        Vector weights = initializeWeightsWithZeros(weightVectorSizeWithIntercept);
 
         for (int i = 0; i < amountOfIterations; i++) {
-            Vector deltaWeights = calculateUpdates(data, mdl.lambda(), weights, intercept); //DEBUG: maybe should be scaled or normalized
+            Vector deltaWeights = calculateUpdates(data, weights); //DEBUG: maybe should be scaled or normalized
             weights = weights.plus(deltaWeights); // change on in-place operation without recreation of vector
         }
 
-        return mdl.withWeights(weights);
+        return new SVMLinearClassificationModel(weights.viewPart(1, weights.size() - 1), weights.get(0));
     }
 
     // DEBUG: rename or change signature
@@ -64,8 +70,7 @@ public class SVMLinearClassificationTrainer implements Trainer<SVMLinearClassifi
     }
 
     /** */
-    private Vector calculateUpdates(LabeledDataset data, double lambda, Vector weights,
-        double intercept) {
+    private Vector calculateUpdates(LabeledDataset data, Vector weights) {
         Vector copiedWeights = weights.copy();
         Vector deltaWeights = initializeWeightsWithZeros(weights.size()); // initialize with zeros
 
@@ -77,9 +82,12 @@ public class SVMLinearClassificationTrainer implements Trainer<SVMLinearClassifi
         for (int i = 0; i < amountOfLocIterations; i++) {
             int randomIdx = ThreadLocalRandom.current().nextInt(amountOfObservation);
             LabeledVector row = (LabeledVector)data.getRow(randomIdx);
+            Double lb = (Double)row.label();
+            Vector v = makeVectorWithInterceptElement(row);
+
             double alpha = tmpAlphas.get(randomIdx);
 
-            Deltas deltas = maximize(row, alpha, copiedWeights, lambda, amountOfObservation);
+            Deltas deltas = maximize(lb, v, alpha, copiedWeights, amountOfObservation);
 
             copiedWeights = copiedWeights.plus(deltas.deltaWeights); // need in-place operation; creates new vector
             deltaWeights = deltaWeights.plus(deltas.deltaWeights);  // need in-place operation; creates new vector
@@ -90,28 +98,36 @@ public class SVMLinearClassificationTrainer implements Trainer<SVMLinearClassifi
         return deltaWeights;
     }
 
-    /** */
-    private Deltas maximize(LabeledVector row, double alpha, Vector weights,
-        double lambda, int amountOfObservation) {
+    private Vector makeVectorWithInterceptElement(LabeledVector row) {
+        Vector vec = row.features().like(row.features().size() + 1);
 
-        double gradient = calcGradient(row, weights, lambda, amountOfObservation);
+        vec.set(0, 1); // set intercept element
+
+        for (int j = 0; j < row.features().size(); j++)
+            vec.set(j + 1, row.features().get(j));
+
+        return vec;
+    }
+
+    /** */
+    private Deltas maximize(double lb, Vector v, double alpha, Vector weights, int amountOfObservation) {
+
+        double gradient = calcGradient(lb, v, weights, amountOfObservation);
         double prjGrad = calculateProjectionGradient(alpha, gradient);
 
-        return calcDeltas(row, alpha, prjGrad, weights.size(), lambda, amountOfObservation);
+        return calcDeltas(lb, v, alpha, prjGrad, weights.size(),  amountOfObservation);
 
     }
 
     /** */
-    private Deltas calcDeltas(LabeledVector row, double alpha, double gradient, int vectorSize,
-        double lambda,
+    private Deltas calcDeltas(double lb, Vector v, double alpha, double gradient, int vectorSize,
         int amountOfObservation) {
         if(gradient != 0.0) {
 
-            double qii = row.features().dot(row.features());
+            double qii = v.dot(v);
             double newAlpha = calcNewAlpha(alpha, gradient, qii);
 
-            Vector deltaWeights = row.features()
-                .times((Double)row.label()*(newAlpha - alpha)/(lambda * amountOfObservation));
+            Vector deltaWeights = v.times(lb*(newAlpha - alpha)/(lambda * amountOfObservation));
             return new Deltas (newAlpha - alpha, deltaWeights);
         } else
             return new Deltas(0.0, initializeWeightsWithZeros(vectorSize));
@@ -127,10 +143,9 @@ public class SVMLinearClassificationTrainer implements Trainer<SVMLinearClassifi
     }
 
     /** */
-    private double calcGradient(LabeledVector row, Vector weights, double lambda,
-        int amountOfObservation) {
-        double dotProduct = row.features().dot(weights);
-        return ((Double)row.label() * dotProduct - 1.0) * (lambda * amountOfObservation);
+    private double calcGradient(double lb, Vector v, Vector weights, int amountOfObservation) {
+        double dotProduct = v.dot(weights);
+        return (lb * dotProduct - 1.0) * (lambda * amountOfObservation);
     }
 
     /** */
@@ -140,6 +155,19 @@ public class SVMLinearClassificationTrainer implements Trainer<SVMLinearClassifi
         else if (alpha >= 1.0) return Math.max(gradient, 0.0);
 
         else return gradient;
+    }
+
+
+    /** */
+    public SVMLinearBinaryClassificationTrainer withLambda(double lambda){
+        assert lambda > 0.0;
+        this.lambda = lambda;
+        return this;
+    }
+
+    /** */
+    public double lambda() {
+        return lambda;
     }
 }
 

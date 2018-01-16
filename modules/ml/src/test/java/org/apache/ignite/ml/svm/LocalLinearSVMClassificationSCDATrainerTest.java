@@ -32,7 +32,7 @@ public class LocalLinearSVMClassificationSCDATrainerTest extends GenericLinearSV
     /** */
     public LocalLinearSVMClassificationSCDATrainerTest() {
         super(
-            new SVMLinearClassificationTrainer(),
+            new SVMLinearBinaryClassificationTrainer(),
             new LabeledDataset<Double, LabeledVector>(AMOUNT_OF_OBSERVATIONS, AMOUNT_OF_FEATURES, false),
             AMOUNT_OF_OBSERVATIONS,
             1e-2);
