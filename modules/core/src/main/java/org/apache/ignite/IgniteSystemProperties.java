@@ -23,11 +23,13 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.stream.StreamTransformer;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -565,6 +567,19 @@ public final class IgniteSystemProperties {
      * should be used.
      */
     public static final String IGNITE_SERVICES_COMPATIBILITY_MODE = "IGNITE_SERVICES_COMPATIBILITY_MODE";
+
+    /**
+     * Manages backward compatibility of {@link StreamTransformer#from(CacheEntryProcessor)} method.
+     * <p>
+     * If the property is {@code true}, then the wrapped {@link CacheEntryProcessor} won't be able to be loaded over
+     * P2P class loading.
+     * <p>
+     * If the property is {@code false}, then another implementation of {@link StreamTransformer} will be returned,
+     * that fixes P2P class loading for {@link CacheEntryProcessor}, but it will be incompatible with old versions
+     * of Ignite.
+     */
+    public static final String IGNITE_STREAM_TRANSFORMER_COMPATIBILITY_MODE =
+        "IGNITE_STREAM_TRANSFORMER_COMPATIBILITY_MODE";
 
     /**
      * When set to {@code true} tree-based data structures - {@code TreeMap} and {@code TreeSet} - will not be
