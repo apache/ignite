@@ -17,7 +17,6 @@
 
 package org.apache.ignite.yardstick.jdbc;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -25,26 +24,11 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
-import org.yardstickframework.BenchmarkConfiguration;
-import org.yardstickframework.BenchmarkUtils;
-
-import static org.apache.ignite.yardstick.jdbc.JdbcUtils.fillData;
-import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
  * Native sql that performs query operations
  */
-public class NativeSqlInsertRangeBenchmark extends IgniteAbstractBenchmark {
-    /** {@inheritDoc} */
-    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
-        super.setUp(cfg);
-
-        fillData(cfg, (IgniteEx)ignite(), args.range());
-    }
-
-    // TODO: move common code into abstract class
-
+public class NativeSqlInsertRangeBenchmark extends AbstractNativeBenchmark {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         long expRsSize;
@@ -68,10 +52,5 @@ public class NativeSqlInsertRangeBenchmark extends IgniteAbstractBenchmark {
         }
 
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void tearDown() throws Exception {
-        super.tearDown();
     }
 }
