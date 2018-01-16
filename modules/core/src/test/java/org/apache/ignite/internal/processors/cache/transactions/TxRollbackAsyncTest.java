@@ -30,9 +30,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -65,6 +65,7 @@ import static java.lang.Thread.sleep;
 import static java.util.Collections.synchronizedList;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.configuration.WALMode.*;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
@@ -95,6 +96,9 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /** */
     public static final int THREADS_CNT = 1;
 
+    /** */
+    public static final long MB = 1024 * 1024;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -106,6 +110,11 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         boolean client = igniteInstanceName.startsWith("client");
 
         cfg.setClientMode(client);
+
+        if (persistenceEnabled())
+            cfg.setDataStorageConfiguration(new DataStorageConfiguration().setWalMode(LOG_ONLY).setPageSize(1024).
+                setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true).
+                    setInitialSize(100 * MB).setMaxSize(100 * MB)));
 
         if (!client) {
             CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME);
@@ -130,13 +139,21 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         return false;
     }
 
+    /**
+     *
+     * @return {@code True} if persistence must be enabled for test.
+     */
+    protected boolean persistenceEnabled() { return false; }
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        startGrid(0);
+        final IgniteEx crd = startGrid(0);
 
         startGridsMultiThreaded(1, GRID_CNT - 1);
+
+        crd.active(true);
 
         awaitPartitionMapExchange();
     }
@@ -268,23 +285,31 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     public void testRollbackSync() throws Exception {
         final Ignite client = startClient();
 
-        // Normal rollback after put.
-        Transaction tx = client.transactions().txStart();
+        for (Ignite ignite : G.allGrids())
+            testRollbackSync0(ignite);
+    }
 
-        client.cache(CACHE_NAME).put(0, 0);
+    /**
+     *
+     */
+    private void testRollbackSync0(Ignite near) throws Exception {
+        // Normal rollback after put.
+        Transaction tx = near.transactions().txStart();
+
+        near.cache(CACHE_NAME).put(0, 0);
 
         tx.rollback();
 
-        assertNull(client.cache(CACHE_NAME).get(0));
+        assertNull(near.cache(CACHE_NAME).get(0));
 
         // Normal rollback before put.
-        tx = client.transactions().txStart();
+        tx = near.transactions().txStart();
 
         tx.rollback();
 
-        client.cache(CACHE_NAME).put(0, 1);
+        near.cache(CACHE_NAME).put(0, 1);
 
-        assertEquals(1, client.cache(CACHE_NAME).get(0));
+        assertEquals(1, near.cache(CACHE_NAME).get(0));
 
         checkFutures();
     }
@@ -445,17 +470,15 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     public void testSequentialRollback() throws Exception {
         Ignite client = startClient();
 
-        testSequentialRollback0(grid(0), grid(0), false);
+        for (int i = 0; i < GRID_CNT; i++)
+            testSequentialRollback0(grid(0), grid(i), false);
 
-//        for (int i = 0; i < GRID_CNT; i++)
-//            testSequentialRollback0(grid(0), grid(i), false);
-//
-//        testSequentialRollback0(grid(0), client, false);
-//
-//        for (int i = 0; i < GRID_CNT; i++)
-//            testSequentialRollback0(grid(0), grid(i), true);
-//
-//        testSequentialRollback0(grid(0), client, true);
+        testSequentialRollback0(grid(0), client, false);
+
+        for (int i = 0; i < GRID_CNT; i++)
+            testSequentialRollback0(grid(0), grid(i), true);
+
+        testSequentialRollback0(grid(0), client, true);
     }
 
     /**
@@ -472,7 +495,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         final CountDownLatch rollbackLatch = new CountDownLatch(1);
 
-        final int txCnt = 1;
+        final int txCnt = 1000;
 
         final IgniteKernal k = (IgniteKernal)tryLockNode;
 
@@ -503,8 +526,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                     catch (Exception e) {
                         // Expected.
                     }
-
-                    System.out.println();
                 }
 
                 stop.set(true);
@@ -544,7 +565,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         txFut.get();
 
-        log.info("All transactions are rolled back");
+        log.info("All transactions are rolled back: holdLockNode=" + holdLockNode + ", tryLockNode=" + tryLockNode);
 
         waitCommit.countDown();
 

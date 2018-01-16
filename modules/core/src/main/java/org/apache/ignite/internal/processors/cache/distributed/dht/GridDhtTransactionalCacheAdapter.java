@@ -676,7 +676,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         // Register listener just so we print out errors.
         // Exclude lock timeout exception since it's not a fatal exception.
         f.listen(CU.errorLogger(log, GridCacheLockTimeoutException.class,
-            GridDistributedLockCancelledException.class, IgniteTxTimeoutCheckedException.class));
+            GridDistributedLockCancelledException.class, IgniteTxTimeoutCheckedException.class,
+            IgniteTxRollbackCheckedException.class));
     }
 
     private boolean waitForExchangeFuture(final ClusterNode node, final GridNearLockRequest req) {
@@ -1094,7 +1095,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             if (tx != null)
                                 tx.rollbackDhtLocal();
 
-                            return new GridDhtFinishedFuture<>(new IgniteCheckedException(msg));
+                            return new GridDhtFinishedFuture<>(new IgniteTxRollbackCheckedException(msg));
                         }
 
                         tx.topologyVersion(req.topologyVersion());
@@ -1399,7 +1400,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         Throwable err = res.error();
 
         // Log error before sending reply.
-        if (err != null && !(err instanceof GridCacheLockTimeoutException) && !ctx.kernalContext().isStopping())
+        if (err != null && !(err instanceof GridCacheLockTimeoutException) &&
+            !(err instanceof IgniteTxRollbackCheckedException) && !ctx.kernalContext().isStopping())
             U.error(log, "Failed to acquire lock for request: " + req, err);
 
         try {
