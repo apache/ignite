@@ -39,12 +39,19 @@ import org.apache.zookeeper.data.Stat;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * TODO ZK: limit reconnect attempts.
+ *
  */
 public class ZookeeperClient implements Watcher {
     /** */
     private static final long RETRY_TIMEOUT =
         IgniteSystemProperties.getLong("IGNITE_ZOOKEEPER_DISCOVERY_RETRY_TIMEOUT", 1000);
+
+    /** */
+    private static final int MAX_RETRY_COUNT =
+        IgniteSystemProperties.getInteger("IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT", 5);
+
+    /** */
+    private int retryCount;
 
     /** */
     private static final int MAX_REQ_SIZE = 1048528;
@@ -810,9 +817,18 @@ public class ZookeeperClient implements Watcher {
      * @return {@code True} if can retry operation.
      */
     private boolean needRetry(int code) {
-        return code == KeeperException.Code.CONNECTIONLOSS.intValue() ||
+        boolean retryByErrorCode = code == KeeperException.Code.CONNECTIONLOSS.intValue() ||
             code == KeeperException.Code.SESSIONMOVED.intValue() ||
             code == KeeperException.Code.OPERATIONTIMEOUT.intValue();
+
+        if (retryByErrorCode) {
+            if (MAX_RETRY_COUNT <= 0 || retryCount++ < MAX_RETRY_COUNT)
+                return true;
+            else
+                return false;
+        }
+        else
+            return false;
     }
 
     /**

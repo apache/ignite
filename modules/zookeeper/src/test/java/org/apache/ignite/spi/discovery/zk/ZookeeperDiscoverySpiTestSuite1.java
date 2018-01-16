@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.zk;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperClientTest;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiSaslSuccessfulAuthTest;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiTest;
 
 /**
@@ -36,6 +37,7 @@ public class ZookeeperDiscoverySpiTestSuite1 extends TestSuite {
 
         suite.addTestSuite(ZookeeperClientTest.class);
         suite.addTestSuite(ZookeeperDiscoverySpiTest.class);
+        suite.addTestSuite(ZookeeperDiscoverySpiSaslSuccessfulAuthTest.class);
 
         return suite;
     }
