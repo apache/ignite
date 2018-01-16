@@ -30,15 +30,10 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
  */
 public class IgnitePdsSingleNodePutGetPersistenceTest extends IgniteDbSingleNodePutGetTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected void configure(DataStorageConfiguration mCfg) {
+        super.configure(mCfg);
 
-        cfg.setDataStorageConfiguration(
-            new DataStorageConfiguration()
-            .setWalMode(WALMode.LOG_ONLY)
-        );
-
-        return cfg;
+        mCfg.setWalMode(WALMode.LOG_ONLY);
     }
 
     /** {@inheritDoc} */
