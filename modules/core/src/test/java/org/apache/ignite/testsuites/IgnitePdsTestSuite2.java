@@ -46,9 +46,8 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.reader.Ign
 public class IgnitePdsTestSuite2 extends TestSuite {
     /**
      * @return Suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite persistent Store Test Suite 2");
 
         // Integrity test.
@@ -98,6 +97,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         suite.addTestSuite(IgniteWalFlushLogOnlySelfTest.class);
 
+        // Test suite uses Standalone WAL iterator to verify PDS content.
         suite.addTestSuite(IgniteWalReaderTest.class);
 
         suite.addTestSuite(IgnitePdsExchangeDuringCheckpointTest.class);
