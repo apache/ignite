@@ -80,6 +80,7 @@ public class MLPGroupUpdateTrainerCacheInput extends AbstractMLPGroupUpdateTrain
         this.batchSize = batchSize;
         this.cache = cache;
         this.mlp = new MultilayerPerceptron(arch, init);
+        this.rand = rand;
     }
 
     /**
