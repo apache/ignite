@@ -255,6 +255,11 @@ public class SensitiveInfoTestLoggerProxy implements IgniteLogger, LifecycleAwar
     }
 
     /** {@inheritDoc} */
+    @Override public void trace(String marker, String msg) {
+        trace(msg);
+    }
+
+    /** {@inheritDoc} */
     @Override public void debug(String msg) {
         if (testSensitiveEnabled()) {
             testSensitive(msg);
@@ -267,6 +272,11 @@ public class SensitiveInfoTestLoggerProxy implements IgniteLogger, LifecycleAwar
     }
 
     /** {@inheritDoc} */
+    @Override public void debug(String marker, String msg) {
+        debug(msg);
+    }
+
+    /** {@inheritDoc} */
     @Override public void info(String msg) {
         if (testSensitiveEnabled()) {
             testSensitive(msg);
@@ -276,6 +286,11 @@ public class SensitiveInfoTestLoggerProxy implements IgniteLogger, LifecycleAwar
         }
         else
             impl.info(enrich(msg));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void info(String marker, String msg) {
+        info(msg);
     }
 
     /** {@inheritDoc} */
@@ -295,6 +310,11 @@ public class SensitiveInfoTestLoggerProxy implements IgniteLogger, LifecycleAwar
     }
 
     /** {@inheritDoc} */
+    @Override public void warning(String marker, String msg, @Nullable Throwable e) {
+        warning(msg, e);
+    }
+
+    /** {@inheritDoc} */
     @Override public void error(String msg) {
         if (testSensitiveEnabled())
             testSensitive(msg);
@@ -308,6 +328,11 @@ public class SensitiveInfoTestLoggerProxy implements IgniteLogger, LifecycleAwar
             testSensitive(msg, e);
 
         impl.error(enrich(msg), e);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void error(String marker, String msg, @Nullable Throwable e) {
+        error(msg, e);
     }
 
     /** {@inheritDoc} */

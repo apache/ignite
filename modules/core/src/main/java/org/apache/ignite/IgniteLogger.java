@@ -88,15 +88,10 @@ public interface IgniteLogger {
     /**
      * Logs out trace message.
      *
-     * @implSpec
-     * The default implementation calls {@code this.trace(msg)}.
-     *
      * @param marker Name of the marker to be associated with the message.
      * @param msg Trace message.
      */
-    default void trace(String marker, String msg) {
-        trace(msg);
-    }
+    void trace(String marker, String msg);
 
     /**
      * Logs out debug message.
@@ -108,15 +103,10 @@ public interface IgniteLogger {
     /**
      * Logs out debug message.
      *
-     * @implSpec
-     * The default implementation calls {@code this.debug(msg)}.
-     *
      * @param marker Name of the marker to be associated with the message.
      * @param msg Debug message.
      */
-    default void debug(String marker, String msg) {
-        debug(msg);
-    }
+    void debug(String marker, String msg);
 
     /**
      * Logs out information message.
@@ -128,24 +118,17 @@ public interface IgniteLogger {
     /**
      * Logs out information message.
      *
-     * @implSpec
-     * The default implementation calls {@code this.info(msg)}.
-     *
      * @param marker Name of the marker to be associated with the message.
      * @param msg Information message.
      */
-    default void info(String marker, String msg) {
-        info(msg);
-    }
+    void info(String marker, String msg);
 
     /**
      * Logs out warning message.
      *
      * @param msg Warning message.
      */
-    default void warning(String msg) {
-        warning(msg, null);
-    }
+    void warning(String msg);
 
     /**
      * Logs out warning message with optional exception.
@@ -158,25 +141,18 @@ public interface IgniteLogger {
     /**
      * Logs out warning message with optional exception.
      *
-     * @implSpec
-     * The default implementation calls {@code this.warning(msg)}.
-     *
      * @param marker Name of the marker to be associated with the message.
      * @param msg Warning message.
      * @param e Optional exception (can be {@code null}).
      */
-    default void warning(String marker, String msg, @Nullable Throwable e) {
-        warning(msg, e);
-    }
+    void warning(String marker, String msg, @Nullable Throwable e);
 
     /**
      * Logs out error message.
      *
      * @param msg Error message.
      */
-    default void error(String msg) {
-        error(null, msg, null);
-    }
+    void error(String msg);
 
     /**
      * Logs error message with optional exception.
@@ -189,16 +165,11 @@ public interface IgniteLogger {
     /**
      * Logs error message with optional exception.
      *
-     * @implSpec
-     * The default implementation calls {@code this.error(msg)}.
-     *
      * @param marker Name of the marker to be associated with the message.
      * @param msg Error message.
      * @param e Optional exception (can be {@code null}).
      */
-    default void error(String marker, String msg, @Nullable Throwable e) {
-        error(msg, e);
-    }
+    void error(String marker, String msg, @Nullable Throwable e);
 
     /**
      * Tests whether {@code trace} level is enabled.
