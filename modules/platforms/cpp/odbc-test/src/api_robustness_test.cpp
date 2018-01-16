@@ -63,9 +63,10 @@ struct ApiRobustnessTestSuiteFixture : public odbc::OdbcTestSuite
      * Constructor.
      */
     ApiRobustnessTestSuiteFixture() :
+        grid(),
         testCache(0)
     {
-        grid = StartNode("queries-test.xml", "NodeMain");
+        grid = StartAdditionalNode("NodeMain");
 
         testCache = grid.GetCache<int64_t, TestType>("cache");
     }

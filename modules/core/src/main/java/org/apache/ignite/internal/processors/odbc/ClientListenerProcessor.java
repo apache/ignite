@@ -21,6 +21,8 @@ import java.net.InetAddress;
 import java.nio.ByteOrder;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -112,7 +114,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 if (portTo <= 0) // Handle int overflow.
                     portTo = Integer.MAX_VALUE;
 
-                GridNioFilter[] filters = makeFilters();
+                GridNioFilter[] filters = makeFilters(cliConnCfg);
 
                 int maxOpenCursors = cliConnCfg.getMaxOpenCursorsPerConnection();
                 long idleTimeout = cliConnCfg.getIdleTimeout();
@@ -168,34 +170,50 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         }
     }
 
-    @NotNull private GridNioFilter[] makeFilters() {
-        GridNioFilter asyncNotifyFilter = new GridNioAsyncNotifyFilter(ctx.igniteInstanceName(), execSvc, log) {
+     /**
+      * Make NIO server filters.
+      * @param cliConnCfg Client configuration.
+      * @return Array of filters, suitable for the configuration.
+      * @throws IgniteCheckedException if provided SslContextFactory is null.
+      */
+    @NotNull private GridNioFilter[] makeFilters(@NotNull ClientConnectorConfiguration cliConnCfg)
+        throws IgniteCheckedException {
+        GridNioFilter openSesFilter = new GridNioAsyncNotifyFilter(ctx.igniteInstanceName(), execSvc, log) {
             @Override public void onSessionOpened(GridNioSession ses)
                 throws IgniteCheckedException {
                 proceedSessionOpened(ses);
             }
         };
 
-        GridNioFilter bufferParser = new GridNioCodecFilter(new ClientListenerBufferedParser(), log, false);
+        GridNioFilter codecFilter = new GridNioCodecFilter(new ClientListenerBufferedParser(), log, false);
 
-        if (isSslEnabled()) {
-            GridNioSslFilter sslFilter = new GridNioSslFilter(ctx.config().getSslContextFactory().create(),
+        if (cliConnCfg.isSslEnabled()) {
+            Factory<SSLContext> sslCtxFactory = cliConnCfg.isUseIgniteSslContextFactory() ?
+                ctx.config().getSslContextFactory() : cliConnCfg.getSslContextFactory();
+
+            if (sslCtxFactory == null)
+                throw new IgniteCheckedException("Failed to create client listener " +
+                    "(SSL is enabled but factory is null). Check the ClientConnectorConfiguration");
+
+            GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtxFactory.create(),
                     true, ByteOrder.nativeOrder(), log);
 
             sslFilter.directMode(false);
 
-            sslFilter.wantClientAuth(true);
-            sslFilter.needClientAuth(true);
+            boolean auth = cliConnCfg.isSslClientAuth();
+
+            sslFilter.wantClientAuth(auth);
+            sslFilter.needClientAuth(auth);
 
             return new GridNioFilter[] {
-                asyncNotifyFilter,
-                bufferParser,
+                openSesFilter,
+                codecFilter,
                 sslFilter
             };
         } else {
             return new GridNioFilter[] {
-                asyncNotifyFilter,
-                bufferParser
+                openSesFilter,
+                codecFilter
             };
         }
     }
@@ -343,12 +361,5 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
      */
     private static boolean isNotDefault(ClientConnectorConfiguration cliConnCfg) {
         return cliConnCfg != null && !(cliConnCfg instanceof ClientConnectorConfigurationEx);
-    }
-
-    /**
-     * @return {@code True} if ssl enabled.
-     */
-    private boolean isSslEnabled() {
-        return ctx.config().getSslContextFactory() != null;
     }
 }
