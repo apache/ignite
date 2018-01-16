@@ -34,25 +34,30 @@ public class IncorrectQueryEntityTest extends GridCommonAbstractTest {
 
         CacheConfiguration dfltCacheCfg = defaultCacheConfiguration();
 
-        QueryEntity queryEntity = new QueryEntity(Object.class.getName(), Object.class.getName());
+        QueryEntity qryEntity = new QueryEntity(Object.class.getName(), Object.class.getName());
 
         LinkedHashMap<String, String> fields = new LinkedHashMap<>();
 
         fields.put("exceptionOid", Object.class.getName());
 
-        queryEntity.setFields(fields);
+        qryEntity.setFields(fields);
 
         Set<String> keyFields = new HashSet<>();
 
         keyFields.add("exceptionOid");
 
-        queryEntity.setKeyFields(keyFields);
+        qryEntity.setKeyFields(keyFields);
 
-        dfltCacheCfg.setQueryEntities(F.asList(queryEntity));
+        dfltCacheCfg.setQueryEntities(F.asList(qryEntity));
 
         cfg.setCacheConfiguration(dfltCacheCfg);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
     }
 
     /**
@@ -67,9 +72,8 @@ public class IncorrectQueryEntityTest extends GridCommonAbstractTest {
         catch (Exception exception) {
             if (!exception.getMessage().contains(
                 GridQueryProcessor.propertyInitializationExceptionMessage(
-                    Object.class, Object.class, "exceptionOid", Object.class))) {
+                    Object.class, Object.class, "exceptionOid", Object.class)))
                 fail("property initialization exception must be thrown, but got " + exception.getMessage());
-            }
         }
     }
 }
