@@ -96,17 +96,15 @@ namespace Apache.Ignite.Core.Tests.Cache
                 RebalanceBatchSize = 1234
             };
 
+            // Register template.
             Ignite.AddCacheConfiguration(template);
             
-            // Register again.
-            // TODO: ??
+            // Double registration is allowed.
             Ignite.AddCacheConfiguration(template);
-
+            
             var cache = Ignite.CreateCache<int, int>("dynTempl1");
             Assert.AreEqual(7, cache.GetConfiguration().Backups);
             Assert.AreEqual(1234, cache.GetConfiguration().RebalanceBatchSize);
-            
-            // TODO
         }
 
         /// <summary>
