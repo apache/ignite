@@ -444,6 +444,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             ctx.wal().log(new PartitionDestroyRecord(grp.groupId(), p));
 
+            grp.dataRegion().memoryMetrics().decrementTotalAllocatedPages(store.fullSize() - 1);
+
             ctx.pageStore().onPartitionDestroyed(grp.groupId(), p, tag);
         }
         finally {

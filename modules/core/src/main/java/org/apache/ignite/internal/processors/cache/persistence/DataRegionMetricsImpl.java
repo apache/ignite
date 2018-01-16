@@ -231,6 +231,16 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     }
 
     /**
+     * Decrements totalAllocatedPages.
+     *
+     * @param n number of pages to decrement by.
+     */
+    public void decrementTotalAllocatedPages(long n) {
+        if (metricsEnabled)
+            totalAllocatedPages.add(-n);
+    }
+
+    /**
      *
      */
     private void updateAllocationRateMetrics(long n) {
