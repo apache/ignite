@@ -20,6 +20,8 @@ package org.apache.ignite.ml.optimization.updatecalculators;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorUtils;
 
@@ -72,23 +74,39 @@ public class RMSPropParameterUpdate implements Serializable {
         return update;
     }
 
+    /**
+     * Get average of updates.
+     *
+     * @param updates Updates.
+     * @return Average of updates.
+     */
     public static RMSPropParameterUpdate avg(List<RMSPropParameterUpdate> updates) {
-        if (!updates.isEmpty()) {
-            Vector updatesSum = updates.stream().map(RMSPropParameterUpdate::update).filter(Objects::nonNull).reduce(Vector::plus).orElse(null);
+        List<Vector> nonNull = updates.stream().map(RMSPropParameterUpdate::update).filter(Objects::nonNull).collect(Collectors.toList());
+        if (!nonNull.isEmpty()) {
+            Vector updatesSum = nonNull.stream().reduce(Vector::plus).orElse(null);
             Vector squaresRunningAverageSum = updates.stream().map(RMSPropParameterUpdate::squaresRunningAverage).reduce(Vector::plus).orElse(null);
 
-            int cnt = updates.size();
+            int cnt = nonNull.size();
 
             return new RMSPropParameterUpdate(squaresRunningAverageSum.divide(cnt), updatesSum.divide(cnt));
         } else
             return null;
     }
 
+    /**
+     * Get sum of updates.
+     *
+     * @param updates Updates.
+     * @return Sum of updates.
+     */
     public static RMSPropParameterUpdate sumLocal(List<RMSPropParameterUpdate> updates) {
         if (!updates.isEmpty()) {
             Vector updatesSum = updates.stream().map(RMSPropParameterUpdate::update).reduce(Vector::plus).orElse(null);
 
-            return new RMSPropParameterUpdate(updates.get(updates.size() - 1).squaresRunningAverage(), updatesSum);
+            // Last squares running average is the most actual.
+            Vector lastSquaresRunningAverage = updates.get(updates.size() - 1).squaresRunningAverage();
+
+            return new RMSPropParameterUpdate(lastSquaresRunningAverage, updatesSum);
         } else
             return null;
     }

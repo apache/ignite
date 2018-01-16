@@ -93,7 +93,7 @@ public class MnistDistributed extends GridCommonAbstractTest {
         IgniteCache<Integer, LabeledVector<Vector, Vector>> labeledVectorsCache = LabeledVectorsCache.createNew(ignite);
         loadIntoCache(trainingMnistLst, labeledVectorsCache);
 
-        RMSPropUpdateCalculator<MultilayerPerceptron> calculator = new RMSPropUpdateCalculator<>(0.25, 0.7, 1E-6);
+        RMSPropUpdateCalculator<MultilayerPerceptron> calculator = new RMSPropUpdateCalculator<>(0.95, 0.01, 1E-5);
         MLPGroupUpdateTrainer<RMSPropParameterUpdate> trainer = MLPGroupUpdateTrainer.getDefault(ignite).
             withMaxGlobalSteps(35).
             withSyncRate(2).
