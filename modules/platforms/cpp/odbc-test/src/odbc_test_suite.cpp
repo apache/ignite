@@ -90,16 +90,23 @@ namespace ignite
             {
                 // Releasing statement handle.
                 SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+                stmt = NULL;
+            }
 
+            if (dbc)
+            {
                 // Disconneting from the server.
                 SQLDisconnect(dbc);
 
                 // Releasing allocated handles.
                 SQLFreeHandle(SQL_HANDLE_DBC, dbc);
-                SQLFreeHandle(SQL_HANDLE_ENV, env);
-
-                stmt = NULL;
                 dbc = NULL;
+            }
+
+            if (env)
+            {
+                // Releasing allocated handles.
+                SQLFreeHandle(SQL_HANDLE_ENV, env);
                 env = NULL;
             }
         }

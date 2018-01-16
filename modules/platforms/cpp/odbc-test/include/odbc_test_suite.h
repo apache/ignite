@@ -29,9 +29,6 @@
 
 #include "ignite/ignite.h"
 
-#include "test_type.h"
-#include "complex_type.h"
-
 namespace ignite
 {
     namespace odbc

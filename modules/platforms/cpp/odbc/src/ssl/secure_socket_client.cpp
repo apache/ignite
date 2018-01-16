@@ -23,9 +23,6 @@
 #include "ignite/odbc/ssl/secure_socket_client.h"
 #include "ignite/odbc/ssl/ssl_bindings.h"
 
-// Declaring constant used by OpenSSL for readability.
-enum { SSL_OPERATION_SUCCESS = 1 };
-
 namespace ignite
 {
     namespace odbc
@@ -82,7 +79,7 @@ namespace ignite
                 std::string address = stream.str();
 
                 long res = ssl::BIO_ctrl(bio, BIO_C_SET_CONNECT, 0, const_cast<char*>(address.c_str()));
-                if (res != SSL_OPERATION_SUCCESS)
+                if (res != OPERATION_SUCCESS)
                 {
                     diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not set SSL connection hostname.");
 
@@ -104,7 +101,7 @@ namespace ignite
 
                 res = ssl::SSL_ctrl(ssl, SSL_CTRL_SET_TLSEXT_HOSTNAME,
                     TLSEXT_NAMETYPE_host_name, const_cast<char*>(hostname));
-                if (res != SSL_OPERATION_SUCCESS)
+                if (res != OPERATION_SUCCESS)
                 {
                     diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not set host name for secure connection");
 
@@ -114,7 +111,7 @@ namespace ignite
                 }
 
                 res = ssl::BIO_ctrl(bio, BIO_C_DO_STATE_MACHINE, 0, NULL);
-                if (res != SSL_OPERATION_SUCCESS)
+                if (res != OPERATION_SUCCESS)
                 {
                     diag.AddStatusRecord(SqlState::S08001_CANNOT_CONNECT,
                         "Failed to establish secure connection with the host.");
@@ -125,7 +122,7 @@ namespace ignite
                 }
 
                 res = ssl::BIO_ctrl(bio, BIO_C_DO_STATE_MACHINE, 0, NULL);
-                if (res != SSL_OPERATION_SUCCESS)
+                if (res != OPERATION_SUCCESS)
                 {
                     diag.AddStatusRecord(SqlState::S08001_CANNOT_CONNECT, "SSL handshake failed.");
 
@@ -276,7 +273,7 @@ namespace ignite
                 const char* cCaPath = caPath.empty() ? 0 : caPath.c_str();
 
                 long res = ssl::SSL_CTX_load_verify_locations(ctx, cCaPath, 0);
-                if (res != SSL_OPERATION_SUCCESS)
+                if (res != OPERATION_SUCCESS)
                 {
                     diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
                         "Can not set Certificate Authority path for secure connection.");
@@ -287,7 +284,7 @@ namespace ignite
                 }
 
                 res = ssl::SSL_CTX_use_certificate_chain_file(ctx, certPath.c_str());
-                if (res != SSL_OPERATION_SUCCESS)
+                if (res != OPERATION_SUCCESS)
                 {
                     diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
                         "Can not set client certificate file for secure connection.");
@@ -298,7 +295,7 @@ namespace ignite
                 }
 
                 res = ssl::SSL_CTX_use_RSAPrivateKey_file(ctx, keyPath.c_str(), SSL_FILETYPE_PEM);
-                if (res != SSL_OPERATION_SUCCESS)
+                if (res != OPERATION_SUCCESS)
                 {
                     diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
                         "Can not set private key file for secure connection.");
@@ -310,7 +307,7 @@ namespace ignite
 
                 const char* const PREFERRED_CIPHERS = "HIGH:!aNULL:!kRSA:!PSK:!SRP:!MD5:!RC4";
                 res = ssl::SSL_CTX_set_cipher_list(ctx, PREFERRED_CIPHERS);
-                if (res != SSL_OPERATION_SUCCESS)
+                if (res != OPERATION_SUCCESS)
                 {
                     diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
                         "Can not set ciphers list for secure connection.");

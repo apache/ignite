@@ -29,6 +29,9 @@ namespace ignite
     {
         namespace ssl
         {
+            // Declaring constant used by OpenSSL for readability.
+            enum { OPERATION_SUCCESS = 1 };
+
             inline SSL_CTX *SSL_CTX_new(const SSL_METHOD *meth)
             {
                 typedef SSL_CTX*(FuncType)(const SSL_METHOD*);
