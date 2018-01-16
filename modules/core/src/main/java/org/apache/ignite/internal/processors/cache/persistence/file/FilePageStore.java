@@ -75,7 +75,7 @@ public class FilePageStore implements PageStore {
     private final int pageSize;
 
     /** */
-    private volatile boolean initialized;
+    private volatile boolean inited;
 
     /** */
     private volatile boolean recover;
@@ -229,7 +229,7 @@ public class FilePageStore implements PageStore {
         lock.writeLock().lock();
 
         try {
-            if (!initialized)
+            if (!inited)
                 return;
 
             fileIO.force();
@@ -254,7 +254,7 @@ public class FilePageStore implements PageStore {
         lock.writeLock().lock();
 
         try {
-            if (!initialized)
+            if (!inited)
                 return 0;
 
             this.tag = tag;
@@ -300,7 +300,7 @@ public class FilePageStore implements PageStore {
         lock.writeLock().lock();
 
         try {
-            if (initialized)
+            if (inited)
                 allocated.set(fileIO.size());
 
             recover = false;
@@ -401,11 +401,11 @@ public class FilePageStore implements PageStore {
      * @throws IgniteCheckedException If failed to initialize store file.
      */
     private void init() throws IgniteCheckedException {
-        if (!initialized) {
+        if (!inited) {
             lock.writeLock().lock();
 
             try {
-                if (!initialized) {
+                if (!inited) {
                     FileIO fileIO = null;
 
                     IgniteCheckedException err = null;
@@ -418,7 +418,7 @@ public class FilePageStore implements PageStore {
                         else
                             allocated.set(checkFile());
 
-                        initialized = true;
+                        inited = true;
                     }
                     catch (IOException e) {
                         throw err = new IgniteCheckedException("Can't open file: " + cfgFile.getName(), e);
@@ -565,7 +565,7 @@ public class FilePageStore implements PageStore {
 
     /** {@inheritDoc} */
     @Override public int pages() {
-        if (!initialized)
+        if (!inited)
             return 0;
 
         return (int)((allocated.get() - headerSize()) / pageSize);
@@ -573,7 +573,7 @@ public class FilePageStore implements PageStore {
 
     /** */
     public boolean isInitialized() {
-        return initialized;
+        return inited;
     }
 
 }
