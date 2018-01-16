@@ -29,6 +29,7 @@ import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
 
+import static org.apache.ignite.yardstick.jdbc.JdbcUtils.fillData;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
@@ -40,31 +41,6 @@ public class NativeSqlInsertRangeBenchmark extends IgniteAbstractBenchmark {
         super.setUp(cfg);
 
         fillData(cfg, (IgniteEx)ignite(), args.range());
-    }
-
-    /**
-     * @param cfg Benchmark configuration.
-     * @param ignite Ignite node.
-     * @param range Data key range.
-     */
-    static void fillData(BenchmarkConfiguration cfg,  IgniteEx ignite, long range) {
-        println(cfg, "Create table...");
-
-        ignite.context().query().querySqlFieldsNoCache(
-            new SqlFieldsQuery("CREATE TABLE test_long (id long primary key, val long)"), true);
-
-        println(cfg, "Populate data...");
-
-        for (long l = 1; l <= range; ++l) {
-            ignite.context().query().querySqlFieldsNoCache(
-                new SqlFieldsQuery("insert into test_long (id, val) values (?, ?)")
-                    .setArgs(l, l + 1), true);
-
-            if (l % 10000 == 0)
-                println(cfg, "Populate " + l);
-        }
-
-        println(cfg, "Finished populating data");
     }
 
     // TODO: move common code into abstract class
@@ -82,26 +58,15 @@ public class NativeSqlInsertRangeBenchmark extends IgniteAbstractBenchmark {
         SqlFieldsQuery delete = new SqlFieldsQuery("DELETE FROM test_long WHERE id = ?");
         delete.setArgs(insertKey);
 
-        // TODO: close cursor
         GridQueryProcessor qryProc = ((IgniteEx)ignite()).context().query();
         try (FieldsQueryCursor<List<?>> insCur = qryProc.querySqlFieldsNoCache(insert, false);
             FieldsQueryCursor<List<?>> delCur = qryProc.querySqlFieldsNoCache(delete, false);){
-            // Todo: something
-            // assert there is no result
+            // No-op, there is no result
         }
         catch (Exception ign) {
             // collision occurred, ignoring
-            BenchmarkUtils.println(cfg, "Collision"); // Todo: remove
-
         }
 
-
-        /*if (it.hasNext())
-            throw new Exception("Only one row expected on UPDATE query");
-
-        if (rsSize != expRsSize)
-            throw new Exception("Invalid result set size [rsSize=" + rsSize + ", expected=" + expRsSize + ']');
-*/
         return true;
     }
 

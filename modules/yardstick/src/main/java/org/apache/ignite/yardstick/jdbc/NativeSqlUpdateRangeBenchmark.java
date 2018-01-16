@@ -26,6 +26,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
 
+import static org.apache.ignite.yardstick.jdbc.JdbcUtils.fillData;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
@@ -37,31 +38,6 @@ public class NativeSqlUpdateRangeBenchmark extends IgniteAbstractBenchmark {
         super.setUp(cfg);
 
         fillData(cfg, (IgniteEx)ignite(), args.range());
-    }
-
-    /**
-     * @param cfg Benchmark configuration.
-     * @param ignite Ignite node.
-     * @param range Data key range.
-     */
-    static void fillData(BenchmarkConfiguration cfg,  IgniteEx ignite, long range) {
-        println(cfg, "Create table...");
-
-        ignite.context().query().querySqlFieldsNoCache(
-            new SqlFieldsQuery("CREATE TABLE test_long (id long primary key, val long)"), true);
-
-        println(cfg, "Populate data...");
-
-        for (long l = 1; l <= range; ++l) {
-            ignite.context().query().querySqlFieldsNoCache(
-                new SqlFieldsQuery("insert into test_long (id, val) values (?, ?)")
-                    .setArgs(l, l + 1), true);
-
-            if (l % 10000 == 0)
-                println(cfg, "Populate " + l);
-        }
-
-        println(cfg, "Finished populating data");
     }
 
     // TODO: move common code into abstract class

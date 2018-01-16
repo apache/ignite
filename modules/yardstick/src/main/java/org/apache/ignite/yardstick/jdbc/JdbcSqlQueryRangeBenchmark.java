@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.yardstickframework.BenchmarkConfiguration;
 
+import static org.apache.ignite.yardstick.jdbc.JdbcUtils.fillData;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
@@ -73,7 +74,7 @@ public class JdbcSqlQueryRangeBenchmark extends AbstractJdbcBenchmark {
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        NativeSqlQueryRangeBenchmark.fillData(cfg, (IgniteEx)ignite(), args.range());
+        fillData(cfg, (IgniteEx)ignite(), args.range());
 
         ignite().close();
     }

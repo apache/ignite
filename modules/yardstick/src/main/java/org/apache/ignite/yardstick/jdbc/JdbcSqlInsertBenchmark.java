@@ -27,6 +27,7 @@ import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
 
 import static java.lang.String.format;
+import static org.apache.ignite.yardstick.jdbc.JdbcUtils.fillData;
 
 public class JdbcSqlInsertBenchmark extends AbstractJdbcBenchmark {
     public static final String TABLE = "test_long";
@@ -39,7 +40,7 @@ public class JdbcSqlInsertBenchmark extends AbstractJdbcBenchmark {
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        NativeSqlQueryRangeBenchmark.fillData(cfg, (IgniteEx)ignite(), args.range());
+        fillData(cfg, (IgniteEx)ignite(), args.range());
 
         ignite().close();
     }
