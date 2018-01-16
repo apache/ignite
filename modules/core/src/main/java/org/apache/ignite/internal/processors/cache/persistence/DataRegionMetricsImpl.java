@@ -98,13 +98,15 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedPages() {
-        return metricsEnabled ? totalAllocatedPages.longValue() : 0;
+        if (!metricsEnabled)
+            return 0;
+
+        return totalAllocatedPages.longValue();
     }
 
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedSize() {
-        if (pageMem == null)
-            return 0;
+        assert pageMem != null;
 
         return getTotalAllocatedPages() * pageMem.pageSize();
     }
@@ -201,7 +203,12 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** {@inheritDoc} */
     public int getPageSize() {
-        return metricsEnabled && pageMem != null ? pageMem.pageSize() : 0;
+        if (!metricsEnabled)
+            return 0;
+
+        assert pageMem != null;
+
+        return pageMem.pageSize();
     }
 
     /**
