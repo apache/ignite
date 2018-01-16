@@ -805,6 +805,14 @@ namespace Apache.Ignite.Core.Impl
             return _prj.GetDataStorageMetrics();
         }
 
+        /** <inheritdoc /> */
+        public void AddCacheConfiguration(CacheConfiguration configuration)
+        {
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
+
+            DoOutOp((int) CacheOp.AddCacheConfiguration, w => configuration.Write(w));
+        }
+
         /// <summary>
         /// Gets or creates near cache.
         /// </summary>

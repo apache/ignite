@@ -104,6 +104,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         PutIfAbsentAsync = 81,
         Extension = 82,
         GlobalMetrics = 83,
-        GetLostPartitions = 84
+        GetLostPartitions = 84,
+        AddCacheConfiguration = 85
     }
 }
