@@ -810,7 +810,8 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
-            DoOutOp((int) CacheOp.AddCacheConfiguration, w => configuration.Write(w));
+            DoOutOp((int) CacheOp.AddCacheConfiguration,
+                s => configuration.Write(BinaryUtils.Marshaller.StartMarshal(s)));
         }
 
         /// <summary>
