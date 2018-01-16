@@ -371,17 +371,6 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     }
 
     /** {@inheritDoc} */
-    @Override protected void handleRecordException(
-        @NotNull final Exception e,
-        @Nullable final FileWALPointer ptr) {
-        super.handleRecordException(e, ptr);
-
-        final RuntimeException ex = new RuntimeException("Record reading problem occurred at file pointer [" + ptr + "]:" + e.getMessage(), e);
-
-        ex.printStackTrace();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void onClose() throws IgniteCheckedException {
         super.onClose();
 
