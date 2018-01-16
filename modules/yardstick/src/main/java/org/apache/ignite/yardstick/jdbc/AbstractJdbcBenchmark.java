@@ -68,34 +68,46 @@ abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
 
         if (url == null) {
             if (args.jdbcUrl().startsWith(JdbcThinUtils.URL_PREFIX)) {
-                for (ClusterNode n : ignite().cluster().forClients().nodes()) {
-                    if (!n.isLocal()) {
-                        for (String addr : n.addresses()) {
-                            if (!addr.equals("127.0.0.1") && !addr.equals("localhost")
-                                && !addr.equals("172.17.0.1")) {
-                                url = JdbcThinUtils.URL_PREFIX + addr + '/';
-
-                                println("Found remote node: " + addr);
-
-                                break;
-                            }
-                        }
-
-                        if (url == null) {
-                            url = JdbcThinUtils.URL_PREFIX + "127.0.0.1" + '/';
-                            println("Found another client node on localhost");
-                        }
-                        break;
-                    }
-                }
+                String addr = findThinAddr();
+                url = JdbcThinUtils.URL_PREFIX + addr + '/';
             }
             else
                 url = args.jdbcUrl();
         }
 
+        println("Using jdbc url:" + url);
+
         fillData(cfg, (IgniteEx)ignite(), args.range());
 
         ignite().close();
+    }
+
+    /**
+     * find address of client node, that thin driver should use
+     * @return address for thin driver
+     */
+    private String findThinAddr(){
+        for (ClusterNode n : ignite().cluster().forClients().nodes()) {
+            if (n.isLocal())
+                continue;
+
+            // try to find non-localhost address of this node
+            for (String addr : n.addresses()) {
+                if (!addr.equals("127.0.0.1")
+                    && !addr.equals("localhost")
+                    && !addr.equals("172.17.0.1")) {
+
+                    println("Found remote node: " + addr);
+                    return addr;
+                }
+            }
+
+            // otherwise this node is running on localhost in a separate jvm
+            println("Found another client node on localhost");
+            return "127.0.0.1";
+        }
+
+        throw new RuntimeException("Setup exception: could not find non-local node, check your setup");
     }
 
     /** {@inheritDoc} */
