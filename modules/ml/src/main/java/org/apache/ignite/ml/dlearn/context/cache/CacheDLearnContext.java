@@ -28,6 +28,7 @@ import org.apache.ignite.ml.dlearn.DLearnContext;
 import org.apache.ignite.ml.dlearn.DLearnPartitionFactory;
 import org.apache.ignite.ml.dlearn.DLearnPartitionStorage;
 import org.apache.ignite.ml.dlearn.utils.DLearnContextPartitionKey;
+import org.apache.ignite.ml.dlearn.utils.DLearnContextTransformer;
 import org.apache.ignite.ml.math.functions.IgniteBiConsumer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
@@ -113,6 +114,11 @@ public class CacheDLearnContext<P> implements DLearnContext<P> {
         });
 
         return new CacheDLearnContext<>(ignite, learningCtxCacheName, partFactory, newLearningCtxId);
+    }
+
+    /** */
+    @Override public <T> DLearnContext<T> transform(DLearnContextTransformer<P, T> transformer) {
+        return transform(transformer.getTransformer(), transformer.getPartFactory());
     }
 
     /** */

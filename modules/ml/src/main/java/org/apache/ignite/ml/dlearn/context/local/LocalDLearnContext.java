@@ -23,6 +23,7 @@ import org.apache.ignite.ml.dlearn.DLearnContext;
 import org.apache.ignite.ml.dlearn.DLearnPartitionFactory;
 import org.apache.ignite.ml.dlearn.DLearnPartitionStorage;
 import org.apache.ignite.ml.dlearn.utils.DLearnContextPartitionKey;
+import org.apache.ignite.ml.dlearn.utils.DLearnContextTransformer;
 import org.apache.ignite.ml.math.functions.IgniteBiConsumer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
@@ -87,5 +88,10 @@ public class LocalDLearnContext<P> implements DLearnContext<P> {
         });
 
         return new LocalDLearnContext<>(learningCtxMap, partFactory, newLearningCtxId, partitions);
+    }
+
+    /** */
+    @Override public <T> DLearnContext<T> transform(DLearnContextTransformer<P, T> transformer) {
+        return transform(transformer.getTransformer(), transformer.getPartFactory());
     }
 }
