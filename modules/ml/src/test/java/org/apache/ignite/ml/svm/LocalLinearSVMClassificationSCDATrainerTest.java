@@ -26,15 +26,11 @@ import org.apache.ignite.ml.structures.LabeledVector;
  * Tests for {@link LinearRegressionSGDTrainer} on {@link DenseLocalOnHeapMatrix}.
  */
 public class LocalLinearSVMClassificationSCDATrainerTest extends GenericLinearSVMTrainerTest {
-    public static final int AMOUNT_OF_OBSERVATIONS = 100;
-    public static final int AMOUNT_OF_FEATURES = 2;
-
     /** */
     public LocalLinearSVMClassificationSCDATrainerTest() {
         super(
             new SVMLinearBinaryClassificationTrainer(),
-            new LabeledDataset<Double, LabeledVector>(AMOUNT_OF_OBSERVATIONS, AMOUNT_OF_FEATURES, false),
-            AMOUNT_OF_OBSERVATIONS,
+            false,
             1e-2);
     }
 }

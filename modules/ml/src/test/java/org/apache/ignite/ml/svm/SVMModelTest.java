@@ -33,9 +33,9 @@ public class SVMModelTest {
 
     /** */
     @Test
-    public void testPredict() {
+    public void testPredictWithRawLabels() {
         Vector weights = new DenseLocalOnHeapVector(new double[]{2.0, 3.0});
-        SVMLinearClassificationModel mdl = new SVMLinearClassificationModel(weights, 1.0);
+        SVMLinearClassificationModel mdl = new SVMLinearClassificationModel(weights, 1.0).withRawLabels(true);
 
         Vector observation = new DenseLocalOnHeapVector(new double[]{1.0, 1.0});
         TestUtils.assertEquals(1.0 + 2.0 * 1.0 + 3.0 * 1.0, mdl.apply(observation), PRECISION);
@@ -51,6 +51,28 @@ public class SVMModelTest {
 
         observation = new DenseLocalOnHeapVector(new double[]{1.0, -2.0});
         TestUtils.assertEquals(1.0 + 2.0 * 1.0 - 3.0 * 2.0, mdl.apply(observation), PRECISION);
+    }
+
+    /** */
+    @Test
+    public void testPredictWithErasedLabels() {
+        Vector weights = new DenseLocalOnHeapVector(new double[]{1.0, 1.0});
+        SVMLinearClassificationModel mdl = new SVMLinearClassificationModel(weights, 1.0);
+
+        Vector observation = new DenseLocalOnHeapVector(new double[]{1.0, 1.0});
+        TestUtils.assertEquals(1.0, mdl.apply(observation), PRECISION);
+
+        observation = new DenseLocalOnHeapVector(new double[]{3.0, 4.0});
+        TestUtils.assertEquals(1.0, mdl.apply(observation), PRECISION);
+
+        observation = new DenseLocalOnHeapVector(new double[]{-1.0, -1.0});
+        TestUtils.assertEquals(-1.0, mdl.apply(observation), PRECISION);
+
+        observation = new DenseLocalOnHeapVector(new double[]{-2.0, 1.1});
+        TestUtils.assertEquals(1.0, mdl.apply(observation), PRECISION);
+
+        observation = new DenseLocalOnHeapVector(new double[]{-1.0, -2.0});
+        TestUtils.assertEquals(-1.0, mdl.apply(observation), PRECISION);
     }
 
     /** */

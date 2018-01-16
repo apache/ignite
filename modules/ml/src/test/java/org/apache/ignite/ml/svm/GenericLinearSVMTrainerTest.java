@@ -28,35 +28,38 @@ import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.regressions.linear.ArtificialRegressionDatasets;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.structures.LabeledDataset;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.junit.Test;
 
 /**
  * Base class for all linear regression trainers.
  */
 public class GenericLinearSVMTrainerTest extends BaseSVMTest {
+    /** Fixed size of Dataset. */
+    private static final int AMOUNT_OF_OBSERVATIONS = 100;
+
+    /** Fixed size of columns in Dataset. */
+    private static final int AMOUNT_OF_FEATURES = 2;
+
     /** */
     private final Trainer<SVMLinearClassificationModel, LabeledDataset> trainer;
 
     /** */
-    private LabeledDataset dataset;
-
-    /** */
-    private int size;
+    private boolean isDistributed;
 
     /** */
     private final double precision;
 
     /** */
-    public GenericLinearSVMTrainerTest(
+    GenericLinearSVMTrainerTest(
         Trainer<SVMLinearClassificationModel, LabeledDataset> trainer,
-        LabeledDataset dataset,
-        int size,
+        boolean isDistributed,
         double precision) {
         super();
         this.trainer = trainer;
-        this.dataset = dataset;
         this.precision = precision;
-        this.size = size;
+        this.isDistributed = isDistributed;
+
     }
 
     /**
@@ -65,9 +68,11 @@ public class GenericLinearSVMTrainerTest extends BaseSVMTest {
     @Test
     public void testTrainWithTheLinearlySeparableCase() {
 
+        LabeledDataset dataset = new LabeledDataset<Double, LabeledVector>(AMOUNT_OF_OBSERVATIONS, AMOUNT_OF_FEATURES, isDistributed);
+
         ThreadLocalRandom rndX = ThreadLocalRandom.current();
         ThreadLocalRandom rndY = ThreadLocalRandom.current();
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < AMOUNT_OF_OBSERVATIONS; i++) {
             double x = rndX.nextDouble(-1000, 1000);
             double y = rndY.nextDouble(-1000, 1000);
             dataset.features(i).set(0, x);
@@ -89,9 +94,11 @@ public class GenericLinearSVMTrainerTest extends BaseSVMTest {
     @Test
     public void testTrainWithTheLinearlySeparableCase10() {
 
+        LabeledDataset dataset = new LabeledDataset<Double, LabeledVector>(AMOUNT_OF_OBSERVATIONS * 10, AMOUNT_OF_FEATURES, isDistributed);
+
         ThreadLocalRandom rndX = ThreadLocalRandom.current();
         ThreadLocalRandom rndY = ThreadLocalRandom.current();
-        for (int i = 0; i < size*10; i++) {
+        for (int i = 0; i < AMOUNT_OF_OBSERVATIONS * 10; i++) {
             double x = rndX.nextDouble(-1000, 1000);
             double y = rndY.nextDouble(-1000, 1000);
             dataset.features(i).set(0, x);
@@ -113,9 +120,11 @@ public class GenericLinearSVMTrainerTest extends BaseSVMTest {
     @Test
     public void testTrainWithTheLinearlySeparableCase100() {
 
+        LabeledDataset dataset = new LabeledDataset<Double, LabeledVector>(AMOUNT_OF_OBSERVATIONS * 100, AMOUNT_OF_FEATURES, isDistributed);
+
         ThreadLocalRandom rndX = ThreadLocalRandom.current();
         ThreadLocalRandom rndY = ThreadLocalRandom.current();
-        for (int i = 0; i < size*100; i++) {
+        for (int i = 0; i < AMOUNT_OF_OBSERVATIONS * 100; i++) {
             double x = rndX.nextDouble(-1000, 1000);
             double y = rndY.nextDouble(-1000, 1000);
             dataset.features(i).set(0, x);
