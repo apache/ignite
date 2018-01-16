@@ -471,6 +471,11 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
+    @Override public void warning(String msg) {
+        warning(null, msg, null);
+    }
+
+    /** {@inheritDoc} */
     @Override public void warning(String msg, @Nullable Throwable e) {
         warning(null, msg, e);
     }
@@ -481,6 +486,11 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
 
         if (consoleLog != null)
             consoleLog.warn(msg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void error(String msg) {
+        error(null, msg, null);
     }
 
     /** {@inheritDoc} */

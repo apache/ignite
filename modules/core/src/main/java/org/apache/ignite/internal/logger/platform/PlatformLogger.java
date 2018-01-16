@@ -101,13 +101,28 @@ public class PlatformLogger implements IgniteLogger {
     }
 
     /** {@inheritDoc} */
+    @Override public void trace(String marker, String msg) {
+        trace(msg);
+    }
+
+    /** {@inheritDoc} */
     @Override public void debug(String msg) {
         log(LVL_DEBUG, msg, null);
     }
 
     /** {@inheritDoc} */
+    @Override public void debug(String marker, String msg) {
+        debug(msg);
+    }
+
+    /** {@inheritDoc} */
     @Override public void info(String msg) {
         log(LVL_INFO, msg, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void info(String marker, String msg) {
+        info(msg);
     }
 
     /** {@inheritDoc} */
@@ -121,6 +136,11 @@ public class PlatformLogger implements IgniteLogger {
     }
 
     /** {@inheritDoc} */
+    @Override public void warning(String marker, String msg, @Nullable Throwable e) {
+        warning(msg, e);
+    }
+
+    /** {@inheritDoc} */
     @Override public void error(String msg) {
         log(LVL_ERROR, msg, null);
     }
@@ -128,6 +148,11 @@ public class PlatformLogger implements IgniteLogger {
     /** {@inheritDoc} */
     @Override public void error(String msg, @Nullable Throwable e) {
         log(LVL_ERROR, msg, e);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void error(String marker, String msg, @Nullable Throwable e) {
+        error(msg, e);
     }
 
     /** {@inheritDoc} */

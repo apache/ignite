@@ -258,11 +258,21 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
+    @Override public void trace(String marker, String msg) {
+        trace(msg);
+    }
+
+    /** {@inheritDoc} */
     @Override public void debug(String msg) {
         if (!impl.isLoggable(FINE))
             warning("Logging at DEBUG level without checking if DEBUG level is enabled: " + msg);
 
         impl.fine(msg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void debug(String marker, String msg) {
+        debug(msg);
     }
 
     /** {@inheritDoc} */
@@ -274,6 +284,11 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
+    @Override public void info(String marker, String msg) {
+        info(msg);
+    }
+
+    /** {@inheritDoc} */
     @Override public void warning(String msg) {
         impl.warning(msg);
     }
@@ -281,6 +296,11 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
     /** {@inheritDoc} */
     @Override public void warning(String msg, @Nullable Throwable e) {
         impl.log(WARNING, msg, e);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void warning(String marker, String msg, @Nullable Throwable e) {
+        warning(msg, e);
     }
 
     /** {@inheritDoc} */
@@ -296,6 +316,11 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
     /** {@inheritDoc} */
     @Override public void error(String msg, @Nullable Throwable e) {
         impl.log(SEVERE, msg, e);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void error(String marker, String msg, @Nullable Throwable e) {
+        error(msg, e);
     }
 
     /** {@inheritDoc} */
