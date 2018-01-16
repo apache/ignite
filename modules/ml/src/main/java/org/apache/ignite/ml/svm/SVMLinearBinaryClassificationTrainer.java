@@ -81,13 +81,8 @@ public class SVMLinearBinaryClassificationTrainer implements Trainer<SVMLinearCl
 
         for (int i = 0; i < amountOfLocIterations; i++) {
             int randomIdx = ThreadLocalRandom.current().nextInt(amountOfObservation);
-            LabeledVector row = (LabeledVector)data.getRow(randomIdx);
-            Double lb = (Double)row.label();
-            Vector v = makeVectorWithInterceptElement(row);
 
-            double alpha = tmpAlphas.get(randomIdx);
-
-            Deltas deltas = maximize(lb, v, alpha, copiedWeights, amountOfObservation);
+            Deltas deltas = getDeltas(data, copiedWeights, amountOfObservation, tmpAlphas, randomIdx);
 
             copiedWeights = copiedWeights.plus(deltas.deltaWeights); // need in-place operation; creates new vector
             deltaWeights = deltaWeights.plus(deltas.deltaWeights);  // need in-place operation; creates new vector
@@ -98,6 +93,20 @@ public class SVMLinearBinaryClassificationTrainer implements Trainer<SVMLinearCl
         return deltaWeights;
     }
 
+    /** */
+    private Deltas getDeltas(LabeledDataset data, Vector copiedWeights, int amountOfObservation, Vector tmpAlphas,
+        int randomIdx) {
+
+        LabeledVector row = (LabeledVector)data.getRow(randomIdx);
+        Double lb = (Double)row.label();
+        Vector v = makeVectorWithInterceptElement(row);
+
+        double alpha = tmpAlphas.get(randomIdx);
+
+        return maximize(lb, v, alpha, copiedWeights, amountOfObservation);
+    }
+
+    /** */
     private Vector makeVectorWithInterceptElement(LabeledVector row) {
         Vector vec = row.features().like(row.features().size() + 1);
 
@@ -122,16 +131,17 @@ public class SVMLinearBinaryClassificationTrainer implements Trainer<SVMLinearCl
     /** */
     private Deltas calcDeltas(double lb, Vector v, double alpha, double gradient, int vectorSize,
         int amountOfObservation) {
+
         if(gradient != 0.0) {
 
             double qii = v.dot(v);
             double newAlpha = calcNewAlpha(alpha, gradient, qii);
 
-            Vector deltaWeights = v.times(lb*(newAlpha - alpha)/(lambda * amountOfObservation));
+            Vector deltaWeights = v.times(lb * (newAlpha - alpha)/(lambda * amountOfObservation));
+
             return new Deltas (newAlpha - alpha, deltaWeights);
         } else
             return new Deltas(0.0, initializeWeightsWithZeros(vectorSize));
-
     }
 
     /** */

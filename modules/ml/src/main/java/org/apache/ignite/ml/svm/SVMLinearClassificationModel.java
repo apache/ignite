@@ -18,10 +18,12 @@
 package org.apache.ignite.ml.svm;
 
 import java.io.Serializable;
+import java.util.Objects;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 
 /**
  * Base class for SVM linear classification model.
@@ -97,9 +99,28 @@ public class SVMLinearClassificationModel implements Model<Vector, Double>, Expo
         return intercept;
     }
 
-    /**  {@inheritDoc} */
+    /** {@inheritDoc} */
     @Override public <P> void saveModel(Exporter<SVMLinearClassificationModel, P> exporter, P path) {
+        exporter.save(this, path);
+    }
 
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        SVMLinearClassificationModel mdl = (SVMLinearClassificationModel)o;
+        return Double.compare(mdl.intercept, intercept) == 0
+            && Double.compare(mdl.threshold, threshold) == 0
+            && Boolean.compare(mdl.isKeepingRawLabels, isKeepingRawLabels) == 0
+            && Objects.equals(weights, mdl.weights);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+
+        return Objects.hash(weights, intercept, isKeepingRawLabels, threshold);
     }
 
     /** {@inheritDoc} */
