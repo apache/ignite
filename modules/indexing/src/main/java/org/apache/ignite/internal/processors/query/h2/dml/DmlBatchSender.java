@@ -206,7 +206,7 @@ public class DmlBatchSender {
         Map<Object, EntryProcessorResult<Boolean>> res;
 
         try {
-            res = cctx.cache().invokeAll(batch.rowProcs);
+            res = cctx.cache().invokeAll(batch.rowProcessors());
         }
         catch (IgniteCheckedException e) {
             for (Integer rowNum : batch.rowNumbers().values()) {
@@ -220,7 +220,7 @@ public class DmlBatchSender {
         }
 
         if (F.isEmpty(res)) {
-            countAllRows(batch.rowNums.values());
+            countAllRows(batch.rowNumbers().values());
 
             return new DmlPageProcessingResult(batch.size(), null, null);
         }
@@ -245,7 +245,7 @@ public class DmlBatchSender {
     private DmlPageProcessingErrorResult splitErrors(Map<Object, EntryProcessorResult<Boolean>> res, Batch batch) {
         Set<Object> errKeys = new LinkedHashSet<>(res.keySet());
 
-        countAllRows(batch.rowNums.values());
+        countAllRows(batch.rowNumbers().values());
 
         SQLException currSqlEx = null;
 
