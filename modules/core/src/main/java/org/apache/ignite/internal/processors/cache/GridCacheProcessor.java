@@ -3635,7 +3635,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (Class<?> itf : o.getClass().getInterfaces()) {
             if (itf.getName().endsWith("MBean") || itf.getName().endsWith("MXBean")) {
                 try {
-                    U.registerCacheMBean(srvr, ctx.gridName(), cacheName, o.getClass().getName(), o,
+                    U.registerMBean(srvr, ctx.gridName(), cacheName, o.getClass().getName(), o,
                         (Class<Object>)itf);
                 }
                 catch (Throwable e) {
@@ -3671,7 +3671,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (Class<?> itf : o.getClass().getInterfaces()) {
             if (itf.getName().endsWith("MBean") || itf.getName().endsWith("MXBean")) {
                 try {
-                    srvr.unregisterMBean(U.makeCacheMBeanName(ctx.gridName(), cacheName, o.getClass().getName()));
+                    srvr.unregisterMBean(U.makeMBeanName(ctx.gridName(), cacheName, o.getClass().getName()));
                 }
                 catch (Throwable e) {
                     U.error(log, "Failed to unregister MBean for component: " + o, e);
