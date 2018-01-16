@@ -312,6 +312,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
         DataRecord res = new DataRecord(postProcessedEntries, dataRec.timestamp());
 
+        res.size(dataRec.size());
         res.position(dataRec.position());
 
         return res;
@@ -367,6 +368,17 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             dataEntry.partitionCounter(),
             fakeCacheObjCtx,
             keepBinary || marshallerMappingFileStoreDir == null);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void handleRecordException(
+        @NotNull final Exception e,
+        @Nullable final FileWALPointer ptr) {
+        super.handleRecordException(e, ptr);
+
+        final RuntimeException ex = new RuntimeException("Record reading problem occurred at file pointer [" + ptr + "]:" + e.getMessage(), e);
+
+        ex.printStackTrace();
     }
 
     /** {@inheritDoc} */
