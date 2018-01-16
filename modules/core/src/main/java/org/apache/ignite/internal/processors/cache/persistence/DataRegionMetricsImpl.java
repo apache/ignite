@@ -181,26 +181,22 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** {@inheritDoc} */
     @Override public long getPhysicalMemorySize() {
-        if (pageMem == null)
-            return 0;
-
         return getPhysicalMemoryPages() * pageMem.pageSize();
     }
 
     /** {@inheritDoc} */
     @Override public long getCheckpointBufferPages() {
-        if (!metricsEnabled || pageMem == null)
+        if (!metricsEnabled)
             return 0;
+
+        assert pageMem != null;
 
         return pageMem.checkpointBufferPagesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getCheckpointBufferSize() {
-        if (!metricsEnabled || pageMem == null)
-            return 0;
-
-        return pageMem.checkpointBufferPagesCount() * pageMem.pageSize();
+        return getCheckpointBufferPages() * pageMem.pageSize();
     }
 
     /** {@inheritDoc} */
