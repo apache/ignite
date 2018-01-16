@@ -1246,8 +1246,12 @@ public abstract class IgniteUtils {
         // In bytes.
         double totalOffheap = 0.0;
 
-        for (ClusterNode n : nodesPerJvm(nodes))
-            totalOffheap += n.<Long>attribute(ATTR_DATA_REGIONS_OFFHEAP_SIZE);
+        for (ClusterNode n : nodesPerJvm(nodes)) {
+            Long val = n.<Long>attribute(ATTR_DATA_REGIONS_OFFHEAP_SIZE);
+
+            if (val != null)
+                totalOffheap += val;
+        }
 
         return roundedHeapSize(totalOffheap, precision);
     }
