@@ -67,6 +67,24 @@ public class IgniteNativeIoLib {
     */
     public static final int POSIX_FADV_DONTNEED = 4;
 
+    /** Flag for newly created files: user has read permission. */
+    public static final int S_IRUSR = 00400;
+
+    /** Flag for newly created files: user has write permission. */
+    public static final int S_IWUSR = 00200;
+
+    /** Flag for newly created files: group has read permission. */
+    public static final int S_IRGRP = 00040;
+
+    /** Flag for newly created files: others have read permission. */
+    public static final int S_IROTH = 00004;
+
+    /** Default access mask for newly created files. */
+    public static final int DEFAULT_OPEN_MODE = S_IRUSR | S_IWUSR | S_IROTH | S_IRGRP;
+
+    /** Invalid argument. */
+    public static final int E_INVAL = 22;
+
 
     /** JNA library available and initialized. Always {@code false} for non linux systems. */
     private static boolean jnaAvailable;

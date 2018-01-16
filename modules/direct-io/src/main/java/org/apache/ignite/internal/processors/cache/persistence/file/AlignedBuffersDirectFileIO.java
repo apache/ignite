@@ -104,10 +104,32 @@ public class AlignedBuffersDirectFileIO implements FileIO {
 
         String pathname = file.getAbsolutePath();
 
-        int fd = IgniteNativeIoLib.open(pathname, setupOpenFlags(modes, log), 00644);
+        int openFlags = setupOpenFlags(modes, log, true);
+        int mode = IgniteNativeIoLib.DEFAULT_OPEN_MODE;
+        int fd = IgniteNativeIoLib.open(pathname, openFlags, mode);
 
-        if (fd < 0)
-            throw new IOException("Error opening file [" + pathname + "], got error [" + getLastError() + "]");
+        if (fd < 0) {
+            int error = Native.getLastError();
+            String message = "Error opening file [" + pathname + "] with flags [0x"
+                + String.format("%2X", openFlags) + ": DIRECT & " + Arrays.asList(modes)
+                + "], got error [" + error + ": " + getLastError() + "]";
+
+            if (error == IgniteNativeIoLib.E_INVAL) {
+                openFlags = setupOpenFlags(modes, log, false);
+                fd = IgniteNativeIoLib.open(pathname, openFlags, mode);
+
+                if (fd > 0) {
+                    U.warn(log, "Disable Direct IO mode for path " + file.getParentFile() +
+                        "(probably incompatible file system selected, for example, tmpfs): " + message);
+
+                    this.fd = fd;
+
+                    return;
+                }
+            }
+
+            throw new IOException(message);
+        }
 
         this.fd = fd;
     }
@@ -117,10 +139,11 @@ public class AlignedBuffersDirectFileIO implements FileIO {
      *
      * @param modes java options.
      * @param log logger.
-     * @return native flags with {@link IgniteNativeIoLib#O_DIRECT} enabled.
+     * @param enableDirect flag for enabling option {@link IgniteNativeIoLib#O_DIRECT} .
+     * @return native flags for open method.
      */
-    private static int setupOpenFlags(OpenOption[] modes, IgniteLogger log) {
-        int flags = IgniteNativeIoLib.O_DIRECT;
+    private static int setupOpenFlags(OpenOption[] modes, IgniteLogger log, boolean enableDirect) {
+        int flags = enableDirect ? IgniteNativeIoLib.O_DIRECT : 0;
         List<OpenOption> openOptionList = Arrays.asList(modes);
 
         for (OpenOption mode : openOptionList) {
