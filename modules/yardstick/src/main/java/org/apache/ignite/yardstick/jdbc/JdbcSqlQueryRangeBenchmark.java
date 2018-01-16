@@ -77,7 +77,7 @@ public class JdbcSqlQueryRangeBenchmark extends AbstractJdbcBenchmark {
         }
 
         if (rsSize != expRsSize)
-            throw new Exception("Invalid result set size [rsSize=" + rsSize + ", expected=" + expRsSize + ']');
+            throw new Exception("Invalid result set size [actual=" + rsSize + ", expected=" + expRsSize + ']');
 
         return true;
     }

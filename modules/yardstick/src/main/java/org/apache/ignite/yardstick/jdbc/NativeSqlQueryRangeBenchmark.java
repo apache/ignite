@@ -35,19 +35,19 @@ public class NativeSqlQueryRangeBenchmark extends AbstractNativeBenchmark {
         SqlFieldsQuery qry;
 
         if (args.sqlRange() <= 0) {
-            qry = new SqlFieldsQuery("select id, val from test_long");
+            qry = new SqlFieldsQuery("SELECT id, val FROM test_long");
 
             expRsSize = args.range();
         }
         else if (args.sqlRange() == 1) {
-            qry = new SqlFieldsQuery("select id, val from test_long where id = ?");
+            qry = new SqlFieldsQuery("SELECT id, val FROM test_long WHERE id = ?");
 
             qry.setArgs(ThreadLocalRandom.current().nextLong(args.range()) + 1);
 
             expRsSize = 1;
         }
         else {
-            qry = new SqlFieldsQuery("select id, val from test_long where id between ? and ?");
+            qry = new SqlFieldsQuery("SELECT id, val FROM test_long WHERE id BETWEEN ? AND ?");
 
             long id = ThreadLocalRandom.current().nextLong(args.range() - args.sqlRange()) + 1;
             long maxId = id + args.sqlRange() - 1;
@@ -71,7 +71,7 @@ public class NativeSqlQueryRangeBenchmark extends AbstractNativeBenchmark {
         }
 
         if (rsSize != expRsSize)
-            throw new Exception("Invalid result set size [rsSize=" + rsSize + ", expected=" + expRsSize + ']');
+            throw new Exception("Invalid result set size [actual=" + rsSize + ", expected=" + expRsSize + ']');
 
         return true;
     }
