@@ -1350,7 +1350,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         assert desc != null;
 
         if (desc.startTopologyVersion() == null)
-            throw new IllegalStateException("Cache doesn't exist: " + cacheName);
+            return;
 
         IgniteInternalFuture<?> affReadyFut = ctx.cache().context().exchange()
             .affinityReadyFuture(desc.startTopologyVersion());
