@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             // Create cache and verify template setting.
             var cache = Ignite.CreateCache<int, int>(randomName);
-            Assert.AreEqual(1, cache.GetConfiguration().Backups);
+            Assert.AreEqual(3, cache.GetConfiguration().Backups);
             Assert.IsTrue(Ignite.GetCacheNames().Contains(randomName));
 
             cache.Put(1, 10);
@@ -69,7 +69,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             
             // Create cache and verify template setting.
             var cache = Ignite.GetOrCreateCache<int, int>(randomName);
-            Assert.AreEqual(1, cache.GetConfiguration().Backups);
+            Assert.AreEqual(3, cache.GetConfiguration().Backups);
 
             cache.Put(1, 10);
             Assert.AreEqual(10, cache.Get(1));
@@ -118,7 +118,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                 {
                     new CacheConfiguration
                     {
-                        Name = "template*"
+                        Name = "template*",
+                        Backups = 3
                     } 
                 }
             };
