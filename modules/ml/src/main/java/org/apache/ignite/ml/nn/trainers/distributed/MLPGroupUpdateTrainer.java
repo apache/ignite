@@ -97,7 +97,7 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
     /**
      * Updates calculator.
      */
-    private final ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator;
+    private final ParameterUpdateCalculator<? super MultilayerPerceptron, U> updateCalculator;
 
     /**
      * Default maximal count of global steps.
@@ -144,7 +144,7 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
         int syncRate,
         IgniteFunction<List<U>, U> allUpdatesReducer,
         IgniteFunction<List<U>, U> locStepUpdatesReducer,
-        ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator,
+        ParameterUpdateCalculator<? super MultilayerPerceptron, U> updateCalculator,
         IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
         Ignite ignite, double tolerance) {
         super(new MLPMetaoptimizer<>(allUpdatesReducer), MLPCache.getOrCreate(ignite), ignite);
@@ -239,7 +239,7 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
             MultilayerPerceptron mlp = data.mlp();
 
             MultilayerPerceptron mlpCp = Utils.copy(mlp);
-            ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator = data.updateCalculator();
+            ParameterUpdateCalculator<? super MultilayerPerceptron, U> updateCalculator = data.updateCalculator();
             IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss = data.loss();
 
             // ParameterUpdateCalculator API to have proper way to setting loss.
@@ -366,7 +366,7 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
      * @param strategy New update strategy.
      * @return New {@link MLPGroupUpdateTrainer} with new tolerance value.
      */
-    public <U1 extends Serializable> MLPGroupUpdateTrainer<U1> withUpdateStrategy(UpdatesStrategy<MultilayerPerceptron, U1> strategy) {
+    public <U1 extends Serializable> MLPGroupUpdateTrainer<U1> withUpdateStrategy(UpdatesStrategy<? super MultilayerPerceptron, U1> strategy) {
         return new MLPGroupUpdateTrainer<>(maxGlobalSteps, syncRate, strategy.allUpdatesReducer(), strategy.locStepUpdatesReducer(),
             strategy.getUpdatesCalculator(), loss, ignite, tolerance);
     }

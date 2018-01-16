@@ -68,7 +68,7 @@ public class MLPLocalTrainerTest {
      */
     @Test
     public void testXORRMSProp() {
-        xorTest(() -> new RMSPropUpdateCalculator<>());
+        xorTest(() -> new RMSPropUpdateCalculator());
     }
 
     /**

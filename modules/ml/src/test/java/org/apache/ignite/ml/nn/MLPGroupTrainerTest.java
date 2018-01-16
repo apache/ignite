@@ -37,6 +37,7 @@ import org.apache.ignite.ml.optimization.updatecalculators.RMSPropUpdateCalculat
 import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
 import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.trainers.group.UpdateStrategies;
 import org.apache.ignite.ml.trainers.group.UpdatesStrategy;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -69,11 +70,11 @@ public class MLPGroupTrainerTest extends GridCommonAbstractTest {
     }
 
     public void testXORRProp() {
-        doTestXOR(new UpdatesStrategy<>(new RPropUpdateCalculator<>(), RPropParameterUpdate::sumLocal, RPropParameterUpdate::avg));
+        doTestXOR(UpdateStrategies.RProp());
     }
 
     public void testXORRMSProp() {
-        doTestXOR(new UpdatesStrategy<MultilayerPerceptron, RMSPropParameterUpdate>(new RMSPropUpdateCalculator<>(), RMSPropParameterUpdate::sumLocal, RMSPropParameterUpdate::avg));
+        doTestXOR(UpdateStrategies.RMSProp());
     }
 
     /**

@@ -37,8 +37,11 @@ import org.apache.ignite.ml.nn.MLPGroupUpdateTrainerCacheInput;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.trainers.distributed.MLPGroupUpdateTrainer;
+import org.apache.ignite.ml.optimization.updatecalculators.RMSPropParameterUpdate;
+import org.apache.ignite.ml.optimization.updatecalculators.RMSPropUpdateCalculator;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
 import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.trainers.group.UpdatesStrategy;
 import org.apache.ignite.ml.util.MnistUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -90,7 +93,11 @@ public class MnistDistributed extends GridCommonAbstractTest {
         IgniteCache<Integer, LabeledVector<Vector, Vector>> labeledVectorsCache = LabeledVectorsCache.createNew(ignite);
         loadIntoCache(trainingMnistLst, labeledVectorsCache);
 
-        MLPGroupUpdateTrainer<RPropParameterUpdate> trainer = MLPGroupUpdateTrainer.getDefault(ignite).withMaxGlobalSteps(35).withSyncRate(2);
+        RMSPropUpdateCalculator<MultilayerPerceptron> calculator = new RMSPropUpdateCalculator<>(0.25, 0.7, 1E-6);
+        MLPGroupUpdateTrainer<RMSPropParameterUpdate> trainer = MLPGroupUpdateTrainer.getDefault(ignite).
+            withMaxGlobalSteps(35).
+            withSyncRate(2).
+            withUpdateStrategy(new UpdatesStrategy<MultilayerPerceptron, RMSPropParameterUpdate>(calculator, RMSPropParameterUpdate::sumLocal, RMSPropParameterUpdate::avg));
 
         MLPArchitecture arch = new MLPArchitecture(FEATURES_CNT).
             withAddedLayer(hiddenNeuronsCnt, true, Activators.SIGMOID).

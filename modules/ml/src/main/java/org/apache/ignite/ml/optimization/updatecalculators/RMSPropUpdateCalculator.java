@@ -111,10 +111,8 @@ public class RMSPropUpdateCalculator<M extends SmoothParametrized<M>> implements
      * @param learningRate Learning rate.
      * @return This object.
      */
-    public RMSPropUpdateCalculator<M> setLearningRate(double learningRate) {
-        this.learningRate = learningRate;
-
-        return this;
+    public RMSPropUpdateCalculator<M> withLearningRate(double learningRate) {
+        return new RMSPropUpdateCalculator<>(gamma, learningRate, epsilon);
     }
 
     /**
@@ -123,10 +121,8 @@ public class RMSPropUpdateCalculator<M extends SmoothParametrized<M>> implements
      * @param gamma Gamma.
      * @return This object.
      */
-    public RMSPropUpdateCalculator<M> setGamma(double gamma) {
-        this.gamma = gamma;
-
-        return this;
+    public RMSPropUpdateCalculator<M> withGamma(double gamma) {
+        return new RMSPropUpdateCalculator<>(gamma, learningRate, epsilon);
     }
 
     /**
@@ -135,9 +131,7 @@ public class RMSPropUpdateCalculator<M extends SmoothParametrized<M>> implements
      * @param epsilon Epsilon.
      * @return This object.
      */
-    public RMSPropUpdateCalculator<M> setEpsilon(double epsilon) {
-        this.epsilon = epsilon;
-
-        return this;
+    public RMSPropUpdateCalculator<M> withEpsilon(double epsilon) {
+        return new RMSPropUpdateCalculator<>(gamma, learningRate, epsilon);
     }
 }
