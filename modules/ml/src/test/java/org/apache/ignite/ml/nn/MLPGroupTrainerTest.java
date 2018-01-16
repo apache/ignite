@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.nn;
 
+import java.io.Serializable;
 import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -31,8 +32,12 @@ import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.initializers.RandomInitializer;
 import org.apache.ignite.ml.nn.trainers.distributed.MLPGroupUpdateTrainer;
+import org.apache.ignite.ml.optimization.updatecalculators.RMSPropParameterUpdate;
+import org.apache.ignite.ml.optimization.updatecalculators.RMSPropUpdateCalculator;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
+import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
 import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.trainers.group.UpdatesStrategy;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -63,10 +68,18 @@ public class MLPGroupTrainerTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
+    public void testXORRProp() {
+        doTestXOR(new UpdatesStrategy<>(new RPropUpdateCalculator<>(), RPropParameterUpdate::sumLocal, RPropParameterUpdate::avg));
+    }
+
+    public void testXORRMSProp() {
+        doTestXOR(new UpdatesStrategy<MultilayerPerceptron, RMSPropParameterUpdate>(new RMSPropUpdateCalculator<>(), RMSPropParameterUpdate::sumLocal, RMSPropParameterUpdate::avg));
+    }
+
     /**
      * Test training of 'xor' by {@link MLPGroupUpdateTrainer}.
      */
-    public void testXOR() {
+    public <U extends Serializable> void doTestXOR(UpdatesStrategy<MultilayerPerceptron, U> strategy) {
         int samplesCnt = 1000;
 
         Matrix xorInputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}},
@@ -96,10 +109,11 @@ public class MLPGroupTrainerTest extends GridCommonAbstractTest {
         int totalCnt = 20;
         int failCnt = 0;
         double maxFailRatio = 0.3;
-        MLPGroupUpdateTrainer<RPropParameterUpdate> trainer = MLPGroupUpdateTrainer.getDefault(ignite).
+        MLPGroupUpdateTrainer<U> trainer = MLPGroupUpdateTrainer.getDefault(ignite).
             withSyncRate(3).
             withTolerance(0.001).
-            withMaxGlobalSteps(1000);
+            withMaxGlobalSteps(1000).
+            withUpdateStrategy(strategy);
 
         for (int i = 0; i < totalCnt; i++) {
 

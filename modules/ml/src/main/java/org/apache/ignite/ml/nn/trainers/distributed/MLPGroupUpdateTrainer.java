@@ -41,6 +41,7 @@ import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator
 import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
 import org.apache.ignite.ml.trainers.group.MetaoptimizerGroupTrainer;
 import org.apache.ignite.ml.trainers.group.ResultAndUpdates;
+import org.apache.ignite.ml.trainers.group.UpdatesStrategy;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 import org.apache.ignite.ml.util.Utils;
 
@@ -357,5 +358,16 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
     public MLPGroupUpdateTrainer<U> withTolerance(double tolerance) {
         return new MLPGroupUpdateTrainer<>(maxGlobalSteps, syncRate, allUpdatesReducer, locStepUpdatesReducer,
             updateCalculator, loss, ignite, tolerance);
+    }
+
+    /**
+     * Create new {@link MLPGroupUpdateTrainer} with new update strategy.
+     *
+     * @param strategy New update strategy.
+     * @return New {@link MLPGroupUpdateTrainer} with new tolerance value.
+     */
+    public <U1 extends Serializable> MLPGroupUpdateTrainer<U1> withUpdateStrategy(UpdatesStrategy<MultilayerPerceptron, U1> strategy) {
+        return new MLPGroupUpdateTrainer<>(maxGlobalSteps, syncRate, strategy.allUpdatesReducer(), strategy.locStepUpdatesReducer(),
+            strategy.getUpdatesCalculator(), loss, ignite, tolerance);
     }
 }

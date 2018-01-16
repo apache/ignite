@@ -93,23 +93,16 @@ public class RMSPropUpdateCalculator<M extends SmoothParametrized<M>> implements
 
         Vector newRunningAverage = oldData.times(gamma).plus(newData.times(1 - gamma));
 
-        return new RMSPropParameterUpdate(newRunningAverage, curGrad);
+        // rms = \sqrt{E[g^2]_i + \epsilon}.
+        Vector rms = newRunningAverage.copy().plus(epsilon).map(Math::sqrt);
+        Vector invRms = rms.map(x -> 1 / x);
+
+        return new RMSPropParameterUpdate(newRunningAverage, invRms.times(learningRate).times(curGrad));
     }
 
     /** {@inheritDoc} */
     @Override public <M1 extends M> M1 update(M1 mdl, RMSPropParameterUpdate update) {
-        Vector curGrad = update.lastGradient();
-
-        // rms = \sqrt{E[g^2]_i + \epsilon}.
-        Vector rms = update.squaresRunningAverage().copy().plus(epsilon).map(Math::sqrt);
-        Vector invRms = rms.map(x -> 1 / x);
-
-        Vector oldParams = mdl.parameters();
-        Vector newParams = oldParams.minus(invRms.times(learningRate).times(curGrad));
-
-        Tracer.showAscii(newParams);
-
-        return (M1)mdl.withParameters(newParams);
+        return (M1)mdl.withParameters(mdl.parameters().minus(update.update()));
     }
 
     /**

@@ -17,14 +17,16 @@
 
 package org.apache.ignite.ml.optimization.updatecalculators;
 
+import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorUtils;
 
 /**
  * Class encapsulating parameter update in RMSProp algorithm.
  */
-public class RMSPropParameterUpdate {
+public class RMSPropParameterUpdate implements Serializable {
     /** Running average. */
     private Vector squaresRunningAverage;
 
@@ -38,6 +40,7 @@ public class RMSPropParameterUpdate {
      */
     public RMSPropParameterUpdate(int paramsCnt) {
         squaresRunningAverage = VectorUtils.zeroes(paramsCnt);
+        update = VectorUtils.zeroes(paramsCnt);
     }
 
     /**
@@ -61,15 +64,6 @@ public class RMSPropParameterUpdate {
     }
 
     /**
-     * Get gradient of last step.
-     *
-     * @return Gradient of last step.
-     */
-    public Vector lastGradient() {
-        return update;
-    }
-
-    /**
      * Get the update.
      *
      * @return Update.
@@ -80,7 +74,7 @@ public class RMSPropParameterUpdate {
 
     public static RMSPropParameterUpdate avg(List<RMSPropParameterUpdate> updates) {
         if (!updates.isEmpty()) {
-            Vector updatesSum = updates.stream().map(RMSPropParameterUpdate::update).reduce(Vector::plus).orElse(null);
+            Vector updatesSum = updates.stream().map(RMSPropParameterUpdate::update).filter(Objects::nonNull).reduce(Vector::plus).orElse(null);
             Vector squaresRunningAverageSum = updates.stream().map(RMSPropParameterUpdate::squaresRunningAverage).reduce(Vector::plus).orElse(null);
 
             int cnt = updates.size();
@@ -90,7 +84,7 @@ public class RMSPropParameterUpdate {
             return null;
     }
 
-    public static RMSPropParameterUpdate localSum(List<RMSPropParameterUpdate> updates) {
+    public static RMSPropParameterUpdate sumLocal(List<RMSPropParameterUpdate> updates) {
         if (!updates.isEmpty()) {
             Vector updatesSum = updates.stream().map(RMSPropParameterUpdate::update).reduce(Vector::plus).orElse(null);
 
