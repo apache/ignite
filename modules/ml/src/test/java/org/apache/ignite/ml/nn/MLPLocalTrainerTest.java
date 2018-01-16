@@ -30,6 +30,7 @@ import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainer;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.optimization.updatecalculators.NesterovUpdateCalculator;
 import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalculator;
+import org.apache.ignite.ml.optimization.updatecalculators.RMSPropUpdateCalculator;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.junit.Test;
@@ -63,6 +64,14 @@ public class MLPLocalTrainerTest {
     }
 
     /**
+     * Test 'XOR' operation training with {@link RMSPropUpdateCalculator}.
+     */
+    @Test
+    public void testXORRMSProp() {
+        xorTest(() -> new RMSPropUpdateCalculator<>());
+    }
+
+    /**
      * Common method for testing 'XOR' with various updaters.
      * @param updaterSupplier Updater supplier.
      * @param <P> Updater parameters type.
@@ -79,7 +88,7 @@ public class MLPLocalTrainerTest {
             withAddedLayer(1, false, Activators.SIGMOID);
 
         SimpleMLPLocalBatchTrainerInput trainerInput = new SimpleMLPLocalBatchTrainerInput(conf,
-            new Random(1234L), xorInputs, xorOutputs, 4);
+            new Random(123L), xorInputs, xorOutputs, 4);
 
         MultilayerPerceptron mlp = new MLPLocalBatchTrainer<>(LossFunctions.MSE,
             updaterSupplier,
