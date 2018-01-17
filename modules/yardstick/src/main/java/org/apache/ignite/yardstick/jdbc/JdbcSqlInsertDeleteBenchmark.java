@@ -21,30 +21,41 @@ import java.sql.PreparedStatement;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class JdbcSqlInsertBenchmark extends AbstractJdbcBenchmark {
-
+/**
+ * JDBC benchmark that performs insert operations
+ */
+public class JdbcSqlInsertDeleteBenchmark extends AbstractJdbcBenchmark {
+    /** Statement that inserts one row */
     private final ThreadLocal<PreparedStatement> singleInsert = newStatement("INSERT INTO test_long (id, val) VALUES (?, ?)");
+
+    /** Statement that deletes one row */
     private final ThreadLocal<PreparedStatement> singleDelete = newStatement("DELETE FROM test_long WHERE id = ?");
 
+    /**
+     * Benchmarked action that inserts and immediately deletes single row
+     *
+     * {@inheritDoc}
+     */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
-        int expectedResSize = 1;
 
         long insertKey = rnd.nextLong(args.range()) + 1 + args.range();
         long insertVal = insertKey + 1;
 
         PreparedStatement insert = singleInsert.get();
+
         insert.setLong(1, insertKey);
         insert.setLong(2, insertVal);
 
         PreparedStatement delete = singleDelete.get();
+
         delete.setLong(1, insertKey);
 
         try {
             insert.executeUpdate();
             delete.executeUpdate();
         }
-        catch (Exception ign){
+        catch (Exception ignored){
             // collision occurred, ignoring
         }
 

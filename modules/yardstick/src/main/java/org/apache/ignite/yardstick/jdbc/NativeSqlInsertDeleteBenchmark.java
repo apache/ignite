@@ -26,10 +26,14 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 
 /**
- * Native sql that performs query operations
+ * Native sql benchmark that performs insert operations
  */
-public class NativeSqlInsertRangeBenchmark extends AbstractNativeBenchmark {
-    /** {@inheritDoc} */
+public class NativeSqlInsertDeleteBenchmark extends AbstractNativeBenchmark {
+    /**
+     * Benchmarked action that inserts and immediately deletes row
+     *
+     * {@inheritDoc}
+     */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         long expRsSize;
 
@@ -37,14 +41,17 @@ public class NativeSqlInsertRangeBenchmark extends AbstractNativeBenchmark {
         long insertVal = insertKey + 1;
 
         SqlFieldsQuery insert = new SqlFieldsQuery("INSERT INTO test_long (id, val) VALUES (?, ?)");
+
         insert.setArgs(insertKey, insertVal);
 
         SqlFieldsQuery delete = new SqlFieldsQuery("DELETE FROM test_long WHERE id = ?");
+
         delete.setArgs(insertKey);
 
         GridQueryProcessor qryProc = ((IgniteEx)ignite()).context().query();
+
         try (FieldsQueryCursor<List<?>> insCur = qryProc.querySqlFieldsNoCache(insert, false);
-            FieldsQueryCursor<List<?>> delCur = qryProc.querySqlFieldsNoCache(delete, false);){
+             FieldsQueryCursor<List<?>> delCur = qryProc.querySqlFieldsNoCache(delete, false)) {
             // No-op, there is no result
         }
         catch (Exception ign) {

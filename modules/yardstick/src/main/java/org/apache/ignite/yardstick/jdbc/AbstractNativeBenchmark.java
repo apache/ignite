@@ -17,12 +17,16 @@
 
 package org.apache.ignite.yardstick.jdbc;
 
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
 
 import static org.apache.ignite.yardstick.jdbc.JdbcUtils.fillData;
 
+/**
+ * Abstract class for benchmarks that use {@link SqlFieldsQuery}
+ */
 public abstract class AbstractNativeBenchmark extends IgniteAbstractBenchmark {
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {

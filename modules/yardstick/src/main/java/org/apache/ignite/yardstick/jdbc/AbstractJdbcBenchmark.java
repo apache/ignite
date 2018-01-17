@@ -137,7 +137,11 @@ abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
         return conn;
     }
 
-    protected final ThreadLocal<PreparedStatement> newStatement(final String sql){
+    /**
+     * Create thread local prepared statement
+     * @param sql - sql query for statement
+     */
+    final ThreadLocal<PreparedStatement> newStatement(final String sql){
         return new ThreadLocal<PreparedStatement>(){
             @Override protected PreparedStatement initialValue() {
                 try {
