@@ -138,7 +138,7 @@ namespace Apache.Ignite.Examples.ThinClient
             var qry = cache.Query(new SqlFieldsQuery("select name, salary from Employee"));
 
             Console.WriteLine();
-            Console.WriteLine(">>> Employee names and their salaries:");
+            Console.WriteLine(">>> Employee names and their salaries (SQL):");
 
             foreach (var row in qry)
                 Console.WriteLine(">>>     [Name=" + row[0] + ", salary=" + row[1] + ']');
