@@ -149,9 +149,6 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.2</version>
                 <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
-                    <compilerVersion>1.7</compilerVersion>
                     <encoding>UTF-8</encoding>
                     <fork>true</fork>
                     <debug>false</debug>

@@ -17,7 +17,8 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.computegrid.ComputeFibonacciContinuationExample;
+//import org.apache.ignite.examples.computegrid.*;
+
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
 /**
@@ -25,9 +26,12 @@ import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
  */
 public class ContinuationExamplesSelfTest extends GridAbstractExamplesTest {
     /**
+     * TODO: IGNITE-711 next example(s) should be implemented for java 8
+     * or testing method(s) should be removed if example(s) does not applicable for java 8.
+     *
      * @throws Exception If failed.
      */
-    public void testContinuationExample() throws Exception {
-        ComputeFibonacciContinuationExample.main(EMPTY_ARGS);
-    }
+//    public void testContinuationExample() throws Exception {
+//        ComputeFibonacciContinuationExample.main(EMPTY_ARGS);
+//    }
 }
