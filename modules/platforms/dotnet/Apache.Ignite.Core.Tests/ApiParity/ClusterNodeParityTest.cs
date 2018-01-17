@@ -21,36 +21,25 @@
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests that <see cref="ICluster"/> has all APIs from Java Ignite interface.
+    /// Tests that <see cref="IClusterNode"/> has all APIs from Java Ignite interface.
     /// </summary>
-    public class ClusterParityTest
+    public class ClusterNodeParityTest
     {
-        /** Members that are not needed on .NET side. */
-        private static readonly string[] UnneededMembers =
-        {
-            "nodeLocalMap",
-            "startNodes",
-            "startNodesAsync",
-            "stopNodes",
-            "restartNodes"
-        };
-
         /** Members that are missing on .NET side and should be added in future. */
         private static readonly string[] MissingMembers =
         {
-            "enableStatistics"  // IGNITE-7276
+            "version"  // IGNITE-7101
         };
 
         /// <summary>
         /// Tests the API parity.
         /// </summary>
         [Test]
-        public void TestCluster()
+        public void TestClusterNode()
         {
             ParityTest.CheckInterfaceParity(
-                @"modules\core\src\main\java\org\apache\ignite\IgniteCluster.java",
-                typeof(ICluster),
-                UnneededMembers, MissingMembers);
+                @"modules\core\src\main\java\org\apache\ignite\cluster\ClusterNode.java",
+                typeof(IClusterNode), MissingMembers);
         }
     }
 }

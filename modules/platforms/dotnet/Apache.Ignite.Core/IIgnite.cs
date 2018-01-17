@@ -357,6 +357,7 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Changes Ignite grid state to active or inactive.
         /// </summary>
+        [Obsolete("Use GetCluster().SetActive instead.")]
         void SetActive(bool isActive);
 
         /// <summary>
@@ -365,6 +366,7 @@ namespace Apache.Ignite.Core
         /// <returns>
         ///   <c>true</c> if the grid is active; otherwise, <c>false</c>.
         /// </returns>
+        [Obsolete("Use GetCluster().IsActive instead.")]
         bool IsActive();
 
         /// <summary>
