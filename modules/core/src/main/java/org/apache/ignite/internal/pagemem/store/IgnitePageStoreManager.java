@@ -52,6 +52,11 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
         throws IgniteCheckedException;
 
     /**
+     * Initializes disk cache store structures.
+     */
+    public void initializeForMetastorage() throws IgniteCheckedException;
+
+    /**
      * Callback called when a cache is stopping. After this callback is invoked, no data associated with
      * the given cache will be stored on disk.
      *

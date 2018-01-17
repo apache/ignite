@@ -43,8 +43,8 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -55,7 +55,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class FreeListImplSelfTest extends GridCommonAbstractTest {
+public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int CPUS = Runtime.getRuntime().availableProcessors();
 
@@ -343,11 +343,11 @@ public class FreeListImplSelfTest extends GridCommonAbstractTest {
 
         long metaPageId = pageMem.allocatePage(1, 1, PageIdAllocator.FLAG_DATA);
 
-        DataRegionMetricsImpl metrics = new DataRegionMetricsImpl(plcCfg);
+        DataRegionMetricsImpl regionMetrics = new DataRegionMetricsImpl(plcCfg);
 
-        DataRegion memPlc = new DataRegion(pageMem, plcCfg, metrics, new NoOpPageEvictionTracker());
+        DataRegion dataRegion = new DataRegion(pageMem, plcCfg, regionMetrics, new NoOpPageEvictionTracker());
 
-        return new FreeListImpl(1, "freelist", metrics, memPlc, null, null, metaPageId, true);
+        return new CacheFreeListImpl(1, "freelist", regionMetrics, dataRegion, null, null, metaPageId, true);
     }
 
     /**
