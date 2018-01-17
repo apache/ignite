@@ -687,7 +687,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
         void reset();
 
         /**
-         * @param evtCnts Event cnts.
+         * @param evtCnts Event counters.
          */
         void waitForEventCount(IgniteBiTuple<Integer, Integer>... evtCnts) throws IgniteCheckedException;
     }

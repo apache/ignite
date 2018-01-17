@@ -2191,7 +2191,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Checks whether events is enabled for this cache.
+     * Checks whether events are enabled for this cache.
      *
      * @return Events enabled flag.
      */
