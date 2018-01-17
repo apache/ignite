@@ -108,6 +108,9 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /** */
     private static boolean cutromEvt = false;
 
+    /** Default cache name with events disabled. */
+    private final static String DEFAULT_CACHE_NAME_EVTS_DISABLED = DEFAULT_CACHE_NAME + "EvtsDisabled";
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
@@ -125,7 +128,14 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
+        CacheConfiguration ccfg = cacheConfiguration(igniteInstanceName);
+
+        CacheConfiguration ccfgEvtsDisabled = new CacheConfiguration(ccfg);
+
+        ccfgEvtsDisabled.setName(DEFAULT_CACHE_NAME_EVTS_DISABLED);
+        ccfgEvtsDisabled.setEventsEnabled(false);
+
+        cfg.setCacheConfiguration(ccfg, ccfgEvtsDisabled);
 
         cfg.setDeploymentMode(CONTINUOUS);
 
