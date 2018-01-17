@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -75,6 +76,8 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
             dbCfg.setPageSize(16 * 1024);
         else
             dbCfg.setPageSize(4 * 1024);
+
+        dbCfg.setWalMode(WALMode.LOG_ONLY);
 
         dbCfg.setDefaultDataRegionConfiguration(
             new DataRegionConfiguration().setPersistenceEnabled(true).setName("default"));
