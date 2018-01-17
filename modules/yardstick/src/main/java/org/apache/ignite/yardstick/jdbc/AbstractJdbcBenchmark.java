@@ -68,7 +68,7 @@ abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
 
         if (url == null) {
             if (args.jdbcUrl().startsWith(JdbcThinUtils.URL_PREFIX)) {
-                String addr = findThinAddr();
+                String addr = findThinAddress();
                 url = JdbcThinUtils.URL_PREFIX + addr + '/';
             }
             else
@@ -87,7 +87,7 @@ abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
      *
      * @return Address for thin driver.
      */
-    private String findThinAddr(){
+    private String findThinAddress(){
         for (ClusterNode n : ignite().cluster().forClients().nodes()) {
             if (n.isLocal())
                 continue;

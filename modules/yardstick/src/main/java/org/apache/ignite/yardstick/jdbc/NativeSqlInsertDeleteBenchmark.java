@@ -35,8 +35,6 @@ public class NativeSqlInsertDeleteBenchmark extends AbstractNativeBenchmark {
      * {@inheritDoc}
      */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        long expRsSize;
-
         long insertKey = ThreadLocalRandom.current().nextLong(args.range()) + 1 + args.range();
         long insertVal = insertKey + 1;
 
