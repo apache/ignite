@@ -52,18 +52,37 @@ public class IgnitePdsTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite");
 
+        addRealPageStoreTests(suite);
+
         // Basic PageMemory tests.
         suite.addTestSuite(PageMemoryImplNoLoadTest.class);
         suite.addTestSuite(IndexStoragePageMemoryImplTest.class);
         suite.addTestSuite(IgnitePdsEvictionTest.class);
         suite.addTestSuite(PageMemoryImplTest.class);
 
-        // Checkpointing smoke-test.
-        suite.addTestSuite(IgnitePdsCheckpointSimulationWithRealCpDisabledTest.class);
-
         // BTree tests with store page memory.
         suite.addTestSuite(BPlusTreePageMemoryImplTest.class);
         suite.addTestSuite(BPlusTreeReuseListPageMemoryImplTest.class);
+
+        suite.addTestSuite(SegmentedRingByteBufferTest.class);
+
+        // Write throttling
+        suite.addTestSuite(PagesWriteThrottleSmokeTest.class);
+
+        return suite;
+    }
+
+    /**
+     * Fills {@code suite} with PDS test subset, which operates with real page store and does actual disk operations.
+     *
+     * @param suite suite to add tests into.
+     */
+    public static void addRealPageStoreTests(TestSuite suite) {
+        // Basic PageMemory tests.
+        suite.addTestSuite(IgnitePdsEvictionTest.class);
+
+        // Checkpointing smoke-test.
+        suite.addTestSuite(IgnitePdsCheckpointSimulationWithRealCpDisabledTest.class);
 
         // Basic API tests.
         suite.addTestSuite(IgniteDbSingleNodePutGetTest.class);
@@ -83,12 +102,5 @@ public class IgnitePdsTestSuite extends TestSuite {
         suite.addTestSuite(IgnitePdsCacheRestoreTest.class);
 
         suite.addTestSuite(DefaultPageSizeBackwardsCompatibilityTest.class);
-
-        suite.addTestSuite(SegmentedRingByteBufferTest.class);
-
-        // Write throttling
-        suite.addTestSuite(PagesWriteThrottleSmokeTest.class);
-
-        return suite;
     }
 }

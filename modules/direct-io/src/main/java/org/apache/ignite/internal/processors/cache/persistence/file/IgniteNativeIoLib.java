@@ -67,6 +67,24 @@ public class IgniteNativeIoLib {
     */
     public static final int POSIX_FADV_DONTNEED = 4;
 
+    /** Flag for newly created files: user has read permission. */
+    public static final int S_IRUSR = 00400;
+
+    /** Flag for newly created files: user has write permission. */
+    public static final int S_IWUSR = 00200;
+
+    /** Flag for newly created files: group has read permission. */
+    public static final int S_IRGRP = 00040;
+
+    /** Flag for newly created files: others have read permission. */
+    public static final int S_IROTH = 00004;
+
+    /** Default access mask for newly created files. */
+    public static final int DEFAULT_OPEN_MODE = S_IRUSR | S_IWUSR | S_IROTH | S_IRGRP;
+
+    /** Invalid argument. */
+    public static final int E_INVAL = 22;
+
 
     /** JNA library available and initialized. Always {@code false} for non linux systems. */
     private static boolean jnaAvailable;
@@ -356,4 +374,17 @@ public class IgniteNativeIoLib {
      * @return On success, zero is returned.  On error, an error number is returned.
      */
     public static native int posix_fadvise(int fd, long offset, long len, int flag);
+
+    /**
+     * Causes regular file referenced by fd to be truncated to a size of precisely length bytes.
+     *
+     * If the file previously was larger than this size, the extra data is lost.
+     * If the file previously was shorter, it is extended, and the extended part reads as null bytes ('\0').
+     * The file offset is not changed.
+     *
+     * @param fd  file descriptor.
+     * @param len required length.
+     * @return On success, zero is returned. On error, -1 is returned, and errno is set appropriately.
+     */
+    public static native int ftruncate(int fd, long len);
 }
