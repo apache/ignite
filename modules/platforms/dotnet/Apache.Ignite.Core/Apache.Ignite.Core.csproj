@@ -56,6 +56,7 @@
     <Compile Include="Cache\Configuration\DataPageEvictionMode.cs" />
     <Compile Include="Client\Cache\CacheClientConfiguration.cs" />
     <Compile Include="Client\IgniteClientConfigurationSection.cs" />
+    <Compile Include="Cluster\IBaselineNode.cs" />
     <Compile Include="Configuration\CheckpointWriteOrder.cs" />
     <Compile Include="Configuration\DataPageEvictionMode.cs" />
     <Compile Include="Configuration\DataRegionConfiguration.cs" />
@@ -79,6 +80,7 @@
     <Compile Include="Impl\Binary\IBinaryRawWriteAware.cs" />
     <Compile Include="Impl\Binary\MultidimensionalArrayHolder.cs" />
     <Compile Include="Impl\Binary\MultidimensionalArraySerializer.cs" />
+    <Compile Include="Impl\Binary\OptimizedMarshallerObject.cs" />
     <Compile Include="Impl\Client\Cache\CacheFlags.cs" />
     <Compile Include="Impl\Client\Cache\ClientCacheConfigurationSerializer.cs" />
     <Compile Include="Impl\Client\Cache\Query\ClientFieldsQueryCursor.cs" />
@@ -90,6 +92,7 @@
     <Compile Include="Impl\Client\Cache\Query\StatementType.cs" />
     <Compile Include="Client\ClientStatusCode.cs" />
     <Compile Include="Events\LocalEventListener.cs" />
+    <Compile Include="Impl\Cluster\BaselineNode.cs" />
     <Compile Include="Impl\DataStorageMetrics.cs" />
     <Compile Include="Impl\IIgniteInternal.cs" />
     <Compile Include="Impl\Client\Cache\CacheClient.cs" />
