@@ -241,7 +241,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
      * @throws Exception If test failed.
      */
     public void testDistributedQuery() throws Exception {
-        int keyCnt = 4;
+        final int keyCnt = 4;
 
         Transaction tx = ignite1.transactions().txStart();
 
