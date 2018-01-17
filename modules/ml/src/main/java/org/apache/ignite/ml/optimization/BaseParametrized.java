@@ -17,15 +17,42 @@
 
 package org.apache.ignite.ml.optimization;
 
-import java.io.Serializable;
-import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.util.Utils;
 
 /**
- * Function which computes gradient of the loss function at any given point.
+ * Base interface for parametrized models.
+ *
+ * @param <M> Model class.
  */
-@FunctionalInterface
-public interface GradientFunction extends Serializable {
-    /** */
-    Vector compute(Matrix inputs, Vector groundTruth, Vector pnt);
+interface BaseParametrized<M extends BaseParametrized<M>> {
+    /**
+     * Get parameters vector.
+     *
+     * @return Parameters vector.
+     */
+    Vector parameters();
+
+    /**
+     * Set parameters.
+     *
+     * @param vector Parameters vector.
+     */
+    M setParameters(Vector vector);
+
+    /**
+     * Return new model with given parameters vector.
+     *
+     * @param vector Parameters vector.
+     */
+    default M withParameters(Vector vector) {
+        return Utils.copy(this).setParameters(vector);
+    }
+
+    /**
+     * Get count of parameters of this model.
+     *
+     * @return Count of parameters of this model.
+     */
+    int parametersCount();
 }

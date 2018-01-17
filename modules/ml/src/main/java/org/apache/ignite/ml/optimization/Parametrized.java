@@ -15,17 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.trainers;
+package org.apache.ignite.ml.optimization;
 
-import org.apache.ignite.ml.Model;
-
-/** Trainer interface. */
-public interface Trainer<M extends Model, T> {
-    /**
-     * Train the model based on provided data.
-     *
-     * @param data Data for training.
-     * @return Trained model.
-     */
-    public M train(T data);
+/**
+ * Interface for parametrized models.
+ *
+ * @param <M> Type of model.
+ */
+public interface Parametrized<M extends Parametrized<M>> extends BaseParametrized<M> {
 }
