@@ -32,6 +32,8 @@ import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.initializers.RandomInitializer;
 import org.apache.ignite.ml.nn.trainers.distributed.MLPGroupUpdateTrainer;
+import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
+import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.group.UpdateStrategies;
 import org.apache.ignite.ml.trainers.group.UpdatesStrategy;
@@ -65,8 +67,22 @@ public class MLPGroupTrainerTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
+    /**
+     * Test training 'xor' by RProp.
+     */
     public void testXORRProp() {
         doTestXOR(UpdateStrategies.RProp());
+    }
+
+    /**
+     * Test training 'xor' by SimpleGD.
+     */
+    public void testXORGD() {
+        SimpleGDUpdateCalculator<MultilayerPerceptron> calculator = new SimpleGDUpdateCalculator<>();
+        UpdatesStrategy<MultilayerPerceptron, SimpleGDParameterUpdate> st =
+            new UpdatesStrategy<>(calculator.withLearningRate(0.5), SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg);
+
+        doTestXOR(st);
     }
 
     /**
@@ -99,7 +115,7 @@ public class MLPGroupTrainerTest extends GridCommonAbstractTest {
             }
         }
 
-        int totalCnt = 60;
+        int totalCnt = 30;
         int failCnt = 0;
         double maxFailRatio = 0.3;
 
@@ -110,7 +126,6 @@ public class MLPGroupTrainerTest extends GridCommonAbstractTest {
             withUpdateStrategy(strategy);
 
         for (int i = 0; i < totalCnt; i++) {
-
             MLPGroupUpdateTrainerCacheInput trainerInput = new MLPGroupUpdateTrainerCacheInput(conf,
                 new RandomInitializer(new Random(123L + i)), 6, cache, 10, new Random(123L + i));
 

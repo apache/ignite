@@ -60,7 +60,7 @@ public class MLPGroupUpdateTrainerCacheInput extends AbstractMLPGroupUpdateTrain
     /**
      * Random number generator.
      */
-    private Random rand;
+    private final Random rand;
 
     /**
      * Construct instance of this class with given parameters.
@@ -98,14 +98,14 @@ public class MLPGroupUpdateTrainerCacheInput extends AbstractMLPGroupUpdateTrain
         this(arch, init, networksCnt, cache, batchSize, null);
     }
 
-        /**
-         * Construct instance of this class with given parameters and default initializer.
-         *
-         * @param arch Architecture of multilayer perceptron.
-         * @param networksCnt Count of networks to be trained in parallel by {@link MLPGroupUpdateTrainer}.
-         * @param cache Cache with labeled vectors.
-         * @param batchSize Size of batch to return on each training iteration.
-         */
+    /**
+     * Construct instance of this class with given parameters and default initializer.
+     *
+     * @param arch Architecture of multilayer perceptron.
+     * @param networksCnt Count of networks to be trained in parallel by {@link MLPGroupUpdateTrainer}.
+     * @param cache Cache with labeled vectors.
+     * @param batchSize Size of batch to return on each training iteration.
+     */
     public MLPGroupUpdateTrainerCacheInput(MLPArchitecture arch, int networksCnt,
         IgniteCache<Integer, LabeledVector<Vector, Vector>> cache,
         int batchSize) {
@@ -116,6 +116,7 @@ public class MLPGroupUpdateTrainerCacheInput extends AbstractMLPGroupUpdateTrain
     @Override public IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier() {
         String cName = cache.getName();
         int bs = batchSize;
+        // This line is for making lambda more lightweight.
         Random r = rand;
 
         return () -> {

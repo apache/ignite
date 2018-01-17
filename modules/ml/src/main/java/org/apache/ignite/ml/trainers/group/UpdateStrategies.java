@@ -20,11 +20,23 @@ package org.apache.ignite.ml.trainers.group;
 import org.apache.ignite.ml.optimization.SmoothParametrized;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
+import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
+import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 
 /**
  * Holder class for various update strategies.
  */
 public class UpdateStrategies {
+    /**
+     * Simple GD update strategy.
+     *
+     * @param <M> Model for optimization.
+     * @return GD update strategy.
+     */
+    public static <M extends SmoothParametrized<M>> UpdatesStrategy<M, SimpleGDParameterUpdate> GD() {
+        return new UpdatesStrategy<>(new SimpleGDUpdateCalculator<M>(), SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg);
+    }
+
     /**
      * RProp update strategy.
      *
