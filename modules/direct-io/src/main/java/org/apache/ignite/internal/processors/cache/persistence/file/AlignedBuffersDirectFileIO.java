@@ -70,6 +70,9 @@ public class AlignedBuffersDirectFileIO implements FileIO {
     /** Number of instances to cache */
     private static final int CACHED_LONGS = 512;
 
+    /** Value used as divisor in {@link #nativeLongCache}. Native longs divisible by this value will be cached. */
+    private static final int NL_CACHE_DIVISOR = 4096;
+
     /** Native long instance cache. */
     private static final AtomicReferenceArray<NativeLong> nativeLongCache = new AtomicReferenceArray<>(CACHED_LONGS);
 
@@ -385,6 +388,11 @@ public class AlignedBuffersDirectFileIO implements FileIO {
                 file, filePos == FILE_POS_USE_CURRENT ? "current" : Long.toString(filePos), getLastError()));
         }
 
+        if ((pos + wr) > limit) {
+            throw new IllegalStateException(String.format("Write illegal state for file [%s]: pos=%d, wr=%d, limit=%d",
+                file, pos, wr, limit));
+        }
+
         srcBuf.position(pos + wr);
 
         return wr;
@@ -394,9 +402,9 @@ public class AlignedBuffersDirectFileIO implements FileIO {
      * @param value value to box to native long.
      * @return native long.
      */
-    @NotNull private NativeLong nl(long value) {
-        if (value % pageSize == 0 && value < CACHED_LONGS * pageSize) {
-            int cacheIdx = (int)(value / pageSize);
+    @NotNull private static NativeLong nl(long value) {
+        if (value % NL_CACHE_DIVISOR == 0 && value < CACHED_LONGS * NL_CACHE_DIVISOR) {
+            int cacheIdx = (int)(value / NL_CACHE_DIVISOR);
 
             NativeLong curCached = nativeLongCache.get(cacheIdx);
 
