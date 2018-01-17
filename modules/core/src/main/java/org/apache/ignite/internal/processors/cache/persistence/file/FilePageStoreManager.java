@@ -49,8 +49,8 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -382,8 +382,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private CacheStoreHolder initForCache(CacheGroupDescriptor grpDesc, CacheConfiguration ccfg) throws IgniteCheckedException {
         assert !grpDesc.sharedGroup() || ccfg.getGroupName() != null : ccfg.getName();
 
-        try {
-            File cacheWorkDir = cacheWorkDir(ccfg);
+        File cacheWorkDir = cacheWorkDir(ccfg);
 
         return initDir(cacheWorkDir, grpDesc.groupId(), grpDesc.config().getAffinity().partitions());
     }
@@ -396,7 +395,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @throws IgniteCheckedException If failed.
      */
     private CacheStoreHolder initDir(File cacheWorkDir, int grpId, int partitions) throws IgniteCheckedException {boolean dirExisted = checkAndInitCacheWorkDir(cacheWorkDir);
-
+        try {
             File idxFile = new File(cacheWorkDir, INDEX_FILE_NAME);
 
             if (dirExisted && !idxFile.exists())
@@ -407,15 +406,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
             FilePageStore idxStore = pageStoreFactory.createPageStore(PageMemory.FLAG_IDX, idxFile);
 
-            FilePageStore[] partStores = new FilePageStore[grpDesc.config().getAffinity().partitions()];
-        FilePageStore[] partStores = new FilePageStore[partitions];
+            FilePageStore[] partStores = new FilePageStore[partitions];
 
             for (int partId = 0; partId < partStores.length; partId++) {
                 FilePageStore partStore = pageStoreFactory.createPageStore(
-                        PageMemory.FLAG_DATA, new File(cacheWorkDir, String.format(PART_FILE_TEMPLATE, partId)));
-        for (int partId = 0; partId < partStores.length; partId++) {
-            FilePageStore partStore = pageStoreFactory.createPageStore(
-                PageMemory.FLAG_DATA, getPartitionFile(cacheWorkDir, partId));
+                    PageMemory.FLAG_DATA, getPartitionFile(cacheWorkDir, partId));
 
                 partStores[partId] = partStore;
             }

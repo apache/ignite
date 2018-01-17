@@ -53,6 +53,9 @@ import org.junit.Assert;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
+/**
+ *
+ */
 public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
 
     private static final int DFLT_PAGE_SIZE = DataStorageConfiguration.DFLT_PAGE_SIZE;
