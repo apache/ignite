@@ -25,11 +25,9 @@ import java.sql.Statement;
 import java.util.Collections;
 import java.util.Properties;
 import org.apache.ignite.IgniteJdbcDriver;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -47,15 +45,6 @@ public class JdbcStreamingToPublicCacheTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        return getConfiguration0(gridName);
-    }
-
-    /**
-     * @param gridName Grid name.
-     * @return Grid configuration used for starting the grid.
-     * @throws Exception If failed.
-     */
-    private IgniteConfiguration getConfiguration0(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
@@ -95,6 +84,8 @@ public class JdbcStreamingToPublicCacheTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param cacheName Cache name.
+     * @param streaming Streaming mode flag.
      * @return Connection to use for the test.
      * @throws Exception if failed.
      */
