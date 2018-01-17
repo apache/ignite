@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -480,7 +481,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     cctx.database().checkpointReadLock();
 
                     try {
-                        Collection<IgniteTxEntry> entries = near() ? allEntries() : writeEntries();
+                        Collection<IgniteTxEntry> entries = near() || cctx.snapshot().needTxReadLogging() ? allEntries() : writeEntries();
 
                         List<DataEntry> dataEntries = null;
 
@@ -563,7 +564,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                             GridCacheVersion dhtVer = cached.isNear() ? writeVersion() : null;
 
                                             if (!near() && cacheCtx.group().persistenceEnabled() &&
-                                                op != NOOP && op != RELOAD && op != READ) {
+                                                op != NOOP && op != RELOAD && (op != READ || cctx.snapshot().needTxReadLogging())) {
                                                 if (dataEntries == null)
                                                     dataEntries = new ArrayList<>(entries.size());
 
@@ -605,7 +606,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 else {
                                                     assert val != null : txEntry;
 
-                                                    cached.innerSet(this,
+                                                    GridCacheUpdateTxResult updRes = cached.innerSet(this,
                                                         eventNodeId(),
                                                         nodeId,
                                                         val,
@@ -627,6 +628,9 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                         dhtVer,
                                                         txEntry.updateCounter());
 
+                                                    if (updRes.loggedPointer() != null)
+                                                        ptr = updRes.loggedPointer();
+
                                                     // Keep near entry up to date.
                                                     if (nearCached != null) {
                                                         CacheObject val0 = cached.valueBytes();
@@ -641,7 +645,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 }
                                             }
                                             else if (op == DELETE) {
-                                                cached.innerRemove(this,
+                                                GridCacheUpdateTxResult updRes = cached.innerRemove(this,
                                                     eventNodeId(),
                                                     nodeId,
                                                     false,
@@ -658,6 +662,9 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                     resolveTaskName(),
                                                     dhtVer,
                                                     txEntry.updateCounter());
+
+                                                if (updRes.loggedPointer() != null)
+                                                    ptr = updRes.loggedPointer();
 
                                                 // Keep near entry up to date.
                                                 if (nearCached != null)
@@ -751,7 +758,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                             if (!near() && !F.isEmpty(dataEntries) && cctx.wal() != null)
                                 cctx.wal().log(new DataRecord(dataEntries));
 
-                            if (ptr != null)
+                            if (ptr != null && !cctx.tm().logTxRecords())
                                 cctx.wal().fsync(ptr);
                         }
                         catch (StorageException e) {
