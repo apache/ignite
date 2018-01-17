@@ -14,39 +14,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.ignite.internal.pagemem.wal;
+package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.IOException;
 import org.apache.ignite.IgniteCheckedException;
-import org.jetbrains.annotations.NotNull;
 
 /**
- * Exception is needed to distinguish WAL manager critical I/O errors.
+ * Exception is needed to distinguish persistent storage I/O errors.
  */
-public class StorageException extends IgniteCheckedException {
-    /** */
-    private static final long serialVersionUID = 0L;
+public class PersistentStorageIOException extends IgniteCheckedException {
+    /**
+     * Create an instance of exception.
+     *
+     * @param cause Error cause.
+     */
+    public PersistentStorageIOException(IOException cause) {
+        super(cause);
+    }
 
     /**
+     * Create an instance of exception.
+     *
      * @param msg Error message.
      * @param cause Error cause.
      */
-    public StorageException(String msg, @NotNull IOException cause) {
+    public PersistentStorageIOException(String msg, IOException cause) {
         super(msg, cause);
-    }
-
-    /**
-     * @param e Cause exception.
-     */
-    public StorageException(IOException e) {
-        super(e);
-    }
-
-    /**
-     * @param msg Error message
-     */
-    public StorageException(String msg) {
-        super(msg);
     }
 }

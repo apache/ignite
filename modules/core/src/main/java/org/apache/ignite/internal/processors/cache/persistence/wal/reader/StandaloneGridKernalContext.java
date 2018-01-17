@@ -619,6 +619,16 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean invalidated() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void invalidate() {
+
+    }
+
+    /** {@inheritDoc} */
     @NotNull @Override public Iterator<GridComponent> iterator() {
         return null;
     }

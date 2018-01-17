@@ -89,7 +89,7 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
                  new DataRegionConfiguration().setMaxSize(2048L * 1024 * 1024).setPersistenceEnabled(true))
-                .setFileIOFactory(new FailingFileIOFactory())
+                .setWalFileIOFactory(new FailingFileIOFactory())
                 .setWalMode(WALMode.BACKGROUND)
                 .setWalBufferSize(128 * 1024)// Setting WAL Segment size to high values forces flushing by timeout.
                 .setWalSegmentSize(flushByTimeout ? 500_000 : 50_000);

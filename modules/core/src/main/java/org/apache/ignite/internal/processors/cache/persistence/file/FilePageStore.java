@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -149,16 +148,11 @@ public class FilePageStore implements PageStore {
     /**
      *
      */
-    private long initFile() {
-        try {
-            ByteBuffer hdr = header(type, dbCfg.getPageSize());
+    private long initFile() throws IOException {
+        ByteBuffer hdr = header(type, dbCfg.getPageSize());
 
-            while (hdr.remaining() > 0)
-                fileIO.write(hdr);
-        }
-        catch (IOException e) {
-            throw new IgniteException("Check file failed.", e);
-        }
+        while (hdr.remaining() > 0)
+            fileIO.write(hdr);
 
         //there is 'super' page in every file
         return headerSize() + dbCfg.getPageSize();
@@ -217,7 +211,7 @@ public class FilePageStore implements PageStore {
             return fileSize;
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("File check failed", e);
+            throw new PersistentStorageIOException("File check failed", e);
         }
     }
 
@@ -240,7 +234,7 @@ public class FilePageStore implements PageStore {
                 cfgFile.delete();
         }
         catch (IOException e) {
-            throw new IgniteCheckedException(e);
+            throw new PersistentStorageIOException(e);
         }
         finally {
             lock.writeLock().unlock();
@@ -264,7 +258,7 @@ public class FilePageStore implements PageStore {
             allocated.set(initFile());
         }
         catch (IOException e) {
-            throw new IgniteCheckedException(e);
+            throw new PersistentStorageIOException(e);
         }
         finally {
             lock.writeLock().unlock();
@@ -288,7 +282,7 @@ public class FilePageStore implements PageStore {
     /**
      *
      */
-    public void finishRecover() {
+    public void finishRecover() throws PersistentStorageIOException {
         lock.writeLock().lock();
 
         try {
@@ -298,7 +292,7 @@ public class FilePageStore implements PageStore {
             recover = false;
         }
         catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new PersistentStorageIOException("Unable to finish recover", e);
         }
         finally {
             lock.writeLock().unlock();
@@ -356,7 +350,7 @@ public class FilePageStore implements PageStore {
                 PageIO.setCrc(pageBuf, savedCrc32);
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Read error", e);
+            throw new PersistentStorageIOException("Read error", e);
         }
     }
 
@@ -385,7 +379,7 @@ public class FilePageStore implements PageStore {
             while (len > 0);
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Read error", e);
+            throw new PersistentStorageIOException("Read error", e);
         }
     }
 
@@ -413,7 +407,9 @@ public class FilePageStore implements PageStore {
                         inited = true;
                     }
                     catch (IOException e) {
-                        throw err = new IgniteCheckedException("Can't open file: " + cfgFile.getName(), e);
+                        err = new PersistentStorageIOException("Could not initialize file: " + cfgFile.getName(), e);
+
+                        throw err;
                     }
                     finally {
                         if (err != null && fileIO != null)
@@ -479,7 +475,7 @@ public class FilePageStore implements PageStore {
             PageIO.setCrc(pageBuf, 0);
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Failed to write the page to the file store [pageId=" + pageId +
+            throw new PersistentStorageIOException("Failed to write the page to the file store [pageId=" + pageId +
                 ", file=" + cfgFile.getAbsolutePath() + ']', e);
         }
         finally {
@@ -517,7 +513,7 @@ public class FilePageStore implements PageStore {
             fileIO.force();
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Sync error", e);
+            throw new PersistentStorageIOException("Sync error", e);
         }
         finally {
             lock.writeLock().unlock();

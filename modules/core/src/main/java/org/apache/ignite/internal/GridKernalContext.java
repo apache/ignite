@@ -42,8 +42,8 @@ import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
-import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
+import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.igfs.IgfsHelper;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
@@ -649,4 +649,18 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return PDS mode folder name resolver, also generates consistent ID in case new folder naming is used
      */
     public PdsFoldersResolver pdsFolderResolver();
+
+    /**
+     * TODO: Should be replaced with proper implementation in https://issues.apache.org/jira/browse/IGNITE-6891
+     *
+     * @return {@code true} if node was invalidated, false in other case.
+     */
+    public boolean invalidated();
+
+    /**
+     * Invalidates node.
+     *
+     * TODO: Should be replaced with proper implementation in https://issues.apache.org/jira/browse/IGNITE-6891
+     */
+    public void invalidate();
 }

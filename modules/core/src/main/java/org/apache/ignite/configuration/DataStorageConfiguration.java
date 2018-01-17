@@ -223,10 +223,13 @@ public class DataStorageConfiguration implements Serializable {
     /** Always write full pages. */
     private boolean alwaysWriteFullPages = DFLT_WAL_ALWAYS_WRITE_FULL_PAGES;
 
-    /** Factory to provide I/O interface for files */
+    /** Factory to provide I/O interface for data files */
     private FileIOFactory fileIOFactory =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY, false) ?
             new AsyncFileIOFactory() : new RandomAccessFileIOFactory();
+
+    /** Factory to provide I/O interface for WAL files */
+    private FileIOFactory walFileIOFactory = new RandomAccessFileIOFactory();
 
     /**
      * Number of sub-intervals the whole {@link #setMetricsRateTimeInterval(long)} will be split into to calculate
@@ -823,7 +826,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Factory to provide implementation of FileIO interface
-     * which is used for any file read/write operations
+     * which is used for data storage files read/write operations
      *
      * @return File I/O factory
      */
@@ -833,7 +836,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Sets factory to provide implementation of FileIO interface
-     * which is used for any file read/write operations
+     * which is used for data storage files read/write operations
      *
      * @param fileIOFactory File I/O factory
      */
@@ -842,6 +845,29 @@ public class DataStorageConfiguration implements Serializable {
 
         return this;
     }
+
+    /**
+     * Factory to provide implementation of FileIO interface
+     * which is used for WAL files read/write operations
+     *
+     * @return File I/O factory
+     */
+    public FileIOFactory getWalFileIOFactory() {
+        return walFileIOFactory;
+    }
+
+    /**
+     * Sets factory to provide implementation of FileIO interface
+     * which is used for WAL files read/write operations
+     *
+     * @param walFileIOFactory File I/O factory
+     */
+    public DataStorageConfiguration setWalFileIOFactory(FileIOFactory walFileIOFactory) {
+        this.walFileIOFactory = walFileIOFactory;
+
+        return this;
+    }
+
 
     /**
      * <b>Note:</b> setting this value with {@link WALMode#DEFAULT} may generate file size overhead for WAL segments in case

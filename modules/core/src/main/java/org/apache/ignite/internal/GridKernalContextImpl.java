@@ -381,6 +381,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** PDS mode folder name resolver, also generates consistent ID in case new folder naming is used */
     private PdsFoldersResolver pdsFolderRslvr;
 
+    /** Node invalidation flag. */
+    private volatile boolean invalidated;
+
     /**
      * No-arg constructor is required by externalization.
      */
@@ -1078,6 +1081,16 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /**{@inheritDoc}*/
     @Override public PdsFoldersResolver pdsFolderResolver() {
         return pdsFolderRslvr;
+    }
+
+    @Override
+    public boolean invalidated() {
+        return invalidated;
+    }
+
+    @Override
+    public void invalidate() {
+        invalidated = true;
     }
 
     /** {@inheritDoc} */
