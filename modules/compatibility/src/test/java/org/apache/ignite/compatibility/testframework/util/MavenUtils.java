@@ -39,6 +39,12 @@ public class MavenUtils {
     /** Path to Maven local repository. For caching. */
     private static String locRepPath = null;
 
+    /** */
+    private static final String GG_MVN_REPO = "http://www.gridgainsystems.com/nexus/content/repositories/external";
+
+    /** Set this flag to true if running PDS compatibility tests locally. */
+    private static boolean useGgRepo;
+
     /**
      * Gets a path to an artifact with given version and groupId=org.apache.ignite and artifactId={@code artifactName}.
      * <br>
@@ -123,7 +129,7 @@ public class MavenUtils {
      * @throws Exception In case of an error.
      */
     private static String defineMavenLocalRepositoryPath() throws Exception {
-        String output = exec("mvn help:effective-settings");
+        String output = exec(buildMvnCommand() + " help:effective-settings");
 
         int endTagPos = output.indexOf("</localRepository>");
 
@@ -141,7 +147,8 @@ public class MavenUtils {
     private static void downloadArtifact(String artifact) throws Exception {
         X.println("Downloading artifact... Identifier: " + artifact);
 
-        exec("mvn dependency:get -Dartifact=" + artifact);
+        exec(buildMvnCommand() + " dependency:get -Dartifact=" + artifact +
+            (useGgRepo ? " -DremoteRepositories=" + GG_MVN_REPO : ""));
 
         X.println("Download is finished");
     }
@@ -192,5 +199,20 @@ public class MavenUtils {
 
             throw e;
         }
+    }
+
+    /**
+     * @return Maven executable command.
+     */
+    private static String buildMvnCommand() {
+        String m2Home = System.getenv("M2_HOME");
+
+        if (m2Home == null)
+            m2Home = System.getProperty("M2_HOME");
+
+        if (m2Home == null)
+            return "mvn";
+
+        return m2Home + "/bin/mvn" ;
     }
 }

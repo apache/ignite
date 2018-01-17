@@ -27,10 +27,11 @@ import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainer;
-import org.apache.ignite.ml.nn.updaters.NesterovUpdateCalculator;
-import org.apache.ignite.ml.nn.updaters.ParameterUpdateCalculator;
-import org.apache.ignite.ml.nn.updaters.RPropUpdateCalculator;
-import org.apache.ignite.ml.nn.updaters.SimpleGDUpdateCalculator;
+import org.apache.ignite.ml.optimization.LossFunctions;
+import org.apache.ignite.ml.optimization.updatecalculators.NesterovUpdateCalculator;
+import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalculator;
+import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
+import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.junit.Test;
 
 /**

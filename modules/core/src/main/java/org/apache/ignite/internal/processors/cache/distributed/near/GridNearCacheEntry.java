@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheLockCandidates;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -470,6 +471,12 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     @Override protected void logUpdate(GridCacheOperation op, CacheObject val, GridCacheVersion ver, long expireTime, long updCntr)
         throws IgniteCheckedException {
         // No-op: queries are disabled for near cache.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected WALPointer logTxUpdate(IgniteInternalTx tx, CacheObject val, long expireTime, long updCntr)
+        throws IgniteCheckedException {
+        return null;
     }
 
     /** {@inheritDoc} */
