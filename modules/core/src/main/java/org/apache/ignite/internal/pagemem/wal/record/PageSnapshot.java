@@ -25,7 +25,6 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import sun.nio.ch.DirectBuffer;
 
 /**
  *
@@ -98,7 +97,7 @@ public class PageSnapshot extends WALRecord {
                 ", pageData = " + Arrays.toString(pageData) + ", super=" + super.toString() + "]";
         }
         finally {
-            ((DirectBuffer)buf).cleaner().clean();
+            GridUnsafe.cleanDirectBuffer(buf);
         }
     }
 }
