@@ -143,7 +143,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
                 currMetrics = getDfltRegionMetrics(node);
 
-                checkMetricsConsistency(node, currMetrics, grpIds);
+                checkMetricsConsistency(node, grpIds);
             }
 
             assert currMetrics.getPhysicalMemoryPages() > initMetrics.getPhysicalMemoryPages();
@@ -174,27 +174,27 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange(true, true, node0.cluster().nodes());
 
-        checkMetricsConsistency(node0, getDfltRegionMetrics(node0), getDfltRegGroupIds(node0));
-        checkMetricsConsistency(node1, getDfltRegionMetrics(node1), getDfltRegGroupIds(node1));
+        checkMetricsConsistency(node0, getDfltRegGroupIds(node0));
+        checkMetricsConsistency(node1, getDfltRegGroupIds(node1));
 
         IgniteEx node2 = startGrid(2);
 
         awaitPartitionMapExchange(true, true, node0.cluster().nodes());
 
-        checkMetricsConsistency(node0, getDfltRegionMetrics(node0), getDfltRegGroupIds(node0));
-        checkMetricsConsistency(node1, getDfltRegionMetrics(node1), getDfltRegGroupIds(node1));
-        checkMetricsConsistency(node2, getDfltRegionMetrics(node2), getDfltRegGroupIds(node2));
+        checkMetricsConsistency(node0, getDfltRegGroupIds(node0));
+        checkMetricsConsistency(node1, getDfltRegGroupIds(node1));
+        checkMetricsConsistency(node2, getDfltRegGroupIds(node2));
 
         stopGrid(1);
 
         awaitPartitionMapExchange(true, true, node0.cluster().nodes());
 
-        checkMetricsConsistency(node0, getDfltRegionMetrics(node0), getDfltRegGroupIds(node0));
-        checkMetricsConsistency(node2, getDfltRegionMetrics(node2), getDfltRegGroupIds(node2));
+        checkMetricsConsistency(node0, getDfltRegGroupIds(node0));
+        checkMetricsConsistency(node2, getDfltRegGroupIds(node2));
     }
 
     /** */
-    private DataRegionMetrics getDfltRegionMetrics(Ignite node) {
+    private static DataRegionMetrics getDfltRegionMetrics(Ignite node) {
         for (DataRegionMetrics m : node.dataRegionMetrics())
             if (DFLT_DATA_REG_DEFAULT_NAME.equals(m.getName()))
                 return m;
@@ -218,7 +218,6 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     /** */
     private static void checkMetricsConsistency (
         final IgniteEx node,
-        final DataRegionMetrics m,
         final Set<Integer> grpIds
     ) throws Exception
     {
@@ -229,7 +228,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
                 for (int grpId : grpIds)
                     pagesInStore += node.context().cache().context().pageStore().pagesAllocated(grpId);
 
-                return m.getTotalAllocatedPages() == pagesInStore;
+                return getDfltRegionMetrics(node).getTotalAllocatedPages() == pagesInStore;
             }
         }, 100); // TODO IGNITE-6711: 1000
 

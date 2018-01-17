@@ -306,8 +306,8 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public void read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
-        init();
+    @Override public boolean read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
+        boolean initRes = init();
 
         try {
             long off = pageOffset(pageId);
@@ -325,7 +325,7 @@ public class FilePageStore implements PageStore {
                 if (n < 0) {
                     pageBuf.put(new byte[pageBuf.remaining()]);
 
-                    return;
+                    return initRes;
                 }
 
                 off += n;
@@ -358,6 +358,8 @@ public class FilePageStore implements PageStore {
         catch (IOException e) {
             throw new IgniteCheckedException("Read error", e);
         }
+
+        return initRes;
     }
 
     /** {@inheritDoc} */
@@ -392,7 +394,7 @@ public class FilePageStore implements PageStore {
     /**
      * @throws IgniteCheckedException If failed to initialize store file.
      */
-    private void init() throws IgniteCheckedException {
+    private boolean init() throws IgniteCheckedException {
         if (!inited) {
             lock.writeLock().lock();
 
@@ -411,6 +413,8 @@ public class FilePageStore implements PageStore {
                             allocated.set(checkFile());
 
                         inited = true;
+
+                        return true;
                     }
                     catch (IOException e) {
                         throw err = new IgniteCheckedException("Can't open file: " + cfgFile.getName(), e);
@@ -430,6 +434,8 @@ public class FilePageStore implements PageStore {
                 lock.writeLock().unlock();
             }
         }
+
+        return false;
     }
 
     /** {@inheritDoc} */

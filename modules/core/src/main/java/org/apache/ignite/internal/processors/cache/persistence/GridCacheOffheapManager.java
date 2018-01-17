@@ -1060,8 +1060,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     // Initialize new page.
                     if (PageIO.getType(pageAddr) != PageIO.T_PART_META) {
-                        grp.dataRegion().memoryMetrics().incrementTotalAllocatedPages();
-
                         PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.latest();
 
                         io.initNewPage(pageAddr, partMetaId, pageMem.pageSize());

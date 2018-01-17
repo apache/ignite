@@ -272,7 +272,12 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     public void read(int cacheId, long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
         PageStore store = getStore(cacheId, PageIdUtils.partId(pageId));
 
-        store.read(pageId, pageBuf, keepCrc);
+        if (store.read(pageId, pageBuf, keepCrc)) {
+            CacheGroupContext gctx = cctx.cache().cacheGroup(cacheId);
+
+            if (gctx != null)
+                gctx.dataRegion().memoryMetrics().incrementTotalAllocatedPages();
+        }
     }
 
     /** {@inheritDoc} */
