@@ -38,23 +38,4 @@ public class IgnitePdsClientNearCachePutGetTest extends IgniteDbPutGetAbstractTe
     @Override protected boolean withClientNearCache() {
         return true;
     }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        GridTestUtils.deleteDbFiles();
-
-        super.beforeTest();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        GridTestUtils.deleteDbFiles();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected long getPartitionMapExchangeTimeout() {
-        return 60 * 1000;
-    }
 }
