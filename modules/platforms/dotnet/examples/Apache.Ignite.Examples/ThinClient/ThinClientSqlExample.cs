@@ -36,8 +36,10 @@ namespace Apache.Ignite.Examples.ThinClient
     /// <para />
     /// This example must be run with standalone Apache Ignite node:
     /// 1) Run %IGNITE_HOME%/platforms/dotnet/bin/Apache.Ignite.exe:
-    /// Apache.Ignite.exe -configFileName=platforms\dotnet\examples\apache.ignite.examples\app.config -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
+    /// Apache.Ignite.exe -configFileName=platforms\dotnet\examples\apache.ignite.examples\app.config
     /// 2) Start example.
+    /// <para />
+    /// This example can also work via pure Java node started with ignite.bat/ignite.sh.
     /// </summary>
     public class ThinClientSqlExample
     {
