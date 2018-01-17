@@ -88,6 +88,38 @@ namespace Apache.Ignite.Core.Cluster
         /// <value>
         /// The reconnect task.
         /// </value>
-        Task<bool> ClientReconnectTask { get; } 
+        Task<bool> ClientReconnectTask { get; }
+
+        /// <summary>
+        /// Changes Ignite grid state to active or inactive.
+        /// </summary>
+        void SetActive(bool isActive);
+
+        /// <summary>
+        /// Determines whether this grid is in active state.
+        /// </summary>
+        /// <returns>
+        ///   <c>true</c> if the grid is active; otherwise, <c>false</c>.
+        /// </returns>
+        bool IsActive();
+
+        /// <summary>
+        /// Sets the baseline topology from the cluster topology of the given version.
+        /// This method requires active cluster (<see cref="IsActive"/>).
+        /// </summary>
+        /// <param name="topologyVersion">The topology version.</param>
+        void SetBaselineTopology(long topologyVersion);
+
+        /// <summary>
+        /// Sets the baseline topology nodes.
+        /// </summary>
+        /// <param name="nodes">The nodes.</param>
+        void SetBaselineTopology(IEnumerable<IBaselineNode> nodes);
+
+        /// <summary>
+        /// Gets the baseline topology.
+        /// Returns null if <see cref="SetBaselineTopology(long)"/> has not been called.
+        /// </summary>
+        ICollection<IBaselineNode> GetBaselineTopology();
     }
 }

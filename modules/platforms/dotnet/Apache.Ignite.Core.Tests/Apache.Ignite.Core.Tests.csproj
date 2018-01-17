@@ -75,6 +75,7 @@
     <Compile Include="ApiParity\CacheParityTest.cs" />
     <Compile Include="ApiParity\ClientConnectorConfigurationParityTest.cs" />
     <Compile Include="ApiParity\ClusterMetricsParityTest.cs" />
+    <Compile Include="ApiParity\ClusterNodeParityTest.cs" />
     <Compile Include="ApiParity\ClusterParityTest.cs" />
     <Compile Include="ApiParity\ComputeParityTest.cs" />
     <Compile Include="ApiParity\DataRegionConfigurationParityTest.cs" />
@@ -104,6 +105,7 @@
     <Compile Include="Binary\EnumsTestOnline.cs" />
     <Compile Include="Binary\Serializable\GenericCollectionsTest.cs" />
     <Compile Include="Cache\Affinity\AffinityAttributeTest.cs" />
+    <Compile Include="Cache\CacheCreateTest.cs" />
     <Compile Include="Cache\DataRegionMetricsTest.cs" />
     <Compile Include="Cache\DataStorageMetricsTest.cs" />
     <Compile Include="Cache\PersistenceTest.cs" />
@@ -280,7 +282,7 @@
     <Compile Include="IgniteConfigurationSectionTest.cs" />
     <Compile Include="IgniteConfigurationSerializerTest.cs" />
     <Compile Include="IgniteConfigurationTest.cs" />
-    <Compile Include="IgniteTestBase.cs" />
+    <Compile Include="SpringTestBase.cs" />
     <Compile Include="JavaHomeTest.cs" />
     <Compile Include="LifecycleTest.cs" />
     <Compile Include="LoadDllTest.cs" />
@@ -296,6 +298,7 @@
     <Compile Include="Binary\Serializable\AdvancedSerializationTest.cs" />
     <Compile Include="IgniteStartStopTest.cs" />
     <Compile Include="Services\ServicesTestFullFooter.cs" />
+    <Compile Include="TestBase.cs" />
     <Compile Include="TestUtils.Common.cs" />
     <Compile Include="Memory\InteropMemoryTest.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTest.cs" />
@@ -490,12 +493,9 @@
     <Compile Include="TestUtils.Windows.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  
   <Target Name="AfterBuild">
     <Copy SourceFiles="$(SolutionDir)Apache.Ignite\bin\$(ConfigurationName)\Apache.Ignite.exe;$(SolutionDir)Apache.Ignite\bin\$(ConfigurationName)\Apache.Ignite.exe.config" DestinationFolder="$(ProjectDir)$(OutDir)" SkipUnchangedFiles="false" />
   </Target>
-
-  
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

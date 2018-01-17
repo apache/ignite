@@ -78,7 +78,8 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "isCacheSanityCheckEnabled",
             "TimeServerPortBase",
             "TimeServerPortRange",
-            "IncludeProperties"
+            "IncludeProperties",
+            "isAutoActivationEnabled"  // IGNITE-7301
         };
 
         /// <summary>

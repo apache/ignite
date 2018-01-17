@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -426,6 +426,7 @@ namespace Apache.Ignite.Core.Tests
                 using (var ignite = Ignition.Start(cfg))
                 {
                     Assert.AreEqual(id, ignite.GetConfiguration().ConsistentId);
+                    Assert.AreEqual(id ?? "127.0.0.1:47500", ignite.GetCluster().GetLocalNode().ConsistentId);
                 }
             }
         }
