@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.Cache;
 import javax.cache.CacheException;
@@ -124,8 +125,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /** */
     private static final long serialVersionUID = 0L;
 
-    public static AtomicInteger fastFinishCnt = new AtomicInteger();
-
     /** Prepare future updater. */
     private static final AtomicReferenceFieldUpdater<GridNearTxLocal, IgniteInternalFuture> PREP_FUT_UPD =
         AtomicReferenceFieldUpdater.newUpdater(GridNearTxLocal.class, IgniteInternalFuture.class, "prepFut");
@@ -133,6 +132,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /** Prepare future updater. */
     private static final AtomicReferenceFieldUpdater<GridNearTxLocal, NearTxFinishFuture> FINISH_FUT_UPD =
         AtomicReferenceFieldUpdater.newUpdater(GridNearTxLocal.class, NearTxFinishFuture.class, "finishFut");
+
+    /** Fast finish updater. */
+    private static final AtomicIntegerFieldUpdater<GridNearTxLocal> FAST_FINISH_UPD =
+        AtomicIntegerFieldUpdater.newUpdater(GridNearTxLocal.class, "fastFinish");
 
     /** DHT mappings. */
     private IgniteTxMappings mappings;
@@ -171,6 +174,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /** */
     @GridToStringExclude
     private TransactionProxyImpl proxy;
+
+    /** Fast finish guard. */
+    @SuppressWarnings("UnusedDeclaration")
+    private volatile int fastFinish;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -844,6 +851,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         boolean recovery,
         Byte dataCenterId) {
         try {
+            if (fastFinish == 0 && !fastFinish())
+                return new GridFinishedFuture<>(timedOut() ? timeoutException() : rollbackException());
+
             addActiveCache(cacheCtx, recovery);
 
             final boolean hasFilters = !F.isEmptyOrNulls(filter) && !F.isAlwaysTrue(filter);
@@ -950,6 +960,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         Byte dataCenterId
     ) {
         assert retval || invokeMap == null;
+
+        if (fastFinish == 0 && !fastFinish())
+            return new GridFinishedFuture<>(timedOut() ? timeoutException() : rollbackException());
 
         try {
             addActiveCache(cacheCtx, recovery);
@@ -1684,6 +1697,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         try {
             checkValid();
+
+            if (fastFinish == 0 && !fastFinish())
+                return new GridFinishedFuture<>(timedOut() ? timeoutException() : rollbackException());
 
             final Map<K, V> retMap = new GridLeanMap<>(keysCnt);
 
@@ -3291,7 +3307,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (fut != null)
             return chainFinishFuture(finishFut, false, clearThreadMap, onTimeout);
 
-        if ((clearThreadMap || prepareAsyncRollback() == null) && fastFinish()) {
+        if (fastFinish()) {
             GridNearTxFastFinishFuture fut0;
 
             if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFastFinishFuture(this, false)))
@@ -3413,7 +3429,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @return {@code True} if 'fast finish' path can be used for transaction completion.
      */
     private boolean fastFinish() {
-        return writeMap().isEmpty() && ((optimistic() && !serializable()) || readMap().isEmpty());
+        return FAST_FINISH_UPD.compareAndSet(this, 0, 1);
     }
 
     /**
