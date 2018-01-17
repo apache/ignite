@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.internal.processors.database.IgniteDbPutGetAbstractTest;
-import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  *

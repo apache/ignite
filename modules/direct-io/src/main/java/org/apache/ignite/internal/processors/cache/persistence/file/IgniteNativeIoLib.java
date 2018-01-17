@@ -367,18 +367,18 @@ public class IgniteNativeIoLib {
      * kernel to perform appropriate optimizations.
      *
      * The advice applies to a (not necessarily existent) region starting at
-     * {@code offset} and extending for {@code len} bytes (or until the end of the file if len is 0)
+     * {@code off} and extending for {@code len} bytes (or until the end of the file if len is 0)
      * within the file referred to by fd.
      *
      * See "man 2 posix_fadvise".
      *
      * @param fd file descriptor.
-     * @param offset region start.
+     * @param off region start.
      * @param len region end.
      * @param flag advice (option) to apply.
      * @return On success, zero is returned.  On error, an error number is returned.
      */
-    public static native int posix_fadvise(int fd, long offset, long len, int flag);
+    public static native int posix_fadvise(int fd, long off, long len, int flag);
 
     /**
      * Causes regular file referenced by fd to be truncated to a size of precisely length bytes.
@@ -397,9 +397,9 @@ public class IgniteNativeIoLib {
      * Repositions the file offset of the open file description associated with the file descriptor {@code fd}
      * to the argument offset according to the directive {@code whence}
      * @param fd file descriptor.
-     * @param offset required position offset.
+     * @param off required position offset.
      * @param whence position base.
      * @return  On error, the value -1 is returned and errno is set to indicate the error.
      */
-    public static native long lseek(int fd, long offset, int whence);
+    public static native long lseek(int fd, long off, int whence);
 }

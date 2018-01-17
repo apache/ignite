@@ -113,7 +113,7 @@ public class AlignedBuffersDirectFileIO implements FileIO {
 
         if (fd < 0) {
             int error = Native.getLastError();
-            String message = "Error opening file [" + pathname + "] with flags [0x"
+            String msg = "Error opening file [" + pathname + "] with flags [0x"
                 + String.format("%2X", openFlags) + ": DIRECT & " + Arrays.asList(modes)
                 + "], got error [" + error + ": " + getLastError() + "]";
 
@@ -123,7 +123,7 @@ public class AlignedBuffersDirectFileIO implements FileIO {
 
                 if (fd > 0) {
                     U.warn(log, "Disable Direct IO mode for path " + file.getParentFile() +
-                        "(probably incompatible file system selected, for example, tmpfs): " + message);
+                        "(probably incompatible file system selected, for example, tmpfs): " + msg);
 
                     this.fd = fd;
 
@@ -131,7 +131,7 @@ public class AlignedBuffersDirectFileIO implements FileIO {
                 }
             }
 
-            throw new IOException(message);
+            throw new IOException(msg);
         }
 
         this.fd = fd;
@@ -399,25 +399,25 @@ public class AlignedBuffersDirectFileIO implements FileIO {
     }
 
     /**
-     * @param value value to box to native long.
+     * @param val value to box to native long.
      * @return native long.
      */
-    @NotNull private static NativeLong nl(long value) {
-        if (value % NL_CACHE_DIVISOR == 0 && value < CACHED_LONGS * NL_CACHE_DIVISOR) {
-            int cacheIdx = (int)(value / NL_CACHE_DIVISOR);
+    @NotNull private static NativeLong nl(long val) {
+        if (val % NL_CACHE_DIVISOR == 0 && val < CACHED_LONGS * NL_CACHE_DIVISOR) {
+            int cacheIdx = (int)(val / NL_CACHE_DIVISOR);
 
             NativeLong curCached = nativeLongCache.get(cacheIdx);
 
             if (curCached != null)
                 return curCached;
 
-            NativeLong nl = new NativeLong(value);
+            NativeLong nl = new NativeLong(val);
 
             nativeLongCache.compareAndSet(cacheIdx, null, nl);
 
             return nl;
         }
-        return new NativeLong(value);
+        return new NativeLong(val);
     }
 
     /**
@@ -497,9 +497,8 @@ public class AlignedBuffersDirectFileIO implements FileIO {
         if (IgniteNativeIoLib.ftruncate(fdCheckOpened(), size) < 0)
             throw new IOException(String.format("Error truncating file %s, got %s", file, getLastError()));
 
-        if (position() > size) {
+        if (position() > size)
             position(size);
-        }
     }
 
     /** {@inheritDoc} */
