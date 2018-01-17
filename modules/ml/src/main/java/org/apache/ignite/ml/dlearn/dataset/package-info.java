@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains different transformers which allows to transform one learning context into another.
+ * Root package for API classes used in algorithms based in d-learn framework.
  */
-package org.apache.ignite.ml.dlearn.context.transformer;
+package org.apache.ignite.ml.dlearn.dataset;

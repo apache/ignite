@@ -18,12 +18,12 @@
 package org.apache.ignite.ml.dlearn;
 
 /**
- * D-learn partition storage is a common interface for partition storages both local and distributed. it allows to save,
- * retrieve and remove objects identified by keys from the d-learn partition.
+ * D-learn partition storage is a common interface for partition storages both local and distributed. Partition storage
+ * allows to save, retrieve and remove objects identified by keys from the d-learn partition.
  */
 public interface DLearnPartitionStorage {
     /**
-     * Saves given value in the d-learn partition with given key.
+     * Saves the given value in the d-learn partition with the given key.
      *
      * @param key key
      * @param val value
@@ -32,7 +32,7 @@ public interface DLearnPartitionStorage {
     public <T> void put(String key, T val);
 
     /**
-     * Retrieves value from the d-learn partition by given key.
+     * Retrieves value from the d-learn partition by the given key.
      *
      * @param key key
      * @param <T> type of value
@@ -41,7 +41,7 @@ public interface DLearnPartitionStorage {
     public <T> T get(String key);
 
     /**
-     * Removes value from the d-learn partition by given key.
+     * Removes value from the d-learn partition by the given key.
      *
      * @param key key
      */

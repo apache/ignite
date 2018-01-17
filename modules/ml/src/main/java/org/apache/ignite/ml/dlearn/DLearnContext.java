@@ -25,10 +25,11 @@ import org.apache.ignite.ml.math.functions.IgniteConsumer;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
- * Learning context is a context maintained during a whole learning process. The context provides an ability to perform
- * calculations in map-reduce manner and guarantees maintenance of the partition states between compute calls.
+ * Learning context is a context maintained during a whole learning or data analysis process. The context provides an
+ * ability to perform calculations in the map-reduce manner and guarantees maintenance of the partition states between
+ * {@code compute()} calls.
  *
- * @param <P> type of learning context partition
+ * @param <P> type of a learning context partition
  */
 public interface DLearnContext<P extends AutoCloseable> extends AutoCloseable {
     /**
@@ -37,7 +38,7 @@ public interface DLearnContext<P extends AutoCloseable> extends AutoCloseable {
      * where partitions are placed and do not involve network subsystem where it's possible.
      *
      * @param mapper mapper function applied on every partition
-     * @param reducer  reducer of the results
+     * @param reducer reducer of the results
      * @param <R> result type
      * @return final reduced result
      */
@@ -49,7 +50,7 @@ public interface DLearnContext<P extends AutoCloseable> extends AutoCloseable {
      * where partitions are placed and do not involve network subsystem where it's possible.
      *
      * @param mapper mapper function applied on every partition
-     * @param reducer  reducer of the results
+     * @param reducer reducer of the results
      * @param <R> result type
      * @return final reduced result
      */
@@ -87,7 +88,8 @@ public interface DLearnContext<P extends AutoCloseable> extends AutoCloseable {
      * @param <T> type of new d-learn partition
      * @return new learning context
      */
-    public <T extends AutoCloseable, C extends DLearnContext<T>> C transform(DLearnContextTransformer<P, T, C> transformer);
+    public <T extends AutoCloseable, C extends DLearnContext<T>> C transform(
+        DLearnContextTransformer<P, T, C> transformer);
 
     /**
      * Removes all data associated with the context.

@@ -22,15 +22,24 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.ml.dlearn.DLearnContext;
 import org.apache.ignite.ml.dlearn.DLearnPartitionStorage;
+import org.apache.ignite.ml.dlearn.context.local.LocalDLearnContextFactory;
 import org.apache.ignite.ml.dlearn.context.local.LocalDLearnPartition;
 import org.apache.ignite.ml.dlearn.context.transformer.DLearnContextTransformer;
 import org.apache.ignite.ml.dlearn.dataset.DLearnLabeledDataset;
 import org.apache.ignite.ml.dlearn.dataset.part.DLearnLabeledDatasetPartition;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
-/** */
+/**
+ * Creates a transformer which accepts cache learning context (produced by {@link LocalDLearnContextFactory}) and
+ * constructs {@link DLearnLabeledDataset}.
+ *
+ * @param <K> type of keys in local learning context
+ * @param <V> type of values in local learning context
+ * @param <L> type of label
+ */
 public class LocalLabeledDatasetDLearnPartitionTransformer<K, V, L>
-    implements DLearnContextTransformer<LocalDLearnPartition<K, V>,DLearnLabeledDatasetPartition<L>, DLearnLabeledDataset<L>> {
+    implements DLearnContextTransformer<LocalDLearnPartition<K, V>, DLearnLabeledDatasetPartition<L>,
+    DLearnLabeledDataset<L>> {
     /** */
     private static final long serialVersionUID = -8438445094768312331L;
 
@@ -41,12 +50,13 @@ public class LocalLabeledDatasetDLearnPartitionTransformer<K, V, L>
     private final IgniteBiFunction<K, V, L> lbExtractor;
 
     /** */
-    public LocalLabeledDatasetDLearnPartitionTransformer(IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+    public LocalLabeledDatasetDLearnPartitionTransformer(IgniteBiFunction<K, V, double[]> featureExtractor,
+        IgniteBiFunction<K, V, L> lbExtractor) {
         this.featureExtractor = featureExtractor;
         this.lbExtractor = lbExtractor;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void transform(LocalDLearnPartition<K, V> oldPart, DLearnLabeledDatasetPartition<L> newPart) {
         Map<K, V> partData = oldPart.getPartData();
@@ -72,7 +82,7 @@ public class LocalLabeledDatasetDLearnPartitionTransformer<K, V, L>
             newPart.setFeatures(features);
             newPart.setRows(m);
 
-            L[] labels = (L[]) new Object[partData.size()];
+            L[] labels = (L[])new Object[partData.size()];
             for (int i = 0; i < partData.size(); i++) {
                 K key = keys.get(i);
                 labels[i] = lbExtractor.apply(key, partData.get(key));
@@ -81,12 +91,12 @@ public class LocalLabeledDatasetDLearnPartitionTransformer<K, V, L>
         }
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public DLearnLabeledDataset<L> wrapContext(DLearnContext<DLearnLabeledDatasetPartition<L>> ctx) {
         return new DLearnLabeledDataset<>(ctx);
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public DLearnLabeledDatasetPartition<L> createPartition(DLearnPartitionStorage storage) {
         return new DLearnLabeledDatasetPartition<>(storage);
     }

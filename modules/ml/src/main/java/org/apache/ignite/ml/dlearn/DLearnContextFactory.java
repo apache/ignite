@@ -20,14 +20,14 @@ package org.apache.ignite.ml.dlearn;
 import java.io.Serializable;
 
 /**
- * Factory produces learning context instances.
+ * Factory produces learning context instances (see {@link DLearnContext}).
  *
- * @param <P> type of d-learn partition
+ * @param <P> type of a d-learn partition
  */
 @FunctionalInterface
 public interface DLearnContextFactory<P extends AutoCloseable> extends Serializable {
     /**
-     * Creates new instance of learning context.
+     * Constructs a new instance of learning context.
      *
      * @return learning context
      */

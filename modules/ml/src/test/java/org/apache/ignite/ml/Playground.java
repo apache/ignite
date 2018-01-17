@@ -72,9 +72,7 @@ public class Playground extends GridCommonAbstractTest {
         // cache with specified transformation (it will be performed locally because partitions are on the same nodes).
         // In this case for every partition in upstream cache will be created labeled dataset partition and this new
         // partition will be filled with help of specified feature and label extractors.
-
-
-        DLearnLabeledDataset<Double> dataset =  cacheLearningCtx
+        DLearnLabeledDataset<Double> dataset = cacheLearningCtx
             .transform(
                 DLearnContextTransformers.cacheToLabeledDataset(
                     (k, v) -> Arrays.copyOfRange(v, 1, v.length),      // specify feature extractor
@@ -83,21 +81,23 @@ public class Playground extends GridCommonAbstractTest {
             );
 
         // Calculation of mean value. This calculation will be performed in map-reduce manner.
-        double[] mean = dataset.mean(new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+        double[] mean = dataset.mean(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
         System.err.println("Mean values : " + Arrays.toString(mean));
-        TestUtils.assertEquals(new double[]{3.59376071e+00,   1.13636364e+01,   1.11367787e+01,   6.91699605e-02,
-            5.54695059e-01,   6.28463439e+00,   6.85749012e+01,   3.79504269e+00,
-            9.54940711e+00,   4.08237154e+02}, mean, 1e-6);
+        TestUtils.assertEquals(new double[] {
+            3.59376071e+00, 1.13636364e+01, 1.11367787e+01, 6.91699605e-02,
+            5.54695059e-01, 6.28463439e+00, 6.85749012e+01, 3.79504269e+00,
+            9.54940711e+00, 4.08237154e+02}, mean, 1e-6);
 
         // Calculation of standard deviation. This calculation will be performed in map-reduce manner.
-        double[] std = dataset.std(new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+        double[] std = dataset.std(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
         System.err.println("Std values : " + Arrays.toString(std));
-        TestUtils.assertEquals(new double[]{8.58828355e+00,   2.32993957e+01,   6.85357058e+00,   2.53742935e-01,
-            1.15763115e-01,   7.01922514e-01,   2.81210326e+01,   2.10362836e+00,
-            8.69865112e+00,   1.68370495e+02}, std, 1e-6);
+        TestUtils.assertEquals(new double[] {
+            8.58828355e+00, 2.32993957e+01, 6.85357058e+00, 2.53742935e-01,
+            1.15763115e-01, 7.01922514e-01, 2.81210326e+01, 2.10362836e+00,
+            8.69865112e+00, 1.68370495e+02}, std, 1e-6);
 
         // Calculation of covariance matrix.  This calculation will be performed in map-reduce manner.
-        double[][] cov = dataset.cov(new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+        double[][] cov = dataset.cov(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
         System.err.println("Covariance matrix : ");
         for (double[] row : cov)
             System.err.println(Arrays.toString(row));

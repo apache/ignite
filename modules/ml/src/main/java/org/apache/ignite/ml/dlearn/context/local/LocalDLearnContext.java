@@ -77,16 +77,17 @@ public class LocalDLearnContext<P extends AutoCloseable> implements DLearnContex
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends AutoCloseable, C extends DLearnContext<T>> C transform(DLearnContextTransformer<P, T, C> transformer) {
-        UUID newLearningCtxId = UUID.randomUUID();
+    @Override public <T extends AutoCloseable, C extends DLearnContext<T>> C transform(
+        DLearnContextTransformer<P, T, C> transformer) {
+        UUID newLearnCtxId = UUID.randomUUID();
 
         compute((part, partIdx) -> {
-            DLearnPartitionStorage newStorage = new LocalDLearnPartitionStorage(learningCtxMap, newLearningCtxId, partIdx);
+            DLearnPartitionStorage newStorage = new LocalDLearnPartitionStorage(learningCtxMap, newLearnCtxId, partIdx);
             T newPart = transformer.createPartition(newStorage);
             transformer.transform(part, newPart);
         });
 
-        DLearnContext<T> newCtx = new LocalDLearnContext<>(learningCtxMap, transformer, newLearningCtxId, partitions);
+        DLearnContext<T> newCtx = new LocalDLearnContext<>(learningCtxMap, transformer, newLearnCtxId, partitions);
 
         return transformer.wrapContext(newCtx);
     }

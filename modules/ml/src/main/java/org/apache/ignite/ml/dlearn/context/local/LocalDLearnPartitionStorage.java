@@ -22,14 +22,23 @@ import java.util.UUID;
 import org.apache.ignite.ml.dlearn.DLearnPartitionStorage;
 import org.apache.ignite.ml.dlearn.utils.DLearnContextPartitionKey;
 
+/**
+ * D-learn partition storage based on on-heap hash map for local processing and tests. Doesn't require Ignite cluster
+ * to work.
+ */
 public class LocalDLearnPartitionStorage implements DLearnPartitionStorage {
-
+    /**
+     * Storage.
+     */
     private final Map<DLearnContextPartitionKey, Object> learningCtxMap;
 
+    /** */
     private final UUID learningCtxId;
 
+    /** */
     private final int part;
 
+    /** */
     public LocalDLearnPartitionStorage(
         Map<DLearnContextPartitionKey, Object> learningCtxMap, UUID learningCtxId, int part) {
         this.learningCtxMap = learningCtxMap;
@@ -37,15 +46,18 @@ public class LocalDLearnPartitionStorage implements DLearnPartitionStorage {
         this.part = part;
     }
 
+    /** {@inheritDoc} */
     @Override public <T> void put(String key, T val) {
         learningCtxMap.put(new DLearnContextPartitionKey(part, learningCtxId, key), val);
     }
 
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T get(String key) {
-        return (T) learningCtxMap.get(new DLearnContextPartitionKey(part, learningCtxId, key));
+        return (T)learningCtxMap.get(new DLearnContextPartitionKey(part, learningCtxId, key));
     }
 
+    /** {@inheritDoc} */
     @Override public void remove(String key) {
         learningCtxMap.remove(new DLearnContextPartitionKey(part, learningCtxId, key));
     }

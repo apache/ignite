@@ -23,12 +23,23 @@ import org.apache.ignite.ml.math.functions.IgniteBiConsumer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 
-/** */
+/**
+ * Wrapper of a learning context which allows to introduce new context-specific methods based on base {@code compute()}
+ * functionality.
+ *
+ * @param <P> type of a d-learn partition
+ */
 public class AbstractDLearnContextWrapper<P extends AutoCloseable> implements DLearnContext<P> {
-    /** */
+    /**
+     * Delegate which actually performs base functions like {@code compute()}, {@code transform()} and {@code close()}.
+     */
     protected final DLearnContext<P> delegate;
 
-    /** */
+    /**
+     * Constructs a new instance of context wrapper which delegates base operations to {@code delegate}.
+     *
+     * @param delegate delegate
+     */
     public AbstractDLearnContextWrapper(DLearnContext<P> delegate) {
         this.delegate = delegate;
     }
@@ -44,7 +55,8 @@ public class AbstractDLearnContextWrapper<P extends AutoCloseable> implements DL
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends AutoCloseable, C extends DLearnContext<T>> C transform(DLearnContextTransformer<P, T, C> transformer) {
+    @Override public <T extends AutoCloseable, C extends DLearnContext<T>> C transform(
+        DLearnContextTransformer<P, T, C> transformer) {
         return delegate.transform(transformer);
     }
 

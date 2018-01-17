@@ -52,7 +52,8 @@ public class CacheDLearnContext<P extends AutoCloseable> implements DLearnContex
     private final UUID learningCtxId;
 
     /** */
-    public CacheDLearnContext(Ignite ignite, String learningCtxCacheName, DLearnPartitionFactory<P> partFactory, UUID learningCtxId) {
+    public CacheDLearnContext(Ignite ignite, String learningCtxCacheName, DLearnPartitionFactory<P> partFactory,
+        UUID learningCtxId) {
         this.ignite = ignite;
         this.learningCtxCacheName = learningCtxCacheName;
         this.partFactory = partFactory;
@@ -103,17 +104,18 @@ public class CacheDLearnContext<P extends AutoCloseable> implements DLearnContex
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends AutoCloseable, C extends DLearnContext<T>> C transform(DLearnContextTransformer<P, T, C> transformer) {
-        UUID newLearningCtxId = UUID.randomUUID();
+    @Override public <T extends AutoCloseable, C extends DLearnContext<T>> C transform(
+        DLearnContextTransformer<P, T, C> transformer) {
+        UUID newLearnCtxId = UUID.randomUUID();
 
         compute((part, partIdx) -> {
             IgniteCache<DLearnContextPartitionKey, byte[]> learningCtxCache = ignite.cache(learningCtxCacheName);
-            DLearnPartitionStorage storage = new CacheDLearnPartitionStorage(learningCtxCache, newLearningCtxId, partIdx);
+            DLearnPartitionStorage storage = new CacheDLearnPartitionStorage(learningCtxCache, newLearnCtxId, partIdx);
             T newPart = transformer.createPartition(storage);
             transformer.transform(part, newPart);
         });
 
-        DLearnContext<T> newCtx = new CacheDLearnContext<>(ignite, learningCtxCacheName, transformer, newLearningCtxId);
+        DLearnContext<T> newCtx = new CacheDLearnContext<>(ignite, learningCtxCacheName, transformer, newLearnCtxId);
 
         return transformer.wrapContext(newCtx);
     }

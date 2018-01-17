@@ -22,7 +22,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Key used to identify a-learn partition objects.
+ * Key used to identify d-learn partition objects.
  */
 public class DLearnContextPartitionKey implements Serializable {
     /** */

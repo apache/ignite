@@ -19,7 +19,13 @@ package org.apache.ignite.ml.dlearn.context.cache;
 
 import org.apache.ignite.ml.dlearn.DLearnPartitionStorage;
 
-/** */
+/**
+ * D-learn partition which uses Ignite cache to keep data and produces as initial context partition by
+ * {@link CacheDLearnContextFactory}.
+ *
+ * @param <K> type of keys
+ * @param <V> type of values
+ */
 public class CacheDLearnPartition<K, V> implements AutoCloseable {
     /** */
     private static final String UPSTREAM_CACHE_NAME_KEY = "upstream_cache_name";

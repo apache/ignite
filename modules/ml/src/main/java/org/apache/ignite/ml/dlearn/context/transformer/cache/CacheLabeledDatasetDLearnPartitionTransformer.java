@@ -26,14 +26,24 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.ml.dlearn.DLearnContext;
 import org.apache.ignite.ml.dlearn.DLearnPartitionStorage;
+import org.apache.ignite.ml.dlearn.context.cache.CacheDLearnContextFactory;
 import org.apache.ignite.ml.dlearn.context.cache.CacheDLearnPartition;
 import org.apache.ignite.ml.dlearn.dataset.DLearnLabeledDataset;
 import org.apache.ignite.ml.dlearn.dataset.part.DLearnLabeledDatasetPartition;
 import org.apache.ignite.ml.dlearn.context.transformer.DLearnContextTransformer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
-/** */
-public class CacheLabeledDatasetDLearnPartitionTransformer<K, V, L> implements DLearnContextTransformer<CacheDLearnPartition<K,V>, DLearnLabeledDatasetPartition<L>, DLearnLabeledDataset<L>> {
+/**
+ * Creates a transformer which accepts cache learning context (produced by {@link CacheDLearnContextFactory}) and
+ * constructs {@link DLearnLabeledDataset}.
+ *
+ * @param <K> type of keys in cache learning context
+ * @param <V> type of values in cache learning context
+ * @param <L> type of label
+ */
+public class CacheLabeledDatasetDLearnPartitionTransformer<K, V, L>
+    implements DLearnContextTransformer<CacheDLearnPartition<K, V>, DLearnLabeledDatasetPartition<L>,
+    DLearnLabeledDataset<L>> {
     /** */
     private static final long serialVersionUID = 3479218902890029731L;
 
@@ -51,14 +61,14 @@ public class CacheLabeledDatasetDLearnPartitionTransformer<K, V, L> implements D
         this.lbExtractor = lbExtractor;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void transform(CacheDLearnPartition<K, V> oldPart, DLearnLabeledDatasetPartition<L> newPart) {
         List<Cache.Entry<K, V>> partData = queryPartDataIntoList(oldPart);
 
         int m = partData.size(), n = 0;
         double[] features = null;
-        L[] labels = (L[]) new Object[m];
+        L[] labels = (L[])new Object[m];
         for (int i = 0; i < partData.size(); i++) {
             Cache.Entry<K, V> entry = partData.get(i);
             double[] rowFeatures = featureExtractor.apply(entry.getKey(), entry.getValue());
@@ -80,17 +90,22 @@ public class CacheLabeledDatasetDLearnPartitionTransformer<K, V, L> implements D
         newPart.setLabels(labels);
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public DLearnLabeledDataset<L> wrapContext(DLearnContext<DLearnLabeledDatasetPartition<L>> ctx) {
         return new DLearnLabeledDataset<>(ctx);
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public DLearnLabeledDatasetPartition<L> createPartition(DLearnPartitionStorage storage) {
         return new DLearnLabeledDatasetPartition<>(storage);
     }
 
-    /** */
+    /**
+     * Retrieves local partition data from the cache via {@link ScanQuery} and collects it into list.
+     *
+     * @param oldPart partition
+     * @return list of cache entries
+     */
     private List<Cache.Entry<K, V>> queryPartDataIntoList(CacheDLearnPartition<K, V> oldPart) {
         List<Cache.Entry<K, V>> partData = new ArrayList<>();
         for (Cache.Entry<K, V> entry : queryPartData(oldPart))
@@ -98,7 +113,12 @@ public class CacheLabeledDatasetDLearnPartitionTransformer<K, V, L> implements D
         return partData;
     }
 
-    /** */
+    /**
+     * Retrieves local partition data from the cache via {@link ScanQuery} and returns cursor.
+     *
+     * @param oldPart partition
+     * @return cursor
+     */
     private Iterable<Cache.Entry<K, V>> queryPartData(CacheDLearnPartition<K, V> oldPart) {
         Ignite ignite = Ignition.localIgnite();
         IgniteCache<K, V> upstreamCache = ignite.cache(oldPart.getUpstreamCacheName());

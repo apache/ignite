@@ -21,12 +21,16 @@ import com.github.fommil.netlib.BLAS;
 import org.apache.ignite.ml.dlearn.DLearnContext;
 import org.apache.ignite.ml.dlearn.dataset.part.DLeanDatasetPartition;
 
-/** */
+/**
+ * Dataset provides API to work with dataset.
+ *
+ * @param <P> type of a d-learn partition
+ */
 public class DLearnDataset<P extends DLeanDatasetPartition> extends AbstractDLearnContextWrapper<P> {
     /** */
     private static final BLAS blas = BLAS.getInstance();
 
-    /** */
+    /** {@inheritDoc} */
     public DLearnDataset(DLearnContext<P> delegate) {
         super(delegate);
     }

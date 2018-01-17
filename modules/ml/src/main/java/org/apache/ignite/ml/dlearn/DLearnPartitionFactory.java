@@ -20,11 +20,11 @@ package org.apache.ignite.ml.dlearn;
 import java.io.Serializable;
 
 /**
- * With assumption that a d-lear partition is the type-safe wrapper on top of a partition storage (distributed or not),
- * {@code DLearnPartitionFactory} provides API for instantiation of a new d-learn partition instances based on given
+ * With assumption that a d-lear partition is a type-safe wrapper on top of a partition storage (distributed or not),
+ * {@code DLearnPartitionFactory} provides API for instantiation of a new d-learn partition instances based on the given
  * partition storage.
  *
- * @param <P> type of d-learn partition
+ * @param <P> type of a d-learn partition
  */
 @FunctionalInterface
 public interface DLearnPartitionFactory<P extends AutoCloseable> extends Serializable {

@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains different transformers which allows to transform one learning context into another.
+ * Contains transformers which allows to transform cache learning context into some another contexts.
  */
-package org.apache.ignite.ml.dlearn.context.transformer;
+package org.apache.ignite.ml.dlearn.context.transformer.cache;

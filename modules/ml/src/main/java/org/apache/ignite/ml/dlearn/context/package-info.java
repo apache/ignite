@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Root package for distributed learning implementations (based on cache, local storage, etc...).
+ * Root package for underlying d-learn implementations (based on cache, local storage, etc...).
  */
 package org.apache.ignite.ml.dlearn.context;

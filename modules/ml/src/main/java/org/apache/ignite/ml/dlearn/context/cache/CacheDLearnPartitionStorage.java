@@ -27,14 +27,22 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.dlearn.DLearnPartitionStorage;
 import org.apache.ignite.ml.dlearn.utils.DLearnContextPartitionKey;
 
+/**
+ * D-learn partition storage based on Ignite cache.
+ */
 public class CacheDLearnPartitionStorage implements DLearnPartitionStorage {
-
+    /**
+     * Storage.
+     */
     private final IgniteCache<DLearnContextPartitionKey, byte[]> learningCtxCache;
 
+    /** */
     private final UUID learningCtxId;
 
+    /** */
     private final int part;
 
+    /** */
     public CacheDLearnPartitionStorage(IgniteCache<DLearnContextPartitionKey,
         byte[]> learningCtxCache, UUID learningCtxId, int part) {
         this.learningCtxCache = learningCtxCache;
@@ -42,15 +50,18 @@ public class CacheDLearnPartitionStorage implements DLearnPartitionStorage {
         this.part = part;
     }
 
+    /** {@inheritDoc} */
     @Override public <T> void put(String key, T val) {
         learningCtxCache.put(new DLearnContextPartitionKey(part, learningCtxId, key), serialize(val));
     }
 
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T get(String key) {
         return (T) deserialize(learningCtxCache.localPeek(new DLearnContextPartitionKey(part, learningCtxId, key)));
     }
 
+    /** {@inheritDoc} */
     @Override public void remove(String key) {
         learningCtxCache.remove(new DLearnContextPartitionKey(part, learningCtxId, key));
     }

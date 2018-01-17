@@ -20,8 +20,13 @@ package org.apache.ignite.ml.dlearn.dataset;
 import org.apache.ignite.ml.dlearn.DLearnContext;
 import org.apache.ignite.ml.dlearn.dataset.part.DLearnLabeledDatasetPartition;
 
+/**
+ * Dataset provides API to work with labeled dataset.
+ *
+ * @param <L> type of a label
+ */
 public class DLearnLabeledDataset<L> extends DLearnDataset<DLearnLabeledDatasetPartition<L>> {
-    /** */
+    /** {@inheritDoc} */
     public DLearnLabeledDataset(
         DLearnContext<DLearnLabeledDatasetPartition<L>> delegate) {
         super(delegate);

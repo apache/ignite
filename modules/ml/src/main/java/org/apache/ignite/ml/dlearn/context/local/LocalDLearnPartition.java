@@ -21,7 +21,11 @@ import java.util.Map;
 import org.apache.ignite.ml.dlearn.DLearnPartitionStorage;
 
 /**
- * Learning context partition which uses local on-heap hash map to keep data.
+ * D-learn partition which uses local on-heap hash map to keep data and produced as initial context partition by
+ * {@link LocalDLearnContextFactory}.
+ *
+ * @param <K> type of keys
+ * @param <V> type of values
  */
 public class LocalDLearnPartition<K, V> implements AutoCloseable {
     /** */
