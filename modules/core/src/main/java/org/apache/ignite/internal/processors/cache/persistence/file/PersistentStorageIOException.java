@@ -23,6 +23,9 @@ import org.apache.ignite.IgniteCheckedException;
  * Exception is needed to distinguish persistent storage I/O errors.
  */
 public class PersistentStorageIOException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Create an instance of exception.
      *
