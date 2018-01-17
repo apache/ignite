@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -202,13 +202,11 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
 
     /** {@inheritDoc} */
     @Override public long pagesAllocated(int grpId) {
-        assert false : "Is it reachable?";
-
         return 0;
     }
 
     /** {@inheritDoc} */
-    @Override public long pagesAllocated() {
-        return allocators.values().stream().mapToInt(AtomicInteger::get).sum();
+    @Override public long bytesAllocated(String dataRegionName) {
+        return 0;
     }
 }

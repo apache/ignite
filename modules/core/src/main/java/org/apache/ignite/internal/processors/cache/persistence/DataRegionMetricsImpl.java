@@ -98,7 +98,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedPages() {
-        return metricsEnabled ? pageMem.storeMgr().pagesAllocated() : 0;
+        return metricsEnabled ? pageMem.storeMgr().bytesAllocated(memPlcCfg.getName()) / pageMem.pageSize() : 0;
     }
 
     /** {@inheritDoc} */

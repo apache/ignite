@@ -31,7 +31,6 @@ public interface FilePageStoreFactory {
      *
      * @param type Data type, can be {@link PageIdAllocator#FLAG_IDX} or {@link PageIdAllocator#FLAG_DATA}.
      * @param file File Page store file.
-     * @param totalSize counter to be updated on store size changes.
      */
-    public FilePageStore createPageStore(byte type, File file, LongAdder totalSize) throws IgniteCheckedException;
+    public FilePageStore createPageStore(byte type, File file, LongAdder totalAllocated) throws IgniteCheckedException;
 }

@@ -34,7 +34,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -59,6 +58,9 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_DATA_REGION_NAME;
 
 /**
  * File page store manager.
@@ -108,6 +110,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** */
     private final Set<Integer> grpsWithoutIdx = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
+
+    /** */
+    private final Map<String, LongAdder> totalAllocatedPerRegion = new ConcurrentHashMap<>();
 
     /**
      * @param ctx Kernal context.
@@ -206,7 +211,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         int grpId = MetaStorage.METASTORAGE_CACHE_ID;
 
         if (!idxCacheStores.containsKey(grpId)) {
-            CacheStoreHolder holder = initDir(new File(storeWorkDir, "metastorage"), grpId, 1);
+            CacheStoreHolder holder = initDir(new File(storeWorkDir, "metastorage"), grpId, 1,
+                METASTORE_DATA_REGION_NAME);
 
             CacheStoreHolder old = idxCacheStores.put(grpId, holder);
 
@@ -273,6 +279,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         PageStore store = getStore(grpId, partId);
 
         assert store instanceof FilePageStore : store;
+
+        ((FilePageStore)store).truncate(tag);
     }
 
     /** {@inheritDoc} */
@@ -292,12 +300,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     public void read(int cacheId, long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
         PageStore store = getStore(cacheId, PageIdUtils.partId(pageId));
 
-        if (store.read(pageId, pageBuf, keepCrc)) {
-            CacheGroupContext gctx = cctx.cache().cacheGroup(cacheId);
-
-            if (gctx != null)
-                gctx.dataRegion().memoryMetrics().incrementTotalAllocatedPages();
-        }
+        store.read(pageId, pageBuf, keepCrc);
     }
 
     /** {@inheritDoc} */
@@ -361,19 +364,25 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private CacheStoreHolder initForCache(CacheGroupDescriptor grpDesc, CacheConfiguration ccfg) throws IgniteCheckedException {
         assert !grpDesc.sharedGroup() || ccfg.getGroupName() != null : ccfg.getName();
 
+        String dataRegionName = ccfg.getDataRegionName();
+
+        if (dataRegionName == null)
+            dataRegionName = DFLT_DATA_REG_DEFAULT_NAME;
+
         File cacheWorkDir = cacheWorkDir(ccfg);
 
-        return initDir(cacheWorkDir, grpDesc.groupId(), grpDesc.config().getAffinity().partitions());
+        return initDir(cacheWorkDir, grpDesc.groupId(), grpDesc.config().getAffinity().partitions(), dataRegionName);
     }
 
     /**
      * @param cacheWorkDir Work directory.
      * @param grpId Group ID.
      * @param partitions Number of partitions.
+     * @param dataRegionName data region cache group belongs to.
      * @return Cache store holder.
      * @throws IgniteCheckedException If failed.
      */
-    private CacheStoreHolder initDir(File cacheWorkDir, int grpId, int partitions) throws IgniteCheckedException {
+    private CacheStoreHolder initDir(File cacheWorkDir, int grpId, int partitions, String dataRegionName) throws IgniteCheckedException {
         boolean dirExisted = checkAndInitCacheWorkDir(cacheWorkDir);
 
         File idxFile = new File(cacheWorkDir, INDEX_FILE_NAME);
@@ -384,20 +393,26 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         FileVersionCheckingFactory pageStoreFactory = new FileVersionCheckingFactory(
             dsCfg.getFileIOFactory(), igniteCfg.getDataStorageConfiguration());
 
-        LongAdder totalSize = new LongAdder();
+        LongAdder totalAllocated = totalAllocatedPerRegion.get(dataRegionName);
 
-        FilePageStore idxStore = pageStoreFactory.createPageStore(PageMemory.FLAG_IDX, idxFile, totalSize);
+        if (totalAllocated == null) {
+            totalAllocated = new LongAdder();
+
+            totalAllocatedPerRegion.put(dataRegionName, totalAllocated);
+        }
+
+        FilePageStore idxStore = pageStoreFactory.createPageStore(PageMemory.FLAG_IDX, idxFile, totalAllocated);
 
         FilePageStore[] partStores = new FilePageStore[partitions];
 
         for (int partId = 0; partId < partStores.length; partId++) {
             FilePageStore partStore = pageStoreFactory.createPageStore(
-                PageMemory.FLAG_DATA, getPartitionFile(cacheWorkDir, partId), totalSize);
+                PageMemory.FLAG_DATA, getPartitionFile(cacheWorkDir, partId), totalAllocated);
 
             partStores[partId] = partStore;
         }
 
-        return new CacheStoreHolder(idxStore, partStores, totalSize);
+        return new CacheStoreHolder(idxStore, partStores);
     }
 
     /**
@@ -491,7 +506,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public long allocatePage(int grpId, int partId, byte flags) throws IgniteCheckedException {
+    @Override public long allocatePage(int grpId, int partId, byte flags)
+        throws IgniteCheckedException
+    {
         assert partId <= PageIdAllocator.MAX_PARTITION_ID || partId == PageIdAllocator.INDEX_PARTITION;
 
         PageStore store = getStore(grpId, partId);
@@ -600,8 +617,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public long pagesAllocated() {
-        return idxCacheStores.values().stream().mapToLong(h -> h.totalSize.sum()).sum() / dsCfg.getPageSize();
+    @Override public long bytesAllocated(String dataRegionName) {
+        LongAdder totalAllocated = totalAllocatedPerRegion.get(dataRegionName);
+
+        return totalAllocated != null ? totalAllocated.sum() : 0;
     }
 
     /**
@@ -726,16 +745,12 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         /** Partition stores. */
         private final FilePageStore[] partStores;
 
-        /** Size of all stores. */
-        private final LongAdder totalSize;
-
         /**
          *
          */
-        public CacheStoreHolder(FilePageStore idxStore, FilePageStore[] partStores, LongAdder totalSize) {
+        public CacheStoreHolder(FilePageStore idxStore, FilePageStore[] partStores) {
             this.idxStore = idxStore;
             this.partStores = partStores;
-            this.totalSize = totalSize;
         }
     }
 

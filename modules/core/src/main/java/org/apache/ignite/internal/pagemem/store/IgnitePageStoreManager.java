@@ -211,9 +211,10 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
     public long pagesAllocated(int grpId);
 
     /**
-     * Calculates number of pages currently allocated for all cache groups.
+     * Calculates number of bytes currently allocated for given data region.
      *
+     * @param dataRegionName data region name.
      * @return number of pages.
      */
-    public long pagesAllocated();
+    public long bytesAllocated(String dataRegionName);
 }
