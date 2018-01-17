@@ -255,11 +255,13 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
      * Build final XML.
      *
      * @param {Bean} cfg Ignite configuration.
-     * @param available Function to check target version of generated source to appropriate for generation.
+     * @param {Object} targetVer Version of Ignite for generated project.
      * @param {Boolean} clientNearCaches
      * @returns {StringBuilder}
      */
-    static igniteConfiguration(cfg, available, clientNearCaches) {
+    static igniteConfiguration(cfg, targetVer, clientNearCaches) {
+        const available = versionService.since.bind(versionService, targetVer.ignite);
+
         const sb = new StringBuilder();
 
         // 0. Add header.
@@ -326,8 +328,6 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
         const clientNearCaches = client ? _.filter(cluster.caches, (cache) =>
             cache.cacheMode === 'PARTITIONED' && _.get(cache, 'clientNearConfiguration.enabled')) : [];
 
-        const available = versionService.since.bind(versionService, targetVer.ignite);
-
-        return this.igniteConfiguration(cfg, available, clientNearCaches);
+        return this.igniteConfiguration(cfg, targetVer, clientNearCaches);
     }
 }

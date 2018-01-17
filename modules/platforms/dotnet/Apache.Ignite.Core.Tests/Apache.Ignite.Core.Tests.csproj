@@ -59,13 +59,13 @@
       <HintPath>..\packages\NUnit.Runners.2.6.3\tools\nunit.framework.dll</HintPath>
     </Reference>
     <Reference Include="System" />
-    <Reference Include="System.configuration" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceProcess" />
     <Reference Include="System.Transactions" />
-    <Reference Include="System.XML" />
+    <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
@@ -104,6 +104,7 @@
     <Compile Include="Binary\EnumsTestOnline.cs" />
     <Compile Include="Binary\Serializable\GenericCollectionsTest.cs" />
     <Compile Include="Cache\Affinity\AffinityAttributeTest.cs" />
+    <Compile Include="Cache\CacheCreateTest.cs" />
     <Compile Include="Cache\DataRegionMetricsTest.cs" />
     <Compile Include="Cache\DataStorageMetricsTest.cs" />
     <Compile Include="Cache\PersistenceTest.cs" />
@@ -280,7 +281,7 @@
     <Compile Include="IgniteConfigurationSectionTest.cs" />
     <Compile Include="IgniteConfigurationSerializerTest.cs" />
     <Compile Include="IgniteConfigurationTest.cs" />
-    <Compile Include="IgniteTestBase.cs" />
+    <Compile Include="SpringTestBase.cs" />
     <Compile Include="JavaHomeTest.cs" />
     <Compile Include="LifecycleTest.cs" />
     <Compile Include="LoadDllTest.cs" />
@@ -296,6 +297,7 @@
     <Compile Include="Binary\Serializable\AdvancedSerializationTest.cs" />
     <Compile Include="IgniteStartStopTest.cs" />
     <Compile Include="Services\ServicesTestFullFooter.cs" />
+    <Compile Include="TestBase.cs" />
     <Compile Include="TestUtils.Common.cs" />
     <Compile Include="Memory\InteropMemoryTest.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTest.cs" />
@@ -323,7 +325,7 @@
       <Project>{5b571661-17f4-4f29-8c7d-0edb38ca9b55}</Project>
       <Name>Apache.Ignite.Linq</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Apache.Ignite.log4net\Apache.Ignite.Log4Net.csproj">
+    <ProjectReference Include="..\Apache.Ignite.Log4Net\Apache.Ignite.Log4Net.csproj">
       <Project>{6F82D669-382E-4435-8092-68C4440146D8}</Project>
       <Name>Apache.Ignite.Log4Net</Name>
     </ProjectReference>
@@ -335,12 +337,12 @@
       <Project>{27F7F3C6-BDDE-43A9-B565-856F8395A04B}</Project>
       <Name>Apache.Ignite</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Examples\Apache.Ignite.ExamplesDll\Apache.Ignite.ExamplesDll.csproj">
+    <ProjectReference Include="..\examples\Apache.Ignite.ExamplesDll\Apache.Ignite.ExamplesDll.csproj">
       <Project>{dfb08363-202e-412d-8812-349ef10a8702}</Project>
       <Name>Apache.Ignite.ExamplesDll</Name>
       <Aliases>ExamplesDll</Aliases>
     </ProjectReference>
-    <ProjectReference Include="..\Examples\Apache.Ignite.Examples\Apache.Ignite.Examples.csproj">
+    <ProjectReference Include="..\examples\Apache.Ignite.Examples\Apache.Ignite.Examples.csproj">
       <Project>{069fa680-3c4d-43a9-b84f-e67513b87827}</Project>
       <Name>Apache.Ignite.Examples</Name>
     </ProjectReference>
@@ -490,14 +492,9 @@
     <Compile Include="TestUtils.Windows.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup Condition="'$(Platform)' != 'AnyCPU'">
-    <PostBuildEvent>copy /Y $(SolutionDir)Apache.Ignite\bin\$(PlatformName)\$(ConfigurationName)\Apache.Ignite.exe $(ProjectDir)$(OutDir)
-copy /Y $(SolutionDir)Apache.Ignite\bin\$(PlatformName)\$(ConfigurationName)\Apache.Ignite.exe.config $(ProjectDir)$(OutDir)</PostBuildEvent>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Platform)' == 'AnyCPU'">
-    <PostBuildEvent>copy /Y $(SolutionDir)Apache.Ignite\bin\$(ConfigurationName)\Apache.Ignite.exe $(ProjectDir)$(OutDir)
-copy /Y $(SolutionDir)Apache.Ignite\bin\$(ConfigurationName)\Apache.Ignite.exe.config $(ProjectDir)$(OutDir)</PostBuildEvent>
-  </PropertyGroup>
+  <Target Name="AfterBuild">
+    <Copy SourceFiles="$(SolutionDir)Apache.Ignite\bin\$(ConfigurationName)\Apache.Ignite.exe;$(SolutionDir)Apache.Ignite\bin\$(ConfigurationName)\Apache.Ignite.exe.config" DestinationFolder="$(ProjectDir)$(OutDir)" SkipUnchangedFiles="false" />
+  </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

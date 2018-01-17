@@ -1047,41 +1047,90 @@ public class GridToStringBuilder {
      * @return String representation of an array.
      */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
-    public static <T> String arrayToString(Class arrType, @Nullable Object arr) {
+    public static <T> String arrayToString(Class arrType, Object arr) {
         if (arr == null)
             return "null";
 
-        T[] array = (T[])arr;
-
-        if (array.length > COLLECTION_LIMIT)
-            arr = Arrays.copyOf(array, COLLECTION_LIMIT);
-
         String res;
+        int more = 0;
 
-        if (arrType.equals(byte[].class))
-            res = Arrays.toString((byte[])arr);
-        else if (arrType.equals(boolean[].class))
-            res = Arrays.toString((boolean[])arr);
-        else if (arrType.equals(short[].class))
-            res = Arrays.toString((short[])arr);
-        else if (arrType.equals(int[].class))
-            res = Arrays.toString((int[])arr);
-        else if (arrType.equals(long[].class))
-            res = Arrays.toString((long[])arr);
-        else if (arrType.equals(float[].class))
-            res = Arrays.toString((float[])arr);
-        else if (arrType.equals(double[].class))
-            res = Arrays.toString((double[])arr);
-        else if (arrType.equals(char[].class))
-            res = Arrays.toString((char[])arr);
-        else
-            res = Arrays.toString((Object[])arr);
-
-        if (array.length > COLLECTION_LIMIT) {
+        if (arrType.equals(byte[].class)) {
+            byte[] byteArr = (byte[])arr;
+            if (byteArr.length > COLLECTION_LIMIT) {
+                more = byteArr.length - COLLECTION_LIMIT;
+                byteArr = Arrays.copyOf(byteArr, COLLECTION_LIMIT);
+            }
+            res = Arrays.toString(byteArr);
+        }
+        else if (arrType.equals(boolean[].class)) {
+            boolean[] boolArr = (boolean[])arr;
+            if (boolArr.length > COLLECTION_LIMIT) {
+                more = boolArr.length - COLLECTION_LIMIT;
+                boolArr = Arrays.copyOf(boolArr, COLLECTION_LIMIT);
+            }
+            res = Arrays.toString(boolArr);
+        }
+        else if (arrType.equals(short[].class)) {
+            short[] shortArr = (short[])arr;
+            if (shortArr.length > COLLECTION_LIMIT) {
+                more = shortArr.length - COLLECTION_LIMIT;
+                shortArr = Arrays.copyOf(shortArr, COLLECTION_LIMIT);
+            }
+            res = Arrays.toString(shortArr);
+        }
+        else if (arrType.equals(int[].class)) {
+            int[] intArr = (int[])arr;
+            if (intArr.length > COLLECTION_LIMIT) {
+                more = intArr.length - COLLECTION_LIMIT;
+                intArr = Arrays.copyOf(intArr, COLLECTION_LIMIT);
+            }
+            res = Arrays.toString(intArr);
+        }
+        else if (arrType.equals(long[].class)) {
+            long[] longArr = (long[])arr;
+            if (longArr.length > COLLECTION_LIMIT) {
+                more = longArr.length - COLLECTION_LIMIT;
+                longArr = Arrays.copyOf(longArr, COLLECTION_LIMIT);
+            }
+            res = Arrays.toString(longArr);
+        }
+        else if (arrType.equals(float[].class)) {
+            float[] floatArr = (float[])arr;
+            if (floatArr.length > COLLECTION_LIMIT) {
+                more = floatArr.length - COLLECTION_LIMIT;
+                floatArr = Arrays.copyOf(floatArr, COLLECTION_LIMIT);
+            }
+            res = Arrays.toString(floatArr);
+        }
+        else if (arrType.equals(double[].class)) {
+            double[] doubleArr = (double[])arr;
+            if (doubleArr.length > COLLECTION_LIMIT) {
+                more = doubleArr.length - COLLECTION_LIMIT;
+                doubleArr = Arrays.copyOf(doubleArr, COLLECTION_LIMIT);
+            }
+            res = Arrays.toString(doubleArr);
+        }
+        else if (arrType.equals(char[].class)) {
+            char[] charArr = (char[])arr;
+            if (charArr.length > COLLECTION_LIMIT) {
+                more = charArr.length - COLLECTION_LIMIT;
+                charArr = Arrays.copyOf(charArr, COLLECTION_LIMIT);
+            }
+            res = Arrays.toString(charArr);
+        }
+        else {
+            Object[] objArr = (Object[])arr;
+            if (objArr.length > COLLECTION_LIMIT) {
+                more = objArr.length - COLLECTION_LIMIT;
+                objArr = Arrays.copyOf(objArr, COLLECTION_LIMIT);
+            }
+            res = Arrays.toString(objArr);
+        }
+        if (more > 0) {
             StringBuilder resSB = new StringBuilder(res);
 
             resSB.deleteCharAt(resSB.length() - 1);
-            resSB.append("... and ").append(array.length - COLLECTION_LIMIT).append(" more]");
+            resSB.append("... and ").append(more).append(" more]");
 
             res = resSB.toString();
         }

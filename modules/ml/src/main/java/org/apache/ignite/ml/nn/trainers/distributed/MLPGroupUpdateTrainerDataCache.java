@@ -55,7 +55,7 @@ public class MLPGroupUpdateTrainerDataCache {
         CacheConfiguration<UUID, MLPGroupUpdateTrainingData> cfg = new CacheConfiguration<>();
 
         // Write to primary.
-        cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
+        cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         // Atomic transactions only.
         cfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);

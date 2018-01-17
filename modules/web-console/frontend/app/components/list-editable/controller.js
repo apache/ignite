@@ -22,6 +22,7 @@ export default class {
 
     constructor($animate, $element, $transclude) {
         $animate.enabled($element, false);
+        this.$transclude = $transclude;
 
         this.hasItemView = $transclude.isSlotFilled('itemView');
 
