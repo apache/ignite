@@ -45,4 +45,9 @@ public class GridCacheReplicatedDataStructuresFailoverSelfTest
     @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
         return TRANSACTIONAL;
     }
+
+    /** {@inheritDoc} */
+    @Override public void testReentrantLockConstantTopologyChangeNonFailoverSafe() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-12953");
+    }
 }
