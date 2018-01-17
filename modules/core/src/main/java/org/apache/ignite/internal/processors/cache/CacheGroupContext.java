@@ -381,7 +381,7 @@ public class CacheGroupContext {
      * @return {@code True} if given event type should be recorded.
      */
     public boolean eventRecordable(int type) {
-        return cacheType.userCache() && ctx.gridEvents().isRecordable(type) && ccfg.isEventsEnabled();
+        return cacheType.userCache() && ctx.gridEvents().isRecordable(type);
     }
 
     /**
@@ -407,7 +407,7 @@ public class CacheGroupContext {
         for (int i = 0; i < caches.size(); i++) {
             GridCacheContext cctx = caches.get(i);
 
-            if (cctx.recordEvent(type)) {
+            if (cctx.config().isEventsEnabled() && cctx.recordEvent(type)) {
                 cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
                     cctx.localNode(),
                     "Cache rebalancing event.",
@@ -434,14 +434,15 @@ public class CacheGroupContext {
         for (int i = 0; i < caches.size(); i++) {
             GridCacheContext cctx = caches.get(i);
 
-            cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
-                cctx.localNode(),
-                "Cache unloading event.",
-                EVT_CACHE_REBALANCE_PART_UNLOADED,
-                part,
-                null,
-                0,
-                0));
+            if (cctx.config().isEventsEnabled())
+                cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
+                    cctx.localNode(),
+                    "Cache unloading event.",
+                    EVT_CACHE_REBALANCE_PART_UNLOADED,
+                    part,
+                    null,
+                    0,
+                    0));
         }
     }
 
@@ -472,20 +473,21 @@ public class CacheGroupContext {
         for (int i = 0; i < caches.size(); i++) {
             GridCacheContext cctx = caches.get(i);
 
-            cctx.events().addEvent(part,
-                key,
-                evtNodeId,
-                (IgniteUuid)null,
-                null,
-                type,
-                newVal,
-                hasNewVal,
-                oldVal,
-                hasOldVal,
-                null,
-                null,
-                null,
-                keepBinary);
+            if (cctx.config().isEventsEnabled())
+                cctx.events().addEvent(part,
+                    key,
+                    evtNodeId,
+                    (IgniteUuid)null,
+                    null,
+                    type,
+                    newVal,
+                    hasNewVal,
+                    oldVal,
+                    hasOldVal,
+                    null,
+                    null,
+                    null,
+                    keepBinary);
         }
     }
 
