@@ -188,6 +188,8 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientsReconnect() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-13324");
+
         Ignite srv1 = startGrid("server1");
 
         crd = ((IgniteKernal)srv1).localNode();
