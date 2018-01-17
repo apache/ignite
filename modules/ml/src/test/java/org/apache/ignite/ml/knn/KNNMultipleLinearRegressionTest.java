@@ -19,13 +19,13 @@ package org.apache.ignite.ml.knn;
 
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.knn.models.KNNStrategy;
-import org.apache.ignite.ml.knn.models.Normalization;
 import org.apache.ignite.ml.knn.regression.KNNMultipleLinearRegression;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
 import org.apache.ignite.ml.structures.LabeledDataset;
+import org.apache.ignite.ml.structures.preprocessing.Normalizer;
 import org.junit.Assert;
 
 /**
@@ -115,7 +115,7 @@ public class KNNMultipleLinearRegressionTest extends BaseKNNTest {
 
         LabeledDataset training = new LabeledDataset(x, y);
 
-        final LabeledDataset normalizedTrainingDataset = training.normalizeWith(Normalization.MINIMAX);
+        final LabeledDataset normalizedTrainingDataset = (LabeledDataset)Normalizer.normalizeWithMiniMax(training);
 
         KNNMultipleLinearRegression knnMdl = new KNNMultipleLinearRegression(5, new EuclideanDistance(), KNNStrategy.SIMPLE, normalizedTrainingDataset);
         Vector vector = new DenseLocalOnHeapVector(new double[] {104.6, 419180, 2822, 2857, 118734, 1956});
@@ -147,7 +147,7 @@ public class KNNMultipleLinearRegressionTest extends BaseKNNTest {
 
         LabeledDataset training = new LabeledDataset(x, y);
 
-        final LabeledDataset normalizedTrainingDataset = training.normalizeWith(Normalization.MINIMAX);
+        final LabeledDataset normalizedTrainingDataset = (LabeledDataset)Normalizer.normalizeWithMiniMax(training);
 
         KNNMultipleLinearRegression knnMdl = new KNNMultipleLinearRegression(5, new EuclideanDistance(), KNNStrategy.WEIGHTED, normalizedTrainingDataset);
         Vector vector = new DenseLocalOnHeapVector(new double[] {104.6, 419180, 2822, 2857, 118734, 1956});

@@ -53,11 +53,10 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridNodeOrderComparator;
@@ -66,7 +65,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
-import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
@@ -76,12 +74,12 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
-import org.apache.ignite.internal.processors.jobmetrics.GridJobMetrics;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridAtomicLong;
@@ -98,8 +96,10 @@ import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -139,6 +139,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_REGIONS_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LATE_AFFINITY_ASSIGNMENT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
@@ -492,6 +493,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         ctx.addNodeAttribute(ATTR_PHY_RAM, totSysMemory);
         ctx.addNodeAttribute(ATTR_OFFHEAP_SIZE, requiredOffheap());
+        ctx.addNodeAttribute(ATTR_DATA_REGIONS_OFFHEAP_SIZE, configuredOffheap());
 
         DiscoverySpi spi = getSpi();
 
@@ -1043,98 +1045,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             /** {@inheritDoc} */
             @Override public ClusterMetrics metrics() {
-                GridJobMetrics jm = ctx.jobMetric().getJobMetrics();
-
-                ClusterMetricsSnapshot nm = new ClusterMetricsSnapshot();
-
-                nm.setLastUpdateTime(U.currentTimeMillis());
-
-                // Job metrics.
-                nm.setMaximumActiveJobs(jm.getMaximumActiveJobs());
-                nm.setCurrentActiveJobs(jm.getCurrentActiveJobs());
-                nm.setAverageActiveJobs(jm.getAverageActiveJobs());
-                nm.setMaximumWaitingJobs(jm.getMaximumWaitingJobs());
-                nm.setCurrentWaitingJobs(jm.getCurrentWaitingJobs());
-                nm.setAverageWaitingJobs(jm.getAverageWaitingJobs());
-                nm.setMaximumRejectedJobs(jm.getMaximumRejectedJobs());
-                nm.setCurrentRejectedJobs(jm.getCurrentRejectedJobs());
-                nm.setAverageRejectedJobs(jm.getAverageRejectedJobs());
-                nm.setMaximumCancelledJobs(jm.getMaximumCancelledJobs());
-                nm.setCurrentCancelledJobs(jm.getCurrentCancelledJobs());
-                nm.setAverageCancelledJobs(jm.getAverageCancelledJobs());
-                nm.setTotalRejectedJobs(jm.getTotalRejectedJobs());
-                nm.setTotalCancelledJobs(jm.getTotalCancelledJobs());
-                nm.setTotalExecutedJobs(jm.getTotalExecutedJobs());
-                nm.setTotalJobsExecutionTime(jm.getTotalJobsExecutionTime());
-                nm.setMaximumJobWaitTime(jm.getMaximumJobWaitTime());
-                nm.setCurrentJobWaitTime(jm.getCurrentJobWaitTime());
-                nm.setAverageJobWaitTime(jm.getAverageJobWaitTime());
-                nm.setMaximumJobExecuteTime(jm.getMaximumJobExecuteTime());
-                nm.setCurrentJobExecuteTime(jm.getCurrentJobExecuteTime());
-                nm.setAverageJobExecuteTime(jm.getAverageJobExecuteTime());
-                nm.setCurrentIdleTime(jm.getCurrentIdleTime());
-                nm.setTotalIdleTime(jm.getTotalIdleTime());
-                nm.setAverageCpuLoad(jm.getAverageCpuLoad());
-
-                // Job metrics.
-                nm.setTotalExecutedTasks(ctx.task().getTotalExecutedTasks());
-
-                // VM metrics.
-                nm.setAvailableProcessors(metrics.getAvailableProcessors());
-                nm.setCurrentCpuLoad(metrics.getCurrentCpuLoad());
-                nm.setCurrentGcCpuLoad(metrics.getCurrentGcCpuLoad());
-                nm.setHeapMemoryInitialized(metrics.getHeapMemoryInitialized());
-                nm.setHeapMemoryUsed(metrics.getHeapMemoryUsed());
-                nm.setHeapMemoryCommitted(metrics.getHeapMemoryCommitted());
-                nm.setHeapMemoryMaximum(metrics.getHeapMemoryMaximum());
-                nm.setHeapMemoryTotal(metrics.getHeapMemoryMaximum());
-                nm.setNonHeapMemoryInitialized(metrics.getNonHeapMemoryInitialized());
-                nonHeapMemoryUsed(nm);
-                nm.setNonHeapMemoryCommitted(metrics.getNonHeapMemoryCommitted());
-                nm.setNonHeapMemoryMaximum(metrics.getNonHeapMemoryMaximum());
-                nm.setNonHeapMemoryTotal(metrics.getNonHeapMemoryMaximum());
-                nm.setUpTime(metrics.getUptime());
-                nm.setStartTime(metrics.getStartTime());
-                nm.setNodeStartTime(startTime);
-                nm.setCurrentThreadCount(metrics.getThreadCount());
-                nm.setMaximumThreadCount(metrics.getPeakThreadCount());
-                nm.setTotalStartedThreadCount(metrics.getTotalStartedThreadCount());
-                nm.setCurrentDaemonThreadCount(metrics.getDaemonThreadCount());
-                nm.setTotalNodes(1);
-
-                // Data metrics.
-                nm.setLastDataVersion(ctx.cache().lastDataVersion());
-
-                GridIoManager io = ctx.io();
-
-                // IO metrics.
-                nm.setSentMessagesCount(io.getSentMessagesCount());
-                nm.setSentBytesCount(io.getSentBytesCount());
-                nm.setReceivedMessagesCount(io.getReceivedMessagesCount());
-                nm.setReceivedBytesCount(io.getReceivedBytesCount());
-                nm.setOutboundMessagesQueueSize(io.getOutboundMessagesQueueSize());
-
-                return nm;
-            }
-
-            /**
-             * @param nm Initializing metrics snapshot.
-             */
-            private void nonHeapMemoryUsed(ClusterMetricsSnapshot nm) {
-                long nonHeapUsed = metrics.getNonHeapMemoryUsed();
-
-                Map<Integer, CacheMetrics> nodeCacheMetrics = cacheMetrics();
-
-                if (nodeCacheMetrics != null) {
-                    for (Map.Entry<Integer, CacheMetrics> entry : nodeCacheMetrics.entrySet()) {
-                        CacheMetrics e = entry.getValue();
-
-                        if (e != null)
-                            nonHeapUsed += e.getOffHeapAllocatedSize();
-                    }
-                }
-
-                nm.setNonHeapMemoryUsed(nonHeapUsed);
+                return new ClusterMetricsImpl(ctx, metrics, startTime);
             }
 
             /** {@inheritDoc} */
@@ -1477,9 +1388,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         int totalCpus = cpus(allNodes);
 
         double heap = U.heapSize(allNodes, 2);
+        double offheap = U.offheapSize(allNodes, 2);
 
         if (log.isQuiet())
-            U.quiet(false, topologySnapshotMessage(topVer, srvNodes.size(), clientNodes.size(), totalCpus, heap));
+            topologySnapshotMessage(new IgniteClosure<String, Void>() {
+                @Override public Void apply(String msg) {
+                    U.quiet(false, msg);
+
+                    return null;
+                }
+            }, topVer, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap);
 
         if (log.isDebugEnabled()) {
             String dbg = "";
@@ -1519,11 +1437,18 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             dbg += ">>> Total number of CPUs: " + totalCpus + U.nl();
             dbg += ">>> Total heap size: " + heap + "GB" + U.nl();
+            dbg += ">>> Total offheap size: " + offheap + "GB" + U.nl();
 
             log.debug(dbg);
         }
         else if (log.isInfoEnabled())
-            log.info(topologySnapshotMessage(topVer, srvNodes.size(), clientNodes.size(), totalCpus, heap));
+            topologySnapshotMessage(new IgniteClosure<String, Void>() {
+                @Override public Void apply(String msg) {
+                    log.info(msg);
+
+                    return null;
+                }
+            }, topVer, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap);
     }
 
     /**
@@ -1558,20 +1483,83 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * @return Configured data regions offheap memory in bytes.
+     */
+    private long configuredOffheap() {
+        DataStorageConfiguration memCfg = ctx.config().getDataStorageConfiguration();
+
+        if (memCfg == null)
+            return 0;
+
+        long res = memCfg.getDefaultDataRegionConfiguration().getMaxSize();
+
+        DataRegionConfiguration[] dataRegions = memCfg.getDataRegionConfigurations();
+
+        if (dataRegions != null) {
+            for (DataRegionConfiguration dataReg : dataRegions)
+                res += dataReg.getMaxSize();
+        }
+
+        return res;
+    }
+
+    /**
+     * @param regCfg Data region configuration.
+     * @return Data region message.
+     */
+    private String dataRegionConfigurationMessage(DataRegionConfiguration regCfg) {
+        if (regCfg == null)
+            return null;
+
+        SB m = new SB();
+
+        m.a("  ^-- ").a(regCfg.getName()).a(" [");
+        m.a("initSize=").a(U.readableSize(regCfg.getInitialSize(), false));
+        m.a(", maxSize=").a(U.readableSize(regCfg.getMaxSize(), false));
+        m.a(", persistenceEnabled=" + regCfg.isPersistenceEnabled()).a(']');
+
+        return m.toString();
+    }
+
+    /**
+     * @param clo Wrapper of logger.
      * @param topVer Topology version.
      * @param srvNodesNum Server nodes number.
      * @param clientNodesNum Client nodes number.
      * @param totalCpus Total cpu number.
      * @param heap Heap size.
-     * @return Topology snapshot message.
+     * @param offheap Offheap size.
      */
-    private String topologySnapshotMessage(long topVer, int srvNodesNum, int clientNodesNum, int totalCpus, double heap) {
-        return PREFIX + " [" +
+    private void topologySnapshotMessage(IgniteClosure<String, Void> clo, long topVer, int srvNodesNum,
+        int clientNodesNum, int totalCpus, double heap, double offheap) {
+        String summary = PREFIX + " [" +
             (discoOrdered ? "ver=" + topVer + ", " : "") +
             "servers=" + srvNodesNum +
             ", clients=" + clientNodesNum +
             ", CPUs=" + totalCpus +
+            ", offheap=" + offheap + "GB" +
             ", heap=" + heap + "GB]";
+
+        clo.apply(summary);
+
+        DataStorageConfiguration memCfg = ctx.config().getDataStorageConfiguration();
+
+        if (memCfg == null)
+            return;
+
+        clo.apply("Data Regions Configured:");
+        clo.apply(dataRegionConfigurationMessage(memCfg.getDefaultDataRegionConfiguration()));
+
+        DataRegionConfiguration[] dataRegions = memCfg.getDataRegionConfigurations();
+
+        if (dataRegions != null) {
+            for (int i = 0; i < dataRegions.length; ++i) {
+                String msg = dataRegionConfigurationMessage(dataRegions[i]);
+
+                if (msg != null)
+                    clo.apply(msg);
+            }
+        }
     }
 
     /** {@inheritDoc} */

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.examples.sql;
 
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -24,8 +25,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.model.Organization;
 import org.apache.ignite.examples.model.Person;
-
-import java.util.List;
 
 /**
  * Example to showcase DML capabilities of Ignite's SQL engine.

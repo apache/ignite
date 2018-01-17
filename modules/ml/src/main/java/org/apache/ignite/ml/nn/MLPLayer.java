@@ -17,13 +17,14 @@
 
 package org.apache.ignite.ml.nn;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 
 /**
  * Class containing information about layer.
  */
-public class MLPLayer {
+public class MLPLayer implements Serializable {
     /**
      * Weights matrix.
      */

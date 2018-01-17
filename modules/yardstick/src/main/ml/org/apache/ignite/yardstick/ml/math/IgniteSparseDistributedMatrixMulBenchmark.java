@@ -22,14 +22,28 @@ import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 
 /**
- * Ignite benchmark that performs ML Grid operations.
- * Todo: IGNITE-7097, complete implementation of this benchmark.
+ * Ignite benchmark that performs unoptimized matrix multiplication of {@link SparseDistributedMatrix}.
+ * For optimized benchmark refer {@link IgniteSparseBlockDistributedMatrixMulBenchmark}.
  */
 @SuppressWarnings("unused")
 public class IgniteSparseDistributedMatrixMulBenchmark extends IgniteAbstractMatrixMulBenchmark {
+    /** This benchmark is unacceptably slow without scaling down, see IGNITE-7097. */
+    private static final int SCALE_DOWN = 2;
+
     /** {@inheritDoc} */
     @Override Matrix newMatrix(int rowSize, int colSize) {
-        return new SparseDistributedMatrix(rowSize, colSize,
+        return new SparseDistributedMatrix(rowSize >> SCALE_DOWN, colSize >> SCALE_DOWN,
             StorageConstants.ROW_STORAGE_MODE, StorageConstants.RANDOM_ACCESS_MODE);
+    }
+
+    /** {@inheritDoc} */
+    @Override Matrix createAndFill(double[][] data, double scale) {
+        Matrix res = newMatrix(data.length, data[0].length);
+
+        for (int row = 0; row < res.rowSize(); row++)
+            for (int col = 0; col < res.columnSize(); col++)
+                res.set(row, col, row == col ? data[row][col] * scale : data[row][col]);
+
+        return res;
     }
 }
