@@ -100,7 +100,7 @@ public class MLPGroupTrainerExample {
                 MLPGroupUpdateTrainer<RPropParameterUpdate> trainer = MLPGroupUpdateTrainer.getDefault(ignite).
                     withSyncPeriod(3).
                     withTolerance(0.001).
-                    withMaxGlobalSteps(100);
+                    withMaxGlobalSteps(20);
 
                 for (int i = 0; i < totalCnt; i++) {
 
@@ -124,7 +124,7 @@ public class MLPGroupTrainerExample {
 
                 System.out.println("\n>>> Fail percentage: " + (failRatio * 100) + "%.");
 
-                System.out.println("\n>>> Distributed  multilayer perceptron example completed.");
+                System.out.println("\n>>> Distributed multilayer perceptron example completed.");
             });
 
             igniteThread.start();
