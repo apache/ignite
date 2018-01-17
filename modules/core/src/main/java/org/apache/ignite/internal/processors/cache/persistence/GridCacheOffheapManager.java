@@ -928,7 +928,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         reuseRoot.isAllocated()) {
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();
-                            
+
                             return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
                         }
                     };
@@ -1060,8 +1060,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     // Initialize new page.
                     if (PageIO.getType(pageAddr) != PageIO.T_PART_META) {
-                       // grp.dataRegion().memoryMetrics().incrementTotalAllocatedPages();
-
                         PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.latest();
 
                         io.initNewPage(pageAddr, partMetaId, pageMem.pageSize());
