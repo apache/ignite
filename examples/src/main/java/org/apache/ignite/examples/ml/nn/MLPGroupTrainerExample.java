@@ -40,8 +40,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * <p>
- * Example of using distributed {@link MultilayerPerceptron}.</p>
+ * Example of using distributed {@link MultilayerPerceptron}.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p>

@@ -363,11 +363,11 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
     /**
      * Create new {@link MLPGroupUpdateTrainer} with new update strategy.
      *
-     * @param strategy New update strategy.
+     * @param stgy New update strategy.
      * @return New {@link MLPGroupUpdateTrainer} with new tolerance value.
      */
-    public <U1 extends Serializable> MLPGroupUpdateTrainer<U1> withUpdateStrategy(UpdatesStrategy<? super MultilayerPerceptron, U1> strategy) {
-        return new MLPGroupUpdateTrainer<>(maxGlobalSteps, syncPeriod, strategy.allUpdatesReducer(), strategy.locStepUpdatesReducer(),
-            strategy.getUpdatesCalculator(), loss, ignite, tolerance);
+    public <U1 extends Serializable> MLPGroupUpdateTrainer<U1> withUpdateStrategy(UpdatesStrategy<? super MultilayerPerceptron, U1> stgy) {
+        return new MLPGroupUpdateTrainer<>(maxGlobalSteps, syncPeriod, stgy.allUpdatesReducer(), stgy.locStepUpdatesReducer(),
+            stgy.getUpdatesCalculator(), loss, ignite, tolerance);
     }
 }
