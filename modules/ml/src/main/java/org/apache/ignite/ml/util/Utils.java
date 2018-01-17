@@ -87,7 +87,8 @@ public class Utils {
     }
 
     /**
-     * Select k distinct integers from range [0, n) with reservoir sampling: https://en.wikipedia.org/wiki/Reservoir_sampling.
+     * Select k distinct integers from range [0, n) with reservoir sampling:
+     * https://en.wikipedia.org/wiki/Reservoir_sampling.
      * Equivalent to {@code selectKDistinct(n, k, new Random())}.
      *
      * @param n Number specifying left end of range of integers to pick values from.
