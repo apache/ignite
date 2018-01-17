@@ -17,18 +17,31 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import org.apache.ignite.internal.processors.database.IgniteDbClientNearCachePutGetTest;
-import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import org.apache.ignite.internal.processors.database.IgniteDbPutGetAbstractTest;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  *
  */
-public class IgnitePdsClientNearCachePutGetTest extends IgniteDbClientNearCachePutGetTest {
+public class IgnitePdsClientNearCachePutGetTest extends IgniteDbPutGetAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean indexingEnabled() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean withClientNearCache() {
+        return true;
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        GridTestUtils.deleteDbFiles();
 
         super.beforeTest();
     }
@@ -37,6 +50,11 @@ public class IgnitePdsClientNearCachePutGetTest extends IgniteDbClientNearCacheP
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        GridTestUtils.deleteDbFiles();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getPartitionMapExchangeTimeout() {
+        return 60 * 1000;
     }
 }

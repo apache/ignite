@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesWriteThrottleSmokeTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBufferTest;
-import org.apache.ignite.internal.processors.database.IgniteDbClientNearCachePutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbDynamicCacheSelfTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMultiNodePutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbPutGetWithCacheStoreTest;
@@ -89,7 +88,6 @@ public class IgnitePdsTestSuite extends TestSuite {
         suite.addTestSuite(IgniteDbMultiNodePutGetTest.class);
         suite.addTestSuite(IgniteDbSingleNodeTinyPutGetTest.class);
         suite.addTestSuite(IgniteDbDynamicCacheSelfTest.class);
-        suite.addTestSuite(IgniteDbClientNearCachePutGetTest.class);
 
         // Persistence-enabled.
         suite.addTestSuite(IgnitePdsSingleNodePutGetPersistenceTest.class);
