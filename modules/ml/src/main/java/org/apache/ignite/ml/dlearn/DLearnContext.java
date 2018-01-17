@@ -30,7 +30,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
  *
  * @param <P> type of learning context partition
  */
-public interface DLearnContext<P> {
+public interface DLearnContext<P extends AutoCloseable> extends AutoCloseable {
     /**
      * Computes a given function on every d-learn partition in current learning context independently and then reduces
      * results into one final single result. The goal of this approach is to perform {@code mapper} locally on the nodes
@@ -87,5 +87,10 @@ public interface DLearnContext<P> {
      * @param <T> type of new d-learn partition
      * @return new learning context
      */
-    public <T, C extends DLearnContext<T>> C transform(DLearnContextTransformer<P, T, C> transformer);
+    public <T extends AutoCloseable, C extends DLearnContext<T>> C transform(DLearnContextTransformer<P, T, C> transformer);
+
+    /**
+     * Removes all data associated with the context.
+     */
+    public void close();
 }

@@ -17,13 +17,13 @@
 
 package org.apache.ignite.ml.dlearn.context.local;
 
-import java.util.List;
+import java.util.Map;
 import org.apache.ignite.ml.dlearn.DLearnPartitionStorage;
 
 /**
  * Learning context partition which uses local on-heap hash map to keep data.
  */
-public class LocalDLearnPartition<V> {
+public class LocalDLearnPartition<K, V> implements AutoCloseable {
     /** */
     private static final String PART_DATA_KEY = "part_data";
 
@@ -36,12 +36,19 @@ public class LocalDLearnPartition<V> {
     }
 
     /** */
-    public List<V> getPartData() {
+    public Map<K, V> getPartData() {
         return storage.get(PART_DATA_KEY);
     }
 
     /** */
-    public void setPartData(List<V> partData) {
+    public void setPartData(Map<K, V> partData) {
         storage.put(PART_DATA_KEY, partData);
+    }
+
+    /**
+     * Removes all data associated with the partition.
+     */
+    @Override public void close() {
+        storage.remove(PART_DATA_KEY);
     }
 }

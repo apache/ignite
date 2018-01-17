@@ -33,7 +33,7 @@ import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
  *
  * @param <P> type of learning context partition
  */
-public class LocalDLearnContext<P> implements DLearnContext<P> {
+public class LocalDLearnContext<P extends AutoCloseable> implements DLearnContext<P> {
     /** */
     private final Map<DLearnContextPartitionKey, Object> learningCtxMap;
 
@@ -55,7 +55,7 @@ public class LocalDLearnContext<P> implements DLearnContext<P> {
         this.partitions = partitions;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public <R> R compute(IgniteBiFunction<P, Integer, R> mapper, IgniteBinaryOperator<R> reducer) {
         R res = null;
         for (int partIdx = 0; partIdx < partitions; partIdx++) {
@@ -67,7 +67,7 @@ public class LocalDLearnContext<P> implements DLearnContext<P> {
         return res;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public void compute(IgniteBiConsumer<P, Integer> mapper) {
         for (int partIdx = 0; partIdx < partitions; partIdx++) {
             DLearnPartitionStorage storage = new LocalDLearnPartitionStorage(learningCtxMap, learningCtxId, partIdx);
@@ -76,8 +76,8 @@ public class LocalDLearnContext<P> implements DLearnContext<P> {
         }
     }
 
-    /** */
-    @Override public <T, C extends DLearnContext<T>> C transform(DLearnContextTransformer<P, T, C> transformer) {
+    /** {@inheritDoc} */
+    @Override public <T extends AutoCloseable, C extends DLearnContext<T>> C transform(DLearnContextTransformer<P, T, C> transformer) {
         UUID newLearningCtxId = UUID.randomUUID();
 
         compute((part, partIdx) -> {
@@ -89,5 +89,25 @@ public class LocalDLearnContext<P> implements DLearnContext<P> {
         DLearnContext<T> newCtx = new LocalDLearnContext<>(learningCtxMap, transformer, newLearningCtxId, partitions);
 
         return transformer.wrapContext(newCtx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        compute(this::closePartition);
+    }
+
+    /** */
+    private void closePartition(P part) {
+        try {
+            part.close();
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /** */
+    public Map<DLearnContextPartitionKey, Object> getLearningCtxMap() {
+        return learningCtxMap;
     }
 }

@@ -53,4 +53,12 @@ public class DLearnLabeledDatasetPartition<L> extends DLeanDatasetPartition {
     public L[] getLabels() {
         return storage.get(LABELS_KEY);
     }
+
+    /**
+     * Removes all data associated with the partition.
+     */
+    @Override public void close() {
+        super.close();
+        storage.remove(LABELS_KEY);
+    }
 }

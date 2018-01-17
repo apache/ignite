@@ -22,7 +22,7 @@ import org.apache.ignite.ml.dlearn.DLearnPartitionStorage;
 /**
  * Interface which provides simple dataset API which allows to get or set an underlying feature matrix in flat format.
  */
-public class DLeanDatasetPartition {
+public class DLeanDatasetPartition implements AutoCloseable {
     /** */
     private static final String FEATURES_KEY = "features";
 
@@ -71,5 +71,13 @@ public class DLeanDatasetPartition {
      */
     public int getRows() {
         return storage.get(ROWS_KEY);
+    }
+
+    /**
+     * Removes all data associated with the partition.
+     */
+    @Override public void close() {
+        storage.remove(FEATURES_KEY);
+        storage.remove(ROWS_KEY);
     }
 }

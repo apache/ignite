@@ -38,7 +38,7 @@ import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
  *
  * @param <P> type of learning context partition
  */
-public class CacheDLearnContext<P> implements DLearnContext<P> {
+public class CacheDLearnContext<P extends AutoCloseable> implements DLearnContext<P> {
     /** */
     private final Ignite ignite;
 
@@ -59,7 +59,7 @@ public class CacheDLearnContext<P> implements DLearnContext<P> {
         this.learningCtxId = learningCtxId;
     }
 
-    /** */
+    /** {@inheritDoc} */
     public <R> R compute(IgniteBiFunction<P, Integer, R> mapper, IgniteBinaryOperator<R> reducer) {
         ClusterGroup clusterGrp = ignite.cluster().forDataNodes(learningCtxCacheName);
 
@@ -83,7 +83,7 @@ public class CacheDLearnContext<P> implements DLearnContext<P> {
         return reduce(results, reducer);
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public void compute(IgniteBiConsumer<P, Integer> mapper) {
         ClusterGroup clusterGrp = ignite.cluster().forDataNodes(learningCtxCacheName);
 
@@ -102,8 +102,8 @@ public class CacheDLearnContext<P> implements DLearnContext<P> {
         });
     }
 
-    /** */
-    @Override public <T, C extends DLearnContext<T>> C transform(DLearnContextTransformer<P, T, C> transformer) {
+    /** {@inheritDoc} */
+    @Override public <T extends AutoCloseable, C extends DLearnContext<T>> C transform(DLearnContextTransformer<P, T, C> transformer) {
         UUID newLearningCtxId = UUID.randomUUID();
 
         compute((part, partIdx) -> {
@@ -124,5 +124,25 @@ public class CacheDLearnContext<P> implements DLearnContext<P> {
         for (R partRes : results)
             res = reducer.apply(res, partRes);
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        compute(this::closePartition);
+    }
+
+    /** */
+    private void closePartition(P part) {
+        try {
+            part.close();
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /** */
+    public String getLearningCtxCacheName() {
+        return learningCtxCacheName;
     }
 }

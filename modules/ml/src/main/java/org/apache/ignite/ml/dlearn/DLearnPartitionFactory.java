@@ -27,7 +27,7 @@ import java.io.Serializable;
  * @param <P> type of d-learn partition
  */
 @FunctionalInterface
-public interface DLearnPartitionFactory<P> extends Serializable {
+public interface DLearnPartitionFactory<P extends AutoCloseable> extends Serializable {
     /**
      * Creates a new d-learn partition (type-safe wrapper on top of a partition storage).
      *

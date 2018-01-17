@@ -30,28 +30,41 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.ml.dlearn.utils.DLearnContextPartitionKey;
 
 /**
- * Affinity function used to identify partition number and node to place learning context partition. This function is
- * initialized with {@link #initAssignment} parameter which contains information about upstream cache distribution across
- * cluster. It allows it to place learning context partitions on the same nodes as partitions of the upstream cache.
+ * This affinity function is used to identify a partition by key and node to place the partition. This function is
+ * initialized with {@link #initAssignment} parameter which contains information about upstream cache distribution
+ * across the cluster. This information allows function to place context partitions on the same nodes as partitions
+ * of the upstream cache. Be aware that this affinity functions supports only {@link DLearnContextPartitionKey} keys.
  */
 public class DLearnPartitionAffinityFunction implements AffinityFunction {
     /** */
     private static final long serialVersionUID = 7735390384525189270L;
 
     /**
-     * Initial distribution of the partitions (copy of upstream cache partitions distribution)
+     * Initial distribution of the partitions (copy of upstream cache partitions distribution).
      */
     private final List<UUID> initAssignment;
 
     /**
-     * Version of the topology used to make an {@link #initAssignment}
+     * Version of the topology used to collect the {@link #initAssignment}.
      */
     private final long initTopVer;
 
-    /** */
-    public DLearnPartitionAffinityFunction(List<UUID> initAssignment, long initTopVer) {
+    /**
+     * Number of partition backups.
+     */
+    private final int backups;
+
+    /**
+     * Creates new instance of d-learn partition affinity function initialized with initial distribution.
+     *
+     * @param initAssignment initial distribution of the partitions (copy of upstream cache partitions distribution)
+     * @param initTopVer version of the topology used to collect the {@link #initAssignment}
+     * @param backups number of partition backups
+     */
+    public DLearnPartitionAffinityFunction(List<UUID> initAssignment, long initTopVer, int backups) {
         this.initAssignment = initAssignment;
         this.initTopVer = initTopVer;
+        this.backups = backups;
     }
 
     /** {@inheritDoc} */
@@ -66,7 +79,7 @@ public class DLearnPartitionAffinityFunction implements AffinityFunction {
 
     /** {@inheritDoc} */
     @Override public int partition(Object key) {
-        BinaryObject bo = (BinaryObject)key;
+        BinaryObject bo = (BinaryObject) key;
         DLearnContextPartitionKey datasetPartKey = bo.deserialize();
         return datasetPartKey.getPart();
     }

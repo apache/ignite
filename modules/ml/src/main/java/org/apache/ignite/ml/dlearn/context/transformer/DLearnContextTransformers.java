@@ -5,7 +5,6 @@ import org.apache.ignite.ml.dlearn.context.transformer.cache.CacheLabeledDataset
 import org.apache.ignite.ml.dlearn.context.transformer.local.LocalDatasetDLearnPartitionTransformer;
 import org.apache.ignite.ml.dlearn.context.transformer.local.LocalLabeledDatasetDLearnPartitionTransformer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /** */
 public class DLearnContextTransformers {
@@ -20,12 +19,12 @@ public class DLearnContextTransformers {
     }
 
     /** */
-    public static <V> LocalDatasetDLearnPartitionTransformer<V> localToDataset(IgniteFunction<V, double[]> featureExtractor) {
+    public static <K, V> LocalDatasetDLearnPartitionTransformer<K, V> localToDataset(IgniteBiFunction<K, V, double[]> featureExtractor) {
         return new LocalDatasetDLearnPartitionTransformer<>(featureExtractor);
     }
 
     /** */
-    public static <V, L> LocalLabeledDatasetDLearnPartitionTransformer<V, L> localToLabeledDataset(IgniteFunction<V, double[]> featureExtractor, IgniteFunction<V, L> lbExtractor) {
+    public static <K, V, L> LocalLabeledDatasetDLearnPartitionTransformer<K, V, L> localToLabeledDataset(IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
         return new LocalLabeledDatasetDLearnPartitionTransformer<>(featureExtractor, lbExtractor);
     }
 }

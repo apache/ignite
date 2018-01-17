@@ -20,7 +20,7 @@ package org.apache.ignite.ml.dlearn.context.cache;
 import org.apache.ignite.ml.dlearn.DLearnPartitionStorage;
 
 /** */
-public class CacheDLearnPartition<K, V> {
+public class CacheDLearnPartition<K, V> implements AutoCloseable {
     /** */
     private static final String UPSTREAM_CACHE_NAME_KEY = "upstream_cache_name";
 
@@ -53,5 +53,13 @@ public class CacheDLearnPartition<K, V> {
     /** */
     public int getPart() {
         return storage.get(PART_KEY);
+    }
+
+    /**
+     * Removes all data associated with the partition.
+     */
+    @Override public void close() {
+        storage.remove(UPSTREAM_CACHE_NAME_KEY);
+        storage.remove(PART_KEY);
     }
 }

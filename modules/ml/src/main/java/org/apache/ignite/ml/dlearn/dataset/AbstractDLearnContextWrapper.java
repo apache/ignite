@@ -24,7 +24,7 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 
 /** */
-public class AbstractDLearnContextWrapper<P> implements DLearnContext<P> {
+public class AbstractDLearnContextWrapper<P extends AutoCloseable> implements DLearnContext<P> {
     /** */
     protected final DLearnContext<P> delegate;
 
@@ -33,18 +33,23 @@ public class AbstractDLearnContextWrapper<P> implements DLearnContext<P> {
         this.delegate = delegate;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public <R> R compute(IgniteBiFunction<P, Integer, R> mapper, IgniteBinaryOperator<R> reducer) {
         return delegate.compute(mapper, reducer);
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public void compute(IgniteBiConsumer<P, Integer> mapper) {
         delegate.compute(mapper);
     }
 
-    /** */
-    @Override public <T, C extends DLearnContext<T>> C transform(DLearnContextTransformer<P, T, C> transformer) {
+    /** {@inheritDoc} */
+    @Override public <T extends AutoCloseable, C extends DLearnContext<T>> C transform(DLearnContextTransformer<P, T, C> transformer) {
         return delegate.transform(transformer);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        delegate.close();
     }
 }

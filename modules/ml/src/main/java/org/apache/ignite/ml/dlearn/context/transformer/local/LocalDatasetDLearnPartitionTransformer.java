@@ -17,37 +17,41 @@
 
 package org.apache.ignite.ml.dlearn.context.transformer.local;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.apache.ignite.ml.dlearn.DLearnContext;
 import org.apache.ignite.ml.dlearn.DLearnPartitionStorage;
 import org.apache.ignite.ml.dlearn.context.local.LocalDLearnPartition;
+import org.apache.ignite.ml.dlearn.context.transformer.DLearnContextTransformer;
 import org.apache.ignite.ml.dlearn.dataset.DLearnDataset;
 import org.apache.ignite.ml.dlearn.dataset.part.DLeanDatasetPartition;
-import org.apache.ignite.ml.dlearn.context.transformer.DLearnContextTransformer;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /** */
-public class LocalDatasetDLearnPartitionTransformer<V>
-    implements DLearnContextTransformer<LocalDLearnPartition<V>, DLeanDatasetPartition, DLearnDataset<DLeanDatasetPartition>> {
+public class LocalDatasetDLearnPartitionTransformer<K, V>
+    implements DLearnContextTransformer<LocalDLearnPartition<K, V>, DLeanDatasetPartition, DLearnDataset<DLeanDatasetPartition>> {
     /** */
     private static final long serialVersionUID = -7567051002880704559L;
 
     /** */
-    private final IgniteFunction<V, double[]> featureExtractor;
+    private final IgniteBiFunction<K, V, double[]> featureExtractor;
 
     /** */
-    public LocalDatasetDLearnPartitionTransformer(IgniteFunction<V, double[]> featureExtractor) {
+    public LocalDatasetDLearnPartitionTransformer(IgniteBiFunction<K, V, double[]> featureExtractor) {
         this.featureExtractor = featureExtractor;
     }
 
     /** */
-    @Override public void transform(LocalDLearnPartition<V> oldPart, DLeanDatasetPartition newPart) {
-        List<V> partData = oldPart.getPartData();
+    @Override public void transform(LocalDLearnPartition<K, V> oldPart, DLeanDatasetPartition newPart) {
+        Map<K, V> partData = oldPart.getPartData();
         if (partData != null && !partData.isEmpty()) {
             double[] features = null;
             int m = partData.size(), n = 0;
+            List<K> keys = new ArrayList<>(partData.keySet());
             for (int i = 0; i < partData.size(); i++) {
-                double[] rowFeatures = featureExtractor.apply(partData.get(i));
+                K key = keys.get(i);
+                double[] rowFeatures = featureExtractor.apply(key, partData.get(key));
 
                 if (i == 0) {
                     n = rowFeatures.length;

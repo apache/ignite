@@ -31,37 +31,39 @@ import org.apache.ignite.ml.dlearn.utils.DLearnContextPartitionKey;
  *
  * @param <V> type of upstream values
  */
-public class LocalDLearnContextFactory<V> implements DLearnContextFactory<LocalDLearnPartition<V>> {
+public class LocalDLearnContextFactory<K, V> implements DLearnContextFactory<LocalDLearnPartition<K, V>> {
     /** */
     private static final long serialVersionUID = -7614441997952907675L;
 
     /** */
-    private final List<V> data;
+    private final Map<K, V> data;
 
     /** */
     private final int partitions;
 
     /** */
-    public LocalDLearnContextFactory(List<V> data, int partitions) {
+    public LocalDLearnContextFactory(Map<K, V> data, int partitions) {
         this.data = data;
         this.partitions = partitions;
     }
 
     /** {@inheritDoc} */
-    @Override public LocalDLearnContext<LocalDLearnPartition<V>> createContext() {
+    @Override public LocalDLearnContext<LocalDLearnPartition<K, V>> createContext() {
         Map<DLearnContextPartitionKey, Object> learningCtxMap = new HashMap<>();
+
         UUID learningCtxId = UUID.randomUUID();
 
         int partSize = data.size() / partitions;
 
         // loads data into learning context partitions
+        List<K> keys = new ArrayList<>(data.keySet());
         for (int partIdx = 0; partIdx < partitions; partIdx++) {
-            List<V> partData = new ArrayList<>();
+            Map<K, V> partData = new HashMap<>();
             for (int j = partIdx * partSize; j < (partIdx + 1) * partSize && j < data.size(); j++)
-                partData.add(data.get(j));
+                partData.put(keys.get(j), data.get(keys.get(j)));
 
             DLearnPartitionStorage storage = new LocalDLearnPartitionStorage(learningCtxMap, learningCtxId, partIdx);
-            LocalDLearnPartition<V> part = new LocalDLearnPartition<>(storage);
+            LocalDLearnPartition<K, V> part = new LocalDLearnPartition<>(storage);
             part.setPartData(partData);
         }
 

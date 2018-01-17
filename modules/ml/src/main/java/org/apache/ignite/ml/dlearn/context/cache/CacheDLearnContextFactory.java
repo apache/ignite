@@ -103,6 +103,6 @@ public class CacheDLearnContextFactory<K, V> implements DLearnContextFactory<Cac
                 break;
         }
 
-        return new DLearnPartitionAffinityFunction(initAssignment, topVer);
+        return new DLearnPartitionAffinityFunction(initAssignment, topVer, 0);
     }
 }

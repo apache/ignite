@@ -25,7 +25,7 @@ import java.io.Serializable;
  * @param <P> type of d-learn partition
  */
 @FunctionalInterface
-public interface DLearnContextFactory<P> extends Serializable {
+public interface DLearnContextFactory<P extends AutoCloseable> extends Serializable {
     /**
      * Creates new instance of learning context.
      *
