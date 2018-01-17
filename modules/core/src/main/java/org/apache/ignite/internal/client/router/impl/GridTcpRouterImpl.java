@@ -260,29 +260,31 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
             // ThreadWorkerGroups running in the same JVM by other routers/nodes.
             String igniteInstanceName = "router-" + id;
 
-            ArrayList<GridNioFilter> filterArrayList = new ArrayList<>();
+            ArrayList<GridNioFilter> filterList = new ArrayList<>();
 
-            filterArrayList.add(new GridNioCodecFilter(parser, log, false));
+            filterList.add(new GridNioCodecFilter(parser, log, false));
 
             if (compressionType != CompressionType.NO_COMPRESSION) {
-                GridNioCompressionFilter compressFilter = new GridNioCompressionFilter(compressionType, false, ByteOrder.nativeOrder(), log);
+                GridNioCompressionFilter compressFilter = new GridNioCompressionFilter(
+                    compressionType, false, ByteOrder.nativeOrder(), log);
 
-                filterArrayList.add(compressFilter);
+                filterList.add(compressFilter);
             }
 
             if (sslCtx != null) {
-                GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, false, ByteOrder.nativeOrder(), log);
+                GridNioSslFilter sslFilter = new GridNioSslFilter(
+                    sslCtx, false, ByteOrder.nativeOrder(), log);
 
                 sslFilter.wantClientAuth(wantClientAuth);
 
                 sslFilter.needClientAuth(needClientAuth);
 
-                filterArrayList.add(sslFilter);
+                filterList.add(sslFilter);
             }
 
-            GridNioFilter[] filters = new GridNioFilter[filterArrayList.size()];
+            GridNioFilter[] filters = new GridNioFilter[filterList.size()];
 
-            filterArrayList.toArray(filters);
+            filterList.toArray(filters);
 
             srv = GridNioServer.<GridClientMessage>builder()
                 .address(hostAddr)

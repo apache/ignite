@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResult.BUFFER_OVERFLOW;
 import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResult.BUFFER_UNDERFLOW;
@@ -54,7 +55,7 @@ public class DeflaterEngine implements CompressionEngine {
     private int inputUnwrapPos = 0;
 
     /** */
-    private int inputUnwapLen = 0;
+    private int inputUnwrapLen = 0;
 
     /** */
     public DeflaterEngine(){
@@ -62,11 +63,11 @@ public class DeflaterEngine implements CompressionEngine {
     }
 
     /** {@inheritDoc} */
-    public CompressionEngineResult wrap(ByteBuffer src, ByteBuffer buf) throws IOException {
+    public CompressionEngineResult wrap(ByteBuffer src, ByteBuffer buf) {
         int len = src.remaining();
 
-        while (inputDeflaterArr.length < len)
-            inputDeflaterArr = new byte[inputDeflaterArr.length * 2];
+        if (inputDeflaterArr.length < len)
+            inputDeflaterArr = new byte[U.ceilPow2(inputDeflaterArr.length)];
 
         src.get(inputDeflaterArr, 0, len);
 
@@ -111,18 +112,18 @@ public class DeflaterEngine implements CompressionEngine {
         while (inputInflaterArr.length < src.remaining())
             inputInflaterArr = new byte[inputInflaterArr.length * 2];
 
-        if (inputUnwrapPos >= inputUnwapLen) {
+        if (inputUnwrapPos >= inputUnwrapLen) {
             if (len > 0) {
                 src.get(inputInflaterArr, 0, len);
 
-                inputUnwapLen = len;
+                inputUnwrapLen = len;
                 inputUnwrapPos = 0;
             }
             else
                 return BUFFER_UNDERFLOW;
         }
 
-        inflater.setInput(inputInflaterArr, inputUnwrapPos, inputUnwapLen - inputUnwrapPos);
+        inflater.setInput(inputInflaterArr, inputUnwrapPos, inputUnwrapLen - inputUnwrapPos);
 
         byte[] arr = new byte[1024];
 
@@ -137,7 +138,7 @@ public class DeflaterEngine implements CompressionEngine {
 
         int readed = inflater.getRemaining();
 
-        inputUnwrapPos =  inputUnwapLen - readed ;
+        inputUnwrapPos =  inputUnwrapLen - readed ;
 
         if (inflater.finished()) {
             inflater.reset();
@@ -149,7 +150,7 @@ public class DeflaterEngine implements CompressionEngine {
 
             inflateBaos.reset();
 
-            if (src.remaining() == 0 && inputUnwrapPos == inputUnwapLen)
+            if (src.remaining() == 0 && inputUnwrapPos == inputUnwrapLen)
                 return BUFFER_UNDERFLOW;
         }
         else

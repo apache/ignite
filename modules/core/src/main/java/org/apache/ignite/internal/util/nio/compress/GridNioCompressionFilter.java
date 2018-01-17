@@ -57,7 +57,10 @@ public class GridNioCompressionFilter extends GridNioFilterAdapter {
      * @param order Byte order.
      * @param log Logger to use.
      */
-    public GridNioCompressionFilter(CompressionType compressionType, boolean directBuf, ByteOrder order, IgniteLogger log) {
+    public GridNioCompressionFilter(CompressionType compressionType,
+        boolean directBuf,
+        ByteOrder order,
+        IgniteLogger log) {
         super("Compress filter");
 
         this.log = log;

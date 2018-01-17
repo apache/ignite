@@ -177,29 +177,31 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
             try {
                 IgniteLogger gridLog = new JavaLogger(false);
 
-                ArrayList<GridNioFilter> filterArrayList = new ArrayList<>();
+                ArrayList<GridNioFilter> filterList = new ArrayList<>();
 
-                filterArrayList.add(new GridNioCodecFilter(new GridTcpRestParser(routerClient), gridLog, false));
+                filterList.add(new GridNioCodecFilter(new GridTcpRestParser(routerClient), gridLog, false));
 
                 if (cfg.getCompressionType() != CompressionType.NO_COMPRESSION) {
-                    GridNioCompressionFilter compressionFilter = new GridNioCompressionFilter(cfg.getCompressionType(),true, ByteOrder.nativeOrder(), gridLog);
+                    GridNioCompressionFilter compressionFilter = new GridNioCompressionFilter(
+                        cfg.getCompressionType(),true, ByteOrder.nativeOrder(), gridLog);
 
                     compressionFilter.directMode(false);
 
-                    filterArrayList.add(compressionFilter);
+                    filterList.add(compressionFilter);
                 }
 
                 if (sslCtx != null) {
-                    GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, true, ByteOrder.nativeOrder(), gridLog);
+                    GridNioSslFilter sslFilter = new GridNioSslFilter(
+                        sslCtx, true, ByteOrder.nativeOrder(), gridLog);
 
                     sslFilter.directMode(false);
 
-                    filterArrayList.add(sslFilter);
+                    filterList.add(sslFilter);
                 }
 
-                GridNioFilter[] filters = new GridNioFilter[filterArrayList.size()];
+                GridNioFilter[] filters = new GridNioFilter[filterList.size()];
 
-                filterArrayList.toArray(filters);
+                filterList.toArray(filters);
 
                 srv = GridNioServer.builder().address(U.getLocalHost())
                     .port(-1)

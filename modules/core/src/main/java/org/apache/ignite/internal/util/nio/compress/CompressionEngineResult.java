@@ -34,5 +34,5 @@ enum CompressionEngineResult {
     BUFFER_UNDERFLOW,
 
     /** */
-    OK;
+    OK
 }

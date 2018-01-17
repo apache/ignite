@@ -55,7 +55,8 @@ public class LZ4Engine implements CompressionEngine {
 
             buf.position(buf.position() + compress);
             src.position(src.position() + src.remaining());
-        } catch (LZ4Exception e) {
+        }
+        catch (LZ4Exception e) {
             return BUFFER_OVERFLOW;
         }
 
@@ -85,7 +86,8 @@ public class LZ4Engine implements CompressionEngine {
 
             buf.position(buf.position() + decompress);
             src.position(src.position() + compressedLen);
-        } catch (LZ4Exception e) {
+        }
+        catch (LZ4Exception e) {
             src.position(initPos);
 
             return BUFFER_OVERFLOW;
@@ -95,13 +97,13 @@ public class LZ4Engine implements CompressionEngine {
     }
 
     /** */
-    private int getInt(ByteBuffer buf){
+    private int getInt(ByteBuffer buf) {
         return ((buf.get() & 0xFF) << 24) | ((buf.get() & 0xFF) << 16)
             | ((buf.get() & 0xFF) << 8) | (buf.get() & 0xFF);
     }
 
     /** */
-    private void putInt(int val, ByteBuffer buf){
+    private void putInt(int val, ByteBuffer buf) {
         buf.put((byte)(val >>> 24));
         buf.put((byte)(val >>> 16));
         buf.put((byte)(val >>> 8));

@@ -48,7 +48,8 @@ public class ZstdEngine implements CompressionEngine {
         if (src.isDirect() && buf.isDirect()) {
             try {
                 Zstd.compress(buf, src, COMPRESS_LEVEL);
-            } catch (RuntimeException e) {
+            }
+            catch (RuntimeException e) {
                 if (e.getMessage().contains(DEST_BUFFER_OVERFLOW_ERR_MSG))
                     return BUFFER_OVERFLOW;
                 else
@@ -56,7 +57,8 @@ public class ZstdEngine implements CompressionEngine {
             }
 
             return OK;
-        } else {
+        }
+        else {
             byte[] inputArr = new byte[src.remaining()];
 
             src.get(inputArr);
@@ -101,7 +103,8 @@ public class ZstdEngine implements CompressionEngine {
 
             try {
                 Zstd.decompress(buf, src);
-            } catch (RuntimeException e) {
+            }
+            catch (RuntimeException e) {
                 src.limit(oldLimit);
 
                 if (e.getMessage().contains(DEST_BUFFER_OVERFLOW_ERR_MSG))
@@ -132,7 +135,8 @@ public class ZstdEngine implements CompressionEngine {
                     else
                         throw new IOException("Failed to decompress data: " + Zstd.getErrorName(res));
                 }
-            } while (res == DEST_BUFFER_OVERFLOW_ERR);
+            }
+            while (res == DEST_BUFFER_OVERFLOW_ERR);
 
             if (res > buf.remaining()) {
                 src.position(initPos);
@@ -169,22 +173,22 @@ public class ZstdEngine implements CompressionEngine {
         if (!magicCheck)
             throw new IOException("Invalid magic prefix.");
 
-        int frameHeaderDescriptor = buf.get(offset) & 0xFF;
+        int frameHdrDesc = buf.get(offset) & 0xFF;
 
-        int contentSizeDescriptor = frameHeaderDescriptor >>> 6;
-        boolean singleSegment = (frameHeaderDescriptor & 0b100000) != 0;
-        boolean hasChecksum = (frameHeaderDescriptor & 0b100) != 0;
-        int dictionaryDescriptor = frameHeaderDescriptor & 0b11;
+        int contentSizeDesc = frameHdrDesc >>> 6;
+        boolean singleSegment = (frameHdrDesc & 0b100000) != 0;
+        boolean hasChecksum = (frameHdrDesc & 0b100) != 0;
+        int dictionaryDesc = frameHdrDesc & 0b11;
 
-        int headerSize = 1 +
+        int hdrSize = 1 +
             (singleSegment ? 0 : 1) +
-            (dictionaryDescriptor == 0 ? 0 : (1 << (dictionaryDescriptor - 1))) +
-            (contentSizeDescriptor == 0 ? (singleSegment ? 1 : 0) : (1 << contentSizeDescriptor));
+            (dictionaryDesc == 0 ? 0 : (1 << (dictionaryDesc - 1))) +
+            (contentSizeDesc == 0 ? (singleSegment ? 1 : 0) : (1 << contentSizeDesc));
 
-        if (offset + headerSize > limit)
+        if (offset + hdrSize > limit)
             return -1;
 
-        offset += headerSize;
+        offset += hdrSize;
 
         boolean lastBlock;
 
@@ -193,16 +197,16 @@ public class ZstdEngine implements CompressionEngine {
                 return -1;
 
             // read block header
-            int header = (
+            int hdr = (
                 ((buf.get(offset + 2) & 0xff) << 16) |
                     ((buf.get(offset + 1) & 0xff) <<  8) |
                     ((buf.get(offset) & 0xff))) & 0xFF_FFFF;
 
             offset += 3 /* SIZE_OF_BLOCK_HEADER */;
 
-            lastBlock = (header & 1) != 0;
-            int blockType = (header >>> 1) & 0b11;
-            int blockSize = (header >>> 3) & 0b111111111111111111111; // 21 bits
+            lastBlock = (hdr & 1) != 0;
+            int blockType = (hdr >>> 1) & 0b11;
+            int blockSize = (hdr >>> 3) & 0b111111111111111111111; // 21 bits
 
             switch (blockType) {
                 case 0:
@@ -215,7 +219,8 @@ public class ZstdEngine implements CompressionEngine {
                     offset += blockSize;
                     break;
             }
-        } while (!lastBlock);
+        }
+        while (!lastBlock);
 
         if (hasChecksum)
             offset += 3;

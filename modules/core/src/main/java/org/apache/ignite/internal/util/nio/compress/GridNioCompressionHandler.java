@@ -157,8 +157,8 @@ class GridNioCompressionHandler extends ReentrantLock {
      * Compress data to be written to the network.
      *
      * @param src data to compress.
-     * @throws IOException on errors.
      * @return Output buffer with compressed data.
+     * @throws IOException on errors.
      */
     ByteBuffer compress(ByteBuffer src) throws IOException {
         assert isHeldByCurrentThread();
@@ -189,8 +189,8 @@ class GridNioCompressionHandler extends ReentrantLock {
     /**
      * Copies data from out net buffer and passes it to the underlying chain.
      *
-     * @return Write future.
      * @param ackC Closure invoked when message ACK is received.
+     * @return Write future.
      * @throws GridNioException If send failed.
      */
     GridNioFuture<?> writeNetBuffer(IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
@@ -205,9 +205,8 @@ class GridNioCompressionHandler extends ReentrantLock {
      * Unwraps user data to the application buffer.
      *
      * @throws IOException If failed to process compress data.
-     * @throws GridNioException If failed to pass events to the next filter.
      */
-    private void unwrapData() throws IgniteCheckedException, IOException {
+    private void unwrapData() throws IOException {
         if (log.isDebugEnabled())
             log.debug("Unwrapping received data: " + ses);
 

@@ -2326,10 +2326,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     } :
                     null;
 
-                ArrayList<GridNioFilter> filterArrayList = new ArrayList<>();
+                ArrayList<GridNioFilter> filterList = new ArrayList<>();
 
-                filterArrayList.add(new GridNioCodecFilter(parser, log, true));
-                filterArrayList.add(new GridConnectionBytesVerifyFilter(log));
+                filterList.add(new GridNioCodecFilter(parser, log, true));
+                filterList.add(new GridConnectionBytesVerifyFilter(log));
 
                 if (isNetworkCompressingEnabled()) {
                     GridNioCompressionFilter compressFilter =
@@ -2337,7 +2337,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     compressFilter.directMode(true);
 
-                    filterArrayList.add(compressFilter);
+                    filterList.add(compressFilter);
                 }
 
                 if (isSslEnabled()) {
@@ -2350,12 +2350,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     sslFilter.wantClientAuth(true);
                     sslFilter.needClientAuth(true);
 
-                    filterArrayList.add(sslFilter);
+                    filterList.add(sslFilter);
                 }
 
-                GridNioFilter[] filters = new GridNioFilter[filterArrayList.size()];
+                GridNioFilter[] filters = new GridNioFilter[filterList.size()];
 
-                filterArrayList.toArray(filters);
+                filterList.toArray(filters);
 
                 GridNioServer<Message> srvr =
                     GridNioServer.<Message>builder()

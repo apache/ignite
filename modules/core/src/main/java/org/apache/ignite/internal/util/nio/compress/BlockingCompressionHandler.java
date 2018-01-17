@@ -41,8 +41,7 @@ public class BlockingCompressionHandler {
     public BlockingCompressionHandler(CompressionEngine compressionEngine,
         boolean directBuf,
         ByteOrder order,
-        IgniteLogger log)
-        throws IOException {
+        IgniteLogger log) {
         this.log = log;
         this.compressionEngine = compressionEngine;
 
@@ -137,9 +136,8 @@ public class BlockingCompressionHandler {
      * Unwraps user data to the application buffer.
      *
      * @throws IOException If failed to process compress data.
-     * @throws GridNioException If failed to pass events to the next filter.
      */
-    private void unwrapData() throws IgniteCheckedException, IOException {
+    private void unwrapData() throws IOException {
         if (log.isDebugEnabled())
             log.debug("Unwrapping received data.");
 
