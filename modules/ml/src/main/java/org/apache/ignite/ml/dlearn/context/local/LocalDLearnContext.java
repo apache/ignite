@@ -60,8 +60,10 @@ public class LocalDLearnContext<P extends AutoCloseable> implements DLearnContex
         R res = null;
         for (int partIdx = 0; partIdx < partitions; partIdx++) {
             DLearnPartitionStorage storage = new LocalDLearnPartitionStorage(learningCtxMap, learningCtxId, partIdx);
+
             P part = partFactory.createPartition(storage);
             R partRes = mapper.apply(part, partIdx);
+
             res = reducer.apply(res, partRes);
         }
         return res;
@@ -71,7 +73,9 @@ public class LocalDLearnContext<P extends AutoCloseable> implements DLearnContex
     @Override public void compute(IgniteBiConsumer<P, Integer> mapper) {
         for (int partIdx = 0; partIdx < partitions; partIdx++) {
             DLearnPartitionStorage storage = new LocalDLearnPartitionStorage(learningCtxMap, learningCtxId, partIdx);
+
             P part = partFactory.createPartition(storage);
+
             mapper.accept(part, partIdx);
         }
     }
@@ -83,7 +87,9 @@ public class LocalDLearnContext<P extends AutoCloseable> implements DLearnContex
 
         compute((part, partIdx) -> {
             DLearnPartitionStorage newStorage = new LocalDLearnPartitionStorage(learningCtxMap, newLearnCtxId, partIdx);
+
             T newPart = transformer.createPartition(newStorage);
+
             transformer.transform(part, newPart);
         });
 

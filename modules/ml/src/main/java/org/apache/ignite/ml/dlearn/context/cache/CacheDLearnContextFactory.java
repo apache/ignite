@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.dlearn.context.cache;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
@@ -41,7 +42,7 @@ public class CacheDLearnContextFactory<K, V> implements DLearnContextFactory<Cac
     private static final long serialVersionUID = 2903867793242785702L;
 
     /** */
-    private static final String LEARNING_CONTEXT_CACHE_NAME = "%s_LEARNING_CONTEXT_%s";
+    private static final String CONTEXT_CACHE_NAME = "%s_LEARNING_CONTEXT_%s";
 
     /** */
     private final  Ignite ignite;
@@ -58,16 +59,18 @@ public class CacheDLearnContextFactory<K, V> implements DLearnContextFactory<Cac
     /** {@inheritDoc} */
     @Override public CacheDLearnContext<CacheDLearnPartition<K, V>> createContext() {
         CacheConfiguration<DLearnContextPartitionKey, byte[]> learningCtxCacheCfg = new CacheConfiguration<>();
-        learningCtxCacheCfg.setName(String.format(LEARNING_CONTEXT_CACHE_NAME, upstreamCache, UUID.randomUUID()));
+        learningCtxCacheCfg.setName(String.format(CONTEXT_CACHE_NAME, upstreamCache.getName(), UUID.randomUUID()));
         learningCtxCacheCfg.setAffinity(createLearningContextCacheAffinityFunction());
 
         IgniteCache<DLearnContextPartitionKey, byte[]> learningCtxCache = ignite.createCache(learningCtxCacheCfg);
 
         Affinity<?> affinity = ignite.affinity(upstreamCache.getName());
         UUID learningCtxId = UUID.randomUUID();
+
         for (int partIdx = 0; partIdx < affinity.partitions(); partIdx++) {
             DLearnPartitionStorage storage = new CacheDLearnPartitionStorage(learningCtxCache, learningCtxId, partIdx);
             CacheDLearnPartition<K, V> part = new CacheDLearnPartition<>(storage);
+
             part.setUpstreamCacheName(upstreamCache.getName());
             part.setPart(partIdx);
         }
@@ -87,15 +90,19 @@ public class CacheDLearnContextFactory<K, V> implements DLearnContextFactory<Cac
 
         // tries to collect partition-to-node map and checks that topology version hasn't been changed during this
         // process
-        List<UUID> initAssignment;
+        List<List<UUID>> initAssignment;
         long topVer;
         while (true) {
             topVer = ignite.cluster().topologyVersion();
 
             initAssignment = new ArrayList<>(affinity.partitions());
+
             for (int part = 0; part < affinity.partitions(); part++) {
-                ClusterNode primaryNode = affinity.mapPartitionToNode(part);
-                initAssignment.add(primaryNode.id());
+                Collection<ClusterNode> nodes = affinity.mapPartitionToPrimaryAndBackups(part);
+                List<UUID> nodeIds = new ArrayList<>(nodes.size());
+                for (ClusterNode node : nodes)
+                    nodeIds.add(node.id());
+                initAssignment.add(nodeIds);
             }
 
             // if topology version changed we need to try again
@@ -103,6 +110,6 @@ public class CacheDLearnContextFactory<K, V> implements DLearnContextFactory<Cac
                 break;
         }
 
-        return new DLearnPartitionAffinityFunction(initAssignment, topVer, 0);
+        return new DLearnPartitionAffinityFunction(initAssignment);
     }
 }

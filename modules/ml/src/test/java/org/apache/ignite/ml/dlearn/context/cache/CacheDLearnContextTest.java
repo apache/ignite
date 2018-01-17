@@ -61,7 +61,7 @@ public class CacheDLearnContextTest extends GridCommonAbstractTest {
 
     /** */
     public void testClose() {
-        IgniteCache<Integer, String> data = generateTestData();
+        IgniteCache<Integer, String> data = generateTestData(2, 0);
 
         CacheDLearnContextFactory<Integer, String> ctxFactory = new CacheDLearnContextFactory<>(ignite, data);
         CacheDLearnContext<CacheDLearnPartition<Integer, String>> ctx = ctxFactory.createContext();
@@ -78,7 +78,7 @@ public class CacheDLearnContextTest extends GridCommonAbstractTest {
 
     /** */
     public void testCloseDerivativeContext() {
-        IgniteCache<Integer, String> data = generateTestData();
+        IgniteCache<Integer, String> data = generateTestData(2, 0);
 
         CacheDLearnContextFactory<Integer, String> ctxFactory = new CacheDLearnContextFactory<>(ignite, data);
         CacheDLearnContext<CacheDLearnPartition<Integer, String>> ctx = ctxFactory.createContext();
@@ -105,7 +105,7 @@ public class CacheDLearnContextTest extends GridCommonAbstractTest {
 
     /** */
     public void testCloseBaseContext() {
-        IgniteCache<Integer, String> data = generateTestData();
+        IgniteCache<Integer, String> data = generateTestData(2, 0);
 
         CacheDLearnContextFactory<Integer, String> ctxFactory = new CacheDLearnContextFactory<>(ignite, data);
         CacheDLearnContext<CacheDLearnPartition<Integer, String>> ctx = ctxFactory.createContext();
@@ -135,12 +135,15 @@ public class CacheDLearnContextTest extends GridCommonAbstractTest {
      *
      * @return Ignite Cache with data for tests
      */
-    private IgniteCache<Integer, String> generateTestData() {
+    private IgniteCache<Integer, String> generateTestData(int partitions, int backups) {
         CacheConfiguration<Integer, String> cacheConfiguration = new CacheConfiguration<>();
+
         cacheConfiguration.setName(UUID.randomUUID().toString());
-        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(true, 2));
+        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, partitions));
+        cacheConfiguration.setBackups(backups);
 
         IgniteCache<Integer, String> cache = ignite.createCache(cacheConfiguration);
+
         cache.put(1, "TEST1");
         cache.put(2, "TEST2");
         cache.put(3, "TEST3");

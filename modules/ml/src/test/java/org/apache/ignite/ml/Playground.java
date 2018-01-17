@@ -24,7 +24,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.dlearn.DLearnContext;
+import org.apache.ignite.ml.dlearn.context.cache.CacheDLearnContext;
 import org.apache.ignite.ml.dlearn.context.cache.CacheDLearnContextFactory;
 import org.apache.ignite.ml.dlearn.context.cache.CacheDLearnPartition;
 import org.apache.ignite.ml.dlearn.context.transformer.DLearnContextTransformers;
@@ -34,7 +34,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /** */
 public class Playground extends GridCommonAbstractTest {
     /** Number of nodes in grid */
-    private static final int NODE_COUNT = 4;
+    private static final int NODE_COUNT = 2;
 
     /** */
     private Ignite ignite;
@@ -61,11 +61,21 @@ public class Playground extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testTrainOnBostonDataset() {
+    public void testTrainOnBostonDataset() throws Exception {
+//        ignite.events().localListen(evt -> {
+//            System.err.println("EVT PART LOADED : " + evt);
+//            return true;
+//        }, EventType.EVT_CACHE_REBALANCE_PART_LOADED);
+//
+//        ignite.events().localListen(evt -> {
+//            System.err.println("EVT PART UNLOADED : " + evt);
+//            return true;
+//        }, EventType.EVT_CACHE_REBALANCE_PART_UNLOADED);
+
         IgniteCache<Integer, double[]> bostonDataset = loadDataset();
         // Initialization of d-learn context, after this step context cache will be created with partitions placed on
         // the same nodes as the upstream Ignite Cache (in this case bostonDataset).
-        DLearnContext<CacheDLearnPartition<Integer, double[]>> cacheLearningCtx =
+        CacheDLearnContext<CacheDLearnPartition<Integer, double[]>> cacheLearningCtx =
             new CacheDLearnContextFactory<>(ignite, bostonDataset).createContext();
 
         // Loading of the d-learn context. During this step data will be transferred from the upstream cache to context
@@ -107,8 +117,8 @@ public class Playground extends GridCommonAbstractTest {
     private IgniteCache<Integer, double[]> loadDataset() {
         CacheConfiguration<Integer, double[]> cc = new CacheConfiguration<>();
         cc.setName("BOSTON_DATASET");
-        cc.setAffinity(new RendezvousAffinityFunction(true, 10));
-        IgniteCache<Integer, double[]> cache = ignite.createCache(cc);
+        cc.setAffinity(new RendezvousAffinityFunction(false, 10));
+        IgniteCache<Integer, double[]> cache = ignite.getOrCreateCache(cc);
 
         int nvars = 13;
         Scanner scanner = new Scanner(this.getClass().getClassLoader().getResourceAsStream("datasets/regression/boston.csv"));

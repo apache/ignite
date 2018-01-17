@@ -18,10 +18,10 @@
 package org.apache.ignite.ml.dlearn.context.cache.utils;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -42,29 +42,15 @@ public class DLearnPartitionAffinityFunction implements AffinityFunction {
     /**
      * Initial distribution of the partitions (copy of upstream cache partitions distribution).
      */
-    private final List<UUID> initAssignment;
-
-    /**
-     * Version of the topology used to collect the {@link #initAssignment}.
-     */
-    private final long initTopVer;
-
-    /**
-     * Number of partition backups.
-     */
-    private final int backups;
+    private final List<List<UUID>> initAssignment;
 
     /**
      * Creates new instance of d-learn partition affinity function initialized with initial distribution.
      *
      * @param initAssignment initial distribution of the partitions (copy of upstream cache partitions distribution)
-     * @param initTopVer version of the topology used to collect the {@link #initAssignment}
-     * @param backups number of partition backups
      */
-    public DLearnPartitionAffinityFunction(List<UUID> initAssignment, long initTopVer, int backups) {
+    public DLearnPartitionAffinityFunction(List<List<UUID>> initAssignment) {
         this.initAssignment = initAssignment;
-        this.initTopVer = initTopVer;
-        this.backups = backups;
     }
 
     /** {@inheritDoc} */
@@ -86,20 +72,37 @@ public class DLearnPartitionAffinityFunction implements AffinityFunction {
 
     /** {@inheritDoc} */
     @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
-        long currTopVer = affCtx.currentTopologyVersion().topologyVersion();
         List<List<ClusterNode>> assignment = new ArrayList<>(initAssignment.size());
-        if (currTopVer == initTopVer) {
-            Map<UUID, ClusterNode> topSnapshotIdx = new HashMap<>();
-            for (ClusterNode node : affCtx.currentTopologySnapshot())
-                topSnapshotIdx.put(node.id(), node);
-            for (int part = 0; part < initAssignment.size(); part++) {
-                UUID partNodeId = initAssignment.get(part);
-                ClusterNode partNode = topSnapshotIdx.get(partNodeId);
-                assignment.add(Collections.singletonList(partNode));
+
+        Map<UUID, ClusterNode> topSnapshotIdx = new HashMap<>();
+        List<ClusterNode> topSnapshot = affCtx.currentTopologySnapshot();
+
+        for (ClusterNode node : topSnapshot)
+            topSnapshotIdx.put(node.id(), node);
+
+        for (int part = 0; part < initAssignment.size(); part++) {
+            List<ClusterNode> partNodes = new ArrayList<>(1 + affCtx.backups());
+            List<UUID> partNodeIds = initAssignment.get(part);
+
+            // looking for a primary node
+            ClusterNode primaryPartNode = null;
+            for (UUID partNodeId : partNodeIds) {
+                primaryPartNode = topSnapshotIdx.get(partNodeId);
+                if (primaryPartNode != null)
+                    break;
             }
-            return assignment;
+
+            if (primaryPartNode == null) {
+                Random random = new Random();
+                int nodeIdx = random.nextInt(topSnapshot.size());
+                primaryPartNode = topSnapshot.get(nodeIdx);
+            }
+            partNodes.add(primaryPartNode);
+
+            assignment.add(partNodes);
         }
-        throw new IllegalStateException();
+
+        return assignment;
     }
 
     /** {@inheritDoc} */

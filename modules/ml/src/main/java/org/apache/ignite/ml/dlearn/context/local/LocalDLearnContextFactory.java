@@ -57,13 +57,16 @@ public class LocalDLearnContextFactory<K, V> implements DLearnContextFactory<Loc
 
         // loads data into learning context partitions
         List<K> keys = new ArrayList<>(data.keySet());
+
         for (int partIdx = 0; partIdx < partitions; partIdx++) {
             Map<K, V> partData = new HashMap<>();
+
             for (int j = partIdx * partSize; j < (partIdx + 1) * partSize && j < data.size(); j++)
                 partData.put(keys.get(j), data.get(keys.get(j)));
 
             DLearnPartitionStorage storage = new LocalDLearnPartitionStorage(learningCtxMap, learningCtxId, partIdx);
             LocalDLearnPartition<K, V> part = new LocalDLearnPartition<>(storage);
+
             part.setPartData(partData);
         }
 

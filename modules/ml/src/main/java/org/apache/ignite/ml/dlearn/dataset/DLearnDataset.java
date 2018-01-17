@@ -35,78 +35,131 @@ public class DLearnDataset<P extends DLeanDatasetPartition> extends AbstractDLea
         super(delegate);
     }
 
-    /** */
+    /**
+     * Calculates mean value by given columns.
+     *
+     * @param cols columns
+     * @return mean values
+     */
     public double[] mean(int[] cols) {
         ValueWithCount<double[]> res = delegate.compute((part, partIdx) -> {
             double[] features = part.getFeatures();
             int m = part.getRows();
+
             double[] y = new double[cols.length];
+
             for (int i = 0; i < cols.length; i++)
                 for (int j = cols[i] * m; j < (cols[i] + 1) * m; j++)
                     y[i] += features[j];
+
             return new ValueWithCount<>(y, m);
-        }, (a, b) -> a == null ? b : new ValueWithCount<>(sum(a.val, b.val), a.cnt + b.cnt));
-        blas.dscal(res.val.length, 1.0 / res.cnt, res.val, 1);
-        return res.val;
+        }, (a, b) -> a == null ? b : b == null ? a : new ValueWithCount<>(sum(a.val, b.val), a.cnt + b.cnt));
+
+        if (res != null) {
+            blas.dscal(res.val.length, 1.0 / res.cnt, res.val, 1);
+            return res.val;
+        }
+
+        return null;
     }
 
-    /** */
+    /**
+     * Calculates mean value by the given column.
+     *
+     * @param col column
+     * @return mean value
+     */
     public double mean(int col) {
         return mean(new int[]{col})[0];
     }
 
-    /** */
+    /**
+     * Calculates standard deviation by given columns.
+     *
+     * @param cols columns
+     * @return standard deviations
+     */
     public double[] std(int[] cols) {
         double[] mean = mean(cols);
         ValueWithCount<double[]> res = delegate.compute(part -> {
             double[] features = part.getFeatures();
             int m = part.getRows();
+
             double[] y = new double[cols.length];
+
             for (int i = 0; i < cols.length; i++)
                 for (int j = cols[i] * m; j < (cols[i] + 1) * m; j++)
                     y[i] += Math.pow(features[j] - mean[cols[i]], 2);
+
             return new ValueWithCount<>(y, m);
-        }, (a, b) -> a == null ? b : new ValueWithCount<>(sum(a.val, b.val), a.cnt + b.cnt));
-        blas.dscal(res.val.length, 1.0 / res.cnt, res.val, 1);
-        for (int i = 0; i < res.val.length; i++)
-            res.val[i] = Math.sqrt(res.val[i]);
-        return res.val;
+        }, (a, b) -> a == null ? b : b == null ? a : new ValueWithCount<>(sum(a.val, b.val), a.cnt + b.cnt));
+
+        if (res != null) {
+            blas.dscal(res.val.length, 1.0 / res.cnt, res.val, 1);
+            for (int i = 0; i < res.val.length; i++)
+                res.val[i] = Math.sqrt(res.val[i]);
+            return res.val;
+        }
+
+        return null;
     }
 
-    /** */
+    /**
+     * Calculates standard deviation by the given column.
+     *
+     * @param col column
+     * @return standard deviation
+     */
     public double std(int col) {
         return std(new int[]{col})[0];
     }
 
-    /** */
+    /**
+     * Calculates covariance matrix by given columns.
+     *
+     * @param cols columns
+     * @return covariance matrix
+     */
     public double[][] cov(int[] cols) {
         double[] mean = mean(cols);
         ValueWithCount<double[][]> res = delegate.compute(part -> {
             double[] features = part.getFeatures();
             int m = part.getRows();
+
             double[][] y = new double[cols.length][cols.length];
+
             for (int i = 0; i < cols.length; i++)
                 for (int j = 0; j < cols.length; j++) {
                     int firstCol = cols[i];
                     int secondCol = cols[j];
+
                     for (int k = 0; k < m; k++) {
                         double firstVal = features[m * firstCol + k];
                         double secondVal = features[m * secondCol + k];
                         y[i][j] += ((firstVal - mean[firstCol]) * (secondVal - mean[secondCol]));
                     }
                 }
+
             return new ValueWithCount<>(y, m);
-        }, (a, b) -> a == null ? b : new ValueWithCount<>(sum(a.val, b.val), a.cnt + b.cnt));
-        return scale(res.val, 1.0 / res.cnt);
+        }, (a, b) -> a == null ? b : b == null ? a : new ValueWithCount<>(sum(a.val, b.val), a.cnt + b.cnt));
+
+        return res != null ? scale(res.val, 1.0 / res.cnt) : null;
     }
 
-    /** */
+    /**
+     * Calculates correlation matrix by given columns.
+     *
+     * @param cols columns
+     * @return correlation matrix
+     */
     public double[][] corr(int[] cols) {
         double[][] cov = cov(cols);
         double[] std = std(cols);
+
         for (int i = 0; i < cov.length; i++)
             for (int j = 0; j < cov[0].length; j++)
                 cov[i][j] /= (std[i]*std[j]);
+
         return cov;
     }
 
@@ -114,20 +167,25 @@ public class DLearnDataset<P extends DLeanDatasetPartition> extends AbstractDLea
     private static double[] sum(double[] a, double[] b) {
         for (int i = 0; i < a.length; i++)
             a[i] += b[i];
+
         return a;
     }
 
+    /** */
     private static double[][] sum(double[][] a, double[][] b) {
         for (int i = 0; i < a.length; i++)
             for (int j = 0; j < a[i].length; j++)
                 a[i][j] += b[i][j];
+
         return a;
     }
 
+    /** */
     private static double[][] scale(double[][] a, double alpha) {
         for (int i = 0; i < a.length; i++)
             for (int j = 0; j < a[i].length; j++)
                 a[i][j] *= alpha;
+
         return a;
     }
 
@@ -140,7 +198,7 @@ public class DLearnDataset<P extends DLeanDatasetPartition> extends AbstractDLea
         private final int cnt;
 
         /** */
-        public ValueWithCount(V val, int cnt) {
+        ValueWithCount(V val, int cnt) {
             this.val = val;
             this.cnt = cnt;
         }

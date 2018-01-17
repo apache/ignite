@@ -72,12 +72,16 @@ public class CacheDLearnContext<P extends AutoCloseable> implements DLearnContex
 
             int[] partitions = affinity.primaryPartitions(locNode);
             R res = null;
+
             for (int part : partitions) {
                 DLearnPartitionStorage storage = new CacheDLearnPartitionStorage(learningCtxCache, learningCtxId, part);
+
                 P learningCtxPart = partFactory.createPartition(storage);
                 R partRes = mapper.apply(learningCtxPart, part);
+
                 res = reducer.apply(res, partRes);
             }
+
             return res;
         });
 
@@ -95,9 +99,12 @@ public class CacheDLearnContext<P extends AutoCloseable> implements DLearnContex
             ClusterNode locNode = ignite.cluster().localNode();
 
             int[] partitions = affinity.primaryPartitions(locNode);
+
             for (int part : partitions) {
                 DLearnPartitionStorage storage = new CacheDLearnPartitionStorage(learningCtxCache, learningCtxId, part);
+
                 P learningCtxPart = partFactory.createPartition(storage);
+
                 mapper.accept(learningCtxPart, part);
             }
         });
@@ -111,7 +118,9 @@ public class CacheDLearnContext<P extends AutoCloseable> implements DLearnContex
         compute((part, partIdx) -> {
             IgniteCache<DLearnContextPartitionKey, byte[]> learningCtxCache = ignite.cache(learningCtxCacheName);
             DLearnPartitionStorage storage = new CacheDLearnPartitionStorage(learningCtxCache, newLearnCtxId, partIdx);
+
             T newPart = transformer.createPartition(storage);
+
             transformer.transform(part, newPart);
         });
 
@@ -123,8 +132,10 @@ public class CacheDLearnContext<P extends AutoCloseable> implements DLearnContex
     /** */
     private <R> R reduce(Collection<R> results, IgniteBinaryOperator<R> reducer) {
         R res = null;
+
         for (R partRes : results)
             res = reducer.apply(res, partRes);
+
         return res;
     }
 

@@ -53,10 +53,13 @@ public class LocalDatasetDLearnPartitionTransformer<K, V>
     /** {@inheritDoc} */
     @Override public void transform(LocalDLearnPartition<K, V> oldPart, DLeanDatasetPartition newPart) {
         Map<K, V> partData = oldPart.getPartData();
+
         if (partData != null && !partData.isEmpty()) {
             double[] features = null;
             int m = partData.size(), n = 0;
+
             List<K> keys = new ArrayList<>(partData.keySet());
+
             for (int i = 0; i < partData.size(); i++) {
                 K key = keys.get(i);
                 double[] rowFeatures = featureExtractor.apply(key, partData.get(key));
@@ -72,6 +75,7 @@ public class LocalDatasetDLearnPartitionTransformer<K, V>
                 for (int j = 0; j < rowFeatures.length; j++)
                     features[j * m + i] = rowFeatures[j];
             }
+
             newPart.setFeatures(features);
             newPart.setRows(m);
         }

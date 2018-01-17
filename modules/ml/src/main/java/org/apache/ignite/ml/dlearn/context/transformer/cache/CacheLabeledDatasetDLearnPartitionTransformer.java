@@ -69,6 +69,7 @@ public class CacheLabeledDatasetDLearnPartitionTransformer<K, V, L>
         int m = partData.size(), n = 0;
         double[] features = null;
         L[] labels = (L[])new Object[m];
+
         for (int i = 0; i < partData.size(); i++) {
             Cache.Entry<K, V> entry = partData.get(i);
             double[] rowFeatures = featureExtractor.apply(entry.getKey(), entry.getValue());
@@ -85,6 +86,7 @@ public class CacheLabeledDatasetDLearnPartitionTransformer<K, V, L>
             for (int j = 0; j < rowFeatures.length; j++)
                 features[j * m + i] = rowFeatures[j];
         }
+
         newPart.setFeatures(features);
         newPart.setRows(m);
         newPart.setLabels(labels);
@@ -124,7 +126,6 @@ public class CacheLabeledDatasetDLearnPartitionTransformer<K, V, L>
         IgniteCache<K, V> upstreamCache = ignite.cache(oldPart.getUpstreamCacheName());
 
         ScanQuery<K, V> qry = new ScanQuery<>();
-        qry.setLocal(true);
         qry.setPartition(oldPart.getPart());
 
         return upstreamCache.query(qry);

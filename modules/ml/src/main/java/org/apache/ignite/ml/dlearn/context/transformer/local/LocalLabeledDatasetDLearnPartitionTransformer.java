@@ -60,13 +60,16 @@ public class LocalLabeledDatasetDLearnPartitionTransformer<K, V, L>
     @SuppressWarnings("unchecked")
     @Override public void transform(LocalDLearnPartition<K, V> oldPart, DLearnLabeledDatasetPartition<L> newPart) {
         Map<K, V> partData = oldPart.getPartData();
+
         if (partData != null && !partData.isEmpty()) {
             double[] features = null;
             int m = partData.size(), n = 0;
+
             List<K> keys = new ArrayList<>(partData.keySet());
+
             for (int i = 0; i < partData.size(); i++) {
                 K key = keys.get(i);
-                double[] rowFeatures = featureExtractor.apply(key, partData.get(i));
+                double[] rowFeatures = featureExtractor.apply(key, partData.get(key));
 
                 if (i == 0) {
                     n = rowFeatures.length;
@@ -79,14 +82,17 @@ public class LocalLabeledDatasetDLearnPartitionTransformer<K, V, L>
                 for (int j = 0; j < rowFeatures.length; j++)
                     features[j * m + i] = rowFeatures[j];
             }
+
             newPart.setFeatures(features);
             newPart.setRows(m);
 
             L[] labels = (L[])new Object[partData.size()];
+
             for (int i = 0; i < partData.size(); i++) {
                 K key = keys.get(i);
                 labels[i] = lbExtractor.apply(key, partData.get(key));
             }
+
             newPart.setLabels(labels);
         }
     }
