@@ -78,9 +78,8 @@ public class MLPGroupTrainerTest extends GridCommonAbstractTest {
      * Test training 'xor' by SimpleGD.
      */
     public void testXORGD() {
-        SimpleGDUpdateCalculator<MultilayerPerceptron> calculator = new SimpleGDUpdateCalculator<>();
-        UpdatesStrategy<MultilayerPerceptron, SimpleGDParameterUpdate> st =
-            new UpdatesStrategy<>(calculator.withLearningRate(0.5), SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg);
+        UpdatesStrategy<? super MultilayerPerceptron, SimpleGDParameterUpdate> st =
+            new UpdatesStrategy<>(new SimpleGDUpdateCalculator().withLearningRate(0.5), SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg);
 
         doTestXOR(st);
     }
@@ -88,7 +87,7 @@ public class MLPGroupTrainerTest extends GridCommonAbstractTest {
     /**
      * Test training of 'xor' by {@link MLPGroupUpdateTrainer}.
      */
-    public <U extends Serializable> void doTestXOR(UpdatesStrategy<MultilayerPerceptron, U> strategy) {
+    public <U extends Serializable> void doTestXOR(UpdatesStrategy<? super MultilayerPerceptron, U> strategy) {
         int samplesCnt = 1000;
 
         Matrix xorInputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}},

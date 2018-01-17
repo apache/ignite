@@ -74,7 +74,7 @@ public class MnistLocal {
             2000);
 
         MultilayerPerceptron mdl = new MLPLocalBatchTrainer<>(LossFunctions.MSE,
-            () -> new RPropUpdateCalculator<>(0.1, 1.2, 0.5),
+            () -> new RPropUpdateCalculator(0.1, 1.2, 0.5),
             1E-7,
             200).
             train(input);

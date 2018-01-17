@@ -26,7 +26,7 @@ import org.apache.ignite.ml.optimization.SmoothParametrized;
 /**
  * Simple gradient descent parameters updater.
  */
-public class SimpleGDUpdateCalculator<M extends SmoothParametrized> implements ParameterUpdateCalculator<M, SimpleGDParameterUpdate> {
+public class SimpleGDUpdateCalculator implements ParameterUpdateCalculator<SmoothParametrized, SimpleGDParameterUpdate> {
     /**
      * Learning rate.
      */
@@ -59,7 +59,7 @@ public class SimpleGDUpdateCalculator<M extends SmoothParametrized> implements P
     }
 
     /** {@inheritDoc} */
-    @Override public SimpleGDParameterUpdate init(M mdl,
+    @Override public SimpleGDParameterUpdate init(SmoothParametrized mdl,
         IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
         this.loss = loss;
         return new SimpleGDParameterUpdate(mdl.parametersCount());
@@ -72,7 +72,7 @@ public class SimpleGDUpdateCalculator<M extends SmoothParametrized> implements P
     }
 
     /** {@inheritDoc} */
-    @Override public <M1 extends M> M1 update(M1 obj, SimpleGDParameterUpdate update) {
+    @Override public <M1 extends SmoothParametrized> M1 update(M1 obj, SimpleGDParameterUpdate update) {
         Vector params = obj.parameters();
         return (M1)obj.setParameters(params.minus(update.gradient().times(learningRate)));
     }
@@ -83,7 +83,7 @@ public class SimpleGDUpdateCalculator<M extends SmoothParametrized> implements P
      * @param learningRate Learning rate.
      * @return New instance of this class with same parameters as this one, but with new learning rate.
      */
-    public SimpleGDUpdateCalculator<M> withLearningRate(double learningRate) {
-        return new SimpleGDUpdateCalculator<>(learningRate);
+    public SimpleGDUpdateCalculator withLearningRate(double learningRate) {
+        return new SimpleGDUpdateCalculator(learningRate);
     }
 }

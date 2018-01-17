@@ -35,6 +35,7 @@ import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
+import org.apache.ignite.ml.optimization.SmoothParametrized;
 import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalculator;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
@@ -124,8 +125,8 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
     /**
      * Default update calculator.
      */
-    private static final ParameterUpdateCalculator<MultilayerPerceptron, RPropParameterUpdate>
-        DEFAULT_UPDATE_CALCULATOR = new RPropUpdateCalculator<>();
+    private static final ParameterUpdateCalculator<SmoothParametrized, RPropParameterUpdate>
+        DEFAULT_UPDATE_CALCULATOR = new RPropUpdateCalculator();
 
     /**
      * Default loss function.

@@ -30,20 +30,18 @@ public class UpdateStrategies {
     /**
      * Simple GD update strategy.
      *
-     * @param <M> Model for optimization.
      * @return GD update strategy.
      */
-    public static <M extends SmoothParametrized<M>> UpdatesStrategy<M, SimpleGDParameterUpdate> GD() {
-        return new UpdatesStrategy<>(new SimpleGDUpdateCalculator<M>(), SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg);
+    public static UpdatesStrategy<SmoothParametrized, SimpleGDParameterUpdate> GD() {
+        return new UpdatesStrategy<>(new SimpleGDUpdateCalculator(), SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg);
     }
 
     /**
      * RProp update strategy.
      *
-     * @param <M> Model for optimization.
      * @return RProp update strategy.
      */
-    public static <M extends SmoothParametrized<M>> UpdatesStrategy<M, RPropParameterUpdate> RProp() {
-        return new UpdatesStrategy<>(new RPropUpdateCalculator<>(), RPropParameterUpdate::sumLocal, RPropParameterUpdate::avg);
+    public static UpdatesStrategy<SmoothParametrized, RPropParameterUpdate> RProp() {
+        return new UpdatesStrategy<>(new RPropUpdateCalculator(), RPropParameterUpdate::sumLocal, RPropParameterUpdate::avg);
     }
 }
