@@ -615,7 +615,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if cache is replicated cache.
      */
     public boolean isReplicated() {
-        return cacheCfg.getCacheMode() == CacheMode.REPLICATED;
+        return cacheCfg != null && cacheCfg.getCacheMode() == CacheMode.REPLICATED;
     }
 
     /**
@@ -768,7 +768,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Preloader.
      */
     public GridCachePreloader preloader() {
-        return cache().preloader();
+        GridCacheAdapter<K, V> cache = cache();
+
+        if (cache == null)
+            return null;
+
+        return cache.preloader();
+
     }
 
     /**

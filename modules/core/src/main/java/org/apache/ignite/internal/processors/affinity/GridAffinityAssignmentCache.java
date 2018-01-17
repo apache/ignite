@@ -41,6 +41,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridNodeOrderComparator;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -508,17 +509,21 @@ public class GridAffinityAssignmentCache {
         AffinityAssignment cache = head.get();
 
         if (!cache.topologyVersion().equals(topVer)) {
-            cache = affCache.get(topVer);
+            AffinityAssignment newCache = affCache.get(topVer);
 
-            if (cache == null) {
-                throw new IllegalStateException("Getting affinity for topology version earlier than affinity is " +
+            if (newCache == null) {
+                log.warning("Getting affinity for topology version earlier than affinity is " +
                     "calculated [locNode=" + ctx.discovery().localNode() +
                     ", grp=" + cacheOrGrpName +
                     ", topVer=" + topVer +
                     ", head=" + head.get().topologyVersion() +
                     ", history=" + affCache.keySet() +
                     ']');
+
+                return cache;
             }
+
+            cache = newCache;
         }
 
         assert cache.topologyVersion().equals(topVer) : "Invalid cached affinity: " + cache;
@@ -585,7 +590,7 @@ public class GridAffinityAssignmentCache {
         try {
             if (log.isDebugEnabled())
                 log.debug("Will wait for topology version [locNodeId=" + ctx.localNodeId() +
-                ", topVer=" + topVer + ']');
+                    ", topVer=" + topVer + ']');
 
             IgniteInternalFuture<AffinityTopologyVersion> fut = readyFuture(topVer);
 
@@ -604,9 +609,12 @@ public class GridAffinityAssignmentCache {
                 }
             }
         }
-        catch (IgniteCheckedException e) {
+        catch (CacheStoppedException cse) {
+            return;
+        }
+        catch (IgniteCheckedException ice) {
             throw new IgniteException("Failed to wait for affinity ready future for topology version: " + topVer,
-                e);
+                ice);
         }
     }
 

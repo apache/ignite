@@ -173,6 +173,14 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
         return evt == EVT_NODE_LEFT || evt == EVT_NODE_FAILED;
     }
 
+    /**
+     * @return {@code True} if exchange is for client node joining or leaving.
+     */
+    public boolean isClientTopologyChange() {
+        return eventNode().isClient() && (isJoined() || isLeft());
+    }
+
+
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.

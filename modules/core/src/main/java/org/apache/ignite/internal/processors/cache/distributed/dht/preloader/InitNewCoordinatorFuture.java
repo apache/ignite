@@ -236,7 +236,9 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
                 GridDhtPartitionsFullMessage fullMsg0 = msg.finishMessage();
 
                 if (fullMsg0 != null) {
-                    assert fullMsg == null || fullMsg.resultTopologyVersion().equals(fullMsg0.resultTopologyVersion());
+                    assert fullMsg == null
+                        || fullMsg.resultTopologyVersion() == fullMsg0.resultTopologyVersion()
+                        || fullMsg.resultTopologyVersion().equals(fullMsg0.resultTopologyVersion());
 
                     fullMsg  = fullMsg0;
                 }

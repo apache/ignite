@@ -663,6 +663,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                         grp.addRebalanceEvent(p,
                                             EVT_CACHE_REBALANCE_PART_DATA_LOST,
                                             discoEvt.eventNode(),
+                                            exchFut.topologyVersion(),
                                             discoEvt.type(),
                                             discoEvt.timestamp());
                                     }
@@ -1899,6 +1900,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             grp.addRebalanceEvent(part,
                                 EVT_CACHE_REBALANCE_PART_DATA_LOST,
                                 discoEvt.eventNode(),
+                                resTopVer,
                                 discoEvt.type(),
                                 discoEvt.timestamp());
                         }

@@ -185,14 +185,6 @@ class GridDhtPartitionSupplier {
             }
         }
 
-        if (cutTop.compareTo(demTop) > 0) {
-            if (log.isDebugEnabled())
-                log.debug("Demand request cancelled [current=" + cutTop + ", demanded=" + demTop +
-                    ", from=" + id + ", idx=" + idx + "]");
-
-            return;
-        }
-
         if (log.isDebugEnabled())
             log.debug("Demand request accepted [current=" + cutTop + ", demanded=" + demTop +
                 ", from=" + id + ", idx=" + idx + "]");

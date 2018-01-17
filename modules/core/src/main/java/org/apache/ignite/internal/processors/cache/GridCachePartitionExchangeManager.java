@@ -874,10 +874,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @return {@code True} if pending future queue is empty.
+     * @param ignoreClient Whether to ignore exchange tasks from client nodes.
+     * @return {@code True} if pending future queue contains exchange task.
      */
-    public boolean hasPendingExchange() {
-        return exchWorker.hasPendingExchange();
+    public boolean hasPendingExchange(boolean ignoreClient) {
+        return exchWorker.hasPendingExchange(ignoreClient);
     }
 
     /**
@@ -1704,10 +1705,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param task Task.
      * @return {@code True} if this is exchange task.
      */
-    private static boolean isExchangeTask(CachePartitionExchangeWorkerTask task) {
-        return task instanceof GridDhtPartitionsExchangeFuture ||
-            task instanceof RebalanceReassignExchangeTask ||
-            task instanceof ForceRebalanceExchangeTask;
+    private static boolean isExchangeTask(CachePartitionExchangeWorkerTask task, boolean ignoreClient) {
+        return task instanceof RebalanceReassignExchangeTask ||
+            task instanceof ForceRebalanceExchangeTask ||
+            (task instanceof GridDhtPartitionsExchangeFuture
+                && (!ignoreClient || !((GridDhtPartitionsExchangeFuture)task).exchangeId().isClientTopologyChange()));
     }
 
     /**
@@ -2025,7 +2027,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * @param exchId Exchange ID.
          */
         void forceReassign(GridDhtPartitionExchangeId exchId) {
-            if (!hasPendingExchange() && !busy)
+            if (!hasPendingExchange(true) && !busy)
                 futQ.add(new RebalanceReassignExchangeTask(exchId));
         }
 
@@ -2125,7 +2127,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         void addCustomTask(CachePartitionExchangeWorkerTask task) {
             assert task != null;
 
-            assert !isExchangeTask(task);
+            assert !isExchangeTask(task, false);
 
             futQ.offer(task);
         }
@@ -2136,7 +2138,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * @param task Task.
          */
         void processCustomTask(CachePartitionExchangeWorkerTask task) {
-            assert !isExchangeTask(task);
+            assert !isExchangeTask(task, false);
 
             try {
                 cctx.cache().processCustomExchangeTask(task);
@@ -2149,10 +2151,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         /**
          * @return Whether pending exchange future exists.
          */
-        boolean hasPendingExchange() {
+        boolean hasPendingExchange(boolean ignoreClient) {
             if (!futQ.isEmpty()) {
                 for (CachePartitionExchangeWorkerTask task : futQ) {
-                    if (isExchangeTask(task))
+                    if (isExchangeTask(task, ignoreClient))
                         return true;
                 }
             }
@@ -2169,7 +2171,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             int cnt = 0;
 
             for (CachePartitionExchangeWorkerTask task : futQ) {
-                if (isExchangeTask(task)) {
+                if (isExchangeTask(task, false)) {
                     U.warn(log, ">>> " + ((GridDhtPartitionsExchangeFuture)task).shortInfo());
 
                     if (++cnt == 10)
@@ -2203,7 +2205,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     }
 
                     // If not first preloading and no more topology events present.
-                    if (!cctx.kernalContext().clientNode() && !hasPendingExchange() && preloadFinished)
+                    if (!cctx.kernalContext().clientNode() && !hasPendingExchange(true) && preloadFinished)
                         timeout = cctx.gridConfig().getNetworkTimeout();
 
                     // After workers line up and before preloading starts we initialize all futures.
@@ -2227,7 +2229,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (task == null)
                         continue; // Main while loop.
 
-                    if (!isExchangeTask(task)) {
+                    if (!isExchangeTask(task, false)) {
                         processCustomTask(task);
 
                         continue;
@@ -2337,7 +2339,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 changed |= grp.topology().afterExchange(exchFut);
                             }
 
-                            if (!cctx.kernalContext().clientNode() && changed && !hasPendingExchange())
+                            if (!cctx.kernalContext().clientNode() && changed && !hasPendingExchange(true))
                                 refreshPartitions();
                         }
 
@@ -2432,7 +2434,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             U.log(log, "Rebalancing scheduled [order=" + rebList + "]");
 
-                            if (!hasPendingExchange()) {
+                            if (!hasPendingExchange(true)) {
                                 U.log(log, "Rebalancing started " +
                                     "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
                                     ", node=" + exchId.nodeId() + ']');

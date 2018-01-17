@@ -20,6 +20,7 @@ package org.apache.ignite.events;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -70,6 +71,9 @@ public class CacheRebalancingEvent extends EventAdapter {
     /** Cache name. */
     private String cacheName;
 
+    /** Topology version. */
+    private AffinityTopologyVersion topVer;
+
     /** Partition for the event. */
     private int part;
 
@@ -96,6 +100,7 @@ public class CacheRebalancingEvent extends EventAdapter {
      */
     public CacheRebalancingEvent(
         String cacheName,
+        AffinityTopologyVersion topVer,
         ClusterNode node,
         String msg,
         int type,
@@ -106,6 +111,7 @@ public class CacheRebalancingEvent extends EventAdapter {
     ) {
         super(node, msg, type);
         this.cacheName = cacheName;
+        this.topVer = topVer;
         this.part = part;
         this.discoNode = discoNode;
         this.discoEvtType = discoEvtType;
@@ -119,6 +125,16 @@ public class CacheRebalancingEvent extends EventAdapter {
      */
     public String cacheName() {
         return cacheName;
+    }
+
+
+    /**
+     * Gets topology version.
+     *
+     * @return Topology version.
+     */
+    public AffinityTopologyVersion topologyVersion() {
+        return topVer;
     }
 
     /**

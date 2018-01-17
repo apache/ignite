@@ -184,7 +184,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         // No assignments for disabled preloader.
         GridDhtPartitionTopology top = grp.topology();
 
-        if (!grp.rebalanceEnabled())
+        if (!grp.rebalanceEnabled() || exchId.isClientTopologyChange())
             return new GridDhtPreloaderAssignments(exchId, top.readyTopologyVersion());
 
         int partCnt = grp.affinity().partitions();
@@ -201,7 +201,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
         for (int p = 0; p < partCnt; p++) {
-            if (ctx.exchange().hasPendingExchange()) {
+            if (ctx.exchange().hasPendingExchange(true)) {
                 if (log.isDebugEnabled())
                     log.debug("Skipping assignments creation, exchange worker has pending assignments: " +
                         exchId);
@@ -295,6 +295,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                             grp.addRebalanceEvent(p,
                                 EVT_CACHE_REBALANCE_PART_DATA_LOST,
                                 exchId.eventNode(),
+                                assigns.topologyVersion(),
                                 exchId.event(),
                                 exchId.eventTimestamp());
                         }
@@ -421,7 +422,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> rebalanceFuture() {
-        return ctx.kernalContext().clientNode() ? new GridFinishedFuture<>(true) : demander.rebalanceFuture();
+        return ctx.kernalContext().clientNode() ? new GridFinishedFuture<>(true) : demander.rebalanceFuture(false);
     }
 
     /**
@@ -474,7 +475,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** {@inheritDoc} */
     @Override public boolean needForceKeys() {
         if (grp.rebalanceEnabled()) {
-            IgniteInternalFuture<Boolean> rebalanceFut = rebalanceFuture();
+            if (ctx.kernalContext().clientNode())
+                return false;
+
+            IgniteInternalFuture<Boolean> rebalanceFut = demander.rebalanceFuture(true);
 
             if (rebalanceFut.isDone() && Boolean.TRUE.equals(rebalanceFut.result()))
                 return false;

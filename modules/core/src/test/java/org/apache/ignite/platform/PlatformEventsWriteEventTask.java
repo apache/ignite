@@ -32,6 +32,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.JobEvent;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
@@ -112,7 +113,7 @@ public class PlatformEventsWriteEventTask extends ComputeTaskAdapter<Long, Objec
                 ctx.writeEvent(writer, new CacheQueryReadEvent(node, msg, evtType, "qryType", "cacheName",
                     "clsName", "clause", null, null, null, uuid, "taskName", 1, 2, 3, 4));
 
-                ctx.writeEvent(writer, new CacheRebalancingEvent("cacheName", node, msg, evtType, 1, node, 2, 3));
+                ctx.writeEvent(writer, new CacheRebalancingEvent("cacheName", AffinityTopologyVersion.ZERO, node, msg, evtType, 1, node, 2, 3));
 
                 ctx.writeEvent(writer, new CheckpointEvent(node, msg, evtType, "cpKey"));
 
