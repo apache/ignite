@@ -69,32 +69,34 @@ public class Slf4jLoggerMarkerTest extends TestCase {
         assertNotNull(allFile);
         String all = U.readFileToString(allFile.getPath(), "UTF-8");
 
-        assertTrue(all.contains("Ignored error"));
-        assertTrue(all.contains("Ignored warning"));
-        assertTrue(all.contains("Ignored info"));
-        assertTrue(all.contains("Ignored debug"));
-        assertTrue(all.contains("Ignored trace"));
-        assertTrue(all.contains("Accepted error"));
-        assertTrue(all.contains("Accepted warning"));
-        assertTrue(all.contains("Accepted info"));
-        assertTrue(all.contains("Accepted debug"));
-        assertTrue(all.contains("Accepted trace"));
+        assertTrue(all.contains("[IGNORE_ME] Ignored error"));
+        assertTrue(all.contains("[IGNORE_ME] Ignored warning"));
+        assertTrue(all.contains("[IGNORE_ME] Ignored info"));
+        assertTrue(all.contains("[IGNORE_ME] Ignored debug"));
+        assertTrue(all.contains("[IGNORE_ME] Ignored trace"));
+
+        assertTrue(all.contains("[ACCEPT_ME] Accepted error"));
+        assertTrue(all.contains("[ACCEPT_ME] Accepted warning"));
+        assertTrue(all.contains("[ACCEPT_ME] Accepted info"));
+        assertTrue(all.contains("[ACCEPT_ME] Accepted debug"));
+        assertTrue(all.contains("[ACCEPT_ME] Accepted trace"));
 
         // check file with one marker filtered out
         File filteredFile = U.resolveIgnitePath(LOG_FILTERED);
         assertNotNull(filteredFile);
         String filtered = U.readFileToString(filteredFile.getPath(), "UTF-8");
 
-        assertFalse(filtered.contains("Ignored error"));
-        assertFalse(filtered.contains("Ignored warning"));
-        assertFalse(filtered.contains("Ignored info"));
-        assertFalse(filtered.contains("Ignored debug"));
-        assertFalse(filtered.contains("Ignored trace"));
-        assertTrue(filtered.contains("Accepted error"));
-        assertTrue(filtered.contains("Accepted warning"));
-        assertTrue(filtered.contains("Accepted info"));
-        assertTrue(filtered.contains("Accepted debug"));
-        assertTrue(filtered.contains("Accepted trace"));
+        assertFalse(filtered.contains("[IGNORE_ME] Ignored error"));
+        assertFalse(filtered.contains("[IGNORE_ME] Ignored warning"));
+        assertFalse(filtered.contains("[IGNORE_ME] Ignored info"));
+        assertFalse(filtered.contains("[IGNORE_ME] Ignored debug"));
+        assertFalse(filtered.contains("[IGNORE_ME] Ignored trace"));
+
+        assertTrue(filtered.contains("[ACCEPT_ME] Accepted error"));
+        assertTrue(filtered.contains("[ACCEPT_ME] Accepted warning"));
+        assertTrue(filtered.contains("[ACCEPT_ME] Accepted info"));
+        assertTrue(filtered.contains("[ACCEPT_ME] Accepted debug"));
+        assertTrue(filtered.contains("[ACCEPT_ME] Accepted trace"));
     }
 
     /** Delete existing logs, if any */

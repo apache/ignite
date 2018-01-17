@@ -20,12 +20,12 @@
 <Configuration>
     <Appenders>
         <File name="FILTERED" fileName="work/log/filtered.log" append="false">
-            <PatternLayout pattern="[%d{ISO8601}][%-5p][%markerSimpleName][%t][%c{1}] %m%n"/>
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
             <MarkerFilter marker="IGNORE_ME" onMatch="DENY" onMismatch="NEUTRAL"/>
         </File>
 
         <File name="ALL" fileName="work/log/all.log"  append="false">
-            <PatternLayout pattern="[%d{ISO8601}][%-5p][%markerSimpleName][%t][%c{1}] %m%n"/>
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
         </File>
     </Appenders>
 
