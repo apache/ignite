@@ -35,7 +35,7 @@ public class LocalDatasetExample {
     /** Run example. */
     public static void main(String[] args) {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            System.out.println(">>> D-Learn Dataset example started.");
+            System.out.println(">>> D-Learn Local Dataset example started.");
 
             Map<Integer, Person> persons = createCache(ignite);
 
@@ -72,7 +72,7 @@ public class LocalDatasetExample {
             for (double[] row : corr)
                 System.out.println("\t" + Arrays.toString(row));
 
-            System.out.println(">>> D-Learn Dataset example completed.");
+            System.out.println(">>> D-Learn Local Dataset example completed.");
         }
     }
 
