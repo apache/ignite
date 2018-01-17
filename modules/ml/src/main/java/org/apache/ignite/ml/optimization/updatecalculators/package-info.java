@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains parameters updaters.
+ * Contains update calculators.
  */
-package org.apache.ignite.ml.nn.updaters;
+package org.apache.ignite.ml.optimization.updatecalculators;

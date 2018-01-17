@@ -69,8 +69,8 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void onPartitionDestroyed(int cacheId, int partId, int tag) throws IgniteCheckedException {
-        // No-op.
+    @Override public long onPartitionDestroyed(int cacheId, int partId, int tag) throws IgniteCheckedException {
+        return 0;
     }
 
     /** {@inheritDoc} */

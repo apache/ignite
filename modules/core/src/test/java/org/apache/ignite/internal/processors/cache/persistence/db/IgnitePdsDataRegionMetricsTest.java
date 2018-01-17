@@ -141,9 +141,9 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
                 cache.putAll(map);
 
-                currMetrics = getDfltRegionMetrics(node);
-
                 checkMetricsConsistency(node, grpIds);
+
+                currMetrics = getDfltRegionMetrics(node);
             }
 
             assert currMetrics.getPhysicalMemoryPages() > initMetrics.getPhysicalMemoryPages();
@@ -174,12 +174,19 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange(true, true, node0.cluster().nodes());
 
+        node0.context().cache().context().database().waitForCheckpoint("");
+        node1.context().cache().context().database().waitForCheckpoint("");
+
         checkMetricsConsistency(node0, getDfltRegGroupIds(node0));
         checkMetricsConsistency(node1, getDfltRegGroupIds(node1));
 
         IgniteEx node2 = startGrid(2);
 
         awaitPartitionMapExchange(true, true, node0.cluster().nodes());
+
+        node0.context().cache().context().database().waitForCheckpoint("");
+        node1.context().cache().context().database().waitForCheckpoint("");
+        node2.context().cache().context().database().waitForCheckpoint("");
 
         checkMetricsConsistency(node0, getDfltRegGroupIds(node0));
         checkMetricsConsistency(node1, getDfltRegGroupIds(node1));
@@ -188,6 +195,9 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         stopGrid(1);
 
         awaitPartitionMapExchange(true, true, node0.cluster().nodes());
+
+        node0.context().cache().context().database().waitForCheckpoint("");
+        node2.context().cache().context().database().waitForCheckpoint("");
 
         checkMetricsConsistency(node0, getDfltRegGroupIds(node0));
         checkMetricsConsistency(node2, getDfltRegGroupIds(node2));
@@ -228,11 +238,12 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
                 for (int grpId : grpIds)
                     pagesInStore += node.context().cache().context().pageStore().pagesAllocated(grpId);
 
-                return getDfltRegionMetrics(node).getTotalAllocatedPages() == pagesInStore;
-            }
-        }, 100); // TODO IGNITE-6711: 1000
+                long allocated = getDfltRegionMetrics(node).getTotalAllocatedPages();
 
-//        assert m.getTotalAllocatedPages() >= m.getPhysicalMemoryPages();
-//        assert storageMatches;
+                return allocated == pagesInStore;
+            }
+        }, 1000);
+
+        assert storageMatches;
     }
 }

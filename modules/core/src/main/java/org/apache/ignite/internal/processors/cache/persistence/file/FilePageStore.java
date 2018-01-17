@@ -250,18 +250,26 @@ public class FilePageStore implements PageStore {
     /**
      *
      */
-    public void truncate(int tag) throws IgniteCheckedException {
+    public long truncate(int tag) throws IgniteCheckedException {
         lock.writeLock().lock();
 
         try {
             if (!inited)
-                return;
+                return 0;
 
             this.tag = tag;
 
             fileIO.clear();
 
-            allocated.set(initFile());
+            long prevAlloc = allocated.get();
+
+            long newAlloc = initFile();
+
+            assert (prevAlloc - newAlloc) % dbCfg.getPageSize() == 0;
+
+            allocated.set(newAlloc);
+
+            return prevAlloc - newAlloc;
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);
@@ -325,7 +333,7 @@ public class FilePageStore implements PageStore {
                 if (n < 0) {
                     pageBuf.put(new byte[pageBuf.remaining()]);
 
-                    return initRes;
+                 return initRes;
                 }
 
                 off += n;
@@ -568,4 +576,10 @@ public class FilePageStore implements PageStore {
 
         return (int)((allocated.get() - headerSize()) / pageSize);
     }
+
+    /** */
+    public boolean isInitialized() {
+        return inited;
+    }
+
 }

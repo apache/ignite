@@ -83,7 +83,8 @@ namespace Apache.Ignite.Core.Impl
             LoggerIsLevelEnabled = 19,
             LoggerLog = 20,
             GetBinaryProcessor = 21,
-            ReleaseStart = 22
+            ReleaseStart = 22,
+            AddCacheConfiguration = 23
         }
 
         /** */
@@ -803,6 +804,15 @@ namespace Apache.Ignite.Core.Impl
         public IDataStorageMetrics GetDataStorageMetrics()
         {
             return _prj.GetDataStorageMetrics();
+        }
+
+        /** <inheritdoc /> */
+        public void AddCacheConfiguration(CacheConfiguration configuration)
+        {
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
+
+            DoOutOp((int) Op.AddCacheConfiguration,
+                s => configuration.Write(BinaryUtils.Marshaller.StartMarshal(s)));
         }
 
         /// <summary>

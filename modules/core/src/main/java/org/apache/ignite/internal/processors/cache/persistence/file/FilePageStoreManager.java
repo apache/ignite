@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -245,14 +246,14 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void onPartitionDestroyed(int grpId, int partId, int tag) throws IgniteCheckedException {
+    @Override public long onPartitionDestroyed(int grpId, int partId, int tag) throws IgniteCheckedException {
         assert partId <= PageIdAllocator.MAX_PARTITION_ID;
 
         PageStore store = getStore(grpId, partId);
 
         assert store instanceof FilePageStore : store;
 
-        ((FilePageStore)store).truncate(tag);
+        return ((FilePageStore)store).truncate(tag);
     }
 
     /** {@inheritDoc} */
