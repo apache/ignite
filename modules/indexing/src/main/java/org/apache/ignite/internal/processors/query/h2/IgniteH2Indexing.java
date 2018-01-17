@@ -1536,8 +1536,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 // We may use this cached statement only for local queries and non queries.
                 if (qry.isLocal() || !prepared.isQuery())
-                    return Collections.singletonList(doRunPrepared(schemaName, prepared, qry, null, null, keepBinary,
-                        cancel));
+                    return (List<FieldsQueryCursor<List<?>>>)doRunPrepared(schemaName, prepared, qry, null, null,
+                            keepBinary, cancel);
             }
         }
 
@@ -1567,7 +1567,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             firstArg += prepared.getParameters().size();
 
-            res.add(doRunPrepared(schemaName, prepared, newQry, twoStepQry, meta, keepBinary, cancel));
+            res.addAll(doRunPrepared(schemaName, prepared, newQry, twoStepQry, meta, keepBinary, cancel));
 
             if (parseRes.twoStepQuery() != null && parseRes.twoStepQueryKey() != null &&
                     !parseRes.twoStepQuery().explain())
@@ -1588,7 +1588,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param cancel Query cancel state holder.
      * @return Query result.
      */
-    private FieldsQueryCursor<List<?>> doRunPrepared(String schemaName, Prepared prepared, SqlFieldsQuery qry,
+    private List<? extends FieldsQueryCursor<List<?>>> doRunPrepared(String schemaName, Prepared prepared, SqlFieldsQuery qry,
         GridCacheTwoStepQuery twoStepQry, List<GridQueryFieldMetadata> meta, boolean keepBinary,
         GridQueryCancel cancel) {
         String sqlQry = qry.getSql();
@@ -1608,7 +1608,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         final GridQueryFieldsResult updRes =
                             dmlProc.updateSqlFieldsLocal(schemaName, conn, prepared, qry, filter, cancel);
 
-                        return new QueryCursorImpl<>(new Iterable<List<?>>() {
+                        return Collections.singletonList(new QueryCursorImpl<>(new Iterable<List<?>>() {
                             @Override public Iterator<List<?>> iterator() {
                                 try {
                                     return new GridQueryCacheObjectsIterator(updRes.iterator(), objectContext(),
@@ -1618,7 +1618,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                                     throw new IgniteException(e);
                                 }
                             }
-                        }, cancel);
+                        }, cancel));
                     }
                 }
                 catch (IgniteCheckedException e) {
@@ -1633,7 +1633,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
                 try {
-                    return ddlProc.runDdlStatement(sqlQry, prepared);
+                    return Collections.singletonList(ddlProc.runDdlStatement(sqlQry, prepared));
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + sqlQry + ']', e);
@@ -1642,11 +1642,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             if (prepared instanceof NoOperation) {
                 QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(
-                        Collections.singletonList(Collections.singletonList(0L)), null, false);
+                    Collections.singletonList(Collections.singletonList(0L)), null, false);
 
                 resCur.fieldsMeta(UPDATE_RESULT_META);
 
-                return resCur;
+                return Collections.singletonList(resCur);
             }
 
             throw new IgniteSQLException("Unsupported DDL/DML operation: " + prepared.getClass().getName());
@@ -1658,12 +1658,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             checkQueryType(qry, true);
 
-            return doRunDistributedQuery(schemaName, qry, twoStepQry, meta, keepBinary, cancel);
+            return Collections.singletonList(doRunDistributedQuery(schemaName, qry, twoStepQry, meta, keepBinary,
+                cancel));
         }
 
         // We've encountered a local query, let's just run it.
         try {
-            return queryLocalSqlFields(schemaName, qry, keepBinary, filter, cancel);
+            return Collections.singletonList(queryLocalSqlFields(schemaName, qry, keepBinary, filter, cancel));
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSQLException("Failed to execute local statement [stmt=" + sqlQry +
