@@ -72,6 +72,9 @@ public class ClientConnectorConfiguration {
     /** Idle timeout. */
     private long idleTimeout = DFLT_IDLE_TIMEOUT;
 
+    /** Authentication config. */
+    private AuthenticationConfiguration authCfg;
+
     /**
      * Creates SQL connector configuration with all default values.
      */
@@ -297,6 +300,28 @@ public class ClientConnectorConfiguration {
      */
     public ClientConnectorConfiguration setIdleTimeout(long idleTimeout) {
         this.idleTimeout = idleTimeout;
+
+        return this;
+    }
+
+    /**
+     * Gets user authentication configuration.
+     *
+     * @return Authentication configuration.
+     */
+    public AuthenticationConfiguration getAuthenticationConfiguration() {
+        return authCfg;
+    }
+
+    /**
+     * Sets authentication configuration.
+     *
+     * @param authCfg authentication configuration.
+     * @see #getAuthenticationConfiguration()
+     * @return {@code this} for chaining.
+     */
+    public ClientConnectorConfiguration setAuthenticationConfiguration(AuthenticationConfiguration authCfg) {
+        this.authCfg = authCfg;
 
         return this;
     }

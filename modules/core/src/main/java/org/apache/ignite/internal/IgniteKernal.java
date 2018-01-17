@@ -113,6 +113,7 @@ import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
+import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
@@ -919,7 +920,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startProcessor(new GridClusterStateProcessor(ctx));
                 startProcessor(new GridCacheProcessor(ctx));
                 startProcessor(new GridQueryProcessor(ctx));
-                startProcessor(new ClientListenerProcessor(ctx));
                 startProcessor(new GridServiceProcessor(ctx));
                 startProcessor(new GridTaskSessionProcessor(ctx));
                 startProcessor(new GridJobProcessor(ctx));
@@ -933,6 +933,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startProcessor(new DataStructuresProcessor(ctx));
                 startProcessor(createComponent(PlatformProcessor.class, ctx));
                 startProcessor(new GridMarshallerMappingProcessor(ctx));
+                startProcessor(new IgniteAuthenticationProcessor(ctx));
+                startProcessor(new ClientListenerProcessor(ctx));
 
                 // Start plugins.
                 for (PluginProvider provider : ctx.plugins().allProviders()) {

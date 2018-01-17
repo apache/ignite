@@ -46,6 +46,7 @@ import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
+import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
@@ -282,6 +283,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private DataStructuresProcessor dataStructuresProc;
+
+    /** */
+    @GridToStringExclude
+    private IgniteAuthenticationProcessor authProc;
 
     /** */
     @GridToStringExclude
@@ -837,6 +842,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public DataStructuresProcessor dataStructures() {
         return dataStructuresProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteAuthenticationProcessor authentication() {
+        return authProc;
     }
 
     /** {@inheritDoc} */
