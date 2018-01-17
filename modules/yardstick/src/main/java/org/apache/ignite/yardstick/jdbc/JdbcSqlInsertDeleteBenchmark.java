@@ -22,17 +22,17 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * JDBC benchmark that performs insert operations
+ * JDBC benchmark that performs insert operations.
  */
 public class JdbcSqlInsertDeleteBenchmark extends AbstractJdbcBenchmark {
-    /** Statement that inserts one row */
+    /** Statement that inserts one row. */
     private final ThreadLocal<PreparedStatement> singleInsert = newStatement("INSERT INTO test_long (id, val) VALUES (?, ?)");
 
-    /** Statement that deletes one row */
+    /** Statement that deletes one row. */
     private final ThreadLocal<PreparedStatement> singleDelete = newStatement("DELETE FROM test_long WHERE id = ?");
 
     /**
-     * Benchmarked action that inserts and immediately deletes single row
+     * Benchmarked action that inserts and immediately deletes single row.
      *
      * {@inheritDoc}
      */

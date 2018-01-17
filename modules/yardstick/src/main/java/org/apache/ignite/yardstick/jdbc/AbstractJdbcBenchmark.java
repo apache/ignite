@@ -83,8 +83,9 @@ abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
     }
 
     /**
-     * find address of client node, that thin driver should use
-     * @return address for thin driver
+     * Find address of client node, that thin driver should use.
+     *
+     * @return Address for thin driver.
      */
     private String findThinAddr(){
         for (ClusterNode n : ignite().cluster().forClients().nodes()) {
@@ -123,7 +124,7 @@ abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
     }
 
     /**
-     * Create new {@link Connection} from {@link #args}. Intended for use by {@link #setUp} and {@link #tearDown}
+     * Create new {@link Connection} from {@link #args}. Intended for use by {@link #setUp} and {@link #tearDown}.
      * @return JDBC connection.
      * @throws SQLException On error.
      */
@@ -138,8 +139,9 @@ abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
     }
 
     /**
-     * Create thread local prepared statement
-     * @param sql - sql query for statement
+     * Create thread local prepared statement.
+     * @param sql - sql query for statement.
+     * @return Prepared statement.
      */
     final ThreadLocal<PreparedStatement> newStatement(final String sql){
         return new ThreadLocal<PreparedStatement>(){

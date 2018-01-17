@@ -26,11 +26,11 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 
 /**
- * Native sql benchmark that performs update operations
+ * Native sql benchmark that performs update operations.
  */
 public class NativeSqlUpdateRangeBenchmark extends AbstractNativeBenchmark {
     /**
-     * Benchmarked action that performs updates (single row or batch)
+     * Benchmarked action that performs updates (single row or batch).
      *
      * {@inheritDoc}
      */

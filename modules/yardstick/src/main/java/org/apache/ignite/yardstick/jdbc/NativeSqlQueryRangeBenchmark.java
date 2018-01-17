@@ -25,11 +25,11 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 
 /**
- * Native sql benchmark that performs select operations
+ * Native sql benchmark that performs select operations.
  */
 public class NativeSqlQueryRangeBenchmark extends AbstractNativeBenchmark {
     /**
-     * Benchmarked action that performs selects and validates results
+     * Benchmarked action that performs selects and validates results.
      *
      * {@inheritDoc}
      */

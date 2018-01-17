@@ -25,7 +25,7 @@ import org.yardstickframework.BenchmarkConfiguration;
 import static org.apache.ignite.yardstick.jdbc.JdbcUtils.fillData;
 
 /**
- * Abstract class for benchmarks that use {@link SqlFieldsQuery}
+ * Abstract class for benchmarks that use {@link SqlFieldsQuery}.
  */
 public abstract class AbstractNativeBenchmark extends IgniteAbstractBenchmark {
     /** {@inheritDoc} */

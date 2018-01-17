@@ -26,11 +26,11 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 
 /**
- * Native sql benchmark that performs insert operations
+ * Native sql benchmark that performs insert operations.
  */
 public class NativeSqlInsertDeleteBenchmark extends AbstractNativeBenchmark {
     /**
-     * Benchmarked action that inserts and immediately deletes row
+     * Benchmarked action that inserts and immediately deletes row.
      *
      * {@inheritDoc}
      */

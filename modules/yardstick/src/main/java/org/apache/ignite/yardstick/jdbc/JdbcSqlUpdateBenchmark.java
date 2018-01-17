@@ -22,17 +22,17 @@ import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * JDBC benchmark that performs update operations
+ * JDBC benchmark that performs update operations.
  */
 public class JdbcSqlUpdateBenchmark extends AbstractJdbcBenchmark {
-    /** Statement that updates one row*/
+    /** Statement that updates one row. */
     private final ThreadLocal<PreparedStatement> singleUpdate = newStatement("UPDATE test_long SET val = (val + 1) WHERE id = ?");
 
-    /** Statement that updates range of rows*/
+    /** Statement that updates range of rows. */
     private final ThreadLocal<PreparedStatement> rangeUpdate = newStatement("UPDATE test_long SET val = (val + 1) WHERE id BETWEEN ? AND ?");
 
     /**
-     * Benchmarked action that performs updates
+     * Benchmarked action that performs updates.
      *
      * {@inheritDoc}
      */
@@ -67,5 +67,4 @@ public class JdbcSqlUpdateBenchmark extends AbstractJdbcBenchmark {
 
         return true;
     }
-
 }

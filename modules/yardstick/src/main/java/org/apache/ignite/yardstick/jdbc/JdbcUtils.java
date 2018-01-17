@@ -24,11 +24,11 @@ import org.yardstickframework.BenchmarkConfiguration;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * Useful methods for jdbc benchmarks
+ * Useful methods for JDBC benchmarks.
  */
 public class JdbcUtils {
     /**
-     * Common method to fill test stand with data
+     * Common method to fill test stand with data.
      * @param cfg Benchmark configuration.
      * @param ignite Ignite node.
      * @param range Data key range.
