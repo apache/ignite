@@ -18,31 +18,17 @@
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.processors.cache.distributed.GridCacheEventAbstractTest;
 import org.apache.ignite.lang.IgniteBiTuple;
-
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Tests events.
  */
-public class GridCacheReplicatedEventDisabledSelfTest extends GridCacheEventAbstractTest {
+public class GridCacheReplicatedEventDisabledSelfTest extends GridCacheReplicatedEventSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         return super.cacheConfiguration(igniteInstanceName).setEventsEnabled(false);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return REPLICATED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 2;
     }
 
     /** {@inheritDoc} */
