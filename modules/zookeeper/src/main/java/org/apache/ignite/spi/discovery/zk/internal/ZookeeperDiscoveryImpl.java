@@ -2054,6 +2054,9 @@ public class ZookeeperDiscoveryImpl {
      * @throws Exception If failed.
      */
     private void saveAndProcessNewEvents() throws Exception {
+        if (stopping())
+            return;
+
         long start = System.currentTimeMillis();
 
         byte[] evtsBytes = marshalZip(rtState.evtsData);
@@ -3006,7 +3009,7 @@ public class ZookeeperDiscoveryImpl {
         assert locNode.isClient() : locNode;
 
         throw localNodeFail("All server nodes failed, client node disconnected " +
-            "(received 'no-servers' message ) [locId=" + locNode.id() + ']', true);
+            "(received 'no-servers' message) [locId=" + locNode.id() + ']', true);
     }
 
     /**
