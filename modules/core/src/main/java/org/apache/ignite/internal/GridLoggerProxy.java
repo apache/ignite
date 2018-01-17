@@ -119,7 +119,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     }
 
     /** {@inheritDoc} */
-    @Override public void trace(String marker, String msg) {
+    @Override public void trace(@Nullable String marker, String msg) {
         impl.trace(marker, enrich(msg));
     }
 
@@ -129,7 +129,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     }
 
     /** {@inheritDoc} */
-    @Override public void debug(String marker, String msg) {
+    @Override public void debug(@Nullable String marker, String msg) {
         impl.debug(marker, enrich(msg));
     }
 
@@ -139,7 +139,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     }
 
     /** {@inheritDoc} */
-    @Override public void info(String marker, String msg) {
+    @Override public void info(@Nullable String marker, String msg) {
         impl.info(marker, enrich(msg));
     }
 
@@ -154,7 +154,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     }
 
     /** {@inheritDoc} */
-    @Override public void warning(String marker, String msg, @Nullable Throwable e) {
+    @Override public void warning(@Nullable String marker, String msg, @Nullable Throwable e) {
         impl.warning(marker, enrich(msg), e);
     }
 
@@ -169,7 +169,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     }
 
     /** {@inheritDoc} */
-    @Override public void error(String marker, String msg, @Nullable Throwable e) {
+    @Override public void error(@Nullable String marker, String msg, @Nullable Throwable e) {
         impl.error(marker, enrich(msg), e);
     }
 

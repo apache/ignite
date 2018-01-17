@@ -445,7 +445,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void trace(String marker, String msg) {
+    @Override public void trace(@Nullable String marker, String msg) {
         if (!isTraceEnabled())
             warning("Logging at TRACE level without checking if TRACE level is enabled: " + msg);
 
@@ -458,7 +458,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void debug(String marker, String msg) {
+    @Override public void debug(@Nullable String marker, String msg) {
         if (!isDebugEnabled())
             warning("Logging at DEBUG level without checking if DEBUG level is enabled: " + msg);
 
@@ -471,7 +471,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void info(String marker, String msg) {
+    @Override public void info(@Nullable String marker, String msg) {
         if (!isInfoEnabled())
             warning("Logging at INFO level without checking if INFO level is enabled: " + msg);
 
@@ -484,7 +484,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void warning(String marker, String msg, @Nullable Throwable e) {
+    @Override public void warning(@Nullable String marker, String msg, @Nullable Throwable e) {
         impl.warn(getMarkerOrNull(marker), msg, e);
     }
 
@@ -494,12 +494,12 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void error(String marker, String msg, @Nullable Throwable e) {
+    @Override public void error(@Nullable String marker, String msg, @Nullable Throwable e) {
         impl.error(getMarkerOrNull(marker), msg, e);
     }
 
     /** Returns Marker object for the specified name, or null if the name is null */
-    private Marker getMarkerOrNull(String marker) {
+    private Marker getMarkerOrNull(@Nullable String marker) {
         return marker != null ? MarkerManager.getMarker(marker) : null;
     }
 

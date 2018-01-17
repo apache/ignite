@@ -94,7 +94,7 @@ public interface IgniteLogger {
      * @param marker Name of the marker to be associated with the message.
      * @param msg Trace message.
      */
-    default void trace(String marker, String msg) {
+    default void trace(@Nullable String marker, String msg) {
         trace(msg);
     }
 
@@ -114,7 +114,7 @@ public interface IgniteLogger {
      * @param marker Name of the marker to be associated with the message.
      * @param msg Debug message.
      */
-    default void debug(String marker, String msg) {
+    default void debug(@Nullable String marker, String msg) {
         debug(msg);
     }
 
@@ -134,7 +134,7 @@ public interface IgniteLogger {
      * @param marker Name of the marker to be associated with the message.
      * @param msg Information message.
      */
-    default void info(String marker, String msg) {
+    default void info(@Nullable String marker, String msg) {
         info(msg);
     }
 
@@ -165,7 +165,7 @@ public interface IgniteLogger {
      * @param msg Warning message.
      * @param e Optional exception (can be {@code null}).
      */
-    default void warning(String marker, String msg, @Nullable Throwable e) {
+    default void warning(@Nullable String marker, String msg, @Nullable Throwable e) {
         warning(msg, e);
     }
 
@@ -196,7 +196,7 @@ public interface IgniteLogger {
      * @param msg Error message.
      * @param e Optional exception (can be {@code null}).
      */
-    default void error(String marker, String msg, @Nullable Throwable e) {
+    default void error(@Nullable String marker, String msg, @Nullable Throwable e) {
         error(msg, e);
     }
 

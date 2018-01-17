@@ -21,7 +21,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
 /**
- * Testing logging via {@link IgniteUtils#warnDev(IgniteLogger, Object)}.
+ * Testing logging via {@link IgniteUtils#warnDevOnly(IgniteLogger, Object)}.
  */
 public class IgniteDevOnlyLogTest extends TestCase {
     /** Check that dev-only messages appear in the log. */
@@ -30,7 +30,7 @@ public class IgniteDevOnlyLogTest extends TestCase {
 
         try (Ignite ignite = startNode()) {
             String msg = getMessage(ignite);
-            IgniteUtils.warnDev(ignite.log(), msg);
+            IgniteUtils.warnDevOnly(ignite.log(), msg);
             assertTrue(readLog(ignite).contains(msg));
         }
         finally {
@@ -44,7 +44,7 @@ public class IgniteDevOnlyLogTest extends TestCase {
 
         try (Ignite ignite = startNode()) {
             String msg = getMessage(ignite);
-            IgniteUtils.warnDev(ignite.log(), msg);
+            IgniteUtils.warnDevOnly(ignite.log(), msg);
             assertTrue(readLog(ignite).contains(msg));
         }
         finally {
@@ -53,20 +53,20 @@ public class IgniteDevOnlyLogTest extends TestCase {
     }
 
     /**
-     * Check that {@link IgniteUtils#warnDev(IgniteLogger, Object)}
-     * doesn't print anything if {@link org.apache.ignite.IgniteSystemProperties#IGNITE_DEV_ONLY_WARNINGS_DISABLED}
+     * Check that {@link IgniteUtils#warnDevOnly(IgniteLogger, Object)}
+     * doesn't print anything if {@link org.apache.ignite.IgniteSystemProperties#IGNITE_DEV_ONLY_LOGGING_DISABLED}
      * is set to {@code true}.
      */
     public void testDevOnlyDisabledProperty() throws IOException {
-        String oldDevOnlyVal = System.setProperty(IgniteSystemProperties.IGNITE_DEV_ONLY_WARNINGS_DISABLED, "true");
+        String oldDevOnlyVal = System.setProperty(IgniteSystemProperties.IGNITE_DEV_ONLY_LOGGING_DISABLED, "true");
 
         try (Ignite ignite = startNode()) {
             String msg = getMessage(ignite);
-            IgniteUtils.warnDev(ignite.log(), msg);
+            IgniteUtils.warnDevOnly(ignite.log(), msg);
             assertFalse(readLog(ignite).contains(msg));
         }
         finally {
-            setOrClearProperty(IgniteSystemProperties.IGNITE_DEV_ONLY_WARNINGS_DISABLED, oldDevOnlyVal);
+            setOrClearProperty(IgniteSystemProperties.IGNITE_DEV_ONLY_LOGGING_DISABLED, oldDevOnlyVal);
         }
 
     }
