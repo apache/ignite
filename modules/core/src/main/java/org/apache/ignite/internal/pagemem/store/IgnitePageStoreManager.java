@@ -86,7 +86,7 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @param memMetrics memory metrics to update, if necessary.
      * @throws IgniteCheckedException If failed to handle partition destroy callback.
      */
-    public long onPartitionDestroyed(int grpId, int partId, int tag, DataRegionMetricsImpl memMetrics)
+    public void onPartitionDestroyed(int grpId, int partId, int tag, DataRegionMetricsImpl memMetrics)
         throws IgniteCheckedException;
 
     /**
@@ -209,4 +209,11 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @return number of pages.
      */
     public long pagesAllocated(int grpId);
+
+    /**
+     * Calculates number of pages currently allocated for all cache groups.
+     *
+     * @return number of pages.
+     */
+    public long pagesAllocated();
 }

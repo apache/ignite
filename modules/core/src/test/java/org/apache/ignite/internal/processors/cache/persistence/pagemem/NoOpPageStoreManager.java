@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -75,10 +76,10 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     }
 
     /** {@inheritDoc} */
-    @Override public long onPartitionDestroyed(int cacheId, int partId, int tag, DataRegionMetricsImpl memMetrics)
+    @Override public void onPartitionDestroyed(int cacheId, int partId, int tag, DataRegionMetricsImpl memMetrics)
         throws IgniteCheckedException
     {
-        return 0;
+        // No-op
     }
 
     /** {@inheritDoc} */
@@ -201,6 +202,13 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
 
     /** {@inheritDoc} */
     @Override public long pagesAllocated(int grpId) {
+        assert false : "Is it reachable?";
+
         return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long pagesAllocated() {
+        return allocators.values().stream().mapToInt(AtomicInteger::get).sum();
     }
 }

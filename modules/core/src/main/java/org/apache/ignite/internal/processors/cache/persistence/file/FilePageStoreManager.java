@@ -34,6 +34,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -263,7 +265,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public long onPartitionDestroyed(int grpId, int partId, int tag, DataRegionMetricsImpl memMetrics)
+    @Override public void onPartitionDestroyed(int grpId, int partId, int tag, DataRegionMetricsImpl memMetrics)
         throws IgniteCheckedException
     {
         assert partId <= PageIdAllocator.MAX_PARTITION_ID;
@@ -271,12 +273,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         PageStore store = getStore(grpId, partId);
 
         assert store instanceof FilePageStore : store;
-
-        long newStoreSize = ((FilePageStore)store).truncate(tag);
-
-        memMetrics.decrementTotalAllocatedPages(newStoreSize / memMetrics.pageSize());
-
-        return newStoreSize;
     }
 
     /** {@inheritDoc} */
@@ -388,18 +384,20 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         FileVersionCheckingFactory pageStoreFactory = new FileVersionCheckingFactory(
             dsCfg.getFileIOFactory(), igniteCfg.getDataStorageConfiguration());
 
-        FilePageStore idxStore = pageStoreFactory.createPageStore(PageMemory.FLAG_IDX, idxFile);
+        LongAdder totalSize = new LongAdder();
+
+        FilePageStore idxStore = pageStoreFactory.createPageStore(PageMemory.FLAG_IDX, idxFile, totalSize);
 
         FilePageStore[] partStores = new FilePageStore[partitions];
 
         for (int partId = 0; partId < partStores.length; partId++) {
             FilePageStore partStore = pageStoreFactory.createPageStore(
-                PageMemory.FLAG_DATA, getPartitionFile(cacheWorkDir, partId));
+                PageMemory.FLAG_DATA, getPartitionFile(cacheWorkDir, partId), totalSize);
 
             partStores[partId] = partStore;
         }
 
-        return new CacheStoreHolder(idxStore, partStores);
+        return new CacheStoreHolder(idxStore, partStores, totalSize);
     }
 
     /**
@@ -601,6 +599,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         return pageCnt;
     }
 
+    /** {@inheritDoc} */
+    @Override public long pagesAllocated() {
+        return idxCacheStores.values().stream().mapToLong(h -> h.totalSize.sum()).sum() / dsCfg.getPageSize();
+    }
+
     /**
      * @return Store work dir. Includes consistent-id based folder
      */
@@ -723,12 +726,16 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         /** Partition stores. */
         private final FilePageStore[] partStores;
 
+        /** Size of all stores. */
+        private final LongAdder totalSize;
+
         /**
          *
          */
-        public CacheStoreHolder(FilePageStore idxStore, FilePageStore[] partStores) {
+        public CacheStoreHolder(FilePageStore idxStore, FilePageStore[] partStores, LongAdder totalSize) {
             this.idxStore = idxStore;
             this.partStores = partStores;
+            this.totalSize = totalSize;
         }
     }
 

@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.File;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 
 /**
@@ -34,9 +35,16 @@ public class FilePageStoreV2 extends FilePageStore {
      * @param file File.
      * @param factory Factory.
      * @param cfg Config.
+     * @param totalSize Counter to be updated on store size changes.
      */
-    public FilePageStoreV2(byte type, File file, FileIOFactory factory, DataStorageConfiguration cfg) {
-        super(type, file, factory, cfg);
+    public FilePageStoreV2(
+        byte type,
+        File file,
+        FileIOFactory factory,
+        DataStorageConfiguration cfg,
+        LongAdder totalSize
+    ) {
+        super(type, file, factory, cfg, totalSize);
 
         hdrSize = cfg.getPageSize();
     }

@@ -1316,8 +1316,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         try {
             CheckpointStatus status = readCheckpointStatus();
 
-            initPageMemoryMetricsIfNeeded(status);
-
             checkpointReadLock();
 
             try {
@@ -1340,46 +1338,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
         catch (StorageException e) {
             throw new IgniteCheckedException(e);
-        }
-    }
-
-    /**
-     *
-     */
-    private void initPageMemoryMetricsIfNeeded(CheckpointStatus status) {
-        if (CheckpointStatus.NULL_UUID.equals(status.cpStartId))
-            return;
-
-        Map<String, Set<Integer>> grpsByRegions = new HashMap<>();
-
-        for (Object ctx : cctx.cacheContexts()) {
-            CacheGroupContext grp = ((GridCacheContext)ctx).group();
-
-            String regionName = grp.dataRegion().config().getName();
-
-            Set<Integer> grps = grpsByRegions.get(regionName);
-
-            if (grps == null)
-                grps = new HashSet<>();
-
-            grps.add(grp.groupId());
-
-            grpsByRegions.put(regionName, grps);
-        }
-
-        for (Map.Entry<String, DataRegionMetrics> e : memMetricsMap.entrySet()) {
-            if (e.getValue() instanceof DataRegionMetricsImpl) {
-                DataRegionMetricsImpl m = (DataRegionMetricsImpl)e.getValue();
-
-                Set<Integer> grps = grpsByRegions.get(e.getKey());
-
-                assert m.getTotalAllocatedPages() == 0;
-
-                if (grps != null) {
-                    for (int grp : grps)
-                        m.incrementTotalAllocatedPages(cctx.pageStore().pagesAllocated(grp));
-                }
-            }
         }
     }
 
