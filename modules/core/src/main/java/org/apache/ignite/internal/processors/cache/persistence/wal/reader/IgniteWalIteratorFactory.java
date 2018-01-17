@@ -86,7 +86,7 @@ public class IgniteWalIteratorFactory {
         this.binaryMetadataFileStoreDir = binaryMetadataFileStoreDir;
         this.marshallerMappingFileStoreDir = marshallerMappingFileStoreDir;
         this.keepBinary = keepBinary;
-        this.ioFactory = new DataStorageConfiguration().getWalFileIOFactory();
+        this.ioFactory = new DataStorageConfiguration().getFileIOFactory();
         new DataStorageConfiguration().setPageSize(pageSize); // just for validate
     }
 
@@ -136,7 +136,7 @@ public class IgniteWalIteratorFactory {
      * according its boundaries.
      */
     public IgniteWalIteratorFactory(@NotNull final IgniteLogger log, int pageSize) {
-        this(log, new DataStorageConfiguration().getWalFileIOFactory(), pageSize);
+        this(log, new DataStorageConfiguration().getFileIOFactory(), pageSize);
     }
 
     /**

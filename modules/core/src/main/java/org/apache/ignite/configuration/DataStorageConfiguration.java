@@ -229,9 +229,6 @@ public class DataStorageConfiguration implements Serializable {
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY, true) ?
             new AsyncFileIOFactory() : new RandomAccessFileIOFactory();
 
-    /** Factory to provide I/O interface for WAL files */
-    private FileIOFactory walFileIOFactory = new RandomAccessFileIOFactory();
-
     /**
      * Number of sub-intervals the whole {@link #setMetricsRateTimeInterval(long)} will be split into to calculate
      * rate-based metrics.
@@ -846,29 +843,6 @@ public class DataStorageConfiguration implements Serializable {
 
         return this;
     }
-
-    /**
-     * Factory to provide implementation of FileIO interface
-     * which is used for WAL files read/write operations
-     *
-     * @return File I/O factory
-     */
-    public FileIOFactory getWalFileIOFactory() {
-        return walFileIOFactory;
-    }
-
-    /**
-     * Sets factory to provide implementation of FileIO interface
-     * which is used for WAL files read/write operations
-     *
-     * @param walFileIOFactory File I/O factory
-     */
-    public DataStorageConfiguration setWalFileIOFactory(FileIOFactory walFileIOFactory) {
-        this.walFileIOFactory = walFileIOFactory;
-
-        return this;
-    }
-
 
     /**
      * <b>Note:</b> setting this value with {@link WALMode#DEFAULT} may generate file size overhead for WAL segments in case

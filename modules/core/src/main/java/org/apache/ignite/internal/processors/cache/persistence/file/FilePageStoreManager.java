@@ -506,12 +506,26 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void sync(int grpId, int partId) throws IgniteCheckedException {
-        getStore(grpId, partId).sync();
+        try {
+            getStore(grpId, partId).sync();
+        }
+        catch (PersistentStorageIOException e) {
+            NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
+
+            throw e;
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void ensure(int grpId, int partId) throws IgniteCheckedException {
-        getStore(grpId, partId).ensure();
+        try {
+            getStore(grpId, partId).ensure();
+        }
+        catch (PersistentStorageIOException e) {
+            NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
+
+            throw e;
+        }
     }
 
     /** {@inheritDoc} */
@@ -520,9 +534,16 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         PageStore store = getStore(grpId, partId);
 
-        long pageIdx = store.allocatePage();
+        try {
+            long pageIdx = store.allocatePage();
 
-        return PageIdUtils.pageId(partId, flags, (int)pageIdx);
+            return PageIdUtils.pageId(partId, flags, (int)pageIdx);
+        }
+        catch (PersistentStorageIOException e) {
+            NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
+
+            throw e;
+        }
     }
 
     /** {@inheritDoc} */

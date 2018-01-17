@@ -95,7 +95,7 @@ public class MockWalIteratorFactory {
         when(persistentCfg1.getWalBufferSize()).thenReturn(DataStorageConfiguration.DFLT_WAL_BUFF_SIZE);
         when(persistentCfg1.getWalRecordIteratorBufferSize()).thenReturn(DataStorageConfiguration.DFLT_WAL_RECORD_ITERATOR_BUFFER_SIZE);
 
-        final FileIOFactory fileIOFactory = new DataStorageConfiguration().getWalFileIOFactory();
+        final FileIOFactory fileIOFactory = new DataStorageConfiguration().getFileIOFactory();
         when(persistentCfg1.getFileIOFactory()).thenReturn(fileIOFactory);
 
         final IgniteConfiguration cfg = Mockito.mock(IgniteConfiguration.class);

@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -58,7 +59,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
  */
 public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
 
-    private static final int DFLT_PAGE_SIZE = DataStorageConfiguration.DFLT_PAGE_SIZE;
+    private static final int PAGE_SIZE = DataStorageConfiguration.DFLT_PAGE_SIZE;
+
+    private static final int WAL_SEGMENT_SIZE = 1024 * PAGE_SIZE;
 
     private static final long DFLT_DISK_SPACE_BYTES = Long.MAX_VALUE;
 
@@ -67,8 +70,6 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "cache";
 
     private boolean failPageStoreDiskOperations = false;
-
-    private boolean failWALDiskOperations = false;
 
     private long diskSpaceBytes = DFLT_DISK_SPACE_BYTES;
 
@@ -86,7 +87,6 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
 
         failPageStoreDiskOperations = false;
-        failWALDiskOperations = false;
         diskSpaceBytes = DFLT_DISK_SPACE_BYTES;
         System.clearProperty(IGNITE_WAL_MMAP);
     }
@@ -100,14 +100,11 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
                         new DataRegionConfiguration().setMaxSize(100 * 1024 * 1024).setPersistenceEnabled(true))
                 .setWalMode(WALMode.LOG_ONLY)
                 .setWalCompactionEnabled(false)
-                .setWalSegmentSize(1024 * DFLT_PAGE_SIZE)
+                .setWalSegmentSize(WAL_SEGMENT_SIZE)
                 .setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
 
         if (failPageStoreDiskOperations)
             dsCfg.setFileIOFactory(new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), diskSpaceBytes));
-
-        if (failWALDiskOperations)
-            dsCfg.setWalFileIOFactory(new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), diskSpaceBytes));
 
         cfg.setDataStorageConfiguration(dsCfg);
 
@@ -125,8 +122,8 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     public void testRecoveringOnCacheInitError() throws Exception {
         failPageStoreDiskOperations = true;
 
-        // One page is enough to initialize only sys cache.
-        diskSpaceBytes = DFLT_PAGE_SIZE;
+        // Two pages is enough to initialize MetaStorage.
+        diskSpaceBytes = 2 * PAGE_SIZE;
 
         final IgniteEx grid = startGrid(0);
 
@@ -153,7 +150,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
 
     public void testRecoveringOnCheckpointWritingError() throws Exception {
         failPageStoreDiskOperations = true;
-        diskSpaceBytes = 1024 * DFLT_PAGE_SIZE;
+        diskSpaceBytes = 1024 * PAGE_SIZE;
 
         final IgniteEx grid = startGrid(0);
         grid.active(true);
@@ -208,10 +205,13 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     }
 
     private void emulateRecoveringOnWALWritingError() throws Exception {
-        failWALDiskOperations = true;
-        diskSpaceBytes = 1024 * DFLT_PAGE_SIZE;
+        diskSpaceBytes = WAL_SEGMENT_SIZE;
 
         final IgniteEx grid = startGrid(0);
+
+        FileWriteAheadLogManager wal = (FileWriteAheadLogManager)grid.context().cache().context().wal();
+        wal.setFileIOFactory(new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), diskSpaceBytes));
+
         grid.active(true);
 
         int failedPosition = -1;
@@ -238,8 +238,6 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         awaitStop(grid);
 
         // Grid should be successfully recovered after stopping.
-        failWALDiskOperations = false;
-
         IgniteEx recoveredGrid = startGrid(0);
         recoveredGrid.active(true);
 
