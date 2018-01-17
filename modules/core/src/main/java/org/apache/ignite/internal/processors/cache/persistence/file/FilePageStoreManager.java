@@ -243,14 +243,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** {@inheritDoc} */
     @Override public void onPartitionCreated(int grpId, int partId) throws IgniteCheckedException {
         // No-op.
-        PageStore store = getStore(grpId, partId);
-
-        if (!((FilePageStore)store).isInitialized()) {
-            CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
-
-            if (gctx != null)
-                gctx.dataRegion().memoryMetrics().incrementTotalAllocatedPages();
-        }
     }
 
     /** {@inheritDoc} */
