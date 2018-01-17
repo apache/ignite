@@ -137,6 +137,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** */
     private static final int OP_RELEASE_START = 22;
 
+    /** */
+    private static final int OP_ADD_CACHE_CONFIGURATION = 23;
+
     /** Start latch. */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
@@ -424,6 +427,13 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
                 return 0;
             }
+
+            case OP_ADD_CACHE_CONFIGURATION:
+                CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
+
+                ctx.grid().addCacheConfiguration(cfg);
+
+                return 0;
         }
 
         return PlatformAbstractTarget.throwUnsupported(type);
