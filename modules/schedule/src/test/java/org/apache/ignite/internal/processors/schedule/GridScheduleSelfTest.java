@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.schedule;
 
+import java.util.Date;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -26,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.schedule.exception.IgniteSchedulerParseException;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -127,7 +129,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
         SchedulerFuture<?> fut = null;
 
-        long freq = 60; // 1 minute frequency.
+        long freq = 2; // 1 second frequency.
         long delay = 2; // 2 seconds delay.
 
         try {
@@ -136,13 +138,11 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
                 new Runnable() {
                     @Override public void run() {
                         latch.countDown();
-
                         info(">>> EXECUTING SCHEDULED RUNNABLE! <<<");
                     }
                 },
                 "{2, 2} * * * * *");
-
-            assert !fut.isDone();
+            assertNotDone(fut);
             assert !fut.isCancelled();
             assert fut.last() == null;
 
@@ -210,7 +210,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
             assertEquals(0, latch.getCount());
 
-            assert !fut.isDone();
+            assertNotDone(fut);
             assert !fut.isCancelled();
             assert fut.last() == null;
             assertFalse(chained1.isDone());
@@ -243,8 +243,8 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
         SchedulerFuture<Integer> fut = null;
 
         long freq = 60; // 1 minute frequency.
-        long delay = 2; // 2 seconds delay.
-
+        long delay = 1; // 1 seconds delay.
+        Integer cnt = 7;
         try {
             fut = grid(0).scheduler().scheduleLocal(new Callable<Integer>() {
                 private int cnt;
@@ -252,9 +252,9 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
                 @Override public Integer call() {
                     info(">>> EXECUTING SCHEDULED CALLABLE! <<<");
 
-                    return ++cnt;
+                    return ++this.cnt;
                 }
-            }, "{1, 2} * * * * *");
+            }, "{1, " + cnt + "} * * * * *");
 
             final AtomicInteger notifyCnt = new AtomicInteger();
 
@@ -264,24 +264,26 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
                 }
             });
 
-            assert !fut.isDone();
+            assertNotDone(fut);
             assert !fut.isCancelled();
             assert fut.last() == null;
+            assertEquals(0, fut.count());
 
             long timeTillRun = freq + delay;
+            for (int i = 1; i < cnt; i++) {
+                info("Going to wait for the " + i + "th run: " + timeTillRun);
 
-            info("Going to wait for the 1st run: " + timeTillRun);
+                assertEquals((Integer)i, fut.get(timeTillRun, SECONDS));
+                assertEquals((Integer)i, fut.last());
+                assertEquals(i, fut.count());
+                assertNotDone(fut);
+                assert !fut.isCancelled();
+            }
+            info("Going to wait for the last run: " + timeTillRun);
 
-            assertEquals((Integer)1, fut.get(timeTillRun, SECONDS));
-            assertEquals((Integer)1, fut.last());
-
-            assert !fut.isDone();
-            assert !fut.isCancelled();
-
-            info("Going to wait for the 2nd run: " + timeTillRun);
-
-            assertEquals((Integer)2, fut.get(timeTillRun, SECONDS));
-            assertEquals((Integer)2, fut.last());
+            assertEquals(cnt, fut.get(timeTillRun, SECONDS));
+            assertEquals(cnt, fut.last());
+            assertEquals(cnt, (Integer)notifyCnt.get());
 
             assert fut.isDone();
             assert !fut.isCancelled();
@@ -296,7 +298,88 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testRunnableCancel() throws Exception {
+    public void testRunnableCancelAfterFirstLaunch() throws Exception {
+        SchedulerFuture<Integer> fut = null;
+
+        long freq = 1; // 1 second frequency.
+        long delay = 1; // 1 seconds delay.
+
+        final AtomicInteger execCnt = new AtomicInteger();
+
+        try {
+            fut = grid(0).scheduler().scheduleLocal(new Callable<Integer>() {
+
+                @Override public Integer call() {
+                    info(">>> EXECUTING SCHEDULED CALLABLE! <<<");
+
+                    return execCnt.incrementAndGet();
+                }
+            }, "{1, *} * * * * *");
+
+            final AtomicInteger notifyCnt = new AtomicInteger();
+
+            fut.listen(new CI1<IgniteFuture<?>>() {
+                @Override public void apply(IgniteFuture<?> e) {
+                    notifyCnt.incrementAndGet();
+                }
+            });
+
+            assertNotDone(fut);
+            assert !fut.isCancelled();
+            assertNull(fut.last());
+            assertEquals(0, fut.count());
+
+            long timeTillRun = freq + delay;
+
+            info("Going to wait for the 1st run: " + timeTillRun);
+
+            assertEquals((Integer)1, fut.get(timeTillRun, SECONDS));
+            assertEquals((Integer)1, fut.last());
+            assertEquals(1, fut.count());
+            assertNotDone(fut);
+            assert !fut.isCancelled();
+
+            info("Cancelling ScheduledFuture");
+            fut.cancel();
+
+            assert fut.isCancelled();
+            assert fut.isDone();
+
+            try {
+                fut.get();
+
+                fail("IgniteException must have been thrown");
+            }
+            catch (IgniteException e) {
+                info("Caught expected exception: " + e);
+            }
+
+            try {
+                fut.get(500, SECONDS);
+
+                fail("IgniteException must have been thrown");
+            }
+            catch (IgniteException e) {
+                info("Caught expected exception: " + e);
+            }
+            assertEquals(Integer.valueOf(1), fut.last());
+            assertEquals(1, notifyCnt.get());
+            //wait to check not executed by schedule
+            Thread.sleep(timeTillRun * 1000);
+            assertEquals(1, execCnt.get());
+        }
+        finally {
+            assert fut != null;
+
+            if (!fut.isCancelled())
+                fut.cancel();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRunnableCancelBeforeDelay() throws Exception {
         SchedulerFuture fut = null;
 
         final GridTuple<Integer> tpl = new GridTuple<>(0);
@@ -307,6 +390,14 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
                     tpl.set(tpl.get() + 1);
                 }
             }, "{1, *} * * * * *");
+
+            final AtomicInteger notifyCnt = new AtomicInteger();
+
+            fut.listen(new CI1<IgniteFuture<?>>() {
+                @Override public void apply(IgniteFuture<?> e) {
+                    notifyCnt.incrementAndGet();
+                }
+            });
 
             assertEquals(Integer.valueOf(0), tpl.get());
 
@@ -334,6 +425,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             catch (IgniteException e) {
                 info("Caught expected exception: " + e);
             }
+            assertEquals(0, notifyCnt.get());
         }
         finally {
             assert fut != null;
@@ -359,7 +451,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
             fail("IgniteException must have been thrown");
         }
-        catch (IgniteException e) {
+        catch (IgniteSchedulerParseException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -369,7 +461,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
             fail("IgniteException must have been thrown");
         }
-        catch (IgniteException e) {
+        catch (IgniteSchedulerParseException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -379,17 +471,17 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
             fail("IgniteException must have been thrown");
         }
-        catch (IgniteException e) {
+        catch (IgniteSchedulerParseException e) {
             info("Caught expected exception: " + e);
         }
 
         try {
             // Number of executions in pattern must be greater than zero or equal to "*".
-            grid(0).scheduler().scheduleLocal(run, "{*, 0} * * * * *").get();
+            grid(0).scheduler().scheduleLocal(run, "{*, 0} * * * * * ?").get();
 
             fail("IgniteException must have been thrown");
         }
-        catch (IgniteException e) {
+        catch (IgniteSchedulerParseException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -399,7 +491,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
             fail("IgniteException must have been thrown");
         }
-        catch (IgniteException e) {
+        catch (IgniteSchedulerParseException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -409,7 +501,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
             fail("IgniteException must have been thrown");
         }
-        catch (IgniteException e) {
+        catch (IgniteSchedulerParseException e) {
             info("Caught expected exception: " + e);
         }
     }
@@ -424,22 +516,53 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        SchedulerFuture<Integer> future = grid(0).scheduler().scheduleLocal(run, "{55} 53 3/5 * * *");
+        SchedulerFuture<Integer> fut = grid(0).scheduler().scheduleLocal(run, "{55} 53 3/5 * * *");
 
         try {
-            future.get();
+            fut.get();
 
             fail("Accepted wrong cron expression");
         }
-        catch (IgniteException e) {
-            assertTrue(e.getMessage().startsWith("Invalid cron expression in schedule pattern"));
+        catch (IgniteSchedulerParseException e) {
+            info("Caught expected exception: " + e);
         }
 
-        assertTrue(future.isDone());
+        assertTrue(fut.isDone());
 
-        assertEquals(0, future.nextExecutionTime());
+        assertEquals(0, fut.nextExecutionTime());
 
-        assertEquals(0, future.nextExecutionTimes(2, System.currentTimeMillis()).length);
+        assertEquals(0, fut.nextExecutionTimes(2, System.currentTimeMillis()).length);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNextExecutionTimes() throws Exception {
+        Callable<Integer> run = new Callable<Integer>() {
+            @Override public Integer call() {
+                return 1;
+            }
+        };
+
+        SchedulerFuture<Integer> fut = grid(0).scheduler().scheduleLocal(run, "{1, 5} * * * * *");
+
+        fut.get();
+        assertFalse(fut.isDone());
+
+        assertTrue(fut.nextExecutionTime() != 0);
+
+        long[] times = fut.nextExecutionTimes(10, System.currentTimeMillis());
+        assertEquals(5, times.length);
+        for (long time : times) {
+            info("execution at :" + new Date(time));
+        }
+    }
+
+    private void assertNotDone(SchedulerFuture<?> fut) {
+        if (fut.isDone()) {
+            fut.last();// throw an exception if available
+            assert false : "must not be done ";
+        }
     }
 
     /**
@@ -484,7 +607,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
         @LoggerResource
         private IgniteLogger log;
 
-        /** @{inheritDoc} */
+        /** {@inheritDoc} */
         @Override public void run() {
             log.info("Runnable job executed on node: " + ignite.cluster().localNode().id());
 
