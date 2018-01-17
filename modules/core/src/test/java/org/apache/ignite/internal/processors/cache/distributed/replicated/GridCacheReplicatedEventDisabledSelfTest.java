@@ -67,7 +67,7 @@ public class GridCacheReplicatedEventDisabledSelfTest extends GridCacheReplicate
 
         /** {@inheritDoc} */
         @Override public boolean apply(Event evt) {
-            fail("Events must be disabled");
+            fail("Events are disabled");
 
             return false;
         }

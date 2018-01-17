@@ -744,6 +744,11 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         cfg.setName(DYNAMIC_CACHE_NAME);
         cfg.setCacheMode(CacheMode.REPLICATED);
 
+        CacheConfiguration cfgEvtsDisabled = new CacheConfiguration(cfg);
+
+        cfgEvtsDisabled.setName("DynamicCacheEvtsDisabled");
+        cfgEvtsDisabled.setEventsEnabled(false);
+
         final CountDownLatch[] starts = new CountDownLatch[nodeCount()];
         final CountDownLatch[] stops = new CountDownLatch[nodeCount()];
 
@@ -781,6 +786,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
             ignite(i).events().localListen(lsnrs[i], EventType.EVTS_CACHE_LIFECYCLE);
         }
 
+        IgniteCache<Object, Object> cacheEvtsDisabled = ignite(0).createCache(cfgEvtsDisabled);
         IgniteCache<Object, Object> cache = ignite(0).createCache(cfg);
 
         try {
@@ -788,6 +794,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
                 start.await();
         }
         finally {
+            cacheEvtsDisabled.destroy();
             cache.destroy();
         }
 
