@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -130,11 +131,21 @@ public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstract
 
                 ignite.cache(fullname).put(d, d);
 
-                log.info("Put to " + fullname + " value " + d);
+                if (log.isInfoEnabled())
+                    log.info("Put to cache [" + fullname + "] value " + d);
 
-                db.wakeupForCheckpoint("").get();
+                final int timeout = 5000;
+                try {
+                    db.wakeupForCheckpoint("").get(timeout, TimeUnit.MILLISECONDS);
+                }
+                catch (IgniteFutureTimeoutCheckedException e) {
+                    continue;
+                }
 
-                int currCpPages = waitForCurrentCheckpointPagesCounterUpdated(db);
+                int currCpPages = waitForCurrentCheckpointPagesCounterUpdated(db, timeout);
+
+                if (currCpPages < 0)
+                    continue;
 
                 pageCntObserved.add(currCpPages);
 
@@ -158,15 +169,23 @@ public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstract
     }
 
     /**
+     * Waits counter of pages will be set up. If it is not changed for timeout milliseconds, method returns negative
+     * value.
+     *
      * @param db DB shared manager.
-     * @return counter when it becomes non-zero.
+     * @param timeout milliseconds to wait.
+     * @return counter when it becomes non-zero, negative value indicates timeout during wait for update.
      */
-    private int waitForCurrentCheckpointPagesCounterUpdated(GridCacheDatabaseSharedManager db) {
+    private int waitForCurrentCheckpointPagesCounterUpdated(GridCacheDatabaseSharedManager db, int timeout) {
         int currCpPages = 0;
+        long start = System.currentTimeMillis();
 
         while (currCpPages == 0) {
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1));
             currCpPages = db.currentCheckpointPagesCount();
+
+            if (currCpPages == 0 && ((System.currentTimeMillis() - start) > timeout))
+                return -1;
         }
 
         return currCpPages;
