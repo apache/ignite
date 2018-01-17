@@ -962,8 +962,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAffinitySimpleStopRandomNode() throws Exception {
-        //fail("IGNITE-GG-12292");
-
         final int ITERATIONS = 3;
 
         for (int iter = 0; iter < 3; iter++) {
@@ -2051,8 +2049,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNoForceKeysRequests() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5510");
-
         cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
             @Override public CacheConfiguration[] apply(String s) {
                 return null;

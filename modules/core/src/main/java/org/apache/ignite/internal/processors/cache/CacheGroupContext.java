@@ -385,7 +385,8 @@ public class CacheGroupContext {
      * @param discoType Discovery event type.
      * @param discoTs Discovery event timestamp.
      */
-    public void addRebalanceEvent(int part, int type, ClusterNode discoNode, int discoType, long discoTs) {
+    public void addRebalanceEvent(int part, int type, ClusterNode discoNode, AffinityTopologyVersion topVer,
+        int discoType, long discoTs) {
         assert discoNode != null;
         assert type > 0;
         assert discoType > 0;
@@ -401,6 +402,7 @@ public class CacheGroupContext {
 
             if (cctx.recordEvent(type)) {
                 cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
+                    topVer,
                     cctx.localNode(),
                     "Cache rebalancing event.",
                     type,
@@ -427,6 +429,7 @@ public class CacheGroupContext {
             GridCacheContext cctx = caches.get(i);
 
             cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
+                AffinityTopologyVersion.NONE,
                 cctx.localNode(),
                 "Cache unloading event.",
                 EVT_CACHE_REBALANCE_PART_UNLOADED,

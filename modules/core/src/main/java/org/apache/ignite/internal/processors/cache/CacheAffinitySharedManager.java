@@ -2200,6 +2200,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @return Last topology version with possibility of affinity mapping change.
+     */
+    public AffinityTopologyVersion lastAffVer() {
+        return lastAffVer;
+    }
+
+    /**
      *
      */
     public void dumpDebugInfo() {

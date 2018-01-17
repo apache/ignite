@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -30,9 +32,13 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.CacheRebalancingEvent;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -46,6 +52,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -57,6 +64,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
+import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
 
 /**
  *
@@ -109,8 +117,10 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         iCfg.setCommunicationSpi(commSpi);
 
-        if (getTestIgniteInstanceName(10).equals(igniteInstanceName))
+        if (getTestIgniteInstanceName(10).equals(igniteInstanceName)
+            || getTestIgniteInstanceName(11).equals(igniteInstanceName)) {
             iCfg.setClientMode(true);
+        }
 
         CacheConfiguration<Integer, Integer> cachePCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
@@ -346,6 +356,97 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         long spend = (System.currentTimeMillis() - start) / 1000;
 
         info("Time to rebalance entries: " + spend);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLoadRebalancingClientNodes() throws Exception {
+        final Ignite ignite = startGrid(0);
+
+        TopologyEventListener lsnr = new TopologyEventListener();
+        ignite.events().localListen(lsnr, EVT_CACHE_REBALANCE_STOPPED);
+
+        startGrid(1);
+
+        generateData(ignite, CACHE_NAME_DHT_PARTITIONED, 0, 0);
+
+        log.info("Preloading started.");
+
+        long start = System.currentTimeMillis();
+
+        concurrentStartFinished = false;
+
+        Thread t1 = new Thread() {
+            @Override public void run() {
+                Random rdm = new Random();
+
+                while (!concurrentStartFinished) {
+                    for (int i = 0; i < TEST_SIZE; i++) {
+                        if (i % (TEST_SIZE / 10) == 0)
+                            log.info("Prepared " + i * 100 / (TEST_SIZE) + "% entries (" + TEST_SIZE + ").");
+
+                        int ii = rdm.nextInt(TEST_SIZE);
+
+                        ignite.cache(CACHE_NAME_DHT_PARTITIONED).put(ii, ii + CACHE_NAME_DHT_PARTITIONED.hashCode());
+                    }
+                }
+            }
+        };
+
+        Thread t2 = new Thread() {
+            @Override public void run() {
+                while (!concurrentStartFinished)
+                    checkData(ignite, CACHE_NAME_DHT_PARTITIONED, 0, 0);
+            }
+        };
+
+        t1.start();
+        t2.start();
+
+        startGrid(2);
+        startGrid(10);
+
+        stopGrid(2);
+
+        startGrid(11);
+
+        waitForRebalancing(lsnr, 6);
+        waitForRebalancing(lsnr, 6);
+
+        concurrentStartFinished = true;
+
+        awaitPartitionMapExchange(true, true, null);
+
+        checkSupplyContextMapIsEmpty();
+
+        t1.join();
+        t2.join();
+
+        long spend = (System.currentTimeMillis() - start) / 1000;
+
+        info("Time to rebalance entries: " + spend);
+    }
+
+    /**
+     *
+     */
+    protected void waitForRebalancing(TopologyEventListener lsnr, int major) throws IgniteInterruptedCheckedException {
+        AffinityTopologyVersion top = new AffinityTopologyVersion(major);
+
+        boolean finished = false;
+
+        long stopTime = System.currentTimeMillis() + 60_000;
+
+        while (System.currentTimeMillis() < stopTime && !finished) {
+            if (lsnr.seenTopology(top))
+                finished = true;
+
+            else
+                U.sleep(100);
+        }
+
+        assertTrue(finished);
     }
 
     /**
@@ -663,6 +764,28 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                 else
                     ai.incrementAndGet();
             }
+        }
+    }
+
+    /**
+     * Event listener.
+     */
+    private final class TopologyEventListener implements IgnitePredicate<Event> {
+        /** */
+        private Set<AffinityTopologyVersion> seenTopologies = new HashSet<>();
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(Event evt) {
+            AffinityTopologyVersion topVer = ((CacheRebalancingEvent)evt).topologyVersion();
+
+            log.info("Finished rebalance for topology " + topVer);
+            seenTopologies.add(topVer);
+
+            return true;
+        }
+
+        private boolean seenTopology(AffinityTopologyVersion topVer) {
+            return seenTopologies.contains(topVer);
         }
     }
 }
