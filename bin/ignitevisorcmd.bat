@@ -142,6 +142,11 @@ if %ENABLE_ASSERTIONS% == 1 set JVM_OPTS_VISOR=%JVM_OPTS_VISOR% -ea
 if "%ARGS%" == "" set ARGS=%*
 
 ::
+:: Final JVM_OPTS for Java 9 compatibility
+::
+"%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr /R /c:"java version .9\..*" > nul && set JVM_OPTS=--add-exports java.base/jdk.internal.misc=ALL-UNNAMED --add-exports java.base/sun.nio.ch=ALL-UNNAMED --add-exports java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED %JVM_OPTS%
+
+::
 :: Starts Visor console.
 ::
 "%JAVA_HOME%\bin\java.exe" %JVM_OPTS_VISOR% -DIGNITE_PROG_NAME="%PROG_NAME%" ^

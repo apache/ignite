@@ -51,22 +51,48 @@
     <!-- http://maven.apache.org/general.html#tools-jar-dependency -->
     <profiles>
         <profile>
-            <id>default-tools.jar</id>
+            <id>java-9</id>
             <activation>
-                <property>
-                    <name>java.vendor</name>
-                    <value>Oracle Corporation</value>
-                </property>
+                <jdk>[1.9,)</jdk>
+            </activation>
+            <dependencies/>
+        </profile>
+
+        <profile>
+            <id>lin-win-java-8</id>
+            <activation>
+                <file>
+                    <exists>${java.home}/../lib/tools.jar</exists>
+                </file>
             </activation>
             <dependencies>
                 <dependency>
                     <groupId>com.sun</groupId>
                     <artifactId>tools</artifactId>
-                    <version>${java.version}</version>
                     <scope>system</scope>
+                    <version>${java.version}</version>
                     <systemPath>${java.home}/../lib/tools.jar</systemPath>
                 </dependency>
             </dependencies>
         </profile>
+
+        <profile>
+            <id>osx-</id>
+            <activation>
+                <file>
+                    <exists>${java.home}/../Classes/classes.jar</exists>
+                </file>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>com.sun</groupId>
+                    <artifactId>tools</artifactId>
+                    <scope>system</scope>
+                    <version>${java.version}</version>
+                    <systemPath>${java.home}/../Classes/classes.jar</systemPath>
+                </dependency>
+            </dependencies>
+        </profile>
+
     </profiles>
 </project>

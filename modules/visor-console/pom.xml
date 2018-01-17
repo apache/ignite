@@ -80,7 +80,7 @@
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
-            <version>${scala211.library.version}</version>
+            <version>${scala.library.version}</version>
         </dependency>
 
         <dependency>
