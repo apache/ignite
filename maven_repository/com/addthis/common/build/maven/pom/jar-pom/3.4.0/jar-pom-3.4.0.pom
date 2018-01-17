@@ -1,0 +1,544 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.addthis.common.build.maven.pom</groupId>
+    <artifactId>papa-pom</artifactId>
+    <version>2.1.0</version>
+  </parent>
+
+  <artifactId>jar-pom</artifactId>
+  <version>3.4.0</version>
+  <packaging>pom</packaging>
+  <name>addthis-oss-jar-pom</name>
+  <description>Parent pom for AddThis open source maven projects that make jars</description>
+  <url>https://github.com/addthis/addthis-oss-jar-pom</url>
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <scm>
+    <connection>scm:git:git@github.com:addthis/addthis-oss-jara-pom.git</connection>
+    <developerConnection>scm:git:git@github.com:addthis/addthis-oss-jar-pom.git</developerConnection>
+    <url>https://github.com/addthis/addthis-oss-jar-pom</url>
+    <tag>v3.4.0</tag>
+  </scm>
+
+  <properties>
+    <project.build.targetJdk>1.7</project.build.targetJdk>
+
+    <!-- custom properties prefixed with 'at.' -->
+    <at.test.excluded.groups />
+    <at.check.skip.all>false</at.check.skip.all>
+    <enforcer.skip>true</enforcer.skip>
+    <at.check.checkstyle.skip>${at.check.skip.all}</at.check.checkstyle.skip>
+    <at.check.checkstyle.configLocation>https://raw.githubusercontent.com/addthis/addthis-oss-jar-pom/master/checkstyle/default.xml</at.check.checkstyle.configLocation>
+    <at.check.findbugs.skip>${at.check.skip.all}</at.check.findbugs.skip>
+    <at.check.jacoco.skip>${at.check.skip.all}</at.check.jacoco.skip>
+    <!-- TODO: Skipping rat does not actually work.  See RAT-173 Once
+         skipping works it should also be possible to create
+         properties for controlling builds failure. -->
+    <at.check.rat.skip>${at.check.skip.all}</at.check.rat.skip>
+
+
+    <!-- core dependencies -->
+    <dep.junit.version>4.11</dep.junit.version>
+    <dep.slf4j.version>1.7.7</dep.slf4j.version>
+    <dep.metrics.version>2.2.0</dep.metrics.version>
+    <dep.guava.version>17.0</dep.guava.version>
+    <dep.joda-time.version>2.5</dep.joda-time.version>
+    <dep.jackson.version>2.4.4</dep.jackson.version>
+    <dep.jackson.etc.version>2.4.4</dep.jackson.etc.version>
+    <dep.jackson.api.version>2.4.4</dep.jackson.api.version>
+
+    <!-- plugins referenced multiple times -->
+    <dep.plugin.surefire.version>2.17</dep.plugin.surefire.version>
+    <dep.plugin.jacoco.version>0.7.1.201405082137</dep.plugin.jacoco.version>
+    <dep.plugin.javadoc.version>2.9.1</dep.plugin.javadoc.version>
+    <dep.plugin.findbugs.version>3.0.0</dep.plugin.findbugs.version>
+    <dep.plugin.checkstyle.version>2.12.1</dep.plugin.checkstyle.version>
+    <dep.plugin.rat.version>0.11</dep.plugin.rat.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- dependencies using inline versions -->
+      <dependency>
+        <groupId>com.typesafe</groupId>
+        <artifactId>config</artifactId>
+        <version>1.2.1</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.code.findbugs</groupId>
+        <artifactId>jsr305</artifactId>
+        <version>2.0.3</version>
+      </dependency>
+      <dependency>
+        <groupId>com.clearspring.analytics</groupId>
+        <artifactId>stream</artifactId>
+        <version>2.7.0</version>
+      </dependency>
+
+      <!-- dependencies with property controlled versions -->
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>${dep.guava.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.yammer.metrics</groupId>
+        <artifactId>metrics-core</artifactId>
+        <version>${dep.metrics.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.yammer.metrics</groupId>
+        <artifactId>metrics-ganglia</artifactId>
+        <version>${dep.metrics.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.yammer.metrics</groupId>
+        <artifactId>metrics-servlet</artifactId>
+        <version>${dep.metrics.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>joda-time</groupId>
+        <artifactId>joda-time</artifactId>
+        <version>${dep.joda-time.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${dep.slf4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-simple</artifactId>
+        <version>${dep.slf4j.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>${dep.junit.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <!-- jackson modules -->
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-core</artifactId>
+        <version>${dep.jackson.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>${dep.jackson.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-annotations</artifactId>
+        <version>${dep.jackson.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.datatype</groupId>
+        <artifactId>jackson-datatype-guava</artifactId>
+        <version>${dep.jackson.etc.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.datatype</groupId>
+        <artifactId>jackson-datatype-jdk7</artifactId>
+        <version>${dep.jackson.etc.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.datatype</groupId>
+        <artifactId>jackson-datatype-joda</artifactId>
+        <version>${dep.jackson.etc.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <!-- lightweight and common enough to just automatically include -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+    </dependency>
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <id>java8</id>
+      <activation>
+        <jdk>[1.8,)</jdk>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-javadoc-plugin</artifactId>
+              <configuration>
+                <additionalparam>-Xdoclint:none</additionalparam>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+  </profiles>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.1</version>
+          <inherited>true</inherited>
+          <configuration>
+            <source>${project.build.targetJdk}</source>
+            <target>${project.build.targetJdk}</target>
+            <showDeprecation>true</showDeprecation>
+            <showWarnings>true</showWarnings>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>${dep.plugin.surefire.version}</version>
+          <configuration>
+            <excludedGroups>${at.test.excluded.groups}</excludedGroups>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>findbugs-maven-plugin</artifactId>
+          <version>${dep.plugin.findbugs.version}</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.jacoco</groupId>
+          <artifactId>jacoco-maven-plugin</artifactId>
+          <version>${dep.plugin.jacoco.version}</version>
+          <configuration>
+            <skip>${at.check.skip.all}</skip>
+          </configuration>
+          <executions>
+            <execution>
+              <goals>
+                <goal>prepare-agent</goal>
+              </goals>
+            </execution>
+            <execution>
+              <id>report</id>
+              <phase>prepare-package</phase>
+              <goals>
+                <goal>report</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>${dep.plugin.javadoc.version}</version>
+          <configuration>
+            <source>${project.build.targetJdk}</source>
+            <encoding>${project.build.sourceEncoding}</encoding>
+            <quiet>true</quiet>
+          </configuration>
+          <executions>
+            <execution>
+              <id>attach-javadocs</id>
+              <phase>verify</phase>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+
+        <!-- Always build a jar with the test classes -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>2.4</version>
+          <executions>
+            <execution>
+              <id>attach-tests</id>
+              <phase>package</phase>
+              <goals>
+                <goal>test-jar</goal>
+              </goals>
+            </execution>
+          </executions>
+          <configuration>
+            <!-- do not build an empty jar if the project is
+                 e.g. a pom project -->
+            <skipIfEmpty>true</skipIfEmpty>
+            <archive>
+              <manifest>
+                <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                <addClasspath>false</addClasspath>
+              </manifest>
+            </archive>
+          </configuration>
+        </plugin>
+
+        <!-- bundle up source code into jars for both the main and the test sources -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-source-plugin</artifactId>
+          <version>2.3</version>
+          <executions>
+            <execution>
+              <id>attach-sources</id>
+              <phase>package</phase>
+              <goals>
+                <goal>jar-no-fork</goal>
+                <goal>test-jar-no-fork</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>1.3.1</version>
+          <executions>
+            <execution>
+              <id>default</id>
+              <phase>verify</phase>
+              <goals>
+                <goal>enforce</goal>
+              </goals>
+            </execution>
+          </executions>
+          <configuration>
+            <fail>true</fail>
+            <skip>${enforcer.skip}</skip>
+            <failFast>false</failFast>
+            <rules>
+              <DependencyConvergence />
+              <!-- The following dependencies are hazardous for builds. -->
+              <bannedDependencies>
+                <excludes>
+                  <!-- use guava -->
+                  <exclude>com.google.collections:google-collections</exclude>
+                </excludes>
+              </bannedDependencies>
+              <requireJavaVersion>
+                <version>${project.build.targetJdk}</version>
+              </requireJavaVersion>
+            </rules>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-checkstyle-plugin</artifactId>
+          <version>${dep.plugin.checkstyle.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.rat</groupId>
+          <artifactId>apache-rat-plugin</artifactId>
+          <version>${dep.plugin.rat.version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
+    <!-- Maven is crazy DRY hostile, repeat the plugins here to actually use them... -->
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-release-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>findbugs-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+      </plugin>
+        <plugin>
+          <groupId>org.apache.rat</groupId>
+          <artifactId>apache-rat-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${dep.plugin.jacoco.version}</version>
+        <configuration>
+          <skip>${at.check.jacoco.skip}</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>findbugs-maven-plugin</artifactId>
+        <version>${dep.plugin.findbugs.version}</version>
+        <configuration>
+          <skip>${at.check.findbugs.skip}</skip>
+          <failOnError>false</failOnError>
+          <effort>Max</effort>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-project-info-reports-plugin</artifactId>
+        <version>2.7</version>
+        <reportSets>
+          <reportSet>
+            <id>default</id>
+            <reports>
+              <report>dependencies</report>
+              <report>dependency-convergence</report>
+              <report>dependency-info</report>
+              <report>dependency-management</report>
+              <report>distribution-management</report>
+              <report>index</report>
+              <report>license</report>
+              <report>modules</report>
+              <report>plugin-management</report>
+              <report>plugins</report>
+              <report>project-team</report>
+              <report>scm</report>
+              <report>summary</report>
+            </reports>
+          </reportSet>
+        </reportSets>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-report-plugin</artifactId>
+        <version>${dep.plugin.surefire.version}</version>
+        <reportSets>
+          <reportSet>
+            <reports>
+              <report>report-only</report>
+              <report>failsafe-report-only</report>
+            </reports>
+          </reportSet>
+        </reportSets>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>${dep.plugin.javadoc.version}</version>
+        <configuration>
+          <source>${project.build.targetJdk}</source>
+          <encoding>${project.build.sourceEncoding}</encoding>
+          <quiet>true</quiet>
+        </configuration>
+        <reportSets>
+          <reportSet>
+            <id>default</id>
+            <reports>
+              <report>javadoc</report>
+            </reports>
+          </reportSet>
+        </reportSets>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jxr-plugin</artifactId>
+        <version>2.4</version>
+        <reportSets>
+          <reportSet>
+            <id>default</id>
+            <reports>
+              <report>jxr</report>
+            </reports>
+          </reportSet>
+        </reportSets>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <version>${dep.plugin.checkstyle.version}</version>
+        <configuration>
+          <skip>${at.check.checkstyle.skip}</skip>
+          <configLocation>${at.check.checkstyle.configLocation}</configLocation>
+          <encoding>UTF-8</encoding>
+          <includeTestSourceDirectory>true</includeTestSourceDirectory>
+          <consoleOutput>false</consoleOutput>
+        </configuration>
+      </plugin>
+      <!-- enabling reporting in this pom blocked on RAT-173 -->
+      <!-- <plugin> -->
+      <!--   <groupId>org.apache.rat</groupId> -->
+      <!--   <artifactId>apache-rat-plugin</artifactId> -->
+      <!--   <version>${dep.plugin.rat.version}</version> -->
+      <!--   <configuration> -->
+      <!--     <skip>${at.check.rat.skip}</skip> -->
+      <!--   </configuration> -->
+      <!-- </plugin> -->
+    </plugins>
+  </reporting>
+
+  <developers>
+    <developer>
+      <name>AddThis and Contributors</name>
+    </developer>
+  </developers>
+
+</project>

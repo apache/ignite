@@ -1,0 +1,173 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.ops4j</groupId>
+        <artifactId>master</artifactId>
+        <version>3.3.0</version>
+    </parent>
+
+    <artifactId>base</artifactId>
+    <version>1.5.0</version>
+    <packaging>pom</packaging>
+
+    <name>OPS4J Base</name>
+    <description>
+    Utility classes and extensions to be used in OPS4J projects.
+  </description>
+
+    <url>http://team.ops4j.org/wiki/display/base/</url>
+
+    <scm>
+        <connection>scm:git:git://github.com/ops4j/org.ops4j.base.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/ops4j/org.ops4j.base.git</developerConnection>
+        <url>http://github.com/ops4j/org.ops4j.base/tree/master</url>
+      <tag>base-1.5.0</tag>
+  </scm>
+
+    <issueManagement>
+        <system>jira</system>
+        <url>http://issues.ops4j.org/jira/browse/BASE</url>
+    </issueManagement>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>1.5.11</version>
+            </dependency>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.10</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>0.9.20</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-core</artifactId>
+                <version>0.9.20</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>retrotranslator-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>translate-project</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>jdk14</classifier>
+                            <embed>jdk14</embed>
+                            <attach>true</attach>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.felix</groupId>
+                    <artifactId>maven-bundle-plugin</artifactId>
+                    <configuration>
+                        <instructions>
+                            <_include>-osgi.bnd</_include>
+                        </instructions>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>retrotranslator-maven-plugin</artifactId>
+                    <version>1.0-alpha-4</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <developers>
+        <developer>
+            <id>niclas</id>
+            <name>Niclas Hedhman</name>
+            <email>niclas@hedhman.org</email>
+            <url>http://www.codedragons.com</url>
+            <organization>Jayway Malaysia Sdn Bhd</organization>
+            <organizationUrl>http://www.jayway.net</organizationUrl>
+            <roles>
+                <role>Developer</role>
+            </roles>
+            <timezone>UTC+8</timezone>
+        </developer>
+        <developer>
+            <id>adreghiciu</id>
+            <name>Alin Dreghiciu</name>
+            <email>adreghiciu@gmail.com</email>
+            <roles>
+                <role>ProjectLead</role>
+                <role>ReleaseManager</role>
+                <role>Developer</role>
+            </roles>
+            <timezone>UTC+2</timezone>
+        </developer>
+        <developer>
+            <id>tonit</id>
+            <name>Toni Menzel</name>
+            <email>toni@okidokiteam.com</email>
+            <roles>
+                <role>Developer</role>
+            </roles>
+            <timezone>UTC+1</timezone>
+        </developer>
+        <developer>
+            <id>hwellmann</id>
+            <name>Harald Wellmann</name>
+            <email>harald.wellmann@gmx.de</email>
+            <roles>
+                <role>Developer</role>
+            </roles>
+            <timezone>UTC+1</timezone>
+        </developer>
+    </developers>
+
+    <contributors>
+        <contributor>
+            <name>Stephen McConnell</name>
+            <organization>Apache Software Foundation</organization>
+        </contributor>
+    </contributors>
+
+    <modules>
+        <module>ops4j-base</module>
+        <module>ops4j-base-exec</module>
+        <module>ops4j-base-io</module>
+        <module>ops4j-base-lang</module>
+        <module>ops4j-base-monitors</module>
+        <module>ops4j-base-net</module>
+        <module>ops4j-base-spi</module>
+        <module>ops4j-base-store</module>
+        <module>ops4j-base-util</module>
+        <module>ops4j-base-util-collections</module>
+        <module>ops4j-base-util-property</module>
+        <module>ops4j-base-util-xml</module>
+    </modules>
+
+</project>

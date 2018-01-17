@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <!--
+
+        Licensed to the Apache Software Foundation (ASF) under one or more
+        contributor license agreements.  See the NOTICE file distributed with
+        this work for additional information regarding copyright ownership.
+        The ASF licenses this file to You under the Apache License, Version 2.0
+        (the "License"); you may not use this file except in compliance with
+        the License.  You may obtain a copy of the License at
+
+            http://www.apache.org/licenses/LICENSE-2.0
+
+        Unless required by applicable law or agreed to in writing, software
+        distributed under the License is distributed on an "AS IS" BASIS,
+        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        See the License for the specific language governing permissions and
+        limitations under the License.
+    -->
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.apache.karaf</groupId>
+        <artifactId>karaf</artifactId>
+        <version>4.0.2</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>org.apache.karaf.client</artifactId>
+    <name>Apache Karaf :: Client</name>
+    <description>Karaf client to connect remotely to a running Karaf instance.</description>
+    <packaging>bundle</packaging>
+
+    <properties>
+        <appendedResourcesDirectory>${basedir}/../etc/appended-resources</appendedResourcesDirectory>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>jline</groupId>
+            <artifactId>jline</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+    </dependencies>
+
+	<build>
+        <resources>
+            <resource>
+                <directory>${project.basedir}/src/main/key</directory>
+                <filtering>false</filtering>
+            </resource>
+        </resources>
+		<plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <configuration>
+                    <instructions>
+                        <_donotcopy>(CVS|.svn|config.properties)</_donotcopy>
+                        <Main-Class>org.apache.karaf.client.Main</Main-Class>
+                        <Bundle-Name>Apache Karaf Shell Client</Bundle-Name>
+                        <Bundle-Description>Shell client bundle for Apache Karaf.</Bundle-Description>
+                        <Private-Package>
+                            org.apache.karaf.client;
+                            org.slf4j.impl;
+                            META-INF;-split-package:=merge-first
+                        </Private-Package>
+                        <Include-Resource>
+                            ../shell/ssh/src/main/resources/karaf.key,
+                            {maven-resources}
+                        </Include-Resource>
+                        <Import-Package>!*</Import-Package>
+                    </instructions>
+                    <unpackBundle>true</unpackBundle>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-artifacts</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>attach-artifact</goal>
+                        </goals>
+                        <configuration>
+                            <artifacts>
+                                <artifact>
+                                    <file>target/classes/karaf.key</file>
+                                    <type>key</type>
+                                </artifact>
+                            </artifacts>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

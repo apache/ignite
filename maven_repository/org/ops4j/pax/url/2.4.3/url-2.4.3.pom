@@ -1,0 +1,432 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.ops4j</groupId>
+        <artifactId>master</artifactId>
+        <version>4.2.0</version>
+    </parent>
+
+    <groupId>org.ops4j.pax</groupId>
+    <artifactId>url</artifactId>
+    <version>2.4.3</version>
+    <packaging>pom</packaging>
+
+    <name>OPS4J Pax Url</name>
+    <description>Pax Url - OSGi URL handlers</description>
+    
+    <prerequisites>
+        <maven>3.0.0</maven>
+    </prerequisites>
+
+    <url>${wiki.url}</url>
+
+    <modules>
+        <module>pax-url-aether</module>
+        <module>pax-url-assembly</module>
+        <module>pax-url-cache</module>
+        <module>pax-url-classpath</module>
+        <module>pax-url-commons</module>
+        <module>pax-url-dir</module>
+        <module>pax-url-link</module>
+        <module>pax-url-obr</module>
+        <module>pax-url-reference</module>
+        <module>pax-url-war</module>
+        <module>pax-url-wrap</module>
+        <module>itest</module>
+    </modules>
+
+    <issueManagement>
+        <system>jira</system>
+        <url>http://team.ops4j.org/browse/PAXURL</url>
+    </issueManagement>
+
+    <scm>
+        <connection>scm:git:git://github.com/ops4j/org.ops4j.pax.url.git</connection>
+        <developerConnection>${release-paxurl-altGitURL}</developerConnection>
+        <url>http://github.com/ops4j/org.ops4j.pax.url/tree/master</url>
+        <tag>url-2.4.3</tag>
+    </scm>
+
+    <properties>
+        <release-paxurl-altGitURL>scm:git:ssh://git@github.com/ops4j/org.ops4j.pax.url.git</release-paxurl-altGitURL>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <dependency.aether.version>1.0.2.v20150114</dependency.aether.version>
+        <dependency.base.version>1.4.0</dependency.base.version>
+        <dependency.bndlib.version>2.3.0</dependency.bndlib.version>
+        <!-- higher versions of logback import slf4j 1.7 -->
+        <dependency.logback.version>1.0.7</dependency.logback.version>
+        <dependency.maven.version>3.2.1</dependency.maven.version>
+        <dependency.osgicore.version>4.3.1</dependency.osgicore.version>
+        <dependency.osgicomp.version>4.3.1</dependency.osgicomp.version>
+        <dependency.paxexam.version>3.5.0</dependency.paxexam.version>
+        <dependency.swissbox.version>1.8.2</dependency.swissbox.version>
+        <dependency.slf4j.version>1.6.6</dependency.slf4j.version>
+        <dependency.wagon.version>2.8</dependency.wagon.version>
+        <wiki.url>http://team.ops4j.org/wiki/display/paxurl</wiki.url>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>retrotranslator-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>translate-project</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>jdk14</classifier>
+                            <embed>jdk14</embed>
+                            <attach>true</attach>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>enforce</id>
+                        <configuration>
+                            <rules>
+                                <requireMavenVersion>
+                                    <version>(3.0.0,)</version>
+                                    <message>This project requires Maven 3</message>
+                                </requireMavenVersion>
+                                <DependencyConvergence />
+                            </rules>
+                        </configuration>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.felix</groupId>
+                    <artifactId>maven-bundle-plugin</artifactId>
+                    <configuration>
+                        <instructions>
+                            <Bundle-DocURL>${wiki.url}</Bundle-DocURL>
+                            <_include>-osgi.bnd</_include>
+                        </instructions>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <configuration>
+                        <compilerArgs>
+                            <arg>-Xlint:all</arg>
+                        </compilerArgs>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-shade-plugin</artifactId>
+                    <version>2.2</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-site-plugin</artifactId>
+                    <version>3.3</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Felix -->
+            <dependency>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>org.osgi.service.obr</artifactId>
+                <version>1.0.2</version>
+            </dependency>
+            <!-- OPS4J Base -->
+            <dependency>
+                <groupId>org.ops4j.base</groupId>
+                <artifactId>ops4j-base-lang</artifactId>
+                <version>${dependency.base.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.ops4j.base</groupId>
+                <artifactId>ops4j-base-io</artifactId>
+                <version>${dependency.base.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.ops4j.base</groupId>
+                <artifactId>ops4j-base-net</artifactId>
+                <version>${dependency.base.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.ops4j.base</groupId>
+                <artifactId>ops4j-base-util-property</artifactId>
+                <version>${dependency.base.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.ops4j.base</groupId>
+                <artifactId>ops4j-base-util-xml</artifactId>
+                <version>${dependency.base.version}</version>
+            </dependency>
+            <!-- OPS4J Pax Swissbox -->
+            <dependency>
+                <groupId>org.ops4j.pax.swissbox</groupId>
+                <artifactId>pax-swissbox-bnd</artifactId>
+                <version>${dependency.swissbox.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.ops4j.pax.swissbox</groupId>
+                <artifactId>pax-swissbox-optional-jcl</artifactId>
+                <version>${dependency.swissbox.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.ops4j.pax.swissbox</groupId>
+                <artifactId>pax-swissbox-property</artifactId>
+                <version>${dependency.swissbox.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.ops4j.pax.swissbox</groupId>
+                <artifactId>pax-swissbox-tracker</artifactId>
+                <version>${dependency.swissbox.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-file</artifactId>
+                <version>${dependency.wagon.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-http</artifactId>
+                <version>${dependency.wagon.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-provider-api</artifactId>
+                <version>${dependency.wagon.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.codehaus.plexus</groupId>
+                <artifactId>plexus-utils</artifactId>
+                <version>3.0.17</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.sonatype.plexus</groupId>
+                <artifactId>plexus-sec-dispatcher</artifactId>
+                <version>1.4</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.sonatype.plexus</groupId>
+                <artifactId>plexus-cipher</artifactId>
+                <version>1.7</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.aether</groupId>
+                <artifactId>aether-api</artifactId>
+                <version>${dependency.aether.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.aether</groupId>
+                <artifactId>aether-impl</artifactId>
+                <version>${dependency.aether.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.aether</groupId>
+                <artifactId>aether-spi</artifactId>
+                <version>${dependency.aether.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.aether</groupId>
+                <artifactId>aether-util</artifactId>
+                <version>${dependency.aether.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.aether</groupId>
+                <artifactId>aether-connector-basic</artifactId>
+                <version>${dependency.aether.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.aether</groupId>
+                <artifactId>aether-transport-wagon</artifactId>
+                <version>${dependency.aether.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.sonatype.sisu</groupId>
+                        <artifactId>sisu-inject-plexus</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.codehaus.plexus</groupId>
+                        <artifactId>plexus-classworlds</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.maven</groupId>
+                <artifactId>maven-aether-provider</artifactId>
+                <version>${dependency.maven.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.maven</groupId>
+                <artifactId>maven-settings-builder</artifactId>
+                <version>${dependency.maven.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>biz.aQute.bnd</groupId>
+                <artifactId>bndlib</artifactId>
+                <version>${dependency.bndlib.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${dependency.slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-simple</artifactId>
+                <version>${dependency.slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>jcl-over-slf4j</artifactId>
+                <version>${dependency.slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${dependency.logback.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>commons-logging</groupId>
+                <artifactId>commons-logging</artifactId>
+                <version>1.1.3</version>
+            </dependency>
+
+            <!-- OSGi Alliance -->
+            <dependency>
+                <groupId>org.osgi</groupId>
+                <artifactId>org.osgi.core</artifactId>
+                <version>${dependency.osgicore.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.osgi</groupId>
+                <artifactId>org.osgi.compendium</artifactId>
+                <version>${dependency.osgicomp.version}</version>
+            </dependency>
+            <!-- Test dependencies -->
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.11</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.easymock</groupId>
+                <artifactId>easymock</artifactId>
+                <version>3.1</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <repositories>
+        <repository>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <id>sonatype-nexus-snapshots</id>
+            <name>Sonatype Nexus Snapshots</name>
+            <url>https://oss.sonatype.org/content/repositories/ops4j-snapshots</url>
+        </repository>
+    </repositories>
+
+    <developers>
+        <developer>
+            <id>adreghiciu</id>
+            <name>Alin Dreghiciu</name>
+            <email>adreghiciu@gmail.com</email>
+            <roles>
+                <role>Developer</role>
+            </roles>
+            <timezone>UTC+2</timezone>
+        </developer>
+        <developer>
+            <id>tonit</id>
+            <name>Toni Menzel</name>
+            <email>toni@okidokiteam.com</email>
+            <roles>
+                <role>Developer</role>
+            </roles>
+            <timezone>UTC+1</timezone>
+        </developer>
+        <developer>
+            <id>hwellmann</id>
+            <name>Harald Wellmann</name>
+            <email>harald.wellmann@gmx.de</email>
+            <roles>
+                <role>Developer</role>
+            </roles>
+            <timezone>UTC+1</timezone>
+        </developer>
+        <developer>
+            <id>jbonofre</id>
+            <name>Jean-Baptiste Onofre</name>
+            <email>jb@nanthrax.net</email>
+            <roles>
+                <role>Developer</role>
+            </roles>
+            <timezone>UTC+1</timezone>
+        </developer>
+    </developers>
+    
+    <!-- don't treat Javadoc warnings as errors when running under JDK 8 -->
+    <profiles>
+        <profile>
+            <id>jdk8</id>
+            <activation>
+                <jdk>1.8</jdk>
+            </activation>
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-javadoc-plugin</artifactId>
+                            <configuration>
+                                <additionalparam>-Xdoclint:none</additionalparam>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
+        </profile>
+    </profiles>
+
+</project>
+

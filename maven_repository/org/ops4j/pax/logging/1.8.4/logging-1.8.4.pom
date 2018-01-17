@@ -1,0 +1,403 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.ops4j</groupId>
+    <artifactId>master</artifactId>
+    <version>3.3.0</version>
+  </parent>
+
+  <groupId>org.ops4j.pax</groupId>
+  <artifactId>logging</artifactId>
+  <version>1.8.4</version>
+  <packaging>pom</packaging>
+
+  <name>OPS4J Pax Logging (Build POM)</name>
+
+  <url>http://www.ops4j.org/projects/pax/logging</url>
+
+  <issueManagement>
+    <system>jira</system>
+    <url>http://issues.ops4j.org/jira/browse/PAXLOGGING</url>
+  </issueManagement>
+
+  <scm>
+    <connection>scm:git:git://github.com/ops4j/org.ops4j.pax.logging.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/ops4j/org.ops4j.pax.logging.git</developerConnection>
+    <url>http://github.com/ops4j/org.ops4j.pax.logging/tree/master</url>
+    <tag>logging-1.8.4</tag>
+  </scm>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.1</version>
+        <configuration>
+          <source>1.6</source>
+          <target>1.6</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>2.2.1</version>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>maven-bundle-plugin</artifactId>
+          <version>2.3.6</version>
+          <extensions>true</extensions>
+          <configuration>
+            <instructions>
+              <Bundle-DocURL>${project.url}</Bundle-DocURL>
+              <_include>-osgi.bnd</_include>
+            </instructions>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.ops4j</groupId>
+          <artifactId>maven-pax-plugin</artifactId>
+          <version>1.5</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>1.4</version>
+        </plugin>
+        
+        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+        <plugin>
+        	<groupId>org.eclipse.m2e</groupId>
+        	<artifactId>lifecycle-mapping</artifactId>
+        	<version>1.0.0</version>
+        	<configuration>
+        		<lifecycleMappingMetadata>
+        			<pluginExecutions>
+        				<pluginExecution>
+        					<pluginExecutionFilter>
+        						<groupId>org.apache.maven.plugins</groupId>
+        						<artifactId>maven-dependency-plugin</artifactId>
+        						<versionRange>[0,)</versionRange>
+        						<goals>
+        							<goal>unpack</goal>
+        						</goals>
+        					</pluginExecutionFilter>
+        					<action>
+        						<ignore />
+        					</action>
+        				</pluginExecution>
+        				<pluginExecution>
+        					<pluginExecutionFilter>
+        						<groupId>org.ops4j.pax.exam</groupId>
+        						<artifactId>maven-paxexam-plugin</artifactId>
+        						<versionRange>[0,)</versionRange>
+        						<goals>
+        							<goal>generate-depends-file</goal>
+        						</goals>
+        					</pluginExecutionFilter>
+        					<action>
+        						<ignore />
+        					</action>
+        				</pluginExecution>
+        			</pluginExecutions>
+        		</lifecycleMappingMetadata>
+        	</configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>2.10.2</version>
+          <configuration>
+            <additionalparam>-Xdoclint:none</additionalparam>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- OSGi Alliance -->
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.core</artifactId>
+        <version>4.3.1</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.compendium</artifactId>
+        <version>4.3.1</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>jmock</groupId>
+        <artifactId>jmock</artifactId>
+        <version>1.0.1</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>log4j</groupId>
+        <artifactId>log4j</artifactId>
+        <version>1.2.16</version>
+        <exclusions>
+          <exclusion>
+            <groupId>com.sun.jmx</groupId>
+            <artifactId>jmxri</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.sun.jdmk</groupId>
+            <artifactId>jmxtools</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-core</artifactId>
+        <version>2.0.2</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-api</artifactId>
+        <version>2.0.2</version>
+      </dependency>
+      <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-classic</artifactId>
+        <version>1.1.2</version>
+      </dependency>
+      <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-core</artifactId>
+        <version>1.1.2</version>
+      </dependency>
+      <dependency>
+        <groupId>avalon-framework</groupId>
+        <artifactId>avalon-framework-api</artifactId>
+        <version>4.3</version>
+        <exclusions>
+          <exclusion>
+            <groupId>avalon-logkit</groupId>
+            <artifactId>avalon-logkit</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <!-- internal dependencies-->
+      <dependency>
+        <groupId>org.ops4j.pax.logging</groupId>
+        <artifactId>pax-logging-service</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.pax.logging</groupId>
+        <artifactId>pax-logging-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <!-- Test dependencies-->
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.10</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.easymock</groupId>
+        <artifactId>easymock</artifactId>
+        <version>3.1</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.pax.exam</groupId>
+        <artifactId>pax-exam</artifactId>
+        <version>1.2.4</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.pax.exam</groupId>
+        <artifactId>pax-exam-container-default</artifactId>
+        <version>1.2.4</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.pax.exam</groupId>
+        <artifactId>pax-exam-junit</artifactId>
+        <version>1.2.4</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.pax.runner</groupId>
+        <artifactId>pax-runner-no-jcl</artifactId>
+        <version>1.8.6</version>
+      </dependency>
+
+      <!-- sample dependencies -->
+      <dependency>
+        <groupId>org.mortbay.jetty</groupId>
+        <artifactId>jetty</artifactId>
+        <version>6.1.26</version>
+      </dependency>
+
+    </dependencies>
+  </dependencyManagement>
+
+  <developers>
+    <developer>
+      <name>Alin Dreghiciu</name>
+      <id>adreghiciu@gmail.com</id>
+      <email>adreghiciu@gmail.com</email>
+    </developer>
+    <developer>
+      <name>Anders Janmyr</name>
+      <id>anders.janmyr@jayway.se</id>
+      <timezone>+1</timezone>
+    </developer>
+    <developer>
+      <name>Andreas Ronge</name>
+      <id>andreas.ronge@jayway.se</id>
+      <email>andreas.ronge@jayway.se</email>
+      <timezone>+1</timezone>
+    </developer>
+    <developer>
+      <name>Hirarm Chirino</name>
+      <id>chirino</id>
+    </developer>
+    <developer>
+      <name>Damian Golda</name>
+      <id>damian.golda@gmail.com</id>
+      <email>damian.golda@gmail.com</email>
+    </developer>
+    <developer>
+      <name>Per Böckman</name>
+      <id>dev2null</id>
+      <timezone>+1</timezone>
+    </developer>
+    <developer>
+      <name>David Ribeiro Alves</name>
+      <id>dr-alves@criticalsoftware.com</id>
+      <email>dr-alves@criticalsoftware.com</email>
+    </developer>
+    <developer>
+      <name>Edward Yakop</name>
+      <id>edward.yakop@gmail.com</id>
+      <organization>Jayway Malaysia Sdn Bhd</organization>
+      <organizationUrl>http://malaysia.jayway.net</organizationUrl>
+      <timezone>+8</timezone>
+    </developer>
+    <developer>
+      <name>Guillaume Nodet</name>
+      <id>gnodet</id>
+        <organization>FuseSource</organization>
+        <organizationUrl>http://fusesource.com</organizationUrl>
+        <timezone>+1</timezone>
+    </developer>
+    <developer>
+      <name>Makas Lau</name>
+      <id>makas@ops4j.org</id>
+      <organization>Jayway Malaysia Sdn Bhd</organization>
+      <organizationUrl>http://malaysia.jayway.net</organizationUrl>
+      <timezone>+8</timezone>
+    </developer>
+    <developer>
+      <name>Stuart McCulloch</name>
+      <id>mcculls</id>
+      <organization>Jayway Malaysia Sdn Bhd</organization>
+      <organizationUrl>http://malaysia.jayway.net</organizationUrl>
+      <timezone>+8</timezone>
+    </developer>
+    <developer>
+      <name>Niclas Hedhman</name>
+      <id>niclas@hedhman.org</id>
+      <organization>Jayway Malaysia Sdn Bhd</organization>
+      <organizationUrl>http://malaysia.jayway.net</organizationUrl>
+      <timezone>+8</timezone>
+      <email>niclas@hedhman.org</email>
+    </developer>
+    <developer>
+      <name>David Leangen</name>
+      <id>ops4j@leangen.net</id>
+      <email>ops4j@leangen.net</email>
+    </developer>
+    <developer>
+      <name>Peter Neubauer</name>
+      <id>peter@neubauer.se</id>
+      <organization>Jayway Malaysia Sdn Bhd</organization>
+      <organizationUrl>http://malaysia.jayway.net</organizationUrl>
+      <timezone>+1</timezone>
+    </developer>
+    <developer>
+      <name>Pierre Parrend</name>
+      <id>pparrend</id>
+    </developer>
+    <developer>
+      <name>Raman Gupta</name>
+      <id>rocketraman@fastmail.fm</id>
+      <email>rocketraman@fastmail.fm</email>
+    </developer>
+    <developer>
+      <name>Toni Menzel</name>
+      <id>tonit</id>
+      <timezone>+1</timezone>
+    </developer>
+    <developer>
+      <name>Wouter de Vaal</name>
+      <id>wouterv</id>
+      <timezone>+1</timezone>
+    </developer>
+    <developer>
+      <name>Matthew Roy</name>
+      <id>mooseroy</id>
+      <timezone>-5</timezone>
+      <email>mooseroy@gmail.com</email>
+    </developer>
+    <developer>
+      <id>heiko.seeberger</id>
+      <name>Heiko Seeberger</name>
+      <email>heiko [dot] seeberger [at] googlemail [dot] com</email>
+      <timezone>+1</timezone>
+      <roles>
+        <role>OSGi expert and Scala enthusiast</role>
+      </roles>
+    </developer>
+    <developer>
+      <name>David Jencks</name>
+      <id>djencks</id>
+      <email>david_jencks@yahoo.com</email>
+    </developer>
+    <developer>
+      <name>Jean-Baptiste Onofré</name>
+      <id>jbonofre</id>
+    </developer>
+    <developer>
+      <name>Chris Dolan</name>
+      <email>chrisdolan@apache.org</email>
+    </developer>
+    <developer>
+      <name>Raul Kripalani</name>
+      <email>raulk@apache.org</email>
+      <organization>Evosent Consulting</organization>
+    </developer>
+  </developers>
+
+  <modules>
+    <module>pax-logging-api</module>
+    <module>pax-logging-service</module>
+    <module>pax-logging-log4j2</module>
+    <module>pax-logging-logback</module>
+    <module>pax-logging-it</module>
+    <module>pax-logging-samples</module>
+  </modules>
+
+</project>

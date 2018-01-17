@@ -1,0 +1,602 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.apache</groupId>
+    <artifactId>apache</artifactId>
+    <version>14</version>
+  </parent>
+  <groupId>org.apache.rat</groupId>
+  <artifactId>apache-rat-project</artifactId>
+  <version>0.11</version>
+  <packaging>pom</packaging>
+  <name>Apache Creadur Rat</name>
+  <url>http://creadur.apache.org/rat/</url>
+  <description>
+Apache Rat is a release audit tool. It improves accuracy and efficiency when checking
+releases. It is heuristic in nature: making guesses about possible problems. It
+will produce false positives and cannot find every possible issue with a release.
+It's reports require interpretation.
+
+In response to demands from project quality tool developers, Rat is available as a
+library suitable for inclusion in tools. This POM describes that library.
+Note that binary compatibility is not guaranteed between 0.x releases.
+
+Apache Rat is developed by the Apache Creadur project, a language and build
+agnostic home for software distribution comprehension and audit tools.
+  </description>
+  <inceptionYear>2006</inceptionYear>
+
+  <prerequisites>
+    <maven>${mavenVersion}</maven>
+  </prerequisites>
+
+  <properties>
+    <javaVersion>1.5</javaVersion>
+    <maven.compiler.source>${javaVersion}</maven.compiler.source>
+    <maven.compiler.target>${javaVersion}</maven.compiler.target>
+    <mavenVersion>2.2.1</mavenVersion>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <!--
+    Publication to the website is a two phase operation:
+
+     1. Deploy to local stage: mvn site-deploy
+     2. Publish to Apache CMS: mvn scm-publish:publish-scm
+
+    This will only work when the origin for scm-publish:publish-scm
+    is the target for site:deploy.
+
+    SO MAKE SURE THAT THE FOLLOWING PROPERTIES RESOLVE TO THE SAME
+    DIRECTORY:
+
+     * scmpublish.content
+     * rat.site.url
+
+    -->
+    <rat.LocalSiteStaging>stage</rat.LocalSiteStaging>
+    <scmpublish.content>${rat.LocalSiteStaging}</scmpublish.content>
+    <rat.site.url>file:${rat.LocalSiteStaging}</rat.site.url>
+    <rat.site.name>Apache Rat Website</rat.site.name>
+    <rat.site.id>org.apache.rat.site</rat.site.id>
+
+    <!-- maven plugin versions -->
+    <mavenInvokerPluginVersion>1.9</mavenInvokerPluginVersion>
+    <mavenPluginPluginVersion>3.3</mavenPluginPluginVersion>
+    <surefire.version>2.17</surefire.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.apache.rat</groupId>
+        <artifactId>apache-rat-core</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.rat</groupId>
+        <artifactId>apache-rat-tasks</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-cli</groupId>
+        <artifactId>commons-cli</artifactId>
+        <version>1.2</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-collections</groupId>
+        <artifactId>commons-collections</artifactId>
+        <version>3.2.1</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <!-- Later versions require Java 1.6+ -->
+        <version>2.2</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-lang</groupId>
+        <artifactId>commons-lang</artifactId>
+        <!--  commons-lang3 versions require Java 1.6+ -->
+        <version>2.6</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-compress</artifactId>
+        <version>1.5</version>
+      </dependency>
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.11</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.ant</groupId>
+        <artifactId>ant</artifactId>
+        <version>1.7.1</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.ant</groupId>
+        <artifactId>ant-antunit</artifactId>
+        <version>1.1</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.ant</groupId>
+        <artifactId>ant-testutil</artifactId>
+        <version>1.7.1</version>
+        <scope>test</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-report-plugin</artifactId>
+        <version>${surefire.version}</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>2.9.1</version>
+        <configuration>
+          <tagletArtifacts>
+            <tagletArtifact>
+              <groupId>org.apache.maven.plugin-tools</groupId>
+              <artifactId>maven-plugin-tools-javadoc</artifactId>
+              <version>${mavenPluginPluginVersion}</version>
+            </tagletArtifact>
+          </tagletArtifacts>
+          <tags>
+            <tag>
+              <name>TODO</name>
+              <placement>X</placement>
+              <head>To do:</head>
+            </tag>
+          </tags>
+          <notimestamp>true</notimestamp>
+        </configuration>
+        <reportSets>
+          <reportSet>
+            <id>non-aggregate</id>
+            <configuration>
+            </configuration>
+            <reports>
+              <report>javadoc</report>
+            </reports>
+          </reportSet>
+          <reportSet>
+            <id>aggregate</id>
+            <configuration>
+            </configuration>
+            <reports>
+              <report>aggregate</report>
+            </reports>
+          </reportSet>
+        </reportSets>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jxr-plugin</artifactId>
+        <version>2.4</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-pmd-plugin</artifactId>
+        <!-- Later versions require Java 1.6+ -->
+        <version>3.1</version>
+        <configuration>
+          <targetJdk>${javaVersion}</targetJdk>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-project-info-reports-plugin</artifactId>
+        <version>2.7</version>
+        <reportSets>
+          <reportSet>
+            <reports>
+              <report>dependencies</report>
+              <report>project-team</report>
+              <report>mailing-list</report>
+              <report>issue-tracking</report>
+              <report>cim</report>
+              <report>license</report>
+              <report>scm</report>
+            </reports>
+          </reportSet>
+        </reportSets>
+      </plugin>
+    </plugins>
+  </reporting>
+
+  <build>
+    <defaultGoal>clean install</defaultGoal>
+    <pluginManagement>
+      <!--
+        This section is typically used to configure the versions of
+        plugins that we use. Note, that we are inheriting from the
+        parent POM, so we only have to configure version numbers,
+        if ours is different.
+      -->
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <version>1.7</version>
+          <dependencies>
+            <dependency>
+              <groupId>org.apache.ant</groupId>
+              <artifactId>ant</artifactId>
+              <version>1.7.1</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.1</version>
+          <configuration>
+            <source>${javaVersion}</source>
+            <target>${javaVersion}</target>
+            <encoding>${project.build.sourceEncoding}</encoding>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>2.8</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-pmd-plugin</artifactId>
+          <version>3.2</version>
+          <configuration>
+            <targetJdk>${javaVersion}</targetJdk>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>${surefire.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-site-plugin</artifactId>
+          <version>3.4</version>
+          <configuration>
+            <outputEncoding>${project.build.sourceEncoding}</outputEncoding>
+            <inputEncoding>${project.build.sourceEncoding}</inputEncoding>
+            <relativizeDecorationLinks>false</relativizeDecorationLinks>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.rat</groupId>
+          <artifactId>apache-rat-plugin</artifactId>
+          <!-- Must use previous version, to avoid a cyclic reference -->
+          <version>0.10</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-scm-publish-plugin</artifactId>
+          <version>1.0</version>
+          <extensions>true</extensions>
+          <configuration>
+            <!-- svn location for publication -->
+            <pubScmUrl>scm:svn:https://svn.apache.org/repos/asf/creadur/site/trunk/content/rat/</pubScmUrl>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-release-plugin</artifactId>
+          <version>2.4.1</version>
+          <configuration>
+            <mavenExecutorId>forked-path</mavenExecutorId>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>pre-site</phase>
+            <id>copy-site-resources</id>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <copy file="RELEASE_NOTES.txt" todir="${project.build.directory}/site/" failonerror="false" />
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <!-- This checks the bytecode version of the dependencies transitively -->
+            <id>enforce-bytecode-version</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <enforceBytecodeVersion>
+                  <maxJdkVersion>${javaVersion}</maxJdkVersion>
+                </enforceBytecodeVersion>
+              </rules>
+              <fail>true</fail>
+            </configuration>
+          </execution>
+        </executions>
+        <dependencies>
+          <dependency>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>extra-enforcer-rules</artifactId>
+            <version>1.0-beta-2</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>animal-sniffer-maven-plugin</artifactId>
+        <version>1.11</version>
+        <executions>
+          <execution>
+            <!-- This checks the source code of our project -->
+            <!--
+              Note that this cannot use our ${javaVersion} property, so it must
+              be changed manually when we decide to move to a higher version of
+              Java
+            -->
+            <id>check-java-1.5-compat</id>
+            <phase>process-classes</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <configuration>
+              <signature>
+                <groupId>org.codehaus.mojo.signature</groupId>
+                <artifactId>java15</artifactId>
+                <version>1.0</version>
+              </signature>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+    <extensions>
+      <extension>
+        <groupId>org.apache.maven.wagon</groupId>
+        <artifactId>wagon-ssh</artifactId>
+        <!-- Last version that is compatible with Maven 2 -->
+        <version>1.0-beta-7</version>
+      </extension>
+    </extensions>
+  </build>
+
+  <issueManagement>
+    <system>JIRA</system>
+    <url>https://issues.apache.org/jira/browse/RAT</url>
+  </issueManagement>
+
+  <ciManagement>
+    <system>Buildbot</system>
+    <url>http://ci.apache.org/builders/rat_trunk</url>
+    <!--  Jenkins builds are at:
+    https://builds.apache.org/job/Creadur-Rat/ - check Java5 compliance and run all tests
+    https://builds.apache.org/job/Creadur-Rat-Site/ - generate mvn site
+     -->
+  </ciManagement>
+
+  <mailingLists>
+    <mailingList>
+      <name>Rat Development (Apache Creadur project)</name>
+      <subscribe>dev-subscribe@creadur.apache.org</subscribe>
+      <unsubscribe>dev-unsubscribe@creadur.apache.org</unsubscribe>
+      <post>dev@creadur.apache.org</post>
+      <archive>http://mail-archives.apache.org/mod_mbox/creadur-dev/</archive>
+    </mailingList>
+    <mailingList>
+      <name>Rat Commits (Apache Creadur project)</name>
+      <subscribe>commits-subscribe@creadur.apache.org</subscribe>
+      <unsubscribe>commits-unsubscribe@creadur.apache.org</unsubscribe>
+      <archive>http://mail-archives.apache.org/mod_mbox/creadur-commits/</archive>
+    </mailingList>
+  </mailingLists>
+  <developers>
+    <developer>
+      <id>bodewig</id>
+      <name>Stefan Bodewig</name>
+      <email>bodewig@apache.org</email>
+    </developer>
+    <developer>
+      <id>rdonkin</id>
+      <name>Robert Burrell Donkin</name>
+      <email>rdonkin@apache.org</email>
+    </developer>
+    <developer>
+      <id>jochen</id>
+      <name>Jochen Wiedmann</name>
+      <email>jochen@apache.org</email>
+    </developer>
+    <developer>
+      <id>gmcdonald</id>
+      <name>Gavin</name>
+      <email>gmcdonald@apache.org</email>
+    </developer>
+    <developer>
+      <id>brianf</id>
+      <name>Brian Fox</name>
+      <email>brianf@apache.org</email>
+    </developer>
+    <developer>
+      <id>dennisl</id>
+      <name>Dennis Lundberg</name>
+      <email>dennisl@apache.org</email>
+    </developer>
+    <developer>
+      <id>rgardler</id>
+      <name>Ross Gardler</name>
+      <email>rgardler@apache.org</email>
+    </developer>
+    <developer>
+      <id>crossley</id>
+      <name>David Crossley</name>
+      <email>crossley@apache.org</email>
+    </developer>
+    <developer>
+      <id>dblevins</id>
+      <name>David Blevins</name>
+      <email>dblevins@apache.org</email>
+    </developer>
+    <developer>
+      <id>pottlinger</id>
+      <name>Philipp Ottlinger</name>
+      <email>pottlinger@apache.org</email>
+    </developer>
+  </developers>
+  <contributors>
+    <contributor>
+      <name>Jukka Zitting</name>
+      <email>jukka@apache.org</email>
+    </contributor>
+    <contributor>
+      <name>Todd Volkert</name>
+      <email>tvolkert+apache@gmail.com</email>
+    </contributor>
+    <contributor>
+      <name>Henri Yandell</name>
+      <email>bayard@apache.org</email>
+    </contributor>
+    <contributor>
+      <name>Guillaume Nodet</name>
+      <email>gnodet@apache.org</email>
+    </contributor>
+    <contributor>
+      <name>Karl Pauls</name>
+      <email>pauls@apache.org</email>
+    </contributor>
+    <contributor>
+      <name>Matthieu Riou</name>
+      <email>mriou@apache.org</email>
+    </contributor>
+    <contributor>
+      <name>Garrett Rooney</name>
+      <email>rooneg@apache.org</email>
+    </contributor>
+  </contributors>
+
+  <scm>
+    <connection>scm:svn:http://svn.apache.org/repos/asf/creadur/rat/tags/apache-rat-project-0.11</connection>
+    <developerConnection>scm:svn:https://svn.apache.org/repos/asf/creadur/rat/tags/apache-rat-project-0.11</developerConnection>
+    <url>http://svn.apache.org/repos/asf/creadur/rat/tags/apache-rat-project-0.11</url>
+  </scm>
+
+  <distributionManagement>
+    <site>
+      <id>${rat.site.id}</id>
+      <name>${rat.site.name}</name>
+      <url>${rat.site.url}</url>
+    </site>
+  </distributionManagement>
+
+  <modules>
+    <module>apache-rat-core</module>
+    <module>apache-rat-plugin</module>
+    <module>apache-rat-tasks</module>
+    <module>apache-rat</module>
+  </modules>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+      <comments>An OSI approved open source license.</comments>
+    </license>
+  </licenses>
+
+  <organization>
+    <name>Apache Software Foundation</name>
+    <url>http://www.apache.org</url>
+  </organization>
+
+  <profiles>
+    <profile>
+      <id>apache-release</id>
+      <build>
+        <plugins>
+          <!-- Skip the source-release artifact here; we create it under the CLI module -->
+          <plugin>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>source-release-assembly</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+                <configuration>
+                  <skipAssembly>true</skipAssembly>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>rat</id>
+      <build>
+        <plugins>
+          <plugin>
+            <!-- We don't want this to propagate to the modules, because they all have their own excludes -->
+            <inherited>false</inherited>
+            <groupId>org.apache.rat</groupId>
+            <artifactId>apache-rat-plugin</artifactId>
+            <configuration>
+              <excludes>
+                <!-- This file only describes how to build the project and it has no license header -->
+                <exclude>BUILD.txt</exclude>
+              </excludes>
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>

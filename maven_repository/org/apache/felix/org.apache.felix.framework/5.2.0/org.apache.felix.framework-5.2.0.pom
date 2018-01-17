@@ -1,0 +1,140 @@
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one
+ or more contributor license agreements.  See the NOTICE file
+ distributed with this work for additional information
+ regarding copyright ownership.  The ASF licenses this file
+ to you under the Apache License, Version 2.0 (the
+ "License"); you may not use this file except in compliance
+ with the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an
+ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ KIND, either express or implied.  See the License for the
+ specific language governing permissions and limitations
+ under the License.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.apache.felix</groupId>
+    <artifactId>felix-parent</artifactId>
+    <version>3</version>
+    <relativePath>../pom/pom.xml</relativePath>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+  <packaging>bundle</packaging>
+  <name>Apache Felix Framework</name>
+  <artifactId>org.apache.felix.framework</artifactId>
+  <version>5.2.0</version>
+  <properties>
+    <dollar>$</dollar>
+    <felix.java.version>6</felix.java.version>
+  </properties>
+  <scm>
+      <connection>scm:svn:http://svn.apache.org/repos/asf/felix/releases/org.apache.felix.framework-5.2.0</connection>
+      <developerConnection>scm:svn:https://svn.apache.org/repos/asf/felix/releases/org.apache.felix.framework-5.2.0</developerConnection>
+      <url>scm:svn:https://svn.apache.org/repos/asf/felix/releases/org.apache.felix.framework-5.2.0</url>
+  </scm>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <version>2.5.0</version>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Bundle-SymbolicName>org.apache.felix.framework</Bundle-SymbolicName>
+            <Bundle-Name>Apache Felix Framework</Bundle-Name>
+            <Bundle-Description>OSGi R6 framework implementation.</Bundle-Description>
+            <Bundle-Vendor>The Apache Software Foundation</Bundle-Vendor>
+            <Export-Package>
+                org.osgi.framework.*;-split-package:=merge-first,
+                org.osgi.resource;-split-package:=first,
+                org.osgi.resource.dto;-split-package:=first,                
+                org.osgi.service.packageadmin;-split-package:=first,
+                org.osgi.service.startlevel;-split-package:=first,
+	            org.osgi.service.url;-split-package:=first,
+                org.osgi.service.resolver,
+                org.osgi.util.tracker;-split-package:=first,
+                org.osgi.dto
+            </Export-Package>
+            <Private-Package>org.apache.felix.framework.*, org.apache.felix.resolver.*</Private-Package>
+            <Import-Package>!*</Import-Package>
+          </instructions>
+        </configuration>
+      </plugin>
+      <plugin>
+          <groupId>org.apache.rat</groupId>
+          <artifactId>apache-rat-plugin</artifactId>
+          <executions>
+              <execution>
+                  <phase>verify</phase>
+                  <goals>
+                      <goal>check</goal>
+                  </goals>
+              </execution>
+          </executions>
+          <configuration>
+              <includes>
+                  <include>src/**</include>
+              </includes>
+              <excludes>
+                  <exclude>src/main/appended-resources/**</exclude>
+                  <exclude>src/**/packageinfo</exclude>
+                  <exclude>src/main/resources/META-INF/services/org.osgi.framework.launch.FrameworkFactory</exclude>
+                  <exclude>src/main/resources/org/apache/felix/framework/Felix.properties</exclude>
+              </excludes>
+            </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <configuration>
+                <failOnError>false</failOnError>
+            </configuration>
+      </plugin>
+    </plugins>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+  </build>
+  <dependencies>
+    <dependency>
+       <groupId>org.osgi</groupId>
+       <artifactId>org.osgi.annotation</artifactId>
+       <version>6.0.0</version>
+       <scope>provided</scope>
+    </dependency>
+    <dependency>
+       <groupId>org.apache.felix</groupId>
+       <artifactId>org.apache.felix.resolver</artifactId>
+       <version>1.6.0</version>
+       <scope>provided</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm-all</artifactId>
+        <version>4.2</version>
+        <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>

@@ -1,0 +1,630 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~ http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.apache.maven</groupId>
+    <artifactId>maven-parent</artifactId>
+    <version>24</version>
+  </parent>
+
+  <groupId>org.apache.maven.scm</groupId>
+  <artifactId>maven-scm</artifactId>
+  <version>1.9.2</version>
+  <packaging>pom</packaging>
+
+  <name>Maven SCM</name>
+  <description>Maven SCM provides a common API for doing SCM operations.</description>
+  <url>http://maven.apache.org/scm/</url>
+  <inceptionYear>2003</inceptionYear>
+
+  <mailingLists>
+    <mailingList>
+      <name>Maven Developer List</name>
+      <subscribe>dev-subscribe@maven.apache.org</subscribe>
+      <unsubscribe>dev-unsubscribe@maven.apache.org</unsubscribe>
+      <post>dev@maven.apache.org</post>
+      <archive>http://mail-archives.apache.org/mod_mbox/maven-dev</archive>
+      <otherArchives>
+        <otherArchive>http://www.mail-archive.com/dev@maven.apache.org/</otherArchive>
+        <otherArchive>http://old.nabble.com/Maven-Developers-f179.html</otherArchive>
+        <otherArchive>http://maven.dev.markmail.org/</otherArchive>
+      </otherArchives>
+    </mailingList>
+    <mailingList>
+      <name>Maven User List</name>
+      <subscribe>users-subscribe@maven.apache.org</subscribe>
+      <unsubscribe>users-unsubscribe@maven.apache.org</unsubscribe>
+      <post>users@maven.apache.org</post>
+      <archive>http://mail-archives.apache.org/mod_mbox/maven-users</archive>
+      <otherArchives>
+        <otherArchive>http://www.mail-archive.com/users@maven.apache.org/</otherArchive>
+        <otherArchive>http://old.nabble.com/Maven---Users-f178.html</otherArchive>
+        <otherArchive>http://maven.users.markmail.org/</otherArchive>
+      </otherArchives>
+    </mailingList>
+    <mailingList>
+      <name>LEGACY SCM Developer List</name>
+      <subscribe>scm-dev-subscribe@maven.apache.org</subscribe>
+      <unsubscribe>scm-dev-unsubscribe@maven.apache.org</unsubscribe>
+      <post>scm-dev@maven.apache.org</post>
+      <archive>http://mail-archives.apache.org/mod_mbox/maven-scm-dev</archive>
+      <otherArchives>
+        <otherArchive>http://www.mail-archive.com/scm-dev@maven.apache.org</otherArchive>
+        <otherArchive>http://maven.scm.dev.markmail.org/</otherArchive>
+      </otherArchives>
+    </mailingList>
+    <mailingList>
+      <name>LEGACY SCM User List</name>
+      <subscribe>scm-users-subscribe@maven.apache.org</subscribe>
+      <unsubscribe>scm-users-unsubscribe@maven.apache.org</unsubscribe>
+      <post>scm-users@maven.apache.org</post>
+      <archive>http://mail-archives.apache.org/mod_mbox/maven-scm-users</archive>
+      <otherArchives>
+        <otherArchive>http://www.mail-archive.com/scm-users@maven.apache.org</otherArchive>
+        <otherArchive>http://maven.scm.users.markmail.org/</otherArchive>
+      </otherArchives>
+    </mailingList>
+    <mailingList>
+      <name>SCM Commits List</name>
+      <subscribe>scm-commits-subscribe@maven.apache.org</subscribe>
+      <unsubscribe>scm-commits-unsubscribe@maven.apache.org</unsubscribe>
+      <archive>http://mail-archives.apache.org/mod_mbox/maven-scm-commits</archive>
+      <otherArchives>
+        <otherArchive>http://www.mail-archive.com/scm-commits@maven.apache.org</otherArchive>
+        <otherArchive>http://maven.scm.commits.markmail.org/</otherArchive>
+      </otherArchives>
+    </mailingList>
+  </mailingLists>
+
+  <prerequisites>
+    <maven>2.0.6</maven>
+  </prerequisites>
+
+  <modules>
+    <module>maven-scm-api</module>
+    <module>maven-scm-managers</module>
+    <module>maven-scm-test</module>
+    <module>maven-scm-providers</module>
+    <module>maven-scm-client</module>
+    <module>maven-scm-plugin</module>
+  </modules>
+
+  <scm>
+    <connection>scm:git:https://git-wip-us.apache.org/repos/asf/maven-scm.git</connection>
+    <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/maven-scm.git</developerConnection>
+    <url>https://github.com/apache/maven-scm/tree/${project.scm.tag}</url>
+    <tag>maven-scm-1.9.2</tag>
+  </scm>
+
+  <issueManagement>
+    <system>jira</system>
+    <url>http://jira.codehaus.org/browse/SCM</url>
+  </issueManagement>
+  <ciManagement>
+    <system>Jenkins</system>
+    <url>https://builds.apache.org/job/maven-scm/</url>
+  </ciManagement>
+
+  <distributionManagement>
+    <site>
+      <id>apache.website</id>
+      <url>scm:svn:https://svn.apache.org/repos/infra/websites/production/maven/content/${maven.site.path}</url>
+    </site>
+  </distributionManagement>
+
+  <properties>
+    <maven.site.path>scm-archives/scm-LATEST</maven.site.path>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-manager-plexus</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <!-- providers declaration -->
+      <dependency>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-provider-accurev</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-provider-bazaar</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-provider-clearcase</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-provider-cvs-commons</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-provider-cvsexe</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-provider-cvsjava</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-provider-git-commons</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-provider-gitexe</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-provider-hg</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-provider-integrity</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-provider-local</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-provider-perforce</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-provider-starteam</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-provider-svn-commons</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-provider-svnexe</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-provider-synergy</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-provider-vss</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-provider-tfs</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-provider-jazz</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <!-- end providers declaration -->
+
+      <!-- Plexus -->
+      <dependency>
+        <groupId>org.codehaus.plexus</groupId>
+        <artifactId>plexus-container-default</artifactId>
+        <version>1.0-alpha-9</version>
+      </dependency>
+      <dependency>
+        <groupId>org.codehaus.plexus</groupId>
+        <artifactId>plexus-utils</artifactId>
+        <version>3.0.15</version>
+      </dependency>
+
+      <dependency>
+        <groupId>commons-lang</groupId>
+        <artifactId>commons-lang</artifactId>
+        <version>2.6</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>2.2</version>
+      </dependency>
+
+      <!-- Test -->
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.8.2</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-core</artifactId>
+        <version>1.9.5</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-provider-svntest</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-test</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-provider-cvstest</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-provider-gittest</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-utils</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+
+    <pluginManagement>
+      <plugins>
+        <plugin><!-- TODO remove when upgrading to maven-parent 25 -->
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-site-plugin</artifactId>
+          <configuration>
+            <topSiteURL>scm:svn:https://svn.apache.org/repos/infra/websites/production/maven/content/${maven.site.path}</topSiteURL>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.modello</groupId>
+          <artifactId>modello-maven-plugin</artifactId>
+          <version>1.1</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>animal-sniffer-maven-plugin</artifactId>
+        <version>1.9</version>
+        <configuration>
+          <signature>
+            <groupId>org.codehaus.mojo.signature</groupId>
+            <artifactId>java15</artifactId>
+            <version>1.0</version>
+          </signature>
+        </configuration>
+        <executions>
+          <execution>
+            <id>check-java-1.5-compat</id>
+            <phase>process-classes</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+
+  </build>
+
+  <contributors>
+    <contributor>
+      <name>Petr Kozelka</name>
+    </contributor>
+    <contributor>
+      <name>Svend Hansen</name>
+    </contributor>
+    <contributor>
+      <name>Ralf Thielow</name>
+    </contributor>
+    <contributor>
+      <name>Mads Mohr Christensen</name>
+    </contributor>
+    <contributor>
+      <name>Frederic Camblor</name>
+    </contributor>
+    <contributor>
+      <name>Raul Wegmann</name>
+    </contributor>
+    <contributor>
+      <name>Darryl L. Miles</name>
+    </contributor>
+    <contributor>
+      <name>Dominik Bartholdi</name>
+    </contributor>
+  </contributors>
+
+  <profiles>
+
+    <profile>
+      <id>reporting</id>
+      <reporting>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <configuration>
+              <notimestamp>true</notimestamp>
+              <linksource>true</linksource>
+              <groups>
+                <group>
+                  <title>API + Test</title>
+                  <packages>org.apache.maven.scm*</packages>
+                </group>
+                <group>
+                  <title>Client</title>
+                  <packages>org.apache.maven.scm.client*</packages>
+                </group>
+                <group>
+                  <title>Plexus Manager</title>
+                  <packages>org.apache.maven.scm.manager.plexus*</packages>
+                </group>
+                <group>
+                  <title>Plugin</title>
+                  <packages>org.apache.maven.scm.plugin*</packages>
+                </group>
+                <group>
+                  <title>AccuRev Provider</title>
+                  <packages>org.apache.maven.scm.provider.accurev*</packages>
+                </group>
+                <group>
+                  <title>Bazaar Provider</title>
+                  <packages>org.apache.maven.scm.provider.bazaar*</packages>
+                </group>
+                <group>
+                  <title>CVS Provider</title>
+                  <packages>org.apache.maven.scm.provider.cvs*:org.apache.maven.scm.providers.cvs*</packages>
+                </group>
+                <group>
+                  <title>Clearcase Provider</title>
+                  <packages>org.apache.maven.scm.provider.clearcase*:org.apache.maven.scm.providers.clearcase*</packages>
+                </group>
+                <group>
+                  <title>Git Provider</title>
+                  <packages>org.apache.maven.scm.provider.git*:org.apache.maven.scm.providers.git*</packages>
+                </group>
+                <group>
+                  <title>Mercurial (Hg) Provider</title>
+                  <packages>org.apache.maven.scm.provider.hg*</packages>
+                </group>
+                <group>
+                  <title>MKS Integrity Provider</title>
+                  <packages>org.apache.maven.scm.provider.integrity*</packages>
+                </group>
+                <group>
+                  <title>Jazz/Rational Team Concert Provider</title>
+                  <packages>org.apache.maven.scm.provider.jazz*</packages>
+                </group>
+                <group>
+                  <title>Local Provider</title>
+                  <packages>org.apache.maven.scm.provider.local*</packages>
+                </group>
+                <group>
+                  <title>Perforce Provider</title>
+                  <packages>org.apache.maven.scm.provider.perforce*</packages>
+                </group>
+                <group>
+                  <title>Starteam Provider</title>
+                  <packages>org.apache.maven.scm.provider.starteam*:org.apache.maven.scm.providers.starteam*</packages>
+                </group>
+                <group>
+                  <title>Subversion Provider</title>
+                  <packages>org.apache.maven.scm.provider.svn*:org.apache.maven.scm.providers.svn*</packages>
+                </group>
+                <group>
+                  <title>Synergy Provider</title>
+                  <packages>org.apache.maven.scm.provider.synergy*</packages>
+                </group>
+                <group>
+                  <title>TFS Provider</title>
+                  <packages>org.apache.maven.scm.provider.tfs*</packages>
+                </group>
+                <group>
+                  <title>Visual Source Safe Provider</title>
+                  <packages>org.apache.maven.scm.provider.vss*:org.apache.maven.scm.providers.vss*</packages>
+                </group>
+              </groups>
+            </configuration>
+            <reportSets>
+              <reportSet>
+                <id>non-aggregate</id>
+                <reports>
+                  <report>javadoc</report>
+                  <report>test-javadoc</report>
+                </reports>
+              </reportSet>
+              <reportSet>
+                <id>aggregate</id>
+                <inherited>false</inherited>
+                <reports>
+                  <report>aggregate</report>
+                </reports>
+              </reportSet>
+            </reportSets>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jxr-plugin</artifactId>
+            <reportSets>
+              <reportSet>
+                <id>non-aggregate</id>
+                <reports>
+                  <report>jxr</report>
+                  <report>test-jxr</report>
+                </reports>
+              </reportSet>
+              <reportSet>
+                <id>aggregate</id>
+                <inherited>false</inherited>
+                <reports>
+                  <report>aggregate</report>
+                </reports>
+              </reportSet>
+            </reportSets>
+          </plugin>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>cobertura-maven-plugin</artifactId>
+            <reportSets>
+              <reportSet>
+                <!-- Disabled as it kills the site generation via a NoClassDefFoundError -->
+                <reports />
+              </reportSet>
+            </reportSets>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-checkstyle-plugin</artifactId>
+            <reportSets>
+              <reportSet>
+                <id>non-aggregate</id>
+                <reports>
+                  <report>checkstyle</report>
+                </reports>
+              </reportSet>
+              <reportSet>
+                <id>aggregate</id>
+                <inherited>false</inherited>
+                <reports>
+                  <report>checkstyle-aggregate</report>
+                </reports>
+              </reportSet>
+            </reportSets>
+          </plugin>
+        </plugins>
+      </reporting>
+    </profile>
+
+    <profile>
+      <id>rat</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.rat</groupId>
+            <artifactId>apache-rat-plugin</artifactId>
+            <configuration>
+              <excludes>
+                <exclude>.gitignore</exclude>
+                <exclude>DEPENDENCIES</exclude>
+                <exclude>README.txt</exclude>
+                <exclude>*.sh</exclude>
+                <exclude>.git/**</exclude>
+                <exclude>.idea/**</exclude>
+                <exclude>**/generated-sources/**</exclude>
+                <exclude>**/.gitattributes</exclude>
+                <exclude>src/main/resources/repository/**</exclude>
+                <exclude>**/src/main/resources/tck-repository/**</exclude>
+                <exclude>src/test/resources/**</exclude>
+                <exclude>src/test/repository/**</exclude>
+                <exclude>src/test/tck-repository/**</exclude>
+                <exclude>src/main/resources/tck/**</exclude>
+                <exclude>.java-version</exclude>
+                <exclude>.repository/**</exclude><!-- for CI -->
+              </excludes>
+            </configuration>
+            <executions>
+              <execution>
+                <id>rat-check</id>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+                <phase>verify</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>apache-release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>source-release-assembly</id>
+                <configuration>
+                  <!-- SCM-737 -->
+                  <descriptorRefs combine.self="override" />
+                  <descriptors>
+                    <descriptor>src/main/assemblies/scm-source-release.xml</descriptor>
+                  </descriptors>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+  </profiles>
+
+  <repositories>
+    <repository>
+      <id>apache.snapshots</id>
+      <url>https://repository.apache.org/content/groups/snapshots-group/</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+
+</project>

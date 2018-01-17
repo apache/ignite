@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.apache.activemq</groupId>
+    <artifactId>activemq-parent</artifactId>
+    <version>5.12.0</version>
+  </parent>
+
+  <artifactId>activemq-broker</artifactId>
+  <packaging>jar</packaging>
+  <name>ActiveMQ :: Broker</name>
+  <description>The ActiveMQ Message Broker implementation</description>
+
+  <properties>
+    <surefire.argLine>-Xmx512M</surefire.argLine>
+  </properties>
+
+  <dependencies>
+    <!-- =============================== -->
+    <!-- Required Dependencies -->
+    <!-- =============================== -->
+    <dependency>
+      <groupId>org.apache.activemq</groupId>
+      <artifactId>activemq-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.activemq</groupId>
+      <artifactId>activemq-openwire-legacy</artifactId>
+    </dependency>
+
+    <!-- =============================== -->
+    <!-- Optional Dependencies -->
+    <!-- =============================== -->
+
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.core</artifactId>
+      <scope>provided</scope>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.activemq</groupId>
+      <artifactId>activemq-jaas</artifactId>
+      <optional>true</optional>
+    </dependency>
+
+    <!-- to support XPath based Selectors -->
+    <dependency>
+      <groupId>xalan</groupId>
+      <artifactId>xalan</artifactId>
+      <optional>true</optional>
+    </dependency>
+
+    <!-- =============================== -->
+    <!-- Testing Dependencies -->
+    <!-- =============================== -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>${maven-javadoc-plugin-version}</version>
+        <configuration>
+          <links>
+            <link>${javase-javadoc-url}</link>
+            <link>${javaee-javadoc-url}</link>
+            <link>${slf4j-javadoc-url}</link>
+            <link>http://junit.sourceforge.net/javadoc/</link>
+          </links>
+          <stylesheetfile>${basedir}/../etc/css/stylesheet.css</stylesheetfile>
+          <linksource>true</linksource>
+          <maxmemory>256m</maxmemory>
+          <source>${source-version}</source>
+          <groups>
+            <group>
+              <title>JMS Client</title>
+              <packages>org.apache.activemq:org.apache.activemq.command</packages>
+            </group>
+            <group>
+              <title>JMS Client support classes for working with BLOBs and JNDI</title>
+              <packages>org.apache.activemq.blob:org.apache.activemq.jndi</packages>
+            </group>
+            <group>
+              <title>Enterprise Integration Pattern support via Camel</title>
+              <packages>org.apache.activemq.camel:org.apache.activemq.camel.*</packages>
+            </group>
+            <group>
+              <title>Spring support</title>
+              <packages>org.apache.activemq.spring:org.apache.activemq.xbean:org.apache.activemq.pool</packages>
+            </group>
+            <group>
+              <title>JMS Client Implementation classes</title>
+              <packages>org.apache.activemq.filter:org.apache.activemq.management:org.apache.activemq.selector:org.apache.activemq.thread</packages>
+            </group>
+            <group>
+              <title>Broker implementation</title>
+              <packages>org.apache.activemq.advisory:org.apache.activemq.broker:org.apache.activemq.broker.*:org.apache.activemq.state:org.apache.activemq.security:org.apache.activemq.transaction</packages>
+            </group>
+            <group>
+              <title>Broker Persistent Store</title>
+              <packages>org.apache.activemq.store:org.apache.activemq.store.*</packages>
+            </group>
+            <group>
+              <title>Kaha fast file based storage</title>
+              <packages>org.apache.activemq.kaha:org.apache.activemq.kaha.*</packages>
+            </group>
+            <group>
+              <title>Transports</title>
+              <packages>org.apache.activemq.transport:org.apache.activemq.transport.*</packages>
+            </group>
+            <group>
+              <title>Memory handling</title>
+              <packages>org.apache.activemq.memory:org.apache.activemq.memory.*</packages>
+            </group>
+            <group>
+              <title>Networks of Brokers</title>
+              <packages>org.apache.activemq.network:org.apache.activemq.network.*</packages>
+            </group>
+            <group>
+              <title>OpenWire support</title>
+              <packages>org.apache.activemq.openwire:org.apache.activemq.openwire.*</packages>
+            </group>
+            <group>
+              <title>Utility classes</title>
+              <packages>org.apache.activemq.util:org.apache.activemq.wireformat:org.apache.activemq.proxy</packages>
+            </group>
+          </groups>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>findbugs-maven-plugin</artifactId>
+        <version>${findbugs-maven-plugin-version}</version>
+        <configuration>
+          <threshold>Normal</threshold>
+          <effort>Default</effort>
+        </configuration>
+      </plugin>
+    </plugins>
+  </reporting>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <forkCount>1</forkCount>
+          <reuseForks>false</reuseForks>
+          <argLine>${surefire.argLine}</argLine>
+          <runOrder>alphabetical</runOrder>
+          <systemProperties>
+            <property>
+              <name>org.apache.activemq.default.directory.prefix</name>
+              <value>target/</value>
+            </property>
+          </systemProperties>
+          <includes>
+            <include>**/*Test.*</include>
+          </includes>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-clean-plugin</artifactId>
+        <configuration>
+          <filesets>
+            <fileset>
+              <directory>${basedir}/activemq-data</directory>
+            </fileset>
+          </filesets>
+        </configuration>
+      </plugin>
+      <!-- generate the attached tests jar -->
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+  <profiles>
+    <profile>
+      <id>activemq.tests-sanity</id>
+      <activation>
+        <property>
+          <name>activemq.tests</name>
+          <value>smoke</value>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <excludes>
+                <exclude>**/JmsQueueTransactionTest.*</exclude>
+                <exclude>**/MessageInterceptorTest.*</exclude>
+                <exclude>**/BrokerDestinationViewTest.*</exclude>
+              </excludes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>

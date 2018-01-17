@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>c3p0</groupId>
+  <artifactId>c3p0</artifactId>
+  <version>0.9.1</version>
+  <packaging>jar</packaging>
+  <name>c3p0:JDBC DataSources/Resource Pools</name>
+  <description>
+    c3p0 is an easy-to-use library for augmenting traditional (DriverManager-based) JDBC drivers with JNDI-bindable DataSources,
+    including DataSources that implement Connection and Statement Pooling, as described by the jdbc3 spec and jdbc2 std extension.
+  </description>
+  <url>http://c3p0.sourceforge.net</url>
+  <scm>
+    <url>http://c3p0.cvs.sourceforge.net/c3p0</url>
+  </scm>
+  <licenses>
+    <license>
+      <name>GNU LESSER GENERAL PUBLIC LICENSE</name>
+      <url>http://www.gnu.org/licenses/lgpl.txt</url>
+    </license>
+  </licenses>
+  <dependencies/>
+</project>

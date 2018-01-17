@@ -1,0 +1,141 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.google.http-client</groupId>
+    <artifactId>google-http-client-parent</artifactId>
+    <version>1.22.0</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+  <artifactId>google-http-client</artifactId>
+  <name>Google HTTP Client Library for Java</name>
+  <description>
+    Google HTTP Client Library for Java. Functionality that works on all supported Java platforms,
+    including Java 5 (or higher) desktop (SE) and web (EE), Android, and Google App Engine.
+  </description>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <links>
+            <link>http://download.oracle.com/javase/1.5.0/docs/api/</link>
+            <link>http://docs.guava-libraries.googlecode.com/git-history/v13.0.1/javadoc</link>
+            <link>http://commons.apache.org/proper/commons-codec/javadocs/api-release</link>
+          </links>
+          <doctitle>${project.name} ${project.version}</doctitle>
+          <windowtitle>${project.artifactId} ${project.version}</windowtitle>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>source-jar</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- Use jarjar to include a private copy of Apache Commons Codec library
+           to avoid a runtime dependency conflict with Android which includes
+           an older version of that library, as well as Guava JDK5. -->
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>jarjar-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>jarjar</goal>
+            </goals>
+            <configuration>
+              <includes>
+                <include>commons-codec:commons-codec</include>
+                <include>com.google.guava:guava-jdk5</include>
+              </includes>
+              <rules>
+                <rule>
+                  <pattern>org.apache.commons.codec.**</pattern>
+                  <result>com.google.api.client.repackaged.org.apache.commons.codec.@1</result>
+                </rule>
+                <rule>
+                  <pattern>com.google.common.**</pattern>
+                  <result>com.google.api.client.repackaged.com.google.common.@1</result>
+                </rule>
+                <keep>
+                  <pattern>com.google.api.client.**</pattern>
+                </keep>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <!-- Remove extraneous files from the jarjar'ed Apache Commons Codec
+               Library. -->
+          <execution>
+            <id>scrub</id>
+            <phase>package</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <jar destfile="target/scrubbed.jar" filesetmanifest="merge">
+                  <zipfileset src="target/google-http-client-${project.version}.jar">
+                    <exclude name="**/org/apache/commons/codec/language/bm/*.txt"/>
+                    <exclude name="META-INF/*.txt"/>
+                    <exclude name="META-INF/maven/**"/>
+                  </zipfileset>
+                </jar>
+                <move file="target/scrubbed.jar" tofile="target/google-http-client-${project.version}.jar"/>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+  <dependencies>
+    <dependency>
+      <groupId>com.google.android</groupId>
+      <artifactId>android</artifactId>
+      <version>1.5_r4</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava-jdk5</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-all</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+</project>

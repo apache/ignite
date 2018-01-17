@@ -1,0 +1,48 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.ops4j.pax</groupId>
+    <artifactId>swissbox</artifactId>
+    <version>1.8.1</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <groupId>org.ops4j.pax.swissbox</groupId>
+  <artifactId>pax-swissbox-core</artifactId>
+  <packaging>bundle</packaging>
+
+  <name>OPS4J Pax Swissbox :: OSGi Core</name>
+  <description>
+    OPS4J Pax Swissbox - Utilities related to OSGi core framework.
+    Detailed information to be found at http://wiki.ops4j.org/confluence/x/MgRN.
+  </description>
+
+  <properties>
+    <bundle.symbolicName>org.ops4j.pax.swissbox.core</bundle.symbolicName>
+    <bundle.namespace>org.ops4j.pax.swissbox.core</bundle.namespace>
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.ops4j.pax.swissbox</groupId>
+      <artifactId>pax-swissbox-lifecycle</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.ops4j.base</groupId>
+      <artifactId>ops4j-base-lang</artifactId>
+    </dependency>
+  </dependencies>
+
+</project>

@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?><project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.objectweb.howl</groupId>
+  <artifactId>howl</artifactId>
+  <name>HOWL logger</name>
+  <version>1.0.1-1</version>
+  <description>HOWL is a logger implementation providing features required by the JOTM project. HOWL uses unformatted
+        binary logs to maximize performance and specifies a journalization API with methods necessary to support JOTM
+        recovery operations.</description>
+  <url>http://forge.objectweb.org/projects/howl/</url>
+  <issueManagement>
+    <system>bugzilla</system>
+    <url>http://forge.objectweb.org/tracker/?group_id=92</url>
+  </issueManagement>
+  <mailingLists>
+    <mailingList>
+      <name>HOWL List</name>
+      <subscribe>howl-subscribe@objectweb.org</subscribe>
+      <unsubscribe>howl-unsubscribe@objectweb.org</unsubscribe>
+      <archive>http://mail-archive.objectweb.org/howl/index.html</archive>
+    </mailingList>
+  </mailingLists>
+  <developers>
+    <developer>
+      <id>girouxm</id>
+      <name>Michael Giroux</name>
+      <roles>
+        <role>Founder</role>
+        <role>Committer</role>
+      </roles>
+      <timezone>-7</timezone>
+    </developer>
+    <developer>
+      <id>djencks</id>
+      <name>David Jencks</name>
+      <roles>
+        <role>Committer</role>
+      </roles>
+      <timezone>-8</timezone>
+    </developer>
+  </developers>
+  <licenses>
+    <license>
+      <name>BSD</name>
+    </license>
+  </licenses>
+  <scm>
+    <connection>scm:cvs:pserver:anonymous@cvs.forge.objectweb.org:/cvsroot:howl</connection>
+    <developerConnection>scm:cvs:ext:${maven.username}@cvs.forge.objectweb.org:/cvsroot:howl</developerConnection>
+    <url>http://cvs.forge.objectweb.org/cgi-bin/viewcvs.cgi/howl/</url>
+  </scm>
+  <organization>
+    <name>ObjectWeb HOWL</name>
+    <url>http://forge.objectweb.org/projects/howl</url>
+  </organization>
+  <build>
+    <sourceDirectory>src/java</sourceDirectory>
+    <scriptSourceDirectory>src/scripts</scriptSourceDirectory>
+    <testSourceDirectory>src/test</testSourceDirectory>
+    <resources>
+      <resource>
+        <targetPath>META-INF</targetPath>
+        <directory>.</directory>
+        <includes>
+          <include>LICENSE.txt</include>
+        </includes>
+      </resource>
+    </resources>
+    <testResources>
+      <testResource>
+        <directory>src/test-resources</directory>
+      </testResource>
+    </testResources>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.4</source>
+          <target>1.4</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <includes>
+            <include implementation="java.lang.String">**/*Test.java</include>
+          </includes>
+          <excludes>
+            <exclude implementation="java.lang.String">**/allTest.java</exclude>
+            <exclude implementation="java.lang.String">**/ExceptionTest.java</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>org.objectweb.howl.log.Version</mainClass>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>compile</phase>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <configuration>
+                  <tasks>
+                    <mkdir dir="${project.build.directory}/classes/cvs"></mkdir>
+                    <cvs cvsroot=":pserver:anonymous@cvs.forge.objectweb.org:/cvsroot/howl" passfile="nul" output="${project.build.directory}/classes/cvs/status.txt">
+                      <commandline>
+                        <argument value="status"></argument>
+                      </commandline>
+                    </cvs>
+                    <mkdir dir="${project.build.directory}/classes/resources"></mkdir>
+                    <echo file="${project.build.directory}/classes/resources/version.properties">build.time=${build.time}</echo>
+                  </tasks>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>3.8.1</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+  <distributionManagement>
+    <repository>
+      <id>objectweb</id>
+      <name>ObjectWeb Maven Repository</name>
+      <url>file:/tmp/repo</url>
+    </repository>
+    <snapshotRepository>
+      <id>objectweb-snapshot</id>
+      <name>ObjectWeb Maven Snapshot Repository</name>
+      <url>scp://jupiter.objectweb.org/var/lib/gforge/chroot/home/groups/maven/htdocs/maven2-snapshot</url>
+    </snapshotRepository>
+    <site>
+      <id>howl.website</id>
+      <url>file:/tmp/site</url>
+    </site>
+    <status>deployed</status>
+  </distributionManagement>
+</project>

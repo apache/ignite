@@ -1,0 +1,5 @@
+#NOTE: This is an Aether internal implementation file, its format can be changed without prior notice.
+#Tue Dec 19 19:09:38 CST 2017
+servlet-api-2.5-20081211.pom>jboss-ga-repository=
+servlet-api-2.5-20081211.pom>jboss-ga-plugin-repository=
+servlet-api-2.5-20081211.jar>jboss-ga-plugin-repository=

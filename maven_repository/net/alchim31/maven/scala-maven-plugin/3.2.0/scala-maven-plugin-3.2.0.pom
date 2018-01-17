@@ -1,0 +1,449 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.sonatype.oss</groupId>
+    <artifactId>oss-parent</artifactId>
+    <version>7</version>
+  </parent>
+
+  <groupId>net.alchim31.maven</groupId>
+  <artifactId>scala-maven-plugin</artifactId>
+  <version>3.2.0</version>
+  <packaging>maven-plugin</packaging>
+
+  <name>scala-maven-plugin</name>
+  <url>http://github.com/davidB/${project.artifactId}</url>
+  <inceptionYear>2012</inceptionYear>
+  <description>The scala-maven-plugin (previously maven-scala-plugin) is used for compiling/testing/running/documenting scala code of any maven project.</description>
+
+  <licenses>
+    <license>
+      <name>Public domain (Unlicense)</name>
+      <url>http://unlicense.org/</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <scm>
+    <connection>scm:git:git://github.com/davidB/${project.artifactId}.git</connection>
+    <developerConnection>scm:git:git@github.com:davidB/${project.artifactId}.git</developerConnection>
+    <url>http://github.com/davidB/${project.artifactId}/</url>
+  </scm>
+
+  <issueManagement>
+    <system>github</system>
+    <url>http://github.com/davidB/${project.artifactId}/issues#issue/</url>
+  </issueManagement>
+
+  <mailingLists>
+    <mailingList>
+      <name>maven-and-scala</name>
+      <archive>http://groups.google.com/group/maven-and-scala</archive>
+      <post>http://groups.google.com/group/maven-and-scala</post>
+    </mailingList>
+  </mailingLists>
+
+  <developers>
+    <developer>
+      <name>David Bernard</name>
+      <timezone>+1</timezone>
+    </developer>
+    <developer>
+      <name>Josh Suereth</name>
+    </developer>
+    <developer>
+      <name>Peter Vlugter</name>
+    </developer>
+  </developers>
+
+  <contributors>
+    <contributor>
+      <name>David Pollak</name>
+    </contributor>
+    <contributor>
+      <name>Arnaud Bailly</name>
+    </contributor>
+    <contributor>
+      <name>Jesse Eichar</name>
+    </contributor>
+    <contributor>
+      <name>Sean Griffin</name>
+    </contributor>
+    <contributor>
+      <name>James Strachan</name>
+    </contributor>
+    <contributor>
+      <name>Jim Hurne</name>
+    </contributor>
+    <contributor>
+      <name>Christoph Höger</name>
+    </contributor>
+    <contributor>
+      <name>Alex Hvostov</name>
+    </contributor>
+    <contributor>
+      <name>Shai Yallin</name>
+    </contributor>
+  </contributors>
+
+  <properties>
+    <maven.version>3.0.4</maven.version>
+    <maven.reporting.version>3.0</maven.reporting.version>
+    <maven.compiler.source>1.6</maven.compiler.source>
+    <maven.compiler.target>1.6</maven.compiler.target>
+    <encoding>UTF-8</encoding>
+    <project.build.sourceEncoding>${encoding}</project.build.sourceEncoding>
+    <github.global.server>github</github.global.server>
+  </properties>
+
+  <prerequisites>
+    <maven>${maven.version}</maven>
+  </prerequisites>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-plugin-api</artifactId>
+      <version>${maven.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.reporting</groupId>
+      <artifactId>maven-reporting-api</artifactId>
+      <version>${maven.reporting.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-core</artifactId>
+      <version>${maven.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.shared</groupId>
+      <artifactId>maven-dependency-tree</artifactId>
+      <version>1.2</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-exec</artifactId>
+      <version>1.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-artifact</artifactId>
+      <!-- Need this because some needed classes were removed from maven-artifact 3.0 -->
+      <version>2.2.1</version>
+    </dependency>
+     <dependency>
+       <groupId>org.codehaus.plexus</groupId>
+       <artifactId>plexus-utils</artifactId>
+       <version>3.0</version>
+     </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-archiver</artifactId>
+      <version>2.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-classworlds</artifactId>
+      <version>2.4</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-project</artifactId>
+      <version>2.0.8</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-archiver</artifactId>
+      <version>2.5</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.doxia</groupId>
+      <artifactId>doxia-sink-api</artifactId>
+      <version>1.1.2</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-model</artifactId>
+      <version>${maven.version}</version>
+    </dependency>
+    <!-- for scala:cctest -->
+    <dependency>
+      <groupId>org.apache.maven.shared</groupId>
+      <artifactId>maven-invoker</artifactId>
+      <version>2.0.11</version>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.8.1</version>
+      <scope>test</scope>
+    </dependency>
+    <!-- sbt incremental compiler -->
+    <dependency>
+      <groupId>com.typesafe.zinc</groupId>
+      <artifactId>zinc</artifactId>
+      <version>0.3.5</version>
+    </dependency>
+<!--
+    <dependency>
+      <groupId>com.typesafe.sbt</groupId>
+      <artifactId>incremental-compiler</artifactId>
+      <version>0.12.1</version>
+    </dependency>
+-->
+
+  </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-changes-plugin</artifactId>
+          <version>2.6</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>2.7</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-install-plugin</artifactId>
+          <version>2.4</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-source-plugin</artifactId>
+          <version>2.2.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>2.9.1</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-site-plugin</artifactId>
+        <version>3.0</version>
+        <configuration>
+          <templateFile>${basedir}/src/site/template-site.vm</templateFile>
+          <reportPlugins>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-plugin-plugin</artifactId>
+              <version>2.6</version>
+            </plugin>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-project-info-reports-plugin</artifactId>
+              <version>2.2</version>
+            </plugin>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-javadoc-plugin</artifactId>
+              <configuration>
+                <minmemory>128m</minmemory>
+                <maxmemory>512m</maxmemory>
+                <useStandardDocletOptions>true</useStandardDocletOptions>
+                <charset>${encoding}</charset>
+                <encoding>${encoding}</encoding>
+                <docencoding>${encoding}</docencoding>
+                <docfilessubdirs>true</docfilessubdirs>
+                <breakiterator>true</breakiterator>
+                <version>true</version>
+                <author>true</author>
+                <keywords>true</keywords>
+                <attach>false</attach>
+                <!--
+                <doctitle>${project.name} API Reference (${project.version}, r${buildNumber})</doctitle>
+                <windowtitle>${project.name} API Reference (${project.version}, r${buildNumber})</windowtitle>
+                 -->
+                <links>
+                  <link>http://java.sun.com/j2se/${maven.compiler.source}/docs/api/</link>
+                  <link>http://slf4j.org/api/</link>
+                  <link>http://commons.apache.org/lang/api-release/</link>
+                  <link>http://commons.apache.org/io/api-release/</link>
+                  <link>http://junit.sourceforge.net/javadoc/</link>
+                </links>
+                <!-- additionalparam>-nopackagediagram</additionalparam-->
+                <!-- additionalparam>-sourceclasspath ${project.build.outputDirectory}</additionalparam-->
+                <!-- -sourceclasspath ${project.build.outputDirectory} -->
+                <excludePackageNames>${project.groupId}.example*:${project.groupId}.util.internal*</excludePackageNames>
+              </configuration>
+            </plugin>
+            <!--
+            <plugin>
+              <groupId>com.dzone.jdocs</groupId>
+              <artifactId>javadoc</artifactId>
+              <version>1.0</version>
+              <configuration>
+                <aggregate>true</aggregate>
+                <source>${java.src.version}</source>
+                <overview>${basedir}/src/main/java/overview.html</overview>
+              </configuration>
+            </plugin>
+            -->
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-jxr-plugin</artifactId>
+              <version>2.2</version>
+            </plugin>
+            <plugin>
+              <groupId>org.codehaus.mojo</groupId>
+              <artifactId>taglist-maven-plugin</artifactId>
+              <version>2.4</version>
+              <configuration>
+                <tags>
+                  <tag>TODO</tag>
+                  <tag>FIXME</tag>
+                  <tag>@todo</tag>
+                  <tag>@deprecated</tag>
+                </tags>
+              </configuration>
+            </plugin>
+            <plugin>
+              <artifactId>maven-changes-plugin</artifactId>
+              <reportSets>
+                <reportSet>
+                  <reports>
+                    <report>changes-report</report>
+                  </reports>
+                </reportSet>
+              </reportSets>
+            </plugin>
+          </reportPlugins>
+        </configuration>
+      </plugin>
+      <plugin>
+        <!-- make sure our code doesn't have 1.6 dependencies except where we know it see * http://mojo.codehaus.org/animal-sniffer/index.html * http://weblogs.java.net/blog/kohsuke/archive/2008/11/compiling_with.html -->
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>animal-sniffer-maven-plugin</artifactId>
+        <version>1.7</version>
+        <configuration>
+          <signature>
+            <groupId>org.codehaus.mojo.signature</groupId>
+            <artifactId>java15</artifactId>
+            <version>1.0</version>
+          </signature>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-changes-plugin</artifactId>
+        <configuration>
+          <template>announcement.md.vm</template>
+          <templateDirectory>announcements</templateDirectory>
+          <mailSender>
+            <name>David Bernard</name>
+            <email>david.bernard.31@gmail.com</email>
+          </mailSender>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-release-plugin</artifactId>
+        <version>2.2.2</version>
+        <configuration>
+          <releaseProfiles>release</releaseProfiles>
+          <goals>changes:changes-validate install animal-sniffer:check site deploy changes:announcement-generate</goals>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+
+  <profiles>
+    <profile>
+      <id>integration-tests</id>
+      <activation>
+          <activeByDefault>true</activeByDefault>
+        <property>
+          <name>maven.test.skip</name>
+          <value>!true</value>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-invoker-plugin</artifactId>
+            <version>1.8</version>
+            <configuration>
+              <settingsFile>src/it/settings.xml</settingsFile>
+              <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
+              <properties>
+                <scala.version.27>2.7.7</scala.version.27>
+                <scala.version.28>2.8.2</scala.version.28>
+                <scala.version.lastrelease>2.11.1</scala.version.lastrelease>
+                <scala.version.next>2.11.1</scala.version.next>
+                <scala.macroparadise.version>2.10.2-SNAPSHOT</scala.macroparadise.version>
+                <scala.macroparadise.organisation>org.scala-lang.macro-paradise</scala.macroparadise.organisation>
+              </properties>
+              <debug>false</debug>
+              <streamLogs>true</streamLogs>
+              <projectsDirectory>src/it</projectsDirectory>
+              <pomIncludes>
+                <pomInclude>**/pom.xml</pomInclude>
+              </pomIncludes>
+              <pomExcludes>
+                <pomExclude>**/off-*/pom.xml</pomExclude>
+                <!-- submodule -->
+                <pomExclude>**/m*/pom.xml</pomExclude>
+                <pomExclude>**/test_macroparadise/macro/pom.xml</pomExclude>
+                <pomExclude>**/test_macroparadise/core/pom.xml</pomExclude>
+                <pomExclude>scalac-plugin/src/it/**/pom.xml</pomExclude>
+              </pomExcludes>
+              <preBuildHookScript>setup.groovy</preBuildHookScript>
+              <postBuildHookScript>validate.groovy</postBuildHookScript>
+            </configuration>
+            <executions>
+              <execution>
+                <id>integration-test</id>
+                <goals>
+                  <goal>install</goal>
+                  <goal>run</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>release</id>
+      <activation>
+        <property>
+          <name>performRelease</name>
+          <value>true</value>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-site-plugin</artifactId>
+          </plugin>
+          <plugin>
+            <groupId>com.github.github</groupId>
+            <artifactId>site-maven-plugin</artifactId>
+            <version>0.9</version>
+            <configuration>
+              <message>Building site for ${project.version}</message>
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>site</goal>
+                </goals>
+                <phase>site</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>

@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>net.sf.jtidy</groupId>
+  <artifactId>jtidy</artifactId>
+  <name>JTidy</name>
+  <version>r938</version>
+  <description>
+    JTidy is a Java port of HTML Tidy, a HTML syntax checker and pretty printer. Like its non-Java cousin, JTidy can be
+    used as a tool for cleaning up malformed and faulty HTML. In addition, JTidy provides a DOM interface to the
+    document that is being processed, which effectively makes you able to use JTidy as a DOM parser for real-world HTML.
+  </description>
+  <url>http://jtidy.sourceforge.net</url>
+  <issueManagement>
+    <url>http://sourceforge.net/tracker/?group_id=13153</url>
+  </issueManagement>
+  <ciManagement>
+    <notifiers>
+      <notifier>
+        <configuration>
+          <address>jtidy-continuum@lists.sourceforge.net</address>
+        </configuration>
+      </notifier>
+    </notifiers>
+  </ciManagement>
+  <inceptionYear>2000</inceptionYear>
+  <mailingLists>
+    <mailingList>
+      <name>JTidy User Mailing list</name>
+      <subscribe>http://lists.sourceforge.net/lists/listinfo/jtidy-user</subscribe>
+      <unsubscribe>http://lists.sourceforge.net/lists/listinfo/jtidy-user</unsubscribe>
+      <archive>http://sourceforge.net/mailarchive/forum.php?forum=jtidy-user</archive>
+    </mailingList>
+    <mailingList>
+      <name>JTidy Developer Mailing list</name>
+      <subscribe>http://lists.sourceforge.net/lists/listinfo/jtidy-devel</subscribe>
+      <unsubscribe>http://lists.sourceforge.net/lists/listinfo/jtidy-devel</unsubscribe>
+      <archive>http://sourceforge.net/mailarchive/forum.php?forum=jtidy-devel</archive>
+    </mailingList>
+    <mailingList>
+      <name>JTidy Cvs Mailing list</name>
+      <subscribe>http://lists.sourceforge.net/lists/listinfo/jtidy-cvs</subscribe>
+      <unsubscribe>http://lists.sourceforge.net/lists/listinfo/jtidy-cvs</unsubscribe>
+      <archive>http://sourceforge.net/mailarchive/forum.php?forum=jtidy-cvs</archive>
+    </mailingList>
+  </mailingLists>
+  <developers>
+    <developer>
+      <id>fgiust</id>
+      <name>Fabrizio Giustina</name>
+      <email>fgiust AT users.sourceforge.net</email>
+      <organization>Sourceforge</organization>
+      <roles>
+        <role>Current project admin and developer</role>
+      </roles>
+      <timezone>+1</timezone>
+    </developer>
+    <developer>
+      <id>atripp</id>
+      <name>Andy Tripp</name>
+      <email>atripp AT users.sourceforge.net</email>
+      <organization>Sourceforge</organization>
+      <roles>
+        <role>Project admin</role>
+      </roles>
+      <timezone>0</timezone>
+    </developer>
+    <developer>
+      <id>russgold</id>
+      <name>Russell Gold</name>
+      <email>russgold AT users.sourceforge.net</email>
+      <organization>Sourceforge</organization>
+      <roles>
+        <role>Project admin</role>
+      </roles>
+      <timezone>0</timezone>
+    </developer>
+    <developer>
+      <id>garypeskin</id>
+      <name>Gary L Peskin</name>
+      <email>garypeskin AT users.sourceforge.net</email>
+      <organization>Sourceforge</organization>
+      <roles>
+        <role>developer</role>
+      </roles>
+      <timezone>0</timezone>
+    </developer>
+    <developer>
+      <id>lempinen</id>
+      <name>Sami Lempinen</name>
+      <email>lempinen AT users.sourceforge.net</email>
+      <organization>Sourceforge</organization>
+      <roles>
+        <role>release manager</role>
+      </roles>
+      <timezone>0</timezone>
+    </developer>
+  </developers>
+  <licenses>
+    <license>
+		<name>Java HTML Tidy License</name>
+		<url>http://jtidy.svn.sourceforge.net/viewvc/jtidy/trunk/jtidy/LICENSE.txt?revision=95</url>
+		<distribution>repo</distribution>
+	</license>
+  </licenses>
+  <scm>
+    <connection>scm:svn:https://svn.sourceforge.net/svnroot/jtidy/trunk/jtidy/</connection>
+    <developerConnection>scm:svn:https://svn.sourceforge.net/svnroot/jtidy/trunk/jtidy/</developerConnection>
+    <url>http://svn.sourceforge.net/viewcvs.cgi/jtidy/trunk/jtidy/</url>
+  </scm>
+  <organization>
+    <name>sourceforge</name>
+    <url>http://sourceforge.net</url>
+  </organization>
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <testFailureIgnore>true</testFailureIgnore>
+          <includes>
+            <include>**/*Test.*</include>
+          </includes>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <showDeprecation>true</showDeprecation>
+          <source>1.3</source>
+          <target>1.3</target>
+          <encoding>UTF8</encoding>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <additionalparam>-breakiterator</additionalparam>
+          <tags>
+            <tag>
+              <head>To Do:</head>
+              <name>todo</name>
+              <placement>a</placement>
+            </tag>
+          </tags>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-clover-plugin</artifactId>
+        <configuration>
+          <licenseLocation>src/config/clover.license</licenseLocation>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>pre-site</phase>
+            <goals>
+              <goal>instrument</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>org.w3c.tidy.Tidy</mainClass>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+	  <!-- <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+			  </executions>
+          </plugin>   -->         
+    </plugins>
+  </build>
+  <dependencies>    
+    <dependency>
+      <groupId>ant</groupId>
+      <artifactId>ant</artifactId>
+      <version>1.6.5</version>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <version>1.0.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <version>1.2.13</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>3.8.1</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+  <reporting>
+    <plugins>
+      <plugin>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <configuration>
+          <configLocation>src/config/checkstyle.xml</configLocation>
+          <enableRulesSummary>false</enableRulesSummary>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <quiet>true</quiet>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-pmd-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <artifactId>maven-project-info-reports-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <artifactId>maven-jxr-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-report-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <artifactId>maven-changelog-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <artifactId>maven-clover-plugin</artifactId>
+        <configuration>
+          <licenseLocation>src/config/clover.license</licenseLocation>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>jdepend-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </reporting>
+  
+  <distributionManagement>
+    <repository>
+      <id>jtidy</id>
+      <url>scp://shell.sourceforge.net/home/groups/j/jt/jtidy/htdocs/maven2/</url>
+    </repository>
+    <snapshotRepository>
+      <id>jtidy</id>
+      <url>scp://shell.sourceforge.net/home/groups/j/jt/jtidy/htdocs/snapshots/</url>
+    </snapshotRepository>
+    <site>
+      <id>jtidy</id>
+      <url>scp://shell.sourceforge.net/home/groups/j/jt/jtidy/htdocs/</url>
+    </site>
+  </distributionManagement>
+</project>

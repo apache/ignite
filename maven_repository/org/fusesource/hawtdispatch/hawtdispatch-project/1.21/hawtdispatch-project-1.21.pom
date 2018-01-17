@@ -1,0 +1,378 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (C) 2012 FuseSource, Inc.
+    http://fusesource.com
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.fusesource</groupId>
+    <artifactId>fusesource-pom</artifactId>
+    <version>1.10</version>
+  </parent>
+
+  <groupId>org.fusesource.hawtdispatch</groupId>
+  <artifactId>hawtdispatch-project</artifactId>
+  <version>1.21</version>
+  <packaging>pom</packaging>
+  
+  <name>${project.artifactId}</name>
+  <description>HawtDispatch: The libdispatch style API for Java and Scala</description>
+
+  <properties>
+    <forge-project-id>hawtdispatch</forge-project-id>
+    <forge-project-id-uc>HAWTDISPATCH</forge-project-id-uc>
+    
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    
+    <junit-version>4.7</junit-version>
+    <log4j-version>1.2.14</log4j-version>
+    <hawtbuf-version>1.9</hawtbuf-version>
+  </properties>
+
+  <prerequisites>
+    <maven>2.0.9</maven>
+  </prerequisites>
+
+  <url>http://${forge-project-id}.fusesource.org/</url>
+  <inceptionYear>2010</inceptionYear>
+
+  <issueManagement>
+    <system>assembla</system>
+    <url>http://www.assembla.com/spaces/hawtdispatch/support/tickets</url>
+  </issueManagement>
+  
+  <mailingLists>
+    <mailingList>
+      <name>Discussion Group</name>
+      <archive>http://groups.google.com/group/hawtdispatch</archive>
+      <post>hawtdispatch@googlegroups.com</post>
+      <subscribe>hawtdispatch+subscribe@googlegroups.com</subscribe>
+      <unsubscribe>hawtdispatch+unsubscribe@googlegroups.com</unsubscribe>
+    </mailingList>
+    <mailingList>
+      <name>Source Control and Issue Tracker Notifications</name>
+      <archive>http://groups.google.com/group/hawtdispatch-commits</archive>
+      <post>hawtdispatch-commits@googlegroups.com</post>
+      <subscribe>hawtdispatch-commits+subscribe@googlegroups.com</subscribe>
+      <unsubscribe>hawtdispatch-commits+unsubscribe@googlegroups.com</unsubscribe>
+    </mailingList>
+  </mailingLists>
+
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  
+  <scm>
+    <connection>scm:git:git://forge.fusesource.com/${forge-project-id}.git</connection>
+    <developerConnection>scm:git:ssh://git@forge.fusesource.com/${forge-project-id}.git</developerConnection>
+    <url>http://github.com/fusesource/hawtdispatch/tree/master</url>
+    <tag>hawtdispatch-project-1.21</tag>
+  </scm>
+
+  <distributionManagement>
+    <site>
+      <id>website.fusesource.org</id>
+      <name>website</name>
+      <url>dav:http://fusesource.com/forge/dav/${forge-project-id}/versions/${project.version}/maven</url>
+    </site>
+  </distributionManagement>
+  
+  <developers>
+    <developer>
+      <id>chirino</id>
+      <name>Hiram Chirino</name>
+      <email>hiram@hiramchirino.com</email>
+      <url>http://hiramchirino.com</url>
+      <timezone>GMT-5</timezone>
+    </developer>
+  </developers>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-release-plugin</artifactId>
+          <version>2.5</version>
+          <configuration>
+            <pushChanges>false</pushChanges>
+            <localCheckout>true</localCheckout>
+            <autoVersionSubmodules>true</autoVersionSubmodules>
+            <allowTimestampedSnapshots>false</allowTimestampedSnapshots>
+            <preparationGoals>clean install</preparationGoals>
+            <goals>deploy</goals>
+            <arguments>-Prelease</arguments>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+    <plugins>
+      
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <version>2.3.4</version>
+        <extensions>true</extensions>
+        <inherited>true</inherited>
+        <configuration>
+          <instructions>
+            <Implementation-Title>${project.description}</Implementation-Title>
+            <Implementation-Version>${project.version}</Implementation-Version>
+            <Bundle-Name>${project.artifactId}</Bundle-Name>
+            <Bundle-SymbolicName>${project.groupId}.${project.artifactId}</Bundle-SymbolicName>
+            <Export-Package>{local-packages};version=${project.version};-noimport:=true</Export-Package>
+            <Import-Package>*</Import-Package>
+            <Private-Package>!*</Private-Package>
+            <_versionpolicy-impl>[$(version;==;$(@)),$(version;=+;$(@)))</_versionpolicy-impl>
+            <_versionpolicy-uses>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy-uses>
+            <_versionpolicy>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy>
+            <_failok>false</_failok>
+          </instructions>
+        </configuration>
+      </plugin>
+            
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>2.1</version>
+        <configuration>
+          <source>1.5</source>
+          <target>1.5</target>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-idea-plugin</artifactId>
+        <version>2.2</version>
+        <configuration>
+          <downloadSources>true</downloadSources>
+          <downloadJavadocs>true</downloadJavadocs>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-eclipse-plugin</artifactId>
+        <version>2.5.1</version>
+        <configuration>
+          <downloadSources>true</downloadSources>
+          <downloadJavadocs>true</downloadJavadocs>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.4.3</version>
+        <configuration>
+          <failIfNoTests>false</failIfNoTests>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-site-plugin</artifactId>
+        <version>3.0</version>
+        <configuration>
+          <reportPlugins>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-javadoc-plugin</artifactId>
+              <version>2.7</version>
+              <configuration>
+        
+                <stylesheetfile>stylesheet.css</stylesheetfile>
+                <resourcesArtifacts>
+                  <resourcesArtifact>
+                    <groupId>org.fusesource.mvnplugins</groupId>
+                    <artifactId>fuse-javadoc-skin</artifactId>
+                    <version>1.9</version>
+                  </resourcesArtifact>
+                </resourcesArtifacts>
+
+                <docfilessubdirs>true</docfilessubdirs>
+                <useStandardDocletOptions>true</useStandardDocletOptions>
+                <charset>UTF-8</charset>
+                <docencoding>UTF-8</docencoding>
+                <breakiterator>true</breakiterator>
+                <version>true</version>
+                <author>true</author>
+                <keywords>true</keywords>
+          
+                <doctitle>${project.name} API Reference (${project.version})</doctitle>
+                <windowtitle>${project.name} API Reference (${project.version})</windowtitle>
+                <links>
+                  <link>http://java.sun.com/j2se/1.5.0/docs/api</link>
+                </links>
+                <encoding>UTF-8</encoding>
+                <locale>en_US</locale>
+                <linksource>true</linksource>
+                <excludePackageNames>*.internal</excludePackageNames>
+              </configuration>
+            </plugin>
+          </reportPlugins>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>2.7</version>
+
+        <dependencies>
+          <dependency>
+            <groupId>org.fusesource.mvnplugins</groupId>
+            <artifactId>fuse-javadoc-skin</artifactId>
+            <version>1.9</version>
+          </dependency>
+        </dependencies>
+        
+        <configuration>
+        
+          <stylesheetfile>stylesheet.css</stylesheetfile>
+          <resourcesArtifacts>
+            <resourcesArtifact>
+              <groupId>org.fusesource.mvnplugins</groupId>
+              <artifactId>fuse-javadoc-skin</artifactId>
+              <version>1.9</version>
+            </resourcesArtifact>
+          </resourcesArtifacts>
+
+          <docfilessubdirs>true</docfilessubdirs>
+          <useStandardDocletOptions>true</useStandardDocletOptions>
+          <charset>UTF-8</charset>
+          <docencoding>UTF-8</docencoding>
+          <breakiterator>true</breakiterator>
+          <version>true</version>
+          <author>true</author>
+          <keywords>true</keywords>
+          
+          <doctitle>${project.name} API Reference (${project.version})</doctitle>
+          <windowtitle>${project.name} API Reference (${project.version})</windowtitle>
+          <links>
+            <link>http://java.sun.com/j2se/1.5.0/docs/api</link>
+          </links>
+          <encoding>UTF-8</encoding>
+          <locale>en_US</locale>
+          <linksource>true</linksource>
+          <excludePackageNames>*.internal</excludePackageNames>
+        </configuration>
+      </plugin>
+      
+    </plugins>
+  </build>
+  
+  <profiles>
+
+    <profile>
+      <id>download</id>
+      <repositories>
+        <repository>
+          <id>Fusesource Snapshots</id>
+          <url>http://repo.fusesource.com/nexus/content/repositories/snapshots</url>
+        </repository>
+        <repository>
+          <id>scala-tools.org</id>
+          <url>http://scala-tools.org/repo-releases</url>
+        </repository>
+        <repository>
+          <id>scala-tools-snapshots.org</id>
+          <url>http://scala-tools.org/repo-snapshots</url>
+        </repository>
+        <repository>
+          <id>nexus.snapshots.scala-tools.org</id>
+          <url>http://nexus.scala-tools.org/content/repositories/snapshots/</url>
+        </repository>        
+      </repositories>
+    </profile>
+    
+    <!-- 
+        Do a license check by running       : mvn -P license license:check  
+        UPdate the license check by running : mvn -P license license:format  
+      -->
+    <profile>
+      <id>license</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.mycila.maven-license-plugin</groupId>
+            <artifactId>maven-license-plugin</artifactId>
+            <version>1.6.0</version>
+            <configuration>
+              <quiet>false</quiet>
+              <header>src/main/resources/license-header.txt</header>
+              <aggregate>true</aggregate>
+              <includes>
+                  <include>src/**</include>
+                  <include>**/pom.xml</include>
+              </includes>
+              <excludes>
+                <!-- can remove once http://code.google.com/p/maven-license-plugin/issues/detail?id=72 is resolved -->
+                <exclude>**/*.scaml</exclude>
+                <exclude>**/LICENSE.txt</exclude>
+                <exclude>**/LICENSE</exclude>
+                <exclude>**/.svn/**</exclude>
+            
+                <!-- ignore files produced during a build -->
+                <exclude>**/target/**</exclude>
+            
+                <!-- ignore binary files -->
+                <exclude>**/*.jpg</exclude>
+                <exclude>**/*.png</exclude>
+                <exclude>**/*.gif</exclude>
+                <exclude>**/*.ico</exclude>
+                <exclude>**/*.keystore</exclude>
+
+              </excludes>
+              <useDefaultExcludes>false</useDefaultExcludes>
+              <mapping>
+                  <jj>JAVADOC_STYLE</jj>
+                  <proto>DOUBLESLASH_STYLE</proto>
+                  <index>SCRIPT_STYLE</index>
+              </mapping>
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+              </execution>
+            </executions>        
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    
+  </profiles>
+
+  <modules>
+    <module>hawtdispatch</module>
+    <module>hawtdispatch-transport</module>
+    <!-- <module>hawtdispatch-netty</module> -->
+    <module>hawtdispatch-scala</module>
+    <module>hawtdispatch-scala-2.11</module>
+    <module>hawtdispatch-example</module>
+    <module>hawtdispatch-website</module>
+  </modules>
+
+</project>

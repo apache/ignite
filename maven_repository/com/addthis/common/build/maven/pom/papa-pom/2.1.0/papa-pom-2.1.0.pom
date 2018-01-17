@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.addthis.common.build.maven.pom</groupId>
+  <artifactId>papa-pom</artifactId>
+  <version>2.1.0</version>
+  <packaging>pom</packaging>
+  <name>addthis-oss-papa-pom</name>
+  <description>Parent pom for AddThis open source projects using maven</description>
+  <url>https://github.com/addthis/addthis-oss-papa-pom</url>
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <prerequisites>
+    <maven>3.0.4</maven>
+  </prerequisites>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.report.outputEncoding>UTF-8</project.report.outputEncoding>
+    <project.report.inputEncoding>UTF-8</project.report.inputEncoding>
+
+    <at.release.allowTimestampedSnapshots>false</at.release.allowTimestampedSnapshots>
+
+    <!-- dist management -->
+    <at.repo.releases.id>sonatype-nexus-staging</at.repo.releases.id>
+    <at.repo.releases.url>https://oss.sonatype.org/service/local/staging/deploy/maven2</at.repo.releases.url>
+    <at.repo.snapshots.id>sonatype-nexus-snapshots</at.repo.snapshots.id>
+    <at.repo.snapshots.url>https://oss.sonatype.org/content/repositories/snapshots/</at.repo.snapshots.url>
+  </properties>
+  
+  <scm>
+    <connection>scm:git:git@github.com:addthis/addthis-oss-papa-pom.git</connection>
+    <developerConnection>scm:git:git@github.com:addthis/addthis-oss-papa-pom.git</developerConnection>
+    <url>https://github.com/addthis/addthis-oss-papa-pom</url>
+    <tag>v2.1.0</tag>
+  </scm>
+  
+  <distributionManagement>
+    <repository>
+      <id>${at.repo.releases.id}</id>
+      <url>${at.repo.releases.url}</url>
+    </repository>
+    <snapshotRepository>
+      <id>${at.repo.snapshots.id}</id>
+      <url>${at.repo.snapshots.url}</url>
+    </snapshotRepository>
+  </distributionManagement>
+  
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-help-plugin</artifactId>
+          <version>2.2</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-archetype-plugin</artifactId>
+          <version>2.2</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-project-info-reports-plugin</artifactId>
+          <version>2.7</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-release-plugin</artifactId>
+          <version>2.5</version>
+          <configuration>
+            <allowTimestampedSnapshots>${at.release.allowTimestampedSnapshots}</allowTimestampedSnapshots>
+            <stagingRepository>${at.repo.releases.id}::default::${at.repo.releases.url}</stagingRepository>
+            <tagNameFormat>v@{project.version}</tagNameFormat>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+  
+  <reporting>
+    <plugins>
+      <plugin>
+        <artifactId>maven-project-info-reports-plugin</artifactId>
+        <version>2.4</version>
+      </plugin>
+    </plugins>
+  </reporting>
+  
+  <organization>
+    <name>AddThis</name>
+    <url>http://www.addthis.com</url>
+  </organization>
+
+  <developers>
+    <developer>
+      <name>AddThis and Contributors</name>
+    </developer>
+  </developers>
+
+</project>

@@ -1,0 +1,55 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.typesafe.sbt</groupId>
+    <artifactId>incremental-compiler</artifactId>
+    <packaging>jar</packaging>
+    <description>incremental-compiler</description>
+    <url>https://github.com/sbt/sbt</url>
+    <version>0.13.5</version>
+    <licenses>
+        <license>
+            <name>BSD-style</name>
+            <url>http://www.opensource.org/licenses/bsd-license.php</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    <name>incremental-compiler</name>
+    <organization>
+        <name>com.typesafe.sbt</name>
+        <url>https://github.com/sbt/sbt</url>
+    </organization>
+    <scm>
+        <url>https://github.com/typesafehub/sbt-republish</url>
+        <connection>scm:git:git@github.com:typesafehub/sbt-republish.git</connection>
+    </scm>
+    <developers>
+        <developer>
+            <id>harrah</id>
+            <name>Mark Harrah</name>
+            <url>https://github.com/harrah</url>
+        </developer>
+        <developer>
+            <id>pvlugter</id>
+            <name>Peter Vlugter</name>
+            <url>https://github.com/pvlugter</url>
+        </developer>
+    </developers>
+    <dependencies>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-compiler</artifactId>
+            <version>2.10.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>2.10.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.typesafe.sbt</groupId>
+            <artifactId>sbt-interface</artifactId>
+            <version>0.13.5</version>
+        </dependency>
+    </dependencies>
+</project>

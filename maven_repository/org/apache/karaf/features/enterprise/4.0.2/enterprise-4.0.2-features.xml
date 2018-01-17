@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<features xmlns="http://karaf.apache.org/xmlns/features/v1.3.0" name="enterprise-4.0.2">
+    <repository>mvn:org.ops4j.pax.cdi/pax-cdi-features/0.12.0/xml/features</repository>
+    <repository>mvn:org.apache.karaf.features/standard/4.0.2/xml/features</repository>
+    <feature name="transaction-api" version="1.1.0">
+        <bundle>mvn:org.apache.geronimo.specs/geronimo-jta_1.1_spec/1.1.1</bundle>
+    </feature>
+    <feature name="transaction-api" version="1.2.0">
+        <bundle>mvn:javax.interceptor/javax.interceptor-api/1.2</bundle>
+        <bundle>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.javax-inject/1_2</bundle>
+        <bundle>mvn:javax.el/javax.el-api/3.0.0</bundle>
+        <bundle>mvn:javax.enterprise/cdi-api/1.2</bundle>
+        <bundle>mvn:javax.transaction/javax.transaction-api/1.2</bundle>
+    </feature>
+    <feature name="transaction" description="OSGi Transaction Manager" version="1.3.0">
+        <details>JTA implementation provided by Apache Aries Transaction</details>
+        <config name="org.apache.aries.transaction" append="false">
+            aries.transaction.recoverable = true
+            aries.transaction.timeout = 600
+            aries.transaction.howl.logFileDir = ${karaf.data}/txlog
+            aries.transaction.howl.maxLogFiles = 2
+            aries.transaction.howl.maxBlocksPerFile = 512
+            aries.transaction.howl.bufferSize = 4
+        </config>
+        <feature version="[1.1,2)" prerequisite="false" dependency="false">transaction-api</feature>
+        <bundle dependency="true">mvn:org.apache.aries/org.apache.aries.util/1.1.1</bundle>
+        <bundle>mvn:org.apache.aries.transaction/org.apache.aries.transaction.manager/1.3.0</bundle>
+        <conditional>
+            <condition>aries-blueprint</condition>
+            <bundle dependency="true">mvn:org.apache.felix/org.apache.felix.coordinator/1.0.0</bundle>
+            <bundle>mvn:org.apache.aries.transaction/org.apache.aries.transaction.blueprint/1.1.1</bundle>
+            <bundle>mvn:org.apache.aries.transaction/org.apache.aries.transaction.blueprint/2.0.0</bundle>
+        </conditional>
+    </feature>
+    <feature name="connector" description="OSGi support for JCA Connector 1.6" version="3.1.1">
+        <details>OSGi support for JCA Connector 1.6</details>
+        <feature version="[1.1,2)" prerequisite="false" dependency="false">transaction</feature>
+        <bundle dependency="true">mvn:org.apache.geronimo.specs/geronimo-j2ee-connector_1.6_spec/1.0</bundle>
+        <bundle dependency="true">mvn:org.apache.geronimo.specs/geronimo-validation_1.0_spec/1.1</bundle>
+        <bundle>mvn:org.apache.geronimo.components/geronimo-connector/3.1.1</bundle>
+    </feature>
+    <feature name="persistence-api" description="Persistence API" version="2.0.0">
+        <details>Persistence API</details>
+        <bundle>mvn:org.apache.geronimo.specs/geronimo-jpa_2.0_spec/1.1</bundle>
+    </feature>
+    <feature name="persistence-api" description="Persistence API" version="2.1.0">
+        <details>Persistence API</details>
+        <bundle>mvn:org.eclipse.persistence/javax.persistence/2.1.0</bundle>
+    </feature>
+    <feature name="jpa" description="OSGi Persistence Container" version="1.0.4">
+        <details>JPA implementation provided by Apache Aries JPA 1.x. NB: this feature doesn"t provide the JPA engine, you have to install one by yourself (OpenJPA for instance)</details>
+        <feature version="[1.1,2)" prerequisite="false" dependency="false">transaction-api</feature>
+        <feature version="[2.0.0,2.2.0)" prerequisite="false" dependency="false">persistence-api</feature>
+        <bundle start-level="30" dependency="true">mvn:org.apache.aries/org.apache.aries.util/1.1.1</bundle>
+        <bundle start-level="30">mvn:org.apache.aries.jpa/org.apache.aries.jpa.api/1.0.2</bundle>
+        <bundle start-level="30">mvn:org.apache.aries.jpa/org.apache.aries.jpa.container/1.0.2</bundle>
+        <bundle start-level="30">mvn:org.apache.aries.jpa/org.apache.aries.jpa.container.context/1.0.4</bundle>
+        <conditional>
+            <condition>aries-blueprint</condition>
+            <bundle start-level="30">mvn:org.apache.aries.jpa/org.apache.aries.jpa.blueprint.aries/1.0.4</bundle>
+        </conditional>
+    </feature>
+    <feature name="jpa" description="OSGi Persistence Container" version="2.2.0">
+        <details>JPA implementation provided by Apache Aries JPA 2.x. NB: this feature doesn't provide the JPA engine, you have to install one by yourself (OpenJPA for instance)</details>
+        <feature version="[1.1,2)" prerequisite="false" dependency="false">transaction-api</feature>
+        <feature version="[2.0.0,2.2.0)" prerequisite="false" dependency="false">persistence-api</feature>
+        <bundle dependency="true">mvn:org.apache.felix/org.apache.felix.coordinator/1.0.0</bundle>
+        <bundle>mvn:org.apache.aries.jpa/org.apache.aries.jpa.api/2.2.0</bundle>
+        <bundle>mvn:org.apache.aries.jpa/org.apache.aries.jpa.container/2.2.0</bundle>
+        <bundle>mvn:org.apache.aries.jpa/org.apache.aries.jpa.support/2.2.0</bundle>
+        <conditional>
+            <condition>aries-blueprint</condition>
+            <bundle>mvn:org.apache.aries.jpa/org.apache.aries.jpa.blueprint/2.2.0</bundle>
+        </conditional>
+    </feature>
+    <feature name="openjpa" description="Apache OpenJPA 2.2.x persistence engine support" version="2.2.2">
+        <details>Enable Apache OpenJPA as persistence engine.</details>
+        <feature prerequisite="false" dependency="false">jndi</feature>
+        <feature version="[1.1,1.2)" prerequisite="false" dependency="false">transaction-api</feature>
+        <feature version="[2.0.0,2.1.0)" prerequisite="false" dependency="false">persistence-api</feature>
+        <bundle dependency="true">mvn:org.apache.geronimo.specs/geronimo-annotation_1.0_spec/1.1.1</bundle>
+        <bundle dependency="true">mvn:org.apache.geronimo.specs/geronimo-servlet_2.5_spec/1.2</bundle>
+        <bundle dependency="true">mvn:org.apache.geronimo.specs/geronimo-el_1.0_spec/1.0.1</bundle>
+        <bundle dependency="true">mvn:commons-lang/commons-lang/2.6</bundle>
+        <bundle dependency="true">mvn:commons-collections/commons-collections/3.2.1</bundle>
+        <bundle dependency="true">mvn:commons-pool/commons-pool/1.6</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-dbcp/1.4_3</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.ant/1.7.0_6</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.serp/1.14.1_1</bundle>
+        <bundle dependency="true">mvn:org.apache.geronimo.specs/geronimo-jms_1.1_spec/1.1.1</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.asm/3.3_2</bundle>
+        <bundle>mvn:org.apache.openjpa/openjpa/2.2.2</bundle>
+    </feature>
+    <feature name="openjpa" description="Apache OpenJPA 2.3.x persistence engine support" version="2.3.0">
+        <details>Enable Apache OpenJPA as persistence engine.</details>
+        <feature version="[1.1,1.2)" prerequisite="false" dependency="false">transaction-api</feature>
+        <feature version="[2.0.0,2.1.0)" prerequisite="false" dependency="false">persistence-api</feature>
+        <bundle dependency="true">mvn:org.apache.geronimo.specs/geronimo-annotation_1.0_spec/1.1.1</bundle>
+        <bundle dependency="true">mvn:org.apache.geronimo.specs/geronimo-servlet_2.5_spec/1.2</bundle>
+        <bundle dependency="true">mvn:org.apache.geronimo.specs/geronimo-el_1.0_spec/1.0.1</bundle>
+        <bundle dependency="true">mvn:commons-lang/commons-lang/2.6</bundle>
+        <bundle dependency="true">mvn:commons-collections/commons-collections/3.2.1</bundle>
+        <bundle dependency="true">mvn:commons-pool/commons-pool/1.6</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-dbcp/1.4_3</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.ant/1.7.0_6</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.serp/1.14.1_1</bundle>
+        <bundle dependency="true">mvn:org.apache.geronimo.specs/geronimo-jms_1.1_spec/1.1.1</bundle>
+        <bundle dependency="true">mvn:org.apache.xbean/xbean-asm4-shaded/3.16</bundle>
+        <bundle>mvn:org.apache.openjpa/openjpa/2.3.0</bundle>
+        <requirement>osgi.ee;filter:="(&amp;(osgi.ee=JavaSE)(!(version&gt;=1.8)))"</requirement>
+    </feature>
+    <feature name="openjpa" description="Apache OpenJPA 2.4.x persistence engine support" version="2.4.0">
+        <details>Enable Apache OpenJPA as persistence engine.</details>
+        <feature prerequisite="false" dependency="false">jndi</feature>
+        <feature version="[1.1,1.2)" prerequisite="false" dependency="false">transaction-api</feature>
+        <feature version="[2.0.0,2.1.0)" prerequisite="false" dependency="false">persistence-api</feature>
+        <bundle dependency="true">mvn:org.apache.geronimo.specs/geronimo-annotation_1.0_spec/1.1.1</bundle>
+        <bundle dependency="true">mvn:org.apache.geronimo.specs/geronimo-servlet_2.5_spec/1.2</bundle>
+        <bundle dependency="true">mvn:org.apache.geronimo.specs/geronimo-el_1.0_spec/1.0.1</bundle>
+        <bundle dependency="true">mvn:commons-lang/commons-lang/2.6</bundle>
+        <bundle dependency="true">mvn:commons-collections/commons-collections/3.2.1</bundle>
+        <bundle dependency="true">mvn:commons-pool/commons-pool/1.6</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-dbcp/1.4_3</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.ant/1.7.0_6</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.serp/1.14.1_1</bundle>
+        <bundle dependency="true">mvn:org.apache.geronimo.specs/geronimo-jms_1.1_spec/1.1.1</bundle>
+        <bundle dependency="true">mvn:org.apache.xbean/xbean-asm5-shaded/4.3</bundle>
+        <bundle>mvn:org.apache.openjpa/openjpa/2.4.0</bundle>
+    </feature>
+    <feature name="hibernate" description="Hibernate 3.x JPA persistence engine support" version="3.3.2.GA">
+        <details>Enable Hibernate 3.x as persistence engine.</details>
+        <feature prerequisite="false" dependency="false">jndi</feature>
+        <feature version="[2.0.0,2.1.0)" prerequisite="false" dependency="false">persistence-api</feature>
+        <bundle dependency="true">mvn:commons-collections/commons-collections/3.2.1</bundle>
+        <bundle dependency="true">mvn:commons-pool/commons-pool/1.6</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-dbcp/1.4_3</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.dom4j/1.6.1_5</bundle>
+        <bundle dependency="true">mvn:org.objectweb.asm/com.springsource.org.objectweb.asm/1.5.3</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.antlr/2.7.7_5</bundle>
+        <bundle dependency="true">mvn:net.sourceforge.cglib/com.springsource.net.sf.cglib/2.2.0</bundle>
+        <bundle dependency="true">mvn:org.jboss.javassist/com.springsource.javassist/3.9.0.GA</bundle>
+        <bundle>mvn:org.hibernate/com.springsource.org.hibernate.annotations.common/3.3.0.ga</bundle>
+        <bundle>mvn:org.hibernate/com.springsource.org.hibernate.annotations/3.4.0.GA</bundle>
+        <bundle>mvn:org.hibernate/com.springsource.org.hibernate.ejb/3.4.0.GA</bundle>
+        <bundle>mvn:org.hibernate/com.springsource.org.hibernate/3.3.2.GA</bundle>
+    </feature>
+    <feature name="hibernate" description="Hibernate 4.2.x JPA persistence engine support" version="4.2.15.Final">
+        <details>Enable Hibernate 4.2.x as persistence engine.</details>
+        <feature version="[2.0.0,2.1.0)" prerequisite="false" dependency="false">persistence-api</feature>
+        <feature prerequisite="false" dependency="false">http</feature>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.antlr/2.7.7_5</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.ant/1.8.2_2</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.dom4j/1.6.1_5</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.serp/1.14.1_1</bundle>
+        <bundle dependency="true">mvn:com.fasterxml/classmate/1.1.0</bundle>
+        <bundle dependency="true">mvn:org.javassist/javassist/3.18.1-GA</bundle>
+        <bundle dependency="true">mvn:org.jboss.spec.javax.security.jacc/jboss-jacc-api_1.4_spec/1.0.2.Final</bundle>
+        <bundle dependency="true">mvn:org.jboss/jandex/1.2.2.Final</bundle>
+        <bundle dependency="true">mvn:org.jboss.logging/jboss-logging/3.1.4.GA</bundle>
+        <bundle dependency="true">mvn:org.hibernate.common/hibernate-commons-annotations/4.0.4.Final</bundle>
+        <bundle>mvn:org.hibernate/hibernate-core/4.2.15.Final</bundle>
+        <bundle>mvn:org.hibernate/hibernate-entitymanager/4.2.15.Final</bundle>
+        <bundle>mvn:org.hibernate/hibernate-osgi/4.2.15.Final</bundle>
+    </feature>
+    <feature name="hibernate-envers" description="Hibernate Envers 4.2.x" version="4.2.15.Final">
+        <details>Enable Hibernate Envers 4.2.x</details>
+        <feature version="4.2.15.Final" prerequisite="false" dependency="false">hibernate</feature>
+        <bundle>mvn:org.hibernate/hibernate-envers/4.2.15.Final</bundle>
+    </feature>
+    <feature name="hibernate" description="Hibernate 4.3.x JPA persistence engine support" version="4.3.6.Final">
+        <details>Enable Hibernate 4.3.x as persistence engine.</details>
+        <feature prerequisite="false" dependency="false">http</feature>
+        <feature version="[2.1.0,2.2.0)" prerequisite="false" dependency="false">persistence-api</feature>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.antlr/2.7.7_5</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.ant/1.8.2_2</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.dom4j/1.6.1_5</bundle>
+        <bundle dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.serp/1.14.1_1</bundle>
+        <bundle dependency="true">mvn:com.fasterxml/classmate/1.1.0</bundle>
+        <bundle dependency="true">mvn:org.javassist/javassist/3.18.1-GA</bundle>
+        <bundle dependency="true">mvn:org.jboss.spec.javax.security.jacc/jboss-jacc-api_1.4_spec/1.0.2.Final</bundle>
+        <bundle dependency="true">mvn:org.jboss/jandex/1.2.2.Final</bundle>
+        <bundle dependency="true">mvn:org.jboss.logging/jboss-logging/3.1.4.GA</bundle>
+        <bundle dependency="true">mvn:org.hibernate.common/hibernate-commons-annotations/4.0.4.Final</bundle>
+        <bundle>mvn:org.hibernate/hibernate-core/4.3.6.Final</bundle>
+        <bundle>mvn:org.hibernate/hibernate-entitymanager/4.3.6.Final</bundle>
+        <bundle>mvn:org.hibernate/hibernate-osgi/4.3.6.Final</bundle>
+    </feature>
+    <feature name="hibernate-envers" description="Hibernate Envers 4.3.x" version="4.3.6.Final">
+        <details>Enable Hibernate Envers 4.3.x</details>
+        <feature version="4.3.6.Final" prerequisite="false" dependency="false">hibernate</feature>
+        <bundle>mvn:org.hibernate/hibernate-envers/4.3.6.Final</bundle>
+    </feature>
+    <feature name="hibernate-validator" description="Hibernate Validator support" version="5.0.3.Final">
+        <bundle dependency="true">mvn:javax.validation/validation-api/1.1.0.Final</bundle>
+        <bundle dependency="true">mvn:com.fasterxml/classmate/1.1.0</bundle>
+        <bundle dependency="true">mvn:javax.el/javax.el-api/2.2.4</bundle>
+        <bundle dependency="true">mvn:org.glassfish.web/javax.el/2.2.4</bundle>
+        <bundle dependency="true">mvn:org.jboss.logging/jboss-logging/3.1.4.GA</bundle>
+        <bundle>mvn:org.hibernate/hibernate-validator/5.0.3.Final</bundle>
+    </feature>
+    <feature name="eclipselink" description="Eclipselink JPA persistence engine support" version="2.6.0">
+        <details>Eclipselink persistence engine.</details>
+        <feature version="[2.1.0,2.2.0)" prerequisite="false" dependency="false">persistence-api</feature>
+        <feature version="[1.1,2)" prerequisite="false" dependency="false">transaction</feature>
+        <bundle>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.commons-dbcp/1.4_3</bundle>
+        <bundle>mvn:org.eclipse.persistence/org.eclipse.persistence.jpa/2.6.0</bundle>
+        <bundle>mvn:org.eclipse.persistence/org.eclipse.persistence.core/2.6.0</bundle>
+        <bundle>mvn:org.eclipse.persistence/org.eclipse.persistence.asm/2.6.0</bundle>
+        <bundle>mvn:org.eclipse.persistence/org.eclipse.persistence.antlr/2.6.0</bundle>
+        <bundle>mvn:org.eclipse.persistence/org.eclipse.persistence.jpa.jpql/2.6.0</bundle>
+        <bundle>mvn:org.apache.aries.jpa/org.apache.aries.jpa.eclipselink.adapter/2.2.0</bundle>
+    </feature>
+    <feature name="jndi" description="OSGi Service Registry JNDI access" version="4.0.2">
+        <details>JNDI support provided by Apache Aries JNDI 1.0.0, including additional service, commands, and MBean.</details>
+        <feature prerequisite="false" dependency="false">aries-proxy</feature>
+        <bundle start-level="30">mvn:org.apache.xbean/xbean-naming/3.18</bundle>
+        <bundle start-level="30">mvn:org.apache.aries.jndi/org.apache.aries.jndi.api/1.1.0</bundle>
+        <bundle start-level="30">mvn:org.apache.aries.jndi/org.apache.aries.jndi.core/1.0.2</bundle>
+        <bundle start-level="30">mvn:org.apache.aries.jndi/org.apache.aries.jndi.rmi/1.0.0</bundle>
+        <bundle start-level="30">mvn:org.apache.aries.jndi/org.apache.aries.jndi.url/1.1.0</bundle>
+        <bundle start-level="30">mvn:org.apache.aries.jndi/org.apache.aries.jndi.legacy.support/1.0.0</bundle>
+        <bundle start-level="30">mvn:org.apache.karaf.jndi/org.apache.karaf.jndi.core/4.0.2</bundle>
+    </feature>
+    <feature name="jdbc" description="JDBC service and commands" version="4.0.2">
+        <details>JDBC support providing service, commands, and MBean.</details>
+        <bundle dependency="true">mvn:org.osgi/org.osgi.service.jdbc/1.0.0</bundle>
+        <bundle>mvn:org.apache.karaf.jdbc/org.apache.karaf.jdbc.core/4.0.2</bundle>
+    </feature>
+    <feature name="jms" description="JMS service and commands" version="4.0.2">
+        <details>JMS support provinding service, commands, and MBean.</details>
+        <feature version="[1.1,2)" prerequisite="false" dependency="false">transaction</feature>
+        <feature prerequisite="false" dependency="false">aries-blueprint</feature>
+        <bundle dependency="true">mvn:org.apache.geronimo.specs/geronimo-jms_1.1_spec/1.1.1</bundle>
+        <bundle>mvn:org.apache.karaf.jms/org.apache.karaf.jms.core/4.0.2</bundle>
+        <requirement>
+            osgi.extender;filter:="(&amp;(osgi.extender=osgi.blueprint)(version&gt;=1.0))"
+        </requirement>
+    </feature>
+    <feature name="application-without-isolation" description="Provide EBA archive support" version="1.0.0">
+        <details>Support of the Aries EBA archives</details>
+        <feature version="4.0.2" prerequisite="false" dependency="false">obr</feature>
+        <feature prerequisite="false" dependency="false">aries-blueprint</feature>
+        <bundle start-level="30">mvn:org.apache.aries.application/org.apache.aries.application.resolver.obr/1.0.0</bundle>
+        <bundle start-level="30">mvn:org.apache.aries.application/org.apache.aries.application.install/1.0.0</bundle>
+        <bundle start-level="30">mvn:org.apache.aries.application/org.apache.aries.application.api/1.0.0</bundle>
+        <bundle start-level="30">mvn:org.apache.aries.application/org.apache.aries.application.management/1.0.0</bundle>
+        <bundle start-level="30">mvn:org.apache.aries.application/org.apache.aries.application.utils/1.0.0</bundle>
+        <bundle start-level="30">mvn:org.apache.aries.application/org.apache.aries.application.modeller/1.0.0</bundle>
+        <bundle start-level="30">mvn:org.apache.aries.application/org.apache.aries.application.default.local.platform/1.0.0</bundle>
+        <bundle start-level="30">mvn:org.apache.aries.application/org.apache.aries.application.resolver.noop/1.0.0</bundle>
+        <bundle start-level="30">mvn:org.apache.aries.application/org.apache.aries.application.deployment.management/1.0.0</bundle>
+        <bundle start-level="30">mvn:org.apache.aries.application/org.apache.aries.application.runtime/1.0.0</bundle>
+    </feature>
+    <feature name="subsystems" description="Support for OSGi subsystems" version="2.0.2">
+        <details>Support for Aries OSGi subsystems</details>
+        <bundle start-level="30" dependency="true">mvn:org.apache.aries/org.apache.aries.util/1.1.1</bundle>
+        <bundle start-level="30" dependency="true">mvn:org.apache.karaf.services/org.apache.karaf.services.coordinator/4.0.2</bundle>
+        <bundle start-level="30">mvn:org.apache.aries.subsystem/org.apache.aries.subsystem.api/2.0.2</bundle>
+        <bundle start-level="30">mvn:org.apache.aries.subsystem/org.apache.aries.subsystem.core/2.0.2</bundle>
+        <conditional>
+            <condition>shell</condition>
+            <bundle start-level="30">mvn:org.apache.karaf.subsystem/org.apache.karaf.subsystem.core/4.0.2</bundle>
+        </conditional>
+    </feature>
+</features>

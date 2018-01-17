@@ -1,0 +1,2709 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.jboss.component.management</groupId>
+    <artifactId>jboss-component-version-master</artifactId>
+    <version>6.0.1-redhat-1</version>
+    <relativePath>../../version-master/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>jboss-dependency-management-build</artifactId>
+
+  <name>JBoss Build Dependency Management</name>
+  <description>Dependency management for components used for building JBoss products</description>
+
+  <packaging>pom</packaging>
+
+  <dependencyManagement>
+
+    <dependencies>
+
+      <dependency>
+        <groupId>aopalliance</groupId>
+        <artifactId>aopalliance</artifactId>
+        <version>${version.aopalliance}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>args4j</groupId>
+        <artifactId>args4j</artifactId>
+        <version>${version.args4j}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>args4j</groupId>
+        <artifactId>args4j-site</artifactId>
+        <version>${version.args4j}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>args4j</groupId>
+        <artifactId>args4j-tools</artifactId>
+        <version>${version.args4j}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>asm</groupId>
+        <artifactId>asm</artifactId>
+        <version>${version.asm}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>asm</groupId>
+        <artifactId>asm-all</artifactId>
+        <version>${version.asm}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>asm</groupId>
+        <artifactId>asm-analysis</artifactId>
+        <version>${version.asm}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>asm</groupId>
+        <artifactId>asm-commons</artifactId>
+        <version>${version.asm}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>asm</groupId>
+        <artifactId>asm-tree</artifactId>
+        <version>${version.asm}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>asm</groupId>
+        <artifactId>asm-util</artifactId>
+        <version>${version.asm}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>asm</groupId>
+        <artifactId>asm-xml</artifactId>
+        <version>${version.asm}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>avalon-framework</groupId>
+        <artifactId>avalon-framework</artifactId>
+        <version>${version.avalon-framework}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>backport-util-concurrent</groupId>
+        <artifactId>backport-util-concurrent</artifactId>
+        <version>${version.backport-util-concurrent}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>biz.aQute</groupId>
+        <artifactId>bnd</artifactId>
+        <version>${version.biz.aQute}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>biz.aQute</groupId>
+        <artifactId>bndlib</artifactId>
+        <version>${version.biz.aQute}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>bsf</groupId>
+        <artifactId>bsf</artifactId>
+        <version>${version.bsf}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>cglib</groupId>
+        <artifactId>cglib</artifactId>
+        <version>${version.cglib}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>cglib</groupId>
+        <artifactId>cglib-nodep</artifactId>
+        <version>${version.cglib}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>ch.qos.cal10n</groupId>
+        <artifactId>cal10n-api</artifactId>
+        <version>${version.ch.qos.cal10n}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.beust</groupId>
+        <artifactId>jcommander</artifactId>
+        <version>${version.com.beust.jcommander}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.googlecode.jtype</groupId>
+        <artifactId>jtype</artifactId>
+        <version>${version.com.googlecode.jtype}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.code</groupId>
+        <artifactId>gwt-visualization</artifactId>
+        <version>${version.com.google.code.gwt-visualization}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.code.cookcc</groupId>
+        <artifactId>cookcc</artifactId>
+        <version>${version.com.google.code.cookcc}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.code.findbugs</groupId>
+        <artifactId>annotations</artifactId>
+        <version>${version.com.google.code.findbugs}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.code.findbugs</groupId>
+        <artifactId>bcel</artifactId>
+        <version>${version.com.google.code.findbugs}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.code.findbugs</groupId>
+        <artifactId>findbugs</artifactId>
+        <version>${version.com.google.code.findbugs}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.code.findbugs</groupId>
+        <artifactId>jFormatString</artifactId>
+        <version>${version.com.google.code.findbugs}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.code.findbugs</groupId>
+        <artifactId>jsr305</artifactId>
+        <version>${version.com.google.code.findbugs}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.code.gwt-log</groupId>
+        <artifactId>gwt-log</artifactId>
+        <version>${version.com.google.code.gwt-log}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>${version.com.google.guava}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.gwt</groupId>
+        <artifactId>gwt-dev</artifactId>
+        <version>${version.com.google.gwt}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.gwt</groupId>
+        <artifactId>gwt-user</artifactId>
+        <version>${version.com.google.gwt}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.gwt</groupId>
+        <artifactId>gwt-servlet</artifactId>
+        <version>${version.com.google.gwt}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.gwt.inject</groupId>
+        <artifactId>gin</artifactId>
+        <version>${version.com.google.gwt.inject}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.inject</groupId>
+        <artifactId>guice</artifactId>
+        <version>${version.com.google.inject.guice}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.inject.extensions</groupId>
+        <artifactId>guice-assistedinject</artifactId>
+        <version>${version.com.google.inject.guice}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.protobuf</groupId>
+        <artifactId>protobuf-java</artifactId>
+        <version>${version.protobuf-java}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.gwtplatform</groupId>
+        <artifactId>gwtp-clients-common</artifactId>
+        <version>${version.com.gwtplatform}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.gwtplatform</groupId>
+        <artifactId>gwtp-mvp-client</artifactId>
+        <version>${version.com.gwtplatform}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.h2database</groupId>
+        <artifactId>h2</artifactId>
+        <version>${version.com.h2database}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.ibm.icu</groupId>
+        <artifactId>icu4j</artifactId>
+        <version>${version.com.ibm.icu}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.sun.faces</groupId>
+        <artifactId>jsf-impl</artifactId>
+        <version>${version.com.sun.faces}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.sun.xml.bind</groupId>
+        <artifactId>jaxb-impl</artifactId>
+        <version>${version.sun.jaxb}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.sun.xml.bind</groupId>
+        <artifactId>jaxb-xjc</artifactId>
+        <version>${version.sun.jaxb}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.sun.xml.fastinfoset</groupId>
+        <artifactId>FastInfoset</artifactId>
+        <version>${version.com.sun.xml.fastinfoset}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.sun.xml.messaging.saaj</groupId>
+        <artifactId>saaj-impl</artifactId>
+        <version>${version.sun.saaj-impl}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.sun.xml.ws</groupId>
+        <artifactId>jaxws-rt</artifactId>
+        <version>${version.sun.jaxws}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.sun.xml.ws</groupId>
+        <artifactId>jaxws-tools</artifactId>
+        <version>${version.sun.jaxws}</version>
+      </dependency>
+
+	  <dependency>
+        <groupId>com.thoughtworks.xstream</groupId>
+        <artifactId>xstream</artifactId>
+        <version>${version.com.thoughtworks.xstream}</version>
+      </dependency>
+      
+      <dependency>
+        <groupId>commons-beanutils</groupId>
+        <artifactId>commons-beanutils</artifactId>
+        <version>${version.commons-beanutils}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>commons-cli</groupId>
+        <artifactId>commons-cli</artifactId>
+        <version>${version.commons-cli}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>commons-codec</groupId>
+        <artifactId>commons-codec</artifactId>
+        <version>${version.commons-codec}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>commons-collections</groupId>
+        <artifactId>commons-collections</artifactId>
+        <version>${version.commons-collections}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>commons-dbcp</groupId>
+        <artifactId>commons-dbcp</artifactId>
+        <version>${version.commons-dbcp}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>commons-digester</groupId>
+        <artifactId>commons-digester</artifactId>
+        <version>${version.commons-digester}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>commons-httpclient</groupId>
+        <artifactId>commons-httpclient</artifactId>
+        <version>${version.commons-httpclient}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>${version.commons-io}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>commons-jelly</groupId>
+        <artifactId>commons-jelly</artifactId>
+        <version>${version.commons-jelly}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>commons-jxpath</groupId>
+        <artifactId>commons-jxpath</artifactId>
+        <version>${version.commons-jxpath}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>commons-lang</groupId>
+        <artifactId>commons-lang</artifactId>
+        <version>${version.commons-lang}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>commons-logging</groupId>
+        <artifactId>commons-logging</artifactId>
+        <version>${version.commons-logging}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>commons-pool</groupId>
+        <artifactId>commons-pool</artifactId>
+        <version>${version.commons-pool}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>concurrent</groupId>
+        <artifactId>concurrent</artifactId>
+        <version>${version.concurrent}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>dom4j</groupId>
+        <artifactId>dom4j</artifactId>
+        <version>${version.dom4j}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>emma</groupId>
+        <artifactId>emma</artifactId>
+        <version>${version.emma}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>emma</groupId>
+        <artifactId>emma_ant</artifactId>
+        <version>${version.emma}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>gnu-getopt</groupId>
+        <artifactId>getopt</artifactId>
+        <version>${version.gnu.getopt}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>i18nlog</groupId>
+        <artifactId>i18nlog</artifactId>
+        <version>${version.i18nlog}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>org.apache.felix.resolver</artifactId>
+        <version>${version.org.apache.felix.resolver}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.freemarker</groupId>
+        <artifactId>freemarker</artifactId>
+        <version>${version.org.freemarker}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jacorb</groupId>
+        <artifactId>idl</artifactId>
+        <version>${version.org.jacorb}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jacorb</groupId>
+        <artifactId>jacorb</artifactId>
+        <version>${version.org.jacorb}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.javassist</groupId>
+        <artifactId>javassist</artifactId>
+        <version>${version.org.javassist}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>jacl</groupId>
+        <artifactId>jacl</artifactId>
+        <version>${version.jacl}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>javax.activation</groupId>
+        <artifactId>activation</artifactId>
+        <version>${version.javax.activation}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>javax.enterprise</groupId>
+        <artifactId>cdi-api</artifactId>
+        <version>${version.javax.enterprise}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>javax.faces</groupId>
+        <artifactId>jsf-api</artifactId>
+        <version>${version.javax.faces}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>javax.faces</groupId>
+        <artifactId>jsf-impl</artifactId>
+        <version>${version.javax.faces}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>javax.inject</groupId>
+        <artifactId>javax.inject</artifactId>
+        <version>${version.javax.inject.javax.inject}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>javax.inject</groupId>
+        <artifactId>javax.inject-tck</artifactId>
+        <version>${version.javax.inject.javax.inject}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>javax.jws</groupId>
+        <artifactId>jsr181-api</artifactId>
+        <version>${version.javax.jws.jsr181-api}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>javax.ws.rs</groupId>
+        <artifactId>jsr311-api</artifactId>
+        <version>${version.javax.ws.rs.jsr311-api}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>javax.mail</groupId>
+        <artifactId>mail</artifactId>
+        <version>${version.javax.mail}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>javax.validation</groupId>
+        <artifactId>validation-api</artifactId>
+        <version>${version.javax.validation}</version>
+      </dependency>
+
+      <dependency>
+          <groupId>javax.validation</groupId>
+          <artifactId>validation-api</artifactId>
+          <version>${version.javax.validation}</version>
+          <classifier>sources</classifier>
+      </dependency>
+
+      <dependency>
+        <groupId>jaxen</groupId>
+        <artifactId>jaxen</artifactId>
+        <version>${version.jaxen}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>jboss.jaxbintros</groupId>
+        <artifactId>jboss-jaxb-intros</artifactId>
+        <version>${version.jboss.jaxbintros}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jvnet.annox</groupId>
+        <artifactId>annox</artifactId>
+        <version>${version.org.jvnet.annox}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jvnet.annox</groupId>
+        <artifactId>annox-project</artifactId>
+        <version>${version.org.jvnet.annox}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jvnet</groupId>
+        <artifactId>mimepull</artifactId>
+        <version>${version.org.jvnet.mimepull}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>jline</groupId>
+        <artifactId>jline</artifactId>
+        <version>${version.jline}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>joda-time</groupId>
+        <artifactId>joda-time</artifactId>
+        <version>${version.joda-time}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>${version.junit}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>log4j</groupId>
+        <artifactId>log4j</artifactId>
+        <version>${version.log4j}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>logkit</groupId>
+        <artifactId>logkit</artifactId>
+        <version>${version.logkit}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>net.java.dev.msv</groupId>
+        <artifactId>msv</artifactId>
+        <version>${version.net.java.dev.msv}</version>
+      </dependency>
+      <dependency>
+        <groupId>net.java.dev.msv</groupId>
+        <artifactId>msv-core</artifactId>
+        <version>${version.net.java.dev.msv}</version>
+      </dependency>
+      <dependency>
+        <groupId>net.java.dev.msv</groupId>
+        <artifactId>msv-generator</artifactId>
+        <version>${version.net.java.dev.msv}</version>
+      </dependency>
+      <dependency>
+        <groupId>net.java.dev.msv</groupId>
+        <artifactId>msv-parent</artifactId>
+        <version>${version.net.java.dev.msv}</version>
+      </dependency>
+      <dependency>
+        <groupId>net.java.dev.msv</groupId>
+        <artifactId>msv-rngconverter</artifactId>
+        <version>${version.net.java.dev.msv}</version>
+      </dependency>
+      <dependency>
+        <groupId>net.java.dev.msv</groupId>
+        <artifactId>msv-testharness</artifactId>
+        <version>${version.net.java.dev.msv}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.sun.msv.datatype.xsd</groupId>
+        <artifactId>xsdlib</artifactId>
+        <version>${version.com.sun.msv.datatype.xsd.xsdlib}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>net.sf.ehcache</groupId>
+        <artifactId>ehcache-core</artifactId>
+        <version>${version.net.sf.ehcache.core}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>net.sf.kxml</groupId>
+        <artifactId>kxml2</artifactId>
+        <version>${version.net.sf.kxml.kxml2}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>net.sf.saxon</groupId>
+        <artifactId>saxon</artifactId>
+        <version>${version.net.sf.saxon}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>net.sourceforge.htmlunit</groupId>
+        <artifactId>htmlunit</artifactId>
+        <version>${version.net.sourceforge.htmlunit}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>net.sourceforge.htmlunit</groupId>
+        <artifactId>htmlunit-core-js</artifactId>
+        <version>${version.net.sourceforge.htmlunit}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>net.sourceforge.jchardet</groupId>
+        <artifactId>jchardet</artifactId>
+        <version>${version.net.sourceforge.jchardet}</version>
+      </dependency>
+      
+      <dependency>
+        <groupId>nu.validator.htmlparser</groupId>
+        <artifactId>htmlparser</artifactId>
+        <version>${version.nu.validator.htmlparser}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>net.sourceforge.nekohtml</groupId>
+        <artifactId>nekohtml</artifactId>
+        <version>${version.net.sourceforge.nekohtml}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.ant</groupId>
+        <artifactId>ant</artifactId>
+        <version>${version.org.apache.ant}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.ant</groupId>
+        <artifactId>ant-launcher</artifactId>
+        <version>${version.org.apache.ant}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.aries.blueprint</groupId>
+        <artifactId>org.apache.aries.blueprint.annotation.api</artifactId>
+        <version>${version.org.apache.aries}</version>
+        <scope>provided</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.aries.blueprint</groupId>
+        <artifactId>org.apache.aries.blueprint.api</artifactId>
+        <version>${version.org.apache.aries}</version>
+        <scope>provided</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.aries.blueprint</groupId>
+        <artifactId>org.apache.aries.blueprint.core</artifactId>
+        <version>${version.org.apache.aries}</version>
+        <scope>provided</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.aries.jmx</groupId>
+        <artifactId>org.apache.aries.jmx</artifactId>
+        <version>${version.org.apache.aries.jmx}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.aries.jmx</groupId>
+        <artifactId>org.apache.aries.jmx.api</artifactId>
+        <version>${version.org.apache.aries.jmx}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.aries.proxy</groupId>
+        <artifactId>org.apache.aries.proxy.api</artifactId>
+        <version>${version.org.apache.aries}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.aries.quiesce</groupId>
+        <artifactId>org.apache.aries.quiesce.api</artifactId>
+        <version>${version.org.apache.aries}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.aries.testsupport</groupId>
+        <artifactId>org.apache.aries.testsupport.unit</artifactId>
+        <version>${version.org.apache.aries}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.aries</groupId>
+        <artifactId>org.apache.aries.util</artifactId>
+        <version>${version.org.apache.aries}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-parent</artifactId>
+        <version>${version.org.apache.commons.commons-parent}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.commons.ssl</groupId>
+        <artifactId>not-yet-commons-ssl</artifactId>
+        <version>${version.org.apache.commons.ssl.not-yet-commons-ssl}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>org.apache.felix.configadmin</artifactId>
+        <version>${version.org.apache.felix.configadmin}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>org.apache.felix.eventadmin</artifactId>
+        <version>${version.org.apache.felix.eventadmin}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>org.apache.felix.framework</artifactId>
+        <version>${version.org.apache.felix.framework}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>org.apache.felix.log</artifactId>
+        <version>${version.org.apache.felix.log}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>org.apache.felix.metatype</artifactId>
+        <version>${version.org.apache.felix.metatype}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>org.apache.felix.scr</artifactId>
+        <version>${version.org.apache.felix.scr}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>org.apache.felix.webconsole</artifactId>
+        <version>${version.org.apache.felix.webconsole}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.geronimo.genesis.config</groupId>
+        <artifactId>logging-config</artifactId>
+        <version>${version.org.apache.geronimo.genesis.config}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpclient</artifactId>
+        <version>${version.org.apache.httpcomponents.httpclient}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpclient-cache</artifactId>
+        <version>${version.org.apache.httpcomponents.httpclient}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpclient-osgi</artifactId>
+        <version>${version.org.apache.httpcomponents.httpclient}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpcore</artifactId>
+        <version>${version.org.apache.httpcomponents.httpcore}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpcore-nio</artifactId>
+        <version>${version.org.apache.httpcomponents.httpcore}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpcore-osgi</artifactId>
+        <version>${version.org.apache.httpcomponents.httpcore}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpmime</artifactId>
+        <version>${version.org.apache.httpcomponents.httpclient}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.james</groupId>
+        <artifactId>apache-mime4j</artifactId>
+        <version>${version.org.apache.james.apache-mime4j}</version>
+      </dependency>
+
+<!--
+      <dependency>
+        <groupId>org.apache.james</groupId>
+        <artifactId>apache-mime4j-project</artifactId>
+        <version>${version.org.apache.james.apache-mime4j-project}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.james</groupId>
+        <artifactId>apache-mime4j-core</artifactId>
+        <version>${version.org.apache.james.apache-mime4j-project}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.james</groupId>
+        <artifactId>apache-mime4j-dom</artifactId>
+        <version>${version.org.apache.james.apache-mime4j-project}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.james</groupId>
+        <artifactId>apache-mime4j-storage</artifactId>
+        <version>${version.org.apache.james.apache-mime4j-project}</version>
+      </dependency>
+-->
+
+      <dependency>
+        <groupId>org.apache.neethi</groupId>
+        <artifactId>neethi</artifactId>
+        <version>${version.org.apache.neethi}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.santuario</groupId>
+        <artifactId>xmlsec</artifactId>
+        <version>${version.org.apache.santuario}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.velocity</groupId>
+        <artifactId>velocity</artifactId>
+        <version>${version.org.apache.velocity}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.ws.security</groupId>
+        <artifactId>wss4j</artifactId>
+        <version>${version.org.apache.ws.security}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.ws.commons.axiom</groupId>
+        <artifactId>axiom</artifactId>
+        <version>${version.org.apache.ws.commons.axiom}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.ws.commons.axiom</groupId>
+        <artifactId>axiom-api</artifactId>
+        <version>${version.org.apache.ws.commons.axiom}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.ws.commons.axiom</groupId>
+        <artifactId>axiom-dom</artifactId>
+        <version>${version.org.apache.ws.commons.axiom}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.ws.commons.axiom</groupId>
+        <artifactId>axiom-impl</artifactId>
+        <version>${version.org.apache.ws.commons.axiom}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.ws.commons.axiom</groupId>
+        <artifactId>axiom-parent</artifactId>
+        <version>${version.org.apache.ws.commons.axiom}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.ws.xmlschema</groupId>
+        <artifactId>xmlschema-core</artifactId>
+        <version>${version.org.apache.ws.xmlschema}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.beanshell</groupId>
+        <artifactId>bsh</artifactId>
+        <version>${version.org.beanshell}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.codehaus.jackson</groupId>
+        <artifactId>jackson-core-asl</artifactId>
+        <version>${version.org.codehaus.jackson}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.codehaus.jackson</groupId>
+        <artifactId>jackson-jaxrs</artifactId>
+        <version>${version.org.codehaus.jackson}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.codehaus.jackson</groupId>
+        <artifactId>jackson-mapper-asl</artifactId>
+        <version>${version.org.codehaus.jackson}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.codehaus.jackson</groupId>
+        <artifactId>jackson-xc</artifactId>
+        <version>${version.org.codehaus.jackson}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.codehaus.jettison</groupId>
+        <artifactId>jettison</artifactId>
+        <version>${version.org.codehaus.jettison}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.codehaus.woodstox</groupId>
+        <artifactId>stax2-api</artifactId>
+        <version>${version.org.codehaus.woodstox.stax2-api}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.codehaus.woodstox</groupId>
+        <artifactId>woodstox-core-asl</artifactId>
+        <version>${version.org.codehaus.woodstox.woodstox-core-asl}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.codehaus.woodstox</groupId>
+        <artifactId>woodstox-core-lgpl</artifactId>
+        <version>${version.org.codehaus.woodstox.woodstox-core-lgpl}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.easymock</groupId>
+        <artifactId>easymock</artifactId>
+        <version>${version.org.easymock}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.easymock</groupId>
+        <artifactId>easymockclassextension</artifactId>
+        <version>${version.org.easymock}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.eclipse</groupId>
+        <artifactId>osgi</artifactId>
+        <version>${version.org.eclipse.osgi}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hamcrest</groupId>
+        <artifactId>hamcrest-core</artifactId>
+        <version>${version.org.hamcrest}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hibernate</groupId>
+        <artifactId>hibernate-core</artifactId>
+        <version>${version.org.hibernate}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hibernate</groupId>
+        <artifactId>hibernate-entitymanager</artifactId>
+        <version>${version.org.hibernate}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hibernate</groupId>
+        <artifactId>hibernate-envers</artifactId>
+        <version>${version.org.hibernate}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hibernate</groupId>
+        <artifactId>hibernate-infinispan</artifactId>
+        <version>${version.org.hibernate}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hibernate</groupId>
+        <artifactId>hibernate-validator</artifactId>
+        <version>${version.org.hibernate.validator}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hibernate.common</groupId>
+        <artifactId>hibernate-commons-annotations</artifactId>
+        <version>${version.org.hibernate.commons.annotations}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hornetq</groupId>
+        <artifactId>hornetq-core</artifactId>
+        <version>${version.org.hornetq}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hornetq</groupId>
+        <artifactId>hornetq-jms</artifactId>
+        <version>${version.org.hornetq}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.hornetq</groupId>
+        <artifactId>hornetq-ra</artifactId>
+        <version>${version.org.hornetq}</version>
+      </dependency>
+
+	  <dependency>
+        <groupId>org.infinispan</groupId>
+        <artifactId>infinispan-api</artifactId>
+        <version>${version.org.infinispan}</version>
+      </dependency>
+      
+      <dependency>
+        <groupId>org.infinispan</groupId>
+        <artifactId>infinispan-core</artifactId>
+        <version>${version.org.infinispan}</version>
+      </dependency>
+      
+      <dependency>
+        <groupId>org.infinispan</groupId>
+        <artifactId>infinispan-commons</artifactId>
+        <version>${version.org.infinispan}</version>
+      </dependency>
+      
+      <dependency>
+        <groupId>org.infinispan</groupId>
+        <artifactId>infinispan-parent</artifactId>
+        <version>${version.org.infinispan}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss</groupId>
+        <artifactId>jandex</artifactId>
+        <version>${version.org.jboss.jandex}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss</groupId>
+        <artifactId>jboss-common-core</artifactId>
+        <version>${version.org.jboss.jboss-common-core}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss</groupId>
+        <artifactId>jboss-dmr</artifactId>
+        <version>${version.org.jboss.jboss-dmr}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss</groupId>
+        <artifactId>jboss-ejb-client</artifactId>
+        <version>${version.org.jboss.ejb-client}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss</groupId>
+        <artifactId>jboss-transaction-spi</artifactId>
+        <version>${version.org.jboss.jboss-transaction-spi}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss</groupId>
+        <artifactId>jboss-vfs</artifactId>
+        <version>${version.org.jboss.jboss-vfs}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss</groupId>
+        <artifactId>jbossxb</artifactId>
+        <version>${version.org.jboss.xb}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss</groupId>
+        <artifactId>staxmapper</artifactId>
+        <version>${version.org.jboss.staxmapper}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.arquillian.container</groupId>
+        <artifactId>arquillian-container-osgi</artifactId>
+        <version>${version.org.jboss.arquillian.osgi}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.arquillian.container</groupId>
+        <artifactId>arquillian-container-spi</artifactId>
+        <version>${version.org.jboss.arquillian.core}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.arquillian.container</groupId>
+        <artifactId>arquillian-container-test-api</artifactId>
+        <version>${version.org.jboss.arquillian.core}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.arquillian.container</groupId>
+        <artifactId>arquillian-container-test-spi</artifactId>
+        <version>${version.org.jboss.arquillian.core}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.arquillian.container</groupId>
+        <artifactId>arquillian-container-test-impl-base</artifactId>
+        <version>${version.org.jboss.arquillian.core}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.arquillian.core</groupId>
+        <artifactId>arquillian-core-api</artifactId>
+        <version>${version.org.jboss.arquillian.core}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.arquillian.core</groupId>
+        <artifactId>arquillian-core-impl-base</artifactId>
+        <version>${version.org.jboss.arquillian.core}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.arquillian.core</groupId>
+        <artifactId>arquillian-core-spi</artifactId>
+        <version>${version.org.jboss.arquillian.core}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.arquillian.junit</groupId>
+        <artifactId>arquillian-junit-core</artifactId>
+        <version>${version.org.jboss.arquillian.core}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.arquillian.testng</groupId>
+        <artifactId>arquillian-testng-core</artifactId>
+        <version>${version.org.jboss.arquillian.core}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.arquillian.junit</groupId>
+        <artifactId>arquillian-junit-container</artifactId>
+        <version>${version.org.jboss.arquillian.core}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.arquillian.testng</groupId>
+        <artifactId>arquillian-testng-container</artifactId>
+        <version>${version.org.jboss.arquillian.core}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.arquillian.protocol</groupId>
+        <artifactId>arquillian-protocol-jmx</artifactId>
+        <version>${version.org.jboss.arquillian.core}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.arquillian.protocol</groupId>
+        <artifactId>arquillian-protocol-servlet</artifactId>
+        <version>${version.org.jboss.arquillian.core}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.arquillian.test</groupId>
+        <artifactId>arquillian-test-spi</artifactId>
+        <version>${version.org.jboss.arquillian.core}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.arquillian.test</groupId>
+        <artifactId>arquillian-test-impl-base</artifactId>
+        <version>${version.org.jboss.arquillian.core}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.arquillian.testenricher</groupId>
+        <artifactId>arquillian-testenricher-cdi</artifactId>
+        <version>${version.org.jboss.arquillian.core}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.arquillian.testenricher</groupId>
+        <artifactId>arquillian-testenricher-ejb</artifactId>
+        <version>${version.org.jboss.arquillian.core}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.arquillian.testenricher</groupId>
+        <artifactId>arquillian-testenricher-initialcontext</artifactId>
+        <version>${version.org.jboss.arquillian.core}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.arquillian.testenricher</groupId>
+        <artifactId>arquillian-testenricher-osgi</artifactId>
+        <version>${version.org.jboss.arquillian.osgi}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.arquillian.testenricher</groupId>
+        <artifactId>arquillian-testenricher-resource</artifactId>
+        <version>${version.org.jboss.arquillian.core}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.ballroom</groupId>
+        <artifactId>widgets</artifactId>
+        <version>${version.org.jboss.ballroom}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.classfilewriter</groupId>
+        <artifactId>jboss-classfilewriter</artifactId>
+        <version>${version.org.jboss.classfilewriter}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.com.sun.httpserver</groupId>
+        <artifactId>httpserver</artifactId>
+        <version>${version.org.jboss.com.sun.httpserver}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.interceptor</groupId>
+        <artifactId>jboss-interceptor-core</artifactId>
+        <version>${version.org.jboss.interceptor}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.interceptor</groupId>
+        <artifactId>jboss-interceptor-parent</artifactId>
+        <version>${version.org.jboss.interceptor}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.interceptor</groupId>
+        <artifactId>jboss-interceptor-spi</artifactId>
+        <version>${version.org.jboss.interceptor}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.invocation</groupId>
+        <artifactId>jboss-invocation</artifactId>
+        <version>${version.org.jboss.invocation}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.ironjacamar</groupId>
+        <artifactId>ironjacamar-common-api</artifactId>
+        <version>${version.org.jboss.ironjacamar}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.ironjacamar</groupId>
+        <artifactId>ironjacamar-common-impl</artifactId>
+        <version>${version.org.jboss.ironjacamar}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.ironjacamar</groupId>
+        <artifactId>ironjacamar-common-spi</artifactId>
+        <version>${version.org.jboss.ironjacamar}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.ironjacamar</groupId>
+        <artifactId>ironjacamar-core-api</artifactId>
+        <version>${version.org.jboss.ironjacamar}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.ironjacamar</groupId>
+        <artifactId>ironjacamar-core-impl</artifactId>
+        <version>${version.org.jboss.ironjacamar}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.ironjacamar</groupId>
+        <artifactId>ironjacamar-deployers-common</artifactId>
+        <version>${version.org.jboss.ironjacamar}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.ironjacamar</groupId>
+        <artifactId>ironjacamar-jdbc</artifactId>
+        <version>${version.org.jboss.ironjacamar}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.ironjacamar</groupId>
+        <artifactId>ironjacamar-spec-api</artifactId>
+        <version>${version.org.jboss.ironjacamar}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.ironjacamar</groupId>
+        <artifactId>ironjacamar-validator</artifactId>
+        <version>${version.org.jboss.ironjacamar}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.jbossts</groupId>
+        <artifactId>jbossjts</artifactId>
+        <version>${version.org.jboss.jbossts.jbossjts}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.jbossts</groupId>
+        <artifactId>jbossjts-integration</artifactId>
+        <version>${version.org.jboss.jbossts.jbossjts-integration}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.jbossts</groupId>
+        <artifactId>jbosstxbridge</artifactId>
+        <version>${version.org.jboss.jbossts.jbossxts}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.jbossts</groupId>
+        <artifactId>jbossxts</artifactId>
+        <version>${version.org.jboss.jbossts.jbossxts}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.jbossts</groupId>
+        <artifactId>jbossxts-api</artifactId>
+        <version>${version.org.jboss.jbossts.jbossxts}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.jsfunit</groupId>
+        <artifactId>jboss-jsfunit-core</artifactId>
+        <version>${version.org.jboss.jsfunit}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.jsfunit</groupId>
+        <artifactId>jsfunit-arquillian</artifactId>
+        <version>${version.org.jboss.jsfunit}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.logging</groupId>
+        <artifactId>jboss-logging</artifactId>
+        <version>${version.org.jboss.logging.jboss-logging}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.logging</groupId>
+        <artifactId>jboss-logging-processor</artifactId>
+        <version>${version.org.jboss.logging.jboss-logging-processor}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.logmanager</groupId>
+        <artifactId>jboss-logmanager</artifactId>
+        <version>${version.org.jboss.logmanager.jboss-logmanager}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.logmanager</groupId>
+        <artifactId>log4j-jboss-logmanager</artifactId>
+        <version>${version.org.jboss.logmanager.log4j-jboss-logmanager}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.marshalling</groupId>
+        <artifactId>jboss-marshalling</artifactId>
+        <version>${version.org.jboss.marshalling.jboss-marshalling}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.marshalling</groupId>
+        <artifactId>jboss-marshalling-river</artifactId>
+        <version>${version.org.jboss.marshalling.jboss-marshalling}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.metadata</groupId>
+        <artifactId>jboss-metadata-common</artifactId>
+        <version>${version.org.jboss.metadata}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.metadata</groupId>
+        <artifactId>jboss-metadata-ear</artifactId>
+        <version>${version.org.jboss.metadata}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.metadata</groupId>
+        <artifactId>jboss-metadata-ejb</artifactId>
+        <version>${version.org.jboss.metadata}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.metadata</groupId>
+        <artifactId>jboss-metadata-web</artifactId>
+        <version>${version.org.jboss.metadata}</version>
+      </dependency>
+      
+      <dependency>
+        <groupId>org.jboss.metadata</groupId>
+        <artifactId>jboss-metadata-appclient</artifactId>
+        <version>${version.org.jboss.metadata}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.mod_cluster</groupId>
+        <artifactId>mod_cluster</artifactId>
+        <version>${version.org.jboss.mod_cluster}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.modules</groupId>
+        <artifactId>jboss-modules</artifactId>
+        <version>${version.org.jboss.modules.jboss-modules}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.msc</groupId>
+        <artifactId>jboss-msc</artifactId>
+        <version>${version.org.jboss.msc.jboss-msc}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.netty</groupId>
+        <artifactId>netty</artifactId>
+        <version>${version.org.jboss.netty}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.osgi</groupId>
+        <artifactId>jboss-osgi-parent</artifactId>
+        <version>${version.org.jboss.osgi.parent}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.osgi.common</groupId>
+        <artifactId>jboss-osgi-common</artifactId>
+        <version>${version.org.jboss.osgi.common}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.osgi.blueprint</groupId>
+        <artifactId>jbosgi-blueprint</artifactId>
+        <version>${version.org.jboss.osgi.blueprint}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.osgi.deployment</groupId>
+        <artifactId>jbosgi-deployment</artifactId>
+        <version>${version.org.jboss.osgi.deployment}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.osgi.framework</groupId>
+        <artifactId>jbosgi-framework-core</artifactId>
+        <version>${version.org.jboss.osgi.framework}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.osgi.http</groupId>
+        <artifactId>jboss-osgi-http</artifactId>
+        <version>${version.org.jboss.osgi.http}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.osgi.jmx</groupId>
+        <artifactId>jboss-osgi-jmx</artifactId>
+        <version>${version.org.jboss.osgi.jmx}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.osgi.jmx</groupId>
+        <artifactId>jboss-osgi-jmx-api</artifactId>
+        <version>${version.org.jboss.osgi.jmx}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.osgi.logging</groupId>
+        <artifactId>jboss-osgi-logging</artifactId>
+        <version>${version.org.jboss.osgi.logging}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.osgi.resolver</groupId>
+        <artifactId>jbosgi-resolver-api</artifactId>
+        <version>${version.org.jboss.osgi.resolver}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.osgi.resolver</groupId>
+        <artifactId>jbosgi-resolver-felix</artifactId>
+        <version>${version.org.jboss.osgi.resolver}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.osgi.resolver</groupId>
+        <artifactId>jbosgi-resolver-metadata</artifactId>
+        <version>${version.org.jboss.osgi.resolver}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.osgi.resolver</groupId>
+        <artifactId>jbosgi-resolver-spi</artifactId>
+        <version>${version.org.jboss.osgi.resolver}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.osgi.spi</groupId>
+        <artifactId>jbosgi-spi</artifactId>
+        <version>${version.org.jboss.osgi.spi}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.osgi.vfs</groupId>
+        <artifactId>jbosgi-vfs</artifactId>
+        <version>${version.org.jboss.osgi.vfs}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.osgi.vfs</groupId>
+        <artifactId>jbosgi-vfs30</artifactId>
+        <version>${version.org.jboss.osgi.vfs}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.osgi.webapp</groupId>
+        <artifactId>jbosgi-webapp</artifactId>
+        <version>${version.org.jboss.osgi.webapp}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.osgi.webconsole</groupId>
+        <artifactId>jbosgi-webconsole</artifactId>
+        <version>${version.org.jboss.osgi.webconsole}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.resteasy</groupId>
+        <artifactId>async-http-servlet-3.0</artifactId>
+        <version>${version.org.jboss.resteasy}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.resteasy</groupId>
+        <artifactId>jaxrs-api</artifactId>
+        <version>${version.org.jboss.resteasy}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.resteasy</groupId>
+        <artifactId>resteasy-atom-provider</artifactId>
+        <version>${version.org.jboss.resteasy}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.resteasy</groupId>
+        <artifactId>resteasy-cdi</artifactId>
+        <version>${version.org.jboss.resteasy}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.resteasy</groupId>
+        <artifactId>resteasy-jackson-provider</artifactId>
+        <version>${version.org.jboss.resteasy}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.resteasy</groupId>
+        <artifactId>resteasy-jaxb-provider</artifactId>
+        <version>${version.org.jboss.resteasy}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.resteasy</groupId>
+        <artifactId>resteasy-jaxrs</artifactId>
+        <version>${version.org.jboss.resteasy}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.resteasy</groupId>
+        <artifactId>resteasy-jsapi</artifactId>
+        <version>${version.org.jboss.resteasy}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.resteasy</groupId>
+        <artifactId>resteasy-multipart-provider</artifactId>
+        <version>${version.org.jboss.resteasy}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.resteasy</groupId>
+        <artifactId>tjws</artifactId>
+        <version>${version.org.jboss.resteasy}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.sasl</groupId>
+        <artifactId>jboss-sasl</artifactId>
+        <version>${version.org.jboss.sasl}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.seam.integration</groupId>
+        <artifactId>jboss-seam-int-jbossas</artifactId>
+        <version>${version.org.jboss.seam.int}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.security</groupId>
+        <artifactId>jboss-negotiation</artifactId>
+        <version>${version.org.jboss.security.jboss-negotiation}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.security</groupId>
+        <artifactId>jboss-negotiation-common</artifactId>
+        <version>${version.org.jboss.security.jboss-negotiation}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.security</groupId>
+        <artifactId>jboss-negotiation-extras</artifactId>
+        <version>${version.org.jboss.security.jboss-negotiation}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.security</groupId>
+        <artifactId>jboss-negotiation-net</artifactId>
+        <version>${version.org.jboss.security.jboss-negotiation}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.security</groupId>
+        <artifactId>jboss-negotiation-ntlm</artifactId>
+        <version>${version.org.jboss.security.jboss-negotiation}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.security</groupId>
+        <artifactId>jboss-negotiation-project</artifactId>
+        <version>${version.org.jboss.security.jboss-negotiation}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.security</groupId>
+        <artifactId>jboss-negotiation-spnego</artifactId>
+        <version>${version.org.jboss.security.jboss-negotiation}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.security</groupId>
+        <artifactId>jbossxacml</artifactId>
+        <version>${version.org.jboss.security.jbossxacml}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.shrinkwrap</groupId>
+        <artifactId>shrinkwrap-api</artifactId>
+        <version>${version.org.jboss.shrinkwrap.shrinkwrap}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.shrinkwrap</groupId>
+        <artifactId>shrinkwrap-impl-base</artifactId>
+        <version>${version.org.jboss.shrinkwrap.shrinkwrap}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.shrinkwrap</groupId>
+        <artifactId>shrinkwrap-spi</artifactId>
+        <version>${version.org.jboss.shrinkwrap.shrinkwrap}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.shrinkwrap.resolver</groupId>
+        <artifactId>shrinkwrap-resolver-impl-maven</artifactId>
+        <version>${version.org.jboss.shrinkwrap.resolver}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.slf4j</groupId>
+        <artifactId>slf4j-jboss-logmanager</artifactId>
+        <version>${version.org.jboss.slf4j.slf4j-jboss-logmanager}</version>
+      </dependency>
+
+      <!-- START: specification dependencies -->
+     <dependency>
+        <groupId>org.jboss.spec.javax.annotation</groupId>
+        <artifactId>jboss-annotations-api_1.1_spec</artifactId>
+        <version>${version.org.jboss.spec.javax.annotation.jboss-annotations-api_1.1_spec}</version>
+      </dependency>
+
+      <!-- NOT RELOCATED -->
+      <dependency>
+        <groupId>org.jboss.spec.javax.ejb</groupId>
+        <artifactId>jboss-ejb-api_3.1_spec</artifactId>
+        <version>${version.org.jboss.spec.javax.ejb.jboss-ejb-api_3.1_spec}</version>
+      </dependency>
+
+      <!-- NOT RELOCATED -->
+      <dependency>
+        <groupId>org.jboss.spec.javax.el</groupId>
+        <artifactId>jboss-el-api_2.2_spec</artifactId>
+        <version>${version.org.jboss.spec.javax.el.jboss-el-api_2.2_spec}</version>
+      </dependency>
+
+      <!-- NOT RELOCATED -->
+      <dependency>
+        <groupId>org.jboss.spec.javax.enterprise.deploy</groupId>
+        <artifactId>jboss-jad-api_1.2_spec</artifactId>
+        <version>${version.org.jboss.spec.javax.enterprise.deploy.jboss-jad-api_1.2_spec}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.spec.javax.faces</groupId>
+        <artifactId>jboss-jsf-api_2.1_spec</artifactId>
+        <version>${version.org.jboss.spec.javax.faces.jboss-jsf-api_2.1_spec}</version>
+      </dependency>
+
+      <!-- NOT RELOCATED -->
+      <dependency>
+        <groupId>org.jboss.spec.javax.interceptor</groupId>
+        <artifactId>jboss-interceptors-api_1.1_spec</artifactId>
+        <version>${version.org.jboss.spec.javax.interceptor.jboss-interceptors-api_1.1_spec}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.spec.javax.jms</groupId>
+        <artifactId>jboss-jms-api_1.1_spec</artifactId>
+        <version>${version.org.jboss.spec.javax.jms.jboss-jms-api_1.1_spec}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.spec.javax.management.j2ee</groupId>
+        <artifactId>jboss-j2eemgmt-api_1.1_spec</artifactId>
+        <version>${version.org.jboss.spec.javax.management.j2ee.jboss-j2eemgmt-api_1.1_spec}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.spec.javax.resource</groupId>
+        <artifactId>jboss-connector-api_1.6_spec</artifactId>
+        <version>${version.org.jboss.spec.javax.resource.jboss-connector-api_1.6_spec}</version>
+      </dependency>
+
+      <!-- NOT RELOCATED -->
+      <dependency>
+        <groupId>org.jboss.spec.javax.rmi</groupId>
+        <artifactId>jboss-rmi-api_1.0_spec</artifactId>
+        <version>${version.org.jboss.spec.javax.rmi.jboss-rmi-api_1.0_spec}</version>
+      </dependency>
+
+      <!-- NOT RELOCATED -->
+      <dependency>
+        <groupId>org.jboss.spec.javax.security.auth.message</groupId>
+        <artifactId>jboss-jaspi-api_1.0_spec</artifactId>
+        <version>${version.org.jboss.spec.javax.security.auth.message.jboss-jaspi-api_1.0_spec}</version>
+      </dependency>
+
+      <!-- NOT RELOCATED -->
+      <dependency>
+        <groupId>org.jboss.spec.javax.security.jacc</groupId>
+        <artifactId>jboss-jacc-api_1.4_spec</artifactId>
+        <version>${version.org.jboss.spec.javax.security.jacc.jboss-jacc-api_1.4_spec}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.spec.javax.servlet</groupId>
+        <artifactId>jboss-servlet-api_3.0_spec</artifactId>
+        <version>${version.org.jboss.spec.javax.servlet.jboss-servlet-api_3.0_spec}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.spec.javax.servlet.jsp</groupId>
+        <artifactId>jboss-jsp-api_2.2_spec</artifactId>
+        <version>${version.org.jboss.spec.javax.servlet.jsp.jboss-jsp-api_2.2_spec}</version>
+      </dependency>
+
+      <!-- NOT RELOCATED -->
+      <dependency>
+        <groupId>org.jboss.spec.javax.servlet.jstl</groupId>
+        <artifactId>jboss-jstl-api_1.2_spec</artifactId>
+        <version>${version.org.jboss.spec.javax.servlet.jstl.jboss-jstl-api_1.2_spec}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.spec.javax.transaction</groupId>
+        <artifactId>jboss-transaction-api_1.1_spec</artifactId>
+        <version>${version.org.jboss.spec.javax.transaction.jboss-transaction-api_1.1_spec}</version>
+      </dependency>
+
+      <!-- NOT RELOCATED -->
+      <dependency>
+        <groupId>org.jboss.spec.javax.ws.rs</groupId>
+        <artifactId>jboss-jaxrs-api_1.1_spec</artifactId>
+        <version>${version.org.jboss.spec.javax.ws.rs.jboss-jaxrs-api_1.1_spec}</version>
+      </dependency>
+
+      <!-- NOT RELOCATED -->
+      <dependency>
+        <groupId>org.jboss.spec.javax.xml.bind</groupId>
+        <artifactId>jboss-jaxb-api_2.2_spec</artifactId>
+        <version>${version.org.jboss.spec.javax.xml.bind.jboss-jaxb-api_2.2_spec}</version>
+      </dependency>
+
+      <!-- NOT RELOCATED -->
+      <dependency>
+        <groupId>org.jboss.spec.javax.xml.registry</groupId>
+        <artifactId>jboss-jaxr-api_1.0_spec</artifactId>
+        <version>${version.org.jboss.spec.javax.xml.registry.jboss-jaxr-api_1.0_spec}</version>
+      </dependency>
+
+      <!-- NOT RELOCATED -->
+      <dependency>
+        <groupId>org.jboss.spec.javax.xml.rpc</groupId>
+        <artifactId>jboss-jaxrpc-api_1.1_spec</artifactId>
+        <version>${version.org.jboss.spec.javax.xml.rpc.jboss-jaxrpc-api_1.1_spec}</version>
+      </dependency>
+
+      <!-- NOT RELOCATED -->
+      <dependency>
+        <groupId>org.jboss.spec.javax.xml.soap</groupId>
+        <artifactId>jboss-saaj-api_1.3_spec</artifactId>
+        <version>${version.org.jboss.spec.javax.xml.soap.jboss-saaj-api_1.3_spec}</version>
+      </dependency>
+
+      <!-- NOT RELOCATED -->
+      <dependency>
+        <groupId>org.jboss.spec.javax.xml.ws</groupId>
+        <artifactId>jboss-jaxws-api_2.2_spec</artifactId>
+        <version>${version.org.jboss.spec.javax.xml.ws.jboss-jaxws-api_2.2_spec}</version>
+      </dependency>
+      <!-- END: specification dependencies -->
+
+      <dependency>
+        <groupId>org.jboss.stdio</groupId>
+        <artifactId>jboss-stdio</artifactId>
+        <version>${version.org.jboss.stdio}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.test</groupId>
+        <artifactId>jboss-test</artifactId>
+        <version>${version.org.jboss.test}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.threads</groupId>
+        <artifactId>jboss-threads</artifactId>
+        <version>${version.org.jboss.threads}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.web</groupId>
+        <artifactId>jasper-jdt</artifactId>
+        <version>${version.org.jboss.web.jasper-jdt}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.web</groupId>
+        <artifactId>jbossweb</artifactId>
+        <version>${version.org.jboss.web}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.weld</groupId>
+        <artifactId>weld-api</artifactId>
+        <version>${version.org.jboss.weld.weld-api}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.weld</groupId>
+        <artifactId>weld-core</artifactId>
+        <version>${version.org.jboss.weld.weld}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.weld</groupId>
+        <artifactId>weld-parent</artifactId>
+        <version>${version.org.jboss.weld.weld-parent}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.weld</groupId>
+        <artifactId>weld-spi</artifactId>
+        <version>${version.org.jboss.weld.weld-api}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.ws</groupId>
+        <artifactId>jbossws-api</artifactId>
+        <version>${version.org.jboss.ws.api}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.ws</groupId>
+        <artifactId>jbossws-common</artifactId>
+        <version>${version.org.jboss.ws.common}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.ws</groupId>
+        <artifactId>jbossws-common-tools</artifactId>
+        <version>${version.org.jboss.ws.common.tools}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.ws</groupId>
+        <artifactId>jbossws-parent</artifactId>
+        <version>${version.org.jboss.ws.parent}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.ws</groupId>
+        <artifactId>jbossws-spi</artifactId>
+        <version>${version.org.jboss.ws.spi}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.ws</groupId>
+        <artifactId>jbossws-shared-testsuite</artifactId>
+        <version>${version.org.jboss.ws.jbossws-shared-testsuite}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.ws.projects</groupId>
+        <artifactId>jaxws-jboss-httpserver-httpspi</artifactId>
+        <version>${version.org.jboss.ws.jaxws-jboss-httpserver-httpspi}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jdom</groupId>
+        <artifactId>jdom</artifactId>
+        <version>${version.org.jdom}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jfree</groupId>
+        <artifactId>jcommon</artifactId>
+        <version>${version.org.jfree.jcommon}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jfree</groupId>
+        <artifactId>jfreechart</artifactId>
+        <version>${version.org.jfree.jfreechart}</version>
+      </dependency>
+      
+      <dependency>
+        <groupId>org.jgroups</groupId>
+        <artifactId>jgroups</artifactId>
+        <version>${version.org.jgroups}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jsoup</groupId>
+        <artifactId>jsoup</artifactId>
+        <version>${version.org.jsoup}</version>
+      </dependency>
+      
+      <dependency>
+        <groupId>org.jsr-305</groupId>
+        <artifactId>ri</artifactId>
+        <version>${version.org.jsr-305.ri}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-all</artifactId>
+        <version>${version.org.mockito}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-core</artifactId>
+        <version>${version.org.mockito}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.objenesis</groupId>
+        <artifactId>objenesis</artifactId>
+        <version>${version.org.objenesis}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.ops4j.base</groupId>
+        <artifactId>ops4j-base</artifactId>
+        <version>${version.org.ops4j.base}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.ops4j.base</groupId>
+        <artifactId>ops4j-base-io</artifactId>
+        <version>${version.org.ops4j.base}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.ops4j.base</groupId>
+        <artifactId>ops4j-base-lang</artifactId>
+        <version>${version.org.ops4j.base}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.ops4j.base</groupId>
+        <artifactId>ops4j-base-monitors</artifactId>
+        <version>${version.org.ops4j.base}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.ops4j.base</groupId>
+        <artifactId>ops4j-base-net</artifactId>
+        <version>${version.org.ops4j.base}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.ops4j.base</groupId>
+        <artifactId>ops4j-base-store</artifactId>
+        <version>${version.org.ops4j.base}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.ops4j.base</groupId>
+        <artifactId>ops4j-base-util-collections</artifactId>
+        <version>${version.org.ops4j.base}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.ops4j.base</groupId>
+        <artifactId>ops4j-base-util-property</artifactId>
+        <version>${version.org.ops4j.base}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.ops4j.base</groupId>
+        <artifactId>ops4j-base-util-xml</artifactId>
+        <version>${version.org.ops4j.base}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.ops4j.pax.swissbox</groupId>
+        <artifactId>pax-swissbox-core</artifactId>
+        <version>${version.org.ops4j.pax.swissbox}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.ops4j.pax.swissbox</groupId>
+        <artifactId>pax-swissbox-extender</artifactId>
+        <version>${version.org.ops4j.pax.swissbox}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.ops4j.pax.swissbox</groupId>
+        <artifactId>pax-swissbox-lifecycle</artifactId>
+        <version>${version.org.ops4j.pax.swissbox}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.ops4j.pax.swissbox</groupId>
+        <artifactId>pax-swissbox-optional-jcl</artifactId>
+        <version>${version.org.ops4j.pax.swissbox}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.ops4j.pax.swissbox</groupId>
+        <artifactId>pax-swissbox-tracker</artifactId>
+        <version>${version.org.ops4j.pax.swissbox}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.ops4j.pax.web</groupId>
+        <artifactId>pax-web-api</artifactId>
+        <version>${version.org.ops4j.pax.web}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.ops4j.pax.web</groupId>
+        <artifactId>pax-web-extender-war</artifactId>
+        <version>${version.org.ops4j.pax.web}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.ops4j.pax.web</groupId>
+        <artifactId>pax-web-jetty-bundle</artifactId>
+        <version>${version.org.ops4j.pax.web}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.ops4j.pax.web</groupId>
+        <artifactId>pax-web-spi</artifactId>
+        <version>${version.org.ops4j.pax.web}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.core</artifactId>
+        <version>${version.osgi}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.compendium</artifactId>
+        <version>${version.osgi}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.picketbox</groupId>
+        <artifactId>jboss-security-spi</artifactId>
+        <version>${version.org.picketbox}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.picketbox</groupId>
+        <artifactId>jbosssx</artifactId>
+        <version>${version.org.picketbox}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.picketbox</groupId>
+        <artifactId>jbosssx-client</artifactId>
+        <version>${version.org.picketbox}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.picketbox</groupId>
+        <artifactId>picketbox</artifactId>
+        <version>${version.org.picketbox}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.picketbox</groupId>
+        <artifactId>picketbox-bare</artifactId>
+        <version>${version.org.picketbox}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.projectodd.stilts</groupId>
+        <artifactId>stilts-stomp-client</artifactId>
+        <version>${version.org.projectodd.stilts}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.projectodd.stilts</groupId>
+        <artifactId>stilts-stomplet-server-bundle</artifactId>
+        <version>${version.org.projectodd.stilts}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.projectodd.stilts</groupId>
+        <artifactId>stilts-stomplet-server-core</artifactId>
+        <version>${version.org.projectodd.stilts}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.rhq.helpers</groupId>
+        <artifactId>rhq-pluginAnnotations</artifactId>
+        <version>${version.org.rhq.helpers}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.rhq.helpers</groupId>
+        <artifactId>rhq-pluginGen</artifactId>
+        <version>${version.org.rhq.helpers}</version>
+      </dependency>
+      
+      <dependency>
+        <groupId>org.scala-lang</groupId>
+        <artifactId>scala-library</artifactId>
+        <version>${version.org.scala-lang}</version>
+      </dependency>
+      
+      <dependency>
+        <groupId>org.scala-lang</groupId>
+        <artifactId>scala-compiler</artifactId>
+        <version>${version.org.scala-lang}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.scannotation</groupId>
+        <artifactId>scannotation</artifactId>
+        <version>${version.org.scannotation}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>jcl-over-slf4j</artifactId>
+        <version>${version.org.slf4j}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>jul-to-slf4j</artifactId>
+        <version>${version.org.slf4j}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>log4j-over-slf4j</artifactId>
+        <version>${version.org.slf4j}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${version.org.slf4j}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-ext</artifactId>
+        <version>${version.org.slf4j}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-log4j12</artifactId>
+        <version>${version.org.slf4j}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-simple</artifactId>
+        <version>${version.org.slf4j}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-jdk14</artifactId>
+        <version>${version.org.slf4j}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-agent</artifactId>
+        <version>${version.org.springframework}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-aop</artifactId>
+        <version>${version.org.springframework}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-beans</artifactId>
+        <version>${version.org.springframework}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-context</artifactId>
+        <version>${version.org.springframework}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-core</artifactId>
+        <version>${version.org.springframework}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-jdbc</artifactId>
+        <version>${version.org.springframework}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-orm</artifactId>
+        <version>${version.org.springframework}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-test</artifactId>
+        <version>${version.org.springframework}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-tx</artifactId>
+        <version>${version.org.springframework}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-web</artifactId>
+        <version>${version.org.springframework}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-webmvc</artifactId>
+        <version>${version.org.springframework}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-jms</artifactId>
+        <version>${version.org.springframework}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.testng</groupId>
+        <artifactId>testng</artifactId>
+        <version>${version.org.testng}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>oro</groupId>
+        <artifactId>oro</artifactId>
+        <version>${version.oro}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>qdox</groupId>
+        <artifactId>qdox</artifactId>
+        <version>${version.qdox}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>slide</groupId>
+        <artifactId>slide-webdavlib</artifactId>
+        <version>${version.slide}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>stax</groupId>
+        <artifactId>stax</artifactId>
+        <version>${version.stax}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>stax</groupId>
+        <artifactId>stax-api</artifactId>
+        <version>${version.stax-api}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>taglibs</groupId>
+        <artifactId>standard</artifactId>
+        <version>${version.taglibs}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>tanukisoft</groupId>
+        <artifactId>wrapper</artifactId>
+        <version>${version.tanukisoft.wrapper}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>werken-xpath</groupId>
+        <artifactId>werken-xpath</artifactId>
+        <version>${version.werken-xpath}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>wsdl4j</groupId>
+        <artifactId>wsdl4j</artifactId>
+        <version>${version.wsdl4j}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>xalan</groupId>
+        <artifactId>serializer</artifactId>
+        <version>${version.org.apache.xalan}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>xalan</groupId>
+        <artifactId>xalan</artifactId>
+        <version>${version.org.apache.xalan}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>xerces</groupId>
+        <artifactId>xercesImpl</artifactId>
+        <version>${version.org.apache.xerces}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>xerces</groupId>
+        <artifactId>xmlParserAPIs</artifactId>
+        <version>${version.xerces}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>xml-apis</groupId>
+        <artifactId>xml-apis</artifactId>
+        <version>${version.xml-apis}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>xml-resolver</groupId>
+        <artifactId>xml-resolver</artifactId>
+        <version>${version.xml-resolver}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>xmlunit</groupId>
+        <artifactId>xmlunit</artifactId>
+        <version>${version.xmlunit}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>xom</groupId>
+        <artifactId>xom</artifactId>
+        <version>${version.xom}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>xpp3</groupId>
+        <artifactId>xpp3</artifactId>
+        <version>${version.xpp3}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>xpp3</groupId>
+        <artifactId>xpp3_min</artifactId>
+        <version>${version.xpp3}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>xpp3</groupId>
+        <artifactId>xpp3_xpath</artifactId>
+        <version>${version.xpp3}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.codehaus.jra</groupId>
+        <artifactId>jra</artifactId>
+        <version>${version.org.codehaus.jra}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.xmlbeans</groupId>
+        <artifactId>xmlbeans</artifactId>
+        <version>${version.org.apache.xmlbeans}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.xmlbeans</groupId>
+        <artifactId>xmlbeans-qname</artifactId>
+        <version>${version.org.apache.xmlbeans}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.xmlbeans</groupId>
+        <artifactId>xmlbeans-xmlpublic</artifactId>
+        <version>${version.org.apache.xmlbeans}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.xmlbeans</groupId>
+        <artifactId>xmlbeans-xpath</artifactId>
+        <version>${version.org.apache.xmlbeans}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.abdera</groupId>
+        <artifactId>abdera</artifactId>
+        <version>${version.org.apache.abdera}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.abdera</groupId>
+        <artifactId>abdera-adapters-parent</artifactId>
+        <version>${version.org.apache.abdera}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.abdera</groupId>
+        <artifactId>abdera-bundle</artifactId>
+        <version>${version.org.apache.abdera}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.abdera</groupId>
+        <artifactId>abdera-client</artifactId>
+        <version>${version.org.apache.abdera}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.abdera</groupId>
+        <artifactId>abdera-core</artifactId>
+        <version>${version.org.apache.abdera}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.abdera</groupId>
+        <artifactId>abdera-extensions-features</artifactId>
+        <version>${version.org.apache.abdera}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.abdera</groupId>
+        <artifactId>abdera-extensions-gdata</artifactId>
+        <version>${version.org.apache.abdera}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.abdera</groupId>
+        <artifactId>abdera-extensions-geo</artifactId>
+        <version>${version.org.apache.abdera}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.abdera</groupId>
+        <artifactId>abdera-extensions-html</artifactId>
+        <version>${version.org.apache.abdera}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.abdera</groupId>
+        <artifactId>abdera-extensions-json</artifactId>
+        <version>${version.org.apache.abdera}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.abdera</groupId>
+        <artifactId>abdera-extensions-main</artifactId>
+        <version>${version.org.apache.abdera}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.abdera</groupId>
+        <artifactId>abdera-extensions-media</artifactId>
+        <version>${version.org.apache.abdera}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.abdera</groupId>
+        <artifactId>abdera-extensions-oauth</artifactId>
+        <version>${version.org.apache.abdera}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.abdera</groupId>
+        <artifactId>abdera-extensions-opensearch</artifactId>
+        <version>${version.org.apache.abdera}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.abdera</groupId>
+        <artifactId>abdera-extensions-parent</artifactId>
+        <version>${version.org.apache.abdera}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.abdera</groupId>
+        <artifactId>abdera-extensions-rss</artifactId>
+        <version>${version.org.apache.abdera}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.abdera</groupId>
+        <artifactId>abdera-extensions-serializer</artifactId>
+        <version>${version.org.apache.abdera}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.abdera</groupId>
+        <artifactId>abdera-extensions-sharing</artifactId>
+        <version>${version.org.apache.abdera}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.abdera</groupId>
+        <artifactId>abdera-extensions-wsse</artifactId>
+        <version>${version.org.apache.abdera}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.abdera</groupId>
+        <artifactId>abdera-filesystem</artifactId>
+        <version>${version.org.apache.abdera}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.abdera</groupId>
+        <artifactId>abdera-i18n</artifactId>
+        <version>${version.org.apache.abdera}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.abdera</groupId>
+        <artifactId>abdera-jdbc</artifactId>
+        <version>${version.org.apache.abdera}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.abdera</groupId>
+        <artifactId>abdera-parser</artifactId>
+        <version>${version.org.apache.abdera}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.abdera</groupId>
+        <artifactId>abdera-security</artifactId>
+        <version>${version.org.apache.abdera}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.abdera</groupId>
+        <artifactId>abdera-server</artifactId>
+        <version>${version.org.apache.abdera}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.abdera</groupId>
+        <artifactId>abdera-spring</artifactId>
+        <version>${version.org.apache.abdera}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>rhino</groupId>
+        <artifactId>js</artifactId>
+        <version>${version.rhino.js}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcmail-jdk16</artifactId>
+        <version>${version.bouncycastle}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcpg-jdk16</artifactId>
+        <version>${version.bouncycastle}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcprov-jdk16</artifactId>
+        <version>${version.bouncycastle}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bctsp-jdk16</artifactId>
+        <version>${version.bouncycastle}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.opensaml</groupId>
+        <artifactId>opensaml</artifactId>
+        <version>${version.org.opensaml.opensaml}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.opensaml</groupId>
+        <artifactId>openws</artifactId>
+        <version>${version.org.opensaml.openws}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.opensaml</groupId>
+        <artifactId>xmltooling</artifactId>
+        <version>${version.org.opensaml.xmltooling}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>isorelax</groupId>
+        <artifactId>isorelax</artifactId>
+        <version>${version.isorelax}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.mina</groupId>
+        <artifactId>mina-core</artifactId>
+        <version>${version.org.apache.mina}</version>
+      </dependency>
+
+    </dependencies>
+
+  </dependencyManagement>
+
+</project>

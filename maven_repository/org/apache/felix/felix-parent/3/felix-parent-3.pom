@@ -1,0 +1,395 @@
+<!-- 
+ Licensed to the Apache Software Foundation (ASF) under one
+ or more contributor license agreements.  See the NOTICE file
+ distributed with this work for additional information
+ regarding copyright ownership.  The ASF licenses this file
+ to you under the Apache License, Version 2.0 (the
+ "License"); you may not use this file except in compliance
+ with the License.  You may obtain a copy of the License at
+ 
+    http://www.apache.org/licenses/LICENSE-2.0
+ 
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an
+ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ KIND, either express or implied.  See the License for the
+ specific language governing permissions and limitations
+ under the License. 
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.apache</groupId>
+        <artifactId>apache</artifactId>
+        <version>17</version>
+        <relativePath />
+    </parent>
+
+    <groupId>org.apache.felix</groupId>
+    <artifactId>felix-parent</artifactId>
+    <packaging>pom</packaging>
+    <name>Apache Felix</name>
+    <version>3</version>
+    <url>http://felix.apache.org/</url>
+    <inceptionYear>2006</inceptionYear>
+    <description>Apache Felix is a community effort to implement the OSGi Framework and Service platform and other interesting OSGi-related technologies.</description>
+
+    <prerequisites>
+        <maven>3.0.5</maven>
+    </prerequisites>
+
+    <properties>
+        <sourceReleaseAssemblyDescriptor>source-release-zip-tar</sourceReleaseAssemblyDescriptor>
+
+        <!-- Default Java VM and API compatibility -->
+        <felix.java.version>5</felix.java.version>
+        <felix.java.signature.groupId>org.codehaus.mojo.signature</felix.java.signature.groupId>
+        
+        <!-- Default settings for the site plugins -->
+        <site.javadoc.exclude>*.impl:*.internal:</site.javadoc.exclude>
+    </properties>
+
+    <issueManagement>
+        <system>Jira</system>
+        <url>http://issues.apache.org/jira/browse/FELIX</url>
+    </issueManagement>
+
+    <mailingLists>
+        <mailingList>
+            <name>Felix Dev</name>
+            <subscribe>dev-subscribe@felix.apache.org</subscribe>
+            <unsubscribe>dev-unsubscribe@felix.apache.org</unsubscribe>
+            <post>-</post>
+            <archive>http://www.mail-archive.com/dev%40felix.apache.org/</archive>
+        </mailingList>
+        <mailingList>
+            <name>Felix Commits</name>
+            <subscribe>commits-subscribe@felix.apache.org</subscribe>
+            <unsubscribe>commits-unsubscribe@felix.apache.org</unsubscribe>
+            <post>-</post>
+            <archive>http://www.mail-archive.com/commits%40felix.apache.org/</archive>
+        </mailingList>
+    </mailingLists>
+
+    <scm>
+        <connection>scm:svn:http://svn.apache.org/repos/asf/felix/releases/felix-parent-3</connection>
+        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/felix/releases/felix-parent-3</developerConnection>
+        <url>http://svn.apache.org/viewvc/felix/releases/?root=Apache-SVN/felix-parent-3</url>
+    </scm>
+
+    <distributionManagement>
+        <site>
+            <id>felix website</id>
+            <url>file:///${user.dir}/target/site-deployed/</url>
+        </site>
+    </distributionManagement>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>apache.snapshots</id>
+            <name>snapshot plugins</name>
+            <url>http://repository.apache.org/snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
+
+    <dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+        </dependency>
+        <dependency>
+            <groupId>org.easymock</groupId>
+            <artifactId>easymock</artifactId>
+            <version>2.5.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>1.10.19</version>
+        </dependency>
+    </dependencies>
+    </dependencyManagement>
+
+    <!-- definitions for testing -->
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.easymock</groupId>
+            <artifactId>easymock</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-project-info-reports-plugin</artifactId>
+                    <version>2.8</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jxr-plugin</artifactId>
+                    <version>2.5</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>ianal-maven-plugin</artifactId>
+                    <version>1.0-alpha-1</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.rat</groupId>
+                    <artifactId>apache-rat-plugin</artifactId>
+                    <version>0.10</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>2.10.2</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>animal-sniffer-maven-plugin</artifactId>
+                    <version>1.14</version>
+    	            <configuration>
+                        <signature>
+                            <groupId>${felix.java.signature.groupId}</groupId>
+                            <artifactId>${felix.java.signature.artifactId}</artifactId>
+                            <version>${felix.java.signature.version}</version>
+                        </signature>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-antrun-plugin</artifactId>
+                    <version>1.8</version>
+                    <dependencies>
+                        <!-- declare dependencies here rather than where needed to
+                             circumvent http://jira.codehaus.org/browse/MANTRUN-51
+                        -->
+                        <dependency>
+                            <groupId>org.apache.ant</groupId>
+                            <artifactId>ant-apache-regexp</artifactId>
+                            <version>1.7.1</version>
+                            <scope>runtime</scope>
+                        </dependency>
+                        <dependency>
+                            <groupId>jakarta-regexp</groupId>
+                            <artifactId>jakarta-regexp</artifactId>
+                            <version>1.4</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-site-plugin</artifactId>
+                    <version>3.3</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-report-plugin</artifactId>
+                    <version>2.18.1</version>
+               </plugin>
+            </plugins>
+        </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>set-bundle-required-execution-environment</id>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                        <configuration>
+                            <exportAntProperties>true</exportAntProperties>
+                            <target>
+                                <script language="javascript"> <![CDATA[
+                                    var System = java.lang.System;
+                                    var skipAnimalSniffer = false;
+                                    var animalSnifferSignaturesVersion = "1.0";
+                                    var animalSnifferSignaturesArtifactId = "java13-sun";
+
+                                    var felixJavaVersion = System.getProperty("felix.java.version");
+                                    if (!felixJavaVersion) {
+                                        felixJavaVersion = project.getProperty("felix.java.version");
+                                    }
+
+                                    if (felixJavaVersion == "4") {
+                                        animalSnifferSignaturesArtifactId = "java14-sun";
+                                    } else if (felixJavaVersion == "5") {
+                                        animalSnifferSignaturesArtifactId = "java15";
+                                    } else if (felixJavaVersion == "6") {
+                                        animalSnifferSignaturesArtifactId = "java16";
+										animalSnifferSignaturesVersion = "1.1";
+                                    } else if (felixJavaVersion == "7") {
+                                        animalSnifferSignaturesArtifactId = "java17";
+	                                } else if ( felixJavaVersion == "8") {
+                                        // there are no published signatures for Java 1.8, so skip execution. However, we also need a valid
+                                        // artifact in the signature, so fallback to the 1.7 signatures and skip checking entirely
+                                        // see also https://github.com/mojohaus/animal-sniffer/issues/1
+                                        animalSnifferSignaturesArtifactId = "java17";
+	                                    skipAnimalSniffer = true;
+	                                } else if ( felixJavaVersion != "3") {
+                                        System.out.println("Unsupported felix.java.version=" + felixJavaVersion + "; must be 3, 4, 5, 6, 7 or 8.");
+                                        throw "felix.java.version must be 3, 4, 5, 6, 7 or 8";
+                                    }
+	                                System.out.println("Using felix.java.version=" + felixJavaVersion);
+                                    project.setProperty("felix.bree", "JavaSE-1." + felixJavaVersion);
+                                    project.setProperty("felix.animal.sniffer.skip", skipAnimalSniffer);
+                                    project.setProperty("felix.java.signature.version", animalSnifferSignaturesVersion);
+                                    project.setProperty("felix.java.signature.artifactId", animalSnifferSignaturesArtifactId);
+                                ]]></script>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <excludePackageNames>${site.javadoc.exclude}</excludePackageNames>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.${felix.java.version}</source>
+                    <target>1.${felix.java.version}</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.rat</groupId>
+                <artifactId>apache-rat-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <!-- check src only (except remote resources additions) -->
+                    <includes>
+                        <include>src/**</include>
+                    </includes>
+                    <excludes>
+                        <exclude>src/main/appended-resources/**</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>animal-sniffer-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <configuration>
+                    <tagBase>https://svn.apache.org/repos/asf/felix/releases</tagBase>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>ianal-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>verify-legal-files</goal>
+                        </goals>
+                        <configuration>
+                            <strict>true</strict>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>.</directory>
+                <targetPath>META-INF</targetPath>
+                <includes>
+                    <include>changelog.txt</include>
+                </includes>
+            </resource>
+        </resources>
+        <extensions>
+		   <extension>
+		     <groupId>org.apache.maven.wagon</groupId>
+		     <artifactId>wagon-ssh</artifactId>
+		     <version>2.9</version>
+		   </extension>
+        </extensions>
+    </build>
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-site-plugin</artifactId>
+                <configuration>
+                    <templateDirectory>${user.dir}/src/site/</templateDirectory>
+                    <template>maven-site.vm</template>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-report-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jxr-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-project-info-reports-plugin</artifactId>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>index</report>
+                            <report>dependencies</report>
+                            <report>project-team</report>
+                            <report>mailing-list</report>
+                            <report>issue-tracking</report>
+                            <report>license</report>
+                            <report>scm</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+        </plugins>
+    </reporting>
+</project>

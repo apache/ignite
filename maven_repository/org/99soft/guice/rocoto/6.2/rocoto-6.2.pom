@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2009-2012 The 99 Software Foundation
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.99soft</groupId>
+    <artifactId>oss-parent</artifactId>
+    <version>9</version>
+  </parent>
+
+  <groupId>org.99soft.guice</groupId>
+  <artifactId>rocoto</artifactId>
+  <version>6.2</version>
+  <packaging>bundle</packaging>
+
+  <name>99soft :: Rocoto</name>
+  <description>Add some spice to Google Guice through configuration files!</description>
+  <url>http://99soft.github.com/rocoto/</url>
+  <inceptionYear>2010</inceptionYear>
+
+  <contributors>
+    <contributor>
+      <name>Cody Ray</name>
+      <email>cray at brighttag dot com</email>
+    </contributor>
+
+    <contributor>
+      <name>Daniel Manzke</name>
+      <email>daniel dot manzke at googlemail dot com</email>
+      <url>http://devsurf.wordpress.com/</url>
+    </contributor>
+
+    <contributor>
+      <name>Ioannis Canellos</name>
+      <email>iocanel at googlemail dot com</email>
+    </contributor>
+
+    <contributor>
+      <name>Marzia Forli</name>
+      <email>marzia dot forli at yahoo dot com</email>
+    </contributor>
+
+    <contributor>
+      <name>Picpoc</name>
+    </contributor>
+
+    <contributor>
+      <name>Stuart McCulloch</name>
+      <email>mcculls at gmail dot com</email>
+    </contributor>
+  </contributors>
+
+  <mailingLists>
+    <mailingList>
+      <name>rocoto</name>
+      <archive>http://groups.google.com/group/rocoto/topics</archive>
+      <subscribe>http://groups.google.com/group/rocoto/subscribe</subscribe>
+      <unsubscribe>http://groups.google.com/group/rocoto/subscribe</unsubscribe>
+      <post>rocoto@googlegroups.com</post>
+    </mailingList>
+  </mailingLists>
+
+  <scm>
+    <url>http://github.com/99soft/rocoto</url>
+    <connection>scm:git:ssh://github.com/99soft/rocoto.git</connection>
+    <developerConnection>scm:git:git+ssh://git@github.com/99soft/rocoto.git</developerConnection>
+    <tag>rocoto-6.2</tag>
+  </scm>
+  <issueManagement>
+    <system>GitHub Issue Management</system>
+    <url>https://github.com/99soft/Rocoto/issues</url>
+  </issueManagement>
+  <distributionManagement>
+    <site>
+      <id>github</id>
+      <url>gitsite:git@github.com/99soft/rocoto.git</url>
+    </site>
+  </distributionManagement>
+
+  <properties>
+    <project.previousVersion>6.1</project.previousVersion>
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <version>2.3.6</version>
+        <extensions>true</extensions>
+        <inherited>true</inherited>
+        <configuration>
+          <instructions>
+            <Bundle-Name>${project.name}</Bundle-Name>
+            <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+            <Export-Package>org.nnsoft.guice*;version="${project.version}"</Export-Package>
+            <Import-Package>
+              javax.*,
+              !com.google.inject*,
+              *
+            </Import-Package>
+            <Fragment-Host>com.google.inject;bundle-version="[3.0.0,4)"</Fragment-Host>
+          </instructions>
+          <unpackBundle>true</unpackBundle>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+    <dependency>
+      <groupId>javax.inject</groupId>
+      <artifactId>javax.inject</artifactId>
+      <version>1</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.google.inject</groupId>
+      <artifactId>guice</artifactId>
+      <version>3.0</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.10</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+</project>

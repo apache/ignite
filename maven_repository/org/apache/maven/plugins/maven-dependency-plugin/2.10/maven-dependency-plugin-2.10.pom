@@ -1,0 +1,371 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <artifactId>maven-plugins</artifactId>
+    <groupId>org.apache.maven.plugins</groupId>
+    <version>27</version>
+    <relativePath>../maven-plugins/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>maven-dependency-plugin</artifactId>
+  <version>2.10</version>
+  <packaging>maven-plugin</packaging>
+
+  <name>Apache Maven Dependency Plugin</name>
+  <description>Provides utility goals to work with dependencies like copying, unpacking, analyzing, resolving and many more.</description>
+
+  <prerequisites>
+    <maven>${mavenVersion}</maven>
+  </prerequisites>
+
+  <scm>
+    <connection>scm:svn:http://svn.apache.org/repos/asf/maven/plugins/tags/maven-dependency-plugin-2.10</connection>
+    <developerConnection>scm:svn:https://svn.apache.org/repos/asf/maven/plugins/tags/maven-dependency-plugin-2.10</developerConnection>
+    <url>http://svn.apache.org/viewvc/maven/plugins/tags/maven-dependency-plugin-2.10</url>
+  </scm>
+  <issueManagement>
+    <system>JIRA</system>
+    <url>http://jira.codehaus.org/browse/MDEP</url>
+  </issueManagement>
+  <distributionManagement>
+    <site>
+      <id>apache.website</id>
+      <url>scm:svn:https://svn.apache.org/repos/infra/websites/production/maven/content/${maven.site.path}</url>
+    </site>
+  </distributionManagement>
+
+  <contributors>
+    <contributor>
+      <name>Bakito</name>
+    </contributor>
+    <contributor>
+      <name>Baptiste MATHUS</name>
+    </contributor>
+    <contributor>
+      <name>Kalle Korhonen</name>
+    </contributor>
+    <contributor>
+      <name>Ryan Heinen</name>
+    </contributor>
+    <contributor>
+      <name>Andreas Kuhtz</name>
+    </contributor>
+    <contributor>
+      <name>Holger Mense</name>
+    </contributor>
+  </contributors>
+
+  <properties>
+    <mavenVersion>2.2.1</mavenVersion>
+    <doxiaVersion>1.4</doxiaVersion>
+    <pluginTestingVersion>2.1</pluginTestingVersion>
+  </properties>
+
+  <dependencies>
+    <!-- maven -->
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-artifact</artifactId>
+      <version>${mavenVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-plugin-api</artifactId>
+      <version>${mavenVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-project</artifactId>
+      <version>${mavenVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-model</artifactId>
+      <version>${mavenVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-core</artifactId>
+      <version>${mavenVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-artifact-manager</artifactId>
+      <version>${mavenVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-repository-metadata</artifactId>
+      <version>${mavenVersion}</version>
+    </dependency>
+
+    <!-- shared -->
+    <dependency>
+      <groupId>org.apache.maven.reporting</groupId>
+      <artifactId>maven-reporting-api</artifactId>
+      <version>3.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.reporting</groupId>
+      <artifactId>maven-reporting-impl</artifactId>
+      <version>2.2</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>1.4</version>
+    </dependency>
+
+    <!-- doxia -->
+    <dependency>
+      <groupId>org.apache.maven.doxia</groupId>
+      <artifactId>doxia-sink-api</artifactId>
+      <version>${doxiaVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.doxia</groupId>
+      <artifactId>doxia-site-renderer</artifactId>
+      <version>${doxiaVersion}</version>
+    </dependency>
+
+    <!-- plexus -->
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-archiver</artifactId>
+      <version>2.9</version>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-utils</artifactId>
+      <version>3.0.20</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.shared</groupId>
+      <artifactId>file-management</artifactId>
+      <version>1.2.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-io</artifactId>
+      <version>2.4</version>
+    </dependency>
+
+    <!-- shared -->
+    <dependency>
+      <groupId>org.apache.maven.shared</groupId>
+      <artifactId>maven-dependency-analyzer</artifactId>
+      <version>1.6</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.shared</groupId>
+      <artifactId>maven-dependency-tree</artifactId>
+      <version>2.2</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.shared</groupId>
+      <artifactId>maven-common-artifact-filters</artifactId>
+      <version>1.4</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.shared</groupId>
+      <artifactId>maven-invoker</artifactId>
+      <version>2.1.1</version>
+    </dependency>
+
+    <dependency>
+      <groupId>commons-lang</groupId>
+      <artifactId>commons-lang</artifactId>
+      <version>2.6</version>
+    </dependency>
+
+    <dependency>
+      <groupId>commons-collections</groupId>
+      <artifactId>commons-collections</artifactId>
+      <version>3.2.1</version>
+    </dependency>
+
+    <dependency>
+      <groupId>classworlds</groupId>
+      <artifactId>classworlds</artifactId>
+      <version>1.1</version>
+    </dependency>
+
+    <!-- dependencies to annotations -->
+    <dependency>
+      <groupId>org.apache.maven.plugin-tools</groupId>
+      <artifactId>maven-plugin-annotations</artifactId>
+    </dependency>
+
+    <!-- test -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.11</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency> <!-- this seems to be a critical dependency, 
+      must be declared before org.apache.maven.plugin-testing so it's first on the classpath -->
+      <groupId>org.apache.maven.shared</groupId>
+      <artifactId>maven-plugin-testing-harness</artifactId>
+      <version>1.1</version>
+      <scope>test</scope>
+    </dependency>
+    <!-- org.apache.maven.plugin-testing:*:2.1 depends on maven-artifact-3.0+ and on Sonatypes Aether,
+         however, for build we'd still like to depend on maven-artifact-2.2.1
+         Replace when depending on Maven3 
+     -->
+    <!-- 
+    <dependency>
+      <groupId>org.apache.maven.plugin-testing</groupId>
+      <artifactId>maven-plugin-testing-tools</artifactId>
+      <version>${pluginTestingVersion}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency> 
+      <groupId>org.apache.maven.plugin-testing</groupId>
+      <artifactId>maven-plugin-testing-harness</artifactId>
+      <version>${pluginTestingVersion}</version>
+      <scope>test</scope>
+    </dependency>
+     -->
+   <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-interpolation</artifactId>
+      <version>1.21</version>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.rat</groupId>
+          <artifactId>apache-rat-plugin</artifactId>
+          <configuration>
+            <excludes combine.children="append">
+              <!--
+                These files contain results for integration tests which can't contain license header
+                otherwise the IT's will fail.
+              -->
+              <exclude>src/it/projects/tree/expected.txt</exclude>
+              <exclude>src/it/projects/tree-includes/expected.txt</exclude>
+              <exclude>src/it/projects/tree-verbose/expected.txt</exclude>
+            </excludes>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <!-- Need of more heap space in order to run the unit tests !-->
+          <argLine>-Xmx384m</argLine>
+          <systemPropertyVariables>
+            <maven.home>${maven.home}</maven.home>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>run-its</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-invoker-plugin</artifactId>
+            <configuration>
+              <goals>
+                <goal>clean</goal>
+                <goal>process-sources</goal>
+              </goals>
+              <projectsDirectory>src/it/projects</projectsDirectory>
+              <pomExcludes>
+                <pomExclude>purge-local-repository-bad-pom/pom.xml</pomExclude>
+              </pomExcludes>
+              <!-- for mrm -->
+              <settingsFile>src/it/mrm/settings.xml</settingsFile>
+              <filterProperties>
+                <repository.proxy.url>${repository.proxy.url}</repository.proxy.url>
+              </filterProperties>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>mrm-maven-plugin</artifactId>
+            <version>1.0-beta-2</version>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>start</goal>
+                  <goal>stop</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <propertyName>repository.proxy.url</propertyName>
+              <repositories>
+                <mockRepo>
+                  <source>src/it/mrm/repository</source>
+                </mockRepo>
+                <!-- 
+                <mockRepo>
+                  <source>src/test/resources/m2repo</source>
+                </mockRepo>
+                 -->
+                <proxyRepo />
+              </repositories>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>reporting</id>
+      <reporting>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>l10n-maven-plugin</artifactId>
+            <version>1.0-alpha-2</version>
+            <configuration>
+              <locales>
+                <locale>de</locale>
+                <locale>pt_BR</locale>
+                <locale>sv</locale>
+              </locales>
+            </configuration>
+          </plugin>
+        </plugins>
+      </reporting>
+    </profile>
+  </profiles>
+</project>

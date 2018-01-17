@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  - OW2 Consortium
+  - Copyright (C) 2007 Bull S.A.S.
+  - Contact: jonas-team@objectweb.org
+  -
+  - This library is free software; you can redistribute it and/or
+  - modify it under the terms of the GNU Lesser General Public
+  - License as published by the Free Software Foundation; either
+  - version 2.1 of the License, or any later version.
+  -
+  - This library is distributed in the hope that it will be useful,
+  - but WITHOUT ANY WARRANTY; without even the implied warranty of
+  - MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  - Lesser General Public License for more details.
+  -
+  - You should have received a copy of the GNU Lesser General Public
+  - License along with this library; if not, write to the Free Software
+  - Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+  - USA
+  -
+  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  - $Id: pom.xml 11 2007-12-11 10:33:38Z benoitf $
+  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+-->
+<project
+  xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                      http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.ow2</groupId>
+  <artifactId>ow2</artifactId>
+  <version>1.1</version>
+  <name>OW2 Consortium</name>
+  <description>
+    The OW2 Consortium is an open source community committed to making available to everyone the
+    best and most reliable middleware technology. OW2 mission is to develop open source code
+    middleware and to foster a vibrant community and business ecosystem.
+  </description>
+  <packaging>pom</packaging>
+
+  <!-- Consortium description -->
+  <organization>
+    <name>OW2 Consortium</name>
+    <url>http://www.ow2.org</url>
+  </organization>
+
+  <!-- OW2 Logo can be refered using the '${organization.logo}' property -->
+  <properties>
+    <organization.logo>
+      http://www.ow2.org/xwiki/bin/skin/XWiki/DefaultSkin/logoOW2.png
+    </organization.logo>
+  </properties>
+
+  <!-- Source Code Management -->
+  <scm>
+    <connection>scm:svn:svn://svn.forge.objectweb.org/svnroot/maven/ow2-pom/tags/OW2_POM_1_1</connection>
+    <developerConnection>scm:svn:svn+ssh://svn.forge.objectweb.org/svnroot/maven/ow2-pom/tags/OW2_POM_1_1</developerConnection>
+  </scm>
+
+  <!-- Distribution -->
+  <distributionManagement>
+
+    <!-- Release Repository:
+      Refer to this server in your settings.xml using the
+      'ow2.release' ID -->
+    <repository>
+      <uniqueVersion>false</uniqueVersion>
+      <id>ow2.release</id>
+      <name>OW2 Maven 2 Releases Repository</name>
+      <url>scp://jupiter.objectweb.org/var/lib/gforge/chroot/home/groups/maven/htdocs/maven2</url>
+      <layout>default</layout>
+    </repository>
+
+    <!-- Snapshots Repository:
+      Refer to this server in your settings.xml using the
+      'ow2.snapshot' ID -->
+    <snapshotRepository>
+      <uniqueVersion>false</uniqueVersion>
+      <id>ow2.snapshot</id>
+      <name>OW2 Maven 2 Snapshots Repository</name>
+      <url>
+        scp://jupiter.objectweb.org/var/lib/gforge/chroot/home/groups/maven/htdocs/maven2-snapshot
+      </url>
+      <layout>default</layout>
+    </snapshotRepository>
+  </distributionManagement>
+
+  <!-- Plugin Repositories -->
+  <pluginRepositories>
+    <pluginRepository>
+      <id>ow2-plugin</id>
+      <name>OW2 Plugin repository</name>
+      <url>http://maven.ow2.org/maven2</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </pluginRepository>
+
+    <pluginRepository>
+      <id>ow2-plugin-snapshot</id>
+      <name>OW2 snapshot plugin repository</name>
+      <url>http://maven.ow2.org/maven2-snapshot</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </pluginRepository>
+
+  </pluginRepositories>
+
+  <!-- Repositories -->
+  <repositories>
+    <repository>
+      <id>ow2</id>
+      <name>OW2 repository</name>
+      <url>http://maven.ow2.org/maven2</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+    <repository>
+      <id>ow2-snapshot</id>
+      <name>OW2 repository</name>
+      <url>http://maven.ow2.org/maven2-snapshot</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+    </repository>
+  </repositories>
+
+</project>

@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.sonatype.oss</groupId>
+        <artifactId>oss-parent</artifactId>
+        <version>7</version>
+    </parent>
+
+    <groupId>org.jledit</groupId>
+    <artifactId>jledit-project</artifactId>
+    <packaging>pom</packaging>
+    <version>0.2.1</version>
+    <name>JLEdit :: Project</name>
+
+    <description>A JLine and Jansi based console text editor.</description>
+    <url>https://github.com/jledit/jledit</url>
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    <scm>
+        <connection>scm:git:git://github.com/jledit/jledit.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/jledit/jledit.git</developerConnection>
+        <url>http://github.com/jledit/jledit</url>
+    </scm>
+
+    <developers>
+        <developer>
+            <id>iocanel</id>
+            <name>Ioannis Canellos</name>
+            <email>iocanel@gmail.com</email>
+            <url>http://iocanel.blogspot.com</url>
+        </developer>
+    </developers>
+
+    <modules>
+        <module>core</module>
+        <module>jledit</module>
+    </modules>
+
+    <properties>
+        <!-- OSGi properties -->
+        <osgi.import />
+        <osgi.dynamic.import />
+        <osgi.bundles />
+        <osgi.private />
+        <osgi.export />
+        <osgi.export.service />
+        <osgi.activator />
+
+        <!-- Maven Dependency Versions -->
+        <jansi.version>1.9</jansi.version>
+        <jline.version>2.7</jline.version>
+        <juniversalchardet.version>1.0.3</juniversalchardet.version>
+        <osgi.version>4.2.0</osgi.version>
+        <!-- Testing Dependencies -->
+        <junit.version>4.10</junit.version>
+
+        <!-- Maven Plugin Versions -->
+        <assembly.plugin.version>2.4</assembly.plugin.version>
+        <bundle.plugin.version>2.3.7</bundle.plugin.version>
+        <compiler.plugin.version>2.0.2</compiler.plugin.version>
+        <dependency.plugin.version>2.6</dependency.plugin.version>
+        <release.plugin.version>2.2.2</release.plugin.version>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <version>${bundle.plugin.version}</version>
+                <extensions>true</extensions>
+                <inherited>true</inherited>
+                <configuration>
+                    <instructions>
+                        <Bundle-Name>${project.name}</Bundle-Name>
+                        <Bundle-SymbolicName>${project.groupId}.${project.artifactId}</Bundle-SymbolicName>
+                        <Export-Package>${osgi.export}</Export-Package>
+                        <Import-Package>${osgi.import}</Import-Package>
+                        <DynamicImport-Package>${osgi.dynamic.import}</DynamicImport-Package>
+                        <Private-Package>${osgi.private}</Private-Package>
+                        <Require-Bundle>${osgi.bundles}</Require-Bundle>
+                        <Bundle-Activator>${osgi.activator}</Bundle-Activator>
+                        <Export-Service>${osgi.export.service}</Export-Service>
+                    </instructions>
+                    <supportedProjectTypes>
+                        <supportedProjectType>jar</supportedProjectType>
+                        <supportedProjectType>war</supportedProjectType>
+                        <supportedProjectType>bundle</supportedProjectType>
+                    </supportedProjectTypes>
+                    <unpackBundle>true</unpackBundle>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>bundle-manifest</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>manifest</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${compiler.plugin.version}</version>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>${release.plugin.version}</version>
+                <configuration>
+                    <preparationGoals>clean install</preparationGoals>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>jline</groupId>
+                <artifactId>jline</artifactId>
+                <version>${jline.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.fusesource.jansi</groupId>
+                <artifactId>jansi</artifactId>
+                <version>${jansi.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.googlecode.juniversalchardet</groupId>
+                <artifactId>juniversalchardet</artifactId>
+                <version>${juniversalchardet.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <!-- OSGi Dependencies -->
+            <dependency>
+                <groupId>org.osgi</groupId>
+                <artifactId>org.osgi.core</artifactId>
+                <version>${osgi.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.osgi</groupId>
+                <artifactId>org.osgi.compendium</artifactId>
+                <version>${osgi.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <!-- Testing Dependencies -->
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+        </dependencies>
+    </dependencyManagement>
+
+    <profiles>
+        <!-- modifies the plugin config inherited from oss-parent -->
+        <profile>
+            <id>sonatype-release-profile-extension</id>
+            <activation>
+                <property>
+                    <name>performRelease</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <configuration>
+                            <executable>${gpg.command}</executable>
+                            <passphrase>${gpg.passphrase}</passphrase>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+    <distributionManagement>
+        <repository>
+            <id>sonatype-nexus-staging</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+            <uniqueVersion>false</uniqueVersion>
+        </repository>
+        <snapshotRepository>
+            <id>sonatype-nexus-snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
+
+</project>

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.sonatype.oss</groupId>
+    <artifactId>oss-parent</artifactId>
+    <version>7-redhat-2</version>
+  </parent>
+  <groupId>com.google.guava</groupId>
+  <artifactId>guava-parent</artifactId>
+  <version>13.0.1-redhat-1</version>
+  <packaging>pom</packaging>
+  <name>Guava Maven Parent</name>
+  <properties>
+    <gpg.skip>true</gpg.skip>
+  </properties>
+  <inceptionYear>2010</inceptionYear>
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <prerequisites>
+    <maven>2.0.9</maven>
+  </prerequisites>
+  <developers>
+    <developer>
+      <id>kevinb9n</id>
+      <name>Kevin Bourrillion</name>
+      <email>kevinb@google.com</email>
+      <organization>Google</organization>
+      <organizationUrl>http://www.google.com</organizationUrl>
+      <roles>
+        <role>owner</role>
+        <role>developer</role>
+      </roles>
+      <timezone>-8</timezone>
+    </developer>
+  </developers>
+  <modules>
+    <module>guava</module>
+    <module>guava-gwt</module>
+    <!--<module>guava-testlib</module>-->
+    <!--<module>guava-tests</module>-->
+  </modules>
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-gpg-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>sign-artifacts</id>
+            <phase>verify</phase>
+            <goals><goal>sign</goal></goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.jboss.component.management</groupId>
+        <artifactId>jboss-dependency-management-all</artifactId>
+        <version>6.1.0-redhat-1</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+<!-- Modified by POM Artifact-Version Manipulator version 1.2.4-redhat-1-eap (722ee63) -->
+</project>

@@ -1,0 +1,32 @@
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>doxia</groupId>
+  <artifactId>doxia-sink-api</artifactId>
+  <name>Doxia Core</name>
+  <version>1.0-alpha-4</version>
+  <issueManagement>
+    <system>jira</system>
+    <url>http://jira.codehaus.org/browse/DOXIA</url>
+  </issueManagement>
+  <ciManagement>
+    <system>continuum</system>
+    <notifiers>
+      <notifier>
+        <address>dev@doxia.codehaus.org</address>
+      </notifier>
+    </notifiers>
+  </ciManagement>
+  <scm>
+    <connection>scm:svn://svn.codehaus.org/home/projects/doxia/scm/doxia-sink-api/tags/doxia-sink-api-1.0-alpha-4</connection>
+    <developerConnection>scm:svn:https://svn.codehaus.org/doxia/doxia-sink-api/tags/doxia-sink-api-1.0-alpha-4</developerConnection>
+    <url>http://svn.doxia.codehaus.org/</url>
+  </scm>
+  <distributionManagement>
+    <repository>
+      <id>repo1</id>
+      <name>Maven Central Repository</name>
+      <url>scp://repo1.maven.org/home/projects/maven/repository-staging/to-ibiblio/maven2</url>
+    </repository>
+    <status>deployed</status>
+  </distributionManagement>
+</project>

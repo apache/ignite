@@ -141,6 +141,7 @@ public class GradientDescent {
                         cnt++;
                     }
                 }
+
                 return resGradient.divide(cnt);
             },
             weights);
@@ -187,7 +188,7 @@ public class GradientDescent {
     /** Makes carrying of the gradient function and fixes data matrix. */
     private IgniteFunction<Vector, Vector> getLossGradientFunction(Matrix data) {
         if (data instanceof SparseDistributedMatrix) {
-            SparseDistributedMatrix distributedMatrix = (SparseDistributedMatrix) data;
+            SparseDistributedMatrix distributedMatrix = (SparseDistributedMatrix)data;
 
             if (distributedMatrix.getStorage().storageMode() == StorageConstants.ROW_STORAGE_MODE)
                 return weights -> calculateDistributedGradient(distributedMatrix, weights);

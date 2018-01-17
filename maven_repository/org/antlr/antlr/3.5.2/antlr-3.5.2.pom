@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>antlr</artifactId>
+    <packaging>jar</packaging>
+    <name>ANTLR 3 Tool</name>
+    <description>The ANTLR 3 tool.</description>
+
+  <!--
+
+    Inherit from the ANTLR master pom, which tells us what
+    version we are and allows us to inherit dependencies
+    and so on.
+
+    -->
+    <parent>
+        <groupId>org.antlr</groupId>
+        <artifactId>antlr-master</artifactId>
+        <version>3.5.2</version>
+    </parent>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>antlr-runtime</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>ST4</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>stringtemplate</artifactId>
+            <scope>compile</scope>
+            <optional>true</optional>
+        </dependency>
+
+    </dependencies>
+  <!--
+
+    Tell Maven which other artifacts we need in order to
+    build, run and test the ANTLR Tool. The ANTLR Tool uses earlier versions
+    of ANTLR at runtime (for the moment), uses the current
+    released version of ANTLR String template, but obviously is
+    reliant on the latest snapshot of the runtime, which will either be
+    taken from the antlr-snapshot repository, or your local .m2
+    repository if you built and installed that locally.
+
+    -->
+
+
+    <build>
+
+        <plugins>
+
+            <plugin>
+                <groupId>org.antlr</groupId>
+                <artifactId>antlr3-maven-plugin</artifactId>
+                <version>3.5</version>
+                <configuration>
+                    <libDirectory>target/generated-sources/antlr/org/antlr/grammar/v3</libDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>antlr</goal>
+                        </goals>
+                    </execution>
+                </executions>
+
+            </plugin>
+
+        </plugins>
+
+
+    </build>
+</project>

@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (C) 2010-2012, FuseSource Corp.  All rights reserved.
+
+        http://fusesource.com
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.fusesource</groupId>
+    <artifactId>fusesource-pom</artifactId>
+    <version>1.10</version>
+  </parent>
+  
+  <groupId>org.fusesource.mqtt-client</groupId>
+  <artifactId>mqtt-client-project</artifactId>
+  <version>1.10</version>
+  <packaging>pom</packaging>
+  
+  <name>${project.artifactId}</name>
+  <description>
+     mqtt-client provides an ASL 2.0 licensed API to MQTT. It takes care of 
+     automatically reconnecting to your MQTT server and restoring your client 
+     session if any network failures occur. Applications can use a blocking 
+     API style, a futures based API, or a callback/continuations passing API 
+     style.
+  </description>
+  
+  <properties>
+    <forge-project-id>mqtt-client</forge-project-id>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    
+    <junit-version>4.7</junit-version>
+    <slf4j-version>1.6.1</slf4j-version>
+    <hawtbuf-version>1.10</hawtbuf-version>
+    <hawtdispatch-version>1.20</hawtdispatch-version>
+    <mvnplugins-version>1.15</mvnplugins-version>
+    <osgi-version>4.2.0</osgi-version>
+    <asm-version>3.1</asm-version>
+
+    <apollo-version>1.6</apollo-version>
+  </properties>
+  
+  <url>http://${forge-project-id}.fusesource.org/</url>
+  <inceptionYear>2010</inceptionYear>
+  
+  <issueManagement>
+    <system>assembla</system>
+    <url>http://www.assembla.com/spaces/mqtt-client/support/tickets</url>
+  </issueManagement>
+  
+  <mailingLists>
+    <mailingList>
+      <name>Discussion Group</name>
+      <archive>http://groups.google.com/group/mqtt-client</archive>
+      <post>mqtt-client@googlegroups.com</post>
+      <subscribe>mqtt-client+subscribe@googlegroups.com</subscribe>
+      <unsubscribe>mqtt-client+unsubscribe@googlegroups.com</unsubscribe>
+    </mailingList>
+    <mailingList>
+      <name>Source Control and Issue Tracker Notifications</name>
+      <archive>http://groups.google.com/group/mqtt-client-commits</archive>
+      <post>mqtt-client-commits@googlegroups.com</post>
+      <subscribe>mqtt-client-commits+subscribe@googlegroups.com</subscribe>
+      <unsubscribe>mqtt-client-commits+unsubscribe@googlegroups.com</unsubscribe>
+    </mailingList>
+  </mailingLists>
+  
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+    
+  <scm>
+    <connection>scm:git:git://forge.fusesource.com/${forge-project-id}.git</connection>
+    <developerConnection>scm:git:ssh://git@forge.fusesource.com/${forge-project-id}.git</developerConnection>
+    <url>http://github.com/fusesource/mqtt-client/tree/master</url>
+    <tag>mqtt-client-project-1.10</tag>
+  </scm>
+  
+  <distributionManagement>
+    <site>
+      <id>website.fusesource.org</id>
+      <name>website</name>
+      <url>dav:http://fusesource.com/forge/dav/${forge-project-id}/maven/${project.version}</url>
+    </site>
+  </distributionManagement>
+  
+  <developers>
+    <developer>
+      <id>chirino</id>
+      <name>Hiram Chirino</name>
+      <email>hiram@hiramchirino.com</email>
+      <url>http://hiramchirino.com</url>
+      <timezone>GMT-5</timezone>
+    </developer>
+  </developers>
+  
+  <build>
+    <defaultGoal>install</defaultGoal>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <version>1.0.0</version>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Bundle-Name>${project.artifactId}</Bundle-Name>
+            <Bundle-SymbolicName>${project.groupId}.${project.artifactId}</Bundle-SymbolicName>
+            <Export-Package>org.fusesource.mqtt.*</Export-Package>
+            <Implementation-Title>${project.name}</Implementation-Title>
+            <Implementation-Version>${project.version}</Implementation-Version>
+          </instructions>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.5</version>
+        <configuration>
+          <redirectTestOutputToFile>true</redirectTestOutputToFile>
+          <forkMode>once</forkMode>
+          <failIfNoTests>false</failIfNoTests>
+          <workingDirectory>${project.build.directory}</workingDirectory>
+          <includes>
+            <include>**/*Test.java</include>
+          </includes>
+          <!--<excludes>-->
+            <!--<exclude>**/**</exclude>-->
+          <!--</excludes>-->
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>2.1</version>
+        <configuration>
+          <source>1.5</source>
+          <target>1.5</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-idea-plugin</artifactId>
+        <version>2.2</version>
+        <configuration>
+          <downloadSources>true</downloadSources>
+          <downloadJavadocs>true</downloadJavadocs>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-eclipse-plugin</artifactId>
+        <version>2.5.1</version>
+        <configuration>
+          <downloadSources>true</downloadSources>
+          <downloadJavadocs>true</downloadJavadocs>
+        </configuration>
+      </plugin>
+    </plugins>
+    
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-release-plugin</artifactId>
+          <version>2.5</version>
+          <configuration>
+            <pushChanges>false</pushChanges>
+            <localCheckout>true</localCheckout>
+            <autoVersionSubmodules>true</autoVersionSubmodules>
+            <allowTimestampedSnapshots>false</allowTimestampedSnapshots>
+            <preparationGoals>clean install</preparationGoals>
+            <goals>deploy</goals>
+            <arguments>-Prelease</arguments>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+    
+  </build>
+
+  <profiles>
+    <!--
+        Enables a couple repositories that may be needed if some dependencies have not been replicated
+        to maven central yet.
+      -->
+    <profile>
+      <id>download</id>
+      <repositories>
+        <repository>
+          <id>com.fusesource.m2</id>
+          <url>http://repo.fusesource.com/nexus/content/groups/public/</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>false</enabled></snapshots>
+        </repository>
+        <repository>
+          <id>Fusesource Snapshots</id>
+          <url>http://repo.fusesource.com/nexus/content/repositories/snapshots</url>
+        </repository>
+        <repository>
+          <id>java.net.m2</id>
+          <url>http://download.java.net/maven/2</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>false</enabled></snapshots>
+        </repository>
+        <repository>
+          <id>glassfish-repo-archive</id>
+          <url>http://maven.glassfish.org/content/groups/glassfish</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>false</enabled></snapshots>
+        </repository>
+      </repositories>
+    </profile>
+    
+    <!-- 
+        Do a license check by running       : mvn -P license license:check  
+        Update the license check by running : mvn -P license license:format  
+      -->
+    <profile>
+      <id>license</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.mycila.maven-license-plugin</groupId>
+            <artifactId>maven-license-plugin</artifactId>
+            <version>1.6.0</version>
+            <configuration>
+              <quiet>false</quiet>
+              <header>src/main/resources/license-header.txt</header>
+              <aggregate>true</aggregate>
+              <includes>
+                  <include>src/**</include>
+                  <include>**/pom.xml</include>
+              </includes>
+              <excludes>
+                <!-- can remove once http://code.google.com/p/maven-license-plugin/issues/detail?id=72 is resolved -->
+                <exclude>**/*.scaml</exclude>
+                <exclude>**/LICENSE.txt</exclude>
+                <exclude>**/LICENSE</exclude>
+                <exclude>**/.svn/**</exclude>
+            
+                <!-- ignore files produced during a build -->
+                <exclude>**/target/**</exclude>
+            
+                <!-- ignore binary files -->
+                <exclude>**/*.jpg</exclude>
+                <exclude>**/*.png</exclude>
+                <exclude>**/*.gif</exclude>
+                <exclude>**/*.ico</exclude>
+                <exclude>**/*.keystore</exclude>
+
+              </excludes>
+              <useDefaultExcludes>false</useDefaultExcludes>
+              <mapping>
+                  <jj>JAVADOC_STYLE</jj>
+                  <proto>DOUBLESLASH_STYLE</proto>
+                  <index>SCRIPT_STYLE</index>
+              </mapping>
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+              </execution>
+            </executions>        
+          </plugin>
+        </plugins>
+      </build>
+    </profile>    
+
+    <profile>
+      <id>lib/rt.jar</id>
+      <activation><file><exists>${java.home}/lib/rt.jar</exists></file></activation>
+      <properties>
+        <rt.jar.path>${java.home}/lib/rt.jar</rt.jar.path>
+        <jsse.jar.path>${java.home}/lib/jsse.jar</jsse.jar.path>
+      </properties>
+    </profile>
+    <profile>
+      <id>Classes/classes.jar</id>
+      <activation><file><exists>${java.home}/../Classes/classes.jar</exists></file></activation>
+      <properties>
+        <rt.jar.path>${java.home}/../Classes/classes.jar</rt.jar.path>
+        <jsse.jar.path>${java.home}/../Classes/jsse.jar</jsse.jar.path>
+      </properties>
+    </profile>
+    <profile>
+      <id>jre/lib/rt.jar</id>
+      <activation><file><exists>${java.home}/jre/lib/rt.jar</exists></file></activation>
+      <properties>
+        <rt.jar.path>${java.home}/jre/lib/rt.jar</rt.jar.path>
+        <jsse.jar.path>${java.home}/jre/lib/jsse.jar</jsse.jar.path>
+      </properties>
+    </profile>
+  </profiles>
+
+  <modules>
+    <module>mqtt-client</module>
+    <module>mqtt-client-java1.4-uber</module>
+    <module>mqtt-client-website</module>
+  </modules>
+    
+</project>

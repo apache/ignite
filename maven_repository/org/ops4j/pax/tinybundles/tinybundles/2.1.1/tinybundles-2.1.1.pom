@@ -1,0 +1,179 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.ops4j</groupId>
+        <artifactId>master</artifactId>
+        <version>4.2.0</version>
+    </parent>
+
+    <groupId>org.ops4j.pax.tinybundles</groupId>
+    <artifactId>tinybundles</artifactId>
+    <version>2.1.1</version>
+    <packaging>bundle</packaging>
+
+    <name>OPS4J Pax Tinybundles</name>
+
+    <url>http://team.ops4j.org/wiki/display/ops4j/Tinybundles</url>
+    <inceptionYear>2007</inceptionYear>
+
+    <scm>
+        <connection>scm:git:git://github.com/ops4j/org.ops4j.pax.tinybundles.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/ops4j/org.ops4j.pax.tinybundles.git</developerConnection>
+        <url>scm:git:https://github.com/ops4j/org.ops4j.pax.tinybundles.git</url>
+        <tag>tinybundles-2.1.1</tag>
+    </scm>
+
+    <issueManagement>
+        <system>jira</system>
+        <url>http://team.ops4j.org/browse/PAXTB</url>
+    </issueManagement>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <dependency.base.version>1.5.0</dependency.base.version>
+        <dependency.slf4j.version>1.6.1</dependency.slf4j.version>
+        <bundle.symbolicName>org.ops4j.pax.tinybundles</bundle.symbolicName>
+        <bundle.namespace>org.ops4j.pax.tinybundles</bundle.namespace>
+    </properties>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
+                <executions>
+                    <!-- default bundle without embedded dependencies -->
+                    <execution>
+                        <id>default-bundle</id>
+                        <goals>
+                            <goal>bundle</goal>
+                        </goals>
+                        <configuration>
+                            <instructions>
+                                <Bundle-SymbolicName>${bundle.symbolicName}</Bundle-SymbolicName>
+                                <Export-Package>${bundle.namespace}.core</Export-Package>
+                            </instructions>
+                        </configuration>
+                    </execution>
+                    <!-- alternative bundle with embedded dependencies, except OSGi and SLF4J -->
+                    <execution>
+                        <id>embedded</id>
+                        <goals>
+                            <goal>bundle</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>embedded</classifier>
+                            <instructions>
+                                <_include>-osgi.bnd</_include>
+                            </instructions>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-remote-resources-plugin</artifactId>
+                <version>1.4</version>
+                <executions>
+                    <execution>
+                        <id>process-remote-resources</id>
+                        <goals>
+                            <goal>process</goal>
+                        </goals>
+                        <configuration>
+                            <resourceBundles>
+                                <resourceBundle>org.ops4j.resources:ops4j-jar-txt-resource-bundle:1.0.0</resourceBundle>
+                            </resourceBundles>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+
+    </build>
+
+    <developers>
+        <developer>
+            <id>tonit</id>
+            <name>Toni Menzel</name>
+            <email>toni@okidokiteam.com</email>
+            <organization>independent software developer</organization>
+            <roles>
+                <role>Developer</role>
+            </roles>
+            <timezone>UTC+1</timezone>
+        </developer>
+        <developer>
+            <id>hwellmann</id>
+            <name>Harald Wellmann</name>
+            <email>harald.wellmann@gmx.de</email>
+            <organization>independent software developer</organization>
+            <roles>
+                <role>Developer</role>
+            </roles>
+            <timezone>UTC+1</timezone>
+        </developer>
+    </developers>
+
+    <description>
+        Tiny Bundles is a library to create and modify adhoc bundles and other OSGi resources using fluent Java API.
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${dependency.slf4j.version}</version>
+            <!-- scope is "provided" to avoid embedding -->
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.ops4j.base</groupId>
+            <artifactId>ops4j-base-store</artifactId>
+            <version>${dependency.base.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>biz.aQute.bnd</groupId>
+            <artifactId>bndlib</artifactId>
+            <version>2.4.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.osgi</groupId>
+                    <artifactId>org.osgi.core</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.core</artifactId>
+            <version>4.2.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>${dependency.slf4j.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+</project>
+

@@ -134,9 +134,6 @@ namespace Apache.Ignite.Core.Tests.Services
             prx.VoidMethod(10);
             Assert.AreEqual(_svc.InvokeResult, prx.InvokeResult);
 
-            prx.VoidMethod(10, "string");
-            Assert.AreEqual(_svc.InvokeResult, prx.InvokeResult);
-
             prx.VoidMethod(10, "string", "arg");
             Assert.AreEqual(_svc.InvokeResult, prx.InvokeResult);
 
@@ -154,7 +151,6 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Assert.AreEqual("ObjectMethod", prx.ObjectMethod());
             Assert.AreEqual("ObjectMethod987", prx.ObjectMethod(987));
-            Assert.AreEqual("ObjectMethod987str123", prx.ObjectMethod(987, "str123"));
             Assert.AreEqual("ObjectMethod987str123TestClass", prx.ObjectMethod(987, "str123", new TestClass()));
             Assert.AreEqual("ObjectMethod987str123TestClass34arg5arg6",
                 prx.ObjectMethod(987, "str123", new TestClass(), 3, 4, "arg5", "arg6"));
@@ -411,10 +407,10 @@ namespace Apache.Ignite.Core.Tests.Services
             void VoidMethod(int arg);
 
             /** */
-            void VoidMethod(int arg, string arg1, object arg2 = null);
+            void VoidMethod(int arg, string arg1, object arg2);
 
             /** */
-            void VoidMethod(int arg, string arg1, object arg2 = null, params object[] args);
+            void VoidMethod(int arg, string arg1, object arg2, params object[] args);
 
             /** */
             object ObjectMethod();
@@ -423,10 +419,10 @@ namespace Apache.Ignite.Core.Tests.Services
             object ObjectMethod(int arg);
 
             /** */
-            object ObjectMethod(int arg, string arg1, object arg2 = null);
+            object ObjectMethod(int arg, string arg1, object arg2);
 
             /** */
-            object ObjectMethod(int arg, string arg1, object arg2 = null, params object[] args);
+            object ObjectMethod(int arg, string arg1, object arg2, params object[] args);
 
             /** */
             void ExceptionMethod();

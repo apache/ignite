@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.jboss.component.management</groupId>
+    <artifactId>jboss-component-version-master</artifactId>
+    <version>6.0.0-redhat-1</version>
+    <relativePath>../version-master/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>jboss-project-dependency-relocations</artifactId>
+
+  <name>JBoss Project Dependency Relocations</name>
+  <description>Properties which describe artifacts which have been relocated in the Maven repository.</description>
+
+  <packaging>pom</packaging>
+
+  <properties>
+
+     <!-- Relocated GAVs used by vman, please keep alphabetical -->
+    <relocations>
+
+ant:ant:1.6.5=org.apache.ant:ant:1.7.1,
+apache-httpclient:commons-httpclient:2.0.2=commons-httpclient:commons-httpclient:3.1,
+apache-slide:webdavlib:2.0=slide:webdavlib:2.0,
+apache-velocity:velocity:1.5=org.apache.velocity:velocity:1.6.3-redhat-1,
+apache-xalan:serializer:2.7.1=xalan:serializer:2.7.1-redhat-1,
+apache-xalan:xalan:2.7.1=xalan:xalan:2.7.1-redhat-1,
+apache-xerces:xml-apis:2.9.1-patch-01=xml-apis:xml-apis:1.3.04,
+
+bsh:bsh:1.2b7=org.beanshell:bsh:2.0b4,
+
+easymock:easymock:1.2Java1.3=org.easymock:easymock:2.5.2
+
+geronimo-spec:geronimo-spec-jta:1.0.1B-rc2=org.jboss.spec.javax.transaction:jboss-transaction-api_1.1_spec:1.0.0.Final,
+
+javassist:javassist:=org.javassist:javassist:3.15.0.GA-redhat-1
+
+javax.annotation:jsr250-api:1.0=org.jboss.spec.javax.annotation:jboss-annotations-api_1.1_spec:1.0.0.Final,
+javax.el:el-api:1.0=org.jboss.spec.javax.el:jboss-el-api_2.2_spec:1.0.0.Final,
+javax.el:javax.el-api:2.2.1=org.jboss.spec.javax.el:jboss-el-api_2.2_spec:1.0.0.Final,
+javax.persistence:persistence-api:1.0=org.hibernate.javax.persistence:hibernate-jpa-2.0-api:1.0.1.Final,
+javax.resource:connector::1.0=org.jboss.spec.javax.resource:jboss-connector-api_1.6_spec:1.0.0.Final,
+javax.servlet:jsp-api:2.0=org.jboss.spec.javax.servlet.jsp:jboss-jsp-api_2.2_spec:1.0.0.Final,
+javax.servlet.jsp.jstl:jstl-api:1.2=org.jboss.spec.javax.servlet.jstl:jboss-jstl-api_1.2_spec:1.0.1.Final,
+javax.servlet:javax.servlet-api:3.0.1=org.jboss.spec.javax.servlet:jboss-servlet-api_3.0_spec:1.0.0.Final,
+javax.servlet:javax.servlet.jsp-api:2.2.1=org.jboss.spec.javax.servlet.jsp:jboss-jsp-api_2.2_spec:1.0.0.Final,
+javax.servlet:servlet-api:2.5=org.jboss.spec.javax.servlet:jboss-servlet-api_3.0_spec:1.0.0.Final,
+javax.transaction:jta:1.1=org.jboss.spec.javax.transaction:jboss-transaction-api_1.1_spec:1.0.0.Final,
+javax.xml.stream:stax-api:1.0-2=stax:stax-api:1.0.1,
+jstl:jstl:1.2=org.jboss.spec.javax.servlet.jstl:jboss-jstl-api_1.2_spec:1.0.1.Final,
+
+org.apache.felix:javax.servlet:1.0.0=org.jboss.spec.javax.servlet:jboss-servlet-api_3.0_spec:1.0.0.Final,
+org.apache.felix:org.osgi.compendium:1.4.0=org.osgi:org.osgi.compendium:4.2.0,
+org.apache.felix:org.osgi.core:1.4.0=org.osgi:org.osgi.core:4.2.0,
+org.apache.geronimo.specs:geronimo-j2ee-connector_1.5_spec:2.0.0=org.jboss.spec.javax.resource:jboss-connector-api_1.6_spec:1.0.0.Final,
+org.apache.geronimo.specs:geronimo-jms_1.1_spec:1.0=org.jboss.spec.javax.jms:jboss-jms-api_1.1_spec:1.0.0.Final,
+org.apache.geronimo.specs:geronimo-jta_1.1_spec:1.1.1=org.jboss.spec.javax.transaction:jboss-transaction-api_1.1_spec:1.0.0.Final,
+org.apache.xalan:xalan:2.7.1-1.jbossorg=xalan:xalan:2.7.1-redhat-1,
+org.jboss.javaee:jboss-transaction-api:1.0.1.GA=org.jboss.spec.javax.transaction:jboss-transaction-api_1.1_spec:1.0.0.Final,
+org.jboss.resteasy:jaxrs-api:=org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_1.1_spec:1.0.0.Final,
+org.jboss.security:jboss-security-spi:2.0.4.SP4=org.picketbox:jboss-security-spi:4.0.6.final-redhat-1,
+org.jboss.security:jbosssx:2.0.4=org.picketbox:jbosssx:4.0.6.final-redhat-1,
+
+    </relocations>
+
+  </properties>
+
+</project>

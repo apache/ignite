@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns='http://maven.apache.org/POM/4.0.0' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' 
+  xsi:schemaLocation='http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd'>
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>biz.aQute.bnd</groupId>
+    <artifactId>parent</artifactId>
+    <version>2.4.0</version>
+  </parent>
+
+  <artifactId>bndlib</artifactId>
+
+  <name>A Swiss Army Knife for OSGi</name>
+  <description>
+    The bndlib project is a general library to be used with OSGi bundles. It contains
+    lots of cool functionality that calculates dependencies, etc.
+  </description>
+
+  <licenses>
+    <license>
+      <name>Apache Software License 2.0</name>
+      <url>http://www.opensource.org/licenses/apache2.0.php</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.core</artifactId>
+      <version>4.3.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.compendium</artifactId>
+      <version>4.3.1</version>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>3.8.2</version>
+      <optional>true</optional>
+    </dependency>
+  </dependencies>
+
+</project>

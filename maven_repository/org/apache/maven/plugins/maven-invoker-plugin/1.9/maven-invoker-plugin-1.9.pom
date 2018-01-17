@@ -1,0 +1,330 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <artifactId>maven-plugins</artifactId>
+    <groupId>org.apache.maven.plugins</groupId>
+    <version>25</version>
+    <relativePath>../maven-plugins/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>maven-invoker-plugin</artifactId>
+  <version>1.9</version>
+  <packaging>maven-plugin</packaging>
+
+  <name>Apache Maven Invoker Plugin</name>
+  <description>
+    The Maven Invoker Plugin is used to run a set of Maven projects. The plugin can determine whether each project
+    execution is successful, and optionally can verify the output generated from a given project execution.
+  </description>
+
+  <prerequisites>
+    <maven>${mavenVersion}</maven>
+  </prerequisites>
+
+  <scm>
+    <connection>scm:svn:http://svn.apache.org/repos/asf/maven/plugins/tags/maven-invoker-plugin-1.9</connection>
+    <developerConnection>scm:svn:https://svn.apache.org/repos/asf/maven/plugins/tags/maven-invoker-plugin-1.9</developerConnection>
+    <url>http://svn.apache.org/viewvc/maven/plugins/tags/maven-invoker-plugin-1.9</url>
+  </scm>
+  <issueManagement>
+    <system>jira</system>
+    <url>http://jira.codehaus.org/browse/MINVOKER</url>
+  </issueManagement>
+  <distributionManagement>
+    <site>
+      <id>apache.website</id>
+      <url>scm:svn:https://svn.apache.org/repos/infra/websites/production/maven/content/${maven.site.path}</url>
+    </site>
+  </distributionManagement>
+
+  <properties>
+    <mavenVersion>2.2.1</mavenVersion>
+    <doxiaVersion>1.4</doxiaVersion>
+    <doxia-sitetoolsVersion>1.1.4</doxia-sitetoolsVersion>
+    <beanshell-groupId>org.beanshell</beanshell-groupId>
+    <beanshell-artifactId>bsh</beanshell-artifactId>
+    <beanshell-version>2.0b4</beanshell-version>
+    <groovy-groupId>org.codehaus.groovy</groovy-groupId>
+    <groovy-artifactId>groovy-all</groovy-artifactId>
+    <groovy-version>2.0.1</groovy-version>
+    <mavenPluginPluginVersion>3.2</mavenPluginPluginVersion>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.maven.shared</groupId>
+      <artifactId>maven-invoker</artifactId>
+      <version>2.1.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-core</artifactId>
+      <version>${mavenVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-project</artifactId>
+      <version>${mavenVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-model</artifactId>
+      <version>${mavenVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-plugin-api</artifactId>
+      <version>${mavenVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-artifact</artifactId>
+      <version>${mavenVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-settings</artifactId>
+      <version>${mavenVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.reporting</groupId>
+      <artifactId>maven-reporting-api</artifactId>
+      <version>3.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.reporting</groupId>
+      <artifactId>maven-reporting-impl</artifactId>
+      <version>2.2</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.maven.plugin-tools</groupId>
+      <artifactId>maven-plugin-annotations</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.maven.shared</groupId>
+      <artifactId>maven-script-interpreter</artifactId>
+      <version>1.1</version>
+    </dependency>
+
+    <!-- Doxia -->
+    <dependency>
+      <groupId>org.apache.maven.doxia</groupId>
+      <artifactId>doxia-sink-api</artifactId>
+      <version>${doxiaVersion}</version>
+    </dependency>
+
+    <!-- Doxia-sitetools -->
+    <dependency>
+      <groupId>org.apache.maven.doxia</groupId>
+      <artifactId>doxia-site-renderer</artifactId>
+      <version>${doxia-sitetoolsVersion}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.codehaus.plexus</groupId>
+          <artifactId>plexus-container-default</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.codehaus.plexus</groupId>
+          <artifactId>plexus-component-api</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>${beanshell-groupId}</groupId>
+      <artifactId>${beanshell-artifactId}</artifactId>
+      <version>${beanshell-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>${groovy-groupId}</groupId>
+      <artifactId>${groovy-artifactId}</artifactId>
+      <version>${groovy-version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>junit</groupId>
+          <artifactId>junit</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.ant</groupId>
+      <artifactId>ant</artifactId>
+      <version>1.8.1</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.ant</groupId>
+          <artifactId>ant-launcher</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-utils</artifactId>
+      <version>3.0.15</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.2</version>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-interpolation</artifactId>
+      <version>1.19</version>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-i18n</artifactId>
+      <version>1.0-beta-7</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.codehaus.plexus</groupId>
+          <artifactId>plexus-container-default</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.codehaus.plexus</groupId>
+          <artifactId>plexus-component-api</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>3.8.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.plugin-testing</groupId>
+      <artifactId>maven-plugin-testing-harness</artifactId>
+      <version>1.2</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-plugin-plugin</artifactId>
+          <version>${mavenPluginPluginVersion}</version>
+          <configuration>
+            <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
+    <plugins>
+      <plugin>
+        <artifactId>maven-plugin-plugin</artifactId>
+        <configuration>
+          <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
+        </configuration>
+        <executions>
+          <execution>
+            <id>generate-descriptor</id>
+            <goals>
+              <goal>descriptor</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.modello</groupId>
+        <artifactId>modello-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>standard</id>
+            <goals>
+              <!-- Generate the xpp3 reader code -->
+              <goal>xpp3-reader</goal>
+              <!-- Generate the xpp3 writer code -->
+              <goal>xpp3-writer</goal>
+              <!-- Generate the Java sources for the model itself -->
+              <goal>java</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>site-docs</id>
+            <phase>pre-site</phase>
+            <goals>
+              <goal>xdoc</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <models>
+            <model>src/main/mdo/invocation.mdo</model>
+          </models>
+          <version>1.0.0</version>
+          <useJava5>true</useJava5>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>run-its</id>
+      <properties>
+        <sitePluginVersion>3.3</sitePluginVersion>
+      </properties>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-invoker-plugin</artifactId>
+              <!-- m-release-p-2.3.2 doesn't allow to specify a different version then the project.
+                 This would be true for jar projects, but not always for plugins.
+               -->
+              <version>1.8</version>
+              <configuration>
+                <debug>true</debug>
+                <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
+                <preBuildHookScript>setup</preBuildHookScript>
+                <postBuildHookScript>verify</postBuildHookScript>
+                <localRepositoryPath>${project.build.directory}/local-repo</localRepositoryPath>
+                <settingsFile>src/it/settings.xml</settingsFile>
+                <mavenOpts>-Djava.io.tmpdir=${project.build.directory}</mavenOpts>
+                <goals>
+                  <goal>clean</goal>
+                  <goal>initialize</goal>
+                </goals>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+
+      </build>
+    </profile>
+  </profiles>
+</project>

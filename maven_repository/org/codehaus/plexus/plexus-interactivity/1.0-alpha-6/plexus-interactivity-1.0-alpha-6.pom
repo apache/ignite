@@ -1,0 +1,22 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <artifactId>plexus-components</artifactId>
+    <groupId>org.codehaus.plexus</groupId>
+    <version>1.1.9</version>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>plexus-interactivity</artifactId>
+  <packaging>pom</packaging>
+  <name>Plexus Interactivity Handler Component</name>
+  <version>1.0-alpha-6</version>
+  <modules>
+    <module>plexus-interactivity-api</module>
+    <module>plexus-interactivity-jline</module>
+  </modules>
+
+  <scm>
+    <connection>scm:svn:http://svn.codehaus.org/plexus/plexus-components/tags/plexus-interactivity-1.0-alpha-6</connection>
+    <developerConnection>scm:svn:https://svn.codehaus.org/plexus/plexus-components/tags/plexus-interactivity-1.0-alpha-6</developerConnection>
+    <url>http://fisheye.codehaus.org/browse/plexus/plexus-components/tags/plexus-interactivity-1.0-alpha-6</url>
+  </scm>
+</project>

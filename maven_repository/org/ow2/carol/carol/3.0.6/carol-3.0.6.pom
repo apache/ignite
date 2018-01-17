@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  - CAROL : Common Architecture for RMI OW2 Layer
+  - Copyright (C) 2007,2008 Bull S.A.S.
+  - Contact: carol@ow2.org
+  -
+  - This library is free software; you can redistribute it and/or
+  - modify it under the terms of the GNU Lesser General Public
+  - License as published by the Free Software Foundation; either
+  - version 2.1 of the License, or (at your option) any later version.
+  -
+  - This library is distributed in the hope that it will be useful,
+  - but WITHOUT ANY WARRANTY; without even the implied warranty of
+  - MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  - Lesser General Public License for more details.
+  -
+  - You should have received a copy of the GNU Lesser General Public
+  - License along with this library; if not, write to the Free Software
+  - Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+  -
+  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  - $Id: pom.xml 2178 2009-06-09 07:25:33Z benoitf $
+  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.ow2.carol</groupId>
+    <artifactId>carol-modules</artifactId>
+    <version>3.0.6</version>
+  </parent>
+  <groupId>org.ow2.carol</groupId>
+  <artifactId>carol</artifactId>
+  <packaging>jar</packaging>
+  <name>CAROL: Common Architecture for RMI OW2 Layer</name>
+  <description />
+  <properties>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>commons-logging</groupId>
+      <artifactId>commons-logging</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.carol</groupId>
+      <artifactId>carol-interceptors</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.carol.irmi</groupId>
+      <artifactId>irmi</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>ant</groupId>
+      <artifactId>ant</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>ant</groupId>
+      <artifactId>ant-junit</artifactId>
+    </dependency>
+    <!-- JacORB -->
+    <dependency>
+      <groupId>org.jacorb</groupId>
+      <artifactId>jacorb</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jacorb</groupId>
+      <artifactId>jacorb-idl</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.cmi</groupId>
+      <artifactId>cmi-jndi</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.cmi</groupId>
+      <artifactId>cmi-admin</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+      <classifier>jdk15</classifier>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+    <plugin>
+        <groupId>org.ow2.util</groupId>
+        <artifactId>util-maven-plugin-antrmic</artifactId>
+        <executions>
+            <execution>
+            <id>JNDIResourceWrapper jrmp</id>
+            <configuration>
+              <iiop>false</iiop>
+              <classname>
+                org.ow2.carol.jndi.wrapping.JNDIResourceWrapper
+              </classname>
+            </configuration>
+            <goals>
+              <goal>rmic</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>JNDIResourceWrapper iiop</id>
+            <configuration>
+              <iiop>true</iiop>
+              <iiopopts>-always</iiopopts>
+              <classname>
+                org.ow2.carol.jndi.wrapping.JNDIResourceWrapper
+              </classname>
+              <compilerarg>-poa</compilerarg>
+            </configuration>
+            <goals>
+              <goal>rmic</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>JNDIReferenceWrapper jrmp</id>
+            <configuration>
+              <iiop>false</iiop>
+              <classname>
+                org.ow2.carol.jndi.wrapping.JNDIReferenceWrapper
+              </classname>
+            </configuration>
+            <goals>
+              <goal>rmic</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>JNDIReferenceWrapper iiop</id>
+            <configuration>
+              <iiop>true</iiop>
+              <iiopopts>-always</iiopopts>
+              <classname>
+                org.ow2.carol.jndi.wrapping.JNDIReferenceWrapper
+              </classname>
+              <compilerarg>-poa</compilerarg>
+            </configuration>
+            <goals>
+              <goal>rmic</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>UnicastJNDIReferenceWrapper jrmp</id>
+            <configuration>
+              <iiop>false</iiop>
+              <classname>
+                org.ow2.carol.jndi.wrapping.UnicastJNDIReferenceWrapper
+              </classname>
+            </configuration>
+            <goals>
+              <goal>rmic</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <trimStackTrace>false</trimStackTrace>
+        </configuration>
+      </plugin>
+      <!-- <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+        <execution>
+            <id>stubs for test</id>
+            <phase>test-compile</phase>
+            <configuration>
+              <tasks name="generate_stubs_for_test">
+                <echo>Running rmic</echo>
+                 for sun jrmp 1.1
+                <mkdir dir="target/test-classes/sunjrmp1.1" />
+                <rmic base="target/test-classes/sunjrmp1.1" compiler="sun" stubversion="1.1" classname="org.ow2.carol.jtests.conform.basic.server.BasicObject">
+                  <classpath refid="maven.test.classpath" />
+                </rmic>
+                <rmic base="target/test-classes/sunjrmp1.1" compiler="sun" stubversion="1.1" classname="org.ow2.carol.jtests.conform.basic.server.BasicMultiObject">
+                  <classpath refid="maven.test.classpath" />
+                </rmic>
+                <rmic base="target/test-classes/sunjrmp1.1" compiler="sun" stubversion="1.1" classname="org.ow2.carol.jtests.conform.basic.server.BasicRemoteObject">
+                  <classpath refid="maven.test.classpath" />
+                </rmic>
+                <jar destfile="target/test-classes/sunjrmp1.1.jar" basedir="target/test-classes/sunjrmp1.1" />
+                 for sun jrmp 1.2
+                <mkdir dir="target/test-classes/sunjrmp1.2" />
+                <rmic base="target/test-classes/sunjrmp1.2" compiler="sun" stubversion="1.2" classname="org.ow2.carol.jtests.conform.basic.server.BasicObject">
+                  <classpath refid="maven.test.classpath" />
+                </rmic>
+                <rmic base="target/test-classes/sunjrmp1.2" compiler="sun" stubversion="1.2" classname="org.ow2.carol.jtests.conform.basic.server.BasicMultiObject">
+                  <classpath refid="maven.test.classpath" />
+                </rmic>
+                <rmic base="target/test-classes/sunjrmp1.2" compiler="sun" stubversion="1.2" classname="org.ow2.carol.jtests.conform.basic.server.BasicRemoteObject">
+                  <classpath refid="maven.test.classpath" />
+                </rmic>
+                <jar destfile="target/test-classes/sunjrmp1.2.jar" basedir="target/test-classes/sunjrmp1.2" />
+                 for sun iiop
+                <mkdir dir="target/test-classes/suniiop" />
+                <rmic base="target/test-classes/suniiop" compiler="sun" iiop="true" classname="org.ow2.carol.jtests.conform.basic.server.BasicObject">
+                  <classpath refid="maven.test.classpath" />
+                  <compilerarg value="-poa" />
+                </rmic>
+                <rmic base="target/test-classes/suniiop" compiler="sun" iiop="true" classname="org.ow2.carol.jtests.conform.basic.server.BasicMultiObject">
+                  <classpath refid="maven.test.classpath" />
+                  <compilerarg value="-poa" />
+                </rmic>
+                <rmic base="target/test-classes/suniiop" compiler="sun" iiop="true" classname="org.ow2.carol.jtests.conform.basic.server.BasicRemoteObject">
+                  <classpath refid="maven.test.classpath" />
+                  <compilerarg value="-poa" />
+                </rmic>
+                <jar destfile="target/test-classes/suniiop.jar" basedir="target/test-classes/suniiop" />
+              </tasks>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>carol test</id>
+            <phase>test</phase>
+            <configuration>
+              <tasks name="run_test">
+                <echo>Running tests</echo>
+                <property name="test_classpath" refid="maven.test.classpath" />
+                <property name="orb.initializer.class" value="-D.org.omg.PortableInterceptor.ORBInitializerClass.org.ow2.carol.jtests.conform.interceptor.iiop.IIOPInitilizer" />
+                <taskdef name="carolTest" classname="org.ow2.carol.ant.CarolTestTask" classpath="target/test-classes" />
+                <mkdir dir="target/test-properties" />
+                <property name="test.dist.lib" value="target/test-classes" />
+                <property name="test.tmp" value="target/test-tmp" />
+                <property name="test.ext" value="${basedir}/src/test/resources/ext" />
+                <property name="carol.dist" value="target/classes" />
+                <property name="test.dist.results" value="target/test-reports" />
+                <property name="test.src" value="src/test/java" />
+                <carolTest antfile="src/test/resources/conform/generic/carol_double.xml" propDestination="target/test-properties" propSource="${test.ext}" />
+              </tasks>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+        <dependencies>
+          <dependency>
+            <groupId>com.sun</groupId>
+            <artifactId>tools</artifactId>
+            <scope>system</scope>
+            <version>1.5.0</version>
+            <systemPath>
+              ${java.home}/../lib/tools.jar
+            </systemPath>
+          </dependency>
+        </dependencies>
+      </plugin> -->
+    </plugins>
+  </build>
+</project>

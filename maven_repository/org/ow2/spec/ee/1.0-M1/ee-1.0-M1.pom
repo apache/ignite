@@ -1,0 +1,52 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.ow2.spec</groupId>
+    <artifactId>parent</artifactId>
+    <version>1.0-M1</version>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.ow2.spec</groupId>
+  <artifactId>ee</artifactId>
+  <version>1.0-M1</version>
+  <packaging>pom</packaging>
+  <name>Java EE Specifications</name>
+  <modules>
+    <!-- specification -->
+    <module>ejb-3.0</module>
+    <module>jpa-1.0</module>
+    <module>jta-1.1</module>
+    <module>jsr77-1.1</module>
+    <module>connector-1.5</module>
+    <module>deployment-1.2</module>
+  </modules>
+
+  <build>
+    <finalName>${pom.artifactId}</finalName>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.5</source>
+          <target>1.5</target>
+          <showDeprecation>true</showDeprecation>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+      <version>5.1</version>
+      <classifier>jdk15</classifier>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.spec</groupId>
+      <artifactId>ow2-api-test-engine</artifactId>
+      <version>${pom.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>

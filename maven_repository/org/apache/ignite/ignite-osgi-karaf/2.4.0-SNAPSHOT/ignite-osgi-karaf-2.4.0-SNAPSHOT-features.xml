@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<features name="ignite" xmlns="http://karaf.apache.org/xmlns/features/v1.3.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://karaf.apache.org/xmlns/features/v1.3.0 http://karaf.apache.org/xmlns/features/v1.3.0">
+
+    <feature name="ignite-all" version="2.4.0-SNAPSHOT" description="Apache Ignite :: All">
+        <details>
+            <![CDATA[Aggregate feature for installing all Apache Ignite module + their dependencies.
+            
+            NOTE #1: Due to a bug in Apache Karaf (KARAF-4129), you must install the ignite-log4j feature explicitly and then either:
+            - manually refresh the pax-logging-api framework bundle  - or - 
+            - restart the Apache Karaf container.
+            You may safely ignore the 'Resource has no uri' exception if you follow this method.
+
+            NOTE #2: This feature *does not* include components that depend on LGPL software (e.g. ignite-hibernate).]]>
+        </details>
+        <feature>ignite-core</feature>
+        <feature>ignite-aop</feature>
+        <feature>ignite-aws</feature>
+        <feature>ignite-camel</feature>
+        <feature>ignite-flume</feature>
+        <feature>ignite-indexing</feature>
+        <feature>ignite-jcl</feature>
+        <feature>ignite-jms11</feature>
+        <feature>ignite-jta</feature>
+        <feature>ignite-kafka</feature>
+        <feature>ignite-mqtt</feature>
+        <!-- KARAF-4129 Karaf feature containing a fragment that attaches to pax-logging-api cannot be installed
+        <feature>ignite-log4j</feature>-->
+        <feature>ignite-rest-http</feature>
+        <feature>ignite-scalar-2.11</feature>
+        <feature>ignite-schedule</feature>
+        <feature>ignite-slf4j</feature>
+        <feature>ignite-spring</feature>
+        <feature>ignite-ssh</feature>
+        <feature>ignite-twitter</feature>
+        <feature>ignite-urideploy</feature>
+        <feature>ignite-web</feature>
+        <feature>ignite-zookeeper</feature>
+    </feature>
+
+    <feature name="ignite-core" version="2.4.0-SNAPSHOT" description="Apache Ignite :: Core">
+        <details><![CDATA[The Apache Ignite core module. This feature also installs the JCache 1.0 specification API.]]></details>
+        <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.javax-cache-api/1.0.0_1</bundle>
+        <bundle dependency="true">mvn:org.apache.ignite/ignite-osgi/2.4.0-SNAPSHOT</bundle>
+        <bundle start="true">mvn:org.apache.ignite/ignite-core/2.4.0-SNAPSHOT</bundle>
+    </feature>
+
+    <feature name="ignite-aop" version="2.4.0-SNAPSHOT" description="Apache Ignite :: AOP">
+        <details><![CDATA[The Apache Ignite AOP module + dependencies.]]></details>
+        <feature dependency="true" version="[4.1.7.RELEASE_1,4.2)">spring-aspects</feature>
+        <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.aopalliance/1.0_6</bundle>        
+        <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.aspectj/1.7.2_1</bundle>
+        <bundle start="true">mvn:org.apache.ignite/ignite-aop/2.4.0-SNAPSHOT</bundle>
+    </feature>
+
+    <feature name="ignite-aws" version="2.4.0-SNAPSHOT" description="Apache Ignite :: AWS">
+        <details><![CDATA[The Apache Ignite AWS module + dependencies.]]></details>
+        <bundle start="true" dependency="true">mvn:org.apache.httpcomponents/httpcore-osgi/4.4.3</bundle>
+        <bundle start="true" dependency="true">mvn:org.apache.httpcomponents/httpclient-osgi/4.5.1</bundle>
+        <bundle start="true" dependency="true">mvn:commons-codec/commons-codec/1.6</bundle>
+        <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.aws-java-sdk/1.10.12_1</bundle>
+        <bundle start="true">mvn:org.apache.ignite/ignite-aws/2.4.0-SNAPSHOT</bundle>
+    </feature>
+
+    <feature name="ignite-camel" version="2.4.0-SNAPSHOT" description="Apache Ignite :: Camel">
+        <details>
+            <![CDATA[The Apache Ignite Camel module.
+
+            Make sure to install the Apache Camel feature repository before installing this feature.
+
+                mvn:org.apache.camel.karaf/apache-camel/\2.16.0/xml/features
+            
+            Installing this feature will trigger the installation of the 'camel-core' feature from the Camel repository.]]>
+        </details>
+        <feature>camel-core</feature>
+        <bundle start="true">mvn:org.apache.ignite/ignite-camel/2.4.0-SNAPSHOT</bundle>
+    </feature>
+
+    <feature name="ignite-flume" version="2.4.0-SNAPSHOT" description="Apache Ignite :: Flume">
+        <details>
+            <![CDATA[The Apache Ignite Flume module + dependencies.]]>
+        </details>
+        <feature prerequisite="true">wrap</feature>
+        <bundle start="true" dependency="true">wrap:mvn:org.apache.flume/flume-ng-core/1.7.0$Bundle-SymbolicName=flume-ng-core&amp;Bundle-Version=1.7.0</bundle>
+        <bundle start="true">mvn:org.apache.ignite/ignite-flume/2.4.0-SNAPSHOT</bundle>
+    </feature>
+
+    <feature name="ignite-hibernate" version="2.4.0-SNAPSHOT" description="Apache Ignite :: Hibernate">
+        <details>
+            <![CDATA[The Apache Ignite Hibernate module + dependencies. 
+            
+            Installing this feature will trigger the installation of the 'hibernate' feature from the Apache Karaf distribution.
+
+            NOTE: Take into account that certain parts of Hibernate are offered under the LGPL license.]]>
+        </details>
+        <feature>hibernate</feature>
+        <bundle start="true">mvn:org.apache.ignite/ignite-hibernate_4.2/2.4.0-SNAPSHOT</bundle>
+    </feature>
+
+    <feature name="ignite-indexing" version="2.4.0-SNAPSHOT" description="Apache Ignite :: Indexing">
+        <details>
+            <![CDATA[The Apache Ignite Indexing module + dependencies. This module is a fragment of ignite-core. 
+            
+            Be sure to refresh ignite-core manually in case it is not refreshed automatically.]]>
+        </details>
+        <bundle start="true" dependency="true">mvn:org.osgi/org.osgi.enterprise/5.0.0</bundle>
+        <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.lucene/5.5.2_1</bundle>
+        <bundle start="true" dependency="true">mvn:com.h2database/h2/1.4.195</bundle>
+        <bundle start="false">mvn:org.apache.ignite/ignite-indexing/2.4.0-SNAPSHOT</bundle>
+    </feature>
+
+    <feature name="ignite-jcl" version="2.4.0-SNAPSHOT" description="Apache Ignite :: JCL">
+        <details>
+            <![CDATA[The Apache Ignite JCL integration module. In Apache Karaf, this module will integrate with Pax Logging.]]>
+        </details>
+        <bundle start="true">mvn:org.apache.ignite/ignite-jcl/2.4.0-SNAPSHOT</bundle>
+    </feature>
+
+    <feature name="ignite-jms11" version="2.4.0-SNAPSHOT" description="Apache Ignite :: JMS 1.1">
+        <details>
+            <![CDATA[The Apache Ignite JMS 1.1 module. Make sure to install your broker's JMS client bundle as well.]]>
+        </details>
+        <bundle start="true" dependency="true">mvn:org.apache.geronimo.specs/geronimo-jms_1.1_spec/1.1.1</bundle>
+        <bundle start="true">mvn:org.apache.ignite/ignite-jms11/2.4.0-SNAPSHOT</bundle>
+    </feature>
+
+    <feature name="ignite-jta" version="2.4.0-SNAPSHOT" description="Apache Ignite :: JTA">
+        <details>
+            <![CDATA[The Apache Ignite JTA module + dependencies. This module is a fragment of ignite-core. 
+            
+            Be sure to refresh ignite-core manually in case it is not refreshed automatically.
+            
+            Installing this feature will trigger the installation of the 'transaction' feature from the Apache Karaf distribution.]]>
+        </details>
+        <feature dependency="true">transaction</feature>
+        <bundle start="true">mvn:org.apache.ignite/ignite-jta/2.4.0-SNAPSHOT</bundle>
+    </feature>
+
+    <feature name="ignite-kafka" version="2.4.0-SNAPSHOT" description="Apache Ignite :: Kafka">
+        <details>
+            <![CDATA[The Apache Ignite Kafka module + dependencies. This module installs the Scala 2.11 library bundle.]]>
+        </details>
+        <feature prerequisite="true">wrap</feature>
+        <bundle start="true" dependency="true">mvn:org.scala-lang/scala-library/2.11.8</bundle>
+        <bundle start="true" dependency="true">wrap:mvn:com.yammer.metrics/metrics-core/2.2.0$Bundle-SymbolicName=yammer-metrics-core&amp;Bundle-Version=2.2.0&amp;Export-Package=*;-noimport:=true;version=2.2.0</bundle>
+        <bundle start="true" dependency="true">wrap:mvn:com.yammer.metrics/metrics-annotation/2.2.0$Bundle-SymbolicName=yammer-metrics-annotation&amp;Bundle-Version=2.2.0&amp;Export-Package=*;-noimport:=true;version=2.2.0</bundle>
+        <bundle start="true" dependency="true">wrap:mvn:org.apache.kafka/connect-api/0.10.0.1$Bundle-SymbolicName=connect-api&amp;Bundle-Version=0.10.0.1</bundle>
+        <bundle start="true" dependency="true">wrap:mvn:org.apache.kafka/kafka_2.11/0.10.0.1$Bundle-SymbolicName=kafka_2.11&amp;Bundle-Version=0.10.0.1</bundle>
+        <bundle start="true" dependency="true">wrap:mvn:org.apache.kafka/kafka-clients/0.10.0.1$Bundle-SymbolicName=kafka-clients&amp;Bundle-Version=0.10.0.1</bundle>
+        <bundle start="true">mvn:org.apache.ignite/ignite-kafka/2.4.0-SNAPSHOT</bundle>
+    </feature>
+
+    <feature name="ignite-log4j" version="2.4.0-SNAPSHOT" description="Apache Ignite :: log4j">
+        <details>
+            <![CDATA[The Apache Ignite log4j module + dependencies. 
+            
+            This module installs an OSGi fragment that exposes extra packages from the Pax Logging bundle required by Ignite. 
+            
+            Be sure to refresh the Pax Logging bundles manually in case this does not happen automatically.]]>
+        </details>
+        <bundle dependency="true" start-level="8">mvn:org.apache.ignite/ignite-osgi-paxlogging/2.4.0-SNAPSHOT</bundle>
+        <bundle start="true">mvn:org.apache.ignite/ignite-log4j/2.4.0-SNAPSHOT</bundle>
+    </feature>
+
+    <feature name="ignite-mqtt" version="2.4.0-SNAPSHOT" description="Apache Ignite :: MQTT">
+        <details>
+            <![CDATA[The Apache Ignite MQTT module + dependencies.]]>
+        </details>
+        <feature prerequisite="true">wrap</feature>
+        <bundle start="true" dependency="true">mvn:com.google.guava/guava/18.0</bundle>
+        <bundle start="true" dependency="true">mvn:org.eclipse.paho/org.eclipse.paho.client.mqttv3/1.0.2</bundle>
+        <bundle start="true" dependency="true">wrap:mvn:com.github.rholder/guava-retrying/2.0.0$Bundle-SymbolicName=guava-retrying&amp;Bundle-SymbolicName=guava-retrying&amp;Bundle-Version=2.0.0</bundle>
+        <bundle start="true">mvn:org.apache.ignite/ignite-mqtt/2.4.0-SNAPSHOT</bundle>
+    </feature>   
+
+    <feature name="ignite-rest-http" version="2.4.0-SNAPSHOT" description="Apache Ignite :: REST HTTP">
+         <!-- NOTICE: XOM cannot be included by default due to an incompatible license;
+                      please review its license model and install the dependency manually if you agree. -->
+        <details>
+            <![CDATA[The Apache Ignite REST HTTP module + dependencies.
+
+            Installing this feature will trigger the installation of the 'http' feature from the Apache Karaf distribution.
+
+            NOTE: Before using this feature you must review the license of the XOM bundle and install it manually if you accept it:
+            install -s mvn:xom/xom/1.2.5]]>
+        </details>
+        <feature dependency="true">http</feature>
+        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-core/2.6.5</bundle>
+        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-databind/2.6.5</bundle>
+        <bundle start="true" dependency="true">mvn:com.fasterxml.jackson.core/jackson-annotations/2.6.5</bundle>
+        <bundle start="true" dependency="true">mvn:commons-lang/commons-lang/2.6</bundle>
+        <bundle start="true" dependency="true">mvn:commons-collections/commons-collections/3.2.2</bundle>
+        <bundle start="true">mvn:org.apache.ignite/ignite-rest-http/2.4.0-SNAPSHOT</bundle>
+    </feature>
+
+    <feature name="ignite-scalar-2.10" version="2.4.0-SNAPSHOT" description="Apache Ignite :: Scala 2.10">
+        <details>
+            <![CDATA[The Apache Ignite Scala 2.11 integration module + dependencies. This module installs the Scala 2.10 library bundle.]]>
+        </details>
+        <bundle start="true" dependency="true">mvn:org.scala-lang/scala-library/2.10.6</bundle>
+        <bundle start="true">mvn:org.apache.ignite/ignite-scalar_2.10/2.4.0-SNAPSHOT</bundle>
+    </feature>
+
+    <feature name="ignite-scalar-2.11" version="2.4.0-SNAPSHOT" description="Apache Ignite :: Scala 2.11">
+        <details>
+            <![CDATA[The Apache Ignite Scala 2.11 integration module + dependencies. This module installs the Scala 2.11 library bundle.]]>
+        </details>
+        <bundle start="true" dependency="true">mvn:org.scala-lang/scala-library/2.11.8</bundle>
+        <bundle start="true">mvn:org.apache.ignite/ignite-scalar/2.4.0-SNAPSHOT</bundle>
+    </feature>
+
+    <feature name="ignite-schedule" version="2.4.0-SNAPSHOT" description="Apache Ignite :: Schedule">
+        <details>
+            <![CDATA[The Apache Ignite Schedule module + dependencies. This module is a fragment of ignite-core.]]>
+        </details>
+        <feature prerequisite="true">wrap</feature>
+        <bundle start="true" dependency="true">wrap:mvn:it.sauronsoftware.cron4j/cron4j/2.2.5$Bundle-SymbolicName=cron4j&amp;Bundle-Version=2.2.5</bundle>
+        <bundle start="true">mvn:org.apache.ignite/ignite-schedule/2.4.0-SNAPSHOT</bundle>
+    </feature>
+
+    <feature name="ignite-slf4j" version="2.4.0-SNAPSHOT" description="Apache Ignite :: slf4j">
+        <details>
+            <![CDATA[The Apache Ignite slf4j module.]]>
+        </details>
+        <bundle start="true">mvn:org.apache.ignite/ignite-slf4j/2.4.0-SNAPSHOT</bundle>
+    </feature>
+
+    <feature name="ignite-spring" version="2.4.0-SNAPSHOT" description="Apache Ignite :: Spring Support">
+        <details>
+            <![CDATA[The Apache Ignite Spring integration module + dependencies. This module is a fragment of ignite-core. 
+            
+            Be sure to refresh ignite-core in case it is not refreshed automatically.
+            
+            This feature installs the following features from the Apache Karaf distribution:
+              - spring
+              - spring-aspects
+              - spring-tx
+              - spring-jdbc
+              
+            With version range: [4.1.7.RELEASE_1,4.2).]]>
+        </details>
+        <feature dependency="true" version="[4.1.7.RELEASE_1,4.2)">spring</feature>
+        <feature dependency="true" version="[4.1.7.RELEASE_1,4.2)">spring-aspects</feature>
+        <feature dependency="true" version="[4.1.7.RELEASE_1,4.2)">spring-tx</feature>
+        <feature dependency="true" version="[4.1.7.RELEASE_1,4.2)">spring-jdbc</feature>
+        <bundle start="true">mvn:org.apache.ignite/ignite-spring/2.4.0-SNAPSHOT</bundle>
+    </feature>
+
+    <feature name="ignite-ssh" version="2.4.0-SNAPSHOT" description="Apache Ignite :: SSH">
+        <details>
+            <![CDATA[The Apache Ignite SSH module + dependencies.]]>
+        </details>
+        <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.jsch/0.1.53_1</bundle>
+        <bundle start="true">mvn:org.apache.ignite/ignite-ssh/2.4.0-SNAPSHOT</bundle>
+    </feature>
+
+    <feature name="ignite-twitter" version="2.4.0-SNAPSHOT" description="Apache Ignite :: Twitter">
+        <details>
+            <![CDATA[The Apache Ignite Twitter module + dependencies.]]>
+        </details>
+        <feature prerequisite="true">wrap</feature>
+        <bundle start="true" dependency="true">mvn:com.google.guava/guava/14.0.1</bundle>
+        <bundle start="true" dependency="true">wrap:mvn:com.twitter/hbc-core/2.2.0$Bundle-SymbolicName=Hosebird Client Core&amp;Bundle-Version=2.2.0</bundle>
+        <bundle start="true" dependency="true">wrap:mvn:com.twitter/hbc-twitter4j/2.2.0$Bundle-SymbolicName=Hosebird Client Twitter4J&amp;Bundle-Version=2.2.0</bundle>
+        <bundle start="true">mvn:org.apache.ignite/ignite-twitter/2.4.0-SNAPSHOT</bundle>
+    </feature>
+
+    <feature name="ignite-urideploy" version="2.4.0-SNAPSHOT" description="Apache Ignite :: URI Deploy">
+        <details>
+            <![CDATA[The Apache Ignite URI Deploy module + dependencies.
+            
+            This feature installs the following features from the Apache Karaf distribution:
+              - spring
+              - spring-aspects
+              - spring-tx
+              
+            With version range: [4.1.7.RELEASE_1,4.2).]]>
+        </details>
+        <feature prerequisite="true">wrap</feature>
+        <feature dependency="true" version="[4.1.7.RELEASE_1,4.2)">spring</feature>
+        <feature dependency="true" version="[4.1.7.RELEASE_1,4.2)">spring-aspects</feature>
+        <feature dependency="true" version="[4.1.7.RELEASE_1,4.2)">spring-tx</feature>
+        <bundle start="true" dependency="true">wrap:mvn:net.sf.jtidy/jtidy/r938$Bundle-SymbolicName=JTidy&amp;Bundle-Version=938</bundle>
+        <bundle start="true" dependency="true">mvn:commons-codec/commons-codec/1.6</bundle>
+        <bundle start="true">mvn:org.apache.ignite/ignite-urideploy/2.4.0-SNAPSHOT</bundle>
+    </feature>
+
+    <feature name="ignite-web" version="2.4.0-SNAPSHOT" description="Apache Ignite :: Web">
+        <details>
+            <![CDATA[The Apache Ignite Web module + dependencies.
+            
+            This feature installs the 'http' feature from the Apache Karaf distribution.]]>
+        </details>
+        <feature dependency="true">http</feature>
+        <bundle start="true">mvn:org.apache.ignite/ignite-web/2.4.0-SNAPSHOT</bundle>
+    </feature>
+
+    <feature name="ignite-zookeeper" version="2.4.0-SNAPSHOT" description="Apache Ignite :: ZooKeeper">
+        <details>
+            <![CDATA[The Apache Ignite ZooKeeper module + dependencies.]]>
+        </details>
+        <bundle start="true" dependency="true">mvn:org.apache.zookeeper/zookeeper/3.4.6</bundle>
+        <bundle start="true" dependency="true">mvn:com.google.guava/guava/16.0.1</bundle>
+        <bundle start="true" dependency="true">mvn:org.codehaus.jackson/jackson-core-asl/1.9.13</bundle>
+        <bundle start="true" dependency="true">mvn:org.codehaus.jackson/jackson-mapper-asl/1.9.13</bundle>
+        <bundle start="true" dependency="true">mvn:org.apache.curator/curator-client/2.9.1</bundle>
+        <bundle start="true" dependency="true">mvn:org.apache.curator/curator-framework/2.9.1</bundle>
+        <bundle start="true" dependency="true">mvn:org.apache.curator/curator-recipes/2.9.1</bundle>
+        <bundle start="true" dependency="true">mvn:org.apache.curator/curator-x-discovery/2.9.1</bundle>
+        <bundle start="true">mvn:org.apache.ignite/ignite-zookeeper/2.4.0-SNAPSHOT</bundle>
+    </feature>
+
+</features>

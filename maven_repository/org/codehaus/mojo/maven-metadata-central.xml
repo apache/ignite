@@ -1,0 +1,665 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <plugins>
+    <plugin>
+      <name>Animal Sniffer Maven Plugin</name>
+      <prefix>animal-sniffer</prefix>
+      <artifactId>animal-sniffer-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven ANTLR Plugin</name>
+      <prefix>antlr</prefix>
+      <artifactId>antlr-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>ANTLR-v3 Maven Plugin</name>
+      <prefix>antlr3</prefix>
+      <artifactId>antlr3-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Appassembler :: Maven Plug-In</name>
+      <prefix>appassembler</prefix>
+      <artifactId>appassembler-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Appfuse Maven Plugin</name>
+      <prefix>appfuse</prefix>
+      <artifactId>appfuse-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Apt Maven Plugin</name>
+      <prefix>apt</prefix>
+      <artifactId>apt-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Mojo's AspectJ Maven Plugin</name>
+      <prefix>aspectj</prefix>
+      <artifactId>aspectj-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Axis Tools Maven Plugin</name>
+      <prefix>axistools</prefix>
+      <artifactId>axistools-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Batik Maven Plugin</name>
+      <prefix>batik</prefix>
+      <artifactId>batik-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Build Helper Maven Plugin</name>
+      <prefix>build-helper</prefix>
+      <artifactId>build-helper-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Dependency Builder Plugin</name>
+      <prefix>build-on-demand</prefix>
+      <artifactId>build-on-demand-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Build Number Maven Plugin</name>
+      <prefix>buildnumber</prefix>
+      <artifactId>buildnumber-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Mojo's Cassandra Maven Plugin</name>
+      <prefix>cassandra</prefix>
+      <artifactId>cassandra-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Castor Maven Plugin</name>
+      <prefix>castor</prefix>
+      <artifactId>castor-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven C-Build Lifecycle Mappings</name>
+      <prefix>cbuild-lifecycles</prefix>
+      <artifactId>cbuild-lifecycles</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven Changelog Plug-in</name>
+      <prefix>changelog</prefix>
+      <artifactId>changelog-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven Changes Report Plugin</name>
+      <prefix>changes</prefix>
+      <artifactId>changes-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Chronos JMeter</name>
+      <prefix>chronos-jmeter</prefix>
+      <artifactId>chronos-jmeter-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Chronos Report</name>
+      <prefix>chronos-report</prefix>
+      <artifactId>chronos-report-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Chronos Surefire</name>
+      <prefix>chronos-surefire</prefix>
+      <artifactId>chronos-surefire-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Clirr Maven Plugin</name>
+      <prefix>clirr</prefix>
+      <artifactId>clirr-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Mojo's Maven plugin for Cobertura</name>
+      <prefix>cobertura</prefix>
+      <artifactId>cobertura-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>CodeNarc Maven Plugin</name>
+      <prefix>codenarc</prefix>
+      <artifactId>codenarc-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven Commons Attributes Plugin</name>
+      <prefix>commons-attributes</prefix>
+      <artifactId>commons-attributes-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven Dashboard Report Plugin</name>
+      <prefix>dashboard</prefix>
+      <artifactId>dashboard-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>DbUnit Plugin</name>
+      <prefix>dbunit</prefix>
+      <artifactId>dbunit-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven Database Upgrade Plugin</name>
+      <prefix>dbupgrade</prefix>
+      <artifactId>dbupgrade-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Dependency Maven Plugin</name>
+      <prefix>dependency</prefix>
+      <artifactId>dependency-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Deploy All Plugin for Maven</name>
+      <prefix>deploy-all</prefix>
+      <artifactId>deploy-all-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>DITA Open Toolkit Maven Plugin</name>
+      <prefix>dita</prefix>
+      <artifactId>dita-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>DITA Open Toolkit Maven Plugin</name>
+      <prefix>ditaot</prefix>
+      <artifactId>ditaot-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven Docbook plugin</name>
+      <prefix>docbook</prefix>
+      <artifactId>docbook-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Emma Maven Plugin</name>
+      <prefix>emma</prefix>
+      <artifactId>emma-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Enchanter Maven Plugin</name>
+      <prefix>enchanter</prefix>
+      <artifactId>enchanter-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Exec Maven Plugin</name>
+      <prefix>exec</prefix>
+      <artifactId>exec-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Failsafe Maven Plugin</name>
+      <prefix>failsafe</prefix>
+      <artifactId>failsafe-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>FindBugs Maven Plugin</name>
+      <prefix>findbugs</prefix>
+      <artifactId>findbugs-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Fit Maven Plugin</name>
+      <prefix>fit</prefix>
+      <artifactId>fit-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven Fitnesse plugin.</name>
+      <prefix>fitnesse</prefix>
+      <artifactId>fitnesse-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven Flatten Plugin</name>
+      <prefix>flatten</prefix>
+      <artifactId>flatten-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Groovy Maven Plugin</name>
+      <prefix>groovy</prefix>
+      <artifactId>groovy-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Mojo's Maven Plugin for GWT</name>
+      <prefix>gwt</prefix>
+      <artifactId>gwt-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Hibernate3 Maven Plugin</name>
+      <prefix>hibernate3</prefix>
+      <artifactId>hibernate3-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>IANAL Maven Plugin</name>
+      <prefix>ianal</prefix>
+      <artifactId>ianal-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven IDEA UI Designer Plugin</name>
+      <prefix>ideauidesigner</prefix>
+      <artifactId>ideauidesigner-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>CORBA IDL Compiler Maven Plugin</name>
+      <prefix>idlj</prefix>
+      <artifactId>idlj-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Jalopy Maven Plugin</name>
+      <prefix>jalopy</prefix>
+      <artifactId>jalopy-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven JasperReports Plugin</name>
+      <prefix>jasperreports</prefix>
+      <artifactId>jasperreports-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>JavaCC Maven Plugin</name>
+      <prefix>javacc</prefix>
+      <artifactId>javacc-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>JavaNCSS Maven Plugin</name>
+      <prefix>javancss</prefix>
+      <artifactId>javancss-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>JAXB-2 Maven Plugin</name>
+      <prefix>jaxb2</prefix>
+      <artifactId>jaxb2-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>JAX-WS Maven Plugin</name>
+      <prefix>jaxws</prefix>
+      <artifactId>jaxws-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>JBoss Maven Plugin</name>
+      <prefix>jboss</prefix>
+      <artifactId>jboss-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>JBoss Packaging Maven Plugin</name>
+      <prefix>jboss-packaging</prefix>
+      <artifactId>jboss-packaging-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>JDepend Maven Plugin</name>
+      <prefix>jdepend</prefix>
+      <artifactId>jdepend-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>JPox Maven Plugin</name>
+      <prefix>jpox</prefix>
+      <artifactId>jpox-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>JRuby Mojo Support</name>
+      <prefix>jruby</prefix>
+      <artifactId>jruby-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>JavaScript Import Maven Plugin</name>
+      <prefix>js-import</prefix>
+      <artifactId>js-import-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>JSLint Maven Plugin</name>
+      <prefix>jslint</prefix>
+      <artifactId>jslint-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven Jspc plugin</name>
+      <prefix>jspc</prefix>
+      <artifactId>jspc-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven JXR Plugin</name>
+      <prefix>jxr</prefix>
+      <artifactId>jxr-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Keytool: Maven Plugin</name>
+      <prefix>keytool</prefix>
+      <artifactId>keytool-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Localization Tools Maven Plugin</name>
+      <prefix>l10n</prefix>
+      <artifactId>l10n-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>LaTeX Maven Plugin</name>
+      <prefix>latex</prefix>
+      <artifactId>latex-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>LESS CSS Maven Plugin</name>
+      <prefix>lesscss</prefix>
+      <artifactId>lesscss-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>License Maven Plugin</name>
+      <prefix>license</prefix>
+      <artifactId>license-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Local Configuration Plugin</name>
+      <prefix>local-config</prefix>
+      <artifactId>local-config-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Makefile Orchestration Plugin</name>
+      <prefix>make</prefix>
+      <artifactId>make-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven JPox Plugin</name>
+      <prefix>jpox</prefix>
+      <artifactId>maven-jpox-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven MiniJar Plugin</name>
+      <prefix>minijar</prefix>
+      <artifactId>minijar-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Mock Repository Manager: Maven Plugin</name>
+      <prefix>mrm</prefix>
+      <artifactId>mrm-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Multimodule Build Optimizer Plugin</name>
+      <prefix>multibuild-optimizer</prefix>
+      <artifactId>multibuild-optimizer-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven Native Plugin</name>
+      <prefix>native</prefix>
+      <artifactId>native-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven Native2ascii Plugin</name>
+      <prefix>native2ascii</prefix>
+      <artifactId>native2ascii-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>NB Repository Plugin</name>
+      <prefix>nb-repository</prefix>
+      <artifactId>nb-repository-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>NBM Maven Plugin</name>
+      <prefix>nbm</prefix>
+      <artifactId>nbm-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Netbeans Freeform Maven Plugin</name>
+      <prefix>netbeans-freeform</prefix>
+      <artifactId>netbeans-freeform-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Mojo's Maven Plugin for NSIS</name>
+      <prefix>nsis</prefix>
+      <artifactId>nsis-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>OpenJPA Maven Plugin</name>
+      <prefix>openjpa</prefix>
+      <artifactId>openjpa-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven OS X Application Bundle Plugin</name>
+      <prefix>osxappbundle</prefix>
+      <artifactId>osxappbundle-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Ounce Maven Plugin</name>
+      <prefix>ounce</prefix>
+      <artifactId>ounce-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Patch Plugin</name>
+      <prefix>patch</prefix>
+      <artifactId>patch-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Eclipse PDE Maven Plugin</name>
+      <prefix>pde</prefix>
+      <artifactId>pde-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Platform Attribute Detector Plugin for Maven</name>
+      <prefix>platform-detector</prefix>
+      <artifactId>platform-detector-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Project Archive Plugin</name>
+      <prefix>project-archive</prefix>
+      <artifactId>project-archive-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Project Sources Plugin</name>
+      <prefix>project-sources</prefix>
+      <artifactId>project-sources-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Properties Maven Plugin</name>
+      <prefix>properties</prefix>
+      <artifactId>properties-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>RAT Maven Plugin</name>
+      <prefix>rat</prefix>
+      <artifactId>rat-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Remote-Source Plugin</name>
+      <prefix>remote-source</prefix>
+      <artifactId>remote-source-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Retrotranslator MAven Plugin</name>
+      <prefix>retrotranslator</prefix>
+      <artifactId>retrotranslator-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>RMI Compiler Maven Plugin</name>
+      <prefix>rmic</prefix>
+      <artifactId>rmic-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>RPM Plugin</name>
+      <prefix>rpm-cbuild</prefix>
+      <artifactId>rpm-cbuild-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>RPM Maven Plugin</name>
+      <prefix>rpm</prefix>
+      <artifactId>rpm-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>RSpec Maven Plugin</name>
+      <prefix>rspec</prefix>
+      <artifactId>rspec-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven 2 SableCC Plugin</name>
+      <prefix>sablecc</prefix>
+      <artifactId>sablecc-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven SCM Changelog Reporter</name>
+      <prefix>scmchangelog</prefix>
+      <artifactId>scmchangelog-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven Selenium Plugin</name>
+      <prefix>selenium</prefix>
+      <artifactId>selenium-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven Service Documentation Generator Plugin</name>
+      <prefix>servicedocgen</prefix>
+      <artifactId>servicedocgen-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Settings Management Plugin</name>
+      <prefix>settings</prefix>
+      <artifactId>settings-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>shade-maven-plugin</name>
+      <prefix>shade</prefix>
+      <artifactId>shade-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Shell Script Executor Plugin</name>
+      <prefix>shell</prefix>
+      <artifactId>shell-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Ship Maven Plugin</name>
+      <prefix>ship</prefix>
+      <artifactId>ship-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Super Helpful Integration Testing ThingY (SHITTY) Maven Plugin</name>
+      <prefix>shitty</prefix>
+      <artifactId>shitty-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>SiteSkinner Maven Plugin</name>
+      <prefix>siteskinner</prefix>
+      <artifactId>siteskinner-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>State Machine Compiler (SMC) Maven Plugin</name>
+      <prefix>smc</prefix>
+      <artifactId>smc-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven Solaris Plugin</name>
+      <prefix>solaris</prefix>
+      <artifactId>solaris-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>SonarQube Maven Plugin</name>
+      <prefix>sonar</prefix>
+      <artifactId>sonar-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>springdoclet</name>
+      <prefix>springdoclet</prefix>
+      <artifactId>springdoclet-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>springws-maven-plugin</name>
+      <prefix>springws</prefix>
+      <artifactId>springws-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>SQL Plugin for Maven</name>
+      <prefix>sql</prefix>
+      <artifactId>sql-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>SQLJ Maven Plugin</name>
+      <prefix>sqlj</prefix>
+      <artifactId>sqlj-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven Surefire Report Plugin</name>
+      <prefix>surefire-report</prefix>
+      <artifactId>surefire-report-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Sysdeo Tomcat Maven Plugin</name>
+      <prefix>sysdeo-tomcat</prefix>
+      <artifactId>sysdeo-tomcat-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Taglist Maven Plugin</name>
+      <prefix>taglist</prefix>
+      <artifactId>taglist-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Templating Maven Plugin</name>
+      <prefix>templating</prefix>
+      <artifactId>templating-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Tidy Maven Plugin</name>
+      <prefix>tidy</prefix>
+      <artifactId>tidy-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Tomcat Maven Plugin</name>
+      <prefix>tomcat</prefix>
+      <artifactId>tomcat-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven Plugin for TrueZIP</name>
+      <prefix>truezip</prefix>
+      <artifactId>truezip-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven Unix Plug-In</name>
+      <prefix>unix</prefix>
+      <artifactId>unix-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Versions Maven Plugin</name>
+      <prefix>versions</prefix>
+      <artifactId>versions-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven VFS plugin</name>
+      <prefix>vfs</prefix>
+      <artifactId>vfs-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven Wagon plugin</name>
+      <prefix>wagon</prefix>
+      <artifactId>wagon-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>WAS6 Maven Plugin</name>
+      <prefix>was6</prefix>
+      <artifactId>was6-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>webdoclet</name>
+      <prefix>webdoclet</prefix>
+      <artifactId>webdoclet-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Weblogic Maven Plugin</name>
+      <prefix>weblogic</prefix>
+      <artifactId>weblogic-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Web Minifier Maven Plugin</name>
+      <prefix>webminifier</prefix>
+      <artifactId>webminifier-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>MWEBSTART :: Webstart Maven Plugin</name>
+      <prefix>webstart</prefix>
+      <artifactId>webstart-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Canoo WebTest Maven Plugin</name>
+      <prefix>webtest</prefix>
+      <artifactId>webtest-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>XDoclet Maven Plugin</name>
+      <prefix>xdoclet</prefix>
+      <artifactId>xdoclet-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>XML Maven Plugin</name>
+      <prefix>xml</prefix>
+      <artifactId>xml-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven XML Beans Plugin</name>
+      <prefix>xmlbeans</prefix>
+      <artifactId>xmlbeans-maven-plugin</artifactId>
+    </plugin>
+    <plugin>
+      <name>Maven XSLT Plugin</name>
+      <prefix>xslt</prefix>
+      <artifactId>xslt-maven-plugin</artifactId>
+    </plugin>
+  </plugins>
+</metadata>

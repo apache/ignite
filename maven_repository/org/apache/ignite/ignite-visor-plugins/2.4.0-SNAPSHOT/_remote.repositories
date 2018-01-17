@@ -1,0 +1,6 @@
+#NOTE: This is an Aether internal implementation file, its format can be changed without prior notice.
+#Tue Jan 09 15:13:46 CST 2018
+ignite-visor-plugins-2.4.0-SNAPSHOT.pom>=
+ignite-visor-plugins-2.4.0-SNAPSHOT-javadoc.jar>=
+ignite-visor-plugins-2.4.0-SNAPSHOT.jar>=
+ignite-visor-plugins-2.4.0-SNAPSHOT-sources.jar>=

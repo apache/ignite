@@ -1,0 +1,245 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.ops4j</groupId>
+    <artifactId>master</artifactId>
+    <version>4.2.0</version>
+  </parent>
+
+  <groupId>org.ops4j.pax</groupId>
+  <artifactId>swissbox</artifactId>
+  <version>1.8.1</version>
+  <packaging>pom</packaging>
+
+  <name>OPS4J Pax Swissbox</name>
+  <description>
+    OPS4J Pax Swissbox - Utilities for OSGi World.
+    Detailed information to be found at http://team.ops4j.org/wiki/display/PAXSB/.
+  </description>
+
+  <url>${pax.swissbox.wiki.url}</url>
+
+  <scm>
+    <connection>scm:git:git@github.com:ops4j/org.ops4j.pax.swissbox.git</connection>
+    <developerConnection>scm:git:git@github.com:ops4j/org.ops4j.pax.swissbox.git</developerConnection>
+    <url>scm:git:https://github.com/ops4j/org.ops4j.pax.swissbox.git</url>
+    <tag>swissbox-1.8.1</tag>
+  </scm>
+
+  <issueManagement>
+    <system>jira</system>
+    <url>http://team.ops4j.org/browse/PAXSB</url>
+  </issueManagement>
+
+  <properties>
+    <pax.swissbox.wiki.url>http://team.ops4j.org/wiki/display/PAXSB</pax.swissbox.wiki.url>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <dependency.base.version>1.5.0</dependency.base.version>
+    <dependency.slf4j.version>1.5.11</dependency.slf4j.version>
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>retrotranslator-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>translate-project</goal>
+            </goals>
+            <configuration>
+              <classifier>jdk14</classifier>
+              <embed>jdk14</embed>
+              <attach>true</attach>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>maven-bundle-plugin</artifactId>
+          <extensions>true</extensions>
+          <configuration>
+            <instructions>
+              <Bundle-DocURL>${pax.swissbox.wiki.url}</Bundle-DocURL>
+              <Bundle-SymbolicName>${bundle.symbolicName}</Bundle-SymbolicName>
+              <Import-Package>org.osgi.framework;version="[1.3,2)", *</Import-Package>
+            </instructions>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- OPS4J Base -->
+      <dependency>
+        <groupId>org.ops4j.base</groupId>
+        <artifactId>ops4j-base-exec</artifactId>
+        <version>${dependency.base.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.base</groupId>
+        <artifactId>ops4j-base-io</artifactId>
+        <version>${dependency.base.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.base</groupId>
+        <artifactId>ops4j-base-lang</artifactId>
+        <version>${dependency.base.version}</version>
+      </dependency>
+      <dependency>
+         <groupId>org.ops4j.base</groupId>
+         <artifactId>ops4j-base-monitors</artifactId>
+         <version>${dependency.base.version}</version>
+      </dependency>    
+      <dependency>
+        <groupId>org.ops4j.base</groupId>
+        <artifactId>ops4j-base-spi</artifactId>
+        <version>${dependency.base.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.base</groupId>
+        <artifactId>ops4j-base-store</artifactId>
+        <version>${dependency.base.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.base</groupId>
+        <artifactId>ops4j-base-util-property</artifactId>
+        <version>${dependency.base.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ops4j.base</groupId>
+        <artifactId>ops4j-base-net</artifactId>
+        <version>${dependency.base.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${dependency.slf4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-simple</artifactId>
+        <version>${dependency.slf4j.version}</version>
+      </dependency>
+
+      <!-- Provided dependencies -->
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.core</artifactId>
+        <version>4.2.0</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.compendium</artifactId>
+        <version>4.2.0</version>
+        <scope>provided</scope>
+      </dependency>
+      
+      <!-- Test dependencies-->
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.9</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.easymock</groupId>
+        <artifactId>easymock</artifactId>
+        <version>3.1</version>
+        <scope>test</scope>
+      </dependency>
+      
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.compendium</artifactId>
+    </dependency>
+  </dependencies>
+
+  <developers>
+    <developer>
+      <id>adreghiciu</id>
+      <name>Alin Dreghiciu</name>
+      <email>adreghiciu@gmail.com</email>
+      <roles>
+        <role>Developer</role>
+      </roles>
+      <timezone>UTC+2</timezone>
+    </developer>
+    <developer>
+      <id>tonit</id>
+      <name>Toni Menzel</name>
+      <email>toni@okidokiteam.com</email>
+      <organization>independent software developer</organization>
+      <roles>
+        <role>Developer</role>
+      </roles>
+      <timezone>UTC+1</timezone>
+    </developer>
+    <developer>
+      <id>hwellmann</id>
+      <name>Harald Wellmann</name>
+      <email>harald.wellmann@gmx.de</email>
+      <roles>
+        <role>Developer</role>
+      </roles>
+      <timezone>UTC+1</timezone>
+    </developer>
+  </developers>
+
+  <profiles>
+    <profile>
+      <id>default</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <modules>
+        <module>pax-swissbox-bnd</module>
+        <module>pax-swissbox-converter</module>
+        <module>pax-swissbox-core</module>
+        <module>pax-swissbox-extender</module>
+        <module>pax-swissbox-framework</module>
+        <module>pax-swissbox-lifecycle</module>
+        <module>pax-swissbox-optional-jcl</module>
+        <module>pax-swissbox-property</module>
+        <module>pax-swissbox-tracker</module>
+        <module>samples</module>
+      </modules>
+    </profile>
+
+    <profile>
+      <id>release</id>
+      <modules>
+        <module>pax-swissbox-bnd</module>
+        <module>pax-swissbox-converter</module>
+        <module>pax-swissbox-core</module>
+        <module>pax-swissbox-extender</module>
+        <module>pax-swissbox-framework</module>
+        <module>pax-swissbox-lifecycle</module>
+        <module>pax-swissbox-optional-jcl</module>
+        <module>pax-swissbox-property</module>
+        <module>pax-swissbox-tracker</module>
+      </modules>
+    </profile>
+
+  </profiles>
+
+</project>
+

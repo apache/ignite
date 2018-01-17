@@ -1,0 +1,6 @@
+#NOTE: This is an Aether internal implementation file, its format can be changed without prior notice.
+#Tue Jan 09 14:58:32 CST 2018
+ignite-mesos-2.4.0-SNAPSHOT.pom>=
+ignite-mesos-2.4.0-SNAPSHOT-javadoc.jar>=
+ignite-mesos-2.4.0-SNAPSHOT.jar>=
+ignite-mesos-2.4.0-SNAPSHOT-sources.jar>=

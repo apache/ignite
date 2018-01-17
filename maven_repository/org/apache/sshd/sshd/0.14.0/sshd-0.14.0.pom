@@ -1,0 +1,346 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+
+    <!--
+
+        Licensed to the Apache Software Foundation (ASF) under one or more
+        contributor license agreements.  See the NOTICE file distributed with
+        this work for additional information regarding copyright ownership.
+        The ASF licenses this file to You under the Apache License, Version 2.0
+        (the "License"); you may not use this file except in compliance with
+        the License.  You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+        Unless required by applicable law or agreed to in writing, software
+        distributed under the License is distributed on an "AS IS" BASIS,
+        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        See the License for the specific language governing permissions and
+        limitations under the License.
+    -->
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.apache</groupId>
+        <artifactId>apache</artifactId>
+        <version>15</version>
+    </parent>
+
+    <groupId>org.apache.sshd</groupId>
+    <artifactId>sshd</artifactId>
+    <version>0.14.0</version>
+    <name>Apache Mina SSHD</name>
+    <packaging>pom</packaging>
+    <inceptionYear>2008</inceptionYear>
+
+    <licenses>
+        <license>
+            <name>Apache 2.0 License</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <mailingLists>
+        <mailingList>
+            <name>Users mailing list</name>
+            <subscribe>users-subscribe@mina.apache.org</subscribe>
+            <unsubscribe>users-unsubscribe@mina.apache.org</unsubscribe>
+            <post>users@mina.apache.org</post>
+            <archive>http://mail-archives.apache.org/mod_mbox/mina-users/</archive>
+        </mailingList>
+        <mailingList>
+            <name>MINA Development mailing list</name>
+            <subscribe>dev-subscribe@mina.apache.org</subscribe>
+            <unsubscribe>dev-unsubscribe@mina.apache.org</unsubscribe>
+            <post>dev@mina.apache.org</post>
+            <archive>http://mail-archives.apache.org/mod_mbox/mina-dev/</archive>
+            <otherArchives>
+                <otherArchive>http://www.nabble.com/Apache-MINA-f16868.html</otherArchive>
+            </otherArchives>
+        </mailingList>
+        <mailingList>
+            <name>MINA Commit mailing list</name>
+            <subscribe>commits-subscribe@mina.apache.org</subscribe>
+            <unsubscribe>commits-unsubscribe@mina.apache.org</unsubscribe>
+            <archive>http://mail-archives.apache.org/mod_mbox/mina-commits/</archive>
+        </mailingList>
+    </mailingLists>
+
+    <issueManagement>
+        <system>JIRA</system>
+        <url>https://issues.apache.org/jira/browse/SSHD</url>
+    </issueManagement>
+
+    <scm>
+        <connection>scm:git:http://git-wip-us.apache.org/repos/asf/mina-sshd.git</connection>
+        <developerConnection>scm:git:http://git-wip-us.apache.org/repos/asf/mina-sshd.git</developerConnection>
+        <url>https://git-wip-us.apache.org/repos/asf?p=mina-sshd.git</url>
+      <tag>sshd-0.14.0</tag>
+  </scm>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.apache.sshd</groupId>
+                <artifactId>sshd-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.sshd</groupId>
+                <artifactId>sshd-pam</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.sshd</groupId>
+                <artifactId>sshd-sftp</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.mina</groupId>
+                <artifactId>mina-core</artifactId>
+                <version>2.0.8</version>
+            </dependency>
+            <dependency>
+                <groupId>tomcat</groupId>
+                <artifactId>tomcat-apr</artifactId>
+                <version>5.5.23</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jcraft</groupId>
+                <artifactId>jzlib</artifactId>
+                <version>1.1.1</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcpg-jdk15on</artifactId>
+                <version>1.51</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcpkix-jdk15on</artifactId>
+                <version>1.51</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>1.6.4</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-log4j12</artifactId>
+                <version>1.6.4</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-jdk14</artifactId>
+                <version>1.6.4</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-simple</artifactId>
+                <version>1.6.4</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jcraft</groupId>
+                <artifactId>jsch</artifactId>
+                <version>0.1.50</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-context</artifactId>
+                <version>3.0.6.RELEASE</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>spring-aop</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>commons-logging</groupId>
+                <artifactId>commons-logging</artifactId>
+                <version>1.1.1</version>
+            </dependency>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.11</version>
+            </dependency>
+            <dependency>
+                <groupId>net.sf.jpam</groupId>
+                <artifactId>jpam</artifactId>
+                <version>1.1</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-httpclient</groupId>
+                <artifactId>commons-httpclient</artifactId>
+                <version>3.1</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.ethz.ganymed</groupId>
+                <artifactId>ganymed-ssh2</artifactId>
+                <version>build210</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jgit</groupId>
+                <artifactId>org.eclipse.jgit</artifactId>
+                <version>3.4.1.201406201815-r</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jgit</groupId>
+                <artifactId>org.eclipse.jgit.pgm</artifactId>
+                <version>3.4.1.201406201815-r</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-release-plugin</artifactId>
+                    <version>2.5.1</version>
+                    <configuration>
+                        <autoVersionSubmodules>true</autoVersionSubmodules>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.2</version>
+                <configuration>
+                    <source>1.5</source>
+                    <target>1.5</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-remote-resources-plugin</artifactId>
+                <version>1.5</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>process</goal>
+                        </goals>
+                        <configuration>
+                            <resourceBundles>
+                                <resourceBundle>org.apache:apache-jar-resource-bundle:1.4</resourceBundle>
+                            </resourceBundles>
+                            <supplementalModels>
+                                <supplementalModel>${projectRoot}/src/legal/notices.xml</supplementalModel>
+                            </supplementalModels>
+                            <properties>
+                                <projectName>Apache MINA SSHD</projectName>
+                                <addLicense>true</addLicense>
+                                <addArtifact>true</addArtifact>
+                            </properties>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.rat</groupId>
+                <artifactId>apache-rat-plugin</artifactId>
+                <version>0.11</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>**/*.iml</exclude>
+                                <exclude>src/docs/**</exclude>
+                                <exclude>**/stty-output-*.txt</exclude>
+                                <exclude>**/big-msg.txt</exclude>
+                                <exclude>sshd-sftp/**</exclude>
+                                <exclude>sshd-pam/**</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.4.1</version>
+                <executions>
+                    <execution>
+                        <id>source-release-assembly</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <version>2.5.3</version>
+                <inherited>true</inherited>
+                <extensions>true</extensions>
+                <executions>
+                    <execution>
+                        <id>bundle-manifest</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>manifest</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.5</version>
+                <inherited>true</inherited>
+                <configuration>
+                    <archive>
+                        <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.17</version>
+                <configuration>
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <distributionManagement>
+        <repository>
+            <id>dummy</id>
+            <name>Dummy to avoid accidental deploys</name>
+            <url />
+        </repository>
+    </distributionManagement>
+
+    <properties>
+        <projectRoot>${basedir}</projectRoot>
+    </properties>
+
+    <profiles>
+        <profile>
+            <id>experimental</id>
+            <modules>
+                <module>sshd-pam</module>
+                <module>sshd-sftp</module>
+            </modules>
+        </profile>
+    </profiles>
+
+    <modules>
+        <module>sshd-core</module>
+        <module>sshd-git</module>
+        <module>assembly</module>
+    </modules>
+
+</project>

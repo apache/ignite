@@ -1,0 +1,6 @@
+#NOTE: This is an Aether internal implementation file, its format can be changed without prior notice.
+#Tue Jan 09 14:56:12 CST 2018
+ignite-clients-2.4.0-SNAPSHOT-sources.jar>=
+ignite-clients-2.4.0-SNAPSHOT.jar>=
+ignite-clients-2.4.0-SNAPSHOT-tests.jar>=
+ignite-clients-2.4.0-SNAPSHOT.pom>=

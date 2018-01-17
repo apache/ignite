@@ -1,0 +1,4 @@
+#NOTE: This is an Aether internal implementation file, its format can be changed without prior notice.
+#Tue Dec 19 19:19:40 CST 2017
+org.apache.karaf.features.core-4.0.2.pom>central=
+org.apache.karaf.features.core-4.0.2.jar>central=

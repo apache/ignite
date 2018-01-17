@@ -1,0 +1,134 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<parent>
+		<groupId>org.sonatype.oss</groupId>
+		<artifactId>oss-parent</artifactId>
+		<version>7</version>
+	</parent>
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>com.esotericsoftware</groupId>
+	<artifactId>reflectasm</artifactId>
+	<version>1.10.1</version>
+	<packaging>bundle</packaging>
+	<name>ReflectASM</name>
+	<description>High performance Java reflection using code generation</description>
+	<url>https://github.com/EsotericSoftware/reflectasm</url>
+
+	<licenses>
+		<license>
+			<name>New BSD License</name>
+			<url>http://www.opensource.org/licenses/bsd-license.php</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<scm>
+		<url>https://github.com/EsotericSoftware/reflectasm</url>
+		<connection>scm:git:git@github.com:EsotericSoftware/reflectasm.git</connection>
+		<developerConnection>scm:git:git@github.com:EsotericSoftware/reflectasm.git</developerConnection>
+	</scm>
+
+	<developers>
+		<developer>
+			<id>nathan.sweet</id>
+			<name>Nathan Sweet</name>
+			<email>nathan.sweet@gmail.com</email>
+		</developer>
+	</developers>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.ow2.asm</groupId>
+			<artifactId>asm</artifactId>
+			<version>5.0.3</version>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.8.2</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<!-- Set nonstandard source and test source dirs -->
+		<sourceDirectory>src</sourceDirectory>
+		<testSourceDirectory>test</testSourceDirectory>
+
+		<plugins>
+     			 <plugin>
+        			<groupId>org.apache.maven.plugins</groupId>
+        			<artifactId>maven-compiler-plugin</artifactId>
+        			<version>3.1</version>
+        			<configuration>
+          				<source>1.5</source>
+          				<target>1.5</target>
+        			</configuration>
+      			</plugin>
+			<!-- Disable resources (project has none) -->
+			<plugin>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>2.5</version>
+				<executions>
+					<execution>
+						<id>default-resources</id>
+						<phase>none</phase>
+					</execution>
+					<execution>
+						<id>default-testResources</id>
+						<phase>none</phase>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>2.4</version>
+				<configuration>
+					<excludes>
+						<exclude>**/.svn/*</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>2.3</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<!-- remove all classes of dependencies that are not used by the project -->
+							<minimizeJar>true</minimizeJar>
+							<shadedArtifactAttached>true</shadedArtifactAttached>
+							<shadedClassifierName>shaded</shadedClassifierName>
+							<relocations>
+								<relocation>
+									<pattern>org.objectweb.asm</pattern>
+									<shadedPattern>com.esotericsoftware.reflectasm.shaded.org.objectweb.asm</shadedPattern>
+								</relocation>
+							</relocations>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-bundle-plugin</artifactId>
+				<version>2.5.0</version>
+				<extensions>true</extensions>
+				<configuration>
+					<instructions>
+						<Export-Package>com.esotericsoftware.reflectasm*</Export-Package>
+					</instructions>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+</project>

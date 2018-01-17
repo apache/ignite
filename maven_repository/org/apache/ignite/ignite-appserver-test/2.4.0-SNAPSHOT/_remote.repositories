@@ -1,0 +1,5 @@
+#NOTE: This is an Aether internal implementation file, its format can be changed without prior notice.
+#Tue Jan 09 15:01:21 CST 2018
+ignite-appserver-test-2.4.0-SNAPSHOT.pom>=
+ignite-appserver-test-2.4.0-SNAPSHOT-sources.jar>=
+ignite-appserver-test-2.4.0-SNAPSHOT.jar>=

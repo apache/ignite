@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!--
+    POM file.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <packaging>pom</packaging>
+
+    <parent>
+        <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite-parent</artifactId>
+        <version>1</version>
+        <relativePath>../../../parent</relativePath>
+    </parent>
+
+    <artifactId>ignite-extdata-uri</artifactId>
+    <version>2.4.0-SNAPSHOT</version>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-beans</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-extdata-uri-dep</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+
+    <modules>
+        <module>modules/uri-dependency</module>
+    </modules>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/java</directory>
+                <excludes>
+                    <exclude>**/*.java</exclude>
+                </excludes>
+            </resource>
+        </resources>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <filesets>
+                                <fileset>
+                                    <directory>deploy</directory>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>compile</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <!-- need to compile sources. pom packaging will not compile automatically. -->
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.7</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.ignite</groupId>
+                        <artifactId>ignite-tools</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+
+                    <dependency>
+                        <groupId>com.sun.mail</groupId>
+                        <artifactId>javax.mail</artifactId>
+                        <version>1.5.2</version>
+                    </dependency>
+                </dependencies>
+                <executions>
+                    <execution>
+                        <id>gar</id>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <phase>compile</phase>
+                        <configuration>
+                            <target>
+                                <taskdef name="gar" classname="org.apache.ignite.util.antgar.IgniteDeploymentGarAntTask" />
+
+                                <!-- copying resources to classes -->
+                                <copy todir="${basedir}/target/classes">
+                                    <fileset dir="${basedir}/src/main/java">
+                                        <include name="**/*.xml" />
+                                        <include name="**/*.properties" />
+                                    </fileset>
+                                </copy>
+
+                                <mkdir dir="${basedir}/target/deploy_tmp/" />
+
+                                <!--uri-classes.gar-->
+                                <gar destfile="${basedir}/target/deploy2/uri-classes.gar" basedir="${basedir}/target/classes" />
+
+                                <!--Copy libs.-->
+                                <zip destfile="${basedir}/target/classes/lib/depend.jar" encoding="UTF-8">
+                                    <zipfileset dir="modules/uri-dependency/target/classes" />
+                                </zip>
+
+                                <copy file="${settings.localRepository}/com/sun/mail/javax.mail/1.5.2/javax.mail-1.5.2.jar" todir="${basedir}/target/classes/lib" />
+
+                                <!--uri-libs.gar-->
+                                <gar destfile="${basedir}/target/deploy2/uri-libs.gar" basedir="${basedir}/target/classes/lib" />
+
+                                <!--uri.gar-->
+                                <gar destfile="${basedir}/target/deploy/uri.gar" basedir="${basedir}/target/classes" />
+
+                                <!--
+                                This is created for test GridTaskUriDeploymentDeadlockSelfTest.
+                                We put two files here to have a collision and make deployment SPI to unregister class loaders.
+                                This is intended to test GG-2852 issue.
+                                -->
+                                <gar destfile="${basedir}/target/resources/helloworld.gar" descrdir="${basedir}/META-INF" basedir="${basedir}/target/classes" />
+                                <gar destfile="${basedir}/target/resources/helloworld1.gar" descrdir="${basedir}/META-INF" basedir="${basedir}/target/classes" />
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.google.code.simple-spring-memcached</groupId>
+  <artifactId>spymemcached</artifactId>
+  <version>2.8.4</version>
+  <name>spymemcached</name>
+  <description>A client library for memcached.</description>
+  <url>http://code.google.com/p/spymemcached/</url>
+  
+  <licenses>
+    <license>
+      <name>MIT License</name>
+      <url>http://www.opensource.org/licenses/mit-license.php</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>dustin</id>
+      <name>Dustin Sallings</name>
+    </developer>
+    <developer>
+      <id>ingenthr</id>
+      <name>Matt Ingenthron</name>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:git@github.com:dustin/java-memcached-client.git</connection>
+    <developerConnection>scm:git:git@github.com:dustin/java-memcached-client.git</developerConnection>
+    <url>git@github.com:dustin/java-memcached-client.git</url>
+  </scm>
+
+  <dependencies>
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <version>1.2.16</version>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+      <version>3.0.3.RELEASE</version>
+      <optional>true</optional>
+    </dependency>
+  </dependencies>
+
+</project>

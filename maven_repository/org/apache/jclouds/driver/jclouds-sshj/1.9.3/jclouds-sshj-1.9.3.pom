@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.apache.jclouds</groupId>
+    <artifactId>jclouds-project</artifactId>
+    <version>1.9.3</version>
+    <relativePath>../../project/pom.xml</relativePath>
+  </parent>
+  <groupId>org.apache.jclouds.driver</groupId>
+  <artifactId>jclouds-sshj</artifactId>
+  <name>jclouds sshj ssh client</name>
+  <description>jclouds sshj ssh client</description>
+  <packaging>bundle</packaging>
+
+  <!-- bootstrapping: need to fetch the project POM -->
+  <repositories>
+    <repository>
+      <id>jclouds-sona-snapshots-nexus</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+
+  <properties>
+    <test.ssh.host>localhost</test.ssh.host>
+    <test.ssh.port>22</test.ssh.port>
+    <test.ssh.username />
+    <test.ssh.password />
+    <test.ssh.keyfile />
+
+    <jclouds.osgi.export>org.jclouds.sshj*;version="${project.version}"</jclouds.osgi.export>
+    <jclouds.osgi.import>org.jclouds*;version="${project.version}",*</jclouds.osgi.import>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.jclouds</groupId>
+      <artifactId>jclouds-compute</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.jclouds</groupId>
+      <artifactId>jclouds-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.jclouds.driver</groupId>
+      <artifactId>jclouds-slf4j</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.jclouds.driver</groupId>
+      <artifactId>jclouds-bouncycastle</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.jclouds</groupId>
+      <artifactId>jclouds-core</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.schmizz</groupId>
+      <artifactId>sshj</artifactId>
+      <version>0.8.1</version>
+    </dependency>
+    <!-- required by sshj -->
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpkix-jdk15on</artifactId>
+      <version>1.49</version>
+      <exclusions>
+        <!-- provided by the jclouds-bouncycastle driver -->
+        <exclusion>
+          <groupId>org.bouncycastle</groupId>
+          <artifactId>bcprov-jdk15on</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>com.jcraft</groupId>
+      <artifactId>jsch.agentproxy.sshj</artifactId>
+      <version>0.0.8</version>
+    </dependency>
+    <dependency>
+      <groupId>com.jcraft</groupId>
+      <artifactId>jsch.agentproxy.connector-factory</artifactId>
+      <version>0.0.8</version>
+    </dependency>
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <id>live</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>integration</id>
+                <phase>integration-test</phase>
+                <goals>
+                  <goal>test</goal>
+                </goals>
+                <configuration>
+                  <!-- note that the groups/excluded groups don't work due to some problem
+                       in surefire or testng. instead, we have to exclude via file path
+                       <groups>live,integration</groups>
+                       <excludedGroups>unit,performance</excludedGroups> -->
+                  <excludes>
+                    <exclude>none</exclude>
+                  </excludes>
+                  <includes>
+                    <include>**/*IntegrationTest.java</include>
+                    <include>**/*LiveTest.java</include>
+                  </includes>
+                  <systemPropertyVariables>
+                    <file.encoding>UTF-8</file.encoding>
+                    <test.ssh.host>${test.ssh.host}</test.ssh.host>
+                    <test.ssh.port>${test.ssh.port}</test.ssh.port>
+                    <test.ssh.username>${test.ssh.username}</test.ssh.username>
+                    <test.ssh.keyfile>${test.ssh.keyfile}</test.ssh.keyfile>
+                    <test.ssh.password>${test.ssh.password}</test.ssh.password>
+                  </systemPropertyVariables>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>

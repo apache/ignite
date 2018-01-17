@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <parent>
+    <groupId>org.sonatype.oss</groupId>
+    <artifactId>oss-parent</artifactId>
+    <version>7</version>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.eclipse.birt.runtime</groupId>
+  <artifactId>org.eclipse.osgi</artifactId>
+  <version>3.10.2.v20150203-1939</version>
+  <packaging>jar</packaging>
+  <name>org.eclipse.osgi_3.10.2.v20150203-1939.jar</name>
+  <description>A component of the BIRT runtime</description>
+  <url>http://www.eclipse.org/projects/project.php?id=birt</url>
+  <licenses>
+    <license>
+      <name>Eclipse Public License - v 1.0</name>
+      <url>http://www.eclipse.org/org/documents/epl-v10.html</url>
+    </license>
+  </licenses>
+  <scm>
+    <url>http://git.eclipse.org/c/birt/org.eclipse.birt.git/</url>
+    <connection>http://git.eclipse.org/c/birt/org.eclipse.birt.git/</connection>
+  </scm>
+  <developers></developers>
+</project>

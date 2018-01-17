@@ -1,0 +1,73 @@
+
+<project xmlns='http://maven.apache.org/POM/4.0.0' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:schemaLocation='http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd'>
+  <modelVersion>
+    4.0.0
+  </modelVersion>
+  <groupId>
+    org.osgi
+  </groupId>
+  <artifactId>
+    org.osgi.core
+  </artifactId>
+  <version>
+    4.3.1
+  </version>
+  <description>
+    OSGi Service Platform Release 4 Version 4.3, Core Interfaces
+     and Classes for use in compiling bundles.
+  </description>
+  <name>
+    osgi.core
+  </name>
+  <url>
+    http://www.osgi.org
+  </url>
+  <scm>
+    <url>
+      private
+    </url>
+    <connection>
+      private
+    </connection>
+    <developerConnection>
+      private
+    </developerConnection>
+  </scm>
+  <organization>
+    <name>
+      OSGi Alliance
+    </name>
+    <url>
+      http://www.osgi.org
+    </url>
+  </organization>
+  <developers>
+    <developer>
+      <id>
+        davidb@apache.org
+      </id>
+      <name>
+        davidb
+      </name>
+      <email>
+        davidb@apache.org
+      </email>
+      <organization>
+        apache
+      </organization>
+    </developer>
+  </developers>
+  <licenses>
+    <license>
+      <name>
+        Apache License, Version 2.0
+      </name>
+      <url>
+        http://opensource.org/licenses/apache2.0.php
+      </url>
+      <distribution>
+        repo
+      </distribution>
+    </license>
+  </licenses>
+</project>

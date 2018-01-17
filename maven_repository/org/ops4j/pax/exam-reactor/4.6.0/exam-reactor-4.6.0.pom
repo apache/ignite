@@ -1,0 +1,96 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.ops4j</groupId>
+        <artifactId>master</artifactId>
+        <version>4.2.0</version>
+    </parent>
+
+    <groupId>org.ops4j.pax</groupId>
+    <artifactId>exam-reactor</artifactId>
+    <version>4.6.0</version>
+    <packaging>pom</packaging>
+
+    <name>OPS4J Pax Exam (Reactor POM)</name>
+
+    <profiles>
+        <profile>
+            <id>default</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <modules>
+                <module>build/pax-exam-checkstyle-rules</module>
+                <module>pom</module>
+                <module>core/pax-exam</module>
+                <module>core/pax-exam-spi</module>
+                <module>core/pax-exam-extender-service</module>
+                <module>core/pax-exam-inject</module>
+                <module>core/pax-exam-invoker-jaxrs2</module>
+                <module>core/pax-exam-invoker-junit</module>
+                <module>core/pax-exam-servlet-bridge</module>
+                <module>core/pax-exam-cdi</module>
+                <module>core/pax-exam-spring</module>
+                <module>core/pax-exam-cm</module>
+                <module>drivers/pax-exam-junit4</module>
+                <module>drivers/pax-exam-testng</module>
+                <module>drivers/pax-exam-testng-servlet-bridge</module>
+
+                <module>core/pax-exam-link-mvn</module>
+                <module>core/pax-exam-link-assembly</module>
+                <module>core/pax-exam-container-rbc</module>
+                <module>core/pax-exam-container-rbc-client</module>
+                <module>features</module>
+                
+                <module>samples</module>
+
+                <module>containers/pax-exam-container-native</module>
+                <module>containers/pax-exam-container-remote</module>
+                <module>containers/pax-exam-container-forked</module>
+                <module>containers/pax-exam-container-glassfish-embedded</module>
+                <module>containers/pax-exam-container-weld</module>
+                <module>containers/pax-exam-container-tomcat</module>
+                <module>containers/pax-exam-container-karaf</module>
+                <module>containers/pax-exam-container-wildfly80</module>
+                <module>containers/pax-exam-container-wildfly90</module>
+                <module>containers/pax-exam-container-openwebbeans</module>
+
+                <module>maven/exam-maven-plugin</module>
+                <module>maven/archetypes/exam-glassfish41-archetype</module>
+                <module>maven/archetypes/exam-osgi-archetype</module>
+                <module>maven/archetypes/exam-karaf-archetype</module>
+                <module>maven/archetypes/exam-wildfly80-archetype</module>
+
+            </modules>
+        </profile>
+        <profile>
+            <id>itest</id>
+            <modules>
+                <module>pom</module>
+                <module>itest</module>
+            </modules>
+        </profile>
+    </profiles>
+
+    <scm>
+        <connection>scm:git:git@github.com:ops4j/org.ops4j.pax.exam2.git</connection>
+        <developerConnection>scm:git:git@github.com:ops4j/org.ops4j.pax.exam2.git</developerConnection>
+        <url>git@github.com:ops4j/org.ops4j.pax.exam2.git</url>
+      <tag>exam-reactor-4.6.0</tag>
+  </scm>
+
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <aggregate>true</aggregate>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

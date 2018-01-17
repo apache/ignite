@@ -1,0 +1,405 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.sonatype.oss</groupId>
+    <artifactId>oss-parent</artifactId>
+    <version>7</version>
+  </parent>
+  <groupId>com.google.guava</groupId>
+  <artifactId>guava-parent</artifactId>
+  <version>13.0.1.redhat-2</version>
+  <packaging>pom</packaging>
+  <name>Guava Maven Parent</name>
+  <url>http://code.google.com/p/guava-libraries</url>
+  <properties>
+    <gpg.skip>true</gpg.skip>
+
+    <!-- **************** -->
+    <!-- Plugins versions -->
+    <!-- **************** -->
+    <version.assembly.plugin>2.4</version.assembly.plugin>
+    <version.buildnumber.plugin>1.2</version.buildnumber.plugin>
+    <version.bundle.plugin>2.3.7</version.bundle.plugin>
+    <version.compiler.plugin>3.1</version.compiler.plugin>
+    <version.jar.plugin>2.4</version.jar.plugin>
+    <version.javadoc.plugin>2.9.1</version.javadoc.plugin>
+    <version.source.plugin>2.2.1</version.source.plugin>
+
+    <!-- ************** -->
+    <!-- Build settings -->
+    <!-- ************** -->
+
+    <!-- Cross plugins settings -->
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+    <!-- maven-compiler-plugin -->
+    <maven.compiler.target>1.6</maven.compiler.target>
+    <maven.compiler.source>1.6</maven.compiler.source>
+
+    <!--
+        Options to override the compiler arguments directly on the compiler arument line to separate between what
+        the IDE understands as the source level and what the Maven compiler actually use.
+    -->
+    <maven.compiler.argument.target>${maven.compiler.target}</maven.compiler.argument.target>
+    <maven.compiler.argument.source>${maven.compiler.source}</maven.compiler.argument.source>
+
+    <!-- maven-enforcer-plugin -->
+    <maven.min.version>3.0.3</maven.min.version>
+    <jdk.min.version>${maven.compiler.argument.source}</jdk.min.version>
+  </properties>
+  <issueManagement>
+    <system>code.google.com</system>
+    <url>http://code.google.com/p/guava-libraries/issues</url>
+  </issueManagement>
+  <inceptionYear>2010</inceptionYear>
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <prerequisites>
+    <maven>2.0.9</maven>
+  </prerequisites>
+  <scm>
+    <connection>scm:git:https://code.google.com/p/guava-libraries/</connection>
+    <developerConnection>scm:git:https://code.google.com/p/guava-libraries/</developerConnection>
+    <url>http://code.google.com/p/guava-libraries/source/browse</url>
+  </scm>
+  <developers>
+    <developer>
+      <id>kevinb9n</id>
+      <name>Kevin Bourrillion</name>
+      <email>kevinb@google.com</email>
+      <organization>Google</organization>
+      <organizationUrl>http://www.google.com</organizationUrl>
+      <roles>
+        <role>owner</role>
+        <role>developer</role>
+      </roles>
+      <timezone>-8</timezone>
+    </developer>
+  </developers>
+
+  <modules>
+    <module>guava</module>
+    <module>guava-gwt</module>
+    <!-- <module>guava-testlib</module> -->
+    <!-- <module>guava-tests</module> -->
+  </modules>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <version>${version.assembly.plugin}</version>
+          <configuration>
+            <archive>
+              <index>true</index>
+              <manifest>
+                <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+              </manifest>
+              <manifestEntries>
+                <Implementation-URL>${project.url}</Implementation-URL>
+                <Java-Version>${java.version}</Java-Version>
+                <Java-Vendor>${java.vendor}</Java-Vendor>
+                <Os-Name>${os.name}</Os-Name>
+                <Os-Arch>${os.arch}</Os-Arch>
+                <Os-Version>${os.version}</Os-Version>
+                <Scm-Url>${project.scm.url}</Scm-Url>
+                <Scm-Connection>${project.scm.connection}</Scm-Connection>
+                <Scm-Revision>${buildNumber}</Scm-Revision>
+                <Build-Timestamp>${build.datetime}</Build-Timestamp>
+              </manifestEntries>
+            </archive>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>buildnumber-maven-plugin</artifactId>
+          <version>${version.buildnumber.plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>maven-bundle-plugin</artifactId>
+          <version>${version.bundle.plugin}</version>
+          <configuration>
+            <archive>
+              <index>true</index>
+              <manifest>
+                <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+              </manifest>
+              <manifestEntries>
+                <Implementation-URL>${project.url}</Implementation-URL>
+                <Java-Version>${java.version}</Java-Version>
+                <Java-Vendor>${java.vendor}</Java-Vendor>
+                <Os-Name>${os.name}</Os-Name>
+                <Os-Arch>${os.arch}</Os-Arch>
+                <Os-Version>${os.version}</Os-Version>
+                <Scm-Url>${project.scm.url}</Scm-Url>
+                <Scm-Connection>${project.scm.connection}</Scm-Connection>
+              </manifestEntries>
+            </archive>
+            <instructions>
+              <Scm-Revision>${buildNumber}</Scm-Revision>
+              <Build-Timestamp>${build.datetime}</Build-Timestamp>
+            </instructions>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>${version.compiler.plugin}</version>
+          <configuration>
+            <showDeprecation>true</showDeprecation>
+            <showWarnings>true</showWarnings>
+            <compilerArguments>
+              <source>${maven.compiler.argument.source}</source>
+              <target>${maven.compiler.argument.target}</target>
+            </compilerArguments>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>${version.jar.plugin}</version>
+          <configuration>
+            <archive>
+              <index>true</index>
+              <manifest>
+                <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+              </manifest>
+              <manifestEntries>
+                <Implementation-URL>${project.url}</Implementation-URL>
+                <Java-Version>${java.version}</Java-Version>
+                <Java-Vendor>${java.vendor}</Java-Vendor>
+                <Os-Name>${os.name}</Os-Name>
+                <Os-Arch>${os.arch}</Os-Arch>
+                <Os-Version>${os.version}</Os-Version>
+                <Scm-Url>${project.scm.url}</Scm-Url>
+                <Scm-Connection>${project.scm.connection}</Scm-Connection>
+                <Scm-Revision>${buildNumber}</Scm-Revision>
+                <Build-Timestamp>${build.datetime}</Build-Timestamp>
+              </manifestEntries>
+            </archive>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>${version.javadoc.plugin}</version>
+          <configuration>
+            <header>&lt;b&gt;${project.name} ${project.version}&lt;/b&gt;</header>
+            <footer>&lt;b&gt;${project.name} ${project.version}&lt;/b&gt;</footer>
+            <archive>
+              <index>true</index>
+              <manifest>
+                <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+              </manifest>
+              <manifestEntries>
+                <Implementation-URL>${project.url}</Implementation-URL>
+                <Java-Version>${java.version}</Java-Version>
+                <Java-Vendor>${java.vendor}</Java-Vendor>
+                <Os-Name>${os.name}</Os-Name>
+                <Os-Arch>${os.arch}</Os-Arch>
+                <Os-Version>${os.version}</Os-Version>
+                <Scm-Url>${project.scm.url}</Scm-Url>
+                <Scm-Connection>${project.scm.connection}</Scm-Connection>
+                <Scm-Revision>${buildNumber}</Scm-Revision>
+                <Build-Timestamp>${build.datetime}</Build-Timestamp>
+              </manifestEntries>
+            </archive>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-source-plugin</artifactId>
+          <version>${version.source.plugin}</version>
+          <configuration>
+            <archive>
+              <index>true</index>
+              <manifest>
+                <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+              </manifest>
+              <manifestEntries>
+                <Implementation-URL>${project.url}</Implementation-URL>
+                <Java-Version>${java.version}</Java-Version>
+                <Java-Vendor>${java.vendor}</Java-Vendor>
+                <Os-Name>${os.name}</Os-Name>
+                <Os-Arch>${os.arch}</Os-Arch>
+                <Os-Version>${os.version}</Os-Version>
+                <Scm-Url>${project.scm.url}</Scm-Url>
+                <Scm-Connection>${project.scm.connection}</Scm-Connection>
+                <Scm-Revision>${buildNumber}</Scm-Revision>
+                <Build-Timestamp>${build.datetime}</Build-Timestamp>
+              </manifestEntries>
+            </archive>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
+    <plugins>
+      <plugin>
+        <artifactId>maven-gpg-plugin</artifactId>
+        <version>1.4</version>
+        <executions>
+          <execution>
+            <id>sign-artifacts</id>
+            <phase>verify</phase>
+            <goals><goal>sign</goal></goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Check for the minimum version of Java and Maven.  Runs during the validate phase. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce-java-version</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <message>To build this project JDK ${jdk.min.version} (or greater) is required. Please install it.</message>
+                  <version>${jdk.min.version}</version>
+                </requireJavaVersion>
+              </rules>
+            </configuration>
+          </execution>
+          <execution>
+            <id>enforce-maven-version</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireMavenVersion>
+                  <message>To build this project Maven ${maven.min.version} (or greater) is required. Please install it.</message>
+                  <version>${maven.min.version}</version>
+                </requireMavenVersion>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Set properties containing the scm revision and build timestamp -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>buildnumber-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>get-build-timestamp</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>create-timestamp</goal>
+            </goals>
+            <configuration>
+              <!-- Example date: Wed, 4 Jul 2001 12:08:56 -0700 -->
+              <timestampFormat>EEE, d MMM yyyy HH:mm:ss Z</timestampFormat>
+              <timestampPropertyName>build.datetime</timestampPropertyName>
+            </configuration>
+          </execution>
+          <execution>
+            <id>get-scm-revision</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>create</goal>
+            </goals>
+            <configuration>
+              <doCheck>false</doCheck>
+              <doUpdate>false</doUpdate>
+              <revisionOnScmFailure>UNKNOWN</revisionOnScmFailure>
+              <getRevisionOnlyOnce>true</getRevisionOnlyOnce>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Attach source jar to all builds.  Runs during the package phase.-->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.commonjava.maven.plugins</groupId>
+        <artifactId>project-sources-maven-plugin</artifactId>
+        <version>0.3</version>
+        <executions>
+          <execution>
+            <id>project-sources-archive</id>
+            <phase>initialize</phase>
+            <goals>
+              <goal>archive</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>com.redhat.rcm.maven.plugin</groupId>
+        <artifactId>buildmetadata-maven-plugin</artifactId>
+        <version>1.5.0</version>
+        <executions>
+          <execution>
+            <id>build-metadata</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>provide-buildmetadata</goal>
+            </goals>
+            <configuration>
+              <validateCheckout>false</validateCheckout>
+              <hideJavaOptsInfo>false</hideJavaOptsInfo>
+              <activateOutputFileMapping>false</activateOutputFileMapping>
+              <createXmlReport>false</createXmlReport>
+              <hideCommandLineInfo>false</hideCommandLineInfo>
+              <propertiesOutputFile>${basedir}/build.properties</propertiesOutputFile>
+              <createPropertiesReport>true</createPropertiesReport>
+              <addMavenExecutionInfo>true</addMavenExecutionInfo>
+              <addLocallyModifiedTagToFullVersion>false</addLocallyModifiedTagToFullVersion>
+              <addJavaRuntimeInfo>true</addJavaRuntimeInfo>
+              <hideMavenOptsInfo>false</hideMavenOptsInfo>
+              <addToGeneratedSources>false</addToGeneratedSources>
+              <forceNewProperties>true</forceNewProperties>
+            </configuration>
+          </execution>
+        </executions>
+        <inherited>false</inherited>
+      </plugin>
+
+    </plugins>
+
+  </build>
+
+  <distributionManagement>
+    <site>
+      <id>guava-site</id>
+      <name>Guava Documentation Site</name>
+      <url>scp://dummy.server/dontinstall/usestaging</url>
+    </site>
+  </distributionManagement>
+</project>
+<!-- Modified by POM Manipulation Extension for Maven 0.8.2 ( SHA: 843a10ee ) -->
+

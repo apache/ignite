@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>org.jledit</groupId>
+        <artifactId>jledit-project</artifactId>
+        <version>0.2.1</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>core</artifactId>
+    <packaging>bundle</packaging>
+    <name>JLEdit :: Core</name>
+
+    <properties>
+        <osgi.activator>org.jledit.osgi.Activator</osgi.activator>
+        <osgi.import>
+            jline,
+            jline.console,
+            org.fusesource.jansi*,
+            org.osgi.framework
+        </osgi.import>
+        <osgi.private>
+            org.mozilla.universalchardet*,
+            org.jledit.utils,
+            org.jledit.utils.internal,
+            org.jledit.collection,
+            org.jledit.simple,
+            org.jledit.main,
+            org.jledit.osgi
+        </osgi.private>
+        <osgi.export>
+            org.jledit;-noimport:=true,
+            org.jledit.theme*;-noimport:=true,
+            org.jledit.command*;-noimport:=true,
+            org.jledit.terminal;-noimport:=true,
+            org.jledit.jline;-noimport:=true,
+        </osgi.export>
+        <osgi.export.service>org.jledit.EditorFactory</osgi.export.service>
+    </properties>
+
+
+    <dependencies>
+        <dependency>
+            <groupId>com.googlecode.juniversalchardet</groupId>
+            <artifactId>juniversalchardet</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>jline</groupId>
+            <artifactId>jline</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.fusesource.jansi</groupId>
+            <artifactId>jansi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.compendium</artifactId>
+        </dependency>
+        <!-- Testing Dependencies -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+    </dependencies>
+
+
+</project>

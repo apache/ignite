@@ -1,0 +1,119 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.ow2.jotm</groupId>
+    <artifactId>jotm</artifactId>
+    <version>2.1.9</version>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.ow2.jotm</groupId>
+  <artifactId>jotm-core</artifactId>
+  <description>JOTM: Java Open Transaction Manager - Core</description>
+  <packaging>bundle</packaging>
+  <name>JOTM :: Core</name>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.ow2.spec.ee</groupId>
+      <artifactId>ow2-jta-1.1-spec</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.spec.ee</groupId>
+      <artifactId>ow2-connector-1.5-spec</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.carol</groupId>
+      <artifactId>carol</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>commons-logging</groupId>
+      <artifactId>commons-logging-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.objectweb.howl</groupId>
+      <artifactId>howl</artifactId>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.ow2.util</groupId>
+        <artifactId>util-maven-plugin-antrmic</artifactId>
+        <executions>
+          <!-- Generates POA enabled IIOP Stubs/Ties in the following order: -->
+          <!-- TODO: generate 2 versions: one with -poa, one without -poa
+               and use classifier to choose it -->
+          <!-- * ControlImpl
+               * TransactionFactoryImpl
+               * SubCoordinator -->
+          <execution>
+            <id>rmic-ControlImpl</id>
+            <goals>
+              <goal>rmic</goal>
+            </goals>
+            <configuration>
+              <iiop>true</iiop>
+              <iiopopts>-always</iiopopts>
+              <classname>org.objectweb.jotm.ControlImpl</classname>
+              <compilerarg>-poa</compilerarg>
+            </configuration>
+          </execution>
+          <execution>
+            <id>rmic-TransactionFactoryImpl</id>
+            <goals>
+              <goal>rmic</goal>
+            </goals>
+            <configuration>
+              <iiop>true</iiop>
+              <iiopopts>-always</iiopopts>
+              <classname>org.objectweb.jotm.TransactionFactoryImpl</classname>
+              <compilerarg>-poa</compilerarg>
+            </configuration>
+          </execution>
+          <execution>
+            <id>rmic-SubCoordinator</id>
+            <goals>
+              <goal>rmic</goal>
+            </goals>
+            <configuration>
+              <iiop>true</iiop>
+              <iiopopts>-always</iiopopts>
+              <classname>org.objectweb.jotm.SubCoordinator</classname>
+              <compilerarg>-poa</compilerarg>
+            </configuration>
+          </execution>
+          <execution>
+            <id>rmic-ControlImpl-jrmp</id>
+            <goals>
+              <goal>rmic</goal>
+            </goals>
+            <configuration>
+              <iiop>false</iiop>
+              <classname>org.objectweb.jotm.ControlImpl</classname>
+            </configuration>
+          </execution>
+          <execution>
+            <id>rmic-TransactionFactoryImpl-jrmp</id>
+            <goals>
+              <goal>rmic</goal>
+            </goals>
+            <configuration>
+              <iiop>false</iiop>
+              <classname>org.objectweb.jotm.TransactionFactoryImpl</classname>
+            </configuration>
+          </execution>
+          <execution>
+            <id>rmic-SubCoordinator-jrmp</id>
+            <goals>
+              <goal>rmic</goal>
+            </goals>
+            <configuration>
+              <iiop>false</iiop>
+              <classname>org.objectweb.jotm.SubCoordinator</classname>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

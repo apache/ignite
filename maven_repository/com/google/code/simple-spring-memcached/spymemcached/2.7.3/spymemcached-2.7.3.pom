@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.google.code.simple-spring-memcached</groupId>
+  <artifactId>spymemcached</artifactId>
+  <version>2.7.3</version>
+  <name>spymemcached</name>
+  <description>A simple, asynchronous, single-threaded memcached client written in java</description>
+  <url>http://code.google.com/p/spymemcached/</url>
+  
+  <licenses>
+    <license>
+      <name>MIT License</name>
+      <url>http://www.opensource.org/licenses/mit-license.php</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>dustin</id>
+      <name>Dustin Sallings</name>
+    </developer>
+    <developer>
+      <id>ingenthr</id>
+      <name>Matt Ingenthron</name>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:git@github.com:dustin/java-memcached-client.git</connection>
+    <developerConnection>scm:git:git@github.com:dustin/java-memcached-client.git</developerConnection>
+    <url>git@github.com:dustin/java-memcached-client.git</url>
+  </scm>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.jboss.netty</groupId> 
+      <artifactId>netty</artifactId>
+      <version>3.2.0.Final</version> 
+    </dependency> 
+    <dependency> 
+      <groupId>org.codehaus.jettison</groupId> 
+      <artifactId>jettison</artifactId> 
+      <version>1.1</version> 
+    </dependency> 
+    <dependency> 
+      <groupId>commons-codec</groupId> 
+      <artifactId>commons-codec</artifactId> 
+      <version>1.5</version> 
+    </dependency> 
+  </dependencies>
+
+</project>

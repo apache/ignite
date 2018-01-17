@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2016 The Netty Project
+  ~
+  ~ The Netty Project licenses this file to you under the Apache License,
+  ~ version 2.0 (the "License"); you may not use this file except in compliance
+  ~ with the License. You may obtain a copy of the License at:
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  ~ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  ~ License for the specific language governing permissions and limitations
+  ~ under the License.
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.netty</groupId>
+    <artifactId>netty-tcnative-parent</artifactId>
+    <version>1.1.33.Fork22</version>
+  </parent>
+  <artifactId>netty-tcnative</artifactId>
+  <packaging>jar</packaging>
+
+  <name>Netty/TomcatNative [OpenSSL - Dynamic]</name>
+  <description>
+    A Mavenized fork of Tomcat Native which incorporates various patches. This artifact is dynamically linked
+    to OpenSSL and Apache APR.
+  </description>
+
+  <properties>
+    <linkStatic>false</linkStatic>
+  </properties>
+
+  <build>
+    <plugins>
+      <!--
+        Set the classifier property based on the settings of the os-detector-plugin.
+        Fedora-based systems use a different soname for OpenSSL than other linux distributions.
+        Use a custom classifier ending in "-fedora" when building on fedora-based systems.
+      -->
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <!-- Build the additional JAR that contains the native library. -->
+          <execution>
+            <id>native-jar</id>
+            <phase>package</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <copy todir="${nativeJarWorkdir}">
+                  <zipfileset src="${defaultJarFile}" />
+                </copy>
+                <copy todir="${nativeJarWorkdir}" includeEmptyDirs="false">
+                  <zipfileset dir="${nativeLibOnlyDir}/META-INF/native" />
+                  <regexpmapper handledirsep="yes" from="^(?:[^/]+/)*([^/]+)$" to="META-INF/native/\1" />
+                </copy>
+                <jar destfile="${nativeJarFile}" manifest="${nativeJarWorkdir}/META-INF/MANIFEST.MF" basedir="${nativeJarWorkdir}" index="true" excludes="META-INF/MANIFEST.MF,META-INF/INDEX.LIST" />
+                <!-- Adjust the classifier used for fedora-like systems -->
+                <condition property="classifier" value="${os.detected.classifier}-fedora" else="${os.detected.classifier}">
+                  <isset property="os.detected.release.like.fedora" />
+                </condition>
+                <attachartifact file="${nativeJarFile}" classifier="${classifier}" type="jar" />
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Generate the .so/.dynlib/.dll as part of the build. -->
+      <plugin>
+        <groupId>org.fusesource.hawtjni</groupId>
+        <artifactId>maven-hawtjni-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>build-native-lib</id>
+            <configuration>
+              <name>netty-tcnative</name>
+              <nativeSourceDirectory>${project.basedir}/src/main/c</nativeSourceDirectory>
+              <libDirectory>${nativeLibOnlyDir}</libDirectory>
+              <forceAutogen>${forceAutogen}</forceAutogen>
+              <forceConfigure>${forceConfigure}</forceConfigure>
+              <windowsBuildTool>msbuild</windowsBuildTool>
+            </configuration>
+            <goals>
+              <goal>generate</goal>
+              <goal>build</goal>
+            </goals>
+            <phase>compile</phase>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <!-- Make sure all required environment variables are present on Windows. -->
+    <profile>
+      <id>enforce-windows-env</id>
+      <activation>
+        <os>
+          <family>windows</family>
+        </os>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-enforcer-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>enforce-msbuild-environment</id>
+                <phase>validate</phase>
+                <goals>
+                  <goal>enforce</goal>
+                </goals>
+                <configuration>
+                  <rules>
+                    <requireEnvironmentVariable>
+                      <variableName>APR_INCLUDE_DIR</variableName>
+                    </requireEnvironmentVariable>
+                    <requireEnvironmentVariable>
+                      <variableName>APR_LIB_DIR</variableName>
+                    </requireEnvironmentVariable>
+                    <requireEnvironmentVariable>
+                      <variableName>OPENSSL_INCLUDE_DIR</variableName>
+                    </requireEnvironmentVariable>
+                    <requireEnvironmentVariable>
+                      <variableName>OPENSSL_LIB_DIR</variableName>
+                    </requireEnvironmentVariable>
+                  </rules>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>

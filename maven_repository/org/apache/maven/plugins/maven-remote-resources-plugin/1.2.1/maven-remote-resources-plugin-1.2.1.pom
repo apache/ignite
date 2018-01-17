@@ -1,0 +1,396 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-plugins</artifactId>
+    <version>19</version>
+    <relativePath>../maven-plugins/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>maven-remote-resources-plugin</artifactId>
+  <version>1.2.1</version>
+  <packaging>maven-plugin</packaging>
+
+  <name>Maven Remote Resources Plugin</name>
+  <description>
+    Process resources packaged in JARs that have been deployed to
+    a remote repository. The primary use case being satisfied is the consistent
+    inclusion of common resources in a large set of projects. Maven projects at
+    Apache use this plug-in to satisfy licensing requirements at Apache where
+    each project must include license and notice files for each release.
+  </description>
+
+  <prerequisites>
+    <maven>${mavenVersion}</maven>
+  </prerequisites>
+
+  <scm>
+    <connection>scm:svn:http://svn.apache.org/repos/asf/maven/plugins/tags/maven-remote-resources-plugin-1.2.1</connection>
+    <developerConnection>scm:svn:https://svn.apache.org/repos/asf/maven/plugins/tags/maven-remote-resources-plugin-1.2.1</developerConnection>
+    <url>http://svn.apache.org/viewvc/maven/plugins/tags/maven-remote-resources-plugin-1.2.1</url>
+  </scm>
+  <issueManagement>
+    <system>JIRA</system>
+    <url>http://jira.codehaus.org/browse/MRRESOURCES</url>
+  </issueManagement>
+
+  <properties>
+    <mavenVersion>2.0.6</mavenVersion>
+    <mavenFilteringVersion>1.0</mavenFilteringVersion>
+  </properties>
+
+  <dependencies>
+    <!-- maven core -->
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-artifact</artifactId>
+      <version>${mavenVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-core</artifactId>
+      <version>${mavenVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-model</artifactId>
+      <version>${mavenVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-monitor</artifactId>
+      <version>${mavenVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-plugin-api</artifactId>
+      <version>${mavenVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-project</artifactId>
+      <version>${mavenVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-settings</artifactId>
+      <version>${mavenVersion}</version>
+    </dependency>
+
+    <!-- maven shared -->
+    <dependency>
+      <groupId>org.apache.maven.shared</groupId>
+      <artifactId>maven-artifact-resolver</artifactId>
+      <version>1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.shared</groupId>
+      <artifactId>maven-common-artifact-filters</artifactId>
+      <version>1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.shared</groupId>
+      <artifactId>maven-downloader</artifactId>
+      <version>1.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.shared</groupId>
+      <artifactId>maven-filtering</artifactId>
+      <version>${mavenFilteringVersion}</version>
+    </dependency>
+
+    <!-- plexus -->
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-container-default</artifactId>
+      <version>1.0-alpha-9</version>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-interpolation</artifactId>
+      <version>1.12</version>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-resources</artifactId>
+      <version>1.0-alpha-5</version>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-utils</artifactId>
+      <version>1.5.12</version>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-velocity</artifactId>
+      <version>1.1.8</version>
+    </dependency>
+
+    <!-- other -->
+    <dependency>
+      <groupId>org.apache.velocity</groupId>
+      <artifactId>velocity</artifactId>
+      <version>1.6.4</version>
+    </dependency>
+
+    <!-- test -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>3.8.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.shared</groupId>
+      <artifactId>maven-plugin-testing-harness</artifactId>
+      <version>1.0-beta-1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.wagon</groupId>
+      <artifactId>wagon-provider-api</artifactId>
+      <version>1.0-beta-6</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.shared</groupId>
+      <artifactId>maven-verifier</artifactId>
+      <version>1.2</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <testResources>
+      <testResource>
+        <directory>src/test/resources</directory>
+      </testResource>
+    </testResources>
+    
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <configuration>
+            <source>1.5</source>
+            <target>1.5</target>
+          </configuration>
+        </plugin>
+        <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <configuration>
+            <includes>
+              <include>**/*Test.java</include>
+            </includes>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.modello</groupId>
+        <artifactId>modello-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>generate-xsd-site-remote-resources</id>
+            <phase>pre-site</phase>
+            <goals>
+              <goal>xsd</goal>
+            </goals>
+            <configuration>
+              <version>1.1.0</version>
+              <outputDirectory>${project.reporting.outputDirectory}/xsd</outputDirectory>
+              <models>
+                <model>src/main/mdo/remote-resources.mdo</model>
+              </models>
+            </configuration>
+          </execution>
+          <execution>
+            <id>generate-xsd-site-supplemental-model</id>
+            <phase>pre-site</phase>
+            <goals>
+              <goal>xsd</goal>
+            </goals>
+            <configuration>
+              <version>1.0.0</version>
+              <outputDirectory>${project.reporting.outputDirectory}/xsd</outputDirectory>
+              <models>
+                <model>src/main/mdo/supplemental-model.mdo</model>
+              </models>
+            </configuration>
+          </execution>
+          <execution>
+            <id>site-docs-remote-resources</id>
+            <phase>pre-site</phase>
+            <goals>
+              <goal>xdoc</goal>
+            </goals>
+            <configuration>
+              <version>1.1.0</version>
+              <models>
+                <model>src/main/mdo/remote-resources.mdo</model>
+              </models>
+            </configuration>
+          </execution>
+          <execution>
+            <id>site-docs-supplemental-models</id>
+            <phase>pre-site</phase>
+            <goals>
+              <goal>xdoc</goal>
+            </goals>
+            <configuration>
+              <version>1.0.0</version>
+              <models>
+                <model>src/main/mdo/supplemental-model.mdo</model>
+              </models>
+            </configuration>
+          </execution>
+          <execution>
+            <id>remote-resources</id>
+            <goals>
+              <goal>xpp3-writer</goal>
+              <goal>java</goal>
+              <goal>xpp3-reader</goal>
+            </goals>
+            <configuration>
+              <version>1.1.0</version>
+              <useJava5>true</useJava5>
+              <models>
+                <model>src/main/mdo/remote-resources.mdo</model>
+              </models>
+            </configuration>
+          </execution>
+          <execution>
+            <id>supplemental-models</id>
+            <goals>
+              <goal>xpp3-writer</goal>
+              <goal>java</goal>
+              <goal>xpp3-reader</goal>
+            </goals>
+            <configuration>
+              <version>1.0.0</version>
+              <useJava5>true</useJava5>
+              <models>
+                <model>src/main/mdo/supplemental-model.mdo</model>
+              </models>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+  
+  <profiles>
+    <profile>
+      <id>reporting</id>
+      <reporting>
+        <plugins>
+          <plugin>
+            <artifactId>maven-pmd-plugin</artifactId>
+            <configuration>
+              <targetJdk>1.5</targetJdk>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-checkstyle-plugin</artifactId>
+            <version>2.6</version>
+          </plugin>
+        </plugins>
+      </reporting>
+    </profile>
+    <profile>
+      <id>run-its</id>
+      <properties>
+        <remoteRepository>${project.build.directory}/remote-repo</remoteRepository>
+      </properties>
+      <build>
+        <testResources>
+          <testResource>
+            <directory>src/it/resources</directory>
+            <filtering>true</filtering>
+            <excludes>
+              <exclude>custom-filter-delim/src/main/resources/**</exclude>
+            </excludes>
+          </testResource>
+          <testResource>
+            <directory>src/it/resources</directory>
+            <filtering>false</filtering>
+            <includes>
+              <include>custom-filter-delim/src/main/resources/**</include>
+            </includes>
+          </testResource>
+        </testResources>
+        
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <artifactId>maven-surefire-plugin</artifactId>
+              <executions>
+                <execution>
+                  <id>integration-tests</id>
+                  <phase>integration-test</phase>
+                  <goals>
+                    <goal>test</goal>
+                  </goals>
+                  <configuration>
+                    <includes>
+                      <include>**/IT*.java</include>
+                    </includes>
+                    <systemProperties>
+                      <property>
+                        <!-- Pass this through to the tests (if set!) to have them pick the right repository -->
+                        <name>maven.repo.local</name>
+                        <value>${project.build.directory}/it-repo</value>
+                      </property>
+                    </systemProperties>
+                  </configuration>
+                </execution>
+              </executions>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+
+        <plugins>
+          <plugin>
+            <artifactId>maven-invoker-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>install-descriptor</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>install</goal>
+                </goals>
+                <configuration>
+                  <localRepositoryPath>${project.build.directory}/it-repo</localRepositoryPath>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+  	    </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>

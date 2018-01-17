@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<!--
+
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+  <modelVersion>4.0.0</modelVersion>
+  
+  <parent>
+    <groupId>org.apache</groupId>
+    <artifactId>apache</artifactId>
+    <version>7</version>
+  </parent>
+  
+  <groupId>org.apache.servicemix</groupId>
+  <artifactId>servicemix-pom</artifactId>
+  <version>5</version>
+  <packaging>pom</packaging>
+  
+  <name>ServiceMix POM</name>
+  <description>
+    This pom provides project information that is common to all ServiceMix branches.
+  </description>
+  
+  <url>http://servicemix.apache.org/</url>
+  <inceptionYear>2005</inceptionYear>
+  
+  <issueManagement>
+    <system>jira</system>
+    <url>http://issues.apache.org/activemq/browse/SM</url>
+  </issueManagement>
+  
+  <mailingLists>
+    <mailingList>
+      <name>ServiceMix Developer List</name>
+      <subscribe>dev-subscribe@servicemix.apache.org</subscribe>
+      <unsubscribe>dev-unsubscribe@servicemix.apache.org</unsubscribe>
+      <post>dev@servicemix.apache.org</post>
+      <archive>http://servicemix.apache.org/discussion-forums.html#nabble-f12051</archive>
+      <otherArchives>
+        <otherArchive>http://dir.gmane.org/gmane.comp.java.servicemix.devel</otherArchive>
+        <otherArchive>http://mail-archives.apache.org/mod_mbox/servicemix-dev/</otherArchive>
+      </otherArchives>
+    </mailingList>
+    <mailingList>
+      <name>ServiceMix User List</name>
+      <subscribe>users-subscribe@servicemix.apache.org</subscribe>
+      <unsubscribe>users-unsubscribe@servicemix.apache.org</unsubscribe>
+      <post>users@servicemix.apache.org</post>
+      <archive>http://servicemix.apache.org/discussion-forums.html#nabble-f12050</archive>
+      <otherArchives>
+        <otherArchive>http://dir.gmane.org/gmane.comp.java.servicemix.user</otherArchive>
+        <otherArchive>http://mail-archives.apache.org/mod_mbox/servicemix-users/</otherArchive>
+      </otherArchives>
+    </mailingList>
+    <mailingList>
+      <name>ServiceMix SCM List</name>
+      <subscribe>commits-subscribe@servicemix.apache.org</subscribe>
+      <unsubscribe>commits-unsubscribe@servicemix.apache.org</unsubscribe>
+      <post>commits@servicemix.apache.org</post>
+      <archive>http://mail-archives.apache.org/mod_mbox/servicemix-commits/</archive>
+    </mailingList>
+  </mailingLists>
+  
+  <developers>
+    <developer>
+      <id>rajdavies</id>
+      <name>Rob Davies</name>
+      <email>rajdavies@apache.org</email>
+      <organization>FuseSource</organization>
+      <organizationUrl>http://www.fusesource.com/</organizationUrl>
+    </developer>
+    <developer>
+      <id>jstrachan</id>
+      <name>James Strachan</name>
+      <email>jstrachan@apache.org</email>
+      <organization>FuseSource</organization>
+      <organizationUrl>http://www.fusesource.com/</organizationUrl>
+    </developer>
+    <developer>
+      <id>chirino</id>
+      <name>Hiram Chirino</name>
+      <email>chirino@apache.org</email>
+      <organization>FuseSource</organization>
+      <organizationUrl>http://www.fusesource.com/</organizationUrl>
+    </developer>
+    <developer>
+      <id>dandiep</id>
+      <name>Dan Diephouse</name>
+      <email>dandiep@codehaus.org</email>
+      <organization>dandiep</organization>
+    </developer>
+    <developer>
+      <id>pdodds</id>
+      <name>Philip Dodds</name>
+      <email>philip.dodds@gmail.com</email>
+      <organization>Five Clouds</organization>
+    </developer>
+    <developer>
+      <id>jlim</id>
+      <name>Jonas Lim</name>
+      <email>jlim@exist.com</email>
+      <organization>Exist Labs</organization>
+    </developer>
+    <developer>
+      <id>ffang</id>
+      <name>Freeman Fang</name>
+      <email>freeman.fang@gmail.com</email>
+      <organization>FuseSource</organization>
+      <organizationUrl>http://www.fusesource.com/</organizationUrl>
+    </developer>
+    <developer>
+      <id>foconer</id>
+      <name>Frederick Oconer</name>
+      <email>foconer@exist.com</email>
+      <organization>Exist Labs</organization>
+    </developer>
+    <developer>
+      <id>jgapuz</id>
+      <name>Joseph Gapuz</name>
+      <email>jgapuz@exist.com</email>
+      <organization>Exist Labs</organization>
+    </developer>
+    <developer>
+      <id>pvillacorta</id>
+      <name>Patrick Villacorta</name>
+      <email>pvillacorta@exist.com</email>
+      <organization>Exist Labs</organization>
+    </developer>
+    <developer>
+      <id>dflores</id>
+      <name>Darwin Flores</name>
+      <email>dflores@exist.com</email>
+      <organization>Exist Labs</organization>
+    </developer>
+    <developer>
+      <id>myap</id>
+      <name>Merwin Yap</name>
+      <email>myap@exist.com</email>
+      <organization>Exist Labs</organization>
+    </developer>
+    <developer>
+      <id>gnodet</id>
+      <name>Guillaume Nodet</name>
+      <email>gnodet@apache.org</email>
+      <organization>FuseSource</organization>
+      <organizationUrl>http://www.fusesource.com/</organizationUrl>
+      <timezone>+1</timezone>
+    </developer>
+    <developer>
+      <id>gastaldi</id>
+      <name>George Gastaldi</name>
+      <email>gastaldi@apache.org</email>
+    </developer>
+    <developer>
+      <id>lhein</id>
+      <name>Lars Heinemann</name>
+      <email>lhein@apache.org</email>
+      <organization>FuseSource</organization>
+      <organizationUrl>http://www.fusesource.com/</organizationUrl>
+      <timezone>+1</timezone>
+    </developer>
+    <developer>
+      <id>jbonofre</id>
+      <name>Jean-Baptiste Onofre</name>
+      <email>jbonofre@apache.org</email>
+      <url>http://www.nanthrax.net</url>
+      <organization>Fimasys</organization>
+      <organizationUrl>http://www.fimasys.com</organizationUrl>
+      <timezone>+1</timezone>
+    </developer>
+    <developer>
+      <id>gertv</id>
+      <name>Gert Vanthienen</name>
+      <email>gertv@apache.org</email>
+      <organization>FuseSource</organization>
+      <organizationUrl>http://www.fusesource.com/</organizationUrl>
+      <timezone>+1</timezone>
+    </developer>    
+  </developers>
+  
+  <pluginRepositories>
+    <pluginRepository>
+      <id>apache.snapshots</id>
+      <name>Apache Snapshots Maven Repository</name>
+      <url>http://repository.apache.org/snapshots</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </pluginRepository>
+  </pluginRepositories>
+  
+  <scm>
+    <connection>scm:svn:http://svn.apache.org/repos/asf/servicemix/servicemix-pom/tags/servicemix-pom-5</connection>
+    <developerConnection>scm:svn:https://svn.apache.org/repos/asf/servicemix/servicemix-pom/tags/servicemix-pom-5</developerConnection>
+    <url>http://svn.apache.org/viewcvs.cgi/servicemix/servicemix-pom/tags/servicemix-pom-5</url>
+  </scm>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-remote-resources-plugin</artifactId>
+          <dependencies>
+              <dependency>
+                  <groupId>org.apache.servicemix</groupId>
+                  <artifactId>servicemix-build</artifactId>
+                  <version>1.0</version>
+              </dependency>
+          </dependencies>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+  
+  <profiles>
+    <profile>
+      <id>apache-release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <!-- most of the plugin configuration for releasing (gpg, sources, ...) is in the Apache parent POM -->
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-release-plugin</artifactId>
+            <configuration>
+              <preparationGoals>clean verify install</preparationGoals>
+              <autoVersionSubmodules>true</autoVersionSubmodules>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <!-- profile to allow overriding the deployment repository to avoid connection problems during release -->
+    <profile>
+      <activation>
+        <property>
+          <name>deploy.altRepository</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <inherited>true</inherited>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-deploy-plugin</artifactId>
+            <configuration>
+              <altDeploymentRepository>${deploy.altRepository}</altDeploymentRepository>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>

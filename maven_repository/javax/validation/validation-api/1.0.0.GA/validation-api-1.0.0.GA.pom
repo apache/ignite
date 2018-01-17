@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>javax.validation</groupId>
+    <artifactId>validation-api</artifactId>
+    <version>1.0.0.GA</version>
+    <packaging>jar</packaging>
+    <name>Bean Validation API</name>
+
+    <description>
+        Bean Validation (JSR-303) API.
+    </description>
+
+    <developers>
+        <developer>
+            <id>epbernard</id>
+            <name>Emmanuel Bernard</name>
+            <email>emmanuel@hibernate.org</email>
+            <organization>JBoss, a division of Red Hat</organization>
+            <url>http://in.relation.to/Bloggers/Emmanuel</url>
+        </developer>
+        <developer>
+            <id>hardy.ferentschik</id>
+            <name>Hardy Ferentschik</name>
+            <email>hferents@redhat.com</email>
+            <organization>JBoss, a division of Red Hat</organization>
+            <url>http://in.relation.to/Bloggers/Hardy</url>
+        </developer>
+    </developers>
+
+    <build>
+        <extensions>
+            <extension>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-webdav</artifactId>
+                <version>1.0-beta-2</version>
+            </extension>
+        </extensions>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>2.0.2</version>
+                    <configuration>
+                        <source>1.5</source>
+                        <target>1.5</target>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>attach-sources</id>
+                            <goals>
+                                <goal>jar</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-release-plugin</artifactId>
+                    <version>2.0-beta-9</version>
+                    <configuration>
+                        <allowTimestampedSnapshots>true</allowTimestampedSnapshots>
+                        <remoteTagging>true</remoteTagging>
+                        <goals>deploy</goals>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <issueManagement>
+        <system>JIRA</system>
+        <url>http://opensource.atlassian.com/projects/hibernate/browse/BVAL</url>
+    </issueManagement>
+
+    <inceptionYear>2007</inceptionYear>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>license.txt</url>
+        </license>
+    </licenses>
+
+    <scm>
+        <connection>scm:svn:https://svn.jboss.org/repos/hibernate/beanvalidation/api/tags/v1_0_0_GA</connection>
+        <url>http://fisheye.jboss.org/browse/Hibernate/beanvalidation/api/tags/v1_0_0_GA</url>
+    </scm>
+
+    <distributionManagement>
+        <repository>
+            <!-- Copy the dist to the local checkout of the JBoss maven2 repo ${maven.repository.root} -->
+            <!-- It is anticipated that ${maven.repository.root} be set in user's settings.xml -->
+            <!-- todo : replace this with direct svn access once the svnkit providers are available -->
+            <id>repository.jboss.org</id>
+            <url>file://${maven.repository.root}</url>
+        </repository>
+        <snapshotRepository>
+            <id>snapshots.jboss.org</id>
+            <name>JBoss Snapshot Repository</name>
+            <url>dav:https://snapshots.jboss.org/maven2</url>
+        </snapshotRepository>
+    </distributionManagement>
+
+    <profiles>
+        <profile>
+            <id>release</id>
+            <properties>
+                <createChecksum>true</createChecksum>
+            </properties>
+        </profile>
+    </profiles>
+
+</project>

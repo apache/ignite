@@ -1,0 +1,497 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ JBoss, Home of Professional Open Source
+  ~ Copyright 2011, Red Hat, Inc. and/or its affiliates, and individual contributors
+  ~ by the @authors tag. See the copyright.txt in the distribution for a
+  ~ full listing of individual contributors.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~ http://www.apache.org/licenses/LICENSE-2.0
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.hibernate</groupId>
+    <artifactId>hibernate-validator-parent</artifactId>
+    <version>4.3.0.Final</version>
+    <packaging>pom</packaging>
+
+    <name>Hibernate Validator Aggregator</name>
+    <url>http://validator.hibernate.org</url>
+    <description>Aggregator of the Hibernate Validator modules.</description>
+
+    <developers>
+        <developer>
+            <id>epbernard</id>
+            <name>Emmanuel Bernard</name>
+            <email>emmanuel@hibernate.org</email>
+            <organization>JBoss, a division of Red Hat</organization>
+            <url>http://in.relation.to/Bloggers/Emmanuel</url>
+        </developer>
+        <developer>
+            <id>hardy.ferentschik</id>
+            <name>Hardy Ferentschik</name>
+            <email>hferents@redhat.com</email>
+            <organization>JBoss, a division of Red Hat</organization>
+            <url>http://in.relation.to/Bloggers/Hardy</url>
+        </developer>
+        <developer>
+            <id>gunnar.morling</id>
+            <name>Gunnar Morling</name>
+            <email>gunnar.morling@googlemail.com</email>
+            <organization>Individual</organization>
+            <url>http://musingsofaprogrammingaddict.blogspot.com/</url>
+        </developer>
+        <developer>
+            <id>kevinpollet</id>
+            <name>Kevin Pollet</name>
+            <email>kevin.pollet@serli.com</email>
+            <organization>SERLI</organization>
+            <url>http://www.serli.com</url>
+        </developer>
+    </developers>
+
+    <contributors>
+        <contributor>
+            <name>George Gastaldi</name>
+            <email>gegastaldi@gmail.com</email>
+        </contributor>
+    </contributors>
+
+    <mailingLists>
+        <mailingList>
+            <name>hibernate-dev</name>
+            <post>hibernate-dev@lists.jboss.org</post>
+        </mailingList>
+    </mailingLists>
+
+    <modules>
+        <module>engine</module>
+        <module>tck-runner</module>
+        <module>integration</module>
+        <module>annotation-processor</module>
+        <module>archetype</module>
+        <module>performance</module>
+    </modules>
+
+    <properties>
+        <!-- see http://maven.apache.org/general.html -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <org.codehaus.mojo.chronos.version>1.0-beta-3</org.codehaus.mojo.chronos.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.hibernate</groupId>
+                <artifactId>hibernate-validator</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hibernate</groupId>
+                <artifactId>hibernate-validator-annotation-processor</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>javax.validation</groupId>
+                <artifactId>validation-api</artifactId>
+                <version>1.0.0.GA</version>
+            </dependency>
+            <dependency>
+                <groupId>joda-time</groupId>
+                <artifactId>joda-time</artifactId>
+                <version>1.6</version>
+            </dependency>
+            <dependency>
+                <groupId>log4j</groupId>
+                <artifactId>log4j</artifactId>
+                <version>1.2.16</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hibernate.javax.persistence</groupId>
+                <artifactId>hibernate-jpa-2.0-api</artifactId>
+                <version>1.0.1.Final</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hibernate</groupId>
+                <artifactId>hibernate-entitymanager</artifactId>
+                <version>3.6.0.Final</version>
+            </dependency>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.8.2</version>
+            </dependency>
+            <dependency>
+                <groupId>org.testng</groupId>
+                <artifactId>testng</artifactId>
+                <version>5.14.2</version>
+            </dependency>
+            <dependency>
+                <groupId>org.codehaus.groovy</groupId>
+                <artifactId>groovy</artifactId>
+                <version>1.8.3</version>
+            </dependency>
+            <dependency>
+                <groupId>org.easymock</groupId>
+                <artifactId>easymock</artifactId>
+                <version>3.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.h2database</groupId>
+                <artifactId>h2</artifactId>
+                <version>1.2.124</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jsoup</groupId>
+                <artifactId>jsoup</artifactId>
+                <version>1.6.1</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.logging</groupId>
+                <artifactId>jboss-logging</artifactId>
+                <version>3.1.0.CR2</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <extensions>
+            <extension>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-webdav</artifactId>
+                <version>1.0-beta-2</version>
+            </extension>
+        </extensions>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>1.0.1</version>
+                <executions>
+                    <execution>
+                        <id>enforce-java</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <rules>
+                        <requireJavaVersion>
+                            <!-- require JDK 1.6 to run the build -->
+                            <version>[1.6,)</version>
+                        </requireJavaVersion>
+                    </rules>
+                </configuration>
+            </plugin>
+        </plugins>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>2.4</version>
+                    <configuration>
+                        <archive>
+                            <manifestEntries>
+                                <Implementation-Title>${project.artifactId}</Implementation-Title>
+                                <Implementation-Version>${project.version}</Implementation-Version>
+                                <Implementation-Vendor>${project.parent.groupId}</Implementation-Vendor>
+                                <Implementation-Vendor-Id>${project.parent.groupId}</Implementation-Vendor-Id>
+                                <Implementation-URL>http://validator.hibernate.org</Implementation-URL>
+                            </manifestEntries>
+                        </archive>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>2.3.2</version>
+                    <configuration>
+                        <source>1.6</source>
+                        <target>1.6</target>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>2.12</version>
+                    <configuration>
+                        <forkMode>once</forkMode>
+                        <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                        <includes>
+                            <include>**/*Test.java</include>
+                        </includes>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-report-plugin</artifactId>
+                    <version>2.12</version>
+                    <executions>
+                        <execution>
+                            <id>generate-test-report</id>
+                            <phase>test</phase>
+                            <goals>
+                                <goal>report-only</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                    <configuration>
+                        <outputDirectory>${project.build.directory}/surefire-reports</outputDirectory>
+                        <outputName>test-report</outputName>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>2.12</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>2.4</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-install-plugin</artifactId>
+                    <version>2.3.1</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <version>2.3</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-release-plugin</artifactId>
+                    <version>2.2.2</version>
+                    <configuration>
+                        <preparationGoals>clean install</preparationGoals>
+                        <autoVersionSubmodules>true</autoVersionSubmodules>
+                        <allowTimestampedSnapshots>true</allowTimestampedSnapshots>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <version>1.2.1</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>jaxb2-maven-plugin</artifactId>
+                    <version>1.3.1</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.jboss.maven.plugins</groupId>
+                    <artifactId>maven-jdocbook-plugin</artifactId>
+                    <version>2.3.5</version>
+                    <extensions>true</extensions>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.hibernate</groupId>
+                            <artifactId>hibernate-jdocbook-style</artifactId>
+                            <version>2.0.1</version>
+                            <type>jdocbook-style</type>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-project-info-reports-plugin</artifactId>
+                    <version>2.0.1</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.felix</groupId>
+                    <artifactId>maven-bundle-plugin</artifactId>
+                    <version>2.3.6</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-archetype-plugin</artifactId>
+                    <version>2.2</version>
+                    <executions>
+                        <execution>
+                            <id>generate-archetype-install</id>
+                            <phase>install</phase>
+                            <goals>
+                                <goal>create-from-project</goal>
+                            </goals>
+                            <configuration>
+                                <archetypePostPhase>install</archetypePostPhase>
+                                <propertyFile>archetype.properties</propertyFile>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>generate-archetype-deploy</id>
+                            <phase>deploy</phase>
+                            <goals>
+                                <goal>create-from-project</goal>
+                            </goals>
+                            <configuration>
+                                <archetypePostPhase>deploy</archetypePostPhase>
+                                <propertyFile>archetype.properties</propertyFile>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>2.1.2</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>2.8.1</version>
+                    <configuration>
+                        <docfilessubdirs>true</docfilessubdirs>
+                        <javadocDirectory>${project.basedir}/../src/main/javadoc</javadocDirectory>
+                        <stylesheetfile>stylesheet.css</stylesheetfile>
+                        <bottom>
+                            <![CDATA[Copyright &copy; ${project.inceptionYear}-{currentYear} <a href="http://redhat.com">Red Hat Middleware, LLC.</a>  All Rights Reserved]]></bottom>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <version>2.7</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.jboss.maven.plugins</groupId>
+                    <artifactId>maven-injection-plugin</artifactId>
+                    <version>1.0.2</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.gmaven</groupId>
+                    <artifactId>gmaven-plugin</artifactId>
+                    <version>1.3</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.zanata</groupId>
+                    <artifactId>zanata-maven-plugin</artifactId>
+                    <version>1.3</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.bsc.maven</groupId>
+                    <artifactId>maven-processor-plugin</artifactId>
+                    <version>2.0.2</version>
+                    <configuration>
+                        <defaultOutputDirectory>${project.build.directory}/generated-sources/logging</defaultOutputDirectory>
+                        <processors>
+                            <processor>org.jboss.logging.processor.apt.LoggingToolsProcessor</processor>
+                        </processors>
+                        <compilerArguments>-AloggingVersion=3.0 -AtranslationFilesPath=${project.basedir}/src/main/resources -source 1.6 -target 1.6 -sourcepath ${project.build.directory}/generated-sources/jaxb -encoding UTF-8</compilerArguments>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>process</id>
+                            <phase>generate-sources</phase>
+                            <goals>
+                                <goal>process</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.jboss.logging</groupId>
+                            <artifactId>jboss-logging-processor</artifactId>
+                            <version>1.0.1.Final</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>2.5</version>
+                    <configuration>
+                        <!-- By default the "@" character is a delimiter, causing files containing
+                             that character to not be filtered properly -->
+                        <useDefaultDelimiters>false</useDefaultDelimiters>
+                        <delimiters>
+                            <delimiter>${*}</delimiter>
+                        </delimiters>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>chronos-jmeter-maven-plugin</artifactId>
+                    <version>${org.codehaus.mojo.chronos.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <ciManagement>
+        <system>Hudson</system>
+        <url>http://hudson.qa.jboss.com/hudson/job/beanvalidation</url>
+    </ciManagement>
+
+    <issueManagement>
+        <system>JIRA</system>
+        <url>http://opensource.atlassian.com/projects/hibernate/browse/HV</url>
+    </issueManagement>
+
+    <inceptionYear>2007</inceptionYear>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <scm>
+        <connection>scm:git:git://github.com/hibernate/hibernate-validator.git</connection>
+        <developerConnection>scm:git:git@github.com:hibernate/hibernate-validator.git</developerConnection>
+        <url>http://github.com/hibernate/hibernate-validator</url>
+    </scm>
+
+    <distributionManagement>
+        <repository>
+            <id>jboss-releases-repository</id>
+            <name>JBoss Releases Repository</name>
+            <url>https://repository.jboss.org/nexus/service/local/staging/deploy/maven2/</url>
+        </repository>
+        <snapshotRepository>
+            <id>jboss-snapshots-repository</id>
+            <name>JBoss Snapshots Repository</name>
+            <url>https://repository.jboss.org/nexus/content/repositories/snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
+
+    <profiles>
+        <profile>
+            <id>docs</id>
+            <activation>
+                <property>
+                    <name>disableDocumentationBuild</name>
+                    <value>!true</value>
+                </property>
+            </activation>
+            <modules>
+                <module>documentation</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>dist</id>
+            <activation>
+                <property>
+                    <name>disableDistributionBuild</name>
+                    <value>!true</value>
+                </property>
+            </activation>
+            <modules>
+                <module>distribution</module>
+            </modules>
+        </profile>
+    </profiles>
+</project>

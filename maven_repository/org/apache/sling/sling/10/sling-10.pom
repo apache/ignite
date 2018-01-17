@@ -1,0 +1,641 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or
+    more contributor license agreements. See the NOTICE file
+    distributed with this work for additional information regarding
+    copyright ownership. The ASF licenses this file to you under the
+    Apache License, Version 2.0 (the "License"); you may not use
+    this file except in compliance with the License. You may obtain
+    a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0 Unless required by
+    applicable law or agreed to in writing, software distributed
+    under the License is distributed on an "AS IS" BASIS, WITHOUT
+    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions
+    and limitations under the License.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.apache</groupId>
+        <artifactId>apache</artifactId>
+        <version>8</version>
+        <relativePath />
+    </parent>
+
+    <groupId>org.apache.sling</groupId>
+    <artifactId>sling</artifactId>
+    <packaging>pom</packaging>
+    <version>10</version>
+
+    <name>Apache Sling (Parent)</name>
+    <description>The parent project for Apache Sling</description>
+    <inceptionYear>2007</inceptionYear>
+
+    <url>http://sling.apache.org</url>
+
+    <prerequisites>
+        <maven>2.2.1</maven>
+    </prerequisites>
+
+
+    <issueManagement>
+        <system>Jira</system>
+        <url>http://issues.apache.org/jira/browse/SLING</url>
+    </issueManagement>
+
+
+    <properties>
+        <site.jira.version.id>12313945</site.jira.version.id>
+        <site.javadoc.exclude />
+        <organization.logo>http://sling.apache.org/site/media.data/logo.png</organization.logo>
+    </properties>
+
+
+    <scm>
+        <connection>scm:svn:http://svn.apache.org/repos/asf/sling/tags/sling-10</connection>
+        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/sling/tags/sling-10</developerConnection>
+        <url>http://svn.apache.org/viewvc/sling/tags/sling-10</url>
+    </scm>
+
+
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.5</version>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>javadoc</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+                <configuration>
+                    <stylesheet>maven</stylesheet>
+                    <excludePackageNames>*.impl:*.internal:${site.javadoc.exclude}</excludePackageNames>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-report-plugin</artifactId>
+                <version>2.4.3</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-changes-plugin</artifactId>
+                <version>2.3</version>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>jira-report</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+                <configuration>
+                    <fixVersionIds>${site.jira.version.id}</fixVersionIds>
+                </configuration>
+            </plugin>
+        </plugins>
+    </reporting>
+
+
+    <build>
+        <plugins>
+
+            <!-- Require Java 5 or higher for building -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>enforce-java</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireJavaVersion>
+                                    <message>
+                                        Apache Sling must be compiled with Java
+                                        5 or higher
+                                    </message>
+                                    <version>1.5.0</version>
+                                </requireJavaVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Attach sources for all builds -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <inherited>true</inherited>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- warn for SLING-443/SLING-1782 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>process-resources</phase>
+                        <configuration>
+                            <tasks>
+                                <echo>
+**************** WARNING (SLING-443/SLING-1782) ******************************
+On most platforms, you'll get OutOfMemoryErrors when building unless you set
+on 32bit platforms: MAVEN_OPTS="-Xmx256M -XX:MaxPermSize=256M", see SLING-443
+on 64bit platforms: MAVEN_OPTS="-Xmx512M -XX:MaxPermSize=512M", see SLING-1782
+******************************************************************************
+                                </echo>
+                            </tasks>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>ianal-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>verify-legal-files</goal>
+                        </goals>
+                        <configuration>
+                            <!-- Fail the build if any artifacts are missing legal files -->
+                            <strict>true</strict>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.sling</groupId>
+                    <artifactId>maven-sling-plugin</artifactId>
+                    <version>2.0.4-incubator</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.sling</groupId>
+                    <artifactId>maven-launchpad-plugin</artifactId>
+                    <version>2.0.6</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.sling</groupId>
+                    <artifactId>maven-jspc-plugin</artifactId>
+                    <version>2.0.4-incubator</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.sling</groupId>
+                    <artifactId>maven-jcrocm-plugin</artifactId>
+                    <version>2.0.4-incubator</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.felix</groupId>
+                    <artifactId>maven-scr-plugin</artifactId>
+                    <version>1.6.0</version>
+                    <!-- As QDox is trying to inspect/load the classes
+                         we have to add a slf4j implementation to the
+                         class path of the plugin - we usually use
+                         a static field for the logger and during class
+                         loading this field requires an slf4j implementation!
+                     -->
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.slf4j</groupId>
+                            <artifactId>slf4j-simple</artifactId>
+                            <version>1.5.2</version>
+                        </dependency>
+                    </dependencies>
+                    <executions>
+                        <execution>
+                            <id>generate-scr-scrdescriptor</id>
+                            <goals>
+                                <goal>scr</goal>
+                            </goals>
+                            <configuration>
+                                <properties>
+                                    <service.vendor>The Apache Software Foundation</service.vendor>
+                                </properties>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <!-- Compile for Java 5 and higher -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <configuration>
+                        <source>1.5</source>
+                        <target>1.5</target>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.felix</groupId>
+                    <artifactId>maven-bundle-plugin</artifactId>
+                    <version>2.0.1</version>
+                    <inherited>true</inherited>
+                    <configuration>
+                        <outputDirectory>${basedir}/target/classes</outputDirectory>
+                        <instructions>
+                            <Bundle-Category>sling</Bundle-Category>
+                            <Bundle-DocURL>
+                                http://sling.apache.org
+                            </Bundle-DocURL>
+                            <Bundle-Vendor>The Apache Software Foundation</Bundle-Vendor>
+                            <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+                        </instructions>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-release-plugin</artifactId>
+                    <configuration>
+                        <tagBase>
+                            https://svn.apache.org/repos/asf/sling/tags
+                        </tagBase>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>2.1</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-war-plugin</artifactId>
+                    <version>2.1-beta-1</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.mortbay.jetty</groupId>
+                    <artifactId>maven-jetty-plugin</artifactId>
+                    <version>6.1.20</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.cargo</groupId>
+                    <artifactId>cargo-maven2-plugin</artifactId>
+                    <version>1.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>ianal-maven-plugin</artifactId>
+                    <version>1.0-alpha-1</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.rat</groupId>
+                    <artifactId>apache-rat-plugin</artifactId>
+                    <version>0.6</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.groovy.maven</groupId>
+                    <artifactId>gmaven-plugin</artifactId>
+                    <version>1.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>animal-sniffer-maven-plugin</artifactId>
+                    <version>1.5</version>
+                    <configuration>
+                        <signature>
+                            <groupId>org.codehaus.mojo.signature</groupId>
+                            <artifactId>java15</artifactId>
+                            <version>1.0</version>
+                        </signature>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
+                    <version>1.5</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>emma-maven-plugin</artifactId>
+                    <version>1.0-alpha-2</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <profiles>
+        <profile>
+            <!--
+                Use this profile to install the OSGi bundle
+                automatically, during development
+            -->
+            <id>autoInstallBundle</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.sling</groupId>
+                        <artifactId>maven-sling-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>install-bundle</id>
+                                <goals>
+                                    <goal>install</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+	    <!--
+	    We should execute this profile manually to make sure that all files in our source code contain proper licenses.
+	    This is very important and should not be skipped in any scenario.  It is very importnt for us to follow ASF policy.
+	    Example:  mvn -Prat prepare-release install
+	    -->
+        <profile>
+            <id>rat</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.rat</groupId>
+                        <artifactId>apache-rat-plugin</artifactId>
+                        <configuration>
+                            <excludes>
+                                <!--  Used by maven-remote-resources-plugin -->
+                                <exclude>src/main/appended-resources/META-INF/*</exclude>
+                                <!--  Generated by maven-remote-resources-plugin -->
+                                <exclude>velocity.log</exclude>
+                                <!-- don't check anything in target -->
+                                <exclude>target/*</exclude>
+                            </excludes>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>animal-sniffer</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>animal-sniffer-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>test</phase>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>emma</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>emma-maven-plugin</artifactId>
+                        <inherited>true</inherited>
+                        <executions>
+                            <execution>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>instrument</goal>
+                                </goals>
+                                <configuration>
+                                    <metadataFile>${user.dir}/coverage.em</metadataFile>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.felix</groupId>
+                        <artifactId>maven-bundle-plugin</artifactId>
+                        <inherited>true</inherited>
+                        <executions>
+                            <execution>
+                                <id>emma-bundle</id>
+                                <goals>
+                                    <goal>bundle</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration>
+                                    <classifier>emma</classifier>
+                                    <outputDirectory>${basedir}/target/generated-classes/emma/classes</outputDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>emma-report</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.groovy.maven</groupId>
+                        <artifactId>gmaven-plugin</artifactId>
+                        <executions>
+                            <!-- store the project's source dir in a comma-delimited list for the emma report. -->
+                            <execution>
+                                <id>save-bundle-metadata</id>
+                                <goals>
+                                    <goal>execute</goal>
+                                </goals>
+                                <phase>validate</phase>
+                                <configuration>
+                                    <source>
+                                        if (!session.executionProperties.sourceDirs) {
+                                            session.executionProperties.sourceDirs = "${basedir}/src/main/java"
+                                        } else {
+                                            session.executionProperties.sourceDirs += ",${basedir}/src/main/java"
+                                        }
+                                    </source>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+    <mailingLists>
+        <mailingList>
+            <name>Apache Sling Development List</name>
+            <subscribe>
+                dev-subscribe@sling.apache.org
+            </subscribe>
+            <unsubscribe>
+                dev-unsubscribe@sling.apache.org
+            </unsubscribe>
+            <post>dev at sling.apache.org</post>
+            <archive>
+                http://mail-archives.apache.org/mod_mbox/sling-dev/
+            </archive>
+            <otherArchives>
+                <otherArchive>
+                    http://sling-dev.markmail.org/
+                </otherArchive>
+                <otherArchive>
+                    http://www.mail-archive.com/dev@sling.apache.org/
+                </otherArchive>
+            </otherArchives>
+        </mailingList>
+        <mailingList>
+            <name>Apache Sling Source Control List</name>
+            <subscribe>
+                commits-subscribe@sling.apache.org
+            </subscribe>
+            <unsubscribe>
+                commits-unsubscribe@sling.apache.org
+            </unsubscribe>
+            <archive>
+                http://mail-archives.apache.org/mod_mbox/sling-commits/
+            </archive>
+            <otherArchives>
+                <otherArchive>
+                    http://sling-commits.markmail.org/
+                </otherArchive>
+                <otherArchive>
+                    http://www.mail-archive.com/commits@sling.apache.org/
+                </otherArchive>
+            </otherArchives>
+        </mailingList>
+    </mailingLists>
+
+    <!-- Please visit our website for the current information about the
+         Apache Sling project team. (see #SLING-1120 why we don't include
+         the list here) -->
+    <developers>
+        <developer>
+            <name>Apache Sling Project</name>
+            <id>sling</id>
+            <url>http://sling.apache.org/site/project-team.html</url>
+        </developer>
+    </developers>
+
+    <dependencyManagement>
+
+        <!-- OSGi Core and Compendium API -->
+        <dependencies>
+            <dependency>
+                <groupId>org.osgi</groupId>
+                <artifactId>org.osgi.core</artifactId>
+                <version>4.1.0</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.osgi</groupId>
+                <artifactId>org.osgi.compendium</artifactId>
+                <version>4.1.0</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <!-- Web Application API -->
+            <dependency>
+                <groupId>javax.servlet</groupId>
+                <artifactId>servlet-api</artifactId>
+                <version>2.4</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <!-- JCR API -->
+            <dependency>
+                <groupId>javax.jcr</groupId>
+                <artifactId>jcr</artifactId>
+                <version>1.0</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <!-- Basic Logging -->
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>1.5.2</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <!-- Declarative Services support annotations -->
+            <dependency>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>org.apache.felix.scr.annotations</artifactId>
+                <version>1.4.0</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <!-- Basic dependencies for Unit Tests -->
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.8.1</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.jmock</groupId>
+                <artifactId>jmock-junit4</artifactId>
+                <version>2.5.1</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-simple</artifactId>
+                <version>1.5.2</version>
+                <scope>test</scope>
+            </dependency>
+
+
+        </dependencies>
+    </dependencyManagement>
+
+    <distributionManagement>
+        <site>
+            <id>apache.sling.site</id>
+            <url>
+                scp://people.apache.org/www/sling.apache.org/generated
+            </url>
+        </site>
+    </distributionManagement>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>apache.snapshots</id>
+            <name>Apache Snapshot Repository</name>
+            <url>http://repository.apache.org/snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+        </pluginRepository>
+    </pluginRepositories>
+
+</project>

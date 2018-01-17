@@ -1,0 +1,292 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <parent>
+    <groupId>org.codehaus.mojo</groupId>
+    <artifactId>mojo-parent</artifactId>
+    <version>32</version>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+
+  <prerequisites>
+    <maven>${mavenVersion}</maven>
+  </prerequisites>
+
+  <artifactId>clirr-maven-plugin</artifactId>
+  <packaging>maven-plugin</packaging>
+  <name>Clirr Maven Plugin</name>
+  <version>2.6.1</version>
+  <description>
+    Clirr is a tool that checks Java libraries for binary and source compatibility with older releases.
+    Basically you give it two sets of jar files and Clirr dumps out a list of changes in the public API.
+    The clirr-maven-plugin can be configured to break the build, if it detects incompatible api changes.
+    In a continuous integration process, the clirr-maven-plugin can automatically prevent accidental
+    introduction of binary or source compatibility problems. Additionally, the plugin can generate
+    a report as part of the generated site.
+  </description>
+
+  <scm>
+    <connection>scm:svn:http://svn.codehaus.org/mojo/tags/clirr-maven-plugin-2.6.1</connection>
+    <developerConnection>scm:svn:https://svn.codehaus.org/mojo/tags/clirr-maven-plugin-2.6.1</developerConnection>
+    <url>http://svn.codehaus.org/mojo/tags/clirr-maven-plugin-2.6.1</url>
+  </scm>
+
+  <issueManagement>
+    <system>jira</system>
+    <url>http://jira.codehaus.org/browse/MCLIRR</url>
+  </issueManagement>
+
+  <inceptionYear>2006</inceptionYear>
+
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <properties>
+    <clirrVersion>0.6</clirrVersion>
+    <doxiaVersion>1.0</doxiaVersion>
+    <doxiaSitetoolsVersion>1.0</doxiaSitetoolsVersion>
+    <mavenVersion>2.0.6</mavenVersion>
+    <mojo.java.target>1.5</mojo.java.target>
+    <sitePluginVersion>3.3</sitePluginVersion>
+  </properties>
+
+  <developers>
+    <developer>
+      <id>brett</id>
+      <name>Brett Porter</name>
+      <email>brett@apache.org</email>
+      <organization>Mergere</organization>
+      <roles>
+        <role>Java Developer</role>
+      </roles>
+      <timezone>+10</timezone>
+    </developer>
+    <developer>
+      <id>jochen</id>
+      <name>Jochen Wiedmann</name>
+      <email>jochen@apache.org</email>
+      <roles>
+        <role>Java Developer</role>
+      </roles>
+      <timezone>+1</timezone>
+    </developer>
+    <developer>
+      <id>jdcasey</id>
+      <name>John Casey</name>
+      <email>jdcasey@apache.org</email>
+      <organization>Sonatype</organization>
+      <roles>
+        <role>Java Developer</role>
+      </roles>
+      <timezone>-5</timezone>
+    </developer>
+    <developer>
+      <id>aheritier</id>
+      <name>Arnaud Heritier</name>
+      <email>aheritier@apache.org</email>
+      <roles>
+        <role>Developer</role>
+        <role>Despot</role>
+      </roles>
+      <timezone>+1</timezone>
+    </developer>
+  </developers>
+
+  <contributors>
+    <contributor>
+      <name>Roland Asmann</name>
+      <email>Roland.Asmann@cfc.at</email>
+    </contributor>
+    <contributor>
+      <name>Mathias Brökelmann</name>
+      <email>mbroekelmann@googlemail.com</email>
+    </contributor>
+    <contributor>
+      <name>Brian Egge</name>
+      <email>brianegge@yahoo.com</email>
+    </contributor>
+    <contributor>
+      <name>Grégory Joseph</name>
+      <email>joseph.gregory@gmail.com</email>
+    </contributor>
+    <contributor>
+      <name>Luc Maisonobe</name>
+      <email>Luc.Maisonobe@free.fr</email>
+    </contributor>
+    <contributor>
+      <name>Dominik Zindel</name>
+      <email>dominik.zindel@elca.ch</email>
+    </contributor>
+    <contributor>
+       <name>Lukas Krejci</name>
+       <email>lkrejci@centrum.cz</email>
+    </contributor>
+  </contributors>
+
+  <dependencies>
+    <dependency>
+      <groupId>net.sf.clirr</groupId>
+      <artifactId>clirr-core</artifactId>
+      <version>${clirrVersion}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>bcel</groupId>
+          <artifactId>bcel</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.bcel</groupId>
+      <artifactId>bcel</artifactId>
+      <version>5.2</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-artifact</artifactId>
+      <version>${mavenVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-model</artifactId>
+      <version>${mavenVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-plugin-api</artifactId>
+      <version>${mavenVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-project</artifactId>
+      <version>${mavenVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.doxia</groupId>
+      <artifactId>doxia-decoration-model</artifactId>
+      <version>${doxiaSitetoolsVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.doxia</groupId>
+      <artifactId>doxia-module-xhtml</artifactId>
+      <version>${doxiaVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.doxia</groupId>
+      <artifactId>doxia-sink-api</artifactId>
+      <version>${doxiaVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.doxia</groupId>
+      <artifactId>doxia-site-renderer</artifactId>
+      <version>${doxiaSitetoolsVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.reporting</groupId>
+      <artifactId>maven-reporting-api</artifactId>
+      <version>${mavenVersion}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-i18n</artifactId>
+      <version>1.0-beta-6</version>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-utils</artifactId>
+      <version>3.0.7</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-docck-plugin</artifactId>
+        <version>1.0-beta-2</version>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>reporting</id>
+      <reporting>
+        <plugins>
+          <plugin>
+            <artifactId>maven-changes-plugin</artifactId>
+            <version>2.6</version>
+            <configuration>
+              <onlyCurrentVersion>true</onlyCurrentVersion>
+            </configuration>
+            <reportSets>
+              <reportSet>
+                <reports>
+                  <report>changes-report</report>
+                  <report>jira-report</report>
+                </reports>
+              </reportSet>
+            </reportSets>
+          </plugin>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>l10n-maven-plugin</artifactId>
+            <version>1.0-alpha-2</version>
+            <configuration>
+              <locales>
+                <locale>de</locale>
+                <locale>fr</locale>
+                <locale>nl</locale>
+                <locale>ru</locale>
+                <locale>sv</locale>
+              </locales>
+            </configuration>
+          </plugin>
+        </plugins>
+      </reporting>
+    </profile>
+
+    <profile>
+      <id>run-its</id>
+      <activation>
+        <property>
+          <name>skipTests</name>
+          <value>!true</value>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-invoker-plugin</artifactId>
+            <configuration>
+              <debug>true</debug>
+              <projectsDirectory>src/it</projectsDirectory>
+              <pomIncludes>
+                <pomInclude>*/pom.xml</pomInclude>
+              </pomIncludes>
+              <postBuildHookScript>verify</postBuildHookScript>
+              <localRepositoryPath>${project.build.directory}/local repository</localRepositoryPath>
+              <goals>
+                <goal>clean</goal>
+                <goal>install</goal>
+              </goals>
+              <settingsFile>src/it/settings.xml</settingsFile>
+              <cloneProjectsTo>${project.build.directory}/it-tests</cloneProjectsTo>
+            </configuration>
+            <executions>
+              <execution>
+                <id>integration-test</id>
+                <goals>
+                  <goal>install</goal>
+                  <goal>run</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>

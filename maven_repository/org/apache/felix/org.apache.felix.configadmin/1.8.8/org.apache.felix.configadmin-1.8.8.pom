@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one
+ or more contributor license agreements.  See the NOTICE file
+ distributed with this work for additional information
+ regarding copyright ownership.  The ASF licenses this file
+ to you under the Apache License, Version 2.0 (the
+ "License"); you may not use this file except in compliance
+ with the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an
+ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ KIND, either express or implied.  See the License for the
+ specific language governing permissions and limitations
+ under the License.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>felix-parent</artifactId>
+        <version>3</version>
+        <relativePath>../pom/pom.xml</relativePath>
+    </parent>
+
+    <artifactId>org.apache.felix.configadmin</artifactId>
+    <version>1.8.8</version>
+    <packaging>bundle</packaging>
+
+    <name>Apache Felix Configuration Admin Service</name>
+    <description>
+        Implementation of the OSGi Configuration Admin Service Specification 1.5
+    </description>
+
+    <scm>
+        <connection>scm:svn:http://svn.apache.org/repos/asf/felix/releases/org.apache.felix.configadmin-1.8.8</connection>
+        <developerConnection>scm:svn:https://svn.apache.org/repos/asf/felix/releases/org.apache.felix.configadmin-1.8.8</developerConnection>
+        <url>scm:svn:https://svn.apache.org/repos/asf/felix/releases/org.apache.felix.configadmin-1.8.8</url>
+    </scm>
+
+    <!--
+        A Note on Testing
+        =================
+        
+        This project contains two kinds of tests: regular unit tests running
+        in the test phase and integration tests based on PAX Exam running
+        in the integration-test phase.
+        
+        Basically the complete project is build using Java 1.3 source and target
+        compatibility (as inherited from the parent pom). The exception are the
+        unit tests in the "integration" packages. These have to be compiled with
+        Java 5 source and target compatibility because the employ annotations
+        and generics.
+        
+        For running the integration tests from the console using Maven nothing
+        special has to be done as the tests run automatically. To run the tests
+        in your IDE, the project has to be built to the "package" phase with
+        the profile "ide" enabled:
+        
+             $ mvn -Pide clean package
+             
+        This creates the scr.jar file in the target folder, which is used by
+        the integration tests when run from the IDE. Alternatively the
+        "project.bundle.file" system property may be set to the bundle JAR
+        in the IDE launcher. 
+    -->
+    <properties>
+        <bundle.build.name>
+            ${basedir}/target
+        </bundle.build.name>
+        <bundle.file.name>
+            ${bundle.build.name}/${project.build.finalName}.jar
+        </bundle.file.name>
+    </properties>
+
+    <dependencies>
+    
+        <!--
+            Depend on latest version to make use of generics. Still we
+            make sure to only require Framework API 1.5 (OSGi Core R4.2)
+        -->
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.core</artifactId>
+            <version>5.0.0</version>
+            <scope>provided</scope>
+        </dependency>
+        
+        <!--
+            Configuration Admin and other API from latest enterprise
+            which provides Config Admin 1.5 API
+        -->
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.enterprise</artifactId>
+            <version>5.0.0</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- BND export annotations -->        
+        <dependency>
+            <groupId>biz.aQute</groupId>
+            <artifactId>bndlib</artifactId>
+            <version>1.50.0</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Integration Testing with Pax Exam -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.6</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.ops4j.pax.exam</groupId>
+            <artifactId>pax-exam-junit4</artifactId>
+            <version>2.6.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.ops4j.pax.exam</groupId>
+            <artifactId>pax-exam-container-native</artifactId>
+            <version>2.6.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.ops4j.pax.exam</groupId>
+            <artifactId>pax-exam-link-mvn</artifactId>
+            <version>2.6.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.ops4j.pax.url</groupId>
+            <artifactId>pax-url-aether</artifactId>
+            <version>1.5.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.ops4j.pax.tinybundles</groupId>
+            <artifactId>tinybundles</artifactId>
+            <version>1.0.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.geronimo.specs</groupId>
+            <artifactId>geronimo-atinject_1.0_spec</artifactId>
+            <version>1.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.7.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.apache.felix.framework</artifactId>
+            <version>4.0.3</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <version>2.3.7</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <instructions>
+                        <Bundle-Category>osgi</Bundle-Category>
+                        <Bundle-SymbolicName>
+                            ${project.artifactId}
+                        </Bundle-SymbolicName>
+                        <Bundle-Vendor>The Apache Software Foundation</Bundle-Vendor>
+                        <Bundle-DocURL>
+                            http://felix.apache.org/site/apache-felix-config-admin.html
+                        </Bundle-DocURL>
+                        <Bundle-Activator>
+                            org.apache.felix.cm.impl.ConfigurationManager
+                        </Bundle-Activator>
+                        <Export-Package>
+                            <!-- just list, version from package-info classes -->
+                            org.apache.felix.cm;
+                            org.apache.felix.cm.file,
+                            org.osgi.service.cm;provide:=true;version=1.5
+                        </Export-Package>
+                        <Import-Package>
+                            org.osgi.service.cm;version="[1.5,1.6)",
+                            org.osgi.framework;version="[1.4,2)",
+							org.osgi.service.log;resolution:=optional;version="1.3",
+                            *
+                        </Import-Package>
+                        <DynamicImport-Package>
+                            <!-- overwrite version from compendium bundle -->
+                            org.osgi.service.log;version="1.3"
+                        </DynamicImport-Package>
+						<Export-Service>
+							org.osgi.service.cm.ConfigurationAdmin;
+								service.description="Configuration Admin Service Specification 1.5 Implementation";
+								service.pid="org.osgi.service.cm.ConfigurationAdmin";
+								service.vendor="Apache Software Foundation",
+							org.apache.felix.cm.PersistenceManager;
+								service.description="Platform Filesystem Persistence Manager";
+								service.pid="org.apache.felix.cm.file.FilePersistenceManager";
+								service.vendor="Apache Software Foundation"
+						</Export-Service>
+						<Import-Service>
+							org.osgi.service.log.LogService;availability:=optional;multiple:=false
+						</Import-Service>
+                        <Embed-Dependency>
+                            org.osgi.core;inline=org/osgi/util/tracker/ServiceTracker*|org/osgi/util/tracker/AbstractTracked.class
+                        </Embed-Dependency>
+                    </instructions>
+                </configuration>
+            </plugin>
+            <!--
+                Exclude Integration tests in (default) unit tests and
+                conversely enable integration tests for integration testing
+                only. Helper classes are completely excluded from testing. 
+            -->
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>surefire-it</id>
+                        <phase>integration-test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <systemProperties>
+                                <property>
+                                    <name>project.bundle.file</name>
+                                    <value>${bundle.file.name}</value>
+                                </property>
+                            </systemProperties>
+                            <excludes>
+                                <exclude>**/cm/*</exclude>
+                                <exclude>**/cm/file/*</exclude>
+                                <exclude>**/cm/impl/**</exclude>
+                            </excludes>
+                            <includes>
+                                <include>**/integration/*</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+                <configuration>
+                    <excludes>
+                        <exclude>**/integration/**</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+    
+    <profiles>
+        <!--
+            copy the package such that IDEs may easily use it without
+            setting the system property
+        -->
+        <profile>
+            <id>ide</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.3</version>
+                        <executions>
+                            <execution>
+                                <id>cm-file-create</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <tasks>
+                                        <copy file="${project.build.directory}/${project.build.finalName}.jar" tofile="${project.build.directory}/configadmin.jar" />
+                                    </tasks>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+    
+    <!-- repositories for Pax Exam and BND tool -->
+    <repositories>
+        <repository>
+            <id>ops4j</id>
+            <name>ops4j</name>
+            <url>http://repository.ops4j.org/maven2</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>aqute</id>
+            <name>aqute</name>
+            <url>http://www.aqute.biz/repo</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+</project>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--  THIS PRODUCT CONTAINS RESTRICTED MATERIALS OF IBM
+5724-H88, 5724-J08, 5724-I63, 5655-W65 COPYRIGHT International Business Machines Corp., 2012
+All Rights Reserved * Licensed Materials - Property of IBM
+US Government Users Restricted Rights - Use, duplication or disclosure
+restricted by GSA ADP Schedule Contract with IBM Corp.
+-->
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+  <licenses>
+     <license>
+          <name>IBM International License Agreement for Non-Warranted Programs</name>
+          <url>http://public.dhe.ibm.com/ibmdl/export/pub/software/websphere/wasdev/maven/licenses/L-JTHS-8SZMHX/HTML/</url>
+          <distribution>repo</distribution>
+          <comments>Additional notices http://public.dhe.ibm.com/ibmdl/export/pub/software/websphere/wasdev/maven/licenses/L-JTHS-8SZMHX/HTML/notices.html</comments>
+      </license>
+  </licenses>
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.ibm.websphere.appserver.api</groupId>
+  <artifactId>com.ibm.websphere.appserver.api.transaction</artifactId>
+  <version>1.1.10</version>
+  <name>WebSphere Transaction API</name>
+  <description>WebSphere Transaction API, version 1.1</description>
+</project>

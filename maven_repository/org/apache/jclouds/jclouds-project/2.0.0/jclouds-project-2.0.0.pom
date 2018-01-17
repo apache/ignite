@@ -1,0 +1,1424 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.apache</groupId>
+    <artifactId>apache</artifactId>
+    <version>14</version>
+    <relativePath />
+  </parent>
+  <groupId>org.apache.jclouds</groupId>
+  <artifactId>jclouds-project</artifactId>
+  <version>2.0.0</version>
+  <packaging>pom</packaging>
+  <name>Apache jclouds Project</name>
+  <url>http://jclouds.apache.org/</url>
+  <description>Apache jclouds: Concurrent API for Cloud Services</description>
+  <inceptionYear>2009</inceptionYear>
+
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+
+  <issueManagement>
+    <system>JIRA</system>
+    <url>https://issues.apache.org/jira/browse/JCLOUDS</url>
+  </issueManagement>
+
+
+  <mailingLists>
+    <mailingList>
+      <name>User List</name>
+      <subscribe>user-subscribe@jclouds.apache.org</subscribe>
+      <unsubscribe>user-unsubscribe@jclouds.apache.org</unsubscribe>
+      <post>user@jclouds.apache.org</post>
+      <archive>http://mail-archives.apache.org/mod_mbox/jclouds-user/</archive>
+    </mailingList>
+    <mailingList>
+      <name>Developer List</name>
+      <subscribe>dev-subscribe@jclouds.apache.org</subscribe>
+      <unsubscribe>dev-unsubscribe@jclouds.apache.org</unsubscribe>
+      <post>dev@jclouds.apache.org</post>
+      <archive>http://mail-archives.apache.org/mod_mbox/jclouds-dev/</archive>
+    </mailingList>
+    <mailingList>
+      <name>Commits List</name>
+      <subscribe>commits-subscribe@jclouds.apache.org</subscribe>
+      <unsubscribe>commits-unsubscribe@jclouds.apache.org</unsubscribe>
+      <archive>http://mail-archives.apache.org/mod_mbox/jclouds-commits/</archive>
+    </mailingList>
+    <mailingList>
+      <name>Issues List</name>
+      <subscribe>issues-subscribe@jclouds.apache.org</subscribe>
+      <unsubscribe>issues-unsubscribe@jclouds.apache.org</unsubscribe>
+      <archive>http://mail-archives.apache.org/mod_mbox/jclouds-issues/</archive>
+    </mailingList>
+  </mailingLists>
+
+  <scm>
+    <connection>scm:git:https://git-wip-us.apache.org/repos/asf/jclouds.git</connection>
+    <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/jclouds.git</developerConnection>
+    <url>https://git-wip-us.apache.org/repos/asf?p=jclouds.git</url>
+    <tag>rel/jclouds-2.0.0-rc3</tag>
+  </scm>
+
+  <repositories>
+    <repository>
+      <id>apache-snapshots</id>
+      <url>https://repository.apache.org/content/repositories/snapshots</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+
+  <!-- to allow downstream projects to access jclouds-resources in plugin config -->
+  <pluginRepositories>
+    <pluginRepository>
+      <id>apache-snapshots</id>
+      <url>https://repository.apache.org/content/repositories/snapshots</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </pluginRepository>
+  </pluginRepositories>
+
+  <distributionManagement>
+    <site>
+      <id>jclouds-github-pages-site</id>
+      <url>${maven.site.url.base}/${project.version}</url>
+    </site>
+  </distributionManagement>
+
+  <developers>
+    <developer>
+      <name>Andrew Bayer</name>
+      <id>abayer</id>
+      <roles>
+        <role>Committer</role>
+        <role>PMC Member</role>
+      </roles>
+    </developer>
+    <developer>
+      <name>Andrea Turli</name>
+      <id>andreaturli</id>
+      <roles>
+        <role>Committer</role>
+      </roles>
+    </developer>
+    <developer>
+      <name>Andrew Gaul</name>
+      <id>gaul</id>
+      <roles>
+        <role>Committer</role>
+        <role>PMC Member</role>
+      </roles>
+    </developer>
+    <developer>
+      <name>Andrew Phillips</name>
+      <id>andrewp</id>
+      <roles>
+        <role>Committer</role>
+        <role>PMC Member</role>
+      </roles>
+      <timezone>+1</timezone>
+    </developer>
+    <developer>
+      <name>Becca Woods</name>
+      <id>silkysun</id>
+      <roles>
+        <role>Committer</role>
+        <role>PMC Member</role>
+      </roles>
+    </developer>
+    <developer>
+      <name>Chris Custine</name>
+      <id>ccustine</id>
+      <roles>
+        <role>Committer</role>
+        <role>PMC Member</role>
+      </roles>
+    </developer>
+    <developer>
+      <name>Everett Toews</name>
+      <id>everett</id>
+      <roles>
+        <role>Committer</role>
+        <role>PMC Member</role>
+      </roles>
+    </developer>
+    <developer>
+      <name>Ignasi Barrera</name>
+      <id>nacx</id>
+      <roles>
+        <role>Committer</role>
+        <role>PMC Member</role>
+      </roles>
+    </developer>
+    <developer>
+      <name>Ioannis Canellos</name>
+      <id>iocanel</id>
+      <roles>
+        <role>Committer</role>
+        <role>PMC Member</role>
+      </roles>
+    </developer>
+    <developer>
+      <name>Jeremy Daggett</name>
+      <id>jdaggett</id>
+      <roles>
+        <role>Committer</role>
+      </roles>
+    </developer>
+    <developer>
+      <name>Matt Stephenson</name>
+      <id>mattstep</id>
+      <roles>
+        <role>Committer</role>
+        <role>PMC Member</role>
+      </roles>
+    </developer>
+    <developer>
+      <name>Zach Shoylev</name>
+      <id>zachsh</id>
+      <roles>
+        <role>Committer</role>
+      </roles>
+    </developer>
+  </developers>
+
+  <properties>
+    <maven.compile.source>1.6</maven.compile.source>
+    <maven.compile.target>1.6</maven.compile.target>
+    <maven.compile.deprecation>true</maven.compile.deprecation>
+    <maven.site.url.base>gitsite:git@github.com/jclouds/jclouds-maven-site.git</maven.site.url.base>
+    <clojure.version>1.3.0</clojure.version>
+    <guava.version>16.0.1</guava.version>
+    <guava.osgi.import>com.google.common.*;version="[16.0.1,20.0.0)"</guava.osgi.import>
+    <guice.version>3.0</guice.version>
+    <okhttp.version>2.2.0</okhttp.version>
+    <surefire.version>2.17</surefire.version>
+    <assertj-core.version>1.7.0</assertj-core.version>
+    <assertj-guava.version>1.3.0</assertj-guava.version>
+    <auto-factory.version>0.1-beta1</auto-factory.version>
+    <auto-service.version>1.0-rc2</auto-service.version>
+    <auto-value.version>1.1</auto-value.version>
+    <java-xmlbuilder.version>1.1</java-xmlbuilder.version>
+    <osgi.version>4.2.0</osgi.version>
+    <osgi.compendium.version>${osgi.version}</osgi.compendium.version>
+    <http.proxyHost />
+    <http.proxyPort />
+    <jclouds.wire.httpstream.url>http://archive.apache.org/dist/commons/logging/binaries/commons-logging-1.1.1-bin.tar.gz</jclouds.wire.httpstream.url>
+    <jclouds.wire.httpstream.md5>e5de09672af9b386c30a311654d8541a</jclouds.wire.httpstream.md5>
+    <jclouds.blobstore.httpstream.url>${jclouds.wire.httpstream.url}</jclouds.blobstore.httpstream.url>
+    <jclouds.blobstore.httpstream.md5>${jclouds.wire.httpstream.md5}</jclouds.blobstore.httpstream.md5>
+    <jclouds.test.listener>org.jclouds.test.testng.UnitTestStatusListener</jclouds.test.listener>
+    <test.ssh.keyfile />
+    <sourceReleaseAssemblyDescriptor>source-release-zip-tar</sourceReleaseAssemblyDescriptor>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.clojure</groupId>
+        <artifactId>clojure</artifactId>
+        <version>${clojure.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.clojure</groupId>
+        <artifactId>tools.logging</artifactId>
+        <version>0.2.3</version>
+      </dependency>
+      <dependency>
+        <groupId>org.clojure</groupId>
+        <artifactId>core.incubator</artifactId>
+        <version>0.1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>${guava.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.inject.extensions</groupId>
+        <artifactId>guice-assistedinject</artifactId>
+        <version>${guice.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.inject</groupId>
+        <artifactId>guice</artifactId>
+        <version>${guice.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.inject.extensions</groupId>
+        <artifactId>guice-multibindings</artifactId>
+        <version>${guice.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.easymock</groupId>
+        <artifactId>easymockclassextension</artifactId>
+        <version>3.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-security</artifactId>
+        <version>8.1.8.v20121106</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-server</artifactId>
+        <version>8.1.8.v20121106</version>
+      </dependency>
+      <dependency>
+        <groupId>com.squareup.okhttp</groupId>
+        <artifactId>mockwebserver</artifactId>
+        <version>${okhttp.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.testng</groupId>
+        <artifactId>testng</artifactId>
+        <version>6.8.21</version>
+        <exclusions>
+          <exclusion>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>xmlunit</groupId>
+        <artifactId>xmlunit</artifactId>
+        <version>1.3</version>
+      </dependency>
+      <dependency>
+        <groupId>log4j</groupId>
+        <artifactId>log4j</artifactId>
+        <version>1.2.17</version>
+      </dependency>
+      <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-classic</artifactId>
+        <version>1.1.2</version>
+      </dependency>
+      <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-core</artifactId>
+        <version>1.1.2</version>
+      </dependency>
+      <dependency>
+        <groupId>org.assertj</groupId>
+        <artifactId>assertj-core</artifactId>
+        <version>${assertj-core.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.assertj</groupId>
+        <artifactId>assertj-guava</artifactId>
+        <version>${assertj-guava.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.auto.factory</groupId>
+        <artifactId>auto-factory</artifactId>
+        <version>${auto-factory.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.auto.service</groupId>
+        <artifactId>auto-service</artifactId>
+        <version>${auto-service.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.auto.value</groupId>
+        <artifactId>auto-value</artifactId>
+        <version>${auto-value.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.jamesmurty.utils</groupId>
+        <artifactId>java-xmlbuilder</artifactId>
+        <version>${java-xmlbuilder.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.core</artifactId>
+        <version>${osgi.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.compendium</artifactId>
+        <version>${osgi.compendium.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.easymock</groupId>
+      <artifactId>easymockclassextension</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>xmlunit</groupId>
+      <artifactId>xmlunit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.clojure</groupId>
+      <artifactId>clojure</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.clojure</groupId>
+      <artifactId>tools.logging</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.clojure</groupId>
+      <artifactId>core.incubator</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-guava</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <resources>
+      <resource>
+        <directory>src/main/clojure</directory>
+      </resource>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+      <!-- For AutoService generated services. -->
+      <resource>
+        <directory>target/classes</directory>
+        <includes>
+          <include>META-INF/services/*</include>
+        </includes>
+      </resource>
+    </resources>
+    <testResources>
+      <testResource>
+        <directory>src/test/clojure</directory>
+      </testResource>
+      <testResource>
+        <directory>src/test/resources</directory>
+      </testResource>
+    </testResources>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-release-plugin</artifactId>
+        <version>2.4</version>
+        <configuration>
+          <useReleaseProfile>false</useReleaseProfile>
+          <goals>deploy</goals>
+          <arguments>-Pdoc -Papache-release ${arguments}</arguments>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.rat</groupId>
+        <artifactId>apache-rat-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <excludes>
+            <!-- expectation files for unit tests -->
+            <exclude>**/src/test/resources/**/*.sh</exclude>
+            <exclude>**/src/test/resources/**/*.bat</exclude>
+            <exclude>**/src/test/resources/**/*.cmd</exclude>
+            <exclude>**/src/test/resources/**/*.txt</exclude>
+            <exclude>**/src/test/resources/**/*.gz</exclude>
+            <exclude>**/src/test/resources/**/*.xml</exclude>
+            <exclude>**/src/test/resources/**/*.crt</exclude>
+            <exclude>src/test/resources/html/*.html</exclude>
+
+            <!-- META-INF/services files -->
+            <exclude>**/services/*LoggingModule</exclude>
+            <exclude>**/services/*ApiMetadata</exclude>
+            <exclude>**/services/*ProviderMetadata</exclude>
+
+            <!-- prevent duplicating license -->
+            <exclude>**/LICENSE.txt</exclude>
+            <exclude>**/header.txt</exclude>
+
+            <!-- high-level project metadata -->
+            <exclude>**/NOTICE.txt</exclude>
+            <exclude>**/DISCLAIMER</exclude>
+            <exclude>**/BUILD.txt</exclude>
+            <exclude>**/CHANGES.txt</exclude>
+            <exclude>**/README.md</exclude>
+            <exclude>**/README.txt</exclude>
+            <exclude>**/DEPENDENCIES</exclude>
+            <exclude>**/CONTRIBUTING.md</exclude>
+
+            <!-- reference data lists -->
+            <exclude>**/*json</exclude>
+            <exclude>**/*readme</exclude>
+
+            <!-- SSH keys -->
+            <exclude>**/test</exclude>
+            <exclude>**/test.pub</exclude>
+            <exclude>**/src/test/resources/**/ssh-*.pub</exclude>
+
+            <!-- temporary files or those generated by IDE or SCM -->
+            <exclude>**/target/**</exclude>
+            <exclude>**/test-output/**</exclude>
+            <exclude>**/bin/**</exclude>
+            <exclude>**/.settings/**</exclude>
+            <exclude>**/.classpath</exclude>
+            <exclude>**/.dir-locals.el</exclude>
+            <exclude>**/.project</exclude>
+            <exclude>**/.idea/**</exclude>
+            <exclude>**/*.iml</exclude>
+            <exclude>**/*.eml</exclude>
+            <exclude>**/*.ipr</exclude>
+            <exclude>**/*.iws</exclude>
+            <exclude>**/*.DS_STORE</exclude>
+            <exclude>**/TAGS</exclude>
+            <exclude>**/.metadata/**</exclude>
+            <exclude>**/atlassian-ide-plugin.xml</exclude>
+            <exclude>**/.DS_Store</exclude>
+            <exclude>.mailmap</exclude>
+            <exclude>.git/**</exclude>
+            <exclude>**/.gitignore</exclude>
+            <exclude>**/.gitattributes</exclude>
+            <exclude>**/.java-version</exclude>
+            <exclude>**/modernizer_exclusions.txt</exclude>
+            <exclude>**/.factorypath</exclude>
+            <exclude>**/.apt_generated/**</exclude>
+            <exclude>**/.checkstyle</exclude>
+            <exclude>nb-configuration.xml</exclude>
+            <exclude>nbactions.xml</exclude>
+
+            <!-- Temporary files generated on CloudBees slaves -->
+            <exclude>.repository/**</exclude>
+            <exclude>gc.log</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.basepom.maven</groupId>
+        <artifactId>duplicate-finder-maven-plugin</artifactId>
+        <version>1.1.1</version>
+        <configuration>
+          <exceptions>
+            <exception>
+              <!-- CloudSigma bundles conflict between api and providers-->
+              <conflictingDependencies>
+                <dependency>
+                  <groupId>org.apache.jclouds.api</groupId>
+                  <artifactId>cloudsigma</artifactId>
+                  <version>${project.version}</version>
+                </dependency>
+                <dependency>
+                  <groupId>org.apache.jclouds.provider</groupId>
+                  <artifactId>cloudsigma-lvs</artifactId>
+                  <version>${project.version}</version>
+                </dependency>
+                <dependency>
+                  <groupId>org.apache.jclouds.provider</groupId>
+                  <artifactId>cloudsigma-zrh</artifactId>
+                  <version>${project.version}</version>
+                </dependency>
+              </conflictingDependencies>
+              <packages>
+                <package>org.jclouds.cloudsigma</package>
+              </packages>
+            </exception>
+            <exception>
+              <!-- Google App Engine Deps, some google classes are duplicated between packages -->
+              <conflictingDependencies>
+                <dependency>
+                  <groupId>com.google.appengine</groupId>
+                  <artifactId>appengine-api-1.0-sdk</artifactId>
+                  <version>1.6.5</version>
+                </dependency>
+                <dependency>
+                  <groupId>com.google.appengine</groupId>
+                  <artifactId>appengine-testing</artifactId>
+                  <version>1.6.5</version>
+                  <scope>test</scope>
+                </dependency>
+              </conflictingDependencies>
+              <packages>
+                <package>com.google</package>
+              </packages>
+            </exception>
+            <exception>
+              <conflictingDependencies>
+                <dependency>
+                  <groupId>com.jcraft</groupId>
+                  <artifactId>jsch.agentproxy.core</artifactId>
+                  <version>0.0.9</version>
+                </dependency>
+                <dependency>
+                  <groupId>com.jcraft</groupId>
+                  <artifactId>jsch.agentproxy.connector-factory</artifactId>
+                  <version>0.0.9</version>
+                </dependency>
+              </conflictingDependencies>
+              <packages>
+                <package>com.jcraft.jsch.agentproxy</package>
+              </packages>
+            </exception>
+          </exceptions>
+          <ignoredResources>
+            <!-- For all the jetty packages -->
+            <ignoredResource>about\.html</ignoredResource>
+            <!-- There are several situations where a test-jar and another test-jar or a bundle conflict on these artifacts -->
+            <ignoredResource>log4j.xml</ignoredResource>
+            <ignoredResource>os.xml</ignoredResource>
+            <ignoredResource>virtualhardwaresection.xml</ignoredResource>
+            <ignoredResource>logback.xml</ignoredResource>
+            <ignoredResource>amzn_images.xml</ignoredResource>
+            <ignoredResource>test.jks</ignoredResource>
+            <ignoredResource>test</ignoredResource>
+            <ignoredResource>CreateInternetService-options-test.xml</ignoredResource>
+            <ignoredResource>.gitattributes</ignoredResource>
+            <ignoredResource>functions/.gitattributes</ignoredResource>
+            <ignoredResource>OSGI-OPT/bnd.bnd</ignoredResource>
+            <!-- For bouncycastle -->
+            <ignoredResource>META-INF/BCKEY.DSA</ignoredResource>
+            <ignoredResource>META-INF/BCKEY.SF</ignoredResource>
+          </ignoredResources>
+          <failBuildInCaseOfConflict>true</failBuildInCaseOfConflict>
+          <skip>${skipDuplicateFinder}</skip>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>verify</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>animal-sniffer-maven-plugin</artifactId>
+        <version>1.11</version>
+        <executions>
+          <execution>
+            <phase>test</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <signature>
+            <groupId>org.codehaus.mojo.signature</groupId>
+            <artifactId>java16</artifactId>
+            <version>1.1</version>
+          </signature>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${surefire.version}</version>
+        <executions>
+          <execution>
+            <id>integration</id>
+            <phase>integration-test</phase>
+            <goals>
+              <goal>test</goal>
+            </goals>
+            <configuration>
+              <argLine>-Xmx512m -Xms256m -Djava.awt.headless=true -XX:MaxPermSize=256m -Xss256k</argLine>
+              <parallel>tests</parallel>
+              <threadCount>5</threadCount>
+              <!-- note that the groups/excluded groups don't work due to some problem
+                   in surefire or testng. instead, we have to exclude via file path
+                   <groups>integration</groups>
+                   <excludedGroups>unit,performance,live</excludedGroups> -->
+              <excludes>
+                <exclude>**/*LiveTest.java</exclude>
+              </excludes>
+              <includes>
+                <include>**/*IntegrationTest.java</include>
+              </includes>
+            </configuration>
+          </execution>
+        </executions>
+        <configuration>
+          <parallel>methods</parallel>
+          <threadCount>5</threadCount>
+          <!-- note that the groups/excluded groups don't work due to some problem
+               in surefire or testng. instead, we have to exclude via file path
+               <groups>unit,performance</groups>
+               <excludedGroups>integration,live</excludedGroups> -->
+          <excludes>
+            <exclude>**/*IntegrationTest.java</exclude>
+            <exclude>**/*LiveTest.java</exclude>
+          </excludes>
+          <properties>
+            <property>
+              <name>listener</name>
+              <value>${jclouds.test.listener}</value>
+            </property>
+          </properties>
+          <systemPropertyVariables>
+            <sun.net.http.allowRestrictedHeaders>true</sun.net.http.allowRestrictedHeaders>
+            <jclouds.wire.httpstream.url>${jclouds.wire.httpstream.url}</jclouds.wire.httpstream.url>
+            <jclouds.wire.httpstream.md5>${jclouds.wire.httpstream.md5}</jclouds.wire.httpstream.md5>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>1.1.1</version>
+        <executions>
+          <execution>
+            <id>enforce-banned-dependencies</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <excludes>
+                    <exclude>:maven-dependency-plugin</exclude>
+                  </excludes>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+          <execution>
+            <id>enforce-java</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <version>[1.6,)</version>
+                </requireJavaVersion>
+                <requireMavenVersion>
+                  <version>[3.0.2,)</version>
+                </requireMavenVersion>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.1</version>
+        <configuration>
+          <compilerId>javac-with-errorprone</compilerId>
+          <forceJavacCompilerUse>true</forceJavacCompilerUse>
+          <encoding>${project.build.sourceEncoding}</encoding>
+          <source>${maven.compile.source}</source>
+          <target>${maven.compile.target}</target>
+            <showDeprecation>false</showDeprecation>
+            <showWarnings>true</showWarnings>
+            <compilerArgs>
+              <compilerArg>-Xlint</compilerArg>
+              <compilerArg>-Xlint:-deprecation</compilerArg>
+              <compilerArg>-Xlint:-rawtypes</compilerArg>
+              <compilerArg>-Xlint:-serial</compilerArg>
+              <compilerArg>-Xlint:-unchecked</compilerArg>
+
+              <!-- on by default: warning -->
+              <compilerArg>-Xep:CannotMockFinalClass:ERROR</compilerArg>
+              <compilerArg>-Xep:ElementsCountedInLoop:ERROR</compilerArg>
+              <compilerArg>-Xep:EqualsHashCode:ERROR</compilerArg>
+              <compilerArg>-Xep:Finally:ERROR</compilerArg>
+              <compilerArg>-Xep:IncompatibleModifiers:ERROR</compilerArg>
+              <compilerArg>-Xep:JUnitAmbiguousTestClass:ERROR</compilerArg>
+              <compilerArg>-Xep:NonAtomicVolatileUpdate:OFF</compilerArg>  <!-- noisy -->
+              <compilerArg>-Xep:NonCanonicalStaticMemberImport:ERROR</compilerArg>
+              <compilerArg>-Xep:NonOverridingEquals:ERROR</compilerArg>
+              <compilerArg>-Xep:PreconditionsInvalidPlaceholder:ERROR</compilerArg>
+              <compilerArg>-Xep:ProtoFieldPreconditionsCheckNotNull:ERROR</compilerArg>
+              <compilerArg>-Xep:RequiredModifiers:ERROR</compilerArg>
+              <compilerArg>-Xep:StaticAccessedFromInstance:ERROR</compilerArg>
+              <compilerArg>-Xep:StringEquality:ERROR</compilerArg>
+              <compilerArg>-Xep:SynchronizeOnNonFinalField:ERROR</compilerArg>
+              <compilerArg>-Xep:TypeParameterUnusedInFormals:OFF</compilerArg>  <!-- noisy -->
+              <compilerArg>-Xep:UnnecessaryStaticImport:ERROR</compilerArg>
+              <compilerArg>-Xep:WaitNotInLoop:ERROR</compilerArg>
+
+              <!-- on by default: error -->
+              <compilerArg>-Xep:ArrayEquals:ERROR</compilerArg>
+              <compilerArg>-Xep:ArrayHashCode:ERROR</compilerArg>
+              <compilerArg>-Xep:ArrayToString:ERROR</compilerArg>
+              <compilerArg>-Xep:ArrayToStringCompoundAssignment:ERROR</compilerArg>
+              <compilerArg>-Xep:ArrayToStringConcatenation:ERROR</compilerArg>
+              <compilerArg>-Xep:AsyncFunctionReturnsNull:ERROR</compilerArg>
+              <compilerArg>-Xep:BadShiftAmount:ERROR</compilerArg>
+              <compilerArg>-Xep:ChainingConstructorIgnoresParameter:ERROR</compilerArg>
+              <compilerArg>-Xep:CheckReturnValue:ERROR</compilerArg>
+              <compilerArg>-Xep:ClassName:ERROR</compilerArg>
+              <compilerArg>-Xep:ComparisonOutOfRange:ERROR</compilerArg>
+              <compilerArg>-Xep:CompileTimeConstant:ERROR</compilerArg>
+              <compilerArg>-Xep:DeadException:ERROR</compilerArg>
+              <compilerArg>-Xep:DepAnn:ERROR</compilerArg>
+              <compilerArg>-Xep:DoubleCheckedLocking:ERROR</compilerArg>
+              <compilerArg>-Xep:EqualsNaN:ERROR</compilerArg>
+              <compilerArg>-Xep:ForOverride:ERROR</compilerArg>
+              <compilerArg>-Xep:GetClassOnClass:ERROR</compilerArg>
+              <compilerArg>-Xep:GuardedByChecker:ERROR</compilerArg>
+              <compilerArg>-Xep:GuiceAssistedInjectScoping:ERROR</compilerArg>
+              <compilerArg>-Xep:HashtableContains:ERROR</compilerArg>
+              <compilerArg>-Xep:InvalidPatternSyntax:ERROR</compilerArg>
+              <compilerArg>-Xep:IsInstanceOfClass:ERROR</compilerArg>
+              <compilerArg>-Xep:JUnit3TestNotRun:ERROR</compilerArg>
+              <compilerArg>-Xep:JUnit4SetUpNotRun:ERROR</compilerArg>
+              <compilerArg>-Xep:JUnit4TearDownNotRun:ERROR</compilerArg>
+              <compilerArg>-Xep:JUnit4TestNotRun:ERROR</compilerArg>
+              <compilerArg>-Xep:LongLiteralLowerCaseSuffix:ERROR</compilerArg>
+              <compilerArg>-Xep:MisusedWeekYear:ERROR</compilerArg>
+              <compilerArg>-Xep:NarrowingCompoundAssignment:ERROR</compilerArg>
+              <compilerArg>-Xep:NonCanonicalStaticImport:ERROR</compilerArg>
+              <compilerArg>-Xep:NonFinalCompileTimeConstant:ERROR</compilerArg>
+              <compilerArg>-Xep:Overrides:ERROR</compilerArg>
+              <!-- Disabled because of internal error on Windows with 2.0.5, see https://github.com/google/error-prone/issues/432 -->
+              <!-- <compilerArg>-Xep:PackageLocation:WARNING</compilerArg> -->
+              <compilerArg>-Xep:PreconditionsCheckNotNull:ERROR</compilerArg>
+              <compilerArg>-Xep:PreconditionsCheckNotNullPrimitive:ERROR</compilerArg>
+              <compilerArg>-Xep:ProtoFieldNullComparison:ERROR</compilerArg>
+              <compilerArg>-Xep:ReturnValueIgnored:ERROR</compilerArg>
+              <compilerArg>-Xep:SelfAssignment:ERROR</compilerArg>
+              <compilerArg>-Xep:SelfEquals:ERROR</compilerArg>
+              <compilerArg>-Xep:SizeGreaterThanOrEqualsZero:ERROR</compilerArg>
+              <compilerArg>-Xep:StringBuilderInitWithChar:ERROR</compilerArg>
+              <compilerArg>-Xep:SuppressWarningsDeprecated:ERROR</compilerArg>
+              <compilerArg>-Xep:TryFailThrowable:ERROR</compilerArg>
+              <compilerArg>-Xep:UnnecessaryTypeArgument:ERROR</compilerArg>
+              <compilerArg>-Xep:UnusedAnonymousClass:ERROR</compilerArg>
+
+              <!-- experimental: warning -->
+              <compilerArg>-Xep:AssertFalse:ERROR</compilerArg>
+              <compilerArg>-Xep:AssistedInjectAndInjectOnConstructors:ERROR</compilerArg>
+              <compilerArg>-Xep:CollectionIncompatibleType:ERROR</compilerArg>
+              <compilerArg>-Xep:GuiceInjectOnFinalField:OFF</compilerArg>  <!-- noisy -->
+              <compilerArg>-Xep:MissingFail:ERROR</compilerArg>
+              <compilerArg>-Xep:NullablePrimitive:ERROR</compilerArg>
+              <compilerArg>-Xep:OverridesGuiceInjectableMethod:OFF</compilerArg>  <!-- internal error with 2.0.5 -->
+              <compilerArg>-Xep:PreconditionsErrorMessageEagerEvaluation:OFF</compilerArg>  <!-- internal error with 2.0.5 -->
+              <compilerArg>-Xep:PrimitiveArrayPassedToVarargsMethod:ERROR</compilerArg>
+
+              <!-- experimental: not a problem -->
+              <compilerArg>-Xep:FallthroughSuppression</compilerArg>
+
+              <!-- experimental: error -->
+              <compilerArg>-Xep:ArraysAsListPrimitiveArray:ERROR</compilerArg>
+              <compilerArg>-Xep:AssistedInjectAndInjectOnSameConstructor:ERROR</compilerArg>
+              <compilerArg>-Xep:ClassCanBeStatic:ERROR</compilerArg>
+              <compilerArg>-Xep:DivZero:ERROR</compilerArg>
+              <compilerArg>-Xep:EmptyIf:ERROR</compilerArg>
+              <compilerArg>-Xep:GuardedByValidator:ERROR</compilerArg>
+              <compilerArg>-Xep:GuiceAssistedParameters:ERROR</compilerArg>
+              <compilerArg>-Xep:InjectInvalidTargetingOnScopingAnnotation:ERROR</compilerArg>
+              <compilerArg>-Xep:InjectMoreThanOneQualifier:OFF</compilerArg>  <!-- noisy -->
+              <compilerArg>-Xep:InjectMoreThanOneScopeAnnotationOnClass:ERROR</compilerArg>
+              <compilerArg>-Xep:InjectScopeAnnotationOnInterfaceOrAbstractClass:ERROR</compilerArg>
+              <compilerArg>-Xep:InjectScopeOrQualifierAnnotationRetention:ERROR</compilerArg>
+              <compilerArg>-Xep:InjectedConstructorAnnotations:ERROR</compilerArg>
+              <compilerArg>-Xep:JMockTestWithoutRunWithOrRuleAnnotation:ERROR</compilerArg>
+              <compilerArg>-Xep:JavaxInjectOnAbstractMethod:ERROR</compilerArg>
+              <compilerArg>-Xep:JavaxInjectOnFinalField:ERROR</compilerArg>
+              <compilerArg>-Xep:LockMethodChecker:ERROR</compilerArg>
+              <compilerArg>-Xep:MalformedFormatString:ERROR</compilerArg>
+              <compilerArg>-Xep:MissingCasesInEnumSwitch:OFF</compilerArg>  <!-- noisy -->
+              <compilerArg>-Xep:ModifyingCollectionWithItself:ERROR</compilerArg>
+              <compilerArg>-Xep:MoreThanOneInjectableConstructor:OFF</compilerArg>  <!-- internal error with 2.0.5 -->
+              <compilerArg>-Xep:NoAllocation:ERROR</compilerArg>
+              <compilerArg>-Xep:NonRuntimeAnnotation:ERROR</compilerArg>
+              <compilerArg>-Xep:NumericEquality:ERROR</compilerArg>
+              <compilerArg>-Xep:OverlappingQualifierAndScopeAnnotation:ERROR</compilerArg>
+              <compilerArg>-Xep:OverridesJavaxInjectableMethod:OFF</compilerArg>  <!-- internal error with 2.0.5 -->
+              <compilerArg>-Xep:ParameterPackage:OFF</compilerArg>  <!-- internal error with 2.0.5 -->
+              <compilerArg>-Xep:ProtoStringFieldReferenceEquality:ERROR</compilerArg>
+              <compilerArg>-Xep:SelfEquality:ERROR</compilerArg>
+              <compilerArg>-Xep:UnlockMethod:ERROR</compilerArg>
+              <compilerArg>-Xep:WildcardImport:ERROR</compilerArg>
+            </compilerArgs>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.codehaus.plexus</groupId>
+            <artifactId>plexus-compiler-javac-errorprone</artifactId>
+            <version>2.6</version>
+          </dependency>
+          <dependency>
+            <groupId>com.google.errorprone</groupId>
+            <artifactId>error_prone_core</artifactId>
+            <version>2.0.5</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+      <plugin>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>2.6</version>
+        <configuration>
+          <encoding>${project.build.sourceEncoding}</encoding>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>2.4</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <archive>
+            <manifestEntries>
+              <Specification-Title>jclouds ${project.name}</Specification-Title>
+              <Specification-Vendor>jclouds</Specification-Vendor>
+              <Implementation-Vendor>jclouds</Implementation-Vendor>
+              <Implementation-Vendor-Id>org.jclouds</Implementation-Vendor-Id>
+              <Implementation-Version>${project.version}</Implementation-Version>
+              <X-Compile-Source-JDK>${maven.compile.source}</X-Compile-Source-JDK>
+              <X-Compile-Target-JDK>${maven.compile.target}</X-Compile-Target-JDK>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <version>2.3.7</version>
+        <extensions>true</extensions>
+        <configuration>
+          <obrRepository>NONE</obrRepository>
+          <instructions>
+            <Bundle-Activator>${jclouds.osgi.activator}</Bundle-Activator>
+            <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+            <Export-Package>${jclouds.osgi.export}</Export-Package>
+            <Import-Package>${guava.osgi.import},${jclouds.osgi.import}</Import-Package>
+            <DynamicImport-Package>${jclouds.osgi.dynamic}</DynamicImport-Package>
+            <Fragment-Host>${jclouds.osgi.fragment}</Fragment-Host>
+          </instructions>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <version>2.15</version>
+        <!-- configuration and dependencies set via profiles -->
+        <executions>
+          <execution>
+            <id>default</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.gaul</groupId>
+        <artifactId>modernizer-maven-plugin</artifactId>
+        <version>1.4.0</version>
+        <!-- configuration and dependencies set via profiles -->
+        <executions>
+          <execution>
+            <id>modernizer</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>modernizer</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-archetype-plugin</artifactId>
+          <version>2.2</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <version>2.3</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>2.7</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>1.1.1</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-install-plugin</artifactId>
+          <version>2.4</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-jxr-plugin</artifactId>
+          <version>2.3</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-pmd-plugin</artifactId>
+          <version>2.7.1</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-project-info-reports-plugin</artifactId>
+          <version>2.5.1</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-site-plugin</artifactId>
+          <version>3.3</version>
+          <configuration>
+            <outputEncoding>${project.build.sourceEncoding}</outputEncoding>
+            <reportPlugins>
+              <plugin>
+                <artifactId>maven-project-info-reports-plugin</artifactId>
+                <reportSets>
+                  <reportSet>
+                    <reports>
+                      <report>index</report>
+                      <report>project-team</report>
+                      <report>mailing-list</report>
+                      <report>issue-tracking</report>
+                      <report>license</report>
+                      <report>scm</report>
+                    </reports>
+                  </reportSet>
+                </reportSets>
+              </plugin>
+              <plugin>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.9</version>
+                <configuration>
+                  <encoding>${project.build.sourceEncoding}</encoding>
+                  <quiet>true</quiet>
+                  <maxmemory>512m</maxmemory>
+                </configuration>
+                <reportSets>
+                  <reportSet>
+                    <id>default</id>
+                    <reports>
+                      <report>javadoc</report>
+                      <report>aggregate</report>
+                    </reports>
+                  </reportSet>
+                </reportSets>
+              </plugin>
+              <plugin>
+                <groupId>org.sonatype.maven.plugin</groupId>
+                <artifactId>emma-maven-plugin</artifactId>
+                <version>1.2</version>
+                <configuration>
+                  <formats>html,xml</formats>
+                </configuration>
+              </plugin>
+              <plugin>
+                <artifactId>maven-jxr-plugin</artifactId>
+              </plugin>
+              <plugin>
+                <artifactId>maven-surefire-report-plugin</artifactId>
+              </plugin>
+              <plugin>
+                <groupId>org.apache.rat</groupId>
+                <artifactId>apache-rat-plugin</artifactId>
+              </plugin>
+              <plugin>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <configuration>
+                  <targetJdk>${maven.compile.source}</targetJdk>
+                </configuration>
+              </plugin>
+              <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>findbugs-maven-plugin</artifactId>
+                <configuration>
+                  <xmlOutput>true</xmlOutput>
+                </configuration>
+              </plugin>
+            </reportPlugins>
+            <stagingRepositoryId>${project.distributionManagement.site.id}</stagingRepositoryId>
+          </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>com.github.stephenc.wagon</groupId>
+              <artifactId>wagon-gitsite</artifactId>
+              <version>0.4.1</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+        <plugin>
+          <artifactId>maven-surefire-report-plugin</artifactId>
+          <version>${surefire.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.rat</groupId>
+          <artifactId>apache-rat-plugin</artifactId>
+          <version>0.10</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>findbugs-maven-plugin</artifactId>
+          <version>3.0.3</version>
+          <configuration>
+            <omitVisitors>
+              CloneIdiom,
+              DefaultEncodingDetector,
+              EqualsOperandShouldHaveClassCompatibleWithThis,
+              FindBadCast2,
+              FindHEmismatch,
+              FindMaskedFields,
+              FindNullDeref,
+              FindReturnRef,
+              FindUnsatisfiedObligation,
+              FormatStringChecker,
+              MethodReturnCheck,
+              Naming,
+              NoteUnconditionalParamDerefs,
+              RuntimeExceptionCapture,
+              SwitchFallthrough,
+              UnreadFields,
+            </omitVisitors>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.sonatype.maven.plugin</groupId>
+          <artifactId>emma-maven-plugin</artifactId>
+          <version>1.2</version>
+        </plugin>
+        <plugin>
+          <groupId>com.theoryinpractise</groupId>
+          <artifactId>clojure-maven-plugin</artifactId>
+          <version>1.3.10</version>
+          <configuration>
+            <sourceDirectories>
+              <sourceDirectory>src/main/clojure</sourceDirectory>
+            </sourceDirectories>
+            <testSourceDirectories>
+              <testSourceDirectory>src/test/clojure</testSourceDirectory>
+            </testSourceDirectories>
+            <clojureOptions>-Xms128m -Xmx512m -Djava.awt.headless=true -XX:MaxPermSize=256m -Xss256k</clojureOptions>
+            <warnOnReflection>true</warnOnReflection>
+            <compileDeclaredNamespaceOnly>true</compileDeclaredNamespaceOnly>
+            <testDeclaredNamespaceOnly>false</testDeclaredNamespaceOnly>
+          </configuration>
+          <executions>
+            <execution>
+              <id>test-clojure</id>
+              <phase>test</phase>
+              <goals>
+                <goal>test</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>2.9</version>
+          <configuration>
+            <maxmemory>512m</maxmemory>
+            <encoding>${project.build.sourceEncoding}</encoding>
+            <quiet>true</quiet>
+            <links>
+              <link>http://download.oracle.com/javase/6/docs/api/</link>
+            </links>
+            <footer><![CDATA[
+            <!-- Google Analytics -->
+            <script type='text/javascript'>
+            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+            </script>
+            <script type='text/javascript'>
+            try {
+            var pageTracker = _gat._getTracker("UA-8638379-1");
+            pageTracker._trackPageview();
+            } catch(err) {}</script>
+            ]]>
+            </footer>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+  <profiles>
+    <profile>
+      <id>live</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>integration</id>
+                <phase>integration-test</phase>
+                <goals>
+                  <goal>test</goal>
+                </goals>
+                <configuration>
+                  <!-- note that the groups/excluded groups don't work due to some problem
+                       in surefire or testng. instead, we have to exclude via file path
+                       <groups>live,integration</groups>
+                       <excludedGroups>unit,performance</excludedGroups> -->
+                  <excludes>
+                    <exclude>none</exclude>
+                  </excludes>
+                  <includes>
+                    <include>**/*IntegrationTest.java</include>
+                    <include>**/*LiveTest.java</include>
+                  </includes>
+                  <systemPropertyVariables>
+                    <!--
+                        If you're behind a proxy, set this here
+                        http://java.sun.com/javase/6/docs/technotes/guides/net/proxies.html
+
+<https.proxyHost>proxy</https.proxyHost>
+<https.proxyPort>port</https.proxyPort>
+<https.noProxyHosts>localhost|10.150.4.49</https.noProxyHosts>
+                    -->
+                    <file.encoding>${project.build.sourceEncoding}</file.encoding>
+                  </systemPropertyVariables>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>distribution</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>generate-distribution-files</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+                <configuration>
+                  <descriptors>
+                    <descriptor>src-descriptor.xml</descriptor>
+                    <descriptor>provided-dependencies-descriptor.xml</descriptor>
+                    <descriptor>jar-with-dependencies-no-core-no-apis-descriptor.xml</descriptor>
+                  </descriptors>
+                </configuration>
+              </execution>
+            </executions>
+            <dependencies>
+              <dependency>
+                <groupId>org.apache.jclouds</groupId>
+                <artifactId>jclouds-assemblies</artifactId>
+                <version>${project.version}</version>
+              </dependency>
+            </dependencies>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>site</id>
+      <build>
+        <plugins>
+          <!-- disable the Maven enforcer plugin and prevent forking (unlike -Denforcer.skip) -->
+          <plugin>
+            <artifactId>maven-enforcer-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>enforce-banned-dependencies</id>
+                <phase>none</phase>
+              </execution>
+              <execution>
+                <id>enforce-java</id>
+                <goals>
+                  <goal>enforce</goal>
+                </goals>
+                <phase>none</phase>
+              </execution>
+              <!-- inherited from oss-parent -->
+              <execution>
+                <id>enforce-maven</id>
+                <goals>
+                  <goal>enforce</goal>
+                </goals>
+                <phase>none</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>jclouds-project</id>
+      <activation>
+        <file>
+          <!-- only in the jclouds-project module -->
+          <exists>src/etc/header.txt</exists>
+        </file>
+      </activation>
+
+      <!-- Maven generates incorrect links without the <site> declaration here -->
+      <distributionManagement>
+        <site>
+          <id>jclouds-github-pages-site</id>
+          <url>${maven.site.url.base}/${project.version}/${project.artifactId}</url>
+        </site>
+      </distributionManagement>
+      <build>
+        <plugins>
+          <plugin>
+            <!-- When building jclouds-project, override the config to use the local file -->
+            <artifactId>maven-checkstyle-plugin</artifactId>
+            <configuration>
+              <configLocation>../resources/checkstyle.xml</configLocation>
+              <includeTestSourceDirectory>true</includeTestSourceDirectory>
+              <failOnViolation>true</failOnViolation>
+              <failsOnError>true</failsOnError>
+              <violationSeverity>warning</violationSeverity>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.gaul</groupId>
+            <artifactId>modernizer-maven-plugin</artifactId>
+            <configuration>
+              <javaVersion>${maven.compile.source}</javaVersion>
+              <!-- in jclouds-project use the local file. ${project.basedir}
+                required here as 1.1.0 of the modernizer plugin can't find the
+                exclusions file otherwise -->
+              <exclusionsFile>${project.basedir}/../resources/modernizer_exclusions.txt</exclusionsFile>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>not-jclouds-project</id>
+      <activation>
+        <file>
+          <!-- only in the jclouds-project module -->
+          <missing>src/etc/header.txt</missing>
+        </file>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-checkstyle-plugin</artifactId>
+            <dependencies>
+              <dependency>
+                <groupId>org.apache.jclouds</groupId>
+                <artifactId>jclouds-resources</artifactId>
+                <version>${project.version}</version>
+              </dependency>
+            </dependencies>
+            <configuration>
+              <!-- jclouds-resources has the checkstyle config in the classpath -->
+              <configLocation>resources/checkstyle.xml</configLocation>
+              <includeTestSourceDirectory>true</includeTestSourceDirectory>
+              <failOnViolation>true</failOnViolation>
+              <failsOnError>true</failsOnError>
+              <violationSeverity>warning</violationSeverity>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.gaul</groupId>
+            <artifactId>modernizer-maven-plugin</artifactId>
+            <dependencies>
+              <dependency>
+                <groupId>org.apache.jclouds</groupId>
+                <artifactId>jclouds-resources</artifactId>
+                <version>${project.version}</version>
+              </dependency>
+            </dependencies>
+            <configuration>
+              <javaVersion>${maven.compile.source}</javaVersion>
+              <exclusionsFile>resources/modernizer_exclusions.txt</exclusionsFile>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>doc</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>2.9</version>
+            <executions>
+              <execution>
+                <id>javadoc</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>src</id>
+      <build>
+        <plugins>
+          <!-- make sure we generate src jars too -->
+          <plugin>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>2.2</version>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>

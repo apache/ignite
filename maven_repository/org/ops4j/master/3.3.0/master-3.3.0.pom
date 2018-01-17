@@ -1,0 +1,328 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.sonatype.oss</groupId>
+    <artifactId>oss-parent</artifactId>
+    <version>9</version>
+  </parent>
+
+  <groupId>org.ops4j</groupId>
+  <artifactId>master</artifactId>
+  <version>3.3.0</version>
+  <packaging>pom</packaging>
+
+  <name>OPS4J - Master POM</name>
+  <description>
+    Maven parent POM for all OPS4J Maven projects.
+  </description>
+  
+  <prerequisites>
+    <maven>3.0.0</maven>
+  </prerequisites>
+
+  <organization>
+    <name>OPS4J - Open Participation Software for Java</name>
+    <url>http://www.ops4j.org/</url>
+  </organization>
+
+  <url>http://www.ops4j.org</url>
+
+  <inceptionYear>2006</inceptionYear>
+
+  <licenses>
+    <license>
+      <name>ALv2</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
+      <distribution>repo</distribution>
+      <comments>Copyrights retained by each developer.</comments>
+    </license>
+  </licenses>
+
+  <mailingLists>
+    <mailingList>
+      <name>General OPS4J</name>
+      <subscribe>ops4j+subscribe@googlegroups.com</subscribe>
+      <unsubscribe>ops4j+unsubscribe@googlegroups.com</unsubscribe>
+      <post>ops4j@googlegroups.com</post>
+      <archive>https://groups.google.com/forum/?fromgroups=#!forum/ops4j</archive>
+    </mailingList>
+  </mailingLists>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <sonatypeOssDistMgmtSnapshotsUrl>https://oss.sonatype.org/content/repositories/ops4j-snapshots</sonatypeOssDistMgmtSnapshotsUrl>
+  </properties>
+
+  <scm>
+    <connection>scm:git:git://github.com/ops4j/org.ops4j.master.git</connection>
+    <developerConnection>scm:git:git@github.com:ops4j/org.ops4j.master.git</developerConnection>
+    <url>http://github.com/ops4j/org.ops4j.master/tree/master</url>
+    <tag>master-3.3.0</tag>
+  </scm>
+
+  <issueManagement>
+    <system>jira</system>
+    <url>http://team.ops4j.org</url>
+  </issueManagement>
+
+  <ciManagement>
+    <system>Hudson</system>
+    <url>http://ci.ops4j.org/</url>
+    <notifiers>
+      <notifier>
+        <type>email</type>
+        <sendOnError>true</sendOnError>
+        <sendOnFailure>true</sendOnFailure>
+        <sendOnWarning>true</sendOnWarning>
+        <sendOnSuccess>false</sendOnSuccess>
+      </notifier>
+    </notifiers>
+  </ciManagement>
+
+  <developers>
+    <!-- The Hall of Fame list would be much too long, so we'd like to leave it out, 
+      but Sonatype OSS Repository Hosting requires this section to be present. I humbly 
+      include my address here, as a placeholder for the entire OPS4J development team. -->
+    <developer>
+      <id>hwellmann</id>
+      <name>Harald Wellmann</name>
+      <email>harald.wellmann@gmx.de</email>
+    </developer>
+  </developers>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>2.6</version>
+        </plugin>
+
+        <!-- do not upgrade to 2.4 before this issue is fixed: https://github.com/sonatype/m2eclipse-extras/issues/10 -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>2.3.2</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-clean-plugin</artifactId>
+          <version>2.5</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-install-plugin</artifactId>
+          <version>2.5.1</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>2.8</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <version>2.4</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-release-plugin</artifactId>
+          <version>2.5</version>
+          <configuration>
+            <autoVersionSubmodules>true</autoVersionSubmodules>
+            <preparationGoals>clean install javadoc:jar</preparationGoals>
+            <releaseProfiles>sonatype-oss-release</releaseProfiles>
+            <tagNameFormat>@{project.artifactId}-@{project.version}</tagNameFormat>
+            <useReleaseProfile>true</useReleaseProfile>
+          </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>org.apache.maven.scm</groupId>
+              <artifactId>maven-scm-provider-gitexe</artifactId>
+              <!-- This version is necessary for use with git version 1.8.5+ -->
+              <version>1.9</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.1</version>
+          <configuration>
+            <source>1.6</source>
+            <target>1.6</target>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.17</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-checkstyle-plugin</artifactId>
+          <version>2.12.1</version>
+          <!-- Note: dependency needed to locate the configuration -->
+          <dependencies>
+            <dependency>
+              <groupId>org.ops4j</groupId>
+              <artifactId>checkstyle-configuration</artifactId>
+              <version>1.2</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>retrotranslator-maven-plugin</artifactId>
+          <version>1.0-alpha-4</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>2.8.1</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>2.9.1</version>
+          <configuration>
+            <minmemory>128m</minmemory>
+            <maxmemory>512m</maxmemory>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>build-helper-maven-plugin</artifactId>
+          <version>1.8</version>
+        </plugin>
+
+        <!-- do not upgrade to 2.2+ before this issue is fixed: https://github.com/sonatype/m2eclipse-extras/issues/10 -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-war-plugin</artifactId>
+          <version>2.4</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>1.2</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>maven-bundle-plugin</artifactId>
+          <version>2.4.0</version>
+          <extensions>true</extensions>
+        </plugin>
+
+        <plugin>
+          <groupId>org.jacoco</groupId>
+          <artifactId>jacoco-maven-plugin</artifactId>
+          <version>0.7.1.201405082137</version>
+        </plugin>
+
+      </plugins>
+    </pluginManagement>
+
+    <plugins>
+      <plugin>
+        <!-- This seems to have to be defined here order for the above configuration 
+          to be picked up during report generation -->
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+      </plugin>
+    </plugins>
+    <extensions>
+      <extension>
+        <groupId>org.apache.maven.wagon</groupId>
+        <artifactId>wagon-ssh-external</artifactId>
+        <version>1.0</version>
+      </extension>
+    </extensions>
+
+  </build>
+
+  <reporting>
+    <plugins>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>2.9</version>
+        <configuration>
+          <minmemory>128m</minmemory>
+          <maxmemory>512m</maxmemory>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-pmd-plugin</artifactId>
+        <version>3.1</version>
+        <configuration>
+          <targetJdk>1.5</targetJdk>
+          <sourceEncoding>utf-8</sourceEncoding>
+          <minimumTokens>100</minimumTokens>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-project-info-reports-plugin</artifactId>
+        <version>2.7</version>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <version>2.12.1</version>
+        <configuration>
+          <!-- Note: configuration comes from the classpath -->
+          <configLocation>org/ops4j/checkstyle/ops4j-checkstyle-format.xml</configLocation>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jxr-plugin</artifactId>
+        <version>2.4</version>
+        <configuration>
+          <aggregate>true</aggregate>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-report-plugin</artifactId>
+        <version>2.17</version>
+        <configuration>
+          <aggregate>true</aggregate>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>versions-maven-plugin</artifactId>
+        <version>2.1</version>
+      </plugin>
+
+    </plugins>
+  </reporting>
+
+</project>
+

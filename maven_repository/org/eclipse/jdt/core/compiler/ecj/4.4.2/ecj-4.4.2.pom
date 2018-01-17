@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<!-- 
+           Originally downloaded here:
+           http://download.eclipse.org/eclipse/downloads/drops4/R-4.4-201406061215/#JDTCORE 
+	-->
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.eclipse.jdt.core.compiler</groupId>
+	<artifactId>ecj</artifactId>
+	<version>4.4.2</version>
+	<packaging>jar</packaging>
+	<name>Eclipse ECJ</name>
+	<description>Eclipse JDT Core Batch Compiler</description>
+	<url>http://www.eclipse.org/jdt/</url>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+	</properties>
+	<licenses>
+		<license>
+			<name>Eclipse Public License v1.0</name>
+			<url>http://www.eclipse.org/org/documents/epl-v10.php</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+	<scm>
+		<url>http://dev.eclipse.org/viewcvs/index.cgi/org.eclipse.jdt.core/</url>
+		<connection>:pserver:anonymous@dev.eclipse.org:/cvsroot/eclipse</connection>
+	</scm>
+	<developers>
+		<!-- I didn't develop ECJ, but the Central Sync Requirements mandate a developer in the POM:
+			https://docs.sonatype.org/display/Repository/Central+Sync+Requirements
+		-->
+		<developer>
+			<name>Ralph Schaer</name>
+			<email>ralphschaer@gmail.com</email>
+		</developer>
+	</developers>
+	
+	<dependencies>
+		<dependency>
+			<groupId>org.apache.ant</groupId>
+			<artifactId>ant</artifactId>
+			<version>1.9.4</version>
+			<optional>true</optional>
+		</dependency>
+	</dependencies>	
+	
+	<build>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+		  <version>2.10.1</version>
+          <configuration>
+            <additionalparam>-Xdoclint:none</additionalparam>
+          </configuration>
+        </plugin>
+      </plugins>	
+	</build>
+	
+</project>

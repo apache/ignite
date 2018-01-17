@@ -1,0 +1,277 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>net.hydromatic</groupId>
+    <artifactId>parent</artifactId>
+    <version>0.1</version>
+  </parent>
+
+  <groupId>sqlline</groupId>
+  <artifactId>sqlline</artifactId>
+  <packaging>jar</packaging>
+  <version>1.3.0</version>
+  <name>sqlline</name>
+  <url>http://github.com/julianhyde/sqlline</url>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <top.dir>${project.basedir}</top.dir>
+
+    <!-- The following list is sorted. -->
+    <docbkx-maven-plugin.version>2.0.17</docbkx-maven-plugin.version>
+    <h2.version>1.4.191</h2.version>
+    <hsqldb.version>2.3.4</hsqldb.version>
+    <jline.version>2.14.3</jline.version>
+    <jmockit.version>1.30</jmockit.version>
+    <junit.version>4.12</junit.version>
+    <maven-dependency-plugin.version>2.10</maven-dependency-plugin.version>
+    <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
+    <scott-data-hsqldb.version>0.1</scott-data-hsqldb.version>
+  </properties>
+
+  <licenses>
+    <license>
+      <name>Modified BSD License</name>
+      <url>http://opensource.org/licenses/BSD-3-Clause</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <distributionManagement>
+    <snapshotRepository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+    </snapshotRepository>
+    <repository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>
+    <site>
+      <id>sqlline.website</id>
+      <name>SQLLine Website</name>
+      <url>file:/home/jhyde/web2/sqlline</url>
+    </site>
+  </distributionManagement>
+
+  <issueManagement>
+    <system>github</system>
+    <url>https://github.com/julianhyde/sqlline/issues</url>
+  </issueManagement>
+
+  <scm>
+    <connection>scm:git:git://github.com/julianhyde/sqlline.git</connection>
+    <developerConnection>scm:git:git@github.com:julianhyde/sqlline.git</developerConnection>
+    <url>http://github.com/julianhyde/sqlline/tree/master</url>
+    <tag>sqlline-1.3.0</tag>
+  </scm>
+
+  <mailingLists>
+    <mailingList>
+      <name>sqlline-dev</name>
+      <archive>http://groups.google.com/group/sqlline-dev/topics</archive>
+      <subscribe>http://groups.google.com/group/sqlline-dev/subscribe</subscribe>
+      <unsubscribe>http://groups.google.com/group/sqlline-dev/subscribe</unsubscribe>
+      <post>http://groups.google.com/group/sqlline-dev/post</post>
+    </mailingList>
+  </mailingLists>
+
+  <prerequisites>
+    <maven>3.2.1</maven><!-- prerequisite of some plugins -->
+  </prerequisites>
+
+  <repositories />
+
+  <build>
+    <plugins>
+      <plugin>
+        <!-- Generate manual.html from manual.xml. Then you must manually
+             generate manual.txt by copy-pasting from manual.html in a web
+             browser. -->
+        <groupId>com.agilejava.docbkx</groupId>
+        <artifactId>docbkx-maven-plugin</artifactId>
+        <version>${docbkx-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>generate-html</goal>
+              <goal>generate-xhtml</goal>
+              <goal>generate-xhtml5</goal>
+              <goal>generate-manpages</goal>
+            </goals>
+            <phase>validate</phase>
+          </execution>
+        </executions>
+        <configuration>
+          <entities>
+            <entity>
+              <name>VERSION</name>
+              <value>${project.version}</value>
+            </entity>
+          </entities>
+          <includes>manual.xml</includes>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>validate</id>
+            <phase>validate</phase>
+            <configuration>
+              <configLocation>${top.dir}/src/main/config/checkstyle/checker.xml</configLocation>
+              <suppressionsLocation>${top.dir}/src/main/config/checkstyle/suppressions.xml</suppressionsLocation>
+              <consoleOutput>true</consoleOutput>
+              <headerLocation>${top.dir}/src/main/config/checkstyle/header.txt</headerLocation>
+              <failOnViolation>true</failOnViolation>
+              <includeTestSourceDirectory>true</includeTestSourceDirectory>
+            </configuration>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <stylesheetfile>${basedir}/doc/styles.css</stylesheetfile>
+          <show>public</show>
+        </configuration>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <!--  To allow JMockit to be loaded first in surefire -->
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>${maven-dependency-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>getClasspathFilenames</id>
+            <goals>
+              <goal>properties</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+           <execution>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+           </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.6</source>
+          <target>1.6</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>-Xmx1024m -javaagent:${org.jmockit:jmockit:jar}</argLine>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>sqlline.SqlLine</mainClass>
+            </manifest>
+          </archive>
+          <descriptorRefs>
+            <descriptorRef>jar-with-dependencies</descriptorRef>
+          </descriptorRefs>
+        </configuration>
+        <executions>
+          <execution>
+            <id>make-assembly</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+    <dependency>
+      <groupId>jline</groupId>
+      <artifactId>jline</artifactId>
+      <version>${jline.version}</version>
+    </dependency>
+    <dependency>
+      <!-- JMockit needs to be on class path before JUnit. -->
+      <groupId>org.jmockit</groupId>
+      <artifactId>jmockit</artifactId>
+      <version>${jmockit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.hydromatic</groupId>
+      <artifactId>scott-data-hsqldb</artifactId>
+      <version>${scott-data-hsqldb.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hsqldb</groupId>
+      <artifactId>hsqldb</artifactId>
+      <version>${hsqldb.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <version>${h2.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>${maven-gpg-plugin.version}</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>

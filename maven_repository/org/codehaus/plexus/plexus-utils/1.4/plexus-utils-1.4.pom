@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?><project>
+  <parent>
+    <artifactId>plexus</artifactId>
+    <groupId>org.codehaus.plexus</groupId>
+    <version>1.0.9</version>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>plexus-utils</artifactId>
+  <name>Plexus Common Utilities</name>
+  <version>1.4</version>
+  <scm>
+    <connection>scm:svn:http://svn.codehaus.org/plexus/plexus-utils/tags/plexus-utils-1.4</connection>
+    <developerConnection>scm:svn:https://svn.codehaus.org/plexus/plexus-utils/tags/plexus-utils-1.4</developerConnection>
+    <url>http://fisheye.codehaus.org/browse/plexus/plexus-utils/tags/plexus-utils-1.4</url>
+  </scm>
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <childDelegation>true</childDelegation>
+          <excludes>
+            <exclude>org/codehaus/plexus/util/FileBasedTestCase.java</exclude>
+            <exclude>**/Test*.java</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  <distributionManagement>
+    <status>deployed</status>
+  </distributionManagement>
+</project>

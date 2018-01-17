@@ -1,0 +1,608 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ |  Copyright 2010-2012 The 99 Software Foundation
+ |
+ |  Licensed under the Apache License, Version 2.0 (the "License");
+ |  you may not use this file except in compliance with the License.
+ |  You may obtain a copy of the License at
+ |
+ |    http://www.apache.org/licenses/LICENSE-2.0
+ |
+ |  Unless required by applicable law or agreed to in writing, software
+ |  distributed under the License is distributed on an "AS IS" BASIS,
+ |  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ |  See the License for the specific language governing permissions and
+ |  limitations under the License.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>org.99soft</groupId>
+  <artifactId>oss-parent</artifactId>
+  <version>9</version>
+  <packaging>pom</packaging>
+
+  <name>99 Software Foundation parent pom</name>
+  <description>The 99 Software Foundation parent pom</description>
+  <url>https://github.com/99soft/</url>
+  <inceptionYear>2010</inceptionYear>
+  <organization>
+    <name>99 Software Foundation</name>
+    <url>http://www.99soft.org/</url>
+  </organization>
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>dpalmisano</id>
+      <name>Davide Palmisano</name>
+      <email>dpalmisano [at] gmail [dot] com</email>
+      <url>http://davidepalmisano.com/</url>
+      <timezone>+1</timezone>
+    </developer>
+
+    <developer>
+      <id>marcosperanza</id>
+      <name>Marco Speranza</name>
+      <email>marco [dot] speranza79 [at] gmail [dot] com</email>
+      <url>http://www.marcosperanza.org/</url>
+      <timezone>+1</timezone>
+    </developer>
+
+    <developer>
+      <id>simonetripodi</id>
+      <name>Simone Tripodi</name>
+      <email>simone [dot] tripodi [at] gmail [dot] com</email>
+      <url>http://simonetripodi.livejournal.com</url>
+      <timezone>+1</timezone>
+    </developer>
+  </developers>
+
+  <scm>
+    <url>http://github.com/99soft/infra</url>
+    <connection>scm:git:ssh://github.com/99soft/infra.git</connection>
+    <developerConnection>scm:git:git+ssh://git@github.com/99soft/infra.git</developerConnection>
+    <tag>oss-parent-9</tag>
+  </scm>
+  <issueManagement>
+    <system>GitHub Issue Management</system>
+    <url>https://github.com/99soft/${project.artifactId}/issues</url>
+  </issueManagement>
+  <ciManagement>
+    <system>Jenkins</system>
+    <url>https://ci-99soft.ci.cloudbees.com/</url>
+    <notifiers>
+      <notifier>
+        <type>mail</type>
+        <sendOnError>true</sendOnError>
+        <sendOnFailure>true</sendOnFailure>
+        <sendOnSuccess>false</sendOnSuccess>
+        <sendOnWarning>false</sendOnWarning>
+      </notifier>
+    </notifiers>
+  </ciManagement>
+
+  <distributionManagement>
+    <snapshotRepository>
+      <id>sonatype-nexus-snapshots</id>
+      <name>Sonatype Nexus Snapshots</name>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+    </snapshotRepository>
+
+    <repository>
+      <id>sonatype-nexus-staging</id>
+      <name>Nexus Release Repository</name>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>
+  </distributionManagement>
+
+  <properties>
+    <!--
+     | source encoding
+    -->
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.build.resourceEncoding>UTF-8</project.build.resourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <!--
+     | compiler stuff
+    -->
+    <javac.src.version>1.5</javac.src.version>
+    <javac.target.version>1.5</javac.target.version>
+    <!--
+     | build version
+    -->
+    <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ssZ</maven.build.timestamp.format>
+    <implementation.build>${buildNumber}; ${maven.build.timestamp}</implementation.build>
+    <project.previousVersion>${project.version}</project.previousVersion>
+    <!--
+     | OSGi stuff
+    -->
+    <osgi.symbolic-name>${project.groupId}.${project.artifactId}</osgi.symbolic-name>
+    <osgi.export>${project.groupId}.*;version=${project.version};-noimport:=true</osgi.export>
+    <osgi.import>*</osgi.import>
+    <osgi.dynamicImport />
+    <osgi.private />
+    <osgi.fragment-host />
+    <!--
+     | shared build/report plugins version
+    -->
+    <surefire.version>2.12</surefire.version>
+    <javadoc.version>2.8</javadoc.version>
+    <cobertura.version>2.5.1</cobertura.version>
+    <!--
+     | aux settings
+    -->
+    <site.skip>false</site.skip>
+    <javadoc.aggregate>false</javadoc.aggregate>
+  </properties>
+
+  <repositories>
+    <repository>
+      <id>sonatype-nexus-snapshots</id>
+      <name>Sonatype Nexus Snapshots</name>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-clean-plugin</artifactId>
+          <version>2.5</version>
+        </plugin>
+
+        <plugin>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>2.5</version>
+        </plugin>
+
+        <plugin>
+          <artifactId>maven-install-plugin</artifactId>
+          <version>2.3.1</version>
+        </plugin>
+
+        <plugin>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>2.7</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>cobertura-maven-plugin</artifactId>
+          <version>${cobertura.version}</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-release-plugin</artifactId>
+          <version>2.3.2</version>
+          <configuration>
+            <mavenExecutorId>forked-path</mavenExecutorId>
+            <useReleaseProfile>false</useReleaseProfile>
+            <arguments>-Prelease,99soft</arguments>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.sonatype.plugins</groupId>
+          <artifactId>nexus-maven-plugin</artifactId>
+          <version>1.9.2.4</version>
+          <configuration>
+            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+            <serverAuthId>sonatype-nexus-staging</serverAuthId>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>buildnumber-maven-plugin</artifactId>
+        <version>1.1</version>
+        <executions>
+          <execution>
+            <phase>validate</phase>
+            <goals>
+              <goal>create</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <doCheck>false</doCheck>
+          <doUpdate>false</doUpdate>
+          <!-- Use committed revision so it does not change every time svn update is run -->
+          <useLastCommittedRevision>true</useLastCommittedRevision>
+          <!-- default revision number if unavailable -->
+          <revisionOnScmFailure>??????</revisionOnScmFailure>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>1.1</version>
+        <executions>
+          <execution>
+            <id>enforce-java</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <version>[1.5,)</version>
+                  <message>[ERROR] The currently supported version of Java is 1.5 or higher</message>
+                </requireJavaVersion>
+                <requireMavenVersion>
+                  <version>[3.0,)</version>
+                  <message>[ERROR] The currently supported version of Maven is 3.0 or higher</message>
+                </requireMavenVersion>
+                <requirePluginVersions>
+                  <banLatest>true</banLatest>
+                  <banRelease>true</banRelease>
+                  <banSnapshots>true</banSnapshots>
+                  <phases>clean,deploy,site</phases>
+                  <message>[ERROR] Best Practice is to always define plugin versions!</message>
+                </requirePluginVersions>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>2.5.1</version>
+        <configuration>
+          <source>${javac.src.version}</source>
+          <target>${javac.target.version}</target>
+          <showDeprecation>true</showDeprecation>
+          <showWarnings>true</showWarnings>
+          <optimize>true</optimize>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${surefire.version}</version>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>cobertura-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>clean</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <version>2.3.7</version>
+        <configuration>
+          <!--
+           | dummy entry to stop bundle plugin from picking up jar config and reporting
+           | WARNING: Duplicate name in Manifest
+           | See http://markmail.org/message/mpkl24wk3jrjhhjg
+          -->
+          <archive>
+            <forced>true</forced>
+          </archive>
+          <excludeDependencies>true</excludeDependencies>
+          <manifestLocation>${project.build.directory}/osgi</manifestLocation>
+          <instructions>
+            <!--
+             | stops the "uses" clauses being added to "Export-Package" manifest entry
+            -->
+            <_nouses>true</_nouses>
+            <!--
+             | Stop the JAVA_1_n_HOME variables from being treated as headers by Bnd
+            -->
+            <_removeheaders>JAVA_1_3_HOME,JAVA_1_4_HOME,JAVA_1_5_HOME,JAVA_1_6_HOME,JAVA_1_7_HOME</_removeheaders>
+            <Bundle-Name>${project.name}</Bundle-Name>
+            <Bundle-SymbolicName>${osgi.symbolic-name}</Bundle-SymbolicName>
+            <Bundle-Description>${project.description}</Bundle-Description>
+            <Export-Package>${osgi.export}</Export-Package>
+            <Private-Package>${osgi.private}</Private-Package>
+            <Import-Package>${osgi.import}</Import-Package>
+            <DynamicImport-Package>${osgi.dynamicImport}</DynamicImport-Package>
+            <Bundle-DocURL>${project.url}</Bundle-DocURL>
+            <Fragment-Host>${osgi.fragment-host}</Fragment-Host>
+          </instructions>
+        </configuration>
+        <executions>
+          <execution>
+            <id>bundle-manifest</id>
+            <phase>process-classes</phase>
+            <goals>
+              <goal>manifest</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>2.4</version>
+        <configuration>
+          <archive>
+            <manifestFile>${project.build.directory}/osgi/MANIFEST.MF</manifestFile>
+            <manifest>
+              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+              <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+            </manifest>
+            <manifestEntries>
+              <Implementation-Build>${implementation.build}</Implementation-Build>
+              <X-Compile-Source-JDK>${javac.src.version}</X-Compile-Source-JDK>
+              <X-Compile-Target-JDK>${javac.target.version}</X-Compile-Target-JDK>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>${javadoc.version}</version>
+        <configuration>
+          <aggregate>${javadoc.aggregate}</aggregate>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-site-plugin</artifactId>
+        <version>3.1</version>
+        <configuration>
+          <locales>en</locales>
+          <skip>${site.skip}</skip>
+          <skipDeploy>${site.skip}</skipDeploy>
+          <reportPlugins>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-project-info-reports-plugin</artifactId>
+              <version>2.4</version>
+            </plugin>
+          </reportPlugins>
+        </configuration>
+        <executions>
+          <execution>
+            <id>attach-descriptor</id>
+            <goals>
+              <goal>attach-descriptor</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-scm-plugin</artifactId>
+        <version>1.7</version>
+        <dependencies>
+          <dependency>
+            <groupId>org.apache.maven.scm</groupId>
+            <artifactId>maven-scm-provider-gitexe</artifactId>
+            <version>1.7</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+    </plugins>
+
+    <extensions>
+      <extension>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-provider-gitexe</artifactId>
+        <version>1.7</version>
+      </extension>
+
+      <extension>
+        <groupId>org.apache.maven.scm</groupId>
+        <artifactId>maven-scm-manager-plexus</artifactId>
+        <version>1.7</version>
+      </extension>
+
+      <extension>
+        <groupId>org.kathrynhuxtable.maven.wagon</groupId>
+        <artifactId>wagon-gitsite</artifactId>
+        <version>0.3.1</version>
+      </extension>
+    </extensions>
+  </build>
+
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>${javadoc.version}</version>
+        <configuration>
+          <bootclasspath>${sun.boot.class.path}</bootclasspath>
+          <doclet>com.google.doclava.Doclava</doclet>
+          <useStandardDocletOptions>false</useStandardDocletOptions>
+          <additionalJOption>-J-Xmx1024m</additionalJOption>
+          <docletArtifact>
+            <groupId>com.google.doclava</groupId>
+            <artifactId>doclava</artifactId>
+            <version>1.0.3</version>
+          </docletArtifact>
+          <additionalparam>
+            -hdf project.name "${project.name}"
+            -d ${project.reporting.outputDirectory}/apidocs
+          </additionalparam>
+        </configuration>
+        <reportSets>
+          <reportSet>
+            <id>default</id>
+            <reports>
+              <report>javadoc</report>
+            </reports>
+          </reportSet>
+        </reportSets>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>cobertura-maven-plugin</artifactId>
+        <version>${cobertura.version}</version>
+        <configuration>
+          <formats>
+            <format>html</format>
+            <format>xml</format>
+          </formats>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jxr-plugin</artifactId>
+        <version>2.3</version>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-report-plugin</artifactId>
+        <version>${surefire.version}</version>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-pmd-plugin</artifactId>
+        <version>2.7.1</version>
+        <configuration>
+          <linkXref>true</linkXref>
+          <minimumTokens>100</minimumTokens>
+          <targetJdk>${javac.target.version}</targetJdk>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>taglist-maven-plugin</artifactId>
+        <version>2.4</version>
+        <configuration>
+          <tagListOptions>
+            <tagClasses>
+              <tagClass>
+                <displayName>Todo Work</displayName>
+                <tags>
+                  <tag>
+                    <matchString>TODO</matchString>
+                    <matchType>ignoreCase</matchType>
+                  </tag>
+                  <tag>
+                    <matchString>FIXME</matchString>
+                    <matchType>ignoreCase</matchType>
+                  </tag>
+                </tags>
+              </tagClass>
+            </tagClasses>
+          </tagListOptions>
+        </configuration>
+      </plugin>
+    </plugins>
+  </reporting>
+
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>2.1.2</version>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+                <configuration>
+                  <archive>
+                    <manifest>
+                      <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                      <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                    </manifest>
+                    <manifestEntries>
+                      <Implementation-Build>${implementation.build}</Implementation-Build>
+                      <X-Compile-Source-JDK>${javac.src.version}</X-Compile-Source-JDK>
+                      <X-Compile-Target-JDK>${javac.target.version}</X-Compile-Target-JDK>
+                    </manifestEntries>
+                  </archive>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>${javadoc.version}</version>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+                <configuration>
+                  <quiet>true</quiet>
+                  <archive>
+                    <manifest>
+                      <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                      <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                    </manifest>
+                    <manifestEntries>
+                      <Implementation-Build>${implementation.build}</Implementation-Build>
+                      <X-Compile-Source-JDK>${javac.src.version}</X-Compile-Source-JDK>
+                      <X-Compile-Target-JDK>${javac.target.version}</X-Compile-Target-JDK>
+                    </manifestEntries>
+                  </archive>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>1.4</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
+</project>

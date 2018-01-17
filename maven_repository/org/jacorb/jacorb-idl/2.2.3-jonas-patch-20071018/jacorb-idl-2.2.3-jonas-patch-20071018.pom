@@ -1,0 +1,28 @@
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.jacorb</groupId>
+  <artifactId>jacorb-idl</artifactId>
+  <version>2.2.3-jonas-patch-20071018</version>
+  <packaging>jar</packaging>
+  <name>Jacorb IDL</name>
+
+  <url>http://www.jacorb.org</url>
+  <description>Jacorb IDL</description>
+  <scm>
+    <url>http://www.jacorb.org/cgi-bin/cvsweb/</url>
+  </scm>
+  <licenses>
+   <license>
+     <name>lgpl</name>
+     <url>http://www.gnu.org/licenses/lgpl.txt</url>
+   </license>
+  </licenses>
+  <dependencies>
+    <dependency>
+      <groupId>logkit</groupId>
+      <artifactId>logkit</artifactId>
+      <version>1.2</version>
+    </dependency>
+  </dependencies>
+</project>
+

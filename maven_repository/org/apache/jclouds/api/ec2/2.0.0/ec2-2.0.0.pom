@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.apache.jclouds</groupId>
+    <artifactId>jclouds-project</artifactId>
+    <version>2.0.0</version>
+    <relativePath>../../project/pom.xml</relativePath>
+  </parent>
+  <groupId>org.apache.jclouds.api</groupId>
+  <artifactId>ec2</artifactId>
+  <name>jclouds ec2 api</name>
+  <description>jclouds components to access an implementation of EC2</description>
+  <packaging>bundle</packaging>
+
+  <properties>
+    <test.ec2.endpoint>https://ec2.us-east-1.amazonaws.com</test.ec2.endpoint>
+    <test.ec2.api-version>2010-08-31</test.ec2.api-version>
+    <test.ec2.build-version />
+    <test.ec2.identity>${test.aws.identity}</test.ec2.identity>
+    <test.ec2.credential>${test.aws.credential}</test.ec2.credential>
+    <!-- default template pattern gets a problematic Ubuntu 10.04 AMI -->
+    <test.ec2.template>hardwareId=m1.small,imageId=us-east-1/ami-1ab3ce73</test.ec2.template>
+    <!-- Active EBS template as of 9/25/2013 -->
+    <test.ec2.ebs-template>hardwareId=m1.small,imageId=us-east-1/ami-53b1ff3a</test.ec2.ebs-template>
+    <!-- Windows_Server-2008-R2 with WinRM enabled (setup instructions at http://www.frontiertown.co.uk/2011/12/overthere-control-windows-from-java/) -->
+    <test.ec2.windows-template>hardwareId=m1.small,imageId=us-east-1/ami-0cb76d65</test.ec2.windows-template>
+    <jclouds.osgi.export>org.jclouds.ec2*;version="${project.version}"</jclouds.osgi.export>
+    <jclouds.osgi.import>org.jclouds*;version="${project.version}",*</jclouds.osgi.import>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.jclouds.api</groupId>
+      <artifactId>sts</artifactId>
+      <version>${project.version}</version>
+      <type>jar</type>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.jclouds</groupId>
+      <artifactId>jclouds-compute</artifactId>
+      <version>${project.version}</version>
+      <type>jar</type>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.jclouds</groupId>
+      <artifactId>jclouds-core</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.jclouds</groupId>
+      <artifactId>jclouds-compute</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.jclouds.driver</groupId>
+      <artifactId>jclouds-log4j</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.jclouds.driver</groupId>
+      <artifactId>jclouds-sshj</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.squareup.okhttp</groupId>
+      <artifactId>mockwebserver</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <!-- Already provided by jclouds-sshj -->
+        <exclusion>
+          <groupId>org.bouncycastle</groupId>
+          <artifactId>bcprov-jdk15on</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>com.google.auto.service</groupId>
+      <artifactId>auto-service</artifactId>
+      <optional>true</optional>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>com.theoryinpractise</groupId>
+        <artifactId>clojure-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>live</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>integration</id>
+                <phase>integration-test</phase>
+                <goals>
+                  <goal>test</goal>
+                </goals>
+                <configuration>
+                  <systemPropertyVariables>
+                    <test.ec2.endpoint>${test.ec2.endpoint}</test.ec2.endpoint>
+                    <test.ec2.api-version>${test.ec2.api-version}</test.ec2.api-version>
+                    <test.ec2.build-version>${test.ec2.build-version}</test.ec2.build-version>
+                    <test.ec2.identity>${test.ec2.identity}</test.ec2.identity>
+                    <test.ec2.credential>${test.ec2.credential}</test.ec2.credential>
+                    <test.ec2.template>${test.ec2.template}</test.ec2.template>
+                    <test.ec2.ebs-template>${test.ec2.ebs-template}</test.ec2.ebs-template>
+                    <test.ec2.windows-template>${test.ec2.windows-template}</test.ec2.windows-template>
+                    <test.ec2.windows-owner>${test.ec2.windows-owner}</test.ec2.windows-owner>
+                  </systemPropertyVariables>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
+</project>
+

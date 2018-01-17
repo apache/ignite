@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata modelVersion="1.1.0">
+  <groupId>net.schmizz</groupId>
+  <artifactId>sshj</artifactId>
+  <versioning>
+    <latest>0.10.1-SNAPSHOT</latest>
+    <release></release>
+    <versions>
+      <version>0.9.1-SNAPSHOT</version>
+      <version>0.10.1-SNAPSHOT</version>
+    </versions>
+    <lastUpdated>20140703055344</lastUpdated>
+  </versioning>
+</metadata>

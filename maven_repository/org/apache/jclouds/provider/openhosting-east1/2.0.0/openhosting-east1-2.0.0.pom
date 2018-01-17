@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.apache.jclouds</groupId>
+    <artifactId>jclouds-project</artifactId>
+    <version>2.0.0</version>
+    <relativePath>../../project/pom.xml</relativePath>
+  </parent>
+  <groupId>org.apache.jclouds.provider</groupId>
+  <artifactId>openhosting-east1</artifactId>
+  <name>jclouds Open Hosting East1 provider</name>
+  <description>Open Hosting implementation targeted to East1</description>
+  <packaging>bundle</packaging>
+
+  <properties>
+    <test.openhosting-east1.endpoint>https://api.east1.openhosting.com</test.openhosting-east1.endpoint>
+    <test.openhosting-east1.api-version>2.0</test.openhosting-east1.api-version>
+    <test.openhosting-east1.build-version />
+    <test.openhosting-east1.identity>FIXME_IDENTITY</test.openhosting-east1.identity>
+    <test.openhosting-east1.credential>FIXME_CREDENTIAL</test.openhosting-east1.credential>
+    <test.openhosting-east1.template />
+
+    <jclouds.osgi.export>org.jclouds.openhosting*;version="${project.version}"</jclouds.osgi.export>
+    <jclouds.osgi.import>
+      org.jclouds.compute.internal;version="${project.version}",
+      org.jclouds.rest.internal;version="${project.version}",
+      org.jclouds*;version="${project.version}",
+      *
+    </jclouds.osgi.import>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.jclouds.api</groupId>
+      <artifactId>elasticstack</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.jclouds.api</groupId>
+      <artifactId>elasticstack</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.jclouds</groupId>
+      <artifactId>jclouds-core</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.jclouds</groupId>
+      <artifactId>jclouds-compute</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.jclouds.driver</groupId>
+      <artifactId>jclouds-log4j</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.jclouds.driver</groupId>
+      <artifactId>jclouds-sshj</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.auto.service</groupId>
+      <artifactId>auto-service</artifactId>
+      <optional>true</optional>
+    </dependency>
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <id>live</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>integration</id>
+                <phase>integration-test</phase>
+                <goals>
+                  <goal>test</goal>
+                </goals>
+                <configuration>
+                  <systemPropertyVariables>
+                    <test.openhosting-east1.endpoint>${test.openhosting-east1.endpoint}</test.openhosting-east1.endpoint>
+                    <test.openhosting-east1.api-version>${test.openhosting-east1.api-version}</test.openhosting-east1.api-version>
+                    <test.openhosting-east1.build-version>${test.openhosting-east1.build-version}</test.openhosting-east1.build-version>
+                    <test.openhosting-east1.identity>${test.openhosting-east1.identity}</test.openhosting-east1.identity>
+                    <test.openhosting-east1.credential>${test.openhosting-east1.credential}</test.openhosting-east1.credential>
+                    <test.openhosting-east1.template>${test.openhosting-east1.template}</test.openhosting-east1.template>
+                  </systemPropertyVariables>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
+</project>

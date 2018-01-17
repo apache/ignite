@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <!--
+
+        Licensed to the Apache Software Foundation (ASF) under one or more
+        contributor license agreements.  See the NOTICE file distributed with
+        this work for additional information regarding copyright ownership.
+        The ASF licenses this file to You under the Apache License, Version 2.0
+        (the "License"); you may not use this file except in compliance with
+        the License.  You may obtain a copy of the License at
+
+            http://www.apache.org/licenses/LICENSE-2.0
+
+        Unless required by applicable law or agreed to in writing, software
+        distributed under the License is distributed on an "AS IS" BASIS,
+        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        See the License for the specific language governing permissions and
+        limitations under the License.
+    -->
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.apache.karaf.assemblies</groupId>
+        <artifactId>assemblies</artifactId>
+        <version>4.0.2</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <groupId>org.apache.karaf</groupId>
+    <artifactId>apache-karaf</artifactId>
+    <packaging>pom</packaging>
+    <name>Apache Karaf :: Assemblies :: Default Distribution</name>
+
+    <properties>
+        <appendedResourcesDirectory>${basedir}/../etc/appended-resources</appendedResourcesDirectory>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.karaf.features</groupId>
+            <artifactId>framework</artifactId>
+            <type>kar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.karaf.features</groupId>
+            <artifactId>standard</artifactId>
+            <classifier>features</classifier>
+            <type>xml</type>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.karaf.features</groupId>
+            <artifactId>spring</artifactId>
+            <classifier>features</classifier>
+            <type>xml</type>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.karaf.features</groupId>
+            <artifactId>enterprise</artifactId>
+            <classifier>features</classifier>
+            <type>xml</type>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.karaf</groupId>
+            <artifactId>demos</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>${project.basedir}/../..</directory>
+                <filtering>false</filtering>
+                <includes>
+                    <include>README</include>
+                    <include>RELEASE*</include>
+                    <include>LICENSE</include>
+                    <include>NOTICE</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>${project.build.directory}/demos</directory>
+                <filtering>true</filtering>
+                <excludes>
+                    <exclude>**/*.i??</exclude>
+                    <exclude>**/.target</exclude>
+                    <exclude>**/.classpath</exclude>
+                </excludes>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>unpack</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <artifactItems>
+                        <artifactItem>
+                            <groupId>org.apache.karaf</groupId>
+                            <artifactId>demos</artifactId>
+                            <version>${project.version}</version>
+                        </artifactItem>
+                    </artifactItems>
+                    <outputDirectory>${project.build.directory}/demos/demos</outputDirectory>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>process-resources</id>
+                        <goals>
+                            <goal>resources</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-remote-resources-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.karaf.tooling</groupId>
+                <artifactId>karaf-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>install-kar</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>assembly</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>package</id>
+                        <goals>
+                            <goal>archive</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <installedFeatures>
+                        <feature>wrapper</feature>
+                    </installedFeatures>
+                    <startupFeatures>
+                        <feature>eventadmin</feature>
+                    </startupFeatures>
+                    <bootFeatures>
+                        <feature>wrap</feature>
+                        <feature>aries-blueprint</feature>
+                        <feature>shell</feature>
+                        <feature>shell-compat</feature>
+                        <feature>feature</feature>
+                        <feature>jaas</feature>
+                        <feature>ssh</feature>
+                        <feature>management</feature>
+                        <feature>bundle</feature>
+                        <feature>config</feature>
+                        <feature>deployer</feature>
+                        <feature>diagnostic</feature>
+                        <feature>feature</feature>
+                        <feature>instance</feature>
+                        <feature>kar</feature>
+                        <feature>log</feature>
+                        <feature>package</feature>
+                        <feature>service</feature>
+                        <feature>system</feature>
+                    </bootFeatures>
+                    <libraries>
+                        <library>xerces-${xerces.version}.jar;url:="wrap:mvn:xerces/xercesImpl/${xerces.version}$Export-Package=org.apache.*;version=${xerces.version}";type:=endorsed;export:=true;delegate:=true</library>
+
+                        <library>mvn:org.apache.servicemix.specs/org.apache.servicemix.specs.jaxp-api-1.4/${servicemix.specs.version};type:=endorsed;export:=true</library>
+                        <library>mvn:org.apache.servicemix.specs/org.apache.servicemix.specs.jaxb-api-2.2/${servicemix.specs.version};type:=endorsed;export:=true</library>
+                        <library>mvn:org.apache.servicemix.specs/org.apache.servicemix.specs.jaxws-api-2.2/${servicemix.specs.version};type:=endorsed;export:=true</library>
+                        <library>mvn:org.apache.servicemix.specs/org.apache.servicemix.specs.saaj-api-1.3/${servicemix.specs.version};type:=endorsed;export:=true</library>
+                        <library>mvn:org.apache.servicemix.specs/org.apache.servicemix.specs.activation-api-1.1/${servicemix.specs.version};type:=endorsed;export:=true</library>
+                        <library>mvn:org.apache.servicemix.specs/org.apache.servicemix.specs.stax-api-1.2/${servicemix.specs.version};type:=endorsed;export:=true</library>
+                        <library>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.xalan/${xalan.bundle.version};type:=endorsed;export:=true</library>
+                        <library>mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.xalan-serializer/${xalan-serializer.bundle.version};type:=endorsed;export:=true</library>
+                        <library>mvn:javax.annotation/javax.annotation-api/1.2;type:=endorsed;export:=true</library>
+
+                        <library>mvn:org.apache.servicemix.specs/org.apache.servicemix.specs.activator/${servicemix.specs.version};type:=default;export:=true</library>
+                        <library>mvn:org.apache.servicemix.specs/org.apache.servicemix.specs.locator/${servicemix.specs.version};type:=default;export:=true</library>
+                    </libraries>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>src</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>src</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>src/main/descriptors/src.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+</project>

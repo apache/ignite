@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.apache.jclouds</groupId>
+        <artifactId>jclouds-project</artifactId>
+        <version>2.0.0</version>
+        <relativePath>../../project/pom.xml</relativePath>
+    </parent>
+
+    <groupId>org.apache.jclouds.provider</groupId>
+    <artifactId>google-compute-engine</artifactId>
+    <name>jclouds Google Compute Engine provider</name>
+    <description>jclouds components to access GoogleCompute</description>
+    <packaging>bundle</packaging>
+
+    <properties>
+        <test.google-compute-engine.identity>client_email which usually looks like project_id@developer.gserviceaccount.com</test.google-compute-engine.identity>
+        <test.google-compute-engine.credential>Private key (PEM encoded PKCS12 file or literal) associated with the client_email</test.google-compute-engine.credential>
+        <!-- Add this property to use a different project, or avoid looking up the project for each test. -->
+        <test.jclouds.googlecloud.project-name></test.jclouds.googlecloud.project-name>
+        <test.jclouds.oauth.credential-type>p12PrivateKeyCredentials</test.jclouds.oauth.credential-type>
+        <test.google-compute-engine.api-version>v1</test.google-compute-engine.api-version>
+        <test.google-compute-engine.build-version/>
+        <test.google-compute-engine.template>imageNameMatches=debian-7-wheezy-v[0-9]*,locationId=us-central1-a,minRam=2048</test.google-compute-engine.template>
+        <jclouds.osgi.export>org.jclouds.googlecomputeengine*;version="${project.version}"</jclouds.osgi.export>
+        <jclouds.osgi.import>
+            org.jclouds.compute.internal;version="${project.version}",
+            org.jclouds.rest.internal;version="${project.version}",
+            org.jclouds*;version="${project.version}",
+            *
+        </jclouds.osgi.import>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.jclouds</groupId>
+            <artifactId>jclouds-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.jclouds.driver</groupId>
+            <artifactId>jclouds-bouncycastle</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.jclouds.common</groupId>
+            <artifactId>googlecloud</artifactId>
+            <version>${project.version}</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.jclouds.common</groupId>
+            <artifactId>googlecloud</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.jclouds.api</groupId>
+            <artifactId>oauth</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.jclouds</groupId>
+            <artifactId>jclouds-compute</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.auto.service</groupId>
+            <artifactId>auto-service</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.auto.value</groupId>
+            <artifactId>auto-value</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.jclouds</groupId>
+            <artifactId>jclouds-compute</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.jclouds</groupId>
+            <artifactId>jclouds-core</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.jclouds.driver</groupId>
+            <artifactId>jclouds-slf4j</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.jclouds.driver</groupId>
+            <artifactId>jclouds-sshj</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.jclouds.driver</groupId>
+            <artifactId>jclouds-okhttp</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>com.squareup.okhttp</groupId>
+          <artifactId>mockwebserver</artifactId>
+          <scope>test</scope>
+          <exclusions>
+            <!-- Already provided by jclouds-sshj -->
+            <exclusion>
+              <groupId>org.bouncycastle</groupId>
+              <artifactId>bcprov-jdk15on</artifactId>
+            </exclusion>
+          </exclusions>
+        </dependency>
+    </dependencies>
+    <profiles>
+        <profile>
+            <id>live</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>default-test</id>
+                                <configuration>
+                                    <skipTests>true</skipTests>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>integration</id>
+                                <phase>integration-test</phase>
+                                <goals>
+                                    <goal>test</goal>
+                                </goals>
+                                <configuration>
+                                    <threadCount>1</threadCount>
+                                    <systemPropertyVariables>
+                                        <test.google-compute-engine.identity>${test.google-compute-engine.identity}</test.google-compute-engine.identity>
+                                        <test.google-compute-engine.credential>${test.google-compute-engine.credential}</test.google-compute-engine.credential>
+                                        <test.jclouds.googlecloud.project-name>${test.jclouds.googlecloud.project-name}</test.jclouds.googlecloud.project-name>
+                                        <test.jclouds.oauth.credential-type>${test.jclouds.oauth.credential-type}</test.jclouds.oauth.credential-type>
+                                        <test.google-compute-engine.api-version>${test.google-compute-engine.api-version}</test.google-compute-engine.api-version>
+                                        <test.google-compute-engine.build-version>${test.google-compute-engine.build-version}</test.google-compute-engine.build-version>
+                                        <test.google-compute-engine.template>${test.google-compute-engine.template}</test.google-compute-engine.template>
+                                    </systemPropertyVariables>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

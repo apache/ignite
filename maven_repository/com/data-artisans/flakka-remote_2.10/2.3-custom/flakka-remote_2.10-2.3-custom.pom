@@ -1,0 +1,106 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.data-artisans</groupId>
+    <artifactId>flakka-remote_2.10</artifactId>
+    <packaging>jar</packaging>
+    <description>flakka-remote</description>
+    <url>http://akka.io/</url>
+    <version>2.3-custom</version>
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    <name>flakka-remote</name>
+    <organization>
+        <name>Typesafe Inc.</name>
+        <url>http://www.typesafe.com</url>
+    </organization>
+    <inceptionYear>2009</inceptionYear>
+    <scm>
+        <url>git://github.com/akka/akka.git</url>
+        <connection>scm:git:git@github.com:akka/akka.git</connection>
+    </scm>
+    <developers>
+        <developer>
+            <id>jboner</id>
+            <name>Jonas Boner</name>
+        </developer>
+        <developer>
+            <id>viktorklang</id>
+            <name>Viktor Klang</name>
+        </developer>
+        <developer>
+            <id>rkuhn</id>
+            <name>Roland Kuhn</name>
+        </developer>
+        <developer>
+            <id>pvlugter</id>
+            <name>Peter Vlugter</name>
+        </developer>
+    </developers>
+    <dependencies>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>2.10.4</version>
+        </dependency>
+        <dependency>
+            <groupId>com.data-artisans</groupId>
+            <artifactId>flakka-actor_2.10</artifactId>
+            <version>2.3-custom</version>
+        </dependency>
+        <dependency>
+            <groupId>com.data-artisans</groupId>
+            <artifactId>flakka-actor-tests_2.10</artifactId>
+            <version>2.3-custom</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.data-artisans</groupId>
+            <artifactId>flakka-testkit_2.10</artifactId>
+            <version>2.3-custom</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty</artifactId>
+            <version>3.8.0.Final</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>2.5.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.uncommons.maths</groupId>
+            <artifactId>uncommons-maths</artifactId>
+            <version>1.2.2a</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>jfree</groupId>
+                    <artifactId>jcommon</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>jfree</groupId>
+                    <artifactId>jfreechart</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.scalatest</groupId>
+            <artifactId>scalatest_2.10</artifactId>
+            <version>2.1.3</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

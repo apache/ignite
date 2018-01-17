@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.eclipse.paho</groupId>
+	<artifactId>java-parent</artifactId>
+	<packaging>pom</packaging>
+	<version>1.0.2</version>
+	
+	<properties>
+		<!-- source & target java version for MQTT Client -->
+		<mqttclient.java.version>1.4</mqttclient.java.version>
+		<!-- source & target java version for others modules -->
+		<java.version>1.6</java.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<build.level>${maven.build.timestamp}</build.level>
+		<tycho.version>0.20.0</tycho.version>
+		<kepler.repo.url>http://download.eclipse.org/releases/kepler</kepler.repo.url>
+		<test.exclude>**/*ConformantTest.java</test.exclude>
+		<download.location>/home/data/httpd/download.eclipse.org/paho/releases/${project.version}/Java</download.location>
+	</properties>
+	
+	<name>Eclipse Paho</name>
+	<url>http://www.eclipse.org/paho</url>
+	<description>
+		The Paho project provides scalable open-source implementations of open and standard messaging protocols aimed at new, existing, and emerging applications for Machine to Machine (M2M) and Internet of Things (IoT).
+	</description>
+
+	<organization>
+		<name>Eclipse Paho</name>
+		<url>http://www.eclipse.org/paho</url>
+	</organization>
+
+	<licenses>
+		<license>
+			<name>Eclipse Public License - Version 1.0</name>
+			<url>http://www.eclipse.org/org/documents/epl-v10.php</url>
+		</license>
+	</licenses>
+	
+	<scm>
+		<url>http://git.eclipse.org/c/paho/org.eclipse.paho.mqtt.java.git</url>
+		<connection>scm:git://git.eclipse.org/gitroot/paho/org.eclipse.paho.mqtt.java.git</connection>
+	</scm>
+	
+	<distributionManagement>
+		<repository>
+			<id>repo.eclipse.org</id>
+			<name>Paho Repository - Releases</name>
+			<url>https://repo.eclipse.org/content/repositories/paho-releases/</url>
+		</repository>
+		<snapshotRepository>
+			<id>repo.eclipse.org</id>
+			<name>Paho Repository - Snapshots</name>
+			<url>https://repo.eclipse.org/content/repositories/paho-snapshots/</url>
+		</snapshotRepository>
+	</distributionManagement>
+	
+	<repositories>
+		<repository>
+			<id>eclipse-kepler</id>
+			<url>${kepler.repo.url}</url>
+			<layout>p2</layout>
+		</repository>
+	</repositories>
+
+	<pluginRepositories>
+		<pluginRepository>
+			<id>cbi</id>
+			<url>https://repo.eclipse.org/content/repositories/cbi-releases/</url>
+		</pluginRepository>
+	</pluginRepositories>
+	
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>junit</groupId>
+				<artifactId>junit</artifactId>
+				<version>4.11</version>
+				<scope>test</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+	
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>3.1</version>
+					<configuration>
+						<encoding>${project.build.sourceEncoding}</encoding>
+						<source>${java.version}</source>
+						<target>${java.version}</target>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.eclipse.tycho</groupId>
+					<artifactId>tycho-maven-plugin</artifactId>
+					<version>${tycho.version}</version>
+					<extensions>true</extensions>
+				</plugin>
+				<plugin>
+					<groupId>org.eclipse.tycho</groupId>
+					<artifactId>tycho-p2-plugin</artifactId>
+					<version>${tycho.version}</version>
+				</plugin>
+				<plugin>
+					<groupId>org.eclipse.tycho</groupId>
+					<artifactId>target-platform-configuration</artifactId>
+					<version>${tycho.version}</version>
+				</plugin>
+				<plugin>
+					<groupId>org.eclipse.cbi.maven.plugins</groupId>
+					<artifactId>eclipse-jarsigner-plugin</artifactId>
+					<version>1.0.5</version>
+				</plugin>
+				<plugin>
+					<groupId>org.eclipse.tycho.extras</groupId>
+					<artifactId>tycho-pack200a-plugin</artifactId>
+					<version>${tycho.version}</version>
+				</plugin>
+
+				<plugin>
+					<groupId>org.eclipse.tycho.extras</groupId>
+					<artifactId>tycho-pack200b-plugin</artifactId>
+					<version>${tycho.version}</version>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+	<profiles>
+		<profile>
+			<id>eclipse-sign</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.eclipse.tycho</groupId>
+						<artifactId>target-platform-configuration</artifactId>
+						<configuration>
+							<includePackedArtifacts>true</includePackedArtifacts>
+						</configuration>
+					</plugin>
+					<plugin>
+						<groupId>org.eclipse.tycho.extras</groupId>
+						<artifactId>tycho-pack200a-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>pack200-normalize</id>
+								<goals>
+									<goal>normalize</goal>
+								</goals>
+								<phase>verify</phase>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.eclipse.cbi.maven.plugins</groupId>
+						<artifactId>eclipse-jarsigner-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>sign</id>
+								<goals>
+									<goal>sign</goal>
+								</goals>
+								<phase>verify</phase>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.eclipse.tycho.extras</groupId>
+						<artifactId>tycho-pack200b-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>pack200-pack</id>
+								<goals>
+									<goal>pack</goal>
+								</goals>
+								<phase>verify</phase>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.eclipse.tycho</groupId>
+						<artifactId>tycho-p2-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>p2-metadata</id>
+								<goals>
+									<goal>p2-metadata</goal>
+								</goals>
+								<phase>verify</phase>
+							</execution>
+						</executions>
+						<configuration>
+							<defaultP2Metadata>false</defaultP2Metadata>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+	<modules>
+		<module>org.eclipse.paho.client.mqttv3</module>
+		<module>org.eclipse.paho.client.mqttv3.test</module>
+		<module>org.eclipse.paho.client.eclipse.feature</module>
+		<module>org.eclipse.paho.client.eclipse.view</module>
+		<module>org.eclipse.paho.client.mqttv3.repository</module>
+		<module>org.eclipse.paho.sample.utility</module>
+		<module>org.eclipse.paho.ui</module>
+		<module>org.eclipse.paho.android.service</module>
+	</modules>
+</project>

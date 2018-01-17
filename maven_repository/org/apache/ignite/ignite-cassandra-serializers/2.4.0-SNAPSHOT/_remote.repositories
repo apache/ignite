@@ -1,0 +1,6 @@
+#NOTE: This is an Aether internal implementation file, its format can be changed without prior notice.
+#Tue Jan 09 15:02:58 CST 2018
+ignite-cassandra-serializers-2.4.0-SNAPSHOT-sources.jar>=
+ignite-cassandra-serializers-2.4.0-SNAPSHOT.pom>=
+ignite-cassandra-serializers-2.4.0-SNAPSHOT-javadoc.jar>=
+ignite-cassandra-serializers-2.4.0-SNAPSHOT.jar>=
