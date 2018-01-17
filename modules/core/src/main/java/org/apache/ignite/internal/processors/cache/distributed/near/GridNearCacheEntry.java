@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheLockCandidates;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -473,9 +474,9 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected void logTxUpdate(IgniteInternalTx tx, CacheObject val, long expireTime, long updCntr)
+    @Override protected WALPointer logTxUpdate(IgniteInternalTx tx, CacheObject val, long expireTime, long updCntr)
         throws IgniteCheckedException {
-        // No-op.
+        return null;
     }
 
     /** {@inheritDoc} */
