@@ -198,7 +198,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
     /**
      * @throws Exception If failed.
      */
-    private void fillCaches() throws Exception {
+    protected void fillCaches() throws Exception {
         grid(0).createCache(Organization.class.getSimpleName());
         grid(0).createCache(Person.class.getSimpleName());
 

@@ -58,7 +58,8 @@ namespace Apache.Ignite.Core.Tests.Examples
         private static readonly Type[] NoDllExamples =
         {
             typeof(BinaryModeExample), typeof(NearCacheExample), typeof(PeerAssemblyLoadingExample),
-            typeof(ThinClientPutGetExample), typeof(SqlExample), typeof(LinqExample), typeof(SqlDmlExample)
+            typeof(ThinClientPutGetExample), typeof(SqlExample), typeof(LinqExample), typeof(SqlDmlExample),
+            typeof(SqlDdlExample)
         };
 
         /** Config file path. */

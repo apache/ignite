@@ -30,6 +30,7 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.PageSupport;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
@@ -49,8 +50,7 @@ import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PagesAllocationRange;
@@ -67,7 +67,6 @@ import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -76,12 +75,16 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
+
 /**
  * Used when persistence enabled.
  */
 public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl implements DbCheckpointListener {
     /** */
-    private MetaStore metaStore;
+    private IndexStorage indexStorage;
 
     /** */
     private ReuseListImpl reuseList;
@@ -101,7 +104,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         RootPage metastoreRoot = metas.treeRoot;
 
-        metaStore = new MetadataStorage(grp.dataRegion().pageMemory(),
+        indexStorage = new IndexStorageImpl(grp.dataRegion().pageMemory(),
             ctx.wal(),
             globalRemoveId(),
             grp.groupId(),
@@ -122,7 +125,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             try {
                 final String name = "PendingEntries";
 
-                RootPage pendingRootPage = metaStore.getOrAllocateForTree(name);
+                RootPage pendingRootPage = indexStorage.getOrAllocateForTree(name);
 
                 pendingEntries = new PendingEntriesTree(
                     grp,
@@ -169,8 +172,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * @param store Store to save metadata.
      * @throws IgniteCheckedException If failed.
      */
-    private boolean saveStoreMetadata(CacheDataStore store, Context ctx, boolean saveMeta,
-        boolean beforeDestroy) throws IgniteCheckedException {
+    private boolean saveStoreMetadata(
+        CacheDataStore store,
+        Context ctx,
+        boolean saveMeta,
+        boolean beforeDestroy
+    ) throws IgniteCheckedException {
         RowStore rowStore0 = store.rowStore();
 
         boolean needSnapshot = ctx != null && ctx.nextSnapshot() && ctx.needToSnapshot(grp.cacheOrGroupName());
@@ -178,7 +185,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         boolean wasSaveToMeta = false;
 
         if (rowStore0 != null) {
-            FreeListImpl freeList = (FreeListImpl)rowStore0.freeList();
+            CacheFreeListImpl freeList = (CacheFreeListImpl)rowStore0.freeList();
 
             freeList.saveMetadata();
 
@@ -192,13 +199,15 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             if (size > 0 || updCntr > 0) {
                 GridDhtPartitionState state = null;
 
+                // localPartition will not acquire writeLock here because create=false.
+                GridDhtLocalPartition part = null;
+
                 if (!grp.isLocal()) {
                     if (beforeDestroy)
                         state = GridDhtPartitionState.EVICTED;
                     else {
-                        // localPartition will not acquire writeLock here because create=false.
-                        GridDhtLocalPartition part = grp.topology().localPartition(store.partId(),
-                            AffinityTopologyVersion.NONE, false, true);
+                        part = grp.topology().localPartition(store.partId(),
+                                AffinityTopologyVersion.NONE, false, true);
 
                         if (part != null && part.state() != GridDhtPartitionState.EVICTED)
                             state = part.state();
@@ -241,63 +250,21 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         long cntrsPageId;
 
                         if (grp.sharedGroup()) {
-                            cntrsPageId = io.getCountersPageId(partMetaPageAddr);
+                            long initCntrPageId = io.getCountersPageId(partMetaPageAddr);
 
-                            byte[] data = serializeCacheSizes(store.cacheSizes());
+                            Map<Integer, Long> newSizes = store.cacheSizes();
+                            Map<Integer, Long> prevSizes = readSharedGroupCacheSizes(pageMem, grpId, initCntrPageId);
 
-                            int items = data.length / 12;
-                            int written = 0;
-                            int pageSize = pageMem.pageSize();
+                            if (prevSizes != null && prevSizes.equals(newSizes))
+                                cntrsPageId = initCntrPageId; // Preventing modification of sizes pages for store
+                            else {
+                                cntrsPageId = writeSharedGroupCacheSizes(pageMem, grpId, initCntrPageId,
+                                    store.partId(), newSizes);
 
-                            boolean init = cntrsPageId == 0;
+                                if (initCntrPageId == 0 && cntrsPageId != 0) {
+                                    io.setCountersPageId(partMetaPageAddr, cntrsPageId);
 
-                            if (init && items > 0) {
-                                cntrsPageId = pageMem.allocatePage(grpId, store.partId(), PageIdAllocator.FLAG_DATA);
-
-                                io.setCountersPageId(partMetaPageAddr, cntrsPageId);
-
-                                changed = true;
-                            }
-
-                            long nextId = cntrsPageId;
-
-                            while (written != items) {
-                                final long curId = nextId;
-                                final long curPage = pageMem.acquirePage(grpId, curId);
-
-                                try {
-                                    final long curAddr = pageMem.writeLock(grpId, curId, curPage);
-
-                                    assert curAddr != 0;
-
-                                    try {
-                                        PagePartitionCountersIO partMetaIo;
-
-                                        if (init) {
-                                            partMetaIo = PagePartitionCountersIO.VERSIONS.latest();
-
-                                            partMetaIo.initNewPage(curAddr, curId, pageSize);
-                                        }
-                                        else
-                                            partMetaIo = PageIO.getPageIO(curAddr);
-
-                                        written += partMetaIo.writeCacheSizes(pageSize, curAddr, data, written);
-
-                                        nextId = partMetaIo.getNextCountersPageId(curAddr);
-
-                                        if(written != items && (init = nextId == 0)) {
-                                            //allocate new counters page
-                                            nextId = pageMem.allocatePage(grpId, store.partId(), PageIdAllocator.FLAG_DATA);
-                                            partMetaIo.setNextCountersPageId(curAddr, nextId);
-                                        }
-                                    }
-                                    finally {
-                                        // Write full page
-                                        pageMem.writeUnlock(grpId, curId, curPage, Boolean.TRUE, true);
-                                    }
-                                }
-                                finally {
-                                    pageMem.releasePage(grpId, curId, curPage);
+                                    changed = true;
                                 }
                             }
                         }
@@ -311,49 +278,35 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             io.setCandidatePageCount(partMetaPageAddr, pageCnt);
 
                             if (saveMeta) {
-                                long metaPageId = pageMem.metaPageId(grpId);
-                                long metaPage = pageMem.acquirePage(grpId, metaPageId);
-
-                                try {
-                                    long metaPageAddr = pageMem.writeLock(grpId, metaPageId, metaPage);
-
-                                    try {
-                                        PageMetaIO metaIo = PageMetaIO.getPageIO(metaPageAddr);
-
-                                        long nextSnapshotTag = metaIo.getNextSnapshotTag(metaPageAddr);
-
-                                        metaIo.setNextSnapshotTag(metaPageAddr, nextSnapshotTag + 1);
-
-                                        if (log != null && log.isDebugEnabled())
-                                            log.debug("Save next snapshot before checkpoint start for grId = " + grpId
-                                                + ", nextSnapshotTag = " + nextSnapshotTag);
-
-                                        if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, metaPageId,
-                                            metaPage, wal, null))
-                                            wal.log(new MetaPageUpdateNextSnapshotId(grpId, metaPageId,
-                                                nextSnapshotTag + 1));
-
-                                        if (state == GridDhtPartitionState.OWNING)
-                                            addPartition(ctx.partitionStatMap(), metaPageAddr, metaIo, grpId, PageIdAllocator.INDEX_PARTITION,
-                                                    this.ctx.kernalContext().cache().context().pageStore().pages(grpId, PageIdAllocator.INDEX_PARTITION));
-                                    }
-                                    finally {
-                                        pageMem.writeUnlock(grpId, metaPageId, metaPage, null, true);
-                                    }
-                                }
-                                finally {
-                                    pageMem.releasePage(grpId, metaPageId, metaPage);
-                                }
+                                saveMeta(ctx);
 
                                 wasSaveToMeta = true;
                             }
 
-                            GridDhtPartitionMap partMap = grp.topology().localPartitionMap();
+                            if (state == OWNING) {
+                                assert part != null;
 
-                            if (partMap.containsKey(store.partId()) &&
-                                partMap.get(store.partId()) == GridDhtPartitionState.OWNING)
-                                addPartition(ctx.partitionStatMap(), partMetaPageAddr, io, grpId, store.partId(),
-                                    this.ctx.pageStore().pages(grpId, store.partId()));
+                                if(!addPartition(
+                                    part,
+                                    ctx.partitionStatMap(),
+                                    partMetaPageAddr,
+                                    io,
+                                    grpId,
+                                    store.partId(),
+                                    this.ctx.pageStore().pages(grpId, store.partId()),
+                                    store.fullSize()
+                                ))
+                                    U.warn(log,"Partition was concurrently evicted grpId=" +  grpId +
+                                            ", partitionId=" + part.id());
+                            }
+                            else if (state == MOVING || state == RENTING) {
+                                if (ctx.partitionStatMap().forceSkipIndexPartition(grpId)) {
+                                    if (log.isInfoEnabled())
+                                        log.info("Will not include SQL indexes to snapshot because there is " +
+                                            "a partition not in " + OWNING + " state [grp=" + grp.cacheOrGroupName() +
+                                            ", partId=" + store.partId() + ", state=" + state + ']');
+                                }
+                            }
 
                             changed = true;
                         }
@@ -386,47 +339,211 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /**
-     * @param cacheSizes Cache sizes.
-     * @return Serialized cache sizes
+     * Loads cache sizes for all caches in shared group.
+     *
+     * @param pageMem page memory to perform operations on pages.
+     * @param grpId Cache group ID.
+     * @param cntrsPageId Counters page ID, if zero is provided that means no counters page exist.
+     * @return Cache sizes if store belongs to group containing multiple caches and sizes are available in memory. May
+     * return null if counter page does not exist.
+     * @throws IgniteCheckedException If page memory operation failed.
      */
-    private byte[] serializeCacheSizes(Map<Integer, Long> cacheSizes) {
-        // Item size = 4 bytes (cache ID) + 8 bytes (cache size) = 12 bytes
-        byte[] data = new byte[cacheSizes.size() * 12];
-        long off = GridUnsafe.BYTE_ARR_OFF;
+    @Nullable private static Map<Integer, Long> readSharedGroupCacheSizes(PageSupport pageMem, int grpId,
+        long cntrsPageId) throws IgniteCheckedException {
 
-        for (Map.Entry<Integer, Long> entry : cacheSizes.entrySet()) {
-            GridUnsafe.putInt(data, off, entry.getKey()); off += 4;
-            GridUnsafe.putLong(data, off, entry.getValue()); off += 8;
+        if (cntrsPageId == 0L)
+            return null;
+
+        Map<Integer, Long> cacheSizes = new HashMap<>();
+
+        long nextId = cntrsPageId;
+
+        while (true){
+            final long curId = nextId;
+            final long curPage = pageMem.acquirePage(grpId, curId);
+
+            try {
+                final long curAddr = pageMem.readLock(grpId, curId, curPage);
+
+                assert curAddr != 0;
+
+                try {
+                    PagePartitionCountersIO cntrsIO = PageIO.getPageIO(curAddr);
+
+                    if (cntrsIO.readCacheSizes(curAddr, cacheSizes))
+                        break;
+
+                    nextId = cntrsIO.getNextCountersPageId(curAddr);
+
+                    assert nextId != 0;
+                }
+                finally {
+                    pageMem.readUnlock(grpId, curId, curPage);
+                }
+            }
+            finally {
+                pageMem.releasePage(grpId, curId, curPage);
+            }
         }
-
-        return data;
+        return cacheSizes;
     }
 
     /**
+     * Saves cache sizes for all caches in shared group. Unconditionally marks pages as dirty.
+     *
+     * @param pageMem page memory to perform operations on pages.
+     * @param grpId Cache group ID.
+     * @param cntrsPageId Counters page ID, if zero is provided that means no counters page exist.
+     * @param partId Partition ID.
+     * @param sizes Cache sizes of all caches in group. Not null.
+     * @return new counter page Id. Same as {@code cntrsPageId} or new value if cache size pages were initialized.
+     * @throws IgniteCheckedException if page memory operation failed.
+     */
+    private static long writeSharedGroupCacheSizes(PageMemory pageMem, int grpId,
+        long cntrsPageId, int partId, Map<Integer, Long> sizes) throws IgniteCheckedException {
+        byte[] data = PagePartitionCountersIO.VERSIONS.latest().serializeCacheSizes(sizes);
+
+        int items = data.length / PagePartitionCountersIO.ITEM_SIZE;
+        boolean init = cntrsPageId == 0;
+
+        if (init && !sizes.isEmpty())
+            cntrsPageId = pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
+
+        long nextId = cntrsPageId;
+        int written = 0;
+
+        while (written != items) {
+            final long curId = nextId;
+            final long curPage = pageMem.acquirePage(grpId, curId);
+
+            try {
+                final long curAddr = pageMem.writeLock(grpId, curId, curPage);
+
+                int pageSize = pageMem.pageSize();
+
+                assert curAddr != 0;
+
+                try {
+                    PagePartitionCountersIO partCntrIo;
+
+                    if (init) {
+                        partCntrIo = PagePartitionCountersIO.VERSIONS.latest();
+
+                        partCntrIo.initNewPage(curAddr, curId, pageSize);
+                    }
+                    else
+                        partCntrIo = PageIO.getPageIO(curAddr);
+
+                    written += partCntrIo.writeCacheSizes(pageSize, curAddr, data, written);
+
+                    nextId = partCntrIo.getNextCountersPageId(curAddr);
+
+                    if (written != items && (init = nextId == 0)) {
+                        //allocate new counters page
+                        nextId = pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
+                        partCntrIo.setNextCountersPageId(curAddr, nextId);
+                    }
+                }
+                finally {
+                    // Write full page
+                    pageMem.writeUnlock(grpId, curId, curPage, Boolean.TRUE, true);
+                }
+            }
+            finally {
+                pageMem.releasePage(grpId, curId, curPage);
+            }
+        }
+
+        return cntrsPageId;
+    }
+
+    /**
+     * @param ctx Context.
+     */
+    private void saveMeta(Context ctx) throws IgniteCheckedException {
+        int grpId = grp.groupId();
+        PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
+        IgniteWriteAheadLogManager wal = this.ctx.wal();
+
+        long metaPageId = pageMem.metaPageId(grpId);
+        long metaPage = pageMem.acquirePage(grpId, metaPageId);
+
+        try {
+            long metaPageAddr = pageMem.writeLock(grpId, metaPageId, metaPage);
+
+            try {
+                PageMetaIO metaIo = PageMetaIO.getPageIO(metaPageAddr);
+
+                long nextSnapshotTag = metaIo.getNextSnapshotTag(metaPageAddr);
+
+                metaIo.setNextSnapshotTag(metaPageAddr, nextSnapshotTag + 1);
+
+                if (log != null && log.isDebugEnabled())
+                    log.debug("Save next snapshot before checkpoint start for grId = " + grpId
+                        + ", nextSnapshotTag = " + nextSnapshotTag);
+
+                if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, metaPageId,
+                    metaPage, wal, null))
+                    wal.log(new MetaPageUpdateNextSnapshotId(grpId, metaPageId,
+                        nextSnapshotTag + 1));
+
+                addPartition(
+                    null,
+                    ctx.partitionStatMap(),
+                    metaPageAddr,
+                    metaIo,
+                    grpId,
+                    PageIdAllocator.INDEX_PARTITION,
+                    this.ctx.pageStore().pages(grpId, PageIdAllocator.INDEX_PARTITION),
+                    -1);
+            }
+            finally {
+                pageMem.writeUnlock(grpId, metaPageId, metaPage, null, true);
+            }
+        }
+        finally {
+            pageMem.releasePage(grpId, metaPageId, metaPage);
+        }
+    }
+
+    /**
+     * @param part
      * @param map Map to add values to.
      * @param metaPageAddr Meta page address
      * @param io Page Meta IO
      * @param cacheId Cache ID.
-     * @param partId Partition ID. Or {@link PageIdAllocator#INDEX_PARTITION} for index partition
      * @param currAllocatedPageCnt total number of pages allocated for partition <code>[partition, cacheId]</code>
      */
-    private static void addPartition(
-        final PartitionAllocationMap map,
-        final long metaPageAddr,
-        final PageMetaIO io,
-        final int cacheId,
-        final int partId,
-        final int currAllocatedPageCnt
+    private static boolean addPartition(
+            GridDhtLocalPartition part,
+            final PartitionAllocationMap map,
+            final long metaPageAddr,
+            final PageMetaIO io,
+            final int cacheId,
+            final int partId,
+            final int currAllocatedPageCnt,
+            final int partSize
     ) {
-        if (currAllocatedPageCnt <= 1)
-            return;
+        if (part != null) {
+            boolean reserved = part.reserve();
+
+            if(!reserved)
+                return false;
+        }
+        else
+            assert partId == PageIdAllocator.INDEX_PARTITION : partId;
 
         assert PageIO.getPageId(metaPageAddr) != 0;
 
         int lastAllocatedPageCnt = io.getLastAllocatedPageCount(metaPageAddr);
+
+        int curPageCnt = lastAllocatedPageCnt == 0 && partSize == 0 ? 0 : currAllocatedPageCnt;
+
         map.put(
             new GroupPartitionId(cacheId, partId),
-            new PagesAllocationRange(lastAllocatedPageCnt, currAllocatedPageCnt));
+            new PagesAllocationRange(lastAllocatedPageCnt, curPageCnt));
+
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -485,7 +602,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         if (grp.sharedGroup())
             idxName = Integer.toString(cacheId) + "_" + idxName;
 
-        return metaStore.getOrAllocateForTree(idxName);
+        return indexStorage.getOrAllocateForTree(idxName);
     }
 
     /** {@inheritDoc} */
@@ -493,7 +610,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         if (grp.sharedGroup())
             idxName = Integer.toString(cacheId) + "_" + idxName;
 
-        metaStore.dropRootPage(idxName);
+        indexStorage.dropRootPage(idxName);
     }
 
     /** {@inheritDoc} */
@@ -613,7 +730,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         for (CacheDataStore store : partDataStores.values()) {
             assert store instanceof GridCacheDataStore;
 
-            FreeListImpl freeList = ((GridCacheDataStore)store).freeList;
+            CacheFreeListImpl freeList = ((GridCacheDataStore)store).freeList;
 
             if (freeList == null)
                 continue;
@@ -863,7 +980,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         private String name;
 
         /** */
-        private volatile FreeListImpl freeList;
+        private volatile CacheFreeListImpl freeList;
 
         /** */
         private volatile CacheDataStore delegate;
@@ -913,7 +1030,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     RootPage reuseRoot = metas.reuseListRoot;
 
-                    freeList = new FreeListImpl(
+                    freeList = new CacheFreeListImpl(
                         grp.groupId(),
                         grp.cacheOrGroupName() + "-" + partId,
                         grp.dataRegion().memoryMetrics(),
@@ -964,43 +1081,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                                 Map<Integer, Long> cacheSizes = null;
 
-                                if (grp.sharedGroup()) {
-                                    long cntrsPageId = io.getCountersPageId(pageAddr);
-
-                                    if (cntrsPageId != 0L) {
-                                        cacheSizes = new HashMap<>();
-
-                                        long nextId = cntrsPageId;
-
-                                        while (true){
-                                            final long curId = nextId;
-                                            final long curPage = pageMem.acquirePage(grpId, curId);
-
-                                            try {
-                                                final long curAddr = pageMem.readLock(grpId, curId, curPage);
-
-                                                assert curAddr != 0;
-
-                                                try {
-                                                    PagePartitionCountersIO cntrsIO = PageIO.getPageIO(curAddr);
-
-                                                    if (cntrsIO.readCacheSizes(curAddr, cacheSizes))
-                                                        break;
-
-                                                    nextId = cntrsIO.getNextCountersPageId(curAddr);
-
-                                                    assert nextId != 0;
-                                                }
-                                                finally {
-                                                    pageMem.readUnlock(grpId, curId, curPage);
-                                                }
-                                            }
-                                            finally {
-                                                pageMem.releasePage(grpId, curId, curPage);
-                                            }
-                                        }
-                                    }
-                                }
+                                if (grp.sharedGroup())
+                                    cacheSizes = readSharedGroupCacheSizes(pageMem, grpId, io.getCountersPageId(pageAddr));
 
                                 delegate0.init(io.getSize(pageAddr), io.getUpdateCounter(pageAddr), cacheSizes);
 

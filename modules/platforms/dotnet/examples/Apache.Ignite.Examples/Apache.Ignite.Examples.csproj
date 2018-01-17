@@ -53,6 +53,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Sql\LinqExample.cs" />
+    <Compile Include="Sql\SqlDdlExample.cs" />
     <Compile Include="Sql\SqlDmlExample.cs" />
     <Compile Include="Sql\SqlExample.cs" />
     <Compile Include="ThinClient\ThinClientPutGetExample.cs" />

@@ -80,6 +80,7 @@ import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
+import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
@@ -386,6 +387,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** PDS mode folder name resolver, also generates consistent ID in case new folder naming is used */
     private PdsFoldersResolver pdsFolderRslvr;
 
+    /** */
+    private GridInternalSubscriptionProcessor internalSubscriptionProc;
+
     /**
      * No-arg constructor is required by externalization.
      */
@@ -590,6 +594,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             mappingProc = (GridMarshallerMappingProcessor)comp;
         else if (comp instanceof PdsFoldersResolver)
             pdsFolderRslvr = (PdsFoldersResolver)comp;
+        else if (comp instanceof GridInternalSubscriptionProcessor)
+            internalSubscriptionProc = (GridInternalSubscriptionProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
                 || comp instanceof PlatformPluginProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
@@ -1076,6 +1082,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public PlatformProcessor platform() {
         return platformProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridInternalSubscriptionProcessor internalSubscriptionProcessor() {
+        return internalSubscriptionProc;
     }
 
     /**
