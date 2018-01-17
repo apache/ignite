@@ -99,7 +99,7 @@ public class MLPGroupTrainerExample {
                 int totalCnt = 100;
                 int failCnt = 0;
                 MLPGroupUpdateTrainer<RPropParameterUpdate> trainer = MLPGroupUpdateTrainer.getDefault(ignite).
-                    withSyncRate(3).
+                    withSyncPeriod(3).
                     withTolerance(0.001).
                     withMaxGlobalSteps(1000);
 

@@ -79,7 +79,7 @@ public class MLPLocalTrainerTest {
             withAddedLayer(1, false, Activators.SIGMOID);
 
         SimpleMLPLocalBatchTrainerInput trainerInput = new SimpleMLPLocalBatchTrainerInput(conf,
-            new Random(1234L), xorInputs, xorOutputs, 4);
+            new Random(123L), xorInputs, xorOutputs, 4);
 
         MultilayerPerceptron mlp = new MLPLocalBatchTrainer<>(LossFunctions.MSE,
             updaterSupplier,

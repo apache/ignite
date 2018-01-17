@@ -89,5 +89,7 @@ public class MnistLocal {
 
         Tracer.showAscii(truth);
         Tracer.showAscii(predicted);
+
+        X.println("Accuracy: " + VectorUtils.zipWith(predicted, truth, (x, y) -> x.equals(y) ? 1.0 : 0.0).sum() / truth.size() * 100 + "%.");
     }
 }

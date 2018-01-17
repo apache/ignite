@@ -80,6 +80,7 @@ public class MLPGroupUpdateTrainerCacheInput extends AbstractMLPGroupUpdateTrain
         this.batchSize = batchSize;
         this.cache = cache;
         this.mlp = new MultilayerPerceptron(arch, init);
+        this.rand = rand;
     }
 
     /**
@@ -94,7 +95,7 @@ public class MLPGroupUpdateTrainerCacheInput extends AbstractMLPGroupUpdateTrain
     public MLPGroupUpdateTrainerCacheInput(MLPArchitecture arch, MLPInitializer init,
         int networksCnt, IgniteCache<Integer, LabeledVector<Vector, Vector>> cache,
         int batchSize) {
-        this(arch, init, networksCnt, cache, batchSize, new Random());
+        this(arch, init, networksCnt, cache, batchSize, null);
     }
 
         /**
