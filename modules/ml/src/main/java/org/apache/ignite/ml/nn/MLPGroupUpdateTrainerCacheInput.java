@@ -116,8 +116,8 @@ public class MLPGroupUpdateTrainerCacheInput extends AbstractMLPGroupUpdateTrain
     @Override public IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier() {
         String cName = cache.getName();
         int bs = batchSize;
-        // This line is for making lambda more lightweight.
-        Random r = rand;
+
+        Random r = rand; // This line is for making lambda more lightweight.
 
         return () -> {
             Ignite ignite = Ignition.localIgnite();
