@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.nn.updaters;
+package org.apache.ignite.ml.optimization.updatecalculators;
 
 import java.io.Serializable;
 import org.apache.ignite.ml.math.Vector;

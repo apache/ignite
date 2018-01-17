@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.nn;
+package org.apache.ignite.ml.trainers.local;
 
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.Model;

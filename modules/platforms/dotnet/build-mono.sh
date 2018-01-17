@@ -17,7 +17,7 @@
 #
 
 #
-# Builds Java and .NET with .NET Core
+# Builds Java and .NET with Mono
 #
 
 pushd .
@@ -25,5 +25,5 @@ cd ../../..
 mvn clean package -DskipTests -Dmaven.javadoc.skip=true -Plgpl,-examples,-clean-libs,-release,-scala,-clientDocs
 popd
 
-cd Apache.Ignite.Core.Tests.DotNetCore
-dotnet build
+nuget restore Apache.Ignite.sln
+msbuild Apache.Ignite.sln /p:RunCodeAnalysis=false
