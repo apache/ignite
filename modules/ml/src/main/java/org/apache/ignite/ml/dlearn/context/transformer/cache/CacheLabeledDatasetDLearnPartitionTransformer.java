@@ -24,13 +24,16 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.ml.dlearn.DLearnContext;
+import org.apache.ignite.ml.dlearn.DLearnPartitionStorage;
 import org.apache.ignite.ml.dlearn.context.cache.CacheDLearnPartition;
-import org.apache.ignite.ml.dlearn.part.LabeledDatasetDLearnPartition;
-import org.apache.ignite.ml.math.functions.IgniteBiConsumer;
+import org.apache.ignite.ml.dlearn.dataset.DLearnLabeledDataset;
+import org.apache.ignite.ml.dlearn.dataset.part.DLearnLabeledDatasetPartition;
+import org.apache.ignite.ml.dlearn.context.transformer.DLearnContextTransformer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /** */
-public class CacheLabeledDatasetDLearnPartitionTransformer<K, V, L> implements IgniteBiConsumer<CacheDLearnPartition<K,V>, LabeledDatasetDLearnPartition<L>> {
+public class CacheLabeledDatasetDLearnPartitionTransformer<K, V, L> implements DLearnContextTransformer<CacheDLearnPartition<K,V>, DLearnLabeledDatasetPartition<L>, DLearnLabeledDataset<L>> {
     /** */
     private static final long serialVersionUID = 3479218902890029731L;
 
@@ -50,7 +53,7 @@ public class CacheLabeledDatasetDLearnPartitionTransformer<K, V, L> implements I
 
     /** */
     @SuppressWarnings("unchecked")
-    @Override public void accept(CacheDLearnPartition<K, V> oldPart, LabeledDatasetDLearnPartition<L> newPart) {
+    @Override public void transform(CacheDLearnPartition<K, V> oldPart, DLearnLabeledDatasetPartition<L> newPart) {
         List<Cache.Entry<K, V>> partData = queryPartDataIntoList(oldPart);
 
         int m = partData.size(), n = 0;
@@ -75,6 +78,16 @@ public class CacheLabeledDatasetDLearnPartitionTransformer<K, V, L> implements I
         newPart.setFeatures(features);
         newPart.setRows(m);
         newPart.setLabels(labels);
+    }
+
+    /** */
+    @Override public DLearnLabeledDataset<L> wrapContext(DLearnContext<DLearnLabeledDatasetPartition<L>> ctx) {
+        return new DLearnLabeledDataset<>(ctx);
+    }
+
+    /** */
+    @Override public DLearnLabeledDatasetPartition<L> createPartition(DLearnPartitionStorage storage) {
+        return new DLearnLabeledDatasetPartition<>(storage);
     }
 
     /** */

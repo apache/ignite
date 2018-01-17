@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.dlearn.part;
+package org.apache.ignite.ml.dlearn.dataset.part;
 
 import org.apache.ignite.ml.dlearn.DLearnPartitionStorage;
 
 /**
  * Interface which provides simple dataset API which allows to get or set an underlying feature matrix in flat format.
  */
-public class DatasetDLeanPartition {
+public class DLeanDatasetPartition {
     /** */
     private static final String FEATURES_KEY = "features";
 
@@ -33,7 +33,7 @@ public class DatasetDLeanPartition {
     private final DLearnPartitionStorage storage;
 
     /** */
-    public DatasetDLeanPartition(DLearnPartitionStorage storage) {
+    public DLeanDatasetPartition(DLearnPartitionStorage storage) {
         this.storage = storage;
     }
 

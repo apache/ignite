@@ -28,7 +28,7 @@ import org.apache.ignite.ml.dlearn.DLearnContext;
 import org.apache.ignite.ml.dlearn.DLearnPartitionFactory;
 import org.apache.ignite.ml.dlearn.DLearnPartitionStorage;
 import org.apache.ignite.ml.dlearn.utils.DLearnContextPartitionKey;
-import org.apache.ignite.ml.dlearn.utils.DLearnContextTransformer;
+import org.apache.ignite.ml.dlearn.context.transformer.DLearnContextTransformer;
 import org.apache.ignite.ml.math.functions.IgniteBiConsumer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
@@ -103,22 +103,19 @@ public class CacheDLearnContext<P> implements DLearnContext<P> {
     }
 
     /** */
-    @Override public <T> DLearnContext<T> transform(IgniteBiConsumer<P, T> transformer, DLearnPartitionFactory<T> partFactory) {
+    @Override public <T, C extends DLearnContext<T>> C transform(DLearnContextTransformer<P, T, C> transformer) {
         UUID newLearningCtxId = UUID.randomUUID();
 
         compute((part, partIdx) -> {
             IgniteCache<DLearnContextPartitionKey, byte[]> learningCtxCache = ignite.cache(learningCtxCacheName);
             DLearnPartitionStorage storage = new CacheDLearnPartitionStorage(learningCtxCache, newLearningCtxId, partIdx);
-            T newPart = partFactory.createPartition(storage);
-            transformer.accept(part, newPart);
+            T newPart = transformer.createPartition(storage);
+            transformer.transform(part, newPart);
         });
 
-        return new CacheDLearnContext<>(ignite, learningCtxCacheName, partFactory, newLearningCtxId);
-    }
+        DLearnContext<T> newCtx = new CacheDLearnContext<>(ignite, learningCtxCacheName, transformer, newLearningCtxId);
 
-    /** */
-    @Override public <T> DLearnContext<T> transform(DLearnContextTransformer<P, T> transformer) {
-        return transform(transformer.getTransformer(), transformer.getPartFactory());
+        return transformer.wrapContext(newCtx);
     }
 
     /** */

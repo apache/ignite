@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.dlearn;
 
-import org.apache.ignite.ml.dlearn.utils.DLearnContextTransformer;
+import org.apache.ignite.ml.dlearn.context.transformer.DLearnContextTransformer;
 import org.apache.ignite.ml.math.functions.IgniteBiConsumer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
@@ -83,22 +83,9 @@ public interface DLearnContext<P> {
      * {@code #transform(IgniteBiConsumer, DLearnPartitionFactory)} locally on every partition in the current context
      * and saves results into the same context cache, but with a new context id.
      *
-     * @param transformer transformer function which makes the new d-learn partition from the old one
-     * @param partFactory d-learn partition factory
-     * @param <T> type of the new d-learn partition
-     * @return new learning context
-     */
-    public <T> DLearnContext<T> transform(IgniteBiConsumer<P, T> transformer, DLearnPartitionFactory<T> partFactory);
-
-    /**
-     * Transforms current learning context into another learning context which contains another type of d-learn
-     * partitions. Transformation doesn't involve new cache instantiation or network data transfer, it just performs
-     * {@code #transform(IgniteBiConsumer, DLearnPartitionFactory)} locally on every partition in the current context
-     * and saves results into the same context cache, but with a new context id.
-     *
      * @param transformer transformer
      * @param <T> type of new d-learn partition
      * @return new learning context
      */
-    public <T> DLearnContext<T> transform(DLearnContextTransformer<P, T> transformer);
+    public <T, C extends DLearnContext<T>> C transform(DLearnContextTransformer<P, T, C> transformer);
 }

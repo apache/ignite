@@ -27,9 +27,8 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.dlearn.DLearnContext;
 import org.apache.ignite.ml.dlearn.context.cache.CacheDLearnContextFactory;
 import org.apache.ignite.ml.dlearn.context.cache.CacheDLearnPartition;
-import org.apache.ignite.ml.dlearn.dataset.DatasetMathUtils;
-import org.apache.ignite.ml.dlearn.part.LabeledDatasetDLearnPartition;
 import org.apache.ignite.ml.dlearn.context.transformer.DLearnContextTransformers;
+import org.apache.ignite.ml.dlearn.dataset.DLearnLabeledDataset;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /** */
@@ -75,7 +74,8 @@ public class Playground extends GridCommonAbstractTest {
         // In this case for every partition in upstream cache will be created labeled dataset partition and this new
         // partition will be filled with help of specified feature and label extractors.
 
-        DLearnContext<LabeledDatasetDLearnPartition<Double>> datasetLearningCtx = cacheLearningCtx
+
+        DLearnLabeledDataset<Double> dataset =  cacheLearningCtx
             .transform(
                 DLearnContextTransformers.cacheToLabeledDataset(
                     (k, v) -> Arrays.copyOfRange(v, 1, v.length),      // specify feature extractor
@@ -84,11 +84,11 @@ public class Playground extends GridCommonAbstractTest {
             );
 
         // Calculation of mean value. This calculation will be performed in map-reduce manner.
-        double[] mean = DatasetMathUtils.mean(datasetLearningCtx, new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+        double[] mean = dataset.mean(new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
         System.err.println("Mean values : " + Arrays.toString(mean));
 
         // Calculation of standard deviation. This calculation will be performed in map-reduce manner.
-        double[] std = DatasetMathUtils.std(datasetLearningCtx, new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+        double[] std = dataset.std(new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
         System.err.println("Std values : " + Arrays.toString(std));
     }
 

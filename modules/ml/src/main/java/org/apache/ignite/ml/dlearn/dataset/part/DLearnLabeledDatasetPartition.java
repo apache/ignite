@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.dlearn.part;
+package org.apache.ignite.ml.dlearn.dataset.part;
 
 import org.apache.ignite.ml.dlearn.DLearnPartitionStorage;
 
@@ -23,7 +23,7 @@ import org.apache.ignite.ml.dlearn.DLearnPartitionStorage;
  * Interface which provides simple dataset API which allows to get or set an underlying feature matrix in flat format
  * and vector of labels.
  */
-public class LabeledDatasetDLearnPartition<L> extends DatasetDLeanPartition {
+public class DLearnLabeledDatasetPartition<L> extends DLeanDatasetPartition {
     /** */
     private static final String LABELS_KEY = "labels";
 
@@ -31,7 +31,7 @@ public class LabeledDatasetDLearnPartition<L> extends DatasetDLeanPartition {
     private final DLearnPartitionStorage storage;
 
     /** */
-    public LabeledDatasetDLearnPartition(DLearnPartitionStorage storage) {
+    public DLearnLabeledDatasetPartition(DLearnPartitionStorage storage) {
         super(storage);
         this.storage = storage;
     }

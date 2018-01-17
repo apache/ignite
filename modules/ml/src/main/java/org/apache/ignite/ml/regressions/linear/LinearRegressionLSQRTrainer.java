@@ -19,15 +19,15 @@ package org.apache.ignite.ml.regressions.linear;
 
 import org.apache.ignite.ml.Trainer;
 import org.apache.ignite.ml.dlearn.DLearnContext;
-import org.apache.ignite.ml.dlearn.part.LabeledDatasetDLearnPartition;
+import org.apache.ignite.ml.dlearn.dataset.part.DLearnLabeledDatasetPartition;
 
 /** */
-public class LinearRegressionLSQRTrainer implements Trainer<LinearRegressionModel, DLearnContext<? extends LabeledDatasetDLearnPartition>> {
+public class LinearRegressionLSQRTrainer implements Trainer<LinearRegressionModel, DLearnContext<? extends DLearnLabeledDatasetPartition>> {
     /** */
     private static final String A_NAME = "a";
 
     /** */
-    @Override public LinearRegressionModel train(DLearnContext<? extends LabeledDatasetDLearnPartition> learningCtx) {
+    @Override public LinearRegressionModel train(DLearnContext<? extends DLearnLabeledDatasetPartition> learningCtx) {
         preProcessContext(learningCtx);
 
 //        DistributedLSQR<?> lsqr = new DistributedLSQR<>(
@@ -51,7 +51,7 @@ public class LinearRegressionLSQRTrainer implements Trainer<LinearRegressionMode
     /**
      * Processing of given learning context before training.
      */
-    private void preProcessContext(DLearnContext<? extends LabeledDatasetDLearnPartition> learningCtx) {
+    private void preProcessContext(DLearnContext<? extends DLearnLabeledDatasetPartition> learningCtx) {
         learningCtx.compute(part -> {
             double[] features = part.getFeatures();
 
@@ -65,7 +65,7 @@ public class LinearRegressionLSQRTrainer implements Trainer<LinearRegressionMode
     /**
      * Processing of given learning context after training.
      */
-    private void postProcessContext(DLearnContext<? extends LabeledDatasetDLearnPartition> learningCtx) {
+    private void postProcessContext(DLearnContext<? extends DLearnLabeledDatasetPartition> learningCtx) {
 //        learningCtx.compute(part -> part.remove(A_NAME));
     }
 

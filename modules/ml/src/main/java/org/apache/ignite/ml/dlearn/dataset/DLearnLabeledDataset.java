@@ -15,8 +15,15 @@
  * limitations under the License.
  */
 
-/**
- * <!-- Package description. -->
- * Root package for different d-learn partitions.
- */
-package org.apache.ignite.ml.dlearn.part;
+package org.apache.ignite.ml.dlearn.dataset;
+
+import org.apache.ignite.ml.dlearn.DLearnContext;
+import org.apache.ignite.ml.dlearn.dataset.part.DLearnLabeledDatasetPartition;
+
+public class DLearnLabeledDataset<L> extends DLearnDataset<DLearnLabeledDatasetPartition<L>> {
+    /** */
+    public DLearnLabeledDataset(
+        DLearnContext<DLearnLabeledDatasetPartition<L>> delegate) {
+        super(delegate);
+    }
+}

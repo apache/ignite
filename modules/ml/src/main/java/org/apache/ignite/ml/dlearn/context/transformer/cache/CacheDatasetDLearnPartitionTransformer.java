@@ -24,13 +24,16 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.ml.dlearn.DLearnContext;
+import org.apache.ignite.ml.dlearn.DLearnPartitionStorage;
 import org.apache.ignite.ml.dlearn.context.cache.CacheDLearnPartition;
-import org.apache.ignite.ml.dlearn.part.DatasetDLeanPartition;
-import org.apache.ignite.ml.math.functions.IgniteBiConsumer;
+import org.apache.ignite.ml.dlearn.dataset.DLearnDataset;
+import org.apache.ignite.ml.dlearn.dataset.part.DLeanDatasetPartition;
+import org.apache.ignite.ml.dlearn.context.transformer.DLearnContextTransformer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /** */
-public class CacheDatasetDLearnPartitionTransformer<K, V> implements IgniteBiConsumer<CacheDLearnPartition<K, V>, DatasetDLeanPartition> {
+public class CacheDatasetDLearnPartitionTransformer<K, V> implements DLearnContextTransformer<CacheDLearnPartition<K, V>, DLeanDatasetPartition, DLearnDataset<DLeanDatasetPartition>> {
     /** */
     private static final long serialVersionUID = -7398727071330763144L;
 
@@ -43,7 +46,7 @@ public class CacheDatasetDLearnPartitionTransformer<K, V> implements IgniteBiCon
     }
 
     /** */
-    @Override public void accept(CacheDLearnPartition<K, V> oldPart, DatasetDLeanPartition newPart) {
+    @Override public void transform(CacheDLearnPartition<K, V> oldPart, DLeanDatasetPartition newPart) {
         List<Cache.Entry<K, V>> partData = queryPartDataIntoList(oldPart);
 
         double[] features = null;
@@ -65,6 +68,16 @@ public class CacheDatasetDLearnPartitionTransformer<K, V> implements IgniteBiCon
         }
         newPart.setFeatures(features);
         newPart.setRows(m);
+    }
+
+    /** */
+    @Override public DLearnDataset<DLeanDatasetPartition> wrapContext(DLearnContext<DLeanDatasetPartition> ctx) {
+        return new DLearnDataset<>(ctx);
+    }
+
+    /** */
+    @Override public DLeanDatasetPartition createPartition(DLearnPartitionStorage storage) {
+        return new DLeanDatasetPartition(storage);
     }
 
     /** */

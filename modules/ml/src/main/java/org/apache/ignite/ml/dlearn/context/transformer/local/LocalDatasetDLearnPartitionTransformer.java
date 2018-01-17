@@ -18,14 +18,17 @@
 package org.apache.ignite.ml.dlearn.context.transformer.local;
 
 import java.util.List;
+import org.apache.ignite.ml.dlearn.DLearnContext;
+import org.apache.ignite.ml.dlearn.DLearnPartitionStorage;
 import org.apache.ignite.ml.dlearn.context.local.LocalDLearnPartition;
-import org.apache.ignite.ml.dlearn.part.DatasetDLeanPartition;
-import org.apache.ignite.ml.math.functions.IgniteBiConsumer;
+import org.apache.ignite.ml.dlearn.dataset.DLearnDataset;
+import org.apache.ignite.ml.dlearn.dataset.part.DLeanDatasetPartition;
+import org.apache.ignite.ml.dlearn.context.transformer.DLearnContextTransformer;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /** */
-public class LocalDatasetDLearnPartitionTransformer<V, P extends DatasetDLeanPartition>
-    implements IgniteBiConsumer<LocalDLearnPartition<V>, P> {
+public class LocalDatasetDLearnPartitionTransformer<V>
+    implements DLearnContextTransformer<LocalDLearnPartition<V>, DLeanDatasetPartition, DLearnDataset<DLeanDatasetPartition>> {
     /** */
     private static final long serialVersionUID = -7567051002880704559L;
 
@@ -38,7 +41,7 @@ public class LocalDatasetDLearnPartitionTransformer<V, P extends DatasetDLeanPar
     }
 
     /** */
-    @Override public void accept(LocalDLearnPartition<V> oldPart, P newPart) {
+    @Override public void transform(LocalDLearnPartition<V> oldPart, DLeanDatasetPartition newPart) {
         List<V> partData = oldPart.getPartData();
         if (partData != null && !partData.isEmpty()) {
             double[] features = null;
@@ -60,5 +63,15 @@ public class LocalDatasetDLearnPartitionTransformer<V, P extends DatasetDLeanPar
             newPart.setFeatures(features);
             newPart.setRows(m);
         }
+    }
+
+    /** */
+    @Override public DLearnDataset<DLeanDatasetPartition> wrapContext(DLearnContext<DLeanDatasetPartition> ctx) {
+        return new DLearnDataset<>(ctx);
+    }
+
+    /** */
+    @Override public DLeanDatasetPartition createPartition(DLearnPartitionStorage storage) {
+        return new DLeanDatasetPartition(storage);
     }
 }
