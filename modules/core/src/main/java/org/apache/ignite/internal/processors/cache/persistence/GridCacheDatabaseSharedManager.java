@@ -493,6 +493,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             );
     }
 
+    /** */
     private void readMetastore() throws IgniteCheckedException {
         try {
             DataStorageConfiguration memCfg = cctx.kernalContext().config().getDataStorageConfiguration();
@@ -2152,6 +2153,56 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
             }
         }
+    }
+
+    /**
+     * @param grpCtx Group context.
+     * @param partId Partition ID.
+     * @return Partition state.
+     */
+    public GridDhtPartitionState readPartitionState(CacheGroupContext grpCtx, int partId) {
+        int grpId = grpCtx.groupId();
+        PageMemoryEx pageMem = (PageMemoryEx)grpCtx.dataRegion().pageMemory();
+
+        try {
+            if (storeMgr.exists(grpId, partId)) {
+                storeMgr.ensure(grpId, partId);
+
+                if (storeMgr.pages(grpId, partId) > 1) {
+                    long partMetaId = pageMem.partitionMetaPageId(grpId, partId);
+                    long partMetaPage = pageMem.acquirePage(grpId, partMetaId);
+
+                    try {
+                        long pageAddr = pageMem.readLock(grpId, partMetaId, partMetaPage);
+
+                        try {
+                            if (PageIO.getType(pageAddr) == PageIO.T_PART_META) {
+                                PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
+
+                                GridDhtPartitionState state = GridDhtPartitionState.fromOrdinal((int)io.getPartitionState(pageAddr));
+
+                                if (state == null)
+                                    state = GridDhtPartitionState.MOVING;
+
+                                return state;
+                            }
+                        }
+                        finally {
+                            pageMem.readUnlock(grpId, partMetaId, partMetaPage);
+                        }
+                    }
+                    finally {
+                        pageMem.releasePage(grpId, partMetaId, partMetaPage);
+                    }
+                }
+            }
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to read partition state (will default to MOVING) [grp=" + grpCtx +
+                ", partId=" + partId + "]", e);
+        }
+
+        return GridDhtPartitionState.MOVING;
     }
 
     /**

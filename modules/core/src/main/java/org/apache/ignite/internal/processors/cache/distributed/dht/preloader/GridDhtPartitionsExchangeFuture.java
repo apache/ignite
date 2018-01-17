@@ -465,6 +465,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         return exchActions != null && exchActions.deactivate();
     }
 
+    /** */
     public boolean changedBaseline() {
         return exchActions != null && exchActions.changedBaseline();
     }
@@ -717,7 +718,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void initCachesOnLocalJoin() throws IgniteCheckedException {
         cctx.activate();
 
-        LocalJoinCachesContext locJoinCtx = cctx.cache().localJoinCachesContext();
+        LocalJoinCachesContext locJoinCtx = exchActions == null ? null : exchActions.localJoinContext();
 
         List<T2<DynamicCacheDescriptor, NearCacheConfiguration>> caches = locJoinCtx == null ? null :
             locJoinCtx.caches();

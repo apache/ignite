@@ -15,21 +15,28 @@
  * limitations under the License.
  */
 
-ignite-list-of-registered-users {
-  display: block;
-}
+package org.apache.ignite.ml.trainers.local;
 
-.list-of-registered-users {
-  .ui-grid-settings--heading {
-    display: flex;
-  }
-  & > a {
-    display: inline-block;
-    margin: 10px;
-    margin-left: 0;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
 
-    &.active {
-      font-weight: bold;
-    }
-  }
+/**
+ * Interface for classes containing input parameters for LocalBatchTrainer.
+ */
+public interface LocalBatchTrainerInput<M extends Model<Matrix, Matrix>> {
+    /**
+     * Get supplier of next batch in form of matrix of inputs and matrix of outputs.
+     *
+     * @return Supplier of next batch.
+     */
+    IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier();
+
+    /**
+     * Model to train.
+     *
+     * @return Model to train.
+     */
+    M mdl();
 }

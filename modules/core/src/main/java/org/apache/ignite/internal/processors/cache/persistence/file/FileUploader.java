@@ -79,6 +79,7 @@ public class FileUploader {
             finishFut.onDone(ex);
         }
         finally {
+            //FIXME: when an error occurs on writeChannel.close() no attempt to close readChannel will happen. Need to be fixed.
             try {
                 if (writeChannel != null)
                     writeChannel.close();

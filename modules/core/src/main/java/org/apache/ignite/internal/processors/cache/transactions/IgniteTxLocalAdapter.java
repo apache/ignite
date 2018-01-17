@@ -677,6 +677,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         if (updRes.success())
                                             txEntry.updateCounter(updRes.updatePartitionCounter());
 
+                                        if (updRes.loggedPointer() != null)
+                                            ptr = updRes.loggedPointer();
+
                                         if (nearCached != null && updRes.success()) {
                                             nearCached.innerSet(
                                                 null,
@@ -724,6 +727,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                                         if (updRes.success())
                                             txEntry.updateCounter(updRes.updatePartitionCounter());
+
+                                        if (updRes.loggedPointer() != null)
+                                            ptr = updRes.loggedPointer();
 
                                         if (nearCached != null && updRes.success()) {
                                             nearCached.innerRemove(

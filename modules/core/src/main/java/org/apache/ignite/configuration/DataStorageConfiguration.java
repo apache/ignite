@@ -210,7 +210,7 @@ public class DataStorageConfiguration implements Serializable {
     private int walTlbSize = DFLT_TLB_SIZE;
 
     /** WAl buffer size. */
-    private int walBuffSize/* = DFLT_WAL_BUFF_SIZE*/;
+    private int walBuffSize;
 
     /** Wal flush frequency in milliseconds. */
     private long walFlushFreq = DFLT_WAL_FLUSH_FREQ;

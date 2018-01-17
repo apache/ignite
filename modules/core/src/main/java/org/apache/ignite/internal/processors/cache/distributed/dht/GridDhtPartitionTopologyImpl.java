@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridAtomicLong;
@@ -366,7 +367,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             && Files.exists(((FilePageStoreManager)storeMgr).getPath(grp.sharedGroup(), grp.cacheOrGroupName(), p)))) {
                             GridDhtLocalPartition locPart = createPartition(p);
 
-                            if (!grp.persistenceEnabled()) {
+                            if (grp.persistenceEnabled()) {
+                                GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)grp.shared().database();
+
+                                locPart.restoreState(db.readPartitionState(grp, locPart.id()));
+                            }
+                            else {
                                 boolean owned = locPart.own();
 
                                 assert owned : "Failed to own partition for oldest node [grp=" + grp.cacheOrGroupName() +

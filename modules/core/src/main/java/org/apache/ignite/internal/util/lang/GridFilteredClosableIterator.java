@@ -15,28 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.nn;
+package org.apache.ignite.internal.util.lang;
 
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.functions.IgniteSupplier;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Interface for classes containing input parameters for LocalBatchTrainer.
+ *
  */
-public interface LocalBatchTrainerInput<M extends Model<Matrix, Matrix>> {
+public abstract class GridFilteredClosableIterator<T> extends GridFilteredIterator<T> implements AutoCloseable {
     /**
-     * Get supplier of next batch in form of matrix of inputs and matrix of outputs.
-     *
-     * @return Supplier of next batch.
+     * @param it Closeable iterator.
      */
-    IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier();
+    protected GridFilteredClosableIterator(GridCloseableIterator<? extends T> it) {
+        super(it);
+    }
 
-    /**
-     * Model to train.
-     *
-     * @return Model to train.
-     */
-    M mdl();
+    /** {@inheritDoc} */
+    @Override public void close() throws IgniteCheckedException {
+        ((GridCloseableIterator)it).close();
+    }
 }

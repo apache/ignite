@@ -713,6 +713,20 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @param cctx Stopped cache context.
+     */
+    public void stopCacheOnReconnect(GridCacheContext cctx) {
+        caches.registeredCaches.remove(cctx.cacheId());
+    }
+
+    /**
+     * @param grpCtx Stopped cache group context.
+     */
+    public void stopCacheGroupOnReconnect(CacheGroupContext grpCtx) {
+        caches.registeredGrps.remove(grpCtx.groupId());
+    }
+
+    /**
      * Called on exchange initiated for cache start/stop request.
      *
      * @param fut Exchange future.

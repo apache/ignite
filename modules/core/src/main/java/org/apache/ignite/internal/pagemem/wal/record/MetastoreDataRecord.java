@@ -25,9 +25,10 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class MetastoreDataRecord extends WALRecord {
-
+    /** */
     private final String key;
 
+    /** */
     @Nullable private final byte[] value;
 
     /**
@@ -39,10 +40,12 @@ public class MetastoreDataRecord extends WALRecord {
         this.value = value;
     }
 
+    /** */
     public String key() {
         return key;
     }
 
+    /** */
     @Nullable public byte[] value() {
         return value;
     }

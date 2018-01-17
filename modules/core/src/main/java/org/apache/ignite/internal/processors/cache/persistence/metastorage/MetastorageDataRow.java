@@ -23,24 +23,23 @@ import org.apache.ignite.internal.processors.cache.persistence.Storable;
  *
  */
 public class MetastorageDataRow implements MetastorageSearchRow, Storable {
-
-    /* **/
+    /** */
     private long link;
 
-    /* **/
+    /** */
     private String key;
 
-    /* **/
+    /** */
     private byte[] value;
 
-    /* **/
+    /** */
     public MetastorageDataRow(long link, String key, byte[] value) {
         this.link = link;
         this.key = key;
         this.value = value;
     }
 
-    /* **/
+    /** */
     public MetastorageDataRow(String key, byte[] value) {
         this.key = key;
         this.value = value;
