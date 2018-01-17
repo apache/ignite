@@ -23,15 +23,12 @@ import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
 /**
  * Tests for {@link LinearRegressionSGDTrainer} on {@link DenseLocalOnHeapMatrix}.
  */
-public class LocalLinearSVMClassificationSCDATrainerTest extends GenericLinearSVMTrainerTest {
+public class DistributedLinearSVMClassificationSCDATrainerTest extends GenericLinearSVMTrainerTest {
     /** */
-    public LocalLinearSVMClassificationSCDATrainerTest() {
+    public DistributedLinearSVMClassificationSCDATrainerTest() {
         super(
-            new SVMLinearBinaryClassificationTrainer()
-                .withLambda(0.2)
-                .withAmountOfIterations(10)
-                .withAmountOfLocIterations(20),
-            false,
+            new SVMLinearBinaryClassificationTrainer(),
+            true,
             1e-2);
     }
 }

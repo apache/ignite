@@ -17,27 +17,15 @@
 
 package org.apache.ignite.ml.svm;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.ml.structures.LabeledDataset;
-import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Base class for SVM tests.
  */
-public class BaseSVMTest extends GridCommonAbstractTest { // TODO: copypasted from BaseKNN  test, refactor it later
+public class BaseSVMTest extends GridCommonAbstractTest {
     /** Count of nodes. */
     private static final int NODE_COUNT = 4;
-
-    /** Separator. */
-    private static final String SEPARATOR = ",";
-
-    /** Path to the Iris dataset. */
-    static final String DATASET_PATH = "datasets/knn/titanic.txt";
 
     /** Grid instance. */
     protected Ignite ignite;
@@ -67,26 +55,4 @@ public class BaseSVMTest extends GridCommonAbstractTest { // TODO: copypasted fr
         stopAllGrids();
     }
 
-    /**
-     * Loads labeled dataset from file with .txt extension.
-     *
-     * @param rsrcPath path to dataset.
-     * @return null if path is incorrect.
-     */
-    LabeledDataset loadDatasetFromTxt(String rsrcPath, boolean isFallOnBadData) {
-        try {
-            Path path = Paths.get(this.getClass().getClassLoader().getResource(rsrcPath).toURI());
-            try {
-                return LabeledDatasetLoader.loadFromTxtFile(path, SEPARATOR, false, isFallOnBadData);
-            }
-            catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        catch (URISyntaxException e) {
-            e.printStackTrace();
-            return null;
-        }
-        return null;
-    }
 }

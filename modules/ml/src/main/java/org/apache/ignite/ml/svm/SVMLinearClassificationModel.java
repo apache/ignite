@@ -23,7 +23,6 @@ import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 
 /**
  * Base class for SVM linear classification model.
@@ -32,28 +31,29 @@ public class SVMLinearClassificationModel implements Model<Vector, Double>, Expo
     /** Output label format. -1 and +1 for false value and raw distances from the separating hyperplane otherwise. */
     private boolean isKeepingRawLabels = false;
 
-    /** Threshold to assign +1 label to the observation if raw value more than this threshold.*/
+    /** Threshold to assign +1 label to the observation if raw value more than this threshold. */
     private double threshold = 0.0;
 
-    /** Multiplier of the objects's vector required to make prediction.  */
+    /** Multiplier of the objects's vector required to make prediction. */
     private Vector weights;
 
     /** Intercept of the linear regression model. */
     private double intercept;
 
+    /** */
     public SVMLinearClassificationModel(Vector weights, double intercept) {
         this.weights = weights;
         this.intercept = intercept;
     }
 
     /** */
-    public SVMLinearClassificationModel withRawLabels(boolean isKeepingRawLabels){
+    public SVMLinearClassificationModel withRawLabels(boolean isKeepingRawLabels) {
         this.isKeepingRawLabels = isKeepingRawLabels;
         return this;
     }
 
     /** */
-    public SVMLinearClassificationModel withThreshold(double threshold){
+    public SVMLinearClassificationModel withThreshold(double threshold) {
         this.threshold = threshold;
         return this;
     }
@@ -72,11 +72,11 @@ public class SVMLinearClassificationModel implements Model<Vector, Double>, Expo
 
     /** {@inheritDoc} */
     @Override public Double apply(Vector input) {
-        final double result = input.dot(weights) + intercept;
-        if(isKeepingRawLabels)
-            return result;
+        final double res = input.dot(weights) + intercept;
+        if (isKeepingRawLabels)
+            return res;
         else
-            return Math.signum(result);
+            return res - threshold > 0 ? 1.0 : -1.0;
     }
 
     /** */

@@ -17,13 +17,6 @@
 
 package org.apache.ignite.ml.svm;
 
-import org.apache.ignite.ml.regressions.linear.BlockDistributedLinearRegressionQRTrainerTest;
-import org.apache.ignite.ml.regressions.linear.BlockDistributedLinearRegressionSGDTrainerTest;
-import org.apache.ignite.ml.regressions.linear.DistributedLinearRegressionQRTrainerTest;
-import org.apache.ignite.ml.regressions.linear.DistributedLinearRegressionSGDTrainerTest;
-import org.apache.ignite.ml.regressions.linear.LinearRegressionModelTest;
-import org.apache.ignite.ml.regressions.linear.LocalLinearRegressionQRTrainerTest;
-import org.apache.ignite.ml.regressions.linear.LocalLinearRegressionSGDTrainerTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -33,6 +26,7 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     LocalLinearSVMClassificationSCDATrainerTest.class,
+    DistributedLinearSVMClassificationSCDATrainerTest.class,
     SVMModelTest.class
 })
 public class SVMTestSuite {

@@ -17,16 +17,11 @@
 
 package org.apache.ignite.ml.svm;
 
-import java.util.Scanner;
 import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.Trainer;
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.regressions.linear.ArtificialRegressionDatasets;
-import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.junit.Test;
@@ -59,7 +54,6 @@ public class GenericLinearSVMTrainerTest extends BaseSVMTest {
         this.trainer = trainer;
         this.precision = precision;
         this.isDistributed = isDistributed;
-
     }
 
     /**
@@ -67,6 +61,9 @@ public class GenericLinearSVMTrainerTest extends BaseSVMTest {
      */
     @Test
     public void testTrainWithTheLinearlySeparableCase() {
+
+        if (isDistributed)
+            IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         LabeledDataset dataset = new LabeledDataset<Double, LabeledVector>(AMOUNT_OF_OBSERVATIONS, AMOUNT_OF_FEATURES, isDistributed);
 
@@ -77,7 +74,7 @@ public class GenericLinearSVMTrainerTest extends BaseSVMTest {
             double y = rndY.nextDouble(-1000, 1000);
             dataset.features(i).set(0, x);
             dataset.features(i).set(1, y);
-            double lb =  y - x > 0 ? 1 : -1;
+            double lb = y - x > 0 ? 1 : -1;
             dataset.setLabel(i, lb);
         }
 
@@ -88,11 +85,13 @@ public class GenericLinearSVMTrainerTest extends BaseSVMTest {
     }
 
     /**
-     * Test trainer on classification model y = x.
-     * Amount of generated points is increased 10 times.
+     * Test trainer on classification model y = x. Amount of generated points is increased 10 times.
      */
     @Test
     public void testTrainWithTheLinearlySeparableCase10() {
+
+        if (isDistributed)
+            IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         LabeledDataset dataset = new LabeledDataset<Double, LabeledVector>(AMOUNT_OF_OBSERVATIONS * 10, AMOUNT_OF_FEATURES, isDistributed);
 
@@ -103,7 +102,7 @@ public class GenericLinearSVMTrainerTest extends BaseSVMTest {
             double y = rndY.nextDouble(-1000, 1000);
             dataset.features(i).set(0, x);
             dataset.features(i).set(1, y);
-            double lb =  y - x > 0 ? 1 : -1;
+            double lb = y - x > 0 ? 1 : -1;
             dataset.setLabel(i, lb);
         }
 
@@ -114,11 +113,13 @@ public class GenericLinearSVMTrainerTest extends BaseSVMTest {
     }
 
     /**
-     * Test trainer on classification model y = x.
-     * Amount of generated points is increased 100 times.
+     * Test trainer on classification model y = x. Amount of generated points is increased 100 times.
      */
     @Test
     public void testTrainWithTheLinearlySeparableCase100() {
+
+        if (isDistributed)
+            IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         LabeledDataset dataset = new LabeledDataset<Double, LabeledVector>(AMOUNT_OF_OBSERVATIONS * 100, AMOUNT_OF_FEATURES, isDistributed);
 
@@ -129,7 +130,7 @@ public class GenericLinearSVMTrainerTest extends BaseSVMTest {
             double y = rndY.nextDouble(-1000, 1000);
             dataset.features(i).set(0, x);
             dataset.features(i).set(1, y);
-            double lb =  y - x > 0 ? 1 : -1;
+            double lb = y - x > 0 ? 1 : -1;
             dataset.setLabel(i, lb);
         }
 
