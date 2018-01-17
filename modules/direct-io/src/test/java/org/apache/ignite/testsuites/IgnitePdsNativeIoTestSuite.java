@@ -17,7 +17,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.persistence.db.wal.reader.IgniteNativeNoPersistenceTest;
+import org.apache.ignite.internal.processors.cache.persistence.file.IgniteNativeIoWithNoPersistenceTest;
 
 /**
  * Subset of {@link IgnitePdsTestSuite} suite test, started with direct-oi jar in classpath.
@@ -31,7 +31,7 @@ public class IgnitePdsNativeIoTestSuite extends TestSuite {
 
         IgnitePdsTestSuite.addRealPageStoreTests(suite);
 
-        suite.addTestSuite(IgniteNativeNoPersistenceTest.class);
+        suite.addTestSuite(IgniteNativeIoWithNoPersistenceTest.class);
 
         return suite;
     }

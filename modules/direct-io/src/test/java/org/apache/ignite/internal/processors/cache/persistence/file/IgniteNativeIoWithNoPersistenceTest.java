@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.db.wal.reader;
+package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import com.google.common.base.Strings;
 import org.apache.ignite.IgniteCache;
@@ -23,14 +23,13 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Checks if Direct IO can be set up if no persistent store is configured
  */
-public class IgniteNativeNoPersistenceTest extends GridCommonAbstractTest {
+public class IgniteNativeIoWithNoPersistenceTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

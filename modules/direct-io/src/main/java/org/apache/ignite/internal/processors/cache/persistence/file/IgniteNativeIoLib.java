@@ -85,6 +85,11 @@ public class IgniteNativeIoLib {
     /** Invalid argument. */
     public static final int E_INVAL = 22;
 
+    /** Seek option: set file offset to offset */
+    public static final int SEEK_SET = 0;
+
+    /** Seek option: change file position to offset */
+    public static final int SEEK_CUR = 1;
 
     /** JNA library available and initialized. Always {@code false} for non linux systems. */
     private static boolean jnaAvailable;
@@ -387,4 +392,14 @@ public class IgniteNativeIoLib {
      * @return On success, zero is returned. On error, -1 is returned, and errno is set appropriately.
      */
     public static native int ftruncate(int fd, long len);
+
+    /**
+     * Repositions the file offset of the open file description associated with the file descriptor {@code fd}
+     * to the argument offset according to the directive {@code whence}
+     * @param fd file descriptor.
+     * @param offset required position offset.
+     * @param whence position base.
+     * @return  On error, the value -1 is returned and errno is set to indicate the error.
+     */
+    public static native long lseek(int fd, long offset, int whence);
 }

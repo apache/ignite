@@ -172,12 +172,22 @@ public class AlignedBuffersDirectFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public long position() throws IOException {
-        throw new UnsupportedOperationException("Not implemented");
+        long position = IgniteNativeIoLib.lseek(fdCheckOpened(), 0, IgniteNativeIoLib.SEEK_CUR);
+
+        if (position < 0) {
+            throw new IOException(String.format("Error checking file [%s] position: %s",
+                file, getLastError()));
+        }
+
+        return position;
     }
 
     /** {@inheritDoc} */
     @Override public void position(long newPosition) throws IOException {
-        throw new UnsupportedOperationException("Not implemented");
+        if (IgniteNativeIoLib.lseek(fdCheckOpened(), newPosition, IgniteNativeIoLib.SEEK_SET) < 0) {
+            throw new IOException(String.format("Error setting file [%s] position to [%s]: %s",
+                file, Long.toString(newPosition), getLastError()));
+        }
     }
 
     /** {@inheritDoc} */
@@ -407,7 +417,7 @@ public class AlignedBuffersDirectFileIO implements FileIO {
      * *nix platforms.
      * @return displayable string with OS error info.
      */
-    public static String getLastError() {
+    private static String getLastError() {
         return IgniteNativeIoLib.strerror(Native.getLastError());
     }
 
@@ -459,8 +469,29 @@ public class AlignedBuffersDirectFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public void clear() throws IOException {
-        if (IgniteNativeIoLib.ftruncate(fdCheckOpened(), 0) < 0)
+        truncate(0);
+    }
+
+    /**
+     * Truncates this channel's file to the given size.
+     *
+     * <p> If the given size is less than the file's current size then the file
+     * is truncated, discarding any bytes beyond the new end of the file. If
+     * the given size is greater than or equal to the file's current size then
+     * the file is not modified. In either case, if this channel's file
+     * position is greater than the given size then it is set to that size.
+     * </p>
+     *
+     * @param  size The new size, a non-negative byte count
+     *
+     */
+    private void truncate(long size) throws IOException {
+        if (IgniteNativeIoLib.ftruncate(fdCheckOpened(), size) < 0)
             throw new IOException(String.format("Error truncating file %s, got %s", file, getLastError()));
+
+        if (position() > size) {
+            position(size);
+        }
     }
 
     /** {@inheritDoc} */

@@ -126,7 +126,7 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
                 return new FilePageStoreV2(type, file, fileIOFactory, memCfg);
 
             default:
-                throw new IllegalArgumentException("Unknown version of file page store: " + ver);
+                throw new IllegalArgumentException("Unknown version of file page store: " + ver + " for file [" + file.getAbsolutePath() + "]");
         }
     }
 }
