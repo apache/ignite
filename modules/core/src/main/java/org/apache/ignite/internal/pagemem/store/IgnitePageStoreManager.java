@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 
 /**
@@ -77,9 +78,11 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @param grpId Cache group ID of the evicted partition.
      * @param partId Partition ID.
      * @param tag Partition tag (growing 1-based partition file version).
+     * @param memMetrics memory metrics to update, if necessary.
      * @throws IgniteCheckedException If failed to handle partition destroy callback.
      */
-    public long onPartitionDestroyed(int grpId, int partId, int tag) throws IgniteCheckedException;
+    public long onPartitionDestroyed(int grpId, int partId, int tag, DataRegionMetricsImpl memMetrics)
+        throws IgniteCheckedException;
 
     /**
      * Reads a page for the given cache ID. Cache ID may be {@code 0} if the page is a meta page.

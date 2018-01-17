@@ -327,4 +327,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         pageReplaceRate = new HitRateMetrics((int)rateTimeInterval, subInts);
         pageReplaceAge = new HitRateMetrics((int)rateTimeInterval, subInts);
     }
+
+    /** */
+    public int pageSize() {
+        return pageMem.pageSize();
+    }
 }
