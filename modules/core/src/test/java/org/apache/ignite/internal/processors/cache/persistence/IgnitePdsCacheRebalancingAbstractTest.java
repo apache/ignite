@@ -686,7 +686,12 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     private static class CoordinatorNodeFilter implements IgnitePredicate<ClusterNode> {
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
-            return node.order() > 1;
+            try {
+                return node.order() > 1;
+            }
+            catch (UnsupportedOperationException e) {
+                return false;
+            }
         }
     }
 }

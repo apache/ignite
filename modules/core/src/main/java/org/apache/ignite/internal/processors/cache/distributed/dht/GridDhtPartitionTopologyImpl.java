@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,6 +39,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -49,6 +51,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
@@ -240,7 +244,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         try {
             AffinityTopologyVersion exchTopVer = exchFut.initialVersion();
 
-            assert exchTopVer.compareTo(readyTopVer) > 0 : "Invalid topology version [topVer=" + readyTopVer +
+            assert exchTopVer.compareTo(readyTopVer) > 0 : "Invalid topology version [grp=" + grp.cacheOrGroupName() +
+                ", topVer=" + readyTopVer +
                 ", exchTopVer=" + exchTopVer +
                 ", fut=" + exchFut + ']';
 
@@ -354,16 +359,27 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     assert exchId.isJoined() || added;
 
                     for (int p = 0; p < num; p++) {
-                        if (localNode(p, aff)) {
+                        IgnitePageStoreManager storeMgr = ctx.pageStore();
+
+                        if (localNode(p, aff)
+                            || (storeMgr instanceof FilePageStoreManager
+                            && grp.persistenceEnabled()
+                            && Files.exists(((FilePageStoreManager)storeMgr).getPath(grp.sharedGroup(), grp.cacheOrGroupName(), p)))) {
                             GridDhtLocalPartition locPart = createPartition(p);
 
-                            boolean owned = locPart.own();
+                            if (grp.persistenceEnabled()) {
+                                GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)grp.shared().database();
 
-                            assert owned : "Failed to own partition for oldest node [grp=" + grp.cacheOrGroupName() +
-                                ", part=" + locPart + ']';
+                                locPart.restoreState(db.readPartitionState(grp, locPart.id()));
+                            }
+                            else {
+                                boolean owned = locPart.own();
 
-                            if (log.isDebugEnabled()) {
-                                log.debug("Owned partition for oldest node [grp=" + grp.cacheOrGroupName() +
+                                assert owned : "Failed to own partition for oldest node [grp=" + grp.cacheOrGroupName() +
+                                    ", part=" + locPart + ']';
+
+                                if (log.isDebugEnabled())
+                                    log.debug("Owned partition for oldest node [grp=" + grp.cacheOrGroupName() +
                                     ", part=" + locPart + ']');
                             }
 
@@ -782,7 +798,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         try {
             GridDhtLocalPartition part = locParts.get(p);
 
-            if (part != null)
+            if (part != null && part.state() != EVICTED)
                 return part;
 
             part = new GridDhtLocalPartition(ctx, grp, p);
@@ -1109,10 +1125,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @param states Additional partition states.
      * @return List of nodes for the partition.
      */
-    private List<ClusterNode> nodes(int p,
+    private List<ClusterNode> nodes(
+        int p,
         AffinityTopologyVersion topVer,
         GridDhtPartitionState state,
-        GridDhtPartitionState... states) {
+        GridDhtPartitionState... states
+    ) {
         Collection<UUID> allIds = F.nodeIds(discoCache.cacheGroupAffinityNodes(grp.groupId()));
 
         lock.readLock().lock();
@@ -1534,13 +1552,26 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (part == null)
                     continue;
 
-                long updCntr = cntrMap.updateCounter(part.id());
+                boolean reserve = part.reserve();
 
-                if (updCntr > part.updateCounter())
-                    part.updateCounter(updCntr);
-                else if (part.updateCounter() > 0) {
-                    cntrMap.initialUpdateCounter(part.id(), part.initialUpdateCounter());
-                    cntrMap.updateCounter(part.id(), part.updateCounter());
+                try {
+                    GridDhtPartitionState state = part.state();
+
+                    if (!reserve || state == EVICTED || state == RENTING)
+                        continue;
+
+                    long updCntr = cntrMap.updateCounter(part.id());
+
+                    if (updCntr > part.updateCounter())
+                        part.updateCounter(updCntr);
+                    else if (part.updateCounter() > 0) {
+                        cntrMap.initialUpdateCounter(part.id(), part.initialUpdateCounter());
+                        cntrMap.updateCounter(part.id(), part.updateCounter());
+                    }
+                }
+                finally {
+                    if (reserve)
+                        part.release();
                 }
             }
         }
@@ -1868,17 +1899,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         if (locPart != null) {
                             boolean marked = plc == PartitionLossPolicy.IGNORE ? locPart.own() : locPart.markLost();
 
-                            if (!marked && locPart.state() == RENTING)
-                                try {
-                                    //TODO https://issues.apache.org/jira/browse/IGNITE-6433
-                                    locPart.tryEvict();
-                                    locPart.rent(false).get();
-                                }
-                                catch (IgniteCheckedException e) {
-                                    U.error(log, "Failed to wait for RENTING partition eviction after partition LOST event",
-                                        e);
-                                }
-
                             if (marked)
                                 updateLocal(locPart.id(), locPart.state(), updSeq, resTopVer);
 
@@ -2067,6 +2087,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @return Checks if any of the local partitions need to be evicted.
      */
     private boolean checkEvictions(long updateSeq, AffinityAssignment aff) {
+        if (!ctx.kernalContext().state().evictionsAllowed())
+            return false;
+
         boolean changed = false;
 
         UUID locId = ctx.localNodeId();
@@ -2105,7 +2128,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         int ownerCnt = nodeIds.size();
                         int affCnt = affNodes.size();
 
-                        if (ownerCnt > affCnt) {
+                        if (ownerCnt > affCnt) { //TODO !!! we could loss all owners in such case. Should be fixed by GG-13223
                             // Sort by node orders in ascending order.
                             Collections.sort(nodes, CU.nodeComparator(true));
 

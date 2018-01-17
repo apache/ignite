@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             typeof(BinaryModeExample), typeof(NearCacheExample), typeof(PeerAssemblyLoadingExample),
             typeof(ThinClientPutGetExample), typeof(SqlExample), typeof(LinqExample), typeof(SqlDmlExample),
-            typeof(ThinClientSqlExample)
+            typeof(SqlDdlExample), typeof(ThinClientSqlExample)
         };
 
         /** Config file path. */
