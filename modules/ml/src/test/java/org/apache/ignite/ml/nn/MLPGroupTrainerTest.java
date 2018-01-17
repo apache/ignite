@@ -78,10 +78,10 @@ public class MLPGroupTrainerTest extends GridCommonAbstractTest {
      * Test training 'xor' by SimpleGD.
      */
     public void testXORGD() {
-        UpdatesStrategy<? super MultilayerPerceptron, SimpleGDParameterUpdate> st =
-            new UpdatesStrategy<>(new SimpleGDUpdateCalculator().withLearningRate(0.5), SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg);
-
-        doTestXOR(st);
+        doTestXOR(new UpdatesStrategy<>(
+            new SimpleGDUpdateCalculator().withLearningRate(0.5),
+            SimpleGDParameterUpdate::sumLocal,
+            SimpleGDParameterUpdate::avg));
     }
 
     /**
