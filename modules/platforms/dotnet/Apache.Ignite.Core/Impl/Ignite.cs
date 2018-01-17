@@ -84,9 +84,10 @@ namespace Apache.Ignite.Core.Impl
             LoggerLog = 20,
             GetBinaryProcessor = 21,
             ReleaseStart = 22,
-            SetBaselineTopologyVersion = 23,
-            SetBaselineTopologyNodes = 24,
-            GetBaselineTopology = 25
+            AddCacheConfiguration = 23,
+            SetBaselineTopologyVersion = 24,
+            SetBaselineTopologyNodes = 25,
+            GetBaselineTopology = 26
         }
 
         /** */
@@ -812,7 +813,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ICollection<IBaselineNode> GetBaselineTopology()
         {
-            return DoInOp((int) Op.GetBaselineTopology, 
+            return DoInOp((int) Op.GetBaselineTopology,
                 s => Marshaller.StartUnmarshal(s).ReadCollectionRaw(r => (IBaselineNode) new BaselineNode(r)));
         }
 
@@ -840,6 +841,15 @@ namespace Apache.Ignite.Core.Impl
         public IDataStorageMetrics GetDataStorageMetrics()
         {
             return _prj.GetDataStorageMetrics();
+        }
+
+        /** <inheritdoc /> */
+        public void AddCacheConfiguration(CacheConfiguration configuration)
+        {
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
+
+            DoOutOp((int) Op.AddCacheConfiguration,
+                s => configuration.Write(BinaryUtils.Marshaller.StartMarshal(s)));
         }
 
         /// <summary>

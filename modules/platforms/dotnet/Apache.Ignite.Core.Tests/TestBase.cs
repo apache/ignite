@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,31 +15,47 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.ApiParity
+namespace Apache.Ignite.Core.Tests
 {
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests that <see cref="IDataStorageMetrics"/> has all APIs from Java Ignite interface.
+    /// Code configuration test base.
     /// </summary>
-    public class DataStorageMetricsParityTest
+    public class TestBase
     {
-        /** Properties that are missing on .NET side. */
-        private static readonly string[] MissingProperties =
+        /// <summary>
+        /// Sets up the fixture.
+        /// </summary>
+        [TestFixtureSetUp]
+        public void TestFixtureSetUp()
         {
-            // IGNITE-7305
-            "WalBuffPollSpinsRate"
-        };
+            Ignition.Start(GetConfig());
+        }
 
         /// <summary>
-        /// Tests the API parity.
+        /// Tears down the fixture.
         /// </summary>
-        [Test]
-        public void TestDataStorageMetrics()
+        [TestFixtureTearDown]
+        public void TestFixtureTearDown()
         {
-            ParityTest.CheckInterfaceParity(
-                @"modules\core\src\main\java\org\apache\ignite\DataStorageMetrics.java",
-                typeof(IDataStorageMetrics), knownMissingMembers: MissingProperties);
+            Ignition.StopAll(true);
+        }
+
+        /// <summary>
+        /// Gets the configuration.
+        /// </summary>
+        protected virtual IgniteConfiguration GetConfig()
+        {
+            return TestUtils.GetTestConfiguration();
+        }
+
+        /// <summary>
+        /// Gets an Ignite instance.
+        /// </summary>
+        protected IIgnite Ignite
+        {
+            get { return Ignition.GetIgnite(); }
         }
     }
 }

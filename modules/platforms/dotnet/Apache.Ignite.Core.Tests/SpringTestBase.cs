@@ -22,11 +22,12 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Compute;
     using NUnit.Framework;
 
+
     /// <summary>
     /// Base class for all grid tests.
     /// </summary>
     [Serializable]
-    public abstract class IgniteTestBase
+    public abstract class SpringTestBase
     {
         /** Grids. */
         [NonSerialized]
@@ -41,21 +42,21 @@ namespace Apache.Ignite.Core.Tests
         private readonly int _expectedHandleRegistryEntries;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="IgniteTestBase"/> class.
+        /// Initializes a new instance of the <see cref="SpringTestBase"/> class.
         /// </summary>
         /// <param name="springUrls">The spring urls.</param>
-        protected IgniteTestBase(params string[] springUrls)
+        protected SpringTestBase(params string[] springUrls)
             : this(0, springUrls)
         {
             // No-op.
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="IgniteTestBase"/> class.
+        /// Initializes a new instance of the <see cref="SpringTestBase"/> class.
         /// </summary>
         /// <param name="springUrls">The spring urls.</param>
         /// <param name="expectedHandleRegistryEntries">The expected handle registry entries.</param>
-        protected IgniteTestBase(int expectedHandleRegistryEntries, params string[] springUrls)
+        protected SpringTestBase(int expectedHandleRegistryEntries, params string[] springUrls)
         {
             _springUrls = springUrls.ToArray();
 

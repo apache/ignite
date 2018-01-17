@@ -141,13 +141,16 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     private static final int OP_RELEASE_START = 22;
 
     /** */
-    private static final int OP_SET_BASELINE_TOPOLOGY_VER = 23;
+    private static final int OP_ADD_CACHE_CONFIGURATION = 23;
 
     /** */
-    private static final int OP_SET_BASELINE_TOPOLOGY_NODES = 24;
+    private static final int OP_SET_BASELINE_TOPOLOGY_VER = 24;
 
     /** */
-    private static final int OP_GET_BASELINE_TOPOLOGY = 25;
+    private static final int OP_SET_BASELINE_TOPOLOGY_NODES = 25;
+
+    /** */
+    private static final int OP_GET_BASELINE_TOPOLOGY = 26;
 
     /** Start latch. */
     private final CountDownLatch startLatch = new CountDownLatch(1);
@@ -458,6 +461,13 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
                 return 0;
             }
+
+            case OP_ADD_CACHE_CONFIGURATION:
+                CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
+
+                ctx.grid().addCacheConfiguration(cfg);
+
+                return 0;
         }
 
         return PlatformAbstractTarget.throwUnsupported(type);
