@@ -28,9 +28,7 @@ import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
  * Parameters for {@link SimpleGDUpdateCalculator}.
  */
 public class SimpleGDParameterUpdate implements Serializable {
-    /**
-     * Gradient.
-     */
+    /** Gradient. */
     private Vector gradient;
 
     /**
