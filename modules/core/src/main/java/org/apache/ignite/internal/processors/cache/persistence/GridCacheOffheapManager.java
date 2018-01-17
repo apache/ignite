@@ -444,7 +444,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             ctx.wal().log(new PartitionDestroyRecord(grp.groupId(), p));
 
-            ctx.pageStore().onPartitionDestroyed(grp.groupId(), p, tag);
+            long newStoreSize = ctx.pageStore().onPartitionDestroyed(grp.groupId(), p, tag);
+
+            grp.dataRegion().memoryMetrics().decrementTotalAllocatedPages(newStoreSize / pageMemory.pageSize());
         }
         finally {
             ctx.database().checkpointReadUnlock();
@@ -528,6 +530,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 long metastoreRoot, reuseListRoot;
 
                 if (PageIO.getType(pageAddr) != PageIO.T_META) {
+                    grp.dataRegion().memoryMetrics().incrementTotalAllocatedPages();
+
                     PageMetaIO pageIO = PageMetaIO.VERSIONS.latest();
 
                     pageIO.initNewPage(pageAddr, metaId, pageMem.pageSize());
@@ -1056,6 +1060,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     // Initialize new page.
                     if (PageIO.getType(pageAddr) != PageIO.T_PART_META) {
+                       // grp.dataRegion().memoryMetrics().incrementTotalAllocatedPages();
+
                         PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.latest();
 
                         io.initNewPage(pageAddr, partMetaId, pageMem.pageSize());

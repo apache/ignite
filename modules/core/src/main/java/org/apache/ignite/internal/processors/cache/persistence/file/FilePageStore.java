@@ -75,7 +75,7 @@ public class FilePageStore implements PageStore {
     private final int pageSize;
 
     /** */
-    private volatile boolean inited;
+    private volatile boolean initialized;
 
     /** */
     private volatile boolean recover;
@@ -229,7 +229,7 @@ public class FilePageStore implements PageStore {
         lock.writeLock().lock();
 
         try {
-            if (!inited)
+            if (!initialized)
                 return;
 
             fileIO.force();
@@ -250,18 +250,26 @@ public class FilePageStore implements PageStore {
     /**
      *
      */
-    public void truncate(int tag) throws IgniteCheckedException {
+    public long truncate(int tag) throws IgniteCheckedException {
         lock.writeLock().lock();
 
         try {
-            if (!inited)
-                return;
+            if (!initialized)
+                return 0;
 
             this.tag = tag;
 
             fileIO.clear();
 
-            allocated.set(initFile());
+            long prevAlloc = allocated.get();
+
+            long newAlloc = initFile();
+
+            assert (prevAlloc - newAlloc) % dbCfg.getPageSize() == 0;
+
+            allocated.set(newAlloc);
+
+            return prevAlloc - newAlloc;
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);
@@ -292,7 +300,7 @@ public class FilePageStore implements PageStore {
         lock.writeLock().lock();
 
         try {
-            if (inited)
+            if (initialized)
                 allocated.set(fileIO.size());
 
             recover = false;
@@ -306,8 +314,8 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public void read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
-        init();
+    @Override public boolean read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
+       boolean inited = init();
 
         try {
             long off = pageOffset(pageId);
@@ -325,7 +333,7 @@ public class FilePageStore implements PageStore {
                 if (n < 0) {
                     pageBuf.put(new byte[pageBuf.remaining()]);
 
-                    return;
+                    return inited;
                 }
 
                 off += n;
@@ -358,6 +366,8 @@ public class FilePageStore implements PageStore {
         catch (IOException e) {
             throw new IgniteCheckedException("Read error", e);
         }
+
+        return inited;
     }
 
     /** {@inheritDoc} */
@@ -392,12 +402,12 @@ public class FilePageStore implements PageStore {
     /**
      * @throws IgniteCheckedException If failed to initialize store file.
      */
-    private void init() throws IgniteCheckedException {
-        if (!inited) {
+    private boolean init() throws IgniteCheckedException {
+        if (!initialized) {
             lock.writeLock().lock();
 
             try {
-                if (!inited) {
+                if (!initialized) {
                     FileIO fileIO = null;
 
                     IgniteCheckedException err = null;
@@ -410,7 +420,9 @@ public class FilePageStore implements PageStore {
                         else
                             allocated.set(checkFile());
 
-                        inited = true;
+                        initialized = true;
+
+                        return true;
                     }
                     catch (IOException e) {
                         throw err = new IgniteCheckedException("Can't open file: " + cfgFile.getName(), e);
@@ -430,6 +442,8 @@ public class FilePageStore implements PageStore {
                 lock.writeLock().unlock();
             }
         }
+
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -557,9 +571,15 @@ public class FilePageStore implements PageStore {
 
     /** {@inheritDoc} */
     @Override public int pages() {
-        if (!inited)
+        if (!initialized)
             return 0;
 
         return (int)((allocated.get() - headerSize()) / pageSize);
     }
+
+    /** */
+    public boolean isInitialized() {
+        return initialized;
+    }
+
 }
