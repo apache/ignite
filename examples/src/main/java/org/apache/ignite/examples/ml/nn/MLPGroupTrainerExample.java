@@ -67,7 +67,7 @@ public class MLPGroupTrainerExample {
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 MLPGroupTrainerExample.class.getSimpleName(), () -> {
 
-                int samplesCnt = 1000;
+                int samplesCnt = 10000;
 
                 Matrix xorInputs = new DenseLocalOnHeapMatrix(
                     new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}},
@@ -87,7 +87,7 @@ public class MLPGroupTrainerExample {
 
                 try (IgniteDataStreamer<Integer, LabeledVector<Vector, Vector>> streamer =
                          ignite.dataStreamer(cacheName)) {
-                    streamer.perNodeBufferSize(10000);
+                    streamer.perNodeBufferSize(100);
 
                     for (int i = 0; i < samplesCnt; i++) {
                         int col = Math.abs(rnd.nextInt()) % 4;
@@ -100,12 +100,12 @@ public class MLPGroupTrainerExample {
                 MLPGroupUpdateTrainer<RPropParameterUpdate> trainer = MLPGroupUpdateTrainer.getDefault(ignite).
                     withSyncPeriod(3).
                     withTolerance(0.001).
-                    withMaxGlobalSteps(1000);
+                    withMaxGlobalSteps(100);
 
                 for (int i = 0; i < totalCnt; i++) {
 
                     MLPGroupUpdateTrainerCacheInput trainerInput = new MLPGroupUpdateTrainerCacheInput(conf,
-                        new RandomInitializer(rnd), 6, cache, 4);
+                        new RandomInitializer(rnd), 6, cache, 10);
 
                     MultilayerPerceptron mlp = trainer.train(trainerInput);
 

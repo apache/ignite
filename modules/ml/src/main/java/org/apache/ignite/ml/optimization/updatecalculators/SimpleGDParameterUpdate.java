@@ -83,6 +83,7 @@ public class SimpleGDParameterUpdate implements Serializable {
      */
     public static SimpleGDParameterUpdate avg(List<SimpleGDParameterUpdate> updates) {
         SimpleGDParameterUpdate sum = sumLocal(updates);
-        return sum != null ? new SimpleGDParameterUpdate(sum.gradient().divide(updates.stream().filter(Objects::nonNull).collect(Collectors.toList()).size())) : null;
+        return sum != null ? new SimpleGDParameterUpdate(sum.gradient().
+            divide(updates.stream().filter(Objects::nonNull).collect(Collectors.toList()).size())) : null;
     }
 }

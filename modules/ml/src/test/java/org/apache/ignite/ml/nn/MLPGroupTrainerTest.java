@@ -87,7 +87,7 @@ public class MLPGroupTrainerTest extends GridCommonAbstractTest {
     /**
      * Test training of 'xor' by {@link MLPGroupUpdateTrainer}.
      */
-    public <U extends Serializable> void doTestXOR(UpdatesStrategy<? super MultilayerPerceptron, U> stgy) {
+    private <U extends Serializable> void doTestXOR(UpdatesStrategy<? super MultilayerPerceptron, U> stgy) {
         int samplesCnt = 1000;
 
         Matrix xorInputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}},

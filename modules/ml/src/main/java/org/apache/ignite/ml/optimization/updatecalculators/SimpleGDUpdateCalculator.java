@@ -27,24 +27,16 @@ import org.apache.ignite.ml.optimization.SmoothParametrized;
  * Simple gradient descent parameters updater.
  */
 public class SimpleGDUpdateCalculator implements ParameterUpdateCalculator<SmoothParametrized, SimpleGDParameterUpdate> {
-    /**
-     * Learning rate.
-     */
+    /** Learning rate. */
     private double learningRate;
 
-    /**
-     * Loss function.
-     */
+    /** Loss function. */
     protected IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
 
-    /**
-     * Default learning rate.
-     */
+    /** Default learning rate. */
     private static final double DEFAULT_LEARNING_RATE = 0.1;
 
-    /**
-     * Construct instance of this class with default parameters.
-     */
+    /** Construct instance of this class with default parameters. */
     public SimpleGDUpdateCalculator() {
         this(DEFAULT_LEARNING_RATE);
     }
