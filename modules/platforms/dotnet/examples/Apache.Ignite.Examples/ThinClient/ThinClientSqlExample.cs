@@ -21,6 +21,7 @@ namespace Apache.Ignite.Examples.ThinClient
     using System.Linq;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
@@ -59,7 +60,17 @@ namespace Apache.Ignite.Examples.ThinClient
                 Console.WriteLine();
                 Console.WriteLine(">>> Cache query client example started.");
 
-                ICacheClient<int, Employee> cache = igniteClient.GetOrCreateCache<int, Employee>(CacheName);
+                // Configure query entities to enable SQL.
+                var cacheCfg = new CacheClientConfiguration
+                {
+                    Name = CacheName,
+                    QueryEntities = new[]
+                    {
+                        new QueryEntity(typeof(int), typeof(Employee)), 
+                    }
+                };
+
+                ICacheClient<int, Employee> cache = igniteClient.GetOrCreateCache<int, Employee>(cacheCfg);
 
                 // Populate cache with sample data entries.
                 PopulateCache(cache);
