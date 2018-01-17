@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 /**
  * Native sql benchmark that performs insert operations
  */
-public class NativeSqlInsertRangeBenchmark extends AbstractNativeBenchmark {
+public class NativeSqlInsertDeleteBenchmark extends AbstractNativeBenchmark {
     /**
      * Benchmarked action that inserts and immediately deletes row
      *

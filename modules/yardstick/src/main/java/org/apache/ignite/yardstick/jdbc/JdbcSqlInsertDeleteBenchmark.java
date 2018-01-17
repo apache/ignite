@@ -24,7 +24,7 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * JDBC benchmark that performs insert operations
  */
-public class JdbcSqlInsertBenchmark extends AbstractJdbcBenchmark {
+public class JdbcSqlInsertDeleteBenchmark extends AbstractJdbcBenchmark {
     /** Statement that inserts one row */
     private final ThreadLocal<PreparedStatement> singleInsert = newStatement("INSERT INTO test_long (id, val) VALUES (?, ?)");
 
