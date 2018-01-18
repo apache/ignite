@@ -307,12 +307,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                         GridDhtPartitionDemandMessage msg = assigns.get(n);
 
-                    if (msg == null) {
-                        assigns.put(n, msg = new GridDhtPartitionDemandMessage(
-                            top.updateSequence(),
-                            assigns.topologyVersion(),
-                            grp.groupId()));
-                    }
+                        if (msg == null) {
+                            assigns.put(n, msg = new GridDhtPartitionDemandMessage(
+                                top.updateSequence(),
+                                assigns.topologyVersion(),
+                                grp.groupId()));
+                        }
 
                         msg.addPartition(p, false);
                     }
