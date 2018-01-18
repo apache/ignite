@@ -147,7 +147,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
     @State(Scope.Benchmark)
     public static class IoSendReceiveSizeState extends IoState {
         /** */
-        @Param({"100", "1000", "2000", "3000", "5000", "10000", "20000", "30000", "40000", "60000", "100000"})
+        @Param({"1000", "5000", "30000", "60000", "100000", "1000000", "5000000"})
         int size = 1000;
 
         /** */
@@ -214,7 +214,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
     @State(Scope.Benchmark)
     public static class IoSendReceiveSizeGoodState extends IoState {
         /** */
-        @Param({"100", "1000", "2000", "3000", "5000", "10000", "20000", "30000", "40000", "60000", "100000"})
+        @Param({"1000", "5000", "30000", "60000", "100000", "1000000", "5000000"})
         int size = 1000;
 
         /** */
