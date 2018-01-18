@@ -27,7 +27,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -36,7 +35,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -102,75 +100,6 @@ public class WalModeChangeFailoverSelfTest extends GridCommonAbstractTest {
         super.afterTest();
 
         stopAllGrids();
-    }
-
-    /**
-     *
-     */
-    public void testFailDuringStreaming() throws Exception {
-        testFailDuringStreaming(false);
-    }
-
-    /**
-     *
-     */
-    public void testFailDuringStreamingWithJoin() throws Exception {
-        testFailDuringStreaming(true);
-    }
-
-    /**
-     *
-     */
-    private void testFailDuringStreaming(boolean join) throws Exception {
-        final IgniteEx ignite1 = startGrid(1);
-        final IgniteEx ignite2 = startGrid(2);
-
-        ignite1.active(true);
-
-        ignite1.cluster().walDisable(CACHE1);
-
-        // Streaming
-        final IgniteCache cache1 = ignite1.getOrCreateCache(CACHE1);
-
-        int size = 100_000;
-
-        for (int i = 0; i < size; i++)
-            cache1.put(i, i);
-
-        assertEquals(size, cache1.size());
-
-        IgniteInternalFuture cpFut1 = ignite1.context().cache().context().database().wakeupForCheckpoint("test");
-        IgniteInternalFuture cpFut2 = ignite2.context().cache().context().database().wakeupForCheckpoint("test");
-
-        cpFut1.get();
-        cpFut2.get();
-
-        for (int i = size; i < size + size; i++)
-            cache1.put(i, i);
-
-        for (Ignite node : G.allGrids())
-            assertFalse(((IgniteEx)node).context().cache().context().pageStore().walDisabledGroups().isEmpty());
-
-        stopAllGrids(true);
-
-        Ignite ignite = startGrid(1);
-
-        if (!join)
-            startGrid(2);
-
-        ignite.active(true);
-
-        if (join)
-            startGrid(2);
-
-        awaitPartitionMapExchange();
-
-        final IgniteCache cache = ignite.getOrCreateCache(CACHE1);
-
-        assertEquals(0, cache.size());
-
-        for (final Ignite node : G.allGrids())
-            assertTrue(((IgniteEx)node).context().cache().context().pageStore().walDisabledGroups().isEmpty());
     }
 
     /**

@@ -217,7 +217,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      *
      * @throws Exception If failed.
      */
-    public void testServerRestartCoordinator() throws Exception {
+    public void _testServerRestartCoordinator() throws Exception {
         checkNodeRestart(true);
     }
 
@@ -379,6 +379,8 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
             Thread.sleep(20_000);
 
             done.set(true);
+
+            X.println(">>> Stopping iteration: " + i);
 
             latch.await();
 
