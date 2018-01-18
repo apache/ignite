@@ -17,7 +17,7 @@
   limitations under the License.
 -->
 
-<Configuration>
+<Configuration monitorInterval="5">
     <Appenders>
         <Console name="CONSOLE" target="SYSTEM_OUT">
             <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
@@ -68,11 +68,11 @@
 
         <Logger name="com.amazonaws" level="WARN"/>
 
+        <Logger name="org.apache.ignite.spi.discovery" level="TRACE"/>
+
         <Root level="INFO">
             <!-- Uncomment to enable logging to console. -->
-            <!--
-            <AppenderRef ref="CONSOLE" level="DEBUG"/>
-            -->
+             <AppenderRef ref="CONSOLE" level="TRACE"/>
 
             <AppenderRef ref="CONSOLE_ERR" level="ERROR"/>
             <AppenderRef ref="FILE" level="DEBUG"/>

@@ -25,6 +25,7 @@ import java.util.Enumeration;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -78,6 +79,10 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  * injection.
  */
 public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAware {
+    /** Delay to be passed to {@link DOMConfigurator#configureAndWatch(String, long)}. */
+    private static final int WATCH_DELAY =
+        IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_LOG4J_CONFIG_UPDATE_DELAY, 5000);
+
     /** Appenders. */
     private static Collection<FileAppender> fileAppenders = new GridConcurrentHashSet<>();
 
@@ -194,15 +199,15 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
 
         this.cfg = path;
 
-        final URL cfgUrl = U.resolveIgniteUrl(path);
+        final File cfgFile = U.resolveIgnitePath(path);
 
-        if (cfgUrl == null)
+        if (cfgFile == null)
             throw new IgniteCheckedException("Log4j configuration path was not found: " + path);
 
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
                 if (init)
-                    DOMConfigurator.configure(cfgUrl);
+                    DOMConfigurator.configureAndWatch(cfgFile.getPath(), WATCH_DELAY);
 
                 return Logger.getRootLogger();
             }
@@ -229,7 +234,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
                 if (init)
-                    DOMConfigurator.configure(cfg);
+                    DOMConfigurator.configureAndWatch(cfg, WATCH_DELAY);
 
                 return Logger.getRootLogger();
             }
@@ -253,7 +258,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
                 if (init)
-                    DOMConfigurator.configure(cfgUrl);
+                    DOMConfigurator.configureAndWatch(cfg, WATCH_DELAY);
 
                 return Logger.getRootLogger();
             }
