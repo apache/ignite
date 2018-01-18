@@ -70,7 +70,7 @@ public class SparseDistributedMatrixMapReducer {
                     for (RowColMatrixKey key : locKeys) {
                         Map<Integer, Double> row = storage.cache().get(key);
 
-                        for (Map.Entry<Integer,Double> cell : row.entrySet())
+                        for (Map.Entry<Integer, Double> cell : row.entrySet())
                             locMatrix.set(idx, cell.getKey(), cell.getValue());
 
                         idx++;
