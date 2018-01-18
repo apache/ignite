@@ -16,22 +16,34 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import java.util.AbstractSet;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
 import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Page ID storage implementation without any striping. Backward compatible implementation.
  */
-public class PagesGridConcurrentHashSet extends AbstractSet<FullPageId> implements PageIdCollection {
+public class PagesGridConcurrentHashSet implements Set<FullPageId>, PageIdCollection {
     /** Delegate, actual pages are stored in this set. */
     private Set<FullPageId> set = new GridConcurrentHashSet<>();
 
     /** {@inheritDoc} */
-    @Override public Iterator<FullPageId> iterator() {
+    @NotNull @Override public Iterator<FullPageId> iterator() {
         return set.iterator();
+    }
+
+
+    /** {@inheritDoc} */
+    @NotNull @Override public Object[] toArray() {
+        return set.toArray();
+    }
+
+    /** {@inheritDoc} */
+    @NotNull @Override public <T> T[] toArray(@NotNull T[] a) {
+        return set.<T>toArray(a);
     }
 
     /** {@inheritDoc} */
@@ -44,8 +56,46 @@ public class PagesGridConcurrentHashSet extends AbstractSet<FullPageId> implemen
         return set.size();
     }
 
+
+    /** {@inheritDoc} */
+    @Override public boolean isEmpty() {
+        return set.isEmpty();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean contains(Object o) {
+        return set.contains(o);
+    }
+
     /** {@inheritDoc} */
     @Override public boolean remove(Object o) {
         return set.remove(o);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public boolean containsAll(@NotNull Collection<?> c) {
+        return set.containsAll(c);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addAll(@NotNull Collection<? extends FullPageId> c) {
+        return set.addAll(c);
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public boolean retainAll(@NotNull Collection<?> c) {
+        return set.retainAll(c);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean removeAll(@NotNull Collection<?> c) {
+        return set.removeAll(c);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clear() {
+        set.clear();
     }
 }

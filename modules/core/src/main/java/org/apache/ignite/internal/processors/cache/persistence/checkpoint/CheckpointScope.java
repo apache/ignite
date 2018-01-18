@@ -58,7 +58,10 @@ public class CheckpointScope {
      * @return buffers with arrays with all checkpoint pages, each buffer may be processed independently.
      */
     public List<FullPageIdsBuffer> toBuffers() {
-        List<FullPageIdsBuffer> buffers = independentSets().map(CheckpointScope::mergeSetsForBucket).collect(Collectors.toList());
+        List<FullPageIdsBuffer> buffers = independentSets()
+            .map(CheckpointScope::mergeSetsForBucket)
+            .filter(FullPageIdsBuffer::isFilled)
+            .collect(Collectors.toList());
 
         //actual number of pages may decrease here because of pages eviction (evicted page may have been already saved).
         pagesNum = buffers.stream().mapToInt(FullPageIdsBuffer::remaining).sum();
@@ -160,7 +163,10 @@ public class CheckpointScope {
 
             int cpThreads = persistenceCfg.getCheckpointThreads();
 
-            allBuffers.addAll(next.split(cpThreads == 1 ? 1 : cpThreads * 4));
+            if (next.remaining() > 1024)
+                allBuffers.addAll(next.split(cpThreads));
+            else
+                allBuffers.add(next);
         }
 
         return allBuffers;

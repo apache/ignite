@@ -43,6 +43,9 @@ public class FullPageIdsBuffer {
     /** Cached comparator used for sorting this buffer. */
     private Comparator<FullPageId> sortedUsingComparator;
 
+    /** empty for caching instance. */
+    private static FullPageIdsBuffer EMPTY_BUFFER = new FullPageIdsBuffer(new FullPageId[]{}, 0,0);
+
     /**
      * @param arr Array.
      * @param position Position.
@@ -177,6 +180,9 @@ public class FullPageIdsBuffer {
             size += next.size();
         }
 
+        if (size == 0)
+            return EMPTY_BUFFER;
+
         FullPageId[] pageIds = new FullPageId[size];
         int locIdx = 0;
 
@@ -213,6 +219,9 @@ public class FullPageIdsBuffer {
                 queue.add(new ComparableIterator<>(comp, list.iterator()));
         }
 
+        if (size == 0)
+            return EMPTY_BUFFER;
+
         FullPageId[] arr = new FullPageId[size];
         int locIdx = 0;
         int curStartPosition = 0;
@@ -245,6 +254,13 @@ public class FullPageIdsBuffer {
 
         //actual number of pages may be less then precalculated size
         return new FullPageIdsBuffer(arr, 0, locIdx).setSortedUsingComparator(comp);
+    }
+
+    /**
+     * @return true if buffer has data
+     */
+    public boolean isFilled() {
+        return remaining() > 0;
     }
 
     /**

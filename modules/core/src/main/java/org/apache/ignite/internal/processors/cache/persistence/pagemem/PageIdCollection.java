@@ -22,5 +22,5 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 /**
  * Empty interface for support different implementation of full page IDs collections.
  */
-public interface PageIdCollection extends Collection<FullPageId>{
+public interface PageIdCollection extends Collection<FullPageId> {
 }

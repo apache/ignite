@@ -396,7 +396,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
     public void testContinuousPutMultithreaded() throws Exception {
         try {
-            System.setProperty(IgniteSystemProperties.IGNITE_DIRTY_PAGES_PARALLEL, "true");
+            System.setProperty(IgniteSystemProperties.IGNITE_DIRTY_PAGES_PARALLEL, "false");
             System.setProperty(IgniteSystemProperties.IGNITE_DIRTY_PAGES_SORTED_STORAGE, "true");
 
             //setWalArchAndWorkToSameValue = true;
