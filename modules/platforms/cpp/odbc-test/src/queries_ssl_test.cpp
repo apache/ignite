@@ -89,6 +89,28 @@ struct SslQueriesTestSuiteFixture : odbc::OdbcTestSuite
         // No-op.
     }
 
+    /**
+     * Create default connection string.
+     * @return Default connection string.
+     */
+    std::string MakeDefaultConnectionString()
+    {
+        std::string cfgDirPath = GetTestConfigDir();
+
+        std::stringstream connectString;
+
+        connectString <<
+            "DRIVER={Apache Ignite};"
+            "ADDRESS=127.0.0.1:11110;"
+            "SCHEMA=cache;"
+            "SSL_MODE=require;"
+            "SSL_KEY_FILE=" << cfgDirPath << Fs << "ssl" << Fs << "client_full.pem;"
+            "SSL_CERT_FILE=" << cfgDirPath << Fs << "ssl" << Fs << "client_full.pem;"
+            "SSL_CA_FILE=" << cfgDirPath << Fs << "ssl" << Fs << "ca.pem;";
+
+        return connectString.str();
+    }
+
     /** Node started during the test. */
     Ignite grid;
 
@@ -103,23 +125,124 @@ BOOST_FIXTURE_TEST_SUITE(SslQueriesTestSuite, SslQueriesTestSuiteFixture)
 
 BOOST_AUTO_TEST_CASE(TestConnectionSsl)
 {
-    std::string cfgDirPath = GetTestConfigDir();
-
-    std::stringstream connectString;
-
-    connectString <<
-        "DRIVER={Apache Ignite};"
-        "ADDRESS=127.0.0.1:11110;"
-        "SCHEMA=cache;"
-        "SSL_MODE=require;"
-        "SSL_KEY_FILE=" << cfgDirPath << Fs << "ssl" << Fs << "client_full.pem;"
-        "SSL_CERT_FILE=" << cfgDirPath << Fs << "ssl" << Fs << "client_full.pem;"
-        "SSL_CA_FILE=" << cfgDirPath << Fs << "ssl" << Fs << "ca.pem;";
-
-    Connect(connectString.str());
+    Connect(MakeDefaultConnectionString());
 
     InsertTestStrings(10, false);
     InsertTestBatch(11, 2000, 1989);
+}
+
+BOOST_AUTO_TEST_CASE(TestConnectionTimeoutQuery)
+{
+    Connect(MakeDefaultConnectionString());
+
+    SQLRETURN ret = SQLSetConnectAttr(dbc, SQL_ATTR_CONNECTION_TIMEOUT, reinterpret_cast<SQLPOINTER>(5), 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    InsertTestStrings(10, false);
+}
+
+BOOST_AUTO_TEST_CASE(TestConnectionTimeoutBatch)
+{
+    Connect(MakeDefaultConnectionString());
+
+    SQLRETURN ret = SQLSetConnectAttr(dbc, SQL_ATTR_CONNECTION_TIMEOUT, reinterpret_cast<SQLPOINTER>(5), 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    InsertTestBatch(11, 20, 9);
+}
+
+BOOST_AUTO_TEST_CASE(TestConnectionTimeoutBoth)
+{
+    Connect(MakeDefaultConnectionString());
+
+    SQLRETURN ret = SQLSetConnectAttr(dbc, SQL_ATTR_CONNECTION_TIMEOUT, reinterpret_cast<SQLPOINTER>(5), 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    InsertTestStrings(10, false);
+    InsertTestBatch(11, 20, 9);
+}
+
+BOOST_AUTO_TEST_CASE(TestQueryTimeoutQuery)
+{
+    Connect(MakeDefaultConnectionString());
+
+    SQLRETURN ret = SQLSetStmtAttr(stmt, SQL_ATTR_QUERY_TIMEOUT, reinterpret_cast<SQLPOINTER>(5), 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    InsertTestStrings(10, false);
+}
+
+BOOST_AUTO_TEST_CASE(TestQueryTimeoutBatch)
+{
+    Connect(MakeDefaultConnectionString());
+
+    SQLRETURN ret = SQLSetStmtAttr(stmt, SQL_ATTR_QUERY_TIMEOUT, reinterpret_cast<SQLPOINTER>(5), 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    InsertTestBatch(11, 20, 9);
+}
+
+BOOST_AUTO_TEST_CASE(TestQueryTimeoutBoth)
+{
+    Connect(MakeDefaultConnectionString());
+
+    SQLRETURN ret = SQLSetStmtAttr(stmt, SQL_ATTR_QUERY_TIMEOUT, reinterpret_cast<SQLPOINTER>(5), 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    InsertTestStrings(10, false);
+    InsertTestBatch(11, 20, 9);
+}
+
+BOOST_AUTO_TEST_CASE(TestQueryAndConnectionTimeoutQuery)
+{
+    Connect(MakeDefaultConnectionString());
+
+    SQLRETURN ret = SQLSetStmtAttr(stmt, SQL_ATTR_QUERY_TIMEOUT, reinterpret_cast<SQLPOINTER>(5), 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    ret = SQLSetConnectAttr(dbc, SQL_ATTR_CONNECTION_TIMEOUT, reinterpret_cast<SQLPOINTER>(3), 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    InsertTestStrings(10, false);
+}
+
+BOOST_AUTO_TEST_CASE(TestQueryAndConnectionTimeoutBatch)
+{
+    Connect(MakeDefaultConnectionString());
+
+    SQLRETURN ret = SQLSetStmtAttr(stmt, SQL_ATTR_QUERY_TIMEOUT, reinterpret_cast<SQLPOINTER>(5), 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    ret = SQLSetConnectAttr(dbc, SQL_ATTR_CONNECTION_TIMEOUT, reinterpret_cast<SQLPOINTER>(3), 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    InsertTestBatch(11, 20, 9);
+}
+
+BOOST_AUTO_TEST_CASE(TestQueryAndConnectionTimeoutBoth)
+{
+    Connect(MakeDefaultConnectionString());
+
+    SQLRETURN ret = SQLSetStmtAttr(stmt, SQL_ATTR_QUERY_TIMEOUT, reinterpret_cast<SQLPOINTER>(5), 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_STMT, stmt);
+
+    ret = SQLSetConnectAttr(dbc, SQL_ATTR_CONNECTION_TIMEOUT, reinterpret_cast<SQLPOINTER>(3), 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    InsertTestStrings(10, false);
+    InsertTestBatch(11, 20, 9);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

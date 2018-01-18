@@ -94,6 +94,24 @@ namespace ignite
 
             private:
                 /**
+                 * Close the connection.
+                 * Internal call.
+                 */
+                void CloseInteral();
+
+                /**
+                 * Wait on the socket for any event for specified time.
+                 * This function uses poll to achive timeout functionality
+                 * for every separate socket operation.
+                 *
+                 * @param timeout Timeout.
+                 * @param rd Wait for read if @c true, or for write if @c false.
+                 * @return -errno on error, WaitResult::TIMEOUT on timeout and
+                 *     WaitResult::SUCCESS on success.
+                 */
+                int WaitOnSocket(int32_t timeout, bool rd);
+
+                /**
                  * Make new context instance.
                  *
                  * @param certPath Certificate file path.
@@ -104,12 +122,6 @@ namespace ignite
                  */
                 static void* MakeContext(const std::string& certPath, const std::string& keyPath,
                     const std::string& caPath, diagnostic::Diagnosable& diag);
-
-                /**
-                 * Close the connection.
-                 * Internal call.
-                 */
-                void CloseInteral();
 
                 /** Certificate file path. */
                 std::string certPath;
@@ -125,6 +137,9 @@ namespace ignite
 
                 /** OpenSSL I/O stream abstraction */
                 void* sslBio;
+
+                /** Blocking flag. */
+                bool blocking;
             };
         }
     }

@@ -193,9 +193,12 @@ namespace ignite
 
         void Connection::Close()
         {
-            socket->Close();
+            if (socket.get() != 0)
+            {
+                socket->Close();
 
-            socket.reset();
+                socket.reset();
+            }
         }
 
         Statement* Connection::CreateStatement()

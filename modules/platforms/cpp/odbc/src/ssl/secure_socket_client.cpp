@@ -23,6 +23,7 @@
 #include "ignite/odbc/ssl/secure_socket_client.h"
 #include "ignite/odbc/ssl/ssl_bindings.h"
 
+
 namespace ignite
 {
     namespace odbc
@@ -35,7 +36,8 @@ namespace ignite
                 keyPath(keyPath),
                 caPath(caPath),
                 context(0),
-                sslBio(0)
+                sslBio(0),
+                blocking(true)
             {
                 // No-op.
             }
@@ -73,12 +75,22 @@ namespace ignite
                     return false;
                 }
 
+                blocking = false;
+                long res = ssl::BIO_set_nbio_(bio, 1);
+                if (res != OPERATION_SUCCESS)
+                {
+                    blocking = true;
+
+                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                        "Can not set up non-blocking mode. Timeouts are not available.");
+                }
+
                 std::stringstream stream;
                 stream << hostname << ":" << port;
 
                 std::string address = stream.str();
 
-                long res = ssl::BIO_ctrl(bio, BIO_C_SET_CONNECT, 0, const_cast<char*>(address.c_str()));
+                res = ssl::BIO_set_conn_hostname_(bio, address.c_str());
                 if (res != OPERATION_SUCCESS)
                 {
                     diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not set SSL connection hostname.");
@@ -89,7 +101,7 @@ namespace ignite
                 }
 
                 SSL* ssl = 0;
-                ssl::BIO_ctrl(bio, BIO_C_GET_SSL, 0, reinterpret_cast<char*>(&ssl));
+                ssl::BIO_get_ssl_(bio, &ssl);
                 if (!ssl)
                 {
                     diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not get SSL instance from BIO.");
@@ -99,8 +111,7 @@ namespace ignite
                     return false;
                 }
 
-                res = ssl::SSL_ctrl(ssl, SSL_CTRL_SET_TLSEXT_HOSTNAME,
-                    TLSEXT_NAMETYPE_host_name, const_cast<char*>(hostname));
+                res = ssl::SSL_set_tlsext_host_name_(ssl, hostname);
                 if (res != OPERATION_SUCCESS)
                 {
                     diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not set host name for secure connection");
@@ -110,7 +121,11 @@ namespace ignite
                     return false;
                 }
 
-                res = ssl::BIO_ctrl(bio, BIO_C_DO_STATE_MACHINE, 0, NULL);
+                do
+                {
+                    res = ssl::BIO_do_connect_(bio);
+                } while (ssl::BIO_should_retry_(bio));
+
                 if (res != OPERATION_SUCCESS)
                 {
                     diag.AddStatusRecord(SqlState::S08001_CANNOT_CONNECT,
@@ -121,7 +136,11 @@ namespace ignite
                     return false;
                 }
 
-                res = ssl::BIO_ctrl(bio, BIO_C_DO_STATE_MACHINE, 0, NULL);
+                do
+                {
+                    res = ssl::BIO_do_handshake_(bio);
+                } while (ssl::BIO_should_retry_(bio));
+
                 if (res != OPERATION_SUCCESS)
                 {
                     diag.AddStatusRecord(SqlState::S08001_CANNOT_CONNECT, "SSL handshake failed.");
@@ -177,7 +196,6 @@ namespace ignite
                     return -1;
                 }
 
-                (void)timeout;
                 BIO* sslBio0 = reinterpret_cast<BIO*>(sslBio);
 
                 int res = 0;
@@ -186,7 +204,7 @@ namespace ignite
                 {
                     res = ssl::BIO_write(sslBio0, data, static_cast<int>(size));
                 }
-                while (ssl::BIO_test_flags(sslBio0, BIO_FLAGS_SHOULD_RETRY));
+                while (ssl::BIO_should_retry_(sslBio0));
 
                 return res;
             }
@@ -202,23 +220,30 @@ namespace ignite
                     return -1;
                 }
 
-                (void)timeout;
                 BIO* sslBio0 = reinterpret_cast<BIO*>(sslBio);
 
                 int res = 0;
+
+                if (!blocking && BIO_pending_(sslBio0) == 0)
+                {
+                    res = WaitOnSocket(timeout, true);
+
+                    if (res < 0 || res == WaitResult::TIMEOUT)
+                        return res;
+                }
 
                 do
                 {
                     res = ssl::BIO_read(sslBio0, buffer, static_cast<int>(size));
                 }
-                while (ssl::BIO_test_flags(sslBio0, BIO_FLAGS_SHOULD_RETRY));
+                while (ssl::BIO_should_retry_(sslBio0));
 
                 return res;
             }
 
             bool SecureSocketClient::IsBlocking() const
             {
-                return true;
+                return blocking;
             }
 
             void* SecureSocketClient::MakeContext(const std::string& certPath, const std::string& keyPath,
@@ -330,6 +355,55 @@ namespace ignite
 
                     sslBio = 0;
                 }
+            }
+
+            int SecureSocketClient::WaitOnSocket(int32_t timeout, bool rd)
+            {
+                int ready = 0;
+                int lastError = 0;
+                int fdSocket = 0;
+                BIO* sslBio0 = reinterpret_cast<BIO*>(sslBio);
+
+                fd_set fds;
+
+                long res = ssl::BIO_get_fd_(sslBio0, &fdSocket);
+
+                if (res < 0)
+                {
+                    LOG_MSG("Can not get file descriptor from the SSL socket: " << res);
+
+                    return res;
+                }
+
+                do {
+                    struct timeval tv = { 0 };
+                    tv.tv_sec = timeout;
+
+                    FD_ZERO(&fds);
+                    FD_SET(static_cast<long>(fdSocket), &fds);
+
+                    fd_set* readFds = 0;
+                    fd_set* writeFds = 0;
+
+                    if (rd)
+                        readFds = &fds;
+                    else
+                        writeFds = &fds;
+
+                    ready = select(fdSocket + 1, readFds, writeFds, NULL, (timeout == 0 ? NULL : &tv));
+
+                    if (ready == SOCKET_ERROR)
+                        lastError = WSAGetLastError();
+
+                } while (ready == SOCKET_ERROR && lastError == WSAEINTR);
+
+                if (ready == SOCKET_ERROR)
+                    return -lastError;
+
+                if (ready == 0)
+                    return WaitResult::TIMEOUT;
+
+                return WaitResult::SUCCESS;
             }
         }
     }
