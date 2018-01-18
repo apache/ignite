@@ -18,7 +18,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -65,7 +65,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     private final DataRegionConfiguration memPlcCfg;
 
     /** */
-    private PageMemory pageMem;
+    private PageMemoryImpl pageMem;
 
     /** Time interval (in milliseconds) when allocations/evictions are counted to calculate rate. */
     private volatile long rateTimeInterval;
@@ -98,7 +98,12 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedPages() {
-        return metricsEnabled ? totalAllocatedPages.longValue() : 0;
+        if (!metricsEnabled)
+            return 0;
+
+        assert pageMem != null;
+
+        return pageMem.storeMgr().pagesAllocated(memPlcCfg.getName());
     }
 
     /** {@inheritDoc} */
@@ -271,7 +276,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     /**
      * @param pageMem Page mem.
      */
-    public void pageMemory(PageMemory pageMem) {
+    public void pageMemory(PageMemoryImpl pageMem) {
         this.pageMem = pageMem;
     }
 

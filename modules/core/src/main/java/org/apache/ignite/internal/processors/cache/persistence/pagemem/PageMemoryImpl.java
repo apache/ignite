@@ -430,8 +430,6 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         long pageId = storeMgr.allocatePage(cacheId, partId, flags);
 
-        memMetrics.incrementTotalAllocatedPages();
-
         assert PageIdUtils.pageIndex(pageId) > 0; //it's crucial for tracking pages (zero page is super one)
 
         // We need to allocate page in memory for marking it dirty to save it in the next checkpoint.
@@ -1517,6 +1515,11 @@ public class PageMemoryImpl implements PageMemoryEx {
         int hash = U.hash(pageId * 65537 + grpId);
 
         return U.safeAbs(hash) % segments;
+    }
+
+    /** */
+    public IgnitePageStoreManager storeMgr() {
+        return storeMgr;
     }
 
     /**

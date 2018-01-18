@@ -22,12 +22,14 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -68,8 +70,11 @@ public class FilePageStore implements PageStore {
     /** I/O interface for read/write operations with file */
     private FileIO fileIO;
 
-    /** */
+    /** Size of current file storage, including header. */
     private final AtomicLong allocated;
+
+    /** Shared allocation counter to be updated on store size changes, excluding header. */
+    private final LongAdder totalAllocatedPages;
 
     /** */
     private final int pageSize;
@@ -90,9 +95,19 @@ public class FilePageStore implements PageStore {
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     /**
-     * @param file File.
+     * @param type Store type; one of {@link PageIdAllocator} flag constants.
+     * @param file Underlying file.
+     * @param factory {@link FileIO} factory.
+     * @param cfg durable memory configuration.
+     * @param totalAllocatedPages Counter to be updated on store size changes.
      */
-    public FilePageStore(byte type, File file, FileIOFactory factory, DataStorageConfiguration cfg) {
+    public FilePageStore(
+        byte type,
+        File file,
+        FileIOFactory factory,
+        DataStorageConfiguration cfg,
+        LongAdder totalAllocatedPages
+    ) {
         this.type = type;
 
         cfgFile = file;
@@ -102,6 +117,8 @@ public class FilePageStore implements PageStore {
         allocated = new AtomicLong();
 
         pageSize = dbCfg.getPageSize();
+
+        this.totalAllocatedPages = totalAllocatedPages;
     }
 
     /** {@inheritDoc} */
@@ -261,7 +278,15 @@ public class FilePageStore implements PageStore {
 
             fileIO.clear();
 
-            allocated.set(initFile());
+            long newAlloc = initFile();
+
+            long delta = newAlloc - allocated.get();
+
+            assert delta % dbCfg.getPageSize() == 0;
+
+            allocated.set(newAlloc);
+
+            totalAllocatedPages.add(delta / pageSize);
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);
@@ -294,8 +319,17 @@ public class FilePageStore implements PageStore {
         try {
             // Since we always have a meta-page in the store, never revert allocated counter to a value smaller than
             // header + page.
-            if (inited)
-                allocated.set(Math.max(headerSize() + pageSize, fileIO.size()));
+            if (inited) {
+                long newSize = Math.max(headerSize() + pageSize, fileIO.size());
+
+                long delta = newSize - allocated.get();
+
+                assert delta % pageSize == 0;
+
+                totalAllocatedPages.add(delta / pageSize);
+
+                allocated.set(newSize);
+            }
 
             recover = false;
         }
@@ -407,10 +441,17 @@ public class FilePageStore implements PageStore {
                     try {
                         this.fileIO = fileIO = ioFactory.create(cfgFile, CREATE, READ, WRITE);
 
-                        if (cfgFile.length() == 0)
-                            allocated.set(initFile());
-                        else
-                            allocated.set(checkFile());
+                        long newSize = cfgFile.length() == 0 ? initFile() : checkFile();
+
+                        assert allocated.get() == 0;
+
+                        long delta = newSize - headerSize();
+
+                        assert delta % pageSize == 0;
+
+                        totalAllocatedPages.add(delta / pageSize);
+
+                        allocated.set(newSize);
 
                         inited = true;
                     }
@@ -550,8 +591,10 @@ public class FilePageStore implements PageStore {
         do {
             off = allocated.get();
 
-            if (allocated.compareAndSet(off, off + pageSize))
+            if (allocated.compareAndSet(off, off + pageSize)) {
+                totalAllocatedPages.add(1);
                 break;
+            }
         }
         while (true);
 
