@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
@@ -71,6 +72,9 @@ public class FilePageStore implements PageStore {
     /** */
     private final AtomicLong allocated;
 
+    /** Counter to be updated on store size changes. */
+    private final LongAdder totalAllocated;
+
     /** */
     private final int pageSize;
 
@@ -91,8 +95,15 @@ public class FilePageStore implements PageStore {
 
     /**
      * @param file File.
+     * @param totalAllocated Counter to be updated on store size changes.
      */
-    public FilePageStore(byte type, File file, FileIOFactory factory, DataStorageConfiguration cfg) {
+    public FilePageStore(
+        byte type,
+        File file,
+        FileIOFactory factory,
+        DataStorageConfiguration cfg,
+        LongAdder totalAllocated
+    ) {
         this.type = type;
 
         cfgFile = file;
@@ -102,6 +113,8 @@ public class FilePageStore implements PageStore {
         allocated = new AtomicLong();
 
         pageSize = dbCfg.getPageSize();
+
+        this.totalAllocated = totalAllocated;
     }
 
     /** {@inheritDoc} */
@@ -261,7 +274,17 @@ public class FilePageStore implements PageStore {
 
             fileIO.clear();
 
-            allocated.set(initFile());
+            long prevAlloc = allocated.get();
+
+            long newAlloc = initFile();
+
+            assert (prevAlloc - newAlloc) % dbCfg.getPageSize() == 0;
+
+            allocated.set(newAlloc);
+
+            long delta = newAlloc - prevAlloc;
+
+            totalAllocated.add(delta);
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);
@@ -294,8 +317,13 @@ public class FilePageStore implements PageStore {
         try {
             // Since we always have a meta-page in the store, never revert allocated counter to a value smaller than
             // header + page.
-            if (inited)
-                allocated.set(Math.max(headerSize() + pageSize, fileIO.size()));
+            if (inited) {
+                long newSize = Math.max(headerSize() + pageSize, fileIO.size());
+
+                totalAllocated.add(newSize - allocated.get());
+
+                allocated.set(newSize);
+            }
 
             recover = false;
         }
@@ -308,8 +336,8 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public void read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
-        init();
+    @Override public boolean read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
+        boolean initRes = init();
 
         try {
             long off = pageOffset(pageId);
@@ -327,7 +355,7 @@ public class FilePageStore implements PageStore {
                 if (n < 0) {
                     pageBuf.put(new byte[pageBuf.remaining()]);
 
-                    return;
+                 return initRes;
                 }
 
                 off += n;
@@ -360,6 +388,8 @@ public class FilePageStore implements PageStore {
         catch (IOException e) {
             throw new IgniteCheckedException("Read error", e);
         }
+
+        return initRes;
     }
 
     /** {@inheritDoc} */
@@ -394,7 +424,7 @@ public class FilePageStore implements PageStore {
     /**
      * @throws IgniteCheckedException If failed to initialize store file.
      */
-    private void init() throws IgniteCheckedException {
+    private boolean init() throws IgniteCheckedException {
         if (!inited) {
             lock.writeLock().lock();
 
@@ -407,12 +437,17 @@ public class FilePageStore implements PageStore {
                     try {
                         this.fileIO = fileIO = ioFactory.create(cfgFile, CREATE, READ, WRITE);
 
-                        if (cfgFile.length() == 0)
-                            allocated.set(initFile());
-                        else
-                            allocated.set(checkFile());
+                        long newSize = cfgFile.length() == 0 ? initFile() : checkFile();
+
+                        assert allocated.get() == 0;
+
+                        totalAllocated.add(newSize - headerSize());
+
+                        allocated.set(newSize);
 
                         inited = true;
+
+                        return true;
                     }
                     catch (IOException e) {
                         throw err = new IgniteCheckedException("Can't open file: " + cfgFile.getName(), e);
@@ -432,6 +467,8 @@ public class FilePageStore implements PageStore {
                 lock.writeLock().unlock();
             }
         }
+
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -549,8 +586,10 @@ public class FilePageStore implements PageStore {
         do {
             off = allocated.get();
 
-            if (allocated.compareAndSet(off, off + pageSize))
+            if (allocated.compareAndSet(off, off + pageSize)) {
+                totalAllocated.add(pageSize);
                 break;
+            }
         }
         while (true);
 
@@ -564,4 +603,10 @@ public class FilePageStore implements PageStore {
 
         return (int)((allocated.get() - headerSize()) / pageSize);
     }
+
+    /** */
+    public boolean isInitialized() {
+        return inited;
+    }
+
 }

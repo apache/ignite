@@ -18,7 +18,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -65,7 +65,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     private final DataRegionConfiguration memPlcCfg;
 
     /** */
-    private PageMemory pageMem;
+    private PageMemoryImpl pageMem;
 
     /** Time interval (in milliseconds) when allocations/evictions are counted to calculate rate. */
     private volatile long rateTimeInterval;
@@ -98,7 +98,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedPages() {
-        return metricsEnabled ? totalAllocatedPages.longValue() : 0;
+        return metricsEnabled ? pageMem.storeMgr().bytesAllocated(memPlcCfg.getName()) / pageMem.pageSize() : 0;
     }
 
     /** {@inheritDoc} */
@@ -207,21 +207,44 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     }
 
     /**
-     * Increments totalAllocatedPages counter.
+     * Increments totalAllocatedPages counter by 1.
      */
     public void incrementTotalAllocatedPages() {
         if (metricsEnabled) {
             totalAllocatedPages.increment();
 
-            updateAllocationRateMetrics();
+            updateAllocationRateMetrics(1);
         }
+    }
+
+    /**
+     * Increments totalAllocatedPages counter.
+     *
+     * @param n number of pages to increment by.
+     */
+    public void incrementTotalAllocatedPages(long n) {
+        if (metricsEnabled) {
+            totalAllocatedPages.add(n);
+
+            updateAllocationRateMetrics(n);
+        }
+    }
+
+    /**
+     * Decrements totalAllocatedPages.
+     *
+     * @param n number of pages to decrement by.
+     */
+    public void decrementTotalAllocatedPages(long n) {
+        if (metricsEnabled)
+            totalAllocatedPages.add(-n);
     }
 
     /**
      *
      */
-    private void updateAllocationRateMetrics() {
-        allocRate.onHit();
+    private void updateAllocationRateMetrics(long n) {
+        allocRate.onHits(n);
     }
 
     /**
@@ -271,7 +294,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     /**
      * @param pageMem Page mem.
      */
-    public void pageMemory(PageMemory pageMem) {
+    public void pageMemory(PageMemoryImpl pageMem) {
         this.pageMem = pageMem;
     }
 
@@ -303,5 +326,10 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         allocRate = new HitRateMetrics((int) rateTimeInterval, subInts);
         pageReplaceRate = new HitRateMetrics((int)rateTimeInterval, subInts);
         pageReplaceAge = new HitRateMetrics((int)rateTimeInterval, subInts);
+    }
+
+    /** */
+    public int pageSize() {
+        return pageMem.pageSize();
     }
 }

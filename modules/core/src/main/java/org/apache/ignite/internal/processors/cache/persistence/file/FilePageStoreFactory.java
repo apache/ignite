@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.File;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 
@@ -31,5 +32,5 @@ public interface FilePageStoreFactory {
      * @param type Data type, can be {@link PageIdAllocator#FLAG_IDX} or {@link PageIdAllocator#FLAG_DATA}.
      * @param file File Page store file.
      */
-    public FilePageStore createPageStore(byte type, File file) throws IgniteCheckedException;
+    public FilePageStore createPageStore(byte type, File file, LongAdder totalAllocated) throws IgniteCheckedException;
 }

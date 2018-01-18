@@ -41,6 +41,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -57,6 +58,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.management.ObjectName;
+import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -167,7 +169,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     public static final String IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC = "IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC";
 
     /** MemoryPolicyConfiguration name reserved for meta store. */
-    private static final String METASTORE_DATA_REGION_NAME = "metastoreMemPlc";
+    public static final String METASTORE_DATA_REGION_NAME = "metastoreMemPlc";
 
     /** */
     private static final long GB = 1024L * 1024 * 1024;

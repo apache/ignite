@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -32,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
 
@@ -74,8 +76,10 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void onPartitionDestroyed(int cacheId, int partId, int tag) throws IgniteCheckedException {
-        // No-op.
+    @Override public void onPartitionDestroyed(int cacheId, int partId, int tag, DataRegionMetricsImpl memMetrics)
+        throws IgniteCheckedException
+    {
+        // No-op
     }
 
     /** {@inheritDoc} */
@@ -194,5 +198,15 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public long pagesAllocated(int grpId) {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long bytesAllocated(String dataRegionName) {
+        return 0;
     }
 }
