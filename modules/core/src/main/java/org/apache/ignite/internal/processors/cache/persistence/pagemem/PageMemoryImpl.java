@@ -1422,9 +1422,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         return total;
     }
 
-    /**
-     * Number of used pages in checkpoint buffer.
-     */
+    /** {@inheritDoc} */
     public int checkpointBufferPagesCount() {
         return cpBufPagesCntr.get();
     }
