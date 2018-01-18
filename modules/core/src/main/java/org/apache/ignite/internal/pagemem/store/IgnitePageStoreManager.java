@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.pagemem.store;
 
 import java.nio.ByteBuffer;
-import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -204,24 +203,4 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @param grpDesc Cache group descriptor.
      */
     public void beforeCacheGroupStart(CacheGroupDescriptor grpDesc);
-
-    /**
-     * Marks cache group as with disabled WAL.
-     *
-     * @param grpId Group id.
-     * @param enabled flag.
-     */
-    public void walEnabled(int grpId, boolean enabled);
-
-    /**
-     * Checks cache group is with disabled WAL.
-     *
-     * @param grpId Group id.
-     */
-    public boolean walEnabled(int grpId);
-
-    /**
-     * Provides list of cache groups with disabled WAL
-     */
-    public Collection<Integer> walDisabledGroups();
 }

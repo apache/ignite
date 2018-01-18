@@ -1021,7 +1021,6 @@ public class CacheGroupContext {
      * @param enabled Enabled flag..
      */
     private void persistWalState(boolean enabled) {
-        if (shared().pageStore() != null)
-            shared().pageStore().walEnabled(grpId, enabled);
+        shared().database().walEnabled(grpId, enabled);
     }
 }

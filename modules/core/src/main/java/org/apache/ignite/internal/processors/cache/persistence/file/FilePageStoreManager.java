@@ -29,11 +29,8 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -691,7 +688,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void beforeCacheGroupStart(CacheGroupDescriptor grpDesc) {
-        if (grpDesc.persistenceEnabled() && !walEnabled(grpDesc.groupId())) {
+        if (grpDesc.persistenceEnabled() && !cctx.database().walEnabled(grpDesc.groupId())) {
             File dir = cacheWorkDir(grpDesc.config());
 
             assert dir.exists();
@@ -702,62 +699,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
             grpDesc.walEnabled(false);
         }
-    }
-
-    /**
-     *
-     */
-    private File walMarkersDir() { // Todo to be replaced with MetaStore usage
-        try {
-            final String workDir = U.defaultWorkDirectory();
-            final File db = U.resolveWorkDirectory(workDir, DFLT_STORE_DIR, false);
-            final File wal = new File(db, "wal");
-            final File node = new File(wal, "disabledWal-" + cctx.igniteInstanceName());
-
-            if (!node.exists())
-                node.mkdirs();
-
-            return node;
-        }
-        catch (IgniteCheckedException e) {
-            e.printStackTrace();
-        }
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    public void walEnabled(int grpId, boolean enabled) { // Todo to be replaced with MetaStore usage
-        try {
-            final File file = new File(walMarkersDir(), grpId + "");
-
-            if (enabled)
-                file.delete();
-            else
-                file.createNewFile();
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /** {@inheritDoc} */
-    public boolean walEnabled(int grpId) { // Todo to be replaced with MetaStore usage
-        final File file = new File(walMarkersDir(), String.valueOf(grpId));
-
-        return !file.exists();
-    }
-
-    /** {@inheritDoc} */
-    public Collection<Integer> walDisabledGroups() { // Todo to be replaced with MetaStore usage
-        File dir = walMarkersDir();
-
-        List<Integer> s = new ArrayList<>();
-
-        for (File file : dir.listFiles())
-            s.add(Integer.valueOf(file.getName()));
-
-        return s;
     }
 
     /**

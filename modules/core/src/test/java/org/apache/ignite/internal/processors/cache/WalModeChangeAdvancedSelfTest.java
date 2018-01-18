@@ -331,6 +331,25 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         final IgniteCache cache = cacheCli.getOrCreateCache(cacheConfig(PARTITIONED));
 
+        Thread watchDog = new Thread(new Runnable() {
+            @Override public void run() {
+                try {
+                    while (true) {
+                        Thread.sleep(5000);
+
+                        for (WalStateManager mgr : WalStateManager.MGRS) {
+                            System.out.println("MGR DUMP " + mgr.cctx.igniteInstanceName() + " " + mgr.ress + " " + mgr.procs);
+                        }
+                    }
+                }
+                catch (Exception e) {
+
+                }
+            }
+        });
+
+        watchDog.start();
+
         for (int i = 0; i < 3; i++) {
             // Start pushing requests.
             Collection<Ignite> walNodes = new ArrayList<>();

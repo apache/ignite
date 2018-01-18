@@ -41,6 +41,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -265,6 +266,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     private static final String MBEAN_GROUP = "Persistent Store";
 
+    /** WAL marker prefix for meta store. */
+    private static final String WAL_KEY_PREFIX = "grp-wal-disabled-";
+
+    /** WAL marker predicate for meta store. */
+    private static final IgnitePredicate<String> WAL_KEY_PREFIX_PRED = new IgnitePredicate<String>() {
+        @Override public boolean apply(String key) {
+            return key.startsWith(WAL_KEY_PREFIX);
+        }
+    };
+
     /** Checkpoint thread. Needs to be volatile because it is created in exchange worker. */
     private volatile Checkpointer checkpointer;
 
@@ -348,6 +359,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** */
     private List<MetastorageLifecycleListener> metastorageLifecycleLsnrs;
+
+    /** Initially disabled cache groups. */
+    public Collection<Integer> initiallyWalDisabledGrps;
 
     /**
      * @param ctx Kernal context.
@@ -530,6 +544,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 metaStorage.init(this);
 
                 applyLastUpdates(status, true);
+
+                initiallyWalDisabledGrps = walDisabledGroups();
 
                 notifyMetastorageReadyForRead();
             }
@@ -1736,7 +1752,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         int applied = 0;
         WALPointer lastRead = null;
 
-        Collection<Integer> ignoreGrps = cctx.pageStore().walDisabledGroups();
+        Collection<Integer> ignoreGrps = storeOnly ? Collections.emptySet() : initiallyWalDisabledGrps;
 
         try (WALIterator it = cctx.wal().replay(status.endPtr)) {
             while (it.hasNextX()) {
@@ -1994,7 +2010,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         long start = U.currentTimeMillis();
         int applied = 0;
 
-        Collection<Integer> ignoreGrps = cctx.pageStore().walDisabledGroups();
+        Collection<Integer> ignoreGrps = metastoreOnly ? Collections.emptySet() : initiallyWalDisabledGrps;
 
         try (WALIterator it = cctx.wal().replay(status.startPtr)) {
             Map<T2<Integer, Integer>, T2<Integer, Long>> partStates = new HashMap<>();
@@ -2080,11 +2096,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
             }
 
-            if (!metastoreOnly)
+            if (!metastoreOnly) {
                 restorePartitionState(partStates, ignoreGrps);
-
-            for (Integer grpId : cctx.pageStore().walDisabledGroups())
-                cctx.pageStore().walEnabled(grpId, false);
+            }
         }
         finally {
             if (!metastoreOnly)
@@ -3926,5 +3940,79 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** {@inheritDoc} */
     @Override public MetaStorage metaStorage() {
         return metaStorage;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean walEnabled(int grpId) {
+        return !initiallyWalDisabledGrps.contains(grpId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void walEnabled(int grpId, boolean enabled) {
+        String key = walGroupIdToKey(grpId);
+
+        checkpointReadLock();
+
+        try {
+            if (enabled)
+                metaStorage.remove(key);
+            else
+                metaStorage.write(key, true);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to write cache group WAL state [grpId=" + grpId +
+                ", enabled=" + enabled + ']', e);
+        }
+        finally {
+            checkpointReadUnlock();
+        }
+    }
+
+    /**
+     * @return List of initially WAL-disabled groups.
+     */
+    private Collection<Integer> walDisabledGroups() {
+        MetaStorage meta = cctx.database().metaStorage();
+
+        try {
+            Set<String> keys = meta.readForPredicate(WAL_KEY_PREFIX_PRED).keySet();
+
+            if (keys.isEmpty())
+                return Collections.emptySet();
+
+            HashSet<Integer> res = new HashSet<>(keys.size());
+
+            for (String key : keys) {
+                int grpId = walKeyToGroupId(key);
+
+                res.add(grpId);
+            }
+
+            return res;
+
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to read cache groups WAL state.", e);
+        }
+    }
+
+    /**
+     * Convert cache group ID to WAL state key.
+     *
+     * @param grpId Group ID.
+     * @return Key.
+     */
+    private static String walGroupIdToKey(int grpId) {
+        return WAL_KEY_PREFIX + grpId;
+    }
+
+    /**
+     * Convert WAL state key to cache group ID.
+     *
+     * @param key Key.
+     * @return Group ID.
+     */
+    private static int walKeyToGroupId(String key) {
+        return Integer.parseInt(key.substring(WAL_KEY_PREFIX.length()));
     }
 }
