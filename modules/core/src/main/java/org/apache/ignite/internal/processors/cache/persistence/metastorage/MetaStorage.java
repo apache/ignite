@@ -189,9 +189,9 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
             String key = row.key();
             byte[] valBytes = row.value();
 
-            if (keyPred.apply(key) && !lastUpdates.containsKey(key)) {
+            if (keyPred.apply(key)) {
                 // Either already added it, or this is a tombstone -> ignore.
-                if (lastUpdates.containsKey(key))
+                if (lastUpdates != null && lastUpdates.containsKey(key))
                     continue;
 
                 if (res == null)
