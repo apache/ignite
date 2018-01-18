@@ -17,12 +17,21 @@
 
 package org.apache.ignite.internal.processors.authentication;
 
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.ignite.IgniteAuthenticationException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 
 /**
  */
 public class IgniteAuthenticationProcessor extends GridProcessorAdapter {
+    /** User map. */
+    private final Map<String, User> users = new HashMap<>();
+
+    /** Map monitor. */
+    private final Object mux = new Object();
+
     /**
      * @param ctx Kernal context.
      */
@@ -36,28 +45,52 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter {
      * @param login User's login.
      * @param passwd Plain text password.
      * @return User object.
+     * @throws IgniteAuthenticationException On error.
      */
-    public User addUser(String login, String passwd) {
-        return null;
+    public User addUser(String login, String passwd) throws IgniteAuthenticationException {
+        synchronized (mux) {
+            if (users.containsKey(login))
+                throw new IgniteAuthenticationException("User already exists. [login=" + login + ']');
+
+            User usr = User.create(login, passwd);
+
+            users.put(login, usr);
+
+            return usr;
+        }
     }
 
     /**
      * Removes user.
      *
      * @param login User's login.
+     * @throws IgniteAuthenticationException On error.
      */
-    public void removeUser(String login) {
+    public void removeUser(String login) throws IgniteAuthenticationException {
+        synchronized (mux) {
+            if (!users.containsKey(login))
+                throw new IgniteAuthenticationException("User not exists. [login=" + login + ']');
 
+            users.remove(login);
+        }
     }
 
     /**
      * Change user password.
      *
      * @param login User's login.
-     * @param newPasswd New password.
+     * @param passwd New password.
+     * @throws IgniteAuthenticationException On error.
      */
-    public void changePassword(String login, String newPasswd) {
+    public void changePassword(String login, String passwd) throws IgniteAuthenticationException {
+        synchronized (mux) {
+            if (!users.containsKey(login))
+                throw new IgniteAuthenticationException("User not exists. [login=" + login + ']');
 
+            User usr = User.create(login, passwd);
+
+            users.put(login, usr);
+        }
     }
 
     /**
@@ -68,6 +101,15 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter {
      * @return User object on successful authenticate. Otherwise returns {@code null}.
      */
     public User authenticate(String login, String passwd) {
+        User usr = null;
+
+        synchronized (mux) {
+            usr = users.get(login);
+        }
+
+        if (usr != null && usr.authorize(passwd))
+            return usr;
+
         return null;
     }
 }

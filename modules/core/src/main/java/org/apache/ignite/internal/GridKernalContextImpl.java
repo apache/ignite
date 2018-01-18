@@ -150,7 +150,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private GridSecurityProcessor authProc;
+    private GridSecurityProcessor securityProc;
 
     /** */
     @GridToStringExclude
@@ -525,7 +525,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else if (comp instanceof GridCollisionManager)
             colMgr = (GridCollisionManager)comp;
         else if (comp instanceof GridSecurityProcessor)
-            authProc = (GridSecurityProcessor)comp;
+            securityProc = (GridSecurityProcessor)comp;
         else if (comp instanceof GridLoadBalancerManager)
             loadMgr = (GridLoadBalancerManager)comp;
         else if (comp instanceof GridIndexingManager)
@@ -596,6 +596,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             pdsFolderRslvr = (PdsFoldersResolver)comp;
         else if (comp instanceof GridInternalSubscriptionProcessor)
             internalSubscriptionProc = (GridInternalSubscriptionProcessor)comp;
+        else if (comp instanceof IgniteAuthenticationProcessor)
+            authProc = (IgniteAuthenticationProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
                 || comp instanceof PlatformPluginProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
@@ -751,7 +753,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public GridSecurityProcessor security() {
-        return authProc;
+        return securityProc;
     }
 
     /** {@inheritDoc} */

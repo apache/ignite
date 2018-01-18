@@ -17,19 +17,105 @@
 
 package org.apache.ignite.internal.processors.authentication;
 
+import com.sun.org.apache.xml.internal.security.utils.Base64;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.util.Objects;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
+
 /**
  */
 public class User {
-    /** Name. */
+    /** Salt length. */
+    private static final int SALT_LEN = 16;
+    /** Random. */
+    private static final SecureRandom random = new SecureRandom();
+
+    /** User name. */
     private final String name;
 
     /** Encrypted password. */
-    private byte[] encPasswd;
+    private String encPasswd;
+
+    /** Salt. */
+    private byte[] salt;
 
     /**
      * @param name User name.
+     * @param encPasswd Encoded password.
+     * @param salt Salt.
      */
-    public User(String name) {
+    private User(String name, String encPasswd, byte[] salt) {
         this.name = name;
+        this.encPasswd = encPasswd;
+        this.salt = salt;
+    }
+
+    /**
+     * Create new user.
+     * @param name User name.
+     * @param passwd Plain text password.
+     * @return Created user.
+     */
+    public static User create(String name, String passwd) {
+        byte [] salt = new byte[SALT_LEN];
+
+        random.nextBytes(salt);
+
+        return new User(name, password(passwd, salt), salt);
+    }
+
+    /**
+     * @param passwd Plain text password.
+     * @param salt Salt.
+     * @return Hashed password.
+     */
+    @Nullable public static String password(String passwd, byte[] salt) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-512");
+
+            for (int i = 0; i < 64; ++i) {
+                md.update(passwd.getBytes(StandardCharsets.UTF_8));
+
+                md.update(salt);
+            }
+
+            return Base64.encode(md.digest(salt));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IgniteException("Authentication error", e);
+        }
+    }
+
+    /**
+     * @param passwd Plain text password.
+     * @return {@code true} If user authorized, otherwise returns {@code false}.
+     */
+    public boolean authorize(String passwd) {
+        return encPasswd.equals(password(passwd, salt));
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        User u = (User )o;
+
+        return F.eq(name, u.name) &&
+            F.eq(salt, u.salt) &&
+            F.eq(encPasswd, u.encPasswd);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int result = Objects.hash(name, encPasswd, salt);
+        return result;
     }
 }
