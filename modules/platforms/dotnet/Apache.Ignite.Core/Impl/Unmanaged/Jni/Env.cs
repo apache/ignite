@@ -19,11 +19,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 {
     using System;
     using System.Diagnostics;
-    using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Security;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// JNIEnv.

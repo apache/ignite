@@ -1977,6 +1977,22 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     @SuppressWarnings("unchecked")
     public FieldsQueryCursor<List<?>> querySqlFields(final GridCacheContext<?,?> cctx, final SqlFieldsQuery qry,
         final boolean keepBinary) {
+        return querySqlFields(cctx, qry, keepBinary, true).get(0);
+    }
+
+    /**
+     * Query SQL fields.
+     *
+     * @param cctx Cache context.
+     * @param qry Query.
+     * @param keepBinary Keep binary flag.
+     * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
+     *      more then one SQL statement.
+     * @return Cursor.
+     */
+    @SuppressWarnings("unchecked")
+    public List<FieldsQueryCursor<List<?>>> querySqlFields(final GridCacheContext<?,?> cctx, final SqlFieldsQuery qry,
+        final boolean keepBinary, final boolean failOnMultipleStmts) {
         checkxEnabled();
 
         validateSqlFieldsQuery(qry);
@@ -1994,37 +2010,39 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             final String schemaName = qry.getSchema() != null ? qry.getSchema() : idx.schema(cctx.name());
             final int mainCacheId = cctx.cacheId();
 
-            IgniteOutClosureX<FieldsQueryCursor<List<?>>> clo;
+            IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>> clo;
 
             if (loc) {
-                clo = new IgniteOutClosureX<FieldsQueryCursor<List<?>>>() {
-                    @Override public FieldsQueryCursor<List<?>> applyx() throws IgniteCheckedException {
+                clo = new IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>>() {
+                    @Override public List<FieldsQueryCursor<List<?>>> applyx() throws IgniteCheckedException {
                         GridQueryCancel cancel = new GridQueryCancel();
 
-                        FieldsQueryCursor<List<?>> cur;
+                        List<FieldsQueryCursor<List<?>>> cursors;
 
                         if (cctx.config().getQueryParallelism() > 1) {
                             qry.setDistributedJoins(true);
 
-                            cur = idx.queryDistributedSqlFields(schemaName, qry,
-                                keepBinary, cancel, mainCacheId, true).get(0);
+                            cursors = idx.queryDistributedSqlFields(schemaName, qry,
+                                keepBinary, cancel, mainCacheId, true);
                         }
                         else {
                             IndexingQueryFilter filter = idx.backupFilter(requestTopVer.get(), qry.getPartitions());
 
-                            cur = idx.queryLocalSqlFields(schemaName, qry, keepBinary, filter, cancel);
+                            cursors = new ArrayList<>(1);
+
+                            cursors.add(idx.queryLocalSqlFields(schemaName, qry, keepBinary, filter, cancel));
                         }
 
                         sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx.name());
 
-                        return cur;
+                        return cursors;
                     }
                 };
             }
             else {
-                clo = new IgniteOutClosureX<FieldsQueryCursor<List<?>>>() {
-                    @Override public FieldsQueryCursor<List<?>> applyx() throws IgniteCheckedException {
-                        return idx.queryDistributedSqlFields(schemaName, qry, keepBinary, null, mainCacheId, true).get(0);
+                clo = new IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>>() {
+                    @Override public List<FieldsQueryCursor<List<?>>> applyx() throws IgniteCheckedException {
+                        return idx.queryDistributedSqlFields(schemaName, qry, keepBinary, null, mainCacheId, failOnMultipleStmts);
                     }
                 };
             }

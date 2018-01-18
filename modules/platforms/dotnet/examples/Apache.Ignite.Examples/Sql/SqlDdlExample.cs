@@ -53,7 +53,8 @@ namespace Apache.Ignite.Examples.Sql
                 // will appear in future versions, JDBC and ODBC drivers do not require it already).
                 var cacheCfg = new CacheConfiguration(DummyCacheName)
                 {
-                    SqlSchema = "PUBLIC"
+                    SqlSchema = "PUBLIC",
+                    CacheMode = CacheMode.Replicated
                 };
 
                 ICache<object, object> cache = ignite.GetOrCreateCache<object, object>(cacheCfg);
