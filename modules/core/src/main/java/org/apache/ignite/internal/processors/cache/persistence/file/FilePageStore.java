@@ -318,11 +318,9 @@ public class FilePageStore implements PageStore {
             // Since we always have a meta-page in the store, never revert allocated counter to a value smaller than
             // header + page.
             if (inited) {
-                assert allocated.get() == 0;
-
                 long newSize = Math.max(headerSize() + pageSize, fileIO.size());
 
-                totalAllocated.add(newSize);
+                totalAllocated.add(newSize - allocated.get());
 
                 allocated.set(newSize);
             }
@@ -443,7 +441,7 @@ public class FilePageStore implements PageStore {
 
                         assert allocated.get() == 0;
 
-                        totalAllocated.add(newSize);
+                        totalAllocated.add(newSize - headerSize());
 
                         allocated.set(newSize);
 
