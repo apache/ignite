@@ -829,7 +829,7 @@ public final class IgniteSystemProperties {
      * No sorting is performed during checkpoint start, only sorted collections are merged into one, and page write
      * starts. Settings this to {@code false} switches to hashcode based non sorted storage, and parallel quick sort at
      * checkpoint start. This options has no effect if {@link #IGNITE_DIRTY_PAGES_PARALLEL} set to {@code false}.
-     * Default value is {@code false}.
+     * Default value is {@code true}.
      */
     public static final String IGNITE_DIRTY_PAGES_SORTED_STORAGE = "IGNITE_DIRTY_PAGES_SORTED_STORAGE";
 

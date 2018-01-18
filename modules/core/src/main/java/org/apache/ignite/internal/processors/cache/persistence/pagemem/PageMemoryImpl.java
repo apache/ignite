@@ -915,7 +915,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      */
     private PageIdCollection createPagesSet() {
         if(isParallelDirtyPages()) {
-            return IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DIRTY_PAGES_SORTED_STORAGE, false)
+            return IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DIRTY_PAGES_SORTED_STORAGE, true)
                 ? new PagesStripedConcurrentSkipListSet()
                 : new PagesStripedConcurrentHashSet();
         }
