@@ -619,7 +619,7 @@ public final class UpdatePlanBuilder {
         Connection conn, SqlFieldsQuery fieldsQry, boolean loc, String selectQry, String cacheName)
         throws IgniteCheckedException {
 
-        if (loc || !isSkipReducerOnUpdateQuery(fieldsQry))
+        if (loc || !isSkipReducerOnUpdateQuery(fieldsQry) || DmlUtils.isBatched(fieldsQry))
             return null;
 
         assert conn != null;

@@ -63,6 +63,7 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheAbstractTest.cs" Link="Cache\CacheAbstractTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheAbstractTransactionalTest.cs" Link="Cache\CacheAbstractTransactionalTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheConfigurationTest.cs" Link="Cache\CacheConfigurationTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheCreateTest.cs" Link="Cache\CacheCreateTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CachePartitionedTest.cs" Link="Cache\CachePartitionedTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheTestAsyncWrapper.cs" Link="Cache\CacheTestAsyncWrapper.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheTestKey.cs" Link="Cache\CacheTestKey.cs" />
@@ -113,7 +114,8 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\DataStructures\AtomicSequenceTest.cs" Link="DataStructures\AtomicSequenceTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\EventsTestLocalListeners.cs" Link="Common\EventsTestLocalListeners.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\IgniteConfigurationTest.cs" Link="Common\IgniteConfigurationTest.cs" />
-    <Compile Include="..\Apache.Ignite.Core.Tests\IgniteTestBase.cs" Link="Common\IgniteTestBase.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\TestBase.cs" Link="Common\TestBase.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\SpringTestBase.cs" Link="Common\SpringTestBase.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Log\CustomLoggerTest.cs" Link="Log\CustomLoggerTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\MessagingTest.cs" Link="Common\MessagingTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Plugin\PluginTest.cs" Link="Plugin\PluginTest.cs" />

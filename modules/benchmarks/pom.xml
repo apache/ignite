@@ -35,9 +35,6 @@
     <url>http://ignite.apache.org</url>
 
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jmh.version>1.13</jmh.version>
-        <javac.target>1.7</javac.target>
         <uberjar.name>benchmarks</uberjar.name>
     </properties>
 
@@ -69,16 +66,6 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.1</version>
-                <configuration>
-                    <compilerVersion>${javac.target}</compilerVersion>
-                    <source>${javac.target}</source>
-                    <target>${javac.target}</target>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>

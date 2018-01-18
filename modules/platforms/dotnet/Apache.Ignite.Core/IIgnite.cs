@@ -357,6 +357,7 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Changes Ignite grid state to active or inactive.
         /// </summary>
+        [Obsolete("Use GetCluster().SetActive instead.")]
         void SetActive(bool isActive);
 
         /// <summary>
@@ -365,6 +366,7 @@ namespace Apache.Ignite.Core
         /// <returns>
         ///   <c>true</c> if the grid is active; otherwise, <c>false</c>.
         /// </returns>
+        [Obsolete("Use GetCluster().IsActive instead.")]
         bool IsActive();
 
         /// <summary>
@@ -400,5 +402,13 @@ namespace Apache.Ignite.Core
         /// in <see cref="IgniteConfiguration.DataStorageConfiguration"/>.
         /// </summary>
         IDataStorageMetrics GetDataStorageMetrics();
+
+        /// <summary>
+        /// Adds cache configuration template. Name should contain *.
+        /// Template settins are applied to a cache created with <see cref="CreateCache{K,V}(string)"/> if specified
+        /// name matches the template name.
+        /// </summary>
+        /// <param name="configuration">Configuration.</param>
+        void AddCacheConfiguration(CacheConfiguration configuration);
     }
 }

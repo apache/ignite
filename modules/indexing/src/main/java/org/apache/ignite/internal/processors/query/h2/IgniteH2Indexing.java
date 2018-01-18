@@ -98,6 +98,7 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO
 import org.apache.ignite.internal.processors.query.h2.database.io.H2InnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2LeafIO;
 import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
+import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
@@ -885,6 +886,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         final PreparedStatement stmt = preparedStatementWithParams(conn, qry, params, true);
 
+        if (GridSqlQueryParser.checkMultipleStatements(stmt))
+            throw new IgniteSQLException("Multiple statements queries are not supported for local queries");
+
         Prepared p = GridSqlQueryParser.prepared(stmt);
 
         if (DmlStatementsProcessor.isDmlStatement(p)) {
@@ -1028,7 +1032,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (e.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
                 throw new QueryCancelledException();
 
-            throw new IgniteCheckedException("Failed to execute SQL query.", e);
+            throw new IgniteCheckedException("Failed to execute SQL query. " + e.getMessage(), e);
         }
         finally {
             if (timeoutMillis > 0)
@@ -1534,7 +1538,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     int paramsCnt = prepared.getParameters().size();
 
-                    if (paramsCnt > 0) {
+                    if (!DmlUtils.isBatched(qry) && paramsCnt > 0) {
                         if (argsOrig == null || argsOrig.length < firstArg + paramsCnt) {
                             throw new IgniteException("Invalid number of query parameters. " +
                                 "Cannot find " + (argsOrig.length + 1 - firstArg) + " parameter.");
@@ -1583,7 +1587,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (twoStepQry == null) {
                     if (DmlStatementsProcessor.isDmlStatement(prepared)) {
                         try {
-                            res.add(dmlProc.updateSqlFieldsDistributed(schemaName, c, prepared,
+                            res.addAll(dmlProc.updateSqlFieldsDistributed(schemaName, c, prepared,
                                 qry.copy().setSql(sqlQry).setArgs(args), cancel));
 
                             continue;
