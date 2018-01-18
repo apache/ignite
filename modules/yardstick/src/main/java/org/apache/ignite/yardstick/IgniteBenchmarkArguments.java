@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -238,10 +237,6 @@ public class IgniteBenchmarkArguments {
     private boolean persistentStoreEnabled;
 
     /** */
-    @Parameter(names = {"-wal", "--writeAheadLogMode"}, description = "Write ahead log mode")
-    private WALMode walMode;
-
-    /** */
     @Parameter(names = {"-stcp", "--streamerCachesPrefix"}, description = "Cache name prefix for streamer benchmark")
     private String streamerCachesPrefix = "streamer";
 
@@ -262,13 +257,6 @@ public class IgniteBenchmarkArguments {
      */
     public boolean persistentStoreEnabled() {
         return persistentStoreEnabled;
-    }
-
-    /**
-     * @return WAL mode.
-     */
-    public WALMode walMode(){
-        return walMode;
     }
 
     /**
