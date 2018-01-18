@@ -101,9 +101,12 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         if (!metricsEnabled)
             return 0;
 
-        assert pageMem != null;
+        if (memPlcCfg.isPersistenceEnabled()) {
+            assert pageMem != null;
 
-        return pageMem.storeManager().pagesAllocated(memPlcCfg.getName());
+            return pageMem.storeManager().pagesAllocated(memPlcCfg.getName());
+        } else
+            return totalAllocatedPages.sum();
     }
 
     /** {@inheritDoc} */
@@ -216,7 +219,8 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
      */
     public void incrementTotalAllocatedPages() {
         if (metricsEnabled) {
-            totalAllocatedPages.increment();
+            if (!memPlcCfg.isPersistenceEnabled())
+                totalAllocatedPages.increment();
 
             updateAllocationRateMetrics();
         }

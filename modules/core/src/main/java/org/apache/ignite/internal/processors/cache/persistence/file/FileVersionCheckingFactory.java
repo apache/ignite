@@ -69,8 +69,7 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
 
     /** {@inheritDoc} */
     @Override public FilePageStore createPageStore(byte type, File file, LongAdder totalAllocatedPages)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         if (!file.exists())
             return createPageStore(type, file, latestVersion(), totalAllocatedPages);
 
@@ -122,8 +121,7 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
      * @param totalAllocatedPages Counter to be updated on store size changes.
      */
     public FilePageStore createPageStore(byte type, File file, int ver, LongAdder totalAllocatedPages)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         switch (ver) {
             case FilePageStore.VERSION:
                 return new FilePageStore(type, file, fileIOFactoryStoreV1, memCfg, totalAllocatedPages);
