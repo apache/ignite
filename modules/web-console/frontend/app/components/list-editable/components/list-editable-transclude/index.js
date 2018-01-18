@@ -15,21 +15,9 @@
  * limitations under the License.
  */
 
-ignite-list-of-registered-users {
-  display: block;
-}
+import angular from 'angular';
+import {listEditableTransclude} from './directive';
 
-.list-of-registered-users {
-  .ui-grid-settings--heading {
-    display: flex;
-  }
-  & > a {
-    display: inline-block;
-    margin: 10px;
-    margin-left: 0;
-
-    &.active {
-      font-weight: bold;
-    }
-  }
-}
+export default angular
+    .module('list-editable.transclude', [])
+    .directive(listEditableTransclude.name, listEditableTransclude);

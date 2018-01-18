@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.nn;
+package org.apache.ignite.ml.optimization;
 
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;

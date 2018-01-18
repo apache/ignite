@@ -15,13 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.nn.updaters;
+package org.apache.ignite.ml.optimization;
 
-import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.Matrix;
+import org.apache.ignite.ml.optimization.util.SparseDistributedMatrixMapReducerTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
- * Interface for models which are smooth functions of their parameters.
+ * Test suite for group trainer tests.
  */
-public interface SmoothParametrized<M extends SmoothParametrized<M>> extends BaseSmoothParametrized<M>, Model<Matrix, Matrix> {
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GradientDescentTest.class,
+    SparseDistributedMatrixMapReducerTest.class
+})
+public class OptimizationTestSuite {
 }

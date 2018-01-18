@@ -15,17 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.nn.updaters;
+package org.apache.ignite.ml.optimization.updatecalculators;
 
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.optimization.SmoothParametrized;
 
 /**
  * Class encapsulating Nesterov algorithm for MLP parameters updateCache.
  */
-public class NesterovUpdateCalculator<M extends SmoothParametrized>
+public class NesterovUpdateCalculator<M extends SmoothParametrized<M>>
     implements ParameterUpdateCalculator<M, NesterovParameterUpdate> {
     /**
      * Learning rate.
@@ -53,20 +54,20 @@ public class NesterovUpdateCalculator<M extends SmoothParametrized>
     }
 
     /** {@inheritDoc} */
-    @Override public NesterovParameterUpdate calculateNewUpdate(SmoothParametrized mdl,
+    @Override public NesterovParameterUpdate calculateNewUpdate(M mdl,
         NesterovParameterUpdate updaterParameters, int iteration, Matrix inputs, Matrix groundTruth) {
-        // TODO:IGNITE-7350 create new updateCache object here instead of in-place change.
+        Vector prevUpdates = updaterParameters.prevIterationUpdates();
+
+        M newMdl = mdl;
 
         if (iteration > 0) {
             Vector curParams = mdl.parameters();
-            mdl.setParameters(curParams.minus(updaterParameters.prevIterationUpdates().times(momentum)));
+            newMdl = mdl.withParameters(curParams.minus(prevUpdates.times(momentum)));
         }
 
-        Vector gradient = mdl.differentiateByParameters(loss, inputs, groundTruth);
-        updaterParameters.setPreviousUpdates(updaterParameters.prevIterationUpdates()
-            .plus(gradient.times(learningRate)));
+        Vector gradient = newMdl.differentiateByParameters(loss, inputs, groundTruth);
 
-        return updaterParameters;
+        return new NesterovParameterUpdate(prevUpdates.plus(gradient.times(learningRate)));
     }
 
     /** {@inheritDoc} */

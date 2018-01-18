@@ -17,8 +17,8 @@
 
 import headerTemplate from 'app/primitives/ui-grid-header/index.tpl.pug';
 
-import columnDefs from './list-of-registered-users.column-defs';
-import categories from './list-of-registered-users.categories';
+import columnDefs from './column-defs';
+import categories from './categories';
 
 const rowTemplate = `<div
   ng-repeat="(colRenderIndex, col) in colContainer.renderedColumns track by col.uid"
@@ -201,8 +201,6 @@ export default class IgniteListOfRegisteredUsersCtrl {
 
                     $ctrl.companies = _.values(_.groupBy(data, 'company'));
                     $ctrl.countries = _.values(_.groupBy(data, 'countryCode'));
-
-                    $ctrl.adjustHeight(data.length);
 
                     $ctrl._refreshRows();
                 });
