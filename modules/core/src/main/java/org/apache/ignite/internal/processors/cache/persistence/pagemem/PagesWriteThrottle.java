@@ -53,6 +53,11 @@ public class PagesWriteThrottle {
     private volatile double initDirtyRatioAtCpBegin = MIN_RATIO_NO_THROTTLE;
 
     /**
+     * Debug only field, used for tests by reflection.
+     */
+    private volatile double lastDirtyRatioThreshold;
+
+    /**
      * @param pageMemory Page memory.
      * @param dbSharedMgr Database manager.
      */
@@ -93,7 +98,11 @@ public class PagesWriteThrottle {
             }
             else if (cpWrittenPages == cpTotalPages) {
                 // Checkpoint is already in fsync stage, increasing maximum ratio of dirty pages to 3/4
-                shouldThrottle = pageMemory.shouldThrottle(3.0 / 4);
+                double threshold = 3.0 / 4;
+
+                lastDirtyRatioThreshold = threshold;
+
+                shouldThrottle = pageMemory.shouldThrottle(threshold);
             }
             else {
                 double dirtyRatioThreshold = ((double)cpWrittenPages) / cpTotalPages;
@@ -117,6 +126,8 @@ public class PagesWriteThrottle {
                 // Starting with initialDirtyRatioAtCpBegin to avoid throttle right after checkpoint start
                 // 7/12 is maximum ratio of dirty pages
                 dirtyRatioThreshold = (dirtyRatioThreshold * throttleWeight + initDirtyRatioAtCpBegin) * 7 / 12;
+
+                lastDirtyRatioThreshold = dirtyRatioThreshold;
 
                 shouldThrottle = pageMemory.shouldThrottle(dirtyRatioThreshold);
             }

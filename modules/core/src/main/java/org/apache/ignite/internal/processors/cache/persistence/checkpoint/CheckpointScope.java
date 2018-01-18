@@ -160,7 +160,7 @@ public class CheckpointScope {
 
             int cpThreads = persistenceCfg.getCheckpointThreads();
 
-            allBuffers.addAll(next.split(cpThreads));
+            allBuffers.addAll(next.split(cpThreads == 1 ? 1 : cpThreads * 4));
         }
 
         return allBuffers;

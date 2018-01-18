@@ -151,7 +151,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             dsCfg.setWalArchivePath(new File(wal, "archive").getAbsolutePath());
         }
 
-        dsCfg.setWalMode(customWalMode != null ? customWalMode : WALMode.DEFAULT);
+        dsCfg.setWalMode(customWalMode != null ? customWalMode : WALMode.LOG_ONLY);
         dsCfg.setWalHistorySize(1);
 
         cfg.setDataStorageConfiguration(dsCfg);
@@ -245,8 +245,8 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             this.ignite = ignite;
             this.operation = operation;
             txtWriter = new FileWriter(new File(getTempDirFile(), "watchdog-" + operation + ".txt"));
-            line("cur." + operation + "/sec", "avg." + operation + "/sec",
-                "dirtyPages", "cpWrittenPages");
+            line("sec", "cur." + operation + "/sec", "avg." + operation + "/sec",
+                "dirtyPages", "cpWrittenPages", "threshold");
         }
 
         private void line(Object... parms) {
@@ -268,85 +268,88 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             final long msStart = U.currentTimeMillis();
             prevMsElapsed.set(0);
             int checkPeriodSec = 1;
-            svc.scheduleAtFixedRate(new Runnable() {
-                @Override public void run() {
-                    long elapsedMs = U.currentTimeMillis() - msStart;
-                    final long totalCnt = longAdder8.longValue();
-                    final long averagePutPerSec = totalCnt * 1000 / elapsedMs;
-                    final long currPutPerSec = ((totalCnt - prevCnt.getAndSet(totalCnt)) * 1000) / (elapsedMs - prevMsElapsed.getAndSet(elapsedMs));
-                    boolean slowProgress = currPutPerSec < averagePutPerSec / 10 && !stopping;
-                    final String fileNameWithDump = slowProgress ? reactNoProgress(msStart) : "";
+            svc.scheduleAtFixedRate(
+                () -> tick(msStart, prevCnt, prevMsElapsed),
+                checkPeriodSec, checkPeriodSec, TimeUnit.SECONDS);
+        }
 
-                    String defRegName = ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName();
-                    long dirtyPages = -1;
-                     for (DataRegionMetrics m : ignite.dataRegionMetrics())
-                      if (m.getName().equals(defRegName))
-                          dirtyPages = m.getDirtyPages();
+        private void tick(long msStart, AtomicLong prevCnt, AtomicLong prevMsElapsed) {
+            long elapsedMs = U.currentTimeMillis() - msStart;
+            final long totalCnt = longAdder8.longValue();
+            final long averagePutPerSec = totalCnt * 1000 / elapsedMs;
+            final long currPutPerSec = ((totalCnt - prevCnt.getAndSet(totalCnt)) * 1000) / (elapsedMs - prevMsElapsed.getAndSet(elapsedMs));
+            boolean slowProgress = currPutPerSec < averagePutPerSec / 10 && !stopping;
+            final String fileNameWithDump = slowProgress ? reactNoProgress(msStart) : "";
 
-                    GridCacheSharedContext<Object, Object> cacheSctx = null;
-                    PageMemoryImpl pageMemory = null;
-                    try {
-                        cacheSctx = ((IgniteEx)ignite).context().cache().context();
-                        pageMemory = (PageMemoryImpl)cacheSctx.database()
-                            .dataRegion(defRegName).pageMemory();
+            String defRegName = ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName();
+            long dirtyPages = -1;
+            for (DataRegionMetrics m : ignite.dataRegionMetrics())
+             if (m.getName().equals(defRegName))
+                 dirtyPages = m.getDirtyPages();
 
-                        //dirtyPages = pageMemory.getDirtyPagesCount();
-                    }
-                    catch (IgniteCheckedException e) {
-                        e.printStackTrace();
-                    }
+            GridCacheSharedContext<Object, Object> cacheSctx = null;
+            PageMemoryImpl pageMemory = null;
+            try {
+                cacheSctx = ((IgniteEx)ignite).context().cache().context();
+                pageMemory = (PageMemoryImpl)cacheSctx.database()
+                    .dataRegion(defRegName).pageMemory();
 
-                    long cpBufPages = 0;
+            }
+            catch (IgniteCheckedException e) {
+                e.printStackTrace();
+            }
 
-                    long cpWrittenPages;
+            long cpBufPages = 0;
 
-                    AtomicInteger cntr = ((GridCacheDatabaseSharedManager)(cacheSctx.database())).writtenPagesCounter();
+            long cpWrittenPages;
 
-                    cpWrittenPages = cntr == null ? 0 : cntr.get();
-                    double threshold = 0;
-                    int idx = -1;
-                    try {
+            AtomicInteger cntr = ((GridCacheDatabaseSharedManager)(cacheSctx.database())).writtenPagesCounter();
 
-                        if (pageMemory != null) {
-                            cpBufPages = pageMemory.checkpointBufferPagesCount();
+            cpWrittenPages = cntr == null ? 0 : cntr.get();
+            double threshold = 0;
+            int idx = -1;
+            try {
 
-                            PagesWriteThrottle throttle = U.field(pageMemory, "writeThrottle");
+                if (pageMemory != null) {
+                    cpBufPages = pageMemory.checkpointBufferPagesCount();
 
-                            threshold = U.field(throttle, "lastDirtyRatioThreshold");
-                        }
+                    PagesWriteThrottle throttle = U.field(pageMemory, "writeThrottle");
 
-                        FileWriteAheadLogManager wal = (FileWriteAheadLogManager)cacheSctx.wal();
-                        // idx = wal.currentIndex();
-                    }
-                    catch (Exception ignored) {
-                        //e.printStackTrace();
-                    }
-
-                    X.println(" >> " +
-                        operation +
-                        " done: " + totalCnt + ", time " + elapsedMs + " ms, " +
-                        "Avg. " + operation + " " + averagePutPerSec + " recs/sec, " +
-                        "Cur. " + operation + " " + currPutPerSec + " recs/sec " +
-                        "dirtyP=" + dirtyPages + ", " +
-                        "cpWrittenP.=" + cpWrittenPages + ", " +
-                        "cpBufP.=" + cpBufPages + " " +
-                        "threshold=" + String.format("%.2f", threshold) + " " +
-                        "walIdx=" + idx + " " +
-                        fileNameWithDump);
-
-                    line(currPutPerSec, averagePutPerSec, dirtyPages, cpWrittenPages);
-
+                    threshold = U.field(throttle, "lastDirtyRatioThreshold");
                 }
-            }, checkPeriodSec, checkPeriodSec, TimeUnit.SECONDS);
+
+                FileWriteAheadLogManager wal = (FileWriteAheadLogManager)cacheSctx.wal();
+                // idx = wal.currentIndex();
+            }
+            catch (Exception ignored) {
+                //e.printStackTrace();
+            }
+
+            String thresholdStr = String.format("%.2f", threshold);
+            X.println(" >> " +
+                operation +
+                " done: " + totalCnt + ", time " + elapsedMs + " ms, " +
+                "Avg. " + operation + " " + averagePutPerSec + " recs/sec, " +
+                "Cur. " + operation + " " + currPutPerSec + " recs/sec " +
+                "dirtyP=" + dirtyPages + ", " +
+                "cpWrittenP.=" + cpWrittenPages + ", " +
+                "cpBufP.=" + cpBufPages + " " +
+                "threshold=" + thresholdStr + " " +
+                "walIdx=" + idx + " " +
+                fileNameWithDump);
+
+            line(elapsedMs/1000, currPutPerSec, averagePutPerSec, dirtyPages, cpWrittenPages, thresholdStr);
         }
 
         private String reactNoProgress(long msStart) {
             try {
                 String s = generateThreadDump();
                 long sec = (U.currentTimeMillis() - msStart) / 1000;
-                String fileName = "dumpAt" + sec + "second.txtWriter";
+                String fileName = "dumpAt" + sec + "second.txt";
                 if (s.contains(IgniteCacheDatabaseSharedManager.class.getName() + ".checkpointLock"))
                     fileName = "checkpoint_" + fileName;
+
+                fileName = operation + fileName;
 
                 File tempDir = getTempDirFile();
                 try (FileWriter writer = new FileWriter(new File(tempDir, fileName))) {
@@ -394,11 +397,11 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     public void testContinuousPutMultithreaded() throws Exception {
         try {
             System.setProperty(IgniteSystemProperties.IGNITE_DIRTY_PAGES_PARALLEL, "true");
-            System.setProperty(IgniteSystemProperties.IGNITE_DIRTY_PAGES_SORTED_STORAGE, "false");
+            System.setProperty(IgniteSystemProperties.IGNITE_DIRTY_PAGES_SORTED_STORAGE, "true");
 
             //setWalArchAndWorkToSameValue = true;
 
-            customWalMode = WALMode.BACKGROUND;
+            customWalMode = WALMode.LOG_ONLY;
             final IgniteEx ignite = startGrid(1);
 
             ignite.active(true);
