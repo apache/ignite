@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.util.typedef.X;
 
 import java.util.ArrayList;
@@ -218,6 +219,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      * @throws Exception If failed.
      */
     public void _testServerRestartCoordinator() throws Exception {
+        // TODO: Fail with proper ticket number.
         checkNodeRestart(true);
     }
 
@@ -268,7 +270,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
                     restartCnt.incrementAndGet();
 
-                    X.println("Finished restart: " + restartCnt.get());
+                    X.println(">>> Finished restart: " + restartCnt.get());
 
                     WalStateManager.dumpDisco();
                 }
@@ -276,25 +278,6 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
         });
 
         t.start();
-
-        Thread watchDog = new Thread(new Runnable() {
-            @Override public void run() {
-                try {
-                    while (true) {
-                        Thread.sleep(5000);
-
-                        for (WalStateManager mgr : WalStateManager.MGRS) {
-                            System.out.println("MGR DUMP " + mgr.cctx.igniteInstanceName() + " " + mgr.ress + " " + mgr.procs);
-                        }
-                    }
-                }
-                catch (Exception e) {
-
-                }
-            }
-        });
-
-        watchDog.start();
 
         boolean state = true;
 
@@ -311,6 +294,72 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
                 // Possible disconnect, re-try.
             }
         }
+    }
+
+    /**
+     * Test client re-connect.
+     *
+     * @throws Exception If failed.
+     */
+    public void testClientReconnect() throws Exception {
+        final Ignite srv = startGrid(config(SRV_1, false, false));
+        Ignite cli = startGrid(config(CLI, true, false));
+
+        cli.cluster().active(true);
+
+        cli.getOrCreateCache(cacheConfig(PARTITIONED));
+
+        final AtomicBoolean done = new AtomicBoolean();
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        // Start load.
+        Thread t = new Thread(new Runnable() {
+            @Override public void run() {
+                boolean state = false;
+
+                while (!done.get()) {
+                    try {
+                        if (state)
+                            cli.cluster().walEnable(CACHE_NAME);
+                        else
+                            cli.cluster().walDisable(CACHE_NAME);
+                    }
+                    catch (IgniteException e) {
+                        String msg = e.getMessage();
+
+                        assert msg.startsWith("Client node disconnected") ||
+                            msg.startsWith("Client node was disconnected") : e.getMessage();
+                    }
+                    finally {
+                        state = !state;
+                    }
+                }
+
+                latch.countDown();
+            }
+        });
+
+        t.setName("wal-load-" + cli.name());
+
+        t.start();
+
+        // Now perform multiple client reconnects.
+        for (int i = 1; i <= 10; i++) {
+            Thread.sleep(ThreadLocalRandom.current().nextLong(200, 1000));
+
+            IgniteClientReconnectAbstractTest.reconnectClientNode(log, cli, srv, new Runnable() {
+                @Override public void run() {
+                    // No-op.
+                }
+            });
+
+            X.println(">>> Finished iteration: " + i);
+        }
+
+        done.set(true);
+
+        latch.await();
     }
 
     /**

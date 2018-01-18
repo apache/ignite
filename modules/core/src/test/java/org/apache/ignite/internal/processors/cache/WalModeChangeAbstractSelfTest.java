@@ -40,12 +40,6 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
 
     // TODO: Test concurrent cache destroy (one thread send messages, another thread creates/destroys cache)
 
-    // TODO: Test node join (info should be shared)
-
-    // TODO: Test client disconnect/reconnect
-
-    // TODO: Test node failures (one thread spans messages, another kills oldest node and create another one)
-
     /** Whether coordinator node should be filtered out. */
     private final boolean filterOnCrd;
 
