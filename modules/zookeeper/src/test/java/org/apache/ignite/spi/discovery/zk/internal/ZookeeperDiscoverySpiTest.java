@@ -1282,7 +1282,12 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
             assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    long internalOrder = GridTestUtils.getFieldValue(spi, "impl", "rtState", "internalOrder");
+                    Object spiImpl = GridTestUtils.getFieldValue(spi, "impl");
+
+                    if (spiImpl == null)
+                        return false;
+
+                    long internalOrder = GridTestUtils.getFieldValue(spiImpl, "rtState", "internalOrder");
 
                     return internalOrder > 0;
                 }
