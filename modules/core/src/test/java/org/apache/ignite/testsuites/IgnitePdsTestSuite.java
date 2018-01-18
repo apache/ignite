@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesWriteThrottleSmokeTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBufferTest;
-import org.apache.ignite.internal.processors.database.IgniteDbClientNearCachePutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbDynamicCacheSelfTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMultiNodePutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbPutGetWithCacheStoreTest;
@@ -52,25 +51,43 @@ public class IgnitePdsTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite");
 
+        addRealPageStoreTests(suite);
+
         // Basic PageMemory tests.
         suite.addTestSuite(PageMemoryImplNoLoadTest.class);
         suite.addTestSuite(IndexStoragePageMemoryImplTest.class);
         suite.addTestSuite(IgnitePdsEvictionTest.class);
         suite.addTestSuite(PageMemoryImplTest.class);
 
-        // Checkpointing smoke-test.
-        suite.addTestSuite(IgnitePdsCheckpointSimulationWithRealCpDisabledTest.class);
-
         // BTree tests with store page memory.
         suite.addTestSuite(BPlusTreePageMemoryImplTest.class);
         suite.addTestSuite(BPlusTreeReuseListPageMemoryImplTest.class);
+
+        suite.addTestSuite(SegmentedRingByteBufferTest.class);
+
+        // Write throttling
+        suite.addTestSuite(PagesWriteThrottleSmokeTest.class);
+
+        return suite;
+    }
+
+    /**
+     * Fills {@code suite} with PDS test subset, which operates with real page store and does actual disk operations.
+     *
+     * @param suite suite to add tests into.
+     */
+    public static void addRealPageStoreTests(TestSuite suite) {
+        // Basic PageMemory tests.
+        suite.addTestSuite(IgnitePdsEvictionTest.class);
+
+        // Checkpointing smoke-test.
+        suite.addTestSuite(IgnitePdsCheckpointSimulationWithRealCpDisabledTest.class);
 
         // Basic API tests.
         suite.addTestSuite(IgniteDbSingleNodePutGetTest.class);
         suite.addTestSuite(IgniteDbMultiNodePutGetTest.class);
         suite.addTestSuite(IgniteDbSingleNodeTinyPutGetTest.class);
         suite.addTestSuite(IgniteDbDynamicCacheSelfTest.class);
-        suite.addTestSuite(IgniteDbClientNearCachePutGetTest.class);
 
         // Persistence-enabled.
         suite.addTestSuite(IgnitePdsSingleNodePutGetPersistenceTest.class);
@@ -83,12 +100,5 @@ public class IgnitePdsTestSuite extends TestSuite {
         suite.addTestSuite(IgnitePdsCacheRestoreTest.class);
 
         suite.addTestSuite(DefaultPageSizeBackwardsCompatibilityTest.class);
-
-        suite.addTestSuite(SegmentedRingByteBufferTest.class);
-
-        // Write throttling
-        suite.addTestSuite(PagesWriteThrottleSmokeTest.class);
-
-        return suite;
     }
 }

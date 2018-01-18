@@ -171,8 +171,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     /**
      * @return Context.
      */
-    @Override
-    public GridCacheContext<K, V> context() {
+    @Override public GridCacheContext<K, V> context() {
         return ctx;
     }
 
@@ -279,8 +278,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         try {
             if (ctx.cache().isLocal())
                 return (IgniteFuture<Void>)createFuture(ctx.cache().localLoadCacheAsync(p, args));
-            else
-                return (IgniteFuture<Void>)createFuture(ctx.cache().globalLoadCacheAsync(p, args));
+
+            return (IgniteFuture<Void>)createFuture(ctx.cache().globalLoadCacheAsync(p, args));
         }
         catch (IgniteCheckedException | IgniteException e) {
             throw cacheException(e);
@@ -356,15 +355,13 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         @Nullable ClusterGroup grp)
         throws IgniteCheckedException {
 
-        final CacheQuery<R> qry;
-
         CacheOperationContext opCtxCall = ctx.operationContextPerCall();
 
         boolean isKeepBinary = opCtxCall != null && opCtxCall.isKeepBinary();
 
         IgniteBiPredicate<K, V> p = scanQry.getFilter();
 
-        qry = ctx.queries().createScanQuery(p, transformer, scanQry.getPartition(), isKeepBinary);
+        final CacheQuery<R> qry = ctx.queries().createScanQuery(p, transformer, scanQry.getPartition(), isKeepBinary);
 
         if (scanQry.getPageSize() > 0)
             qry.pageSize(scanQry.getPageSize());
@@ -558,6 +555,30 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     @SuppressWarnings("unchecked")
     @Override public FieldsQueryCursor<List<?>> query(SqlFieldsQuery qry) {
         return (FieldsQueryCursor<List<?>>)query((Query)qry);
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<FieldsQueryCursor<List<?>>> queryMultipleStatements(SqlFieldsQuery qry) {
+        A.notNull(qry, "qry");
+        try {
+            ctx.checkSecurity(SecurityPermission.CACHE_READ);
+
+            validate(qry);
+
+            convertToBinary(qry);
+
+            CacheOperationContext opCtxCall = ctx.operationContextPerCall();
+
+            boolean keepBinary = opCtxCall != null && opCtxCall.isKeepBinary();
+
+            return ctx.kernalContext().query().querySqlFields(ctx, qry, keepBinary, false);
+        }
+        catch (Exception e) {
+            if (e instanceof CacheException)
+                throw (CacheException)e;
+
+            throw new CacheException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1582,15 +1603,22 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /**
-     * Creates projection that will operate with binary objects. <p> Projection returned by this method will force
-     * cache not to deserialize binary objects, so keys and values will be returned from cache API methods without
-     * changes. Therefore, signature of the projection can contain only following types: <ul> <li>{@code BinaryObject}
-     * for binary classes</li> <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
-     * <li>Arrays of primitives (byte[], int[], ...)</li> <li>{@link String} and array of {@link String}s</li>
-     * <li>{@link UUID} and array of {@link UUID}s</li> <li>{@link Date} and array of {@link Date}s</li> <li>{@link
-     * java.sql.Timestamp} and array of {@link java.sql.Timestamp}s</li> <li>Enums and array of enums</li> <li> Maps,
-     * collections and array of objects (but objects inside them will still be converted if they are binary) </li>
-     * </ul> <p> For example, if you use {@link Integer} as a key and {@code Value} class as a value (which will be
+     * Creates projection that will operate with binary objects.
+     * <p> Projection returned by this method will force cache not to deserialize binary objects,
+     * so keys and values will be returned from cache API methods without changes.
+     * Therefore, signature of the projection can contain only following types:
+     * <ul>
+     *     <li>{@code BinaryObject} for binary classes</li>
+     *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
+     *     <li>Arrays of primitives (byte[], int[], ...)</li>
+     *     <li>{@link String} and array of {@link String}s</li>
+     *     <li>{@link UUID} and array of {@link UUID}s</li>
+     *     <li>{@link Date} and array of {@link Date}s</li>
+     *     <li>{@link java.sql.Timestamp} and array of {@link java.sql.Timestamp}s</li>
+     *     <li>Enums and array of enums</li>
+     *     <li> Maps, collections and array of objects (but objects inside them will still be converted if they are binary) </li>
+     * </ul>
+     * <p> For example, if you use {@link Integer} as a key and {@code Value} class as a value (which will be
      * stored in binary format), you should acquire following projection to avoid deserialization:
      * <pre>
      * IgniteInternalCache<Integer, GridBinaryObject> prj = cache.keepBinary();
@@ -1604,9 +1632,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      *
      * @return Projection for binary objects.
      */
-    @Override
     @SuppressWarnings("unchecked")
-    public <K1, V1> IgniteCache<K1, V1> keepBinary() {
+    @Override public <K1, V1> IgniteCache<K1, V1> keepBinary() {
         throw new UnsupportedOperationException();
     }
 
@@ -1614,17 +1641,15 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * @param dataCenterId Data center ID.
      * @return Projection for data center id.
      */
-    @Override
     @SuppressWarnings("unchecked")
-    public IgniteCache<K, V> withDataCenterId(byte dataCenterId) {
+    @Override public IgniteCache<K, V> withDataCenterId(byte dataCenterId) {
         throw new UnsupportedOperationException();
     }
 
     /**
      * @return Cache with skip store enabled.
      */
-    @Override
-    public IgniteCache<K, V> skipStore() {
+    @Override public IgniteCache<K, V> skipStore() {
         throw new UnsupportedOperationException();
     }
 
@@ -1671,8 +1696,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     /**
      * @return Internal proxy.
      */
-    @Override
-    public GridCacheProxyImpl<K, V> internalProxy() {
+    @Override public GridCacheProxyImpl<K, V> internalProxy() {
         return new GridCacheProxyImpl<>(ctx, delegate, ctx.operationContextPerCall());
     }
 
@@ -1757,17 +1781,17 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     public void restart() {
         GridFutureAdapter<Void> restartFut = new GridFutureAdapter<>();
 
-        final GridFutureAdapter<Void> currentFut = this.restartFut.get();
+        final GridFutureAdapter<Void> curFut = this.restartFut.get();
 
-        boolean changed = this.restartFut.compareAndSet(currentFut, restartFut);
+        boolean changed = this.restartFut.compareAndSet(curFut, restartFut);
 
-        if (changed && currentFut != null)
+        if (changed && curFut != null)
             restartFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
-                @Override public void apply(IgniteInternalFuture<Void> future) {
-                    if (future.error() != null)
-                        currentFut.onDone(future.error());
+                @Override public void apply(IgniteInternalFuture<Void> fut) {
+                    if (fut.error() != null)
+                        curFut.onDone(fut.error());
                     else
-                        currentFut.onDone();
+                        curFut.onDone();
                 }
             });
     }

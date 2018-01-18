@@ -119,15 +119,9 @@ public class SqlDmlExample {
      * @param personCache Person cache.
      */
     private static void delete(IgniteCache<Long, Person> personCache) {
-        String sql =
-            "delete from Person " +
-            "where id in (" +
-                "select p.id " +
-                "from Person p, \"" + ORG_CACHE + "\".Organization as o " +
-                "where o.name != ? and p.orgId = o.id" +
-            ")";
+        String sql = "delete from Person where orgId != ?";
 
-        personCache.query(new SqlFieldsQuery(sql).setArgs("ASF")).getAll();
+        personCache.query(new SqlFieldsQuery(sql).setArgs(1)).getAll();
     }
 
     /**
