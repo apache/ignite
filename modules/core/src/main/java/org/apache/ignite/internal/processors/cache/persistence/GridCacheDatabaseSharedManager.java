@@ -2096,9 +2096,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
             }
 
-            if (!metastoreOnly) {
+            if (!metastoreOnly)
                 restorePartitionState(partStates, ignoreGrps);
-            }
         }
         finally {
             if (!metastoreOnly)
