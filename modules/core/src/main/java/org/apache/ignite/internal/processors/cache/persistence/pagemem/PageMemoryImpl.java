@@ -1518,7 +1518,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** */
-    public IgnitePageStoreManager storeMgr() {
+    public IgnitePageStoreManager storeManager() {
         return storeMgr;
     }
 

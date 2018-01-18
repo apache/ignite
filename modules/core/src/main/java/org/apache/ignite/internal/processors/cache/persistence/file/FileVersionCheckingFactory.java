@@ -103,7 +103,7 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
      * @param type Type.
      * @param file File.
      * @param ver Version.
-     * @param totalAllocatedPages counter to be updated on store size changes.
+     * @param totalAllocatedPages Counter to be updated on store size changes.
      */
     public FilePageStore createPageStore(byte type, File file, int ver, LongAdder totalAllocatedPages)
         throws IgniteCheckedException
