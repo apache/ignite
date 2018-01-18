@@ -39,11 +39,9 @@ public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage 
     private final UUID opId;
 
     /** Group ID. */
-    @GridToStringExclude
     private int grpId;
 
     /** Group deployment ID. */
-    @GridToStringExclude
     private IgniteUuid grpDepId;
 
     /** Message that should be processed through exchange thread. */

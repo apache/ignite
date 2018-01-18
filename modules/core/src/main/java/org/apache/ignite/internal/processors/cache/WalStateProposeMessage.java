@@ -18,39 +18,29 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * WAL state propose message.
  */
 public class WalStateProposeMessage extends WalStateAbstractMessage {
-
-    private static final AtomicLong IDX_GEN = new AtomicLong();
-
     /** */
     private static final long serialVersionUID = 0L;
 
-    private final long idx = IDX_GEN.incrementAndGet();
-
     /** Node ID. */
-    @GridToStringExclude
     private final UUID nodeId;
 
     /** Cache names which are expected to be in the group along with their deployment IDs. */
-    @GridToStringExclude
     private Map<String, IgniteUuid> caches;
 
     /** Whether WAL should be enabled or disabled. */
     private final boolean enable;
 
     /** Whether message is being handled on cache affinity node. */
-    @GridToStringExclude
     private transient boolean affNode;
 
     /**
