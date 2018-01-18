@@ -229,6 +229,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     };
 
     /** */
+    private static final FileFilter NODE_STARTED_FILE_FILTER = new FileFilter() {
+        @Override public boolean accept(File f) {
+            return f.getName().endsWith(NODE_STARTED_FILE_NAME_SUFFIX);
+        }
+    };
+
+    /** */
     private static final Comparator<GridDhtLocalPartition> ASC_PART_COMPARATOR = new Comparator<GridDhtLocalPartition>() {
         @Override public int compare(GridDhtLocalPartition a, GridDhtLocalPartition b) {
             return Integer.compare(a.id(), b.id());
@@ -2826,9 +2833,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     CacheState state = new CacheState(partsState.size());
 
                     for (PartitionState part : partsState) {
-                        //todo ,
-                        state.addPartitionState(part.partId(), part.dataStoreSize(), part.updateCounter(),
-                            (byte)part.state().ordinal());
+                        state.addPartitionState(part.partId(),
+                            part.dataStoreSize(),
+                            part.updateCounter(),
+                            part.partState());
                     }
 
                     cpRec.addCacheGroupState(grp.groupId(), state);
@@ -3001,16 +3009,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private final int dsSize;
         /** Update counter. */
         private final long updateCntr;
+        /** Partition state enum value id. */
+        private byte partState;
 
         /**
          * @param partId Partition id.
          * @param dsSize Ds size.
          * @param updateCntr Update counter.
+         * @param partState Partition state enum value id.
          */
-        public PartitionState(int partId, int dsSize, long updateCntr) {
+        public PartitionState(int partId, int dsSize, long updateCntr, byte partState) {
             this.partId = partId;
             this.dsSize = dsSize;
             this.updateCntr = updateCntr;
+            this.partState = partState;
         }
 
         /**
@@ -3032,6 +3044,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         public long updateCounter() {
             return updateCntr;
+        }
+
+        /**
+         * @return {@link #partState}
+         */
+        public byte partState() {
+            return partState;
         }
     }
 
