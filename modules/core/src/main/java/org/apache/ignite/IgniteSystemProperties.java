@@ -810,6 +810,14 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_GRID_CLIENT_LOG_ENABLED = "IGNITE_GRID_CLIENT_LOG_ENABLED";
 
     /**
+     * When set to {@code true}, direct IO may be enabled. Direct IO enabled only if JAR file with corresponding
+     * feature is available in classpath and OS and filesystem settings allows to enable this mode.
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_DIRECT_IO_ENABLED = "IGNITE_DIRECT_IO_ENABLED";
+
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
