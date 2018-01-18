@@ -425,9 +425,9 @@ namespace ignite
                         readFds, writeFds, NULL, (timeout == 0 ? NULL : &tv));
 
                     if (ready == SOCKET_ERROR)
-                        lastError = WSAGetLastError();
+                        lastError = GetLastSocketError();
 
-                } while (ready == SOCKET_ERROR && lastError == WSAEINTR);
+                } while (ready == SOCKET_ERROR && IsSocketOperationInterrupted(lastError));
 
                 if (ready == SOCKET_ERROR)
                     return -lastError;
@@ -436,6 +436,16 @@ namespace ignite
                     return WaitResult::TIMEOUT;
 
                 return WaitResult::SUCCESS;
+            }
+
+            int TcpSocketClient::GetLastSocketError()
+            {
+                return WSAGetLastError();
+            }
+
+            bool TcpSocketClient::IsSocketOperationInterrupted(int errorCode)
+            {
+                return errorCode == WSAEINTR;
             }
         }
     }
