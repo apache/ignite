@@ -363,6 +363,73 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
     }
 
     /**
+     * Test client re-connect.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCacheDestroy() throws Exception {
+        final Ignite srv = startGrid(config(SRV_1, false, false));
+        Ignite cli = startGrid(config(CLI, true, false));
+
+        cli.cluster().active(true);
+
+        srv.createCache(cacheConfig(PARTITIONED));
+
+        final AtomicBoolean done = new AtomicBoolean();
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        // Start load.
+        Thread t = new Thread(new Runnable() {
+            @Override public void run() {
+                boolean state = false;
+
+                while (!done.get()) {
+                    try {
+                        if (state)
+                            cli.cluster().walEnable(CACHE_NAME);
+                        else
+                            cli.cluster().walDisable(CACHE_NAME);
+                    }
+                    catch (IgniteException e) {
+                        String msg = e.getMessage();
+
+                        assert msg.startsWith("Cache doesn't exist") ||
+                            msg.startsWith("Failed to change WAL mode because some caches no longer exist") :
+                            e.getMessage();
+                    }
+                    finally {
+                        state = !state;
+                    }
+                }
+
+                latch.countDown();
+            }
+        });
+
+        t.setName("wal-load-" + cli.name());
+
+        t.start();
+
+        // Now perform multiple client reconnects.
+        for (int i = 1; i <= 20; i++) {
+            Thread.sleep(ThreadLocalRandom.current().nextLong(200, 1000));
+
+            srv.destroyCache(CACHE_NAME);
+
+            Thread.sleep(100);
+
+            srv.createCache(cacheConfig(PARTITIONED));
+
+            X.println(">>> Finished iteration: " + i);
+        }
+
+        done.set(true);
+
+        latch.await();
+    }
+
+    /**
      * Test that concurrent enable/disable events doesn't leave to hangs.
      *
      * @throws Exception If failed.

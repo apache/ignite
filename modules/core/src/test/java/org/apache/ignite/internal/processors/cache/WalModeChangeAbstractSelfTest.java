@@ -37,9 +37,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  */
 
 public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonAbstractSelfTest {
-
-    // TODO: Test concurrent cache destroy (one thread send messages, another thread creates/destroys cache)
-
     /** Whether coordinator node should be filtered out. */
     private final boolean filterOnCrd;
 
