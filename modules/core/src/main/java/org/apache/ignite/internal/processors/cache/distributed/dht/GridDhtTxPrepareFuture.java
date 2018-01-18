@@ -404,7 +404,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         tx.resolveTaskName(),
                         null,
                         keepBinary,
-                        null); // TODO IGNITE-3478
+                        null);  // TODO IGNITE-7371
 
                     if (retVal || txEntry.op() == TRANSFORM) {
                         if (!F.isEmpty(txEntry.entryProcessors())) {
@@ -508,7 +508,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             /*taskName*/null,
                             /*expiryPlc*/null,
                             /*keepBinary*/true,
-                            null); // TODO IGNITE-3478
+                            null); // TODO IGNITE-7371
                     }
 
                     if (oldVal != null)
@@ -734,6 +734,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     CIX1<IgniteInternalFuture<IgniteInternalTx>> resClo =
                         new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
                             @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> fut) {
+                                if(res.error() == null && fut.error() != null)
+                                    res.error(fut.error());
+
                                 if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1))
                                     sendPrepareResponse(res);
                             }
@@ -1335,7 +1338,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
     /** {@inheritDoc} */
     @Override public void onMvccError(IgniteCheckedException e) {
-        // TODO IGNITE-3478.
+        // No-op
     }
 
     /**

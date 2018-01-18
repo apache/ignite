@@ -30,13 +30,16 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.processors.query.h2.H2RowCache;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.MVCC_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.assertMvccVersionValid;
@@ -70,7 +73,12 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
         }
     };
 
+    /** Row cache. */
+    private final H2RowCache rowCache;
+
     /**
+     * Constructor.
+     *
      * @param name Tree name.
      * @param reuseList Reuse list.
      * @param grpId Cache group ID.
@@ -79,10 +87,11 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
      * @param rowStore Row data store.
      * @param metaPageId Meta page ID.
      * @param initNew Initialize new index.
+     * @param rowCache Row cache.
      * @param mvccEnabled Mvcc flag.
      * @throws IgniteCheckedException If failed.
      */
-    H2Tree(
+    protected H2Tree(
         String name,
         ReuseList reuseList,
         int grpId,
@@ -95,8 +104,8 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
         IndexColumn[] cols,
         List<InlineIndexHelper> inlineIdxs,
         int inlineSize,
-        boolean mvccEnabled
-    ) throws IgniteCheckedException {
+        boolean mvccEnabled,
+        @Nullable H2RowCache rowCache) throws IgniteCheckedException {
         super(name, grpId, pageMem, wal, globalRmvId, metaPageId, reuseList);
 
         if (!initNew) {
@@ -120,14 +129,57 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
 
         setIos(H2ExtrasInnerIO.getVersions(inlineSize, mvccEnabled), H2ExtrasLeafIO.getVersions(inlineSize, mvccEnabled));
 
+        this.rowCache = rowCache;
+
         initTree(initNew, inlineSize);
     }
 
     /**
-     * @return Row store.
+     * Create row from link.
+     *
+     * @param link Link.
+     * @return Row.
+     * @throws IgniteCheckedException if failed.
      */
-    public H2RowFactory getRowFactory() {
-        return rowStore;
+    public GridH2Row createRowFromLink(long link) throws IgniteCheckedException {
+        if (rowCache != null) {
+            GridH2Row row = rowCache.get(link);
+
+            if (row == null) {
+                row = rowStore.getRow(link);
+
+                if (row instanceof GridH2KeyValueRowOnheap)
+                    rowCache.put((GridH2KeyValueRowOnheap)row);
+            }
+
+            return row;
+        }
+        else
+            return rowStore.getRow(link);
+    }
+
+    /**
+     * Create row from link.
+     *
+     * @param link Link.
+     * @return Row.
+     * @throws IgniteCheckedException if failed.
+     */
+    public GridH2Row createRowFromLink(long link, long mvccCrdVer, long mvccCntr) throws IgniteCheckedException {
+        if (rowCache != null) {
+            GridH2Row row = rowCache.get(link);
+
+            if (row == null) {
+                row = rowStore.getMvccRow(link, mvccCrdVer, mvccCntr);
+
+                if (row instanceof GridH2KeyValueRowOnheap)
+                    rowCache.put((GridH2KeyValueRowOnheap)row);
+            }
+
+            return row;
+        }
+        else
+            return rowStore.getMvccRow(link, mvccCrdVer, mvccCntr);
     }
 
     /** {@inheritDoc} */

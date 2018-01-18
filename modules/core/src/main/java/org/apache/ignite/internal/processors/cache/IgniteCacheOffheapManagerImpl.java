@@ -33,16 +33,15 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionWithoutTxs;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCounter;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccLongList;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionWithoutTxs;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
@@ -67,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.tree.PendingRow;
 import org.apache.ignite.internal.processors.cache.tree.SearchRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
@@ -97,9 +97,6 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.ver
  */
 @SuppressWarnings("PublicInnerClass")
 public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager {
-    // TODO IGNITE-3478
-    public final boolean IGNITE_FAKE_MVCC_STORAGE = IgniteSystemProperties.getBoolean("IGNITE_FAKE_MVCC_STORAGE", false);
-
     /** */
     protected GridCacheSharedContext ctx;
 
@@ -145,10 +142,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         this.log = ctx.logger(getClass());
 
         updateValSizeThreshold = ctx.database().pageSize() / 2;
-
-        // TODO IGNITE-3478
-        if (grp.mvccEnabled())
-            log.info("IgniteCacheOffheapManagerImpl start, fakeMvcc=" + IGNITE_FAKE_MVCC_STORAGE);
 
         if (grp.affinityNode()) {
             ctx.database().checkpointReadLock();
@@ -738,7 +731,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /**
-     * TODO IGNITE-3478, review usages, pass correct version.
      *
      * @param cacheId Cache ID.
      * @param dataIt Data store iterator.
@@ -1434,7 +1426,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 boolean newVal = false;
 
-                // TODO IGNITE-3478: null is passed for loaded from store, need handle better.
+                // null is passed for loaded from store.
                 if (mvccVer == null) {
                     mvccVer = new MvccVersionWithoutTxs(1L, MVCC_START_CNTR, 0L);
 
@@ -2078,7 +2070,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (ver != null) {
                 assert grp.mvccEnabled();
 
-                // TODO IGNITE-3478: more optimal cursor, e.g. pass some 'isVisible' closure.
                 return new MvccCursor(dataTree.find(null, null), ver);
             }
 
@@ -2129,7 +2120,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (ver != null) {
                 assert grp.mvccEnabled();
 
-                // TODO IGNITE-3478: more optimal cursor, e.g. pass some 'isVisible' closure.
                 return new MvccCursor(dataTree.find(lowerRow, upperRow, x), ver);
             }
 
@@ -2229,6 +2219,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
+        @Override public void setRowCacheCleaner(GridQueryRowCacheCleaner rowCacheCleaner) {
+            rowStore().setRowCacheCleaner(rowCacheCleaner);
+        }
+
+        /** {@inheritDoc} */
         @Override public void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes) {
             initCntr = updCntr;
             storageSize.set(size);
@@ -2296,7 +2291,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             /** */
             private CacheDataRow curRow;
 
-            /** */
+            /**
+             * @param cur Cursor.
+             * @param ver MVCC version.
+             */
             MvccCursor(GridCursor<? extends CacheDataRow> cur, MvccVersion ver) {
                 this.cur = cur;
                 this.ver = ver;

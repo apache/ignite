@@ -60,10 +60,10 @@ public abstract class AbstractH2InnerIO extends BPlusInnerIO<GridH2SearchRow> im
             long mvccCrdVer = getMvccCoordinatorVersion(pageAddr, idx);
             long mvccCntr = getMvccCounter(pageAddr, idx);
 
-            return ((H2Tree)tree).getRowFactory().getMvccRow(link, mvccCrdVer, mvccCntr);
+            return ((H2Tree)tree).createRowFromLink(link, mvccCrdVer, mvccCntr);
         }
 
-        return ((H2Tree)tree).getRowFactory().getRow(link);
+        return ((H2Tree)tree).createRowFromLink(link);
     }
 
     /** {@inheritDoc} */

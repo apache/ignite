@@ -320,7 +320,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         expiryPlc,
                         skipVals,
                         recovery,
-                        null); // TODO IGNITE-3478
+                        null); // TODO IGNITE-7371
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -384,7 +384,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     skipVals,
                     cctx.deploymentEnabled(),
                     recovery,
-                    null); // TODO IGNITE-3478.
+                    null); // TODO IGNITE-7371
 
                 add(fut); // Append new future.
 
@@ -458,7 +458,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             expiryPlc,
                             !deserializeBinary,
                             null,
-                            null); // TODO IGNITE-3478
+                            null); // TODO IGNITE-7371
 
                         if (res != null) {
                             v = res.value();
@@ -477,7 +477,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             taskName,
                             expiryPlc,
                             !deserializeBinary,
-                            null); // TODO IGNITE-3478
+                            null); // TODO IGNITE-7371
                     }
                 }
 
@@ -597,7 +597,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             expiryPlc,
                             !deserializeBinary,
                             null,
-                            null); // TODO IGNITE-3478
+                            null); // TODO IGNITE-7371
 
                         if (res != null) {
                             v = res.value();
@@ -616,7 +616,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             taskName,
                             expiryPlc,
                             !deserializeBinary,
-                            null); // TODO IGNITE-3478
+                            null); // TODO IGNITE-7371
                     }
 
                     // Entry was not in memory or in swap, so we remove it from cache.

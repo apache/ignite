@@ -1773,7 +1773,6 @@ public class GridCacheUtils {
                     try {
                         entry = colocated.entryEx(key, topVer);
 
-                        // TODO IGNITE-3478 (mvcc ver)
                         entry.initialValue(
                             val,
                             ver,

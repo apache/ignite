@@ -1521,7 +1521,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     resolveTaskName(),
                     null,
                     keepBinary,
-                    null); // TODO IGNITE-3478
+                    null); // TODO IGNITE-7371
             }
 
             boolean modified = false;

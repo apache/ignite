@@ -1825,7 +1825,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /*keep cache objects*/false,
             recovery,
             needVer,
-            null); // TODO IGNITE-3478.
+            null); // TODO IGNITE-7371
     }
 
     /**
@@ -3506,7 +3506,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         GridCacheEntryEx entry = entryEx(key);
 
         try {
-            // TODO IGNITE-3478 (mvcc ver)
             entry.initialValue(cacheVal,
                 ver,
                 null,
@@ -4794,7 +4793,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /*taskName*/null,
             /*expiryPlc*/null,
             !deserializeBinary,
-            null); // TODO IGNITE-3478
+            null); // TODO IGNITE-7371
 
         if (val == null)
             return null;

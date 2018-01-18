@@ -287,7 +287,7 @@ public class GridH2MetaTable extends TableBase {
 
         /** {@inheritDoc} */
         @Override public boolean indexSearchRow() {
-            return false; // TODO IGNITE-3478, check meta table with mvcc.
+            return false;
         }
     }
 

@@ -4930,7 +4930,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** {@inheritDoc} */
         @Override boolean fillFromBuffer0(long pageAddr, BPlusIO<L> io, int startIdx, int cnt)
             throws IgniteCheckedException {
-            if (startIdx == -1) // TODO IGNITE-3478: startIdx == 0? can search twice for first item?
+            if (startIdx == -1)
                 startIdx = findLowerBound(pageAddr, io, cnt);
 
             if (cnt == startIdx)

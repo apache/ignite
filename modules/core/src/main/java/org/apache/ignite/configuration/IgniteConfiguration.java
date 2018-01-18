@@ -2895,7 +2895,7 @@ public class IgniteConfiguration {
     }
 
     /**
-     * TODO IGNITE-3478
+     * Whether or not MVCC is enabled.
      *
      * @return {@code True} if MVCC is enabled.
      */
@@ -2904,7 +2904,7 @@ public class IgniteConfiguration {
     }
 
     /**
-     * TODO IGNITE-3478
+     * Sets MVCC enabled flag.
      *
      * @param mvccEnabled MVCC enabled flag.
      * @return {@code this} for chaining.

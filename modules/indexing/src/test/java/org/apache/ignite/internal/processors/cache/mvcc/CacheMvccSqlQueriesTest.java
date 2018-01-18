@@ -49,8 +49,10 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
- * TODO IGNITE-3478: text/spatial indexes with mvcc. TODO IGNITE-3478: indexingSpi with mvcc. TODO IGNITE-3478:
- * setQueryParallelism with mvcc. TODO IGNITE-3478: dynamic index create.
+ * TODO IGNITE-6739: text/spatial indexes with mvcc.
+ * TODO IGNITE-6739: indexingSpi with mvcc.
+ * TODO IGNITE-6739: setQueryParallelism with mvcc.
+ * TODO IGNITE-6739: dynamic index create.
  */
 @SuppressWarnings("unchecked")
 public class CacheMvccSqlQueriesTest extends CacheMvccAbstractTest {

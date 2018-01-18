@@ -29,7 +29,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * TODO IGNITE-3478: make sure writeTo/readFrom for txs is optimal.
+ *
  */
 public class MvccVersionResponse implements MvccMessage, MvccVersion, MvccLongList {
     /** */

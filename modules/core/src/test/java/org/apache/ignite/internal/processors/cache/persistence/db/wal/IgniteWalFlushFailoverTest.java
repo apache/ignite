@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -31,6 +32,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -65,6 +67,8 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
         deleteWorkFiles();
     }
 
@@ -83,12 +87,12 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(cacheCfg);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setMaxSize(2048L * 1024 * 1024).setPersistenceEnabled(true))
-            .setFileIOFactory(new FailingFileIOFactory())
-            .setWalMode(WALMode.BACKGROUND)
-            // Setting WAL Segment size to high values forces flushing by timeout.
-            .setWalSegmentSize(flushByTimeout ? 500_000 : 50_000);
+                .setDefaultDataRegionConfiguration(
+                 new DataRegionConfiguration().setMaxSize(2048L * 1024 * 1024).setPersistenceEnabled(true))
+                .setFileIOFactory(new FailingFileIOFactory())
+                .setWalMode(WALMode.BACKGROUND)
+                .setWalBufferSize(128 * 1024)// Setting WAL Segment size to high values forces flushing by timeout.
+                .setWalSegmentSize(flushByTimeout ? 500_000 : 50_000);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -121,6 +125,13 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
     private void flushingErrorTest() throws Exception {
         final IgniteEx grid = startGrid(0);
 
+        IgniteWriteAheadLogManager wal = grid.context().cache().context().wal();
+
+        boolean mmap = GridTestUtils.getFieldValue(wal, "mmap");
+
+        if (mmap)
+            return;
+
         try {
             grid.active(true);
 
@@ -152,7 +163,7 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     private void deleteWorkFiles() throws IgniteCheckedException {
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
@@ -162,9 +173,10 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
      * Create File I/O which fails after second attempt to write to File
      */
     private static class FailingFileIOFactory implements FileIOFactory {
+        /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
-        /** */
+        /** Delegate factory. */
         private final FileIOFactory delegateFactory = new RandomAccessFileIOFactory();
 
         /** {@inheritDoc} */
@@ -174,17 +186,23 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-            FileIO delegate = delegateFactory.create(file, modes);
+            final FileIO delegate = delegateFactory.create(file, modes);
 
             return new FileIODecorator(delegate) {
                 int writeAttempts = 2;
 
-                @Override public int write(ByteBuffer sourceBuffer) throws IOException {
+                @Override public int write(ByteBuffer srcBuf) throws IOException {
                     if (--writeAttempts == 0)
                         throw new RuntimeException("Test exception. Unable to write to file.");
 
-                    return super.write(sourceBuffer);
+                    return super.write(srcBuf);
                 }
+
+                /** {@inheritDoc} */
+                @Override public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
+                    return delegate.map(maxWalSegmentSize);
+                }
+
             };
         }
     }

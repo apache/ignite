@@ -36,6 +36,7 @@ import java.util.logging.Logger;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientCacheMode;
 import org.apache.ignite.internal.client.GridClientClosedException;
@@ -79,18 +80,20 @@ public class GridClientImpl implements GridClient {
     /** Logger. */
     private static final Logger log = Logger.getLogger(GridClientImpl.class.getName());
 
-    /** */
+    /* Suppression logging if needed. */
     static {
-        boolean isLog4jUsed = U.gridClassLoader().getResource("org/apache/log4j/Appender.class") != null;
+        if (!IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_GRID_CLIENT_LOG_ENABLED, false)) {
+            boolean isLog4jUsed = U.gridClassLoader().getResource("org/apache/log4j/Appender.class") != null;
 
-        try {
-            if (isLog4jUsed)
-                U.addLog4jNoOpLogger();
-            else
+            try {
+                if (isLog4jUsed)
+                    U.addLog4jNoOpLogger();
+
                 U.addJavaNoOpLogger();
-        }
-        catch (IgniteCheckedException ignored) {
-            // Our log4j warning suppression failed, leave it as is.
+            }
+            catch (IgniteCheckedException ignored) {
+                // If log warning suppression failed, leave it as is.
+            }
         }
     }
 

@@ -65,9 +65,6 @@ public class PersistentStoreConfiguration implements Serializable {
     /** Default wal mode. */
     public static final WALMode DFLT_WAL_MODE = WALMode.DEFAULT;
 
-    /** Default thread local buffer size. */
-    public static final int DFLT_TLB_SIZE = 128 * 1024;
-
     /** Default Wal flush frequency. */
     public static final int DFLT_WAL_FLUSH_FREQ = 2000;
 
@@ -128,8 +125,8 @@ public class PersistentStoreConfiguration implements Serializable {
     /** Wal mode. */
     private WALMode walMode = DFLT_WAL_MODE;
 
-    /** WAl thread local buffer size. */
-    private int tlbSize = DFLT_TLB_SIZE;
+    /** WAl buffer size. */
+    private int walBuffSize/* = DFLT_WAL_BUFF_SIZE*/;
 
     /** Wal flush frequency in milliseconds. */
     private long walFlushFreq = DFLT_WAL_FLUSH_FREQ;
@@ -492,20 +489,43 @@ public class PersistentStoreConfiguration implements Serializable {
     }
 
     /**
-     * Property define size thread local buffer.
-     * Each thread which write to wal have thread local buffer for serialize recode before write in wal.
+     * Property defines size of WAL buffer.
+     * Each WAL record will be serialized to this buffer before write in WAL file.
      *
-     * @return Thread local buffer size.
+     * @return WAL buffer size.
+     * @deprecated Instead {@link #getWalBufferSize()} should be used.
      */
+    @Deprecated
     public int getTlbSize() {
-        return tlbSize <= 0 ? DFLT_TLB_SIZE : tlbSize;
+        return getWalBufferSize();
     }
 
     /**
-     * @param tlbSize Tlb size.
+     * @param tlbSize WAL buffer size.
+     * @deprecated Instead {@link #setWalBufferSize(int walBuffSize)} should be used.
      */
+    @Deprecated
     public PersistentStoreConfiguration setTlbSize(int tlbSize) {
-        this.tlbSize = tlbSize;
+        return setWalBufferSize(tlbSize);
+    }
+
+    /**
+     * Property defines size of WAL buffer.
+     * Each WAL record will be serialized to this buffer before write in WAL file.
+     *
+     * @return WAL buffer size.
+     */
+    @Deprecated
+    public int getWalBufferSize() {
+        return walBuffSize <= 0 ? getWalSegmentSize() / 4 : walBuffSize;
+    }
+
+    /**
+     * @param walBuffSize WAL buffer size.
+     */
+    @Deprecated
+    public PersistentStoreConfiguration setWalBufferSize(int walBuffSize) {
+        this.walBuffSize = walBuffSize;
 
         return this;
     }

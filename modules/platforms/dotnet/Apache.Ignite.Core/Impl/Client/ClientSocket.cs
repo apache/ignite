@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Client
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
@@ -25,6 +26,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using System.Net;
     using System.Net.Sockets;
     using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
@@ -33,7 +35,7 @@ namespace Apache.Ignite.Core.Impl.Client
     /// <summary>
     /// Wrapper over framework socket for Ignite thin client operations.
     /// </summary>
-    internal class ClientSocket : IDisposable
+    internal sealed class ClientSocket : IDisposable
     {
         /** Current version. */
         private static readonly ClientProtocolVersion CurrentProtocolVersion = new ClientProtocolVersion(1, 0, 0);
@@ -44,11 +46,40 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Client type code. */
         private const byte ClientType = 2;
 
-        /** Unerlying socket. */
+        /** Underlying socket. */
         private readonly Socket _socket;
 
-        /** */
+        /** Operation timeout. */
+        private readonly TimeSpan _timeout;
+
+        /** Request timeout checker. */
+        private readonly Timer _timeoutCheckTimer;
+
+        /** Callback checker guard. */
+        private volatile bool _checkingTimeouts;
+
+        /** Current async operations, map from request id. */
+        private readonly ConcurrentDictionary<long, Request> _requests
+            = new ConcurrentDictionary<long, Request>();
+
+        /** Request id generator. */
         private long _requestId;
+
+        /** Socket failure exception. */
+        private volatile Exception _exception;
+
+        /** Locker. */
+        private readonly ReaderWriterLockSlim _sendRequestLock = 
+            new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+
+        /** Background socket receiver trigger. */
+        private readonly ManualResetEventSlim _listenerEvent = new ManualResetEventSlim();
+
+        /** Dispose locker. */
+        private readonly object _disposeSyncRoot = new object();
+
+        /** Disposed flag. */
+        private bool _isDisposed;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientSocket" /> class.
@@ -59,9 +90,21 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             Debug.Assert(clientConfiguration != null);
 
+            _timeout = clientConfiguration.SocketTimeout;
+
             _socket = Connect(clientConfiguration);
 
-            Handshake(_socket, version ?? CurrentProtocolVersion);
+            Handshake(version ?? CurrentProtocolVersion);
+
+            // Check periodically if any request has timed out.
+            if (_timeout > TimeSpan.Zero)
+            {
+                // Minimum Socket timeout is 500ms.
+                _timeoutCheckTimer = new Timer(CheckTimeouts, null, _timeout, TimeSpan.FromMilliseconds(500));
+            }
+
+            // Continuously and asynchronously wait for data from server.
+            Task.Factory.StartNew(WaitForMessages);
         }
 
         /// <summary>
@@ -70,48 +113,120 @@ namespace Apache.Ignite.Core.Impl.Client
         public T DoOutInOp<T>(ClientOp opId, Action<IBinaryStream> writeAction,
             Func<IBinaryStream, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null)
         {
-            var requestId = Interlocked.Increment(ref _requestId);
+            // Encode.
+            var reqMsg = WriteMessage(writeAction, opId);
+            
+            // Send.
+            var response = SendRequest(ref reqMsg);
 
-            var resBytes = SendReceive(_socket, stream =>
+            // Decode.
+            return DecodeResponse(response, readFunc, errorFunc);
+        }
+
+        /// <summary>
+        /// Performs a send-receive operation asynchronously.
+        /// </summary>
+        public Task<T> DoOutInOpAsync<T>(ClientOp opId, Action<IBinaryStream> writeAction,
+            Func<IBinaryStream, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null)
+        {
+            // Encode.
+            var reqMsg = WriteMessage(writeAction, opId);
+
+            // Send.
+            var task = SendRequestAsync(ref reqMsg);
+
+            // Decode.
+            return task.ContinueWith(responseTask => DecodeResponse(responseTask.Result, readFunc, errorFunc));
+        }
+
+        /// <summary>
+        /// Starts waiting for the new message.
+        /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+        private void WaitForMessages()
+        {
+            try
             {
-                stream.WriteShort((short) opId);
-                stream.WriteLong(requestId);
-
-                if (writeAction != null)
+                // Null exception means active socket.
+                while (_exception == null)
                 {
-                    writeAction(stream);
+                    // Do not call Receive if there are no async requests pending.
+                    while (_requests.IsEmpty)
+                    {
+                        // Wait with a timeout so we check for disposed state periodically.
+                        _listenerEvent.Wait(1000);
+
+                        if (_exception != null)
+                        {
+                            return;
+                        }
+
+                        _listenerEvent.Reset();
+                    }
+
+                    var msg = ReceiveMessage();
+                    HandleResponse(msg);
                 }
-            });
-
-            using (var stream = new BinaryHeapStream(resBytes))
-            {
-                var resRequestId = stream.ReadLong();
-                Debug.Assert(requestId == resRequestId);
-
-                var statusCode = (ClientStatusCode) stream.ReadInt();
-
-                if (statusCode == ClientStatusCode.Success)
-                {
-                    return readFunc != null ? readFunc(stream) : default(T);
-                }
-
-                var msg = BinaryUtils.Marshaller.StartUnmarshal(stream).ReadString();
-
-                if (errorFunc != null)
-                {
-                    return errorFunc(statusCode, msg);
-                }
-
-                throw new IgniteClientException(msg, null, statusCode);
             }
+            catch (Exception ex)
+            {
+                // Socket failure (connection dropped, etc).
+                // Close socket and all pending requests.
+                // Note that this does not include request decoding exceptions (failed request, invalid data, etc).
+                _exception = ex;
+                Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Handles the response.
+        /// </summary>
+        private void HandleResponse(byte[] response)
+        {
+            var stream = new BinaryHeapStream(response);
+            var requestId = stream.ReadLong();
+
+            Request req;
+            if (!_requests.TryRemove(requestId, out req))
+            {
+                // Response with unknown id.
+                throw new IgniteClientException("Invalid thin client response id: " + requestId);
+            }
+
+            req.CompletionSource.TrySetResult(stream);
+        }
+
+        /// <summary>
+        /// Decodes the response that we got from <see cref="HandleResponse"/>.
+        /// </summary>
+        private static T DecodeResponse<T>(BinaryHeapStream stream, Func<IBinaryStream, T> readFunc, 
+            Func<ClientStatusCode, string, T> errorFunc)
+        {
+            var statusCode = (ClientStatusCode)stream.ReadInt();
+
+            if (statusCode == ClientStatusCode.Success)
+            {
+                return readFunc != null ? readFunc(stream) : default(T);
+            }
+
+            var msg = BinaryUtils.Marshaller.StartUnmarshal(stream).ReadString();
+
+            if (errorFunc != null)
+            {
+                return errorFunc(statusCode, msg);
+            }
+
+            throw new IgniteClientException(msg, null, statusCode);
         }
 
         /// <summary>
         /// Performs client protocol handshake.
         /// </summary>
-        private static void Handshake(Socket sock, ClientProtocolVersion version)
+        private void Handshake(ClientProtocolVersion version)
         {
-            var res = SendReceive(sock, stream =>
+            // Send request.
+            int messageLen;
+            var buf = WriteMessage(stream =>
             {
                 // Handshake.
                 stream.WriteByte(OpHandshake);
@@ -123,7 +238,15 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 // Client type: platform.
                 stream.WriteByte(ClientType);
-            }, 20);
+            }, 12, out messageLen);
+
+            Debug.Assert(messageLen == 12);
+
+            var sent = _socket.Send(buf, messageLen, SocketFlags.None);
+            Debug.Assert(sent == messageLen);
+
+            // Decode response.
+            var res = ReceiveMessage();
 
             using (var stream = new BinaryHeapStream(res))
             {
@@ -140,42 +263,118 @@ namespace Apache.Ignite.Core.Impl.Client
                 var errMsg = BinaryUtils.Marshaller.Unmarshal<string>(stream);
 
                 throw new IgniteClientException(string.Format(
-                    "Client handhsake failed: '{0}'. Client version: {1}. Server version: {2}",
+                    "Client handshake failed: '{0}'. Client version: {1}. Server version: {2}",
                     errMsg, version, serverVersion));
             }
         }
 
         /// <summary>
-        /// Sends the request and receives a response.
+        /// Receives a message from socket.
         /// </summary>
-        private static byte[] SendReceive(Socket sock, Action<IBinaryStream> writeAction, int bufSize = 128)
+        private byte[] ReceiveMessage()
         {
-            int messageLen;
-            var buf = WriteMessage(writeAction, bufSize, out messageLen);
+            var size = GetInt(ReceiveBytes(4));
+            var msg = ReceiveBytes(size);
+            return msg;
+        }
 
-            lock (sock)
+        /// <summary>
+        /// Receives the data filling provided buffer entirely.
+        /// </summary>
+        private byte[] ReceiveBytes(int size)
+        {
+            Debug.Assert(size > 0);
+
+            // Socket.Receive can return any number of bytes, even 1.
+            // We should repeat Receive calls until required amount of data has been received.
+            var buf = new byte[size];
+            var received = _socket.Receive(buf);
+
+            while (received < size)
             {
-                var sent = sock.Send(buf, messageLen, SocketFlags.None);
-                Debug.Assert(sent == messageLen);
+                var res = _socket.Receive(buf, received, size - received, SocketFlags.None);
 
-                buf = new byte[4];
-                var received = sock.Receive(buf);
-                Debug.Assert(received == buf.Length);
-
-                using (var stream = new BinaryHeapStream(buf))
+                if (res == 0)
                 {
-                    var size = stream.ReadInt();
-                    
-                    buf = new byte[size];
-                    received = sock.Receive(buf);
-
-                    while (received < size)
-                    {
-                        received += sock.Receive(buf, received, size - received, SocketFlags.None);
-                    }
-
-                    return buf;
+                    // Disconnected.
+                    _exception = _exception ?? new SocketException((int) SocketError.ConnectionAborted);
+                    Dispose();
+                    CheckException();
                 }
+
+                received += res;
+            }
+
+            return buf;
+        }
+
+        /// <summary>
+        /// Sends the request synchronously.
+        /// </summary>
+        private BinaryHeapStream SendRequest(ref RequestMessage reqMsg)
+        {
+            // Do not enter lock when disposed.
+            CheckException();
+
+            // If there are no pending async requests, we can execute this operation synchronously,
+            // which is more efficient.
+            if (_sendRequestLock.TryEnterWriteLock(0))
+            {
+                try
+                {
+                    CheckException();
+
+                    if (_requests.IsEmpty)
+                    {
+                        _socket.Send(reqMsg.Buffer, 0, reqMsg.Length, SocketFlags.None);
+
+                        var respMsg = ReceiveMessage();
+                        var response = new BinaryHeapStream(respMsg);
+                        var responseId = response.ReadLong();
+                        Debug.Assert(responseId == reqMsg.Id);
+
+                        return response;
+                    }
+                }
+                finally
+                {
+                    if (_sendRequestLock.IsWriteLockHeld)
+                    {
+                        _sendRequestLock.ExitWriteLock();
+                    }
+                }
+            }
+
+            // Fallback to async mechanism.
+            return SendRequestAsync(ref reqMsg).Result;
+        }
+
+        /// <summary>
+        /// Sends the request asynchronously and returns a task for corresponding response.
+        /// </summary>
+        private Task<BinaryHeapStream> SendRequestAsync(ref RequestMessage reqMsg)
+        {
+            // Do not enter lock when disposed.
+            CheckException();
+
+            _sendRequestLock.EnterReadLock();
+            try
+            {
+                CheckException();
+
+                // Register.
+                var req = new Request();
+                var added = _requests.TryAdd(reqMsg.Id, req);
+                Debug.Assert(added);
+
+                // Send.
+                _socket.Send(reqMsg.Buffer, 0, reqMsg.Length, SocketFlags.None);
+                _listenerEvent.Set();
+                return req.CompletionSource.Task;
+            }
+            finally
+            {
+                _sendRequestLock.ExitReadLock();
             }
         }
 
@@ -184,18 +383,31 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private static byte[] WriteMessage(Action<IBinaryStream> writeAction, int bufSize, out int messageLen)
         {
-            using (var stream = new BinaryHeapStream(bufSize))
-            {
-                stream.WriteInt(0); // Reserve message size.
+            var stream = new BinaryHeapStream(bufSize);
 
-                writeAction(stream);
+            stream.WriteInt(0); // Reserve message size.
+            writeAction(stream);
+            stream.WriteInt(0, stream.Position - 4); // Write message size.
 
-                stream.WriteInt(0, stream.Position - 4); // Write message size.
+            messageLen = stream.Position;
+            return stream.GetArray();
+        }
 
-                messageLen = stream.Position;
+        /// <summary>
+        /// Writes the message to a byte array.
+        /// </summary>
+        private RequestMessage WriteMessage(Action<IBinaryStream> writeAction, ClientOp opId)
+        {
+            var requestId = Interlocked.Increment(ref _requestId);
+            var stream = new BinaryHeapStream(256);
 
-                return stream.GetArray();
-            }
+            stream.WriteInt(0); // Reserve message size.
+            stream.WriteShort((short) opId);
+            stream.WriteLong(requestId);
+            writeAction(stream);
+            stream.WriteInt(0, stream.Position - 4); // Write message size.
+
+            return new RequestMessage(requestId, stream.GetArray(), stream.Position);
         }
 
         /// <summary>
@@ -213,7 +425,10 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     var socket = new Socket(ipEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp)
                     {
-                        NoDelay = cfg.TcpNoDelay
+                        NoDelay = cfg.TcpNoDelay,
+                        Blocking = true,
+                        SendTimeout = (int) cfg.SocketTimeout.TotalMilliseconds,
+                        ReceiveTimeout = (int) cfg.SocketTimeout.TotalMilliseconds
                     };
 
                     if (cfg.SocketSendBufferSize != IgniteClientConfiguration.DefaultSocketBufferSize)
@@ -274,13 +489,181 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /// <summary>
+        /// Checks if any of the current requests timed out.
+        /// </summary>
+        private void CheckTimeouts(object _)
+        {
+            if (_checkingTimeouts)
+            {
+                return;
+            }
+
+            _checkingTimeouts = true;
+
+            try
+            {
+                if (_exception != null)
+                {
+                    _timeoutCheckTimer.Dispose();
+                }
+
+                foreach (var pair in _requests)
+                {
+                    var req = pair.Value;
+
+                    if (req.Duration > _timeout)
+                    {
+                        Console.WriteLine(req.Duration);
+                        req.CompletionSource.TrySetException(new SocketException((int)SocketError.TimedOut));
+
+                        _requests.TryRemove(pair.Key, out req);
+                    }
+                }
+            }
+            finally
+            {
+                _checkingTimeouts = false;
+            }
+        }
+
+        /// <summary>
+        /// Gets the int from buffer.
+        /// </summary>
+        private static unsafe int GetInt(byte[] buf)
+        {
+            fixed (byte* b = buf)
+            {
+                return BinaryHeapStream.ReadInt0(b);
+            }
+        }
+
+        /// <summary>
+        /// Checks the exception.
+        /// </summary>
+        private void CheckException()
+        {
+            var ex = _exception;
+
+            if (ex != null)
+            {
+                throw ex;
+            }
+        }
+
+        /// <summary>
+        /// Closes the socket and completes all pending requests with an error.
+        /// </summary>
+        private void EndRequestsWithError()
+        {
+            var ex = _exception;
+            Debug.Assert(ex != null);
+
+            while (!_requests.IsEmpty)
+            {
+                foreach (var reqId in _requests.Keys.ToArray())
+                {
+                    Request req;
+                    if (_requests.TryRemove(reqId, out req))
+                    {
+                        req.CompletionSource.TrySetException(ex);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA1816:CallGCSuppressFinalizeCorrectly",
             Justification = "There is no finalizer.")]
         public void Dispose()
         {
-            _socket.Dispose();
+            lock (_disposeSyncRoot)
+            {
+                if (_isDisposed)
+                {
+                    return;
+                }
+
+                _exception = _exception ?? new ObjectDisposedException(typeof(ClientSocket).FullName);
+                EndRequestsWithError();
+                _socket.Dispose();
+                _listenerEvent.Set();
+                _listenerEvent.Dispose();
+                _timeoutCheckTimer.Dispose();
+
+                // Wait for lock to be released and dispose.
+                if (!_sendRequestLock.IsWriteLockHeld)
+                {
+                    _sendRequestLock.EnterWriteLock();
+                }
+                _sendRequestLock.ExitWriteLock();
+                _sendRequestLock.Dispose();
+
+                _isDisposed = true;
+            }
+        }
+
+        /// <summary>
+        /// Represents a request.
+        /// </summary>
+        private class Request
+        {
+            /** */
+            private readonly TaskCompletionSource<BinaryHeapStream> _completionSource;
+
+            /** */
+            private readonly DateTime _startTime;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="Request"/> class.
+            /// </summary>
+            public Request()
+            {
+                _completionSource = new TaskCompletionSource<BinaryHeapStream>();
+                _startTime = DateTime.Now;
+            }
+
+            /// <summary>
+            /// Gets the completion source.
+            /// </summary>
+            public TaskCompletionSource<BinaryHeapStream> CompletionSource
+            {
+                get { return _completionSource; }
+            }
+
+            /// <summary>
+            /// Gets the duration.
+            /// </summary>
+            public TimeSpan Duration
+            {
+                get { return DateTime.Now - _startTime; }
+            }
+        }
+
+        /// <summary>
+        /// Represents a request message.
+        /// </summary>
+        private struct RequestMessage
+        {
+            /** */
+            public readonly long Id;
+
+            /** */
+            public readonly byte[] Buffer;
+
+            /** */
+            public readonly int Length;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="RequestMessage"/> struct.
+            /// </summary>
+            public RequestMessage(long id, byte[] buffer, int length)
+            {
+                Id = id;
+                Length = length;
+                Buffer = buffer;
+            }
         }
     }
 }

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Collection;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -62,6 +63,10 @@ import org.jetbrains.annotations.Nullable;
 @SuppressWarnings("ForLoopReplaceableByForEach")
 public class GridNearTxQueryEnlistFuture extends GridCacheCompoundIdentityFuture<Long>
     implements GridCacheVersionedFuture<Long>, MvccResponseListener {
+
+    /** Done field updater. */
+    private static final AtomicIntegerFieldUpdater<GridNearTxQueryEnlistFuture> DONE_UPD =
+        AtomicIntegerFieldUpdater.newUpdater(GridNearTxQueryEnlistFuture.class, "done");
 
     /** Transaction. */
     private final GridNearTxLocal tx;
@@ -117,6 +122,11 @@ public class GridNearTxQueryEnlistFuture extends GridCacheCompoundIdentityFuture
     /** Timeout object. */
     @GridToStringExclude
     private LockTimeoutObject timeoutObj;
+
+    /** */
+    @SuppressWarnings("unused")
+    @GridToStringExclude
+    private volatile int done;
 
     /**
      * @param cctx Cache context.
@@ -291,7 +301,7 @@ public class GridNearTxQueryEnlistFuture extends GridCacheCompoundIdentityFuture
      * @param remap Remap flag.
      * @param topLocked Topology locked flag.
      */
-    private void map(final boolean remap, final boolean topLocked) { // TODO remap.
+    private void map(final boolean remap, final boolean topLocked) {
         if (cctx.mvccEnabled() && mvccVer == null) {
             MvccCoordinator mvccCrd = cctx.affinity().mvccCoordinator(topVer);
 
@@ -526,8 +536,20 @@ public class GridNearTxQueryEnlistFuture extends GridCacheCompoundIdentityFuture
 
     /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable Long res, @Nullable Throwable err) {
+        if (!DONE_UPD.compareAndSet(this, 0, 1))
+            return false;
+
+        cctx.tm().txContext(tx);
+
         if (err != null)
             tx.setRollbackOnly();
+
+        if (!X.hasCause(err, IgniteTxTimeoutCheckedException.class) && tx.trackTimeout()) {
+            // Need restore timeout before onDone is called and next tx operation can proceed.
+            boolean add = tx.addTimeoutHandler();
+
+            assert add;
+        }
 
         if (super.onDone(res, err)) {
             // Clean up.
@@ -631,6 +653,12 @@ public class GridNearTxQueryEnlistFuture extends GridCacheCompoundIdentityFuture
 
                 tx.removeMapping(node.id());
             }
+            else if (res.result() > 0) {
+                if (node.isLocal())
+                    tx.colocatedLocallyMapped(true);
+                else
+                    tx.hasRemoteLocks(true);
+            }
 
             return err != null ? onDone(err) : onDone(res.result(), res.error());
         }
@@ -649,12 +677,11 @@ public class GridNearTxQueryEnlistFuture extends GridCacheCompoundIdentityFuture
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
-            String msg = "Timed out waiting for lock response: " + this;
-
             if (log.isDebugEnabled())
-                log.debug(msg);
+                log.debug("Timed out waiting for lock response: " + this);
 
-            onDone(new IgniteTxTimeoutCheckedException(msg));
+            onDone(new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout for " +
+                "transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']'));
         }
 
         /** {@inheritDoc} */
