@@ -68,6 +68,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
@@ -81,7 +82,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     /** Cache name. */
     public static final String CACHE_NAME = "partitioned" + new Random().nextInt(10000000);
     public static final int OBJECT_SIZE = 40000;
-    public static final int CONTINUOUS_PUT_RECS_CNT = 50_000;
+    public static final int CONTINUOUS_PUT_RECS_CNT = 250_000;
     public static final String PUT_THREAD = "put-thread";
     public static final String GET_THREAD = "get-thread";
 
@@ -228,16 +229,37 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     }
 
     private static class ProgressWatchdog {
-
         private final LongAdder8 longAdder8 = new LongAdder8();
+        private final FileWriter txtWriter;
 
         private ScheduledExecutorService svc = Executors.newScheduledThreadPool(1);
-        private String operation = "put";
+        private final String operation;
         private Ignite ignite;
         private volatile boolean stopping;
 
-        public ProgressWatchdog(Ignite ignite) {
+        ProgressWatchdog(Ignite ignite) throws IgniteCheckedException, IOException {
+            this(ignite, "put");
+        }
+
+        ProgressWatchdog(Ignite ignite, String operation) throws IgniteCheckedException, IOException {
             this.ignite = ignite;
+            this.operation = operation;
+            txtWriter = new FileWriter(new File(getTempDirFile(), "watchdog-" + operation + ".txt"));
+            line("cur." + operation + "/sec", "avg." + operation + "/sec",
+                "dirtyPages", "cpWrittenPages");
+        }
+
+        private void line(Object... parms) {
+            try {
+                for (int i = 0; i < parms.length; i++) {
+                    Object parm = parms[i];
+                    txtWriter.write(parm
+                        + ((i < parms.length - 1) ? "\t" : "\n"));
+                }
+                txtWriter.flush();
+            }
+            catch (IOException ignored) {
+            }
         }
 
         public void start() {
@@ -312,6 +334,8 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                         "walIdx=" + idx + " " +
                         fileNameWithDump);
 
+                    line(currPutPerSec, averagePutPerSec, dirtyPages, cpWrittenPages);
+
                 }
             }, checkPeriodSec, checkPeriodSec, TimeUnit.SECONDS);
         }
@@ -320,12 +344,11 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             try {
                 String s = generateThreadDump();
                 long sec = (U.currentTimeMillis() - msStart) / 1000;
-                String fileName = "dumpAt" + sec + "second.txt";
+                String fileName = "dumpAt" + sec + "second.txtWriter";
                 if (s.contains(IgniteCacheDatabaseSharedManager.class.getName() + ".checkpointLock"))
                     fileName = "checkpoint_" + fileName;
 
-                File tempDir = new File(U.defaultWorkDirectory(), "temp");
-                tempDir.mkdirs();
+                File tempDir = getTempDirFile();
                 try (FileWriter writer = new FileWriter(new File(tempDir, fileName))) {
                     writer.write(s);
                 }
@@ -342,6 +365,8 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
         }
 
         public void stop() {
+            U.closeQuiet(txtWriter);
+
             svc.shutdown();
             try {
                 svc.awaitTermination(10, TimeUnit.SECONDS);
@@ -355,6 +380,15 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
         public void stopping() {
             this.stopping = true;
         }
+    }
+
+    @NotNull private static File getTempDirFile() throws IgniteCheckedException {
+        File tempDir = new File(U.defaultWorkDirectory(), "temp");
+
+        if (!tempDir.exists())
+            tempDir.mkdirs();
+
+        return tempDir;
     }
 
     public void testContinuousPutMultithreaded() throws Exception {
@@ -415,9 +449,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
         final IgniteCache<Integer, IndexedObject> restartedCache = restartedIgnite.cache(CACHE_NAME);
 
-        final ProgressWatchdog watchdog2 = new ProgressWatchdog(restartedIgnite);
-
-        watchdog2.operation = "get";
+        final ProgressWatchdog watchdog2 = new ProgressWatchdog(restartedIgnite, "get");
 
         final Collection<Callable<?>> tasksR = new ArrayList<>();
         tasksR.clear();
