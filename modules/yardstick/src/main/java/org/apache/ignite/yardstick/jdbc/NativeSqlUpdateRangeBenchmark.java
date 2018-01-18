@@ -39,13 +39,7 @@ public class NativeSqlUpdateRangeBenchmark extends AbstractNativeBenchmark {
 
         SqlFieldsQuery qry;
 
-        if (args.sqlRange() <= 0) {
-
-            qry = new SqlFieldsQuery("UPDATE test_long SET val = (val + 1)");
-
-            expRsSize = args.range();
-        }
-        else if (args.sqlRange() == 1) {
+        if (args.sqlRange() == 1) {
             qry = new SqlFieldsQuery("UPDATE test_long SET val = (val + 1) WHERE id = ?");
 
             qry.setArgs(ThreadLocalRandom.current().nextLong(args.range()) + 1);

@@ -38,12 +38,7 @@ public class NativeSqlQueryRangeBenchmark extends AbstractNativeBenchmark {
 
         SqlFieldsQuery qry;
 
-        if (args.sqlRange() <= 0) {
-            qry = new SqlFieldsQuery("SELECT id, val FROM test_long");
-
-            expRsSize = args.range();
-        }
-        else if (args.sqlRange() == 1) {
+        if (args.sqlRange() == 1) {
             qry = new SqlFieldsQuery("SELECT id, val FROM test_long WHERE id = ?");
 
             qry.setArgs(ThreadLocalRandom.current().nextLong(args.range()) + 1);

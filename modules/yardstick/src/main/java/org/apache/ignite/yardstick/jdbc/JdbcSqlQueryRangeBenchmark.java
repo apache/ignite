@@ -30,9 +30,6 @@ public class JdbcSqlQueryRangeBenchmark extends AbstractJdbcBenchmark {
     private ThreadLocal<PreparedStatement> stmtRange = newStatement("SELECT id, val FROM test_long WHERE id BETWEEN ? AND ?");
 
     /** Statement full scan. */
-    private ThreadLocal<PreparedStatement> stmtFull = newStatement("SELECT id, val FROM test_long");
-
-    /** Statement full scan. */
     private ThreadLocal<PreparedStatement> stmtSingle = newStatement("SELECT id, val FROM test_long WHERE id = ?");
 
     /** {@inheritDoc} */
@@ -41,12 +38,7 @@ public class JdbcSqlQueryRangeBenchmark extends AbstractJdbcBenchmark {
 
         PreparedStatement stmt;
 
-        if (args.sqlRange() <= 0) {
-            stmt = stmtFull.get();
-
-            expRsSize = args.range();
-        }
-        else if (args.sqlRange() == 1) {
+        if (args.sqlRange() == 1) {
             stmt = stmtSingle.get();
 
             stmt.setLong(1, ThreadLocalRandom.current().nextLong(args.range()) + 1);
