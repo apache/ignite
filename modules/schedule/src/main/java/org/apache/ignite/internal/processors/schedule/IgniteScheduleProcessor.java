@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.schedule.impl.SpringScheduler;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteCallable;
@@ -108,7 +109,7 @@ public class IgniteScheduleProcessor extends IgniteScheduleProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void start() {
-        sched = SchedulerFactory.createScheduler();
+        sched = new SpringScheduler();
 
         sched.start();
     }

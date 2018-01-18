@@ -129,7 +129,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
         SchedulerFuture<?> fut = null;
 
-        long freq = 2; // 1 second frequency.
+        long freq = 2; // 2 seconds frequency.
         long delay = 2; // 2 seconds delay.
 
         try {
@@ -254,7 +254,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
                     return ++this.cnt;
                 }
-            }, "{1, " + cnt + "} * * * * *");
+            }, "{1, " + cnt + "} * * * * * ?"); //with Day of week
 
             final AtomicInteger notifyCnt = new AtomicInteger();
 
@@ -363,10 +363,10 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
                 info("Caught expected exception: " + e);
             }
             assertEquals(Integer.valueOf(1), fut.last());
-            assertEquals(1, notifyCnt.get());
             //wait to check not executed by schedule
             Thread.sleep(timeTillRun * 1000);
             assertEquals(1, execCnt.get());
+            assertEquals(1, notifyCnt.get());
         }
         finally {
             assert fut != null;

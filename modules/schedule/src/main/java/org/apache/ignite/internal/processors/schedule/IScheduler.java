@@ -22,20 +22,57 @@ package org.apache.ignite.internal.processors.schedule;
 import org.apache.ignite.internal.processors.schedule.exception.IgniteSchedulerException;
 import org.apache.ignite.internal.processors.schedule.exception.IgniteSchedulerParseException;
 
+/**
+ *
+ */
 public interface IScheduler {
-    void start();
+    /**
+     * Start scheduler
+     */
+    public void start();
 
-    boolean isStarted();
+    /**
+     * @return state of scheduler
+     */
+    public boolean isStarted();
 
-    void stop();
+    /**
+     * Stop scheduler
+     */
+    public void stop();
 
-    String schedule(String cron, Runnable run) throws IgniteSchedulerException;
+    /**
+     * @param cron expression
+     * @param run scheduling code
+     * @return task id
+     * @throws IgniteSchedulerException if cron expression is not valid or
+     * if the given task was not accepted for internal reasons (e.g. a pool overload handling policy or a pool shutdown in progress)
+     */
+    public String schedule(String cron, Runnable run) throws IgniteSchedulerException;
 
-    void deschedule(String id);
+    /**
+     * @param id Task id
+     */
+    public void deschedule(String id);
 
-    boolean isValid(String cron);
+    /**
+     * @param cron expression
+     * @return true if expression is valid, otherwise false
+     */
+    public boolean isValid(String cron);
 
-    void validate(String cron) throws IgniteSchedulerParseException;
+    /**
+     * @param cron expression
+     * @throws IgniteSchedulerParseException if cron expression is not valid
+     */
+    public void validate(String cron) throws IgniteSchedulerParseException;
 
-    long[] getNextExecutionTimes(String cron, int cnt, long start) throws IgniteSchedulerParseException;
+    /**
+     * @param cron expression
+     * @param cnt count of executions
+     * @param start time in milliseconds
+     * @return array long[cnt] of the next execition times in milliseconds
+     * @throws IgniteSchedulerParseException if cron expression is not valid
+     */
+    public long[] getNextExecutionTimes(String cron, int cnt, long start) throws IgniteSchedulerParseException;
 }
