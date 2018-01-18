@@ -74,7 +74,7 @@ public class FilePageStore implements PageStore {
     private final AtomicLong allocated;
 
     /** Shared allocation counter to be updated on store size changes, excluding header. */
-    private final LongAdder totalAllocated;
+    private final LongAdder totalAllocatedPages;
 
     /** */
     private final int pageSize;
@@ -99,14 +99,14 @@ public class FilePageStore implements PageStore {
      * @param file Underlying file.
      * @param factory {@link FileIO} factory.
      * @param cfg durable memory configuration.
-     * @param totalAllocated Counter to be updated on store size changes.
+     * @param totalAllocatedPages Counter to be updated on store size changes.
      */
     public FilePageStore(
         byte type,
         File file,
         FileIOFactory factory,
         DataStorageConfiguration cfg,
-        LongAdder totalAllocated
+        LongAdder totalAllocatedPages
     ) {
         this.type = type;
 
@@ -118,7 +118,7 @@ public class FilePageStore implements PageStore {
 
         pageSize = dbCfg.getPageSize();
 
-        this.totalAllocated = totalAllocated;
+        this.totalAllocatedPages = totalAllocatedPages;
     }
 
     /** {@inheritDoc} */
@@ -286,7 +286,7 @@ public class FilePageStore implements PageStore {
 
             allocated.set(newAlloc);
 
-            totalAllocated.add(delta);
+            totalAllocatedPages.add(delta / pageSize);
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);
@@ -322,7 +322,11 @@ public class FilePageStore implements PageStore {
             if (inited) {
                 long newSize = Math.max(headerSize() + pageSize, fileIO.size());
 
-                totalAllocated.add(newSize - allocated.get());
+                long delta = newSize - allocated.get();
+
+                assert delta % pageSize == 0;
+
+                totalAllocatedPages.add(delta / pageSize);
 
                 allocated.set(newSize);
             }
@@ -441,7 +445,11 @@ public class FilePageStore implements PageStore {
 
                         assert allocated.get() == 0;
 
-                        totalAllocated.add(newSize - headerSize());
+                        long delta = newSize - headerSize();
+
+                        assert delta % pageSize == 0;
+
+                        totalAllocatedPages.add(delta / pageSize);
 
                         allocated.set(newSize);
 
@@ -583,7 +591,7 @@ public class FilePageStore implements PageStore {
             off = allocated.get();
 
             if (allocated.compareAndSet(off, off + pageSize)) {
-                totalAllocated.add(pageSize);
+                totalAllocatedPages.add(1);
                 break;
             }
         }

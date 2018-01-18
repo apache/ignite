@@ -111,7 +111,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private final Set<Integer> grpsWithoutIdx = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
 
     /** */
-    private final Map<String, LongAdder> totalAllocatedPerRegion = new ConcurrentHashMap<>();
+    private final Map<String, LongAdder> totalAllocatedPagesPerRegion = new ConcurrentHashMap<>();
 
     /**
      * @param ctx Kernal context.
@@ -390,21 +390,21 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         FileVersionCheckingFactory pageStoreFactory = new FileVersionCheckingFactory(
             dsCfg.getFileIOFactory(), igniteCfg.getDataStorageConfiguration());
 
-        LongAdder totalAllocated = totalAllocatedPerRegion.get(dataRegionName);
+        LongAdder totalAllocatedPages = totalAllocatedPagesPerRegion.get(dataRegionName);
 
-        if (totalAllocated == null) {
-            totalAllocated = new LongAdder();
+        if (totalAllocatedPages == null) {
+            totalAllocatedPages = new LongAdder();
 
-            totalAllocatedPerRegion.put(dataRegionName, totalAllocated);
+            totalAllocatedPagesPerRegion.put(dataRegionName, totalAllocatedPages);
         }
 
-        FilePageStore idxStore = pageStoreFactory.createPageStore(PageMemory.FLAG_IDX, idxFile, totalAllocated);
+        FilePageStore idxStore = pageStoreFactory.createPageStore(PageMemory.FLAG_IDX, idxFile, totalAllocatedPages);
 
         FilePageStore[] partStores = new FilePageStore[partitions];
 
         for (int partId = 0; partId < partStores.length; partId++) {
             FilePageStore partStore = pageStoreFactory.createPageStore(
-                PageMemory.FLAG_DATA, getPartitionFile(cacheWorkDir, partId), totalAllocated);
+                PageMemory.FLAG_DATA, getPartitionFile(cacheWorkDir, partId), totalAllocatedPages);
 
             partStores[partId] = partStore;
         }
@@ -613,9 +613,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public long pagesAllocated(String dataRegionName) {
-        LongAdder totalAllocated = totalAllocatedPerRegion.get(dataRegionName);
+        LongAdder totalAllocated = totalAllocatedPagesPerRegion.get(dataRegionName);
 
-        return totalAllocated != null ? totalAllocated.sum() / dsCfg.getPageSize() : 0;
+        return totalAllocated != null ? totalAllocated.sum() : 0;
     }
 
     /**

@@ -52,17 +52,17 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public FilePageStore createPageStore(byte type, File file, LongAdder totalAllocated)
+    @Override public FilePageStore createPageStore(byte type, File file, LongAdder totalAllocatedPages)
         throws IgniteCheckedException
     {
         if (!file.exists())
-            return createPageStore(type, file, latestVersion(), totalAllocated);
+            return createPageStore(type, file, latestVersion(), totalAllocatedPages);
 
         try (FileIO fileIO = fileIOFactory.create(file)) {
             int minHdr = FilePageStore.HEADER_SIZE;
 
             if (fileIO.size() < minHdr)
-                return createPageStore(type, file, latestVersion(), totalAllocated);
+                return createPageStore(type, file, latestVersion(), totalAllocatedPages);
 
             ByteBuffer hdr = ByteBuffer.allocate(minHdr).order(ByteOrder.LITTLE_ENDIAN);
 
@@ -75,7 +75,7 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
 
             int ver = hdr.getInt();
 
-            return createPageStore(type, file, ver, totalAllocated);
+            return createPageStore(type, file, ver, totalAllocatedPages);
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Error while creating file page store [file=" + file + "]:", e);
@@ -103,17 +103,17 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
      * @param type Type.
      * @param file File.
      * @param ver Version.
-     * @param totalAllocated counter to be updated on store size changes.
+     * @param totalAllocatedPages counter to be updated on store size changes.
      */
-    public FilePageStore createPageStore(byte type, File file, int ver, LongAdder totalAllocated)
+    public FilePageStore createPageStore(byte type, File file, int ver, LongAdder totalAllocatedPages)
         throws IgniteCheckedException
     {
         switch (ver) {
             case FilePageStore.VERSION:
-                return new FilePageStore(type, file, fileIOFactory, memCfg, totalAllocated);
+                return new FilePageStore(type, file, fileIOFactory, memCfg, totalAllocatedPages);
 
             case FilePageStoreV2.VERSION:
-                return new FilePageStoreV2(type, file, fileIOFactory, memCfg, totalAllocated);
+                return new FilePageStoreV2(type, file, fileIOFactory, memCfg, totalAllocatedPages);
 
             default:
                 throw new IllegalArgumentException("Unknown version of file page store: " + ver);

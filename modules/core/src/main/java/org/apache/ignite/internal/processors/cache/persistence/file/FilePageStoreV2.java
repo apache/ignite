@@ -35,16 +35,16 @@ public class FilePageStoreV2 extends FilePageStore {
      * @param file File.
      * @param factory Factory.
      * @param cfg Config.
-     * @param totalAllocated Counter to be updated on store size changes.
+     * @param totalAllocatedPages Counter to be updated on store size changes.
      */
     public FilePageStoreV2(
         byte type,
         File file,
         FileIOFactory factory,
         DataStorageConfiguration cfg,
-        LongAdder totalAllocated
+        LongAdder totalAllocatedPages
     ) {
-        super(type, file, factory, cfg, totalAllocated);
+        super(type, file, factory, cfg, totalAllocatedPages);
 
         hdrSize = cfg.getPageSize();
     }
