@@ -311,9 +311,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         cctx.io().addCacheHandler(0, GridDhtPartitionsSingleMessage.class,
             new MessageHandler<GridDhtPartitionsSingleMessage>() {
                 @Override public void onMessage(final ClusterNode node, final GridDhtPartitionsSingleMessage msg) {
-                    if (msg.client() && msg.crdChange())
-                        System.out.println("RECEIVED CLIENT SINGLE MSG " + cctx.igniteInstanceName() + " " + msg);
-
                     if (!crdInitFut.isDone() && !msg.restoreState()) {
                         GridDhtPartitionExchangeId exchId = msg.exchangeId();
 
@@ -484,25 +481,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 exchFut = exchangeFuture(exchId, evt, null, null, null);
             }
-            else if (customMsg instanceof WalStateAbstractMessage) {
-                if (((WalStateAbstractMessage)customMsg).needExchange()) {
-                    exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt);
-
-                    exchFut = exchangeFuture(exchId, evt, null, null, null);
-                }
-                else if (customMsg instanceof WalStateProposeMessage) {
-                    WalStateProposeMessage msg0 = (WalStateProposeMessage)customMsg;
-
-                    WalStateManager walMgr = cctx.walState();
-
-                    CacheGroupDescriptor grpDesc = cctx.cache().cacheGroupDescriptors().get(msg0.groupId());
-
-                    //WalStateManager.dumpDisco();
-
-//                    System.out.println(">>> IGNORED PROPOSE " + cctx.igniteInstanceName() + " " + msg0);
-                }
-            }
-
             else if (customMsg instanceof WalStateAbstractMessage
                 && ((WalStateAbstractMessage)customMsg).needExchange()) {
                 exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt);
@@ -2304,8 +2282,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (task == null)
                         continue; // Main while loop.
 
-                    // System.out.println(">>> TASK [node=" + cctx.igniteInstanceName() + ", task=" + task + ']');
-
                     if (!isExchangeTask(task)) {
                         processCustomTask(task);
 
@@ -2363,24 +2339,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             long nextDumpTime = 0;
 
-                            int i = 0;
-
                             while (true) {
                                 try {
-                                    WalStateManager walMgr = cctx.walState();
-
                                     resVer = exchFut.get(futTimeout, TimeUnit.MILLISECONDS);
 
                                     break;
                                 }
                                 catch (IgniteFutureTimeoutCheckedException ignored) {
-                                    i++;
-
-                                    if (i == 5)
-                                        WalStateManager.dumpDisco();
-
-                                    System.out.println(cctx.igniteInstanceName() + " " + i + ": Failed to wait for partition map exchange [" +
-                                        "topVer=" + exchFut.initialVersion() + ", evt=" + exchFut.firstEvent() +
+                                    U.warn(diagnosticLog, "Failed to wait for partition map exchange [" +
+                                        "topVer=" + exchFut.initialVersion() +
                                         ", node=" + cctx.localNodeId() + "]. " +
                                         "Dumping pending objects that might be the cause: ");
 
