@@ -103,7 +103,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
         assert pageMem != null;
 
-        return pageMem.storeMgr().pagesAllocated(memPlcCfg.getName());
+        return pageMem.storeManager().pagesAllocated(memPlcCfg.getName());
     }
 
     /** {@inheritDoc} */
