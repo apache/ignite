@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.sql.BatchUpdateException;
 import java.sql.ParameterMetaData;
+import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -52,8 +54,10 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_3_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_4_0;
@@ -530,19 +534,21 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         if (F.isEmpty(schemaName))
             schemaName = QueryUtils.DFLT_SCHEMA;
 
-        int successQueries = 0;
-        int updCnts[] = new int[req.queries().size()];
+        int qryCnt = req.queries().size();
 
-        try {
-            String sql = null;
+        List<Integer> updCntsAcc = new ArrayList<>(qryCnt);
 
-            for (JdbcQuery q : req.queries()) {
-                if (q.sql() != null)
-                    sql = q.sql();
+        // Send back only the first error. Others will be written to the log.
+        IgniteBiTuple<Integer, String> firstErr = new IgniteBiTuple<>();
 
-                SqlFieldsQueryEx qry = new SqlFieldsQueryEx(sql, false);
+        SqlFieldsQueryEx qry = null;
 
-                qry.setArgs(q.args());
+        for (JdbcQuery q : req.queries()) {
+            if (q.sql() != null) { // If we have a new query string in the batch,
+                if (qry != null) // then execute the previous sub-batch and create a new SqlFieldsQueryEx.
+                    executeBatchedQuery(qry, updCntsAcc, firstErr);
+
+                qry = new SqlFieldsQueryEx(q.sql(), false);
 
                 qry.setDistributedJoins(distributedJoins);
                 qry.setEnforceJoinOrder(enforceJoinOrder);
@@ -553,38 +559,88 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 qry.setAutoCommit(req.autoCommit());
 
                 qry.setSchema(schemaName);
-
-                QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query()
-                    .querySqlFieldsNoCache(qry, true, true).get(0);
-
-                assert !qryCur.isQuery();
-
-                List<List<?>> items = qryCur.getAll();
-
-                updCnts[successQueries++] = ((Long)items.get(0).get(0)).intValue();
             }
 
+            assert qry != null;
+
+            qry.addBatchedArgs(q.args());
+        }
+
+        if (qry != null)
+            executeBatchedQuery(qry, updCntsAcc, firstErr);
+
+        int updCnts[] = U.toIntArray(updCntsAcc);
+
+        if (firstErr.isEmpty())
             return new JdbcResponse(new JdbcBatchExecuteResult(updCnts, ClientListenerResponse.STATUS_SUCCESS, null));
+        else
+            return new JdbcResponse(new JdbcBatchExecuteResult(updCnts, firstErr.getKey(), firstErr.getValue()));
+    }
+
+    /**
+     * Executes query and updates result counters.
+     *
+     * @param qry Query.
+     * @param updCntsAcc Per query rows updates counter.
+     * @param firstErr First error data - code and message.
+     */
+    private void executeBatchedQuery(SqlFieldsQueryEx qry, List<Integer> updCntsAcc,
+        IgniteBiTuple<Integer, String> firstErr) {
+        try {
+            List<FieldsQueryCursor<List<?>>> qryRes = ctx.query().querySqlFieldsNoCache(qry, true, true);
+
+            for (FieldsQueryCursor<List<?>> cur : qryRes) {
+                assert !((QueryCursorImpl)cur).isQuery();
+
+                Iterator<List<?>> it = cur.iterator();
+
+                if (it.hasNext()) {
+                    int val = ((Long)it.next().get(0)).intValue();
+
+                    updCntsAcc.add(val);
+                }
+            }
         }
         catch (Exception e) {
-            U.error(log, "Failed to execute batch query [reqId=" + req.requestId() + ", req=" + req + ']', e);
-
             int code;
 
             String msg;
 
             if (e instanceof IgniteSQLException) {
-                code = ((IgniteSQLException) e).statusCode();
+                BatchUpdateException batchCause = X.cause(e, BatchUpdateException.class);
 
-                msg = e.getMessage();
+                if (batchCause != null) {
+                    int[] updCntsOnErr = batchCause.getUpdateCounts();
+
+                    for (int i = 0; i < updCntsOnErr.length; i++)
+                        updCntsAcc.add(updCntsOnErr[i]);
+
+                    msg = batchCause.getMessage();
+
+                    code = batchCause.getErrorCode();
+                }
+                else {
+                    for (int i = 0; i < qry.batchedArguments().size(); i++)
+                        updCntsAcc.add(Statement.EXECUTE_FAILED);
+
+                    msg = e.getMessage();
+
+                    code = ((IgniteSQLException)e).statusCode();
+                }
             }
             else {
-                code = IgniteQueryErrorCode.UNKNOWN;
+                for (int i = 0; i < qry.batchedArguments().size(); i++)
+                    updCntsAcc.add(Statement.EXECUTE_FAILED);
 
                 msg = e.getMessage();
+
+                code = IgniteQueryErrorCode.UNKNOWN;
             }
 
-            return new JdbcResponse(new JdbcBatchExecuteResult(Arrays.copyOf(updCnts, successQueries), code, msg));
+            if (firstErr.isEmpty())
+                firstErr.set(code, msg);
+            else
+                U.error(log, "Failed to execute batch query [qry=" + qry +']', e);
         }
     }
 
