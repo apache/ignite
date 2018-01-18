@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.pagemem.store;
 
-import org.apache.ignite.IgniteCheckedException;
-
 import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * Persistent store of pages.
@@ -53,10 +52,9 @@ public interface PageStore {
      * @param pageId Page ID.
      * @param pageBuf Page buffer to read into.
      * @param keepCrc by default reading zeroes CRC which was on file, but you can keep it in pageBuf if set keepCrc
-     * @return false when store is still not initialized.
      * @throws IgniteCheckedException If reading failed (IO error occurred).
      */
-    public boolean read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException;
+    public void read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException;
 
     /**
      * Reads a header.

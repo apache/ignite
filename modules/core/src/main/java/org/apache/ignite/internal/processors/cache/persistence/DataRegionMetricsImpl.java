@@ -98,7 +98,12 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedPages() {
-        return metricsEnabled ? pageMem.storeMgr().bytesAllocated(memPlcCfg.getName()) / pageMem.pageSize() : 0;
+        if (!metricsEnabled)
+            return 0;
+
+        assert pageMem != null;
+
+        return pageMem.storeMgr().pagesAllocated(memPlcCfg.getName());
     }
 
     /** {@inheritDoc} */
@@ -207,44 +212,21 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     }
 
     /**
-     * Increments totalAllocatedPages counter by 1.
+     * Increments totalAllocatedPages counter.
      */
     public void incrementTotalAllocatedPages() {
         if (metricsEnabled) {
             totalAllocatedPages.increment();
 
-            updateAllocationRateMetrics(1);
+            updateAllocationRateMetrics();
         }
     }
 
     /**
-     * Increments totalAllocatedPages counter.
-     *
-     * @param n number of pages to increment by.
-     */
-    public void incrementTotalAllocatedPages(long n) {
-        if (metricsEnabled) {
-            totalAllocatedPages.add(n);
-
-            updateAllocationRateMetrics(n);
-        }
-    }
-
-    /**
-     * Decrements totalAllocatedPages.
-     *
-     * @param n number of pages to decrement by.
-     */
-    public void decrementTotalAllocatedPages(long n) {
-        if (metricsEnabled)
-            totalAllocatedPages.add(-n);
-    }
-
-    /**
      *
      */
-    private void updateAllocationRateMetrics(long n) {
-        allocRate.onHits(n);
+    private void updateAllocationRateMetrics() {
+        allocRate.onHit();
     }
 
     /**
@@ -326,10 +308,5 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         allocRate = new HitRateMetrics((int) rateTimeInterval, subInts);
         pageReplaceRate = new HitRateMetrics((int)rateTimeInterval, subInts);
         pageReplaceAge = new HitRateMetrics((int)rateTimeInterval, subInts);
-    }
-
-    /** */
-    public int pageSize() {
-        return pageMem.pageSize();
     }
 }

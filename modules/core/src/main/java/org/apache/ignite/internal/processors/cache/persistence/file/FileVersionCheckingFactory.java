@@ -106,7 +106,8 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
      * @param totalAllocated counter to be updated on store size changes.
      */
     public FilePageStore createPageStore(byte type, File file, int ver, LongAdder totalAllocated)
-        throws IgniteCheckedException {
+        throws IgniteCheckedException
+    {
         switch (ver) {
             case FilePageStore.VERSION:
                 return new FilePageStore(type, file, fileIOFactory, memCfg, totalAllocated);

@@ -25,7 +25,6 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 
 /**
@@ -83,10 +82,9 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @param grpId Cache group ID of the evicted partition.
      * @param partId Partition ID.
      * @param tag Partition tag (growing 1-based partition file version).
-     * @param memMetrics memory metrics to update, if necessary.
      * @throws IgniteCheckedException If failed to handle partition destroy callback.
      */
-    public void onPartitionDestroyed(int grpId, int partId, int tag, DataRegionMetricsImpl memMetrics)
+    public void onPartitionDestroyed(int grpId, int partId, int tag)
         throws IgniteCheckedException;
 
     /**
@@ -211,10 +209,10 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
     public long pagesAllocated(int grpId);
 
     /**
-     * Calculates number of bytes currently allocated for given data region.
+     * Calculates number of pages currently allocated for given data region.
      *
      * @param dataRegionName data region name.
      * @return number of pages.
      */
-    public long bytesAllocated(String dataRegionName);
+    public long pagesAllocated(String dataRegionName);
 }

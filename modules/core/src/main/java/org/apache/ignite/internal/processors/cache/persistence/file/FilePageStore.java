@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -69,10 +70,10 @@ public class FilePageStore implements PageStore {
     /** I/O interface for read/write operations with file */
     private FileIO fileIO;
 
-    /** */
+    /** Size of current file storage, including header. */
     private final AtomicLong allocated;
 
-    /** Counter to be updated on store size changes. */
+    /** Shared allocation counter to be updated on store size changes, excluding header. */
     private final LongAdder totalAllocated;
 
     /** */
@@ -94,7 +95,10 @@ public class FilePageStore implements PageStore {
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     /**
-     * @param file File.
+     * @param type Store type; one of {@link PageIdAllocator} flag constants.
+     * @param file Underlying file.
+     * @param factory {@link FileIO} factory.
+     * @param cfg durable memory configuration.
      * @param totalAllocated Counter to be updated on store size changes.
      */
     public FilePageStore(
@@ -274,15 +278,13 @@ public class FilePageStore implements PageStore {
 
             fileIO.clear();
 
-            long prevAlloc = allocated.get();
-
             long newAlloc = initFile();
 
-            assert (prevAlloc - newAlloc) % dbCfg.getPageSize() == 0;
+            long delta = newAlloc - allocated.get();
+
+            assert delta % dbCfg.getPageSize() == 0;
 
             allocated.set(newAlloc);
-
-            long delta = newAlloc - prevAlloc;
 
             totalAllocated.add(delta);
         }
@@ -336,8 +338,8 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
-        boolean initRes = init();
+    @Override public void read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
+        init();
 
         try {
             long off = pageOffset(pageId);
@@ -355,7 +357,7 @@ public class FilePageStore implements PageStore {
                 if (n < 0) {
                     pageBuf.put(new byte[pageBuf.remaining()]);
 
-                 return initRes;
+                    return;
                 }
 
                 off += n;
@@ -388,8 +390,6 @@ public class FilePageStore implements PageStore {
         catch (IOException e) {
             throw new IgniteCheckedException("Read error", e);
         }
-
-        return initRes;
     }
 
     /** {@inheritDoc} */
@@ -424,7 +424,7 @@ public class FilePageStore implements PageStore {
     /**
      * @throws IgniteCheckedException If failed to initialize store file.
      */
-    private boolean init() throws IgniteCheckedException {
+    private void init() throws IgniteCheckedException {
         if (!inited) {
             lock.writeLock().lock();
 
@@ -446,8 +446,6 @@ public class FilePageStore implements PageStore {
                         allocated.set(newSize);
 
                         inited = true;
-
-                        return true;
                     }
                     catch (IOException e) {
                         throw err = new IgniteCheckedException("Can't open file: " + cfgFile.getName(), e);
@@ -467,8 +465,6 @@ public class FilePageStore implements PageStore {
                 lock.writeLock().unlock();
             }
         }
-
-        return false;
     }
 
     /** {@inheritDoc} */
@@ -603,10 +599,4 @@ public class FilePageStore implements PageStore {
 
         return (int)((allocated.get() - headerSize()) / pageSize);
     }
-
-    /** */
-    public boolean isInitialized() {
-        return inited;
-    }
-
 }

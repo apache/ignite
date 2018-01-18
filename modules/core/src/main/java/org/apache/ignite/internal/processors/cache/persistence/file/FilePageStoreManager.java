@@ -49,9 +49,8 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -271,8 +270,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void onPartitionDestroyed(int grpId, int partId, int tag, DataRegionMetricsImpl memMetrics)
-        throws IgniteCheckedException
+    @Override public void onPartitionDestroyed(int grpId, int partId, int tag) throws IgniteCheckedException
     {
         assert partId <= PageIdAllocator.MAX_PARTITION_ID;
 
@@ -506,9 +504,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public long allocatePage(int grpId, int partId, byte flags)
-        throws IgniteCheckedException
-    {
+    @Override public long allocatePage(int grpId, int partId, byte flags) throws IgniteCheckedException {
         assert partId <= PageIdAllocator.MAX_PARTITION_ID || partId == PageIdAllocator.INDEX_PARTITION;
 
         PageStore store = getStore(grpId, partId);
@@ -617,10 +613,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public long bytesAllocated(String dataRegionName) {
+    @Override public long pagesAllocated(String dataRegionName) {
         LongAdder totalAllocated = totalAllocatedPerRegion.get(dataRegionName);
 
-        return totalAllocated != null ? totalAllocated.sum() : 0;
+        return totalAllocated != null ? totalAllocated.sum() / dsCfg.getPageSize() : 0;
     }
 
     /**
