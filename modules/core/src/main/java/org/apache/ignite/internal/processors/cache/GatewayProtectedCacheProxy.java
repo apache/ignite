@@ -387,6 +387,20 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
+    @Override public List<FieldsQueryCursor<List<?>>> queryMultipleStatements(SqlFieldsQuery qry) {
+        GridCacheGateway<K, V> gate = gate();
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
+
+        try {
+            return delegate.queryMultipleStatements(qry);
+        }
+        finally {
+            onLeave(gate, prev);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public <T, R> QueryCursor<R> query(Query<T> qry, IgniteClosure<T, R> transformer) {
         GridCacheGateway<K, V> gate = gate();
 
