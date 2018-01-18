@@ -56,7 +56,7 @@ public class MLPGroupTrainerExample {
      */
     public static void main(String[] args) throws InterruptedException {
         // IMPL NOTE based on MLPGroupTrainerTest#testXOR
-        System.out.println(">>> Distributed  multilayer perceptron example started.");
+        System.out.println(">>> Distributed multilayer perceptron example started.");
 
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
