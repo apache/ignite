@@ -38,9 +38,6 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     private static final byte RESTORE_STATE_FLAG_MASK = 0x02;
 
     /** */
-    private static final byte CRD_CHANGE_FLAG_MASK = 0x04;
-
-    /** */
     private static final long serialVersionUID = 0L;
 
     /** Exchange ID. */
@@ -144,20 +141,6 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
      */
     public boolean restoreState() {
         return (flags & RESTORE_STATE_FLAG_MASK) != 0;
-    }
-
-    /**
-     *
-     */
-    void crdChange(boolean crdChange) {
-        flags = crdChange ? (byte)(flags | CRD_CHANGE_FLAG_MASK) : (byte)(flags & ~CRD_CHANGE_FLAG_MASK);
-    }
-
-    /**
-     * @return Restore exchange state flag.
-     */
-    public boolean crdChange() {
-        return (flags & CRD_CHANGE_FLAG_MASK) != 0;
     }
 
     /** {@inheritDoc} */

@@ -154,7 +154,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private List<ClusterNode> srvNodes;
 
     /** */
-    private volatile ClusterNode crd;
+    private ClusterNode crd;
 
     /** ExchangeFuture id. */
     private final GridDhtPartitionExchangeId exchId;
@@ -281,7 +281,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param cctx Cache context.
      * @param busyLock Busy lock.
      * @param exchId Exchange ID.
-     * @param exchActions Cache change requests.1
+     * @param exchActions Cache change requests.
      * @param affChangeMsg Affinity change message.
      */
     public GridDhtPartitionsExchangeFuture(
@@ -1008,7 +1008,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             assert !crd.isLocal() : crd;
 
             if (!centralizedAff)
-                sendLocalPartitions(crd, false);
+                sendLocalPartitions(crd);
 
             initDone();
 
@@ -1083,7 +1083,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 onAllReceived(null);
         }
         else
-            sendPartitions(crd, false);
+            sendPartitions(crd);
 
         initDone();
     }
@@ -1302,7 +1302,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param node Target Node.
      * @throws IgniteCheckedException If failed.
      */
-    private void sendLocalPartitions(ClusterNode node, boolean crdChanged) throws IgniteCheckedException {
+    private void sendLocalPartitions(ClusterNode node) throws IgniteCheckedException {
         assert node != null;
 
         GridDhtPartitionsSingleMessage msg;
@@ -1342,12 +1342,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (log.isDebugEnabled())
             log.debug("Sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId + ", msg=" + msg + ']');
 
-        msg.crdChange(crdChanged);
-
         try {
-            if (crdChanged)
-                System.out.println("RESPONDING TO CRD CHANGE " + cctx.igniteInstanceName() + " " + msg);
-
             cctx.io().send(node, msg, SYSTEM_POOL);
         }
         catch (ClusterTopologyCheckedException ignored) {
@@ -1453,9 +1448,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * @param oldestNode Oldest node. Target node to send message to.
      */
-    private void sendPartitions(ClusterNode oldestNode, boolean crdChanged) {
+    private void sendPartitions(ClusterNode oldestNode) {
         try {
-            sendLocalPartitions(oldestNode, crdChanged);
+            sendLocalPartitions(oldestNode);
         }
         catch (ClusterTopologyCheckedException ignore) {
             if (log.isDebugEnabled())
@@ -2695,8 +2690,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param msg Message with full partition info.
      */
     public void onReceivePartitionRequest(final ClusterNode node, final GridDhtPartitionsSingleRequest msg) {
-        System.out.println("RECEIVED SINGLE REQ " + cctx.igniteInstanceName() + " " + msg);
-
         assert !cctx.kernalContext().clientNode() || msg.restoreState();
         assert !node.isDaemon() && !CU.clientNode(node) : node;
 
@@ -2823,7 +2816,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         try {
-            sendLocalPartitions(node, false);
+            sendLocalPartitions(node);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send message to coordinator: " + e);
@@ -3158,13 +3151,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         try {
             onDiscoveryEvent(new IgniteRunnable() {
                 @Override public void run() {
-                    System.out.println("EXCHG ON NODE LEFT " + cctx.igniteInstanceName() + "[curCrd=" + crd.id() + ", left=" + node.id() + ']');
-
-                    ClusterNode oldCrd = crd;
-
-                    if (F.eq(crd.id(), node.id()) && cctx.discovery().localNode().isClient())
-                        System.out.println("EXCHG ON NODE LEFT CLI CRD CHANGE");
-
                     if (isDone() || !enterBusy())
                         return;
 
@@ -3205,11 +3191,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                 crdChanged = true;
 
                                 crd = !srvNodes.isEmpty() ? srvNodes.get(0) : null;
-
-                                System.out.println("CRD CHANGE 2 " + cctx.igniteInstanceName() + " " + crd.id());
-
-                                if (cctx.discovery().localNode().isClient())
-                                    System.out.println("CRD CHANGE 2 CLI");
                             }
 
                             switch (state) {
@@ -3321,7 +3302,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                         ", newCrd=" + crd0.id() + ']');
                                 }
 
-                                sendPartitions(crd0, true);
+                                sendPartitions(crd0);
                             }
                         }
                     }
