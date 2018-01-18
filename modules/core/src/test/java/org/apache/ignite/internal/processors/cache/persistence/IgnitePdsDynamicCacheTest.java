@@ -49,7 +49,7 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024).setPersistenceEnabled(true))
             .setWalMode(WALMode.LOG_ONLY)
-            .setPageSize(1024);
+            .setPageSize(4 * 1024);
 
         cfg.setDataStorageConfiguration(memCfg);
 

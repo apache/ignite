@@ -52,7 +52,7 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
     private static final int NUMBER_OF_SEGMENTS = 64;
 
     /** */
-    private static final int PAGE_SIZE = 1024;
+    private static final int PAGE_SIZE = 4 * 1024;
 
     /** */
     private static final long CHUNK_SIZE = 1024 * 1024;
