@@ -122,6 +122,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
     private final LinkedList<Object> allDisco = new LinkedList<>();
 
+    private final ArrayList<Object> outIo = new ArrayList<>();
+
     public static final Set<WalStateManager> MGRS = new GridConcurrentHashSet<>();
 
     /**
@@ -580,6 +582,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             else {
                 // Just send message to coordinator.
                 try {
+                    outIo.add(0, msg);
+
                     cctx.kernalContext().io().sendToGridTopic(crdNode, TOPIC_WAL, msg, SYSTEM_POOL);
                 }
                 catch (IgniteCheckedException e) {
@@ -617,7 +621,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @param msg Ack message.
      */
     public void onAck(WalStateAckMessage msg) {
-        synchronized (this) {
+        synchronized (mux) {
             if (completedOpIds.contains(msg.operationId()))
                 // Skip stale messages.
                 return;

@@ -499,7 +499,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     //WalStateManager.dumpDisco();
 
-                    System.out.println(">>> IGNORED PROPOSE " + cctx.igniteInstanceName() + " " + msg0);
+//                    System.out.println(">>> IGNORED PROPOSE " + cctx.igniteInstanceName() + " " + msg0);
                 }
             }
 

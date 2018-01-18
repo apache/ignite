@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
 import java.util.Collection;
@@ -33,6 +35,7 @@ public class WalStateDistributedProcess {
     private final WalStateProposeMessage msg;
 
     /** Remaining nodes. */
+    @GridToStringInclude
     private final Collection<UUID> remainingNodes;
 
     /** Acks. */
@@ -160,5 +163,10 @@ public class WalStateDistributedProcess {
         assert changed != null;
 
         return new WalStateFinishMessage(msg.operationId(), msg.groupId(), msg.groupDeploymentId(), changed, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(WalStateDistributedProcess.class, this);
     }
 }
