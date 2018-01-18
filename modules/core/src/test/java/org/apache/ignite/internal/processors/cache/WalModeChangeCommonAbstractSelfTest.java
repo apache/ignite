@@ -95,6 +95,16 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
         this.jdbc = jdbc;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        for (Ignite node0 : Ignition.allGrids()) {
+            Collection<String> cacheNames = node0.cacheNames();
+
+            for (String cacheName : cacheNames)
+                destroyCache(node0, cacheName);
+        }
+    }
+
     /**
      * Create cache.
      *

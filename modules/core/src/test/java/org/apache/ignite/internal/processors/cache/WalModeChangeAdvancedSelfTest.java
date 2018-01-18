@@ -52,6 +52,8 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         stopAllGrids();
 
         deleteWorkFiles();
@@ -271,8 +273,6 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
                     restartCnt.incrementAndGet();
 
                     X.println(">>> Finished restart: " + restartCnt.get());
-
-                    WalStateManager.dumpDisco();
                 }
             }
         });
