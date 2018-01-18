@@ -590,7 +590,11 @@ namespace Apache.Ignite.Core.Impl.Client
                 _socket.Dispose();
                 _listenerEvent.Set();
                 _listenerEvent.Dispose();
-                _timeoutCheckTimer.Dispose();
+
+                if (_timeoutCheckTimer != null)
+                {
+                    _timeoutCheckTimer.Dispose();
+                }
 
                 // Wait for lock to be released and dispose.
                 if (!_sendRequestLock.IsWriteLockHeld)

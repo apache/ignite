@@ -230,6 +230,12 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                     "Write-behind mode for the cache store also requires CacheConfiguration.setWriteThrough(true) " +
                     "property. Fix configuration for the cache: " + cfg.getName());
             }
+
+            if (cctx.group().persistenceEnabled() && (cfg.isWriteThrough() || cfg.isReadThrough()))
+                U.quietAndWarn(log,
+                    "Both Ignite native persistence and CacheStore are configured for cache '" + cfg.getName() + "'. " +
+                    "This configuration does not guarantee strict consistency between CacheStore and Ignite data " +
+                    "storage upon restarts. Consult documentation for more details.");
         }
 
         sesLsnrs = CU.startStoreSessionListeners(cctx.kernalContext(), cfg.getCacheStoreSessionListenerFactories());

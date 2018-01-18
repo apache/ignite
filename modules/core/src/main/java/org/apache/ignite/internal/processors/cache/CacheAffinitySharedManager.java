@@ -126,9 +126,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     /** */
     private final ThreadLocal<ClientCacheChangeDiscoveryMessage> clientCacheChanges = new ThreadLocal<>();
 
-    /** Caches initialized flag (initialized when join activate cluster or after activation. */
-    private boolean cachesInitialized;
-
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
         @Override public void onEvent(Event evt) {
@@ -167,23 +164,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         if (state.transition() || !state.active())
             return;
 
-        if (type == EVT_NODE_JOINED && node.isLocal()) {
-            // Clean-up in case of client reconnect.
-            caches.clear();
-
+        if (type == EVT_NODE_JOINED && node.isLocal())
             lastAffVer = null;
-
-            caches.init(cctx.cache().cacheGroupDescriptors(), cctx.cache().cacheDescriptors());
-
-            cachesInitialized = true;
-        }
-        else if (customMsg instanceof ChangeGlobalStateFinishMessage) {
-            if (!cachesInitialized && ((ChangeGlobalStateFinishMessage)customMsg).clusterActive()) {
-                caches.init(cctx.cache().cacheGroupDescriptors(), cctx.cache().cacheDescriptors());
-
-                cachesInitialized = true;
-            }
-        }
 
         if (!CU.clientNode(node) && (type == EVT_NODE_FAILED || type == EVT_NODE_JOINED || type == EVT_NODE_LEFT)) {
             synchronized (mux) {
@@ -192,6 +174,19 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 lastAffVer = topVer;
             }
         }
+    }
+
+    /**
+     * Must be called from exchange thread.
+     */
+    public void initCachesOnLocalJoin(
+        Map<Integer, CacheGroupDescriptor> cacheGroupDescriptors,
+        Map<String, DynamicCacheDescriptor> cacheDescriptors
+    ) {
+        // Clean-up in case of client reconnect.
+        caches.clear();
+
+        caches.init(cacheGroupDescriptors, cacheDescriptors);
     }
 
     /**
@@ -315,6 +310,18 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to send affinity change message.", e);
             }
+        }
+    }
+
+    /**
+     * @return Group IDs.
+     */
+    public Set<Integer> waitGroups() {
+        synchronized (mux) {
+            if (waitInfo == null || !waitInfo.topVer.equals(lastAffVer) )
+                return Collections.emptySet();
+
+            return new HashSet<>(waitInfo.waitGrps.keySet());
         }
     }
 
@@ -703,6 +710,20 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 aff.clientEventTopologyChange(evts.lastEvent(), evts.topologyVersion());
             }
         });
+    }
+
+    /**
+     * @param cctx Stopped cache context.
+     */
+    public void stopCacheOnReconnect(GridCacheContext cctx) {
+        caches.registeredCaches.remove(cctx.cacheId());
+    }
+
+    /**
+     * @param grpCtx Stopped cache group context.
+     */
+    public void stopCacheGroupOnReconnect(CacheGroupContext grpCtx) {
+        caches.registeredGrps.remove(grpCtx.groupId());
     }
 
     /**
@@ -1412,7 +1433,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param crd Coordinator flag.
      * @throws IgniteCheckedException If failed.
      */
-    public void onServerJoin(final GridDhtPartitionsExchangeFuture fut, boolean crd) throws IgniteCheckedException {
+    public void onServerJoin(final GridDhtPartitionsExchangeFuture fut, boolean crd)
+        throws IgniteCheckedException {
         assert !fut.firstEvent().eventNode().isClient();
 
         boolean locJoin = fut.firstEvent().eventNode().isLocal();
@@ -1436,6 +1458,28 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
         else
             waitRebalanceInfo = initAffinityOnNodeJoin(fut, crd);
+
+        this.waitInfo = waitRebalanceInfo != null && !waitRebalanceInfo.empty() ? waitRebalanceInfo : null;
+
+        WaitRebalanceInfo info = this.waitInfo;
+
+        if (crd) {
+            if (log.isDebugEnabled()) {
+                log.debug("Computed new affinity after node join [topVer=" + fut.initialVersion() +
+                    ", waitGrps=" + (info != null ? groupNames(info.waitGrps.keySet()) : null) + ']');
+            }
+        }
+    }
+
+    /**
+     * @param fut Exchange future
+     * @param crd Coordinator flag.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onBaselineTopologyChanged(final GridDhtPartitionsExchangeFuture fut, boolean crd) throws IgniteCheckedException {
+        assert !fut.firstEvent().eventNode().isClient();
+
+        WaitRebalanceInfo waitRebalanceInfo = initAffinityOnNodeJoin(fut, crd);
 
         this.waitInfo = waitRebalanceInfo != null && !waitRebalanceInfo.empty() ? waitRebalanceInfo : null;
 
@@ -1892,7 +1936,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param rebalanceInfo Rebalance information.
      * @param latePrimary If {@code true} delays primary assignment if it is not owner.
      * @param affCache Already calculated assignments (to reduce data stored in history).
-     * @throws IgniteCheckedException If failed.
      */
     private void initAffinityOnNodeJoin(
         ExchangeDiscoveryEvents evts,
@@ -1900,9 +1943,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         GridAffinityAssignmentCache aff,
         WaitRebalanceInfo rebalanceInfo,
         boolean latePrimary,
-        Map<Object, List<List<ClusterNode>>> affCache)
-        throws IgniteCheckedException
-    {
+        Map<Object, List<List<ClusterNode>>> affCache
+    ) {
         if (addedOnExchnage) {
             if (!aff.lastVersion().equals(evts.topologyVersion()))
                 calculateAndInit(evts, aff, evts.topologyVersion());

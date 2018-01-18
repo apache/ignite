@@ -1589,6 +1589,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             GridCacheContext cacheCtx = txEntry1.context();
 
             while (true) {
+                cctx.database().checkpointReadLock();
+
                 try {
                     GridCacheEntryEx entry1 = txEntry1.cached();
 
@@ -1610,7 +1612,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                             if (txEntry2 == txEntry1)
                                 break;
 
-                            txEntry2.cached().txUnlock(tx);
+                            txUnlock(tx, txEntry2);
                         }
 
                         return false;
@@ -1641,10 +1643,40 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                     throw new IgniteCheckedException("Entry lock has been cancelled for transaction: " + tx);
                 }
+                finally {
+                    cctx.database().checkpointReadUnlock();
+                }
             }
         }
 
         return true;
+    }
+
+    /**
+     * @param tx Transaction.
+     * @param txEntry Entry to unlock.
+     */
+    private void txUnlock(IgniteInternalTx tx, IgniteTxEntry txEntry) {
+        while (true) {
+            try {
+                txEntry.cached().txUnlock(tx);
+
+                break;
+            }
+            catch (GridCacheEntryRemovedException ignored) {
+                if (log.isDebugEnabled())
+                    log.debug("Got removed entry in TM txUnlock(..) method (will retry): " + txEntry);
+
+                try {
+                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key(), tx.topologyVersion()));
+                }
+                catch (GridDhtInvalidPartitionException e) {
+                    tx.addInvalidPartition(txEntry.context(), e.partition());
+
+                    break;
+                }
+            }
+        }
     }
 
     /**
