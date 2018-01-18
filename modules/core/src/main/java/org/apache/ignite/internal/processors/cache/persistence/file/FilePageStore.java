@@ -165,9 +165,9 @@ public class FilePageStore implements PageStore {
      * Checks that file store has correct header and size.
      *
      * @return Next available position in the file to store a data.
-     * @throws IgniteCheckedException If check is failed.
+     * @throws PersistentStorageIOException If check is failed.
      */
-    private long checkFile() throws IgniteCheckedException {
+    private long checkFile() throws PersistentStorageIOException {
         try {
             ByteBuffer hdr = ByteBuffer.allocate(headerSize()).order(ByteOrder.LITTLE_ENDIAN);
 
@@ -179,28 +179,28 @@ public class FilePageStore implements PageStore {
             long signature = hdr.getLong();
 
             if (SIGNATURE != signature)
-                throw new IgniteCheckedException("Failed to verify store file (invalid file signature)" +
+                throw new IOException("Failed to verify store file (invalid file signature)" +
                     " [expectedSignature=" + U.hexLong(SIGNATURE) +
                     ", actualSignature=" + U.hexLong(signature) + ']');
 
             int ver = hdr.getInt();
 
             if (version() != ver)
-                throw new IgniteCheckedException("Failed to verify store file (invalid file version)" +
+                throw new IOException("Failed to verify store file (invalid file version)" +
                     " [expectedVersion=" + version() +
                     ", fileVersion=" + ver + "]");
 
             byte type = hdr.get();
 
             if (this.type != type)
-                throw new IgniteCheckedException("Failed to verify store file (invalid file type)" +
+                throw new IOException("Failed to verify store file (invalid file type)" +
                     " [expectedFileType=" + this.type +
                     ", actualFileType=" + type + "]");
 
             int pageSize = hdr.getInt();
 
             if (dbCfg.getPageSize() != pageSize)
-                throw new IgniteCheckedException("Failed to verify store file (invalid page size)" +
+                throw new IOException("Failed to verify store file (invalid page size)" +
                     " [expectedPageSize=" + dbCfg.getPageSize() +
                     ", filePageSize=" + pageSize + "]");
 
@@ -210,7 +210,7 @@ public class FilePageStore implements PageStore {
                 fileSize = pageSize + headerSize();
 
             if ((fileSize - headerSize()) % pageSize != 0)
-                throw new IgniteCheckedException("Failed to verify store file (invalid file size)" +
+                throw new IOException("Failed to verify store file (invalid file size)" +
                     " [fileSize=" + U.hexLong(fileSize) +
                     ", pageSize=" + U.hexLong(pageSize) + ']');
 
