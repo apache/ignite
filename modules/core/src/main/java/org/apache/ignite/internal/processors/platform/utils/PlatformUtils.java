@@ -1225,6 +1225,47 @@ public class PlatformUtils {
     }
 
     /**
+     * Writes node attributes.
+     *
+     * @param writer Writer.
+     * @param attrs Attributes.
+     */
+    public static void writeNodeAttributes(BinaryRawWriterEx writer, Map<String, Object> attrs) {
+        assert writer != null;
+        assert attrs != null;
+
+        if (attrs != null) {
+            writer.writeInt(attrs.size());
+
+            for (Map.Entry<String, Object> e : attrs.entrySet()) {
+                writer.writeString(e.getKey());
+                writer.writeObjectDetached(e.getValue());
+            }
+        } else {
+            writer.writeInt(0);
+        }
+    }
+
+    /**
+     * Reads node attributes.
+     *
+     * @param reader Reader.
+     * @return Attributes.
+     */
+    public static Map<String, Object> readNodeAttributes(BinaryRawReaderEx reader) {
+        assert reader != null;
+
+        int attrCnt = reader.readInt();
+        Map<String, Object> attrs = new HashMap<>(attrCnt);
+
+        for (int j = 0; j < attrCnt; j++) {
+            attrs.put(reader.readString(), reader.readObjectDetached());
+        }
+
+        return attrs;
+    }
+
+    /**
      * Private constructor.
      */
     private PlatformUtils() {

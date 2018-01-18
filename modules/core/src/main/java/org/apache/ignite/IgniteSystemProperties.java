@@ -25,6 +25,7 @@ import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
@@ -759,6 +760,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_WAL_SERIALIZER_VERSION = "IGNITE_WAL_SERIALIZER_VERSION";
 
     /**
+     * If the property is set Ignite will use legacy node comparator (based on node order) inste
+     *
+     * Default value is {@code false}.
+     */
+    public static final String IGNITE_USE_LEGACY_NODE_COMPARATOR = "IGNITE_USE_LEGACY_NODE_COMPARATOR";
+
+    /**
      * Property that indicates should be mapped byte buffer used or not.
      * Possible values: {@code true} and {@code false}.
      */
@@ -770,6 +778,21 @@ public final class IgniteSystemProperties {
      * before 2.3.
      */
     public static final String IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID = "IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID";
+
+    /**
+     * Default value is {@code false}.
+     */
+    public static final String IGNITE_WAL_DEBUG_LOG_ON_RECOVERY = "IGNITE_WAL_DEBUG_LOG_ON_RECOVERY";
+
+    /**
+     * Number of checkpoint history entries held in memory.
+     */
+    public static final String IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE = "IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE";
+
+    /**
+     * If this property is set to {@code true} enable logging in {@link GridClient}.
+     */
+    public static final String IGNITE_GRID_CLIENT_LOG_ENABLED = "IGNITE_GRID_CLIENT_LOG_ENABLED";
 
     /**
      * Enforces singleton.

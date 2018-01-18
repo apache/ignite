@@ -647,6 +647,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             if (part.reserve()) {
                 GridCacheEntryEx entry = null;
 
+                ctx.shared().database().checkpointReadLock();
+
                 try {
                     long ttl = CU.ttlForLoad(plc);
 
@@ -678,6 +680,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                         entry.context().evicts().touch(entry, topVer);
 
                     part.release();
+
+                    ctx.shared().database().checkpointReadUnlock();
                 }
             }
             else if (log.isDebugEnabled())

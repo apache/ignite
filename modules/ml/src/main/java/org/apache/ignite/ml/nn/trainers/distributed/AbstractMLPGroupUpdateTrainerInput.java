@@ -20,7 +20,7 @@ package org.apache.ignite.ml.nn.trainers.distributed;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
-import org.apache.ignite.ml.nn.LocalBatchTrainerInput;
+import org.apache.ignite.ml.trainers.local.LocalBatchTrainerInput;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
 import org.apache.ignite.ml.trainers.group.GroupTrainerInput;

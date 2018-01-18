@@ -74,13 +74,13 @@ import org.h2.value.DataType;
  */
 public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /** Client node index. */
-    private final static int CLIENT = 2;
+    private static final int CLIENT = 2;
 
     /** */
-    private final static String INDEXED_CACHE_NAME = CACHE_NAME + "_idx";
+    private static final String INDEXED_CACHE_NAME = CACHE_NAME + "_idx";
 
     /** */
-    private final static String INDEXED_CACHE_NAME_2 = INDEXED_CACHE_NAME + "_2";
+    private static final String INDEXED_CACHE_NAME_2 = INDEXED_CACHE_NAME + "_2";
 
     /** Data region name. */
     public static final String DATA_REGION_NAME = "my_data_region";
