@@ -1144,7 +1144,13 @@ public class PlatformUtils {
 
         for (BinarySchema schema : schemas) {
             writer.writeInt(schema.schemaId());
-            writer.writeIntArray(schema.fieldIds());
+
+            int[] ids = schema.fieldIds();
+            writer.writeInt(ids.length);
+
+            for (int id : ids) {
+                writer.writeInt(id);
+            }
         }
     }
 
