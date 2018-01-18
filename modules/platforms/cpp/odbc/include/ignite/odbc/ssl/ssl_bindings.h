@@ -167,6 +167,14 @@ namespace ignite
                 return fp(s, cmd, larg ,parg);
             }
 
+            inline long SSL_set_tlsext_host_name_(SSL *s, const char *name)
+            {
+                return ssl::SSL_ctrl(s, SSL_CTRL_SET_TLSEXT_HOSTNAME,
+                    TLSEXT_NAMETYPE_host_name, const_cast<char*>(name));
+            }
+
+
+
             inline const SSL_METHOD *SSLv23_method()
             {
                 typedef const SSL_METHOD*(FuncType)();
@@ -240,6 +248,11 @@ namespace ignite
                 return fp(b, flags);
             }
 
+            inline int BIO_should_retry_(const BIO *b)
+            {
+                return ssl::BIO_test_flags(b, BIO_FLAGS_SHOULD_RETRY);
+            }
+
             inline long BIO_ctrl(BIO *bp, int cmd, long larg, void *parg)
             {
                 typedef long(FuncType)(BIO*, int, long, void*);
@@ -247,6 +260,41 @@ namespace ignite
                 FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpBIO_ctrl);
 
                 return fp(bp, cmd, larg, parg);
+            }
+
+            inline long BIO_get_fd_(BIO *bp, int *fd)
+            {
+                return ssl::BIO_ctrl(bp, BIO_C_GET_FD, 0, reinterpret_cast<void*>(fd));
+            }
+
+            inline long BIO_do_handshake_(BIO *bp)
+            {
+                return ssl::BIO_ctrl(bp, BIO_C_DO_STATE_MACHINE, 0, NULL);
+            }
+
+            inline long BIO_do_connect_(BIO *bp)
+            {
+                return ssl::BIO_do_handshake_(bp);
+            }
+
+            inline long BIO_get_ssl_(BIO *bp, SSL** ssl)
+            {
+                return ssl::BIO_ctrl(bp, BIO_C_GET_SSL, 0, reinterpret_cast<void*>(ssl));
+            }
+
+            inline long BIO_set_nbio_(BIO *bp, long n)
+            {
+                return ssl::BIO_ctrl(bp, BIO_C_SET_NBIO, n, NULL);
+            }
+
+            inline long BIO_set_conn_hostname_(BIO *bp, const char *name)
+            {
+                return ssl::BIO_ctrl(bp, BIO_C_SET_CONNECT, 0, const_cast<char*>(name));
+            }
+
+            inline long BIO_pending_(BIO *bp)
+            {
+                return ssl::BIO_ctrl(bp, BIO_CTRL_PENDING, 0, NULL);
             }
         }
     }
