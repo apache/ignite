@@ -95,19 +95,15 @@ public class SplitAndSortCpPagesTest {
 
         final AtomicInteger totalPagesAfterSort = new AtomicInteger();
 
-        final IgniteClosure<FullPageId[], Callable<Void>> taskFactory = new IgniteClosure<FullPageId[], Callable<Void>>() {
-            @Override public Callable<Void> apply(final FullPageId[] ids) {
-                return new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        final int len = ids.length;
+        final IgniteClosure<FullPageIdsBuffer, Callable<Void>> taskFactory =  ids -> new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                final int len = ids.remaining();
 
-                        totalPagesAfterSort.addAndGet(len);
+                totalPagesAfterSort.addAndGet(len);
 
-                        validateOrder(Collections.singletonList(ids));
+                validateOrder(Collections.singletonList(ids.toArray()));
 
-                        return null;
-                    }
-                };
+                return null;
             }
         };
 
@@ -125,7 +121,7 @@ public class SplitAndSortCpPagesTest {
 
         AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(6, getClass().getSimpleName(), log);
 
-        final IgniteClosure<FullPageId[], Callable<Void>> taskFactory
+        final IgniteClosure<FullPageIdsBuffer, Callable<Void>> taskFactory
             = ids -> () -> null;
 
         List<FullPageIdsBuffer> pageIds = scope.toBuffers();
@@ -182,17 +178,13 @@ public class SplitAndSortCpPagesTest {
 
         AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(16, getClass().getSimpleName(), log);
 
-        IgniteClosure<FullPageId[], Callable<Void>> taskFactory = new IgniteClosure<FullPageId[], Callable<Void>>() {
-            @Override public Callable<Void> apply(final FullPageId[] ids) {
-                return new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        for (FullPageId id : ids) {
-                            map.remove(id);
-                        }
+        IgniteClosure<FullPageIdsBuffer, Callable<Void>> taskFactory = ids -> new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                for (FullPageId id : ids.toArray()) {
+                    map.remove(id);
+                }
 
-                        return null;
-                    }
-                };
+                return null;
             }
         };
 
@@ -230,32 +222,28 @@ public class SplitAndSortCpPagesTest {
 
         AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(16, getClass().getSimpleName(), log);
 
-        final IgniteClosure<FullPageId[], Callable<Void>> taskFactory = new IgniteClosure<FullPageId[], Callable<Void>>() {
-            @Override public Callable<Void> apply(final FullPageId[] ids) {
-                return new Callable<Void>() {
-                    @Override public Void call() throws Exception {
+        final IgniteClosure<FullPageIdsBuffer, Callable<Void>> taskFactory =  ids -> new Callable<Void>() {
+            @Override public Void call() throws Exception {
 
-                        long prevIdx = -1;
-                        long prevPart = -1;
+                long prevIdx = -1;
+                long prevPart = -1;
 
-                        for (FullPageId id : ids) {
-                            long partId = partId(id.pageId());
-                            long idx = pageIndex(id.pageId());
-                            //System.out.println(partId + " idx= " + idx);
-                            if (prevIdx >= 0 && prevPart >= 0) {
-                                if (partId < prevPart)
-                                    throw new IllegalStateException("Invalid order " + partId + " idx=" + prevPart);
+                for (FullPageId id : ids.toArray()) {
+                    long partId = partId(id.pageId());
+                    long idx = pageIndex(id.pageId());
+                    //System.out.println(partId + " idx= " + idx);
+                    if (prevIdx >= 0 && prevPart >= 0) {
+                        if (partId < prevPart)
+                            throw new IllegalStateException("Invalid order " + partId + " idx=" + prevPart);
 
-                                if (idx < prevIdx && partId == prevPart)
-                                    throw new IllegalStateException("Invalid order " + prevIdx + " idx=" + idx);
-                            }
-
-                            prevPart = partId;
-                            prevIdx = idx;
-                        }
-                        return null;
+                        if (idx < prevIdx && partId == prevPart)
+                            throw new IllegalStateException("Invalid order " + prevIdx + " idx=" + idx);
                     }
-                };
+
+                    prevPart = partId;
+                    prevIdx = idx;
+                }
+                return null;
             }
         };
 
@@ -309,18 +297,12 @@ public class SplitAndSortCpPagesTest {
 
         final AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(16, getClass().getSimpleName(), log);
 
-        final IgniteClosure<FullPageId[], Callable<Void>> taskFactory = new IgniteClosure<FullPageId[], Callable<Void>>() {
-            @Override public Callable<Void> apply(final FullPageId[] ids) {
-                return new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        for (FullPageId id : ids) {
-                            ctrlMap.remove(id);
-                        }
-
-                        return null;
-                    }
-                };
+        final IgniteClosure<FullPageIdsBuffer, Callable<Void>> taskFactory =  ids -> () -> {
+            for (FullPageId id : ids.toArray()) {
+                ctrlMap.remove(id);
             }
+
+            return null;
         };
 
         asyncCheckpointer.quickSortAndWritePages(scope, taskFactory).get();

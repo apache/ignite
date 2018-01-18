@@ -16,12 +16,13 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.concurrent.Callable;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Task for sorting pages for sequential write, replicated its subtasks as new callable.
@@ -34,7 +35,10 @@ class QuickSortRecursiveTask implements Callable<Void> {
     /** One write chunk threshold. Determines if it reasonable to submit one page saving task. */
     private static final int ONE_WRITE_CHUNK_THRESHOLD = 1024;
 
-    /** Source array to sort. Shared between threads. */
+    /**
+     * Source array to sort, split and write. Shared between threads.
+     * May be {@code null} for initial task, {@link #setCollector} is provided instead.
+     */
     private final FullPageIdsBuffer buf;
 
     /** This task global settings. */
@@ -52,7 +56,7 @@ class QuickSortRecursiveTask implements Callable<Void> {
      */
     QuickSortRecursiveTask(MultiSetForSameStripeCollector setCollector,
         Comparator<FullPageId> comp,
-        IgniteClosure<FullPageId[], Callable<Void>> taskFactory,
+        IgniteClosure<FullPageIdsBuffer, Callable<Void>> taskFactory,
         IgniteInClosure<Callable<Void>> forkSubmitter,
         ForkNowForkLaterStrategy stgy) {
         this(null, new CpSettings(comp, taskFactory, forkSubmitter, stgy));
@@ -81,14 +85,29 @@ class QuickSortRecursiveTask implements Callable<Void> {
         assert buf != null || setCollector != null;
 
         if (setCollector != null) {
-            final FullPageIdsBuffer buf = CheckpointScope.mergeSetsForBucket(setCollector);
+            Iterable<? extends Collection<FullPageId>> sets = setCollector.unmergedSets();
 
-            handleBuffer(buf);
+            if (setCollector.isSorted(settings.comp)) {
+                FullPageIdsBuffer.createBufferFromSortedCollections(sets, settings.comp, ONE_WRITE_CHUNK_THRESHOLD,
+                    (mayHaveNext, buffer) -> {
+                        try {
+                            validateBufferOrder(buffer);
+
+                            writeOneBuffer(buffer, mayHaveNext);
+                        }
+                        catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+            }
+            else
+                handleBuffer(FullPageIdsBuffer.createBufferFromMultiCollection(sets));
 
             return null;
         }
 
         handleBuffer(buf);
+
         return null;
     }
 
@@ -102,27 +121,13 @@ class QuickSortRecursiveTask implements Callable<Void> {
         if (remaining == 0)
             return;
 
-        final boolean preSorted = buf.isSortedUsingComparator(settings.comp);
+        if (isUnderThreshold(remaining)) {
+            buf.sort(settings.comp);
 
-        if (preSorted || isUnderThreshold(remaining)) {
-            if (!preSorted)
-                buf.sort(settings.comp);
-            else
-            {
-                // validate order of elements presorted.
-                validateBufferOrder(buf);
-            }
+            int subArrays = (int)Math.round(Math.ceil(1.0 * remaining / ONE_WRITE_CHUNK_THRESHOLD));
 
-            int subArrays = (remaining / ONE_WRITE_CHUNK_THRESHOLD) + 1;
-
-            for (FullPageIdsBuffer nextSubArray : buf.split(subArrays)) {
-                final Callable<Void> task = settings.taskFactory.apply(nextSubArray.toArray());
-
-                if (subArrays > 1 && settings.stgy.forkNow())
-                    settings.forkSubmitter.apply(task);
-                else
-                    task.call();
-            }
+            for (Iterator<FullPageIdsBuffer> iter = buf.split(subArrays).iterator(); iter.hasNext(); )
+                writeOneBuffer(iter.next(), iter.hasNext());
         }
         else {
             final FullPageId[] arr = buf.internalArray();
@@ -144,12 +149,30 @@ class QuickSortRecursiveTask implements Callable<Void> {
         }
     }
 
+    /**
+     * @param buf buffer to write.
+     * @param forkAllowed for is reasonable, usually not reasonable for last chunk.
+     * @throws Exception if failed.
+     */
+    private void writeOneBuffer(FullPageIdsBuffer buf, boolean forkAllowed) throws Exception {
+        final Callable<Void> task = settings.taskFactory.apply(buf);
+
+        if (forkAllowed && settings.stgy.forkNow())
+            settings.forkSubmitter.apply(task);
+        else
+            task.call();
+    }
+
+    /**
+     * @param buf buffer to check order of elements
+     */
     private void validateBufferOrder(FullPageIdsBuffer buf) {
         FullPageId prevId = null;
         for (int i = buf.position(); i < buf.limit(); i++) {
             FullPageId id = buf.internalArray()[i];
 
-            assert prevId == null || settings.comp.compare(id, prevId) >= 0 : "Invalid order of element in presorted set";
+            if (!(prevId == null || settings.comp.compare(id, prevId) >= 0))
+                throw new AssertionError("Invalid order of element in presorted set");
 
             prevId = id;
         }
@@ -206,7 +229,7 @@ class QuickSortRecursiveTask implements Callable<Void> {
      */
     private static class CpSettings {
         /** Task factory. */
-        private final IgniteClosure<FullPageId[], Callable<Void>> taskFactory;
+        private final IgniteClosure<FullPageIdsBuffer, Callable<Void>> taskFactory;
 
         /** Forked task submitter. */
         private final IgniteInClosure<Callable<Void>> forkSubmitter;
@@ -224,7 +247,7 @@ class QuickSortRecursiveTask implements Callable<Void> {
          * @param stgy Strategy.
          */
         CpSettings(Comparator<FullPageId> comp,
-            IgniteClosure<FullPageId[], Callable<Void>> taskFactory,
+            IgniteClosure<FullPageIdsBuffer, Callable<Void>> taskFactory,
             IgniteInClosure<Callable<Void>> forkSubmitter,
             ForkNowForkLaterStrategy stgy) {
             this.comp = comp;

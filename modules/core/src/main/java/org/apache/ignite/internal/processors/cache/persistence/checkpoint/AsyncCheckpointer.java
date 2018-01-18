@@ -136,7 +136,7 @@ public class AsyncCheckpointer {
      * @return future will be completed when background writing is done.
      */
     public CountDownFuture quickSortAndWritePages(CheckpointScope cpScope,
-        final IgniteClosure<FullPageId[], Callable<Void>> taskFactory) {
+        final IgniteClosure<FullPageIdsBuffer, Callable<Void>> taskFactory) {
 
         // init counter 1 protects here from premature completing
         final CountDownDynamicFuture cntDownDynamicFut = new CountDownDynamicFuture(1);

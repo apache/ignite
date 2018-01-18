@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.PriorityQueue;
+import java.util.function.BiConsumer;
 import org.apache.ignite.internal.pagemem.FullPageId;
 
 /**
@@ -191,12 +192,16 @@ public class FullPageIdsBuffer {
     }
 
     /**
-     * @param multiColl multi collections, each collection is already ordered using compartator {@code comp}.
+     * @param multiColl multi collections, each collection is already ordered using comparator {@code comp}.
      * @param comp comparator used for ordering provided {@code multiColl}.
+     * @param subBufSize size of elements to provide to subBufferConsumer
+      *@param subBufConsumer handler for sub buffers collected (called earlier than all collection is merged). May be null.
      * @return buffer with all found collections elements.
      */
     static FullPageIdsBuffer createBufferFromSortedCollections(Iterable<? extends Collection<FullPageId>> multiColl,
-        Comparator<FullPageId> comp) {
+        Comparator<FullPageId> comp,
+        int subBufSize,
+        BiConsumer<Boolean, FullPageIdsBuffer> subBufConsumer) {
         PriorityQueue<ComparableIterator<FullPageId>> queue = new PriorityQueue<>();
         int size = 0;
 
@@ -210,6 +215,7 @@ public class FullPageIdsBuffer {
 
         FullPageId[] arr = new FullPageId[size];
         int locIdx = 0;
+        int curStartPosition = 0;
 
         while (!queue.isEmpty()) {
             ComparableIterator<FullPageId> next = queue.remove();
@@ -218,10 +224,23 @@ public class FullPageIdsBuffer {
             if (element != null) { // here null is possible because of parallel removal from underlying collections
                 arr[locIdx] = element;
                 locIdx++;
+
+                if (subBufSize > 0 && subBufConsumer != null && (locIdx - curStartPosition >= subBufSize)) {
+                    FullPageIdsBuffer buf = new FullPageIdsBuffer(arr, curStartPosition, locIdx).setSortedUsingComparator(comp);
+
+                    subBufConsumer.accept(locIdx < size, buf);
+
+                    curStartPosition = locIdx;
+                }
             }
 
             if (next.hasNext())
                 queue.add(next);
+        }
+
+        if (subBufSize > 0 && subBufConsumer != null && locIdx > curStartPosition) {
+            FullPageIdsBuffer buf = new FullPageIdsBuffer(arr, curStartPosition, locIdx).setSortedUsingComparator(comp);
+            subBufConsumer.accept(false, buf);
         }
 
         //actual number of pages may be less then precalculated size
@@ -230,6 +249,7 @@ public class FullPageIdsBuffer {
 
     /**
      * Comparable iterator, which uses peeked elements values for actual comparing iterators.
+     *
      * @param <E> element for iterating
      */
     private static class ComparableIterator<E> implements Iterator<E>, Comparable<ComparableIterator<E>> {

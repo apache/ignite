@@ -79,12 +79,12 @@ public class CheckpointScope {
      * @param collector multi set collector.
      * @return buffer created from umerged sets.
      */
-    public static FullPageIdsBuffer mergeSetsForBucket(MultiSetForSameStripeCollector collector) {
+    private static FullPageIdsBuffer mergeSetsForBucket(MultiSetForSameStripeCollector collector) {
         Comparator<FullPageId> comp = GridCacheDatabaseSharedManager.SEQUENTIAL_CP_PAGE_COMPARATOR;
 
         final Iterable<? extends Collection<FullPageId>> sets = collector.unmergedSets();
         return collector.isSorted(comp)
-            ? FullPageIdsBuffer.createBufferFromSortedCollections(sets, comp)
+            ? FullPageIdsBuffer.createBufferFromSortedCollections(sets, comp, -1, null)
             : FullPageIdsBuffer.createBufferFromMultiCollection(sets);
     }
 

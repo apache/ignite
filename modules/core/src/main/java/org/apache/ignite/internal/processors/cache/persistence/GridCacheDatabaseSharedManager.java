@@ -2583,10 +2583,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         final int totalPagesToWriteCnt = chp.pagesSize();
 
                         // This factory creates callable to write provided pages IDs array to page store.
-                        final IgniteClosure<FullPageId[], Callable<Void>> wrCpPagesFactory =
-                            ids -> new WriteCheckpointPages(
+                        final IgniteClosure<FullPageIdsBuffer, Callable<Void>> wrCpPagesFactory =
+                            idsBuf -> new WriteCheckpointPages(
                                 tracker,
-                                ids,
+                                idsBuf,
                                 updStores,
                                 totalPagesToWriteCnt
                             );
@@ -2612,7 +2612,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 wrCompleteFut = new CountDownFuture(cpPages.size());
 
                                 for (FullPageIdsBuffer next : cpPages) {
-                                    asyncCheckpointer.execute(wrCpPagesFactory.apply(next.toArray()), wrCompleteFut);
+                                    asyncCheckpointer.execute(wrCpPagesFactory.apply(next), wrCompleteFut);
                                 }
                             }
 
@@ -2622,7 +2622,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         else {
                             // Single-threaded checkpoint.
                             for (FullPageIdsBuffer next : chp.cpScope.splitAndSortCpPagesIfNeeded(persistenceCfg)) {
-                                ((WriteCheckpointPages)wrCpPagesFactory.apply(next.toArray())).call();
+                                ((WriteCheckpointPages)wrCpPagesFactory.apply(next)).call();
                             }
                         }
 
@@ -3056,7 +3056,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private CheckpointMetricsTracker tracker;
 
         /** Array of page IDs to write under this task. Overall pages to write may be greater than this collection. */
-        private FullPageId[] writePageIds;
+        private FullPageIdsBuffer writePageIds;
 
         /** */
         private GridConcurrentHashSet<PageStore> updStores;
@@ -3074,7 +3074,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         private WriteCheckpointPages(
             final CheckpointMetricsTracker tracker,
-            final FullPageId[] writePageIds,
+            final FullPageIdsBuffer writePageIds,
             final GridConcurrentHashSet<PageStore> updStores,
             final int totalPagesToWrite) {
             this.tracker = tracker;
@@ -3091,7 +3091,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             snapshotMgr.beforeCheckpointPageWritten();
 
-            for (FullPageId fullId : writePageIds) {
+            for (int i = writePageIds.position(); i < writePageIds.limit(); i++) {
+                FullPageId fullId = writePageIds.internalArray()[i];
+
                 if (checkpointer.shutdownNow)
                     break;
 
@@ -3155,7 +3157,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             if (log.isDebugEnabled())
-                log.debug("Completed write of chunk [" + writePageIds.length + "]");
+                log.debug("Completed write of chunk [" + writePageIds.remaining() + "]");
 
             return null;
         }
