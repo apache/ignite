@@ -2084,7 +2084,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 restorePartitionState(partStates, ignoreGrps);
 
             for (Integer grpId : cctx.pageStore().walDisabledGroups())
-                cctx.pageStore().walEnabled(grpId, true);
+                cctx.pageStore().walEnabled(grpId, false);
         }
         finally {
             if (!metastoreOnly)
