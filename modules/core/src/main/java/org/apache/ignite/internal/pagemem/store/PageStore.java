@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.pagemem.store;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+
+import java.nio.ByteBuffer;
 
 /**
  * Persistent store of pages.
