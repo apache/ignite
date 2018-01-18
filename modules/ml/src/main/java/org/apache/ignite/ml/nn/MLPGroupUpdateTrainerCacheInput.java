@@ -140,7 +140,7 @@ public class MLPGroupUpdateTrainerCacheInput extends AbstractMLPGroupUpdateTrain
             Matrix groundTruth = new DenseLocalOnHeapMatrix(dimEntry.label().size(), bs);
 
             for (int i = 0; i < selected.length; i++) {
-                LabeledVector<Vector, Vector> labeled = cache.get(selected[i]);
+                LabeledVector<Vector, Vector> labeled = cache.get(keys.get(selected[i]));
 
                 inputs.assignColumn(i, labeled.features());
                 groundTruth.assignColumn(i, labeled.label());
