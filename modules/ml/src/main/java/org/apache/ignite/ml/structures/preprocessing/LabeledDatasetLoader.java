@@ -98,21 +98,21 @@ public class LabeledDatasetLoader {
         if (isFallOnBadData && rowData.length != colSize + 1)
             throw new CardinalityException(colSize + 1, rowData.length);
 
-        double val = fillMissedData();
+        double missedData = fillMissedData();
 
         for (int j = 0; j < colSize; j++) {
             try {
-                val = Double.parseDouble(rowData[j + 1]);
-                vec.set(j, val);
+                double feature = Double.parseDouble(rowData[j + 1]);
+                vec.set(j, feature);
             }
             catch (NumberFormatException e) {
                 if (isFallOnBadData)
                     throw new FileParsingException(rowData[j + 1], rowIdx, pathToFile);
                 else
-                    vec.set(j, val);
+                    vec.set(j, missedData);
             }
             catch (ArrayIndexOutOfBoundsException e){
-                vec.set(j, val);
+                vec.set(j, missedData);
             }
         }
         return vec;
