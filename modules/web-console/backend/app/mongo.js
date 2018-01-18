@@ -1010,7 +1010,6 @@ const defineSchema = (mongoose) => {
             metricsEnabled: Boolean,
             alwaysWriteFullPages: Boolean,
             checkpointFrequency: Number,
-            checkpointPageBufferSize: Number,
             checkpointThreads: Number,
             checkpointWriteOrder: {type: String, enum: ['RANDOM', 'SEQUENTIAL']},
             walPath: String,
@@ -1023,12 +1022,14 @@ const defineSchema = (mongoose) => {
             walFsyncDelayNanos: Number,
             walRecordIteratorBufferSize: Number,
             lockWaitTime: Number,
+            walBufferSize: Number,
             walThreadLocalBufferSize: Number,
             metricsSubIntervalCount: Number,
             metricsRateTimeInterval: Number,
             fileIOFactory: {type: String, enum: ['RANDOM', 'ASYNC']},
             walAutoArchiveAfterInactivity: Number,
-            writeThrottlingEnabled: Boolean
+            writeThrottlingEnabled: Boolean,
+            walCompactionEnabled: Boolean
         },
         memoryConfiguration: {
             systemCacheInitialSize: Number,

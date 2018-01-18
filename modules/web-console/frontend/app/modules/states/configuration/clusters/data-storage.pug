@@ -175,9 +175,6 @@ include /app/helpers/jade/mixins
                     +number('Checkpoint frequency:', `${model}.checkpointFrequency`, '"DataStorageCheckpointFrequency"', 'true', '180000', '1',
                     'Frequency which is a minimal interval when the dirty pages will be written to the Persistent Store')
                 .settings-row
-                    +number('Checkpoint page buffer size:', `${model}.checkpointPageBufferSize`, '"DataStorageCheckpointPageBufferSize"', 'true', '268435456', '0',
-                    'Amount of memory allocated for a checkpointing temporary buffer')
-                .settings-row
                     +number('Checkpoint threads:', `${model}.checkpointThreads`, '"DataStorageCheckpointThreads"', 'true', '4', '1', 'A number of threads to use for the checkpoint purposes')
                 .settings-row
                     +dropdown('Checkpoint write order:', `${model}.checkpointWriteOrder`, '"DataStorageCheckpointWriteOrder"', 'true', 'SEQUENTIAL',
@@ -215,6 +212,9 @@ include /app/helpers/jade/mixins
                     +number('WAL segment size:', `${model}.walSegmentSize`, '"DataStorageWalSegmentSize"', 'true', '67108864', '0', 'Size of a WAL segment')
                 .settings-row
                     +number('WAL history size:', `${model}.walHistorySize`, '"DataStorageWalHistorySize"', 'true', '20', '1', 'A total number of checkpoints to keep in the WAL history')
+                .settings-row(ng-show='$ctrl.available("2.4.0")')
+                    +number('WAL buffer size:', `${model}.walBufferSize`, '"DataStorageWalBufferSize"', 'true', 'WAL segment size / 4', '1',
+                    'Size of WAL buffer')
                 .settings-row
                     +number('WAL flush frequency:', `${model}.walFlushFrequency`, '"DataStorageWalFlushFrequency"', 'true', '2000', '1',
                     'How often will be fsync, in milliseconds. In background mode, exist thread which do fsync by timeout')
@@ -257,5 +257,8 @@ include /app/helpers/jade/mixins
                 .settings-row
                     +checkbox('Write throttling enabled', `${model}.writeThrottlingEnabled`, '"DataStorageWriteThrottlingEnabled"',
                     'Throttle threads that generate dirty pages too fast during ongoing checkpoint')
+                .settings-row(ng-show='$ctrl.available("2.4.0")')
+                    +checkbox('Enable WAL compaction', `${model}.walCompactionEnabled`, '"DataStorageWalCompactionEnabled"',
+                    'If true, system filters and compresses WAL archive in background')
             .col-sm-6
                 +preview-xml-java(model, 'clusterDataStorageConfiguration')
