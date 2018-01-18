@@ -13,27 +13,13 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
-package org.apache.ignite.internal.processors.database;
+package org.apache.ignite.internal.processors.cache.persistence.file;
 
-/**
- *
- */
-public class IgniteDbClientNearCachePutGetTest extends IgniteDbPutGetAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
-    }
+import org.apache.ignite.plugin.IgnitePlugin;
 
-    /** {@inheritDoc} */
-    @Override protected boolean indexingEnabled() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean withClientNearCache() {
-        return true;
-    }
+/** Noop plugin. See {@link IgniteNativeIoLib}. */
+public class LinuxNativeIoPlugin implements IgnitePlugin {
+    // No-op.
 }

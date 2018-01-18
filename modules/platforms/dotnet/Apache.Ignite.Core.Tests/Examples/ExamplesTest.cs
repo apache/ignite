@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         private static readonly Type[] RemoteOnlyExamples =
         {
             typeof(PeerAssemblyLoadingExample), typeof(MessagingExample), typeof(NearCacheExample),
-            typeof(ThinClientPutGetExample), typeof(ThinClientQueryExample)
+            typeof(ThinClientPutGetExample), typeof(ThinClientQueryExample), typeof(ThinClientSqlExample)
         };
 
         /** */
@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             typeof(BinaryModeExample), typeof(NearCacheExample), typeof(PeerAssemblyLoadingExample),
             typeof(ThinClientPutGetExample), typeof(SqlExample), typeof(LinqExample), typeof(SqlDmlExample),
-            typeof(SqlDdlExample)
+            typeof(SqlDdlExample), typeof(ThinClientSqlExample)
         };
 
         /** Config file path. */
