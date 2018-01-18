@@ -30,6 +30,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.P2;
@@ -219,22 +220,22 @@ public abstract class AbstractWalRecordsIterator
         if (hnd == null)
             return null;
 
-        FileWALPointer ptr = new FileWALPointer(hnd.idx, (int)hnd.in.position(),0);
+        FileWALPointer actualFilePtr = new FileWALPointer(hnd.idx, (int)hnd.in.position(), 0);
 
         try {
-            WALRecord rec = hnd.ser.readRecord(hnd.in, ptr);
+            WALRecord rec = hnd.ser.readRecord(hnd.in, actualFilePtr);
 
-            ptr.length(rec.size());
+            actualFilePtr.length(rec.size());
 
             // cast using diamond operator here can break compile for 7
-            return new IgniteBiTuple<>((WALPointer)ptr, postProcessRecord(rec));
+            return new IgniteBiTuple<>((WALPointer)actualFilePtr, postProcessRecord(rec));
         }
         catch (IOException | IgniteCheckedException e) {
             if (e instanceof WalSegmentTailReachedException)
                 throw (WalSegmentTailReachedException)e;
 
             if (!(e instanceof SegmentEofException))
-                handleRecordException(e, ptr);
+                handleRecordException(e, actualFilePtr);
 
             return null;
         }
@@ -260,7 +261,7 @@ public abstract class AbstractWalRecordsIterator
         @NotNull final Exception e,
         @Nullable final FileWALPointer ptr) {
         if (log.isInfoEnabled())
-            log.info("Stopping WAL iteration due to an exception: " + e.getMessage());
+            log.info("Stopping WAL iteration due to an exception: " + e.getMessage() + ", ptr=" + ptr);
     }
 
     /**
@@ -275,7 +276,7 @@ public abstract class AbstractWalRecordsIterator
         @Nullable final FileWALPointer start)
         throws IgniteCheckedException, FileNotFoundException {
         try {
-            FileIO fileIO = ioFactory.create(desc.file);
+            FileIO fileIO = desc.isCompressed() ? new UnzipFileIO(desc.file) : ioFactory.create(desc.file);
 
             try {
                 IgniteBiTuple<Integer, Boolean> tup = FileWriteAheadLogManager.readSerializerVersionAndCompactedFlag(fileIO);
@@ -284,12 +285,13 @@ public abstract class AbstractWalRecordsIterator
 
                 boolean isCompacted = tup.get2();
 
+                if (isCompacted)
+                    serializerFactory.skipPositionCheck(true);
+
                 FileInput in = new FileInput(fileIO, buf);
 
                 if (start != null && desc.idx == start.index()) {
                     if (isCompacted) {
-                        serializerFactory.skipPositionCheck(true);
-
                         if (start.fileOffset() != 0)
                             serializerFactory.recordDeserializeFilter(new StartSeekingFilter(start));
                     }

@@ -164,6 +164,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Type: platform object proxy. */
         public const byte PlatformJavaObjectFactoryProxy = 99;
 
+        /** Type: object written with Java OptimizedMarshaller. */
+        public const byte OptimizedMarshaller = 254;
+
         /** Type: platform object proxy. */
         public const int IgniteUuid = 2018070327;
 
