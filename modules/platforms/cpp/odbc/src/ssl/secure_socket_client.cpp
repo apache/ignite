@@ -20,9 +20,13 @@
 
 #include "ignite/odbc/log.h"
 #include "ignite/common/concurrent.h"
+#include "ignite/odbc/system/tcp_socket_client.h"
 #include "ignite/odbc/ssl/secure_socket_client.h"
 #include "ignite/odbc/ssl/ssl_bindings.h"
 
+#ifndef SOCKET_ERROR
+#   define SOCKET_ERROR (-1)
+#endif // SOCKET_ERROR
 
 namespace ignite
 {
@@ -393,11 +397,17 @@ namespace ignite
                     ready = select(fdSocket + 1, readFds, writeFds, NULL, (timeout == 0 ? NULL : &tv));
 
                     if (ready == SOCKET_ERROR)
-                        lastError = WSAGetLastError();
+                        lastError = system::TcpSocketClient::GetLastSocketError();
 
-                } while (ready == SOCKET_ERROR && lastError == WSAEINTR);
+                } while (ready == SOCKET_ERROR && system::TcpSocketClient::IsSocketOperationInterrupted(lastError));
 
                 if (ready == SOCKET_ERROR)
+                    return -lastError;
+
+                int size = sizeof(lastError);
+                res = getsockopt(fdSocket, SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&lastError), &size);
+
+                if (res != SOCKET_ERROR && lastError != 0)
                     return -lastError;
 
                 if (ready == 0)

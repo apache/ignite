@@ -100,6 +100,17 @@ namespace ignite
                  */
                 virtual bool IsBlocking() const;
 
+                /**
+                 * Get socket error.
+                 * @return Last socket error.
+                 */
+                static int GetLastSocketError();
+
+                /**
+                 * Check whether socket operation was interupted.
+                 * @return @c true if the socket operation was interupted.
+                 */
+                static bool IsSocketOperationInterrupted(int errorCode);
             private:
                 /**
                  * Tries set socket options.
