@@ -107,6 +107,13 @@ namespace ignite
                 static int GetLastSocketError();
 
                 /**
+                 * Get socket error.
+                 * @param handle Socket handle.
+                 * @return Last socket error.
+                 */
+                static int GetLastSocketError(int handle);
+
+                /**
                  * Check whether socket operation was interupted.
                  * @return @c true if the socket operation was interupted.
                  */

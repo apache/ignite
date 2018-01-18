@@ -443,6 +443,15 @@ namespace ignite
                 return WSAGetLastError();
             }
 
+            int TcpSocketClient::GetLastSocketError(int handle)
+            {
+                int lastError = 0;
+                int size = sizeof(lastError);
+                int res = getsockopt(handle, SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&lastError), &size);
+
+                return res == SOCKET_ERROR ? 0 : lastError;
+            }
+
             bool TcpSocketClient::IsSocketOperationInterrupted(int errorCode)
             {
                 return errorCode == WSAEINTR;
