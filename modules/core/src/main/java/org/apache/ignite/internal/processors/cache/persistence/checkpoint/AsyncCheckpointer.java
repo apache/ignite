@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
-import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
@@ -138,53 +137,35 @@ public class AsyncCheckpointer {
      */
     public CountDownFuture quickSortAndWritePages(CheckpointScope cpScope,
         final IgniteClosure<FullPageId[], Callable<Void>> taskFactory) {
-        return quickSortAndWritePages(cpScope.toBuffers(), taskFactory);
-    }
-
-    /**
-     * @param pageIds Checkpoint scope, contains unsorted collections. Element's (each FullPageIdsBuffer) data may be
-     * processed separately.
-     * @param taskFactory write pages task factory. Should provide callable to write given pages array.
-     * @return future will be completed when background writing is done.
-     */
-    public CountDownFuture quickSortAndWritePages(List<FullPageIdsBuffer> pageIds,
-        final IgniteClosure<FullPageId[], Callable<Void>> taskFactory) {
 
         // init counter 1 protects here from premature completing
         final CountDownDynamicFuture cntDownDynamicFut = new CountDownDynamicFuture(1);
-        for (FullPageIdsBuffer nextBuffer : pageIds) {
-            Callable<Void> task = new QuickSortRecursiveTask(nextBuffer,
+        final IgniteInClosure<Callable<Void>> submitter = callable -> fork(callable, cntDownDynamicFut);
+        final ForkNowForkLaterStrategy stgy = () -> {
+            if (asyncRunner.getActiveCount() < checkpointThreads) {
+                if (log.isTraceEnabled())
+                    log.trace("Need to fill pool by computing tasks, fork now");
+
+                return true; // need to fill the pool
+            }
+
+            if (blockingQueue.size() < checkpointThreads) {
+                if (log.isTraceEnabled())
+                    log.trace("Need to fill queue by computing tasks 1 for each thread, fork now");
+
+                return true; // need to fill the queue
+            }
+
+            return false; // sufficient queue and pool is already busy, don't flood queue
+        };
+
+        cpScope.independentSets().forEach(set -> {
+            submitter.apply(new QuickSortRecursiveTask(set,
                 SEQUENTIAL_CP_PAGE_COMPARATOR,
                 taskFactory,
-                new IgniteInClosure<Callable<Void>>() {
-                    @Override public void apply(Callable<Void> call) {
-                        fork(call, cntDownDynamicFut);
-                    }
-                },
-                checkpointThreads,
-                new ForkNowForkLaterStrategy() {
-                    @Override public boolean forkNow() {
-                        if (asyncRunner.getActiveCount() < checkpointThreads) {
-                            if (log.isTraceEnabled())
-                                log.trace("Need to fill pool by computing tasks, fork now");
-
-                            return true; // need to fill the pool
-                        }
-
-                        if (blockingQueue.size() < 2) {
-                            if (log.isTraceEnabled())
-                                log.trace("Need to fill queue by computing tasks, fork now");
-
-                            return true; // need to fill the queue
-                        }
-
-                        return false; // sufficient queue and pool is already busy, don't flood queue
-                    }
-                });
-
-            fork(task, cntDownDynamicFut);
-        }
-
+                submitter,
+                stgy));
+        });
 
         cntDownDynamicFut.onDone((Void)null); //submit of all tasks completed
 

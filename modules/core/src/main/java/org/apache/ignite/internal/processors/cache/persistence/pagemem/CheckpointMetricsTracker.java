@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Tracks various checkpoint phases and stats.
@@ -69,6 +70,9 @@ public class CheckpointMetricsTracker {
     /** */
     private long cpEnd;
 
+    /** Page write started. */
+    private AtomicLong firstPageUpdatedTs = new AtomicLong();
+
     /**
      *
      */
@@ -81,6 +85,14 @@ public class CheckpointMetricsTracker {
      */
     public void onDataPageWritten() {
         DATA_PAGES_UPDATER.incrementAndGet(this);
+    }
+
+    /**
+     * sets first data page written timestamp.
+     */
+    public void markFirstPageUpdate() {
+        if (firstPageUpdatedTs.get() == 0)
+            firstPageUpdatedTs.compareAndSet(0, System.currentTimeMillis());
     }
 
     /**
@@ -179,5 +191,12 @@ public class CheckpointMetricsTracker {
      */
     public long fsyncDuration() {
         return cpEnd - cpFsyncStart;
+    }
+
+    /**
+     * @return Millis from CP lock release till first page has been actually written.
+     */
+    public long prepareWritePhase() {
+        return firstPageUpdatedTs.get() - cpPagesWriteStart;
     }
 }

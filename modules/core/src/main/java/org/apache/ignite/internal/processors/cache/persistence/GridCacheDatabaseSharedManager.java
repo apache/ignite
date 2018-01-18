@@ -41,7 +41,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -118,7 +117,6 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.Checkpoin
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageIdCollection;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesStripedConcurrentHashSet;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
@@ -2582,21 +2580,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         // Identity stores set.
                         final GridConcurrentHashSet<PageStore> updStores = new GridConcurrentHashSet<>();
 
-                        final int totalPagesToWriteCnt = chp.cpScope.totalCpPages();
+                        final int totalPagesToWriteCnt = chp.pagesSize();
 
                         // This factory creates callable to write provided pages IDs array to page store.
-                        final IgniteClosure<FullPageId[], Callable<Void>> wrCpPagesFactory;
-
-                        wrCpPagesFactory = new IgniteClosure<FullPageId[], Callable<Void>>() {
-                            @Override public Callable<Void> apply(FullPageId[] ids) {
-                                return new WriteCheckpointPages(
-                                    tracker,
-                                    ids,
-                                    updStores,
-                                    totalPagesToWriteCnt
-                                );
-                            }
-                        };
+                        final IgniteClosure<FullPageId[], Callable<Void>> wrCpPagesFactory =
+                            ids -> new WriteCheckpointPages(
+                                tracker,
+                                ids,
+                                updStores,
+                                totalPagesToWriteCnt
+                            );
 
                         tracker.onPagesWriteStart();
 
@@ -2606,7 +2599,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             if (persistenceCfg.getCheckpointWriteOrder() == CheckpointWriteOrder.SEQUENTIAL
                                 && PageMemoryImpl.isParallelDirtyPages()) {
                                 if (log.isInfoEnabled())
-                                    log.info(String.format("Activated parallel page sort for [pages=%d]", chp.pagesSize()));
+                                    log.info(String.format("Activated parallel dirty page processing. [pages=%d]", chp.pagesSize()));
 
                                 wrCompleteFut = asyncCheckpointer.quickSortAndWritePages(
                                     chp.cpScope,
@@ -2657,6 +2650,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     }
                     else {
                         tracker.onPagesWriteStart();
+                        tracker.markFirstPageUpdate();
                         tracker.onFsyncStart();
                     }
 
@@ -2676,13 +2670,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     if (printCheckpointStats) {
                         if (log.isInfoEnabled())
                             log.info(String.format("Checkpoint finished [cpId=%s, pages=%d, markPos=%s, " +
-                                    "walSegmentsCleared=%d, markDuration=%dms, pagesWrite=%dms, fsync=%dms, " +
+                                    "walSegmentsCleared=%d, markDuration=%dms, prepareWritePhase=%dms, pagesWrite=%dms, fsync=%dms, " +
                                     "total=%dms]",
                                 chp.cpEntry.checkpointId(),
                                 chp.pagesSize(),
                                 chp.cpEntry.checkpointMark(),
                                 chp.walFilesDeleted,
                                 tracker.markDuration(),
+                                tracker.prepareWritePhase(),
                                 tracker.pagesWriteDuration(),
                                 tracker.fsyncDuration(),
                                 tracker.totalDuration()));
@@ -3138,6 +3133,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         if (PageIO.isDataPageType(pageType))
                             tracker.onDataPageWritten();
                     }
+
+                    tracker.markFirstPageUpdate();
 
                     if (!skipCrc) {
                         PageIO.setCrc(writeAddr, PureJavaCrc32.calcCrc32(tmpWriteBuf, pageSize()));

@@ -125,19 +125,12 @@ public class SplitAndSortCpPagesTest {
 
         AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(6, getClass().getSimpleName(), log);
 
-        final IgniteClosure<FullPageId[], Callable<Void>> taskFactory = new IgniteClosure<FullPageId[], Callable<Void>>() {
-            @Override public Callable<Void> apply(final FullPageId[] ids) {
-                return new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        return null;
-                    }
-                };
-            }
-        };
+        final IgniteClosure<FullPageId[], Callable<Void>> taskFactory
+            = ids -> () -> null;
 
         List<FullPageIdsBuffer> pageIds = scope.toBuffers();
 
-        asyncCheckpointer.quickSortAndWritePages(pageIds, taskFactory).get();
+        asyncCheckpointer.quickSortAndWritePages(scope, taskFactory).get();
 
         for (FullPageIdsBuffer next : pageIds) {
             validateOrder(Collections.singletonList(next.toArray()));

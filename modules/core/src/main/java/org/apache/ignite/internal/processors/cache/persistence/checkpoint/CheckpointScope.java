@@ -24,7 +24,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedSet;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.configuration.CheckpointWriteOrder;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -57,22 +58,19 @@ public class CheckpointScope {
      * @return buffers with arrays with all checkpoint pages, each buffer may be processed independently.
      */
     public List<FullPageIdsBuffer> toBuffers() {
-        List<FullPageIdsBuffer> buffers = new ArrayList<>();
-        int totalSize = 0;
+        List<FullPageIdsBuffer> buffers = independentSets().map(CheckpointScope::mergeSetsForBucket).collect(Collectors.toList());
 
-        for (StripedMultiSetCollector regions : regionsPages) {
-            for (MultiSetCollector next : regions.pagesByBucket.values()) {
-                FullPageIdsBuffer buf = mergeSetsForBucket(next);
-
-                totalSize += buf.remaining();
-
-                buffers.add(buf);
-            }
-        }
         //actual number of pages may decrease here because of pages eviction (evicted page may have been already saved).
-        pagesNum = totalSize;
+        pagesNum = buffers.stream().mapToInt(FullPageIdsBuffer::remaining).sum();
 
         return buffers;
+    }
+
+    /**
+     * @return region buckets may be processed separately
+     */
+    Stream<MultiSetForSameStripeCollector> independentSets() {
+        return regionsPages.stream().flatMap(reg -> reg.pagesByBucket.values().stream());
     }
 
     /**
@@ -81,12 +79,13 @@ public class CheckpointScope {
      * @param collector multi set collector.
      * @return buffer created from umerged sets.
      */
-    private FullPageIdsBuffer mergeSetsForBucket(MultiSetCollector collector) {
+    public static FullPageIdsBuffer mergeSetsForBucket(MultiSetForSameStripeCollector collector) {
         Comparator<FullPageId> comp = GridCacheDatabaseSharedManager.SEQUENTIAL_CP_PAGE_COMPARATOR;
 
+        final Iterable<? extends Collection<FullPageId>> sets = collector.unmergedSets();
         return collector.isSorted(comp)
-            ? FullPageIdsBuffer.createBufferFromSortedCollections(collector.unmergedSets, comp)
-            : FullPageIdsBuffer.createBufferFromMultiCollection(collector.unmergedSets);
+            ? FullPageIdsBuffer.createBufferFromSortedCollections(sets, comp)
+            : FullPageIdsBuffer.createBufferFromMultiCollection(sets);
     }
 
 
@@ -174,7 +173,7 @@ public class CheckpointScope {
         /**
          * Maps bucket (stripe) index -> multi set collector for this bucket.
          */
-        private Map<Integer, MultiSetCollector> pagesByBucket = new HashMap<>(PagesStripedConcurrentHashSet.BUCKETS_COUNT);
+        private Map<Integer, MultiSetForSameStripeCollector> pagesByBucket = new HashMap<>(PagesStripedConcurrentHashSet.BUCKETS_COUNT);
 
         /**
          * @return overall size of contained sets for all buckets.
@@ -182,7 +181,7 @@ public class CheckpointScope {
         public int size() {
             int size = 0;
 
-            for (MultiSetCollector next : pagesByBucket.values()) {
+            for (MultiSetForSameStripeCollector next : pagesByBucket.values()) {
                 size += next.size();
             }
 
@@ -193,11 +192,11 @@ public class CheckpointScope {
          * @param bucketIdx Bucket index.
          * @return collector of sets for bucket.
          */
-        MultiSetCollector getOrCreateBucket(int bucketIdx) {
-            MultiSetCollector collector = pagesByBucket.get(bucketIdx);
+        MultiSetForSameStripeCollector getOrCreateBucket(int bucketIdx) {
+            MultiSetForSameStripeCollector collector = pagesByBucket.get(bucketIdx);
 
             if (collector == null) {
-                collector = new MultiSetCollector();
+                collector = new MultiSetForSameStripeCollector();
 
                 pagesByBucket.put(bucketIdx, collector);
             }
@@ -205,51 +204,4 @@ public class CheckpointScope {
         }
     }
 
-    /**
-     * Class to collect several sets for same bucket (stripe), avoiding collection data copy. Class is not thread safe.
-     */
-    private static class MultiSetCollector {
-        /**
-         * Not merged sets for same bucket, but from different segments.
-         */
-        private Collection<Collection<FullPageId>> unmergedSets = new ArrayList<>(EXPECTED_SEGMENTS_COUNT);
-
-        /**
-         * @return overall size of contained sets.
-         */
-        public int size() {
-            int size = 0;
-
-            for (Collection<FullPageId> next : unmergedSets) {
-                size += next.size();
-            }
-
-            return size;
-        }
-
-        /**
-         * Appends next set to this collector, this method does not merge sets for performance reasons.
-         * @param set data to add
-         */
-        public void add(Collection<FullPageId> set) {
-            unmergedSets.add(set);
-        }
-
-        /**
-         * @param comp comparator used for sorting collection.
-         * @return Returns {@code true} if all sets are presorted using specific comparator instance.
-         */
-        public boolean isSorted(Comparator<FullPageId> comp) {
-            for (Collection<FullPageId> next : unmergedSets) {
-                if (!(next instanceof SortedSet))
-                    return false;
-
-                SortedSet sortedSet = (SortedSet)next;
-
-                if (sortedSet.comparator() != comp)
-                    return false;
-            }
-            return true;
-        }
-    }
 }
