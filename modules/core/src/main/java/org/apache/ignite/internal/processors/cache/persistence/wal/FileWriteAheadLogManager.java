@@ -656,7 +656,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Unable to perform segment rollover: " + e.getMessage(), e);
-            handle.invalidateEnvironment(e);
+
+            NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
         }
     }
 
@@ -1856,10 +1857,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 catch (IgniteCheckedException | IOException e) {
                     U.error(log, "Unexpected error during WAL compression", e);
 
-                    FileWriteHandle handle = currentHandle();
-
-                    if (handle != null)
-                        handle.invalidateEnvironment(e);
+                    NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
                 }
                 catch (InterruptedException ignore) {
                     Thread.currentThread().interrupt();
@@ -2011,10 +2009,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 catch (IOException e) {
                     U.error(log, "Unexpected error during WAL decompression", e);
 
-                    FileWriteHandle handle = currentHandle();
-
-                    if (handle != null)
-                        handle.invalidateEnvironment(e);
+                    NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
                 }
             }
         }
@@ -2374,9 +2369,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** */
         private final Lock lock = new ReentrantLock();
-
-        /** Condition activated each time writeBuffer() completes. Used to wait previously flushed write to complete */
-        private final Condition writeComplete = lock.newCondition();
 
         /** Condition for timed wait of several threads, see {@link DataStorageConfiguration#getWalFsyncDelayNanos()} */
         private final Condition fsync = lock.newCondition();
@@ -2788,22 +2780,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     U.awaitQuiet(nextSegment);
             }
             finally {
-                lock.unlock();
-            }
-        }
-
-        /**
-         * @param e Exception to set as a cause for all further operations.
-         */
-        private void invalidateEnvironment(Throwable e) {
-            lock.lock();
-
-            try {
-                NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
-            }
-            finally {
-                writeComplete.signalAll();
-
                 lock.unlock();
             }
         }
@@ -3240,7 +3216,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             Throwable err = walWriter.err;
 
             if (err != null)
-                currentHandle().invalidateEnvironment(err);
+                NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), err);
 
             if (expPos == UNCONDITIONAL_FLUSH)
                 expPos = (currentHandle().buf.tail());
@@ -3327,9 +3303,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 assert hdl.written == hdl.fileIO.position();
             }
             catch (IOException e) {
-                hdl.invalidateEnvironment(e);
+                StorageException se = new StorageException("Unable to write", e);
 
-                throw new StorageException(e);
+                NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), se);
+
+                throw se;
             }
         }
     }

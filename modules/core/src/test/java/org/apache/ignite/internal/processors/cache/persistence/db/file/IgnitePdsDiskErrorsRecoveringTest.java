@@ -44,7 +44,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecora
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -55,33 +54,39 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
- *
+ * Tests node recovering after disk errors during interaction with persistent storage.
  */
 public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
-
+    /** */
     private static final int PAGE_SIZE = DataStorageConfiguration.DFLT_PAGE_SIZE;
 
+    /** */
     private static final int WAL_SEGMENT_SIZE = 1024 * PAGE_SIZE;
 
+    /** */
     private static final long DFLT_DISK_SPACE_BYTES = Long.MAX_VALUE;
 
+    /** */
     private static final long STOP_TIMEOUT_MS = 30 * 1000;
 
+    /** */
     private static final String CACHE_NAME = "cache";
 
+    /** */
     private boolean failPageStoreDiskOperations = false;
 
+    /** */
     private long diskSpaceBytes = DFLT_DISK_SPACE_BYTES;
 
-    @Override
-    protected void beforeTest() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 
-    @Override
-    protected void afterTest() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
@@ -91,8 +96,8 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         System.clearProperty(IGNITE_WAL_MMAP);
     }
 
-    @Override
-    protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
@@ -119,6 +124,9 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /**
+     *
+     */
     public void testRecoveringOnCacheInitError() throws Exception {
         failPageStoreDiskOperations = true;
 
@@ -148,6 +156,9 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         recoveredGrid.active(true);
     }
 
+    /**
+     *
+     */
     public void testRecoveringOnCheckpointWritingError() throws Exception {
         failPageStoreDiskOperations = true;
         diskSpaceBytes = 1024 * PAGE_SIZE;
@@ -194,16 +205,25 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     *
+     */
     public void testRecoveringOnWALErrorWithMmap() throws Exception {
         System.setProperty(IGNITE_WAL_MMAP, "true");
         emulateRecoveringOnWALWritingError();
     }
 
+    /**
+     *
+     */
     public void testRecoveringOnWALErrorWithoutMmap() throws Exception {
         System.setProperty(IGNITE_WAL_MMAP, "false");
         emulateRecoveringOnWALWritingError();
     }
 
+    /**
+     *
+     */
     private void emulateRecoveringOnWALWritingError() throws Exception {
         diskSpaceBytes = WAL_SEGMENT_SIZE;
 
@@ -255,11 +275,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
      *
      */
     private void awaitStop(final IgniteEx grid) throws IgniteInterruptedCheckedException {
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return grid.context().gateway().getState() == GridKernalState.STOPPED;
-            }
-        }, STOP_TIMEOUT_MS);
+        GridTestUtils.waitForCondition(() -> grid.context().gateway().getState() == GridKernalState.STOPPED, STOP_TIMEOUT_MS);
     }
 
     /**
@@ -277,8 +293,11 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     *
+     */
     private static class LimitedSizeFileIO extends FileIODecorator {
-
+        /** */
         private final AtomicLong availableSpaceBytes;
 
         /**
@@ -290,8 +309,8 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
             this.availableSpaceBytes = availableSpaceBytes;
         }
 
-        @Override
-        public int write(ByteBuffer srcBuf) throws IOException {
+        /** {@inheritDoc} */
+        @Override public int write(ByteBuffer srcBuf) throws IOException {
             int written = super.write(srcBuf);
             availableSpaceBytes.addAndGet(-written);
             if (availableSpaceBytes.get() < 0)
@@ -299,8 +318,8 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
             return written;
         }
 
-        @Override
-        public int write(ByteBuffer srcBuf, long position) throws IOException {
+        /** {@inheritDoc} */
+        @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
             int written = super.write(srcBuf, position);
             availableSpaceBytes.addAndGet(-written);
             if (availableSpaceBytes.get() < 0)
@@ -308,16 +327,16 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
             return written;
         }
 
-        @Override
-        public void write(byte[] buf, int off, int len) throws IOException {
+        /** {@inheritDoc} */
+        @Override public void write(byte[] buf, int off, int len) throws IOException {
             super.write(buf, off, len);
             availableSpaceBytes.addAndGet(-len);
             if (availableSpaceBytes.get() < 0)
                 throw new IOException("Not enough space!");
         }
 
-        @Override
-        public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
+        /** {@inheritDoc} */
+        @Override public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
             availableSpaceBytes.addAndGet(-maxWalSegmentSize);
             if (availableSpaceBytes.get() < 0)
                 throw new IOException("Not enough space!");
@@ -329,22 +348,28 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
+        /** */
         private final FileIOFactory delegate;
 
+        /** */
         private final AtomicLong availableSpaceBytes;
 
+        /**
+         * @param delegate File I/O factory delegate.
+         * @param fsSpaceBytes Number of available bytes in FS.
+         */
         private LimitedSizeFileIOFactory(FileIOFactory delegate, long fsSpaceBytes) {
             this.delegate = delegate;
             this.availableSpaceBytes = new AtomicLong(fsSpaceBytes);
         }
 
-        @Override
-        public FileIO create(File file) throws IOException {
+        /** {@inheritDoc} */
+        @Override public FileIO create(File file) throws IOException {
             return new LimitedSizeFileIO(delegate.create(file), availableSpaceBytes);
         }
 
-        @Override
-        public FileIO create(File file, OpenOption... modes) throws IOException {
+        /** {@inheritDoc} */
+        @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             return new LimitedSizeFileIO(delegate.create(file, modes), availableSpaceBytes);
         }
     }

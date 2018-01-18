@@ -51,9 +51,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
     /** */
     private volatile boolean stop = false;
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -71,6 +69,9 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /**
+     * @return DataStorage configuration.
+     */
     private DataStorageConfiguration storageConfiguration() {
         DataRegionConfiguration regionCfg = new DataRegionConfiguration()
                 .setInitialSize(10L * 1024L * 1024L)
@@ -88,18 +89,14 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTestsStarted();
 
         deleteWorkFiles();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTestsStopped();
 
@@ -108,6 +105,11 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
         deleteWorkFiles();
     }
 
+    /**
+     * Tests interruptions on LFS read.
+     *
+     * @throws Exception If failed.
+     */
     public void testInterruptsOnLFSRead() throws Exception {
         final Ignite ignite = startGrid();
 

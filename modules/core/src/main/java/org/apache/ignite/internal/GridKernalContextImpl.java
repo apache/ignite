@@ -1094,13 +1094,13 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         return pdsFolderRslvr;
     }
 
-    @Override
-    public boolean invalidated() {
+    /** {@inheritDoc} */
+    @Override public boolean invalidated() {
         return invalidated;
     }
 
-    @Override
-    public void invalidate() {
+    /** {@inheritDoc} */
+    @Override public void invalidate() {
         invalidated = true;
     }
 

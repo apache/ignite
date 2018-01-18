@@ -146,7 +146,10 @@ public class FilePageStore implements PageStore {
     }
 
     /**
+     * Initializes header and writes it into the file store.
      *
+     * @return Next available position in the file to store a data.
+     * @throws IOException If initialization is failed.
      */
     private long initFile() throws IOException {
         ByteBuffer hdr = header(type, dbCfg.getPageSize());
@@ -159,7 +162,10 @@ public class FilePageStore implements PageStore {
     }
 
     /**
+     * Checks that file store has correct header and size.
      *
+     * @return Next available position in the file to store a data.
+     * @throws IgniteCheckedException If check is failed.
      */
     private long checkFile() throws IgniteCheckedException {
         try {
@@ -217,9 +223,9 @@ public class FilePageStore implements PageStore {
 
     /**
      * @param cleanFile {@code True} to delete file.
-     * @throws IgniteCheckedException If failed.
+     * @throws PersistentStorageIOException If failed.
      */
-    public void stop(boolean cleanFile) throws IgniteCheckedException {
+    public void stop(boolean cleanFile) throws PersistentStorageIOException {
         lock.writeLock().lock();
 
         try {
@@ -244,7 +250,7 @@ public class FilePageStore implements PageStore {
     /**
      *
      */
-    public void truncate(int tag) throws IgniteCheckedException {
+    public void truncate(int tag) throws PersistentStorageIOException {
         lock.writeLock().lock();
 
         try {
