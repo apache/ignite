@@ -25,21 +25,36 @@ import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFun
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
-import org.apache.ignite.ml.nn.updaters.ParameterUpdateCalculator;
+import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalculator;
 
 /** Multilayer perceptron group update training data. */
 public class MLPGroupUpdateTrainingData<U> {
-    /** */
+    /** {@link ParameterUpdateCalculator}. */
     private final ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator;
-    /** */
+
+    /**
+     * Count of steps which should be done by each of parallel trainings before sending it's update for combining with
+     * other parallel trainings updates.
+     */
     private final int stepsCnt;
-    /** */
+
+    /**
+     * Function used to reduce updates in one training (for example, sum all sequential gradient updates to get one
+     * gradient update).
+     */
     private final IgniteFunction<List<U>, U> updateReducer;
-    /** */
+
+    /**
+     * Supplier of batches in the form of (inputs, groundTruths).
+     */
     private final IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier;
-    /** */
+
+    /**
+     * Loss function.
+     */
     private final IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
-    /** */
+
+    /** Error tolerance. */
     private final double tolerance;
 
     /** Construct multilayer perceptron group update training data with all parameters provided. */

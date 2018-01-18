@@ -81,6 +81,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.RebalanceReassignExchangeTask;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.StopCachesOnClientReconnectExchangeTask;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
@@ -254,7 +256,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 if (cache.state().transition()) {
                     if (log.isDebugEnabled())
-                        log.debug("Add pending event: " + evt);
+                        log.debug("Adding pending event: " + evt);
 
                     pendingEvts.add(new PendingDiscoveryEvent(evt, cache));
                 }
@@ -290,6 +292,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param cache Discovery data cache.
      */
     private void processEventInactive(DiscoveryEvent evt, DiscoCache cache) {
+        // Clean local join caches context.
+        cctx.cache().localJoinCachesContext();
+
         if (log.isDebugEnabled())
             log.debug("Ignore event, cluster is inactive: " + evt);
    }
@@ -417,7 +422,19 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt);
 
-            exchFut = exchangeFuture(exchId, evt, cache, null, null);
+            ExchangeActions exchActs = null;
+
+            if (evt.type() == EVT_NODE_JOINED && evt.eventNode().isLocal()) {
+                LocalJoinCachesContext locJoinCtx = cctx.cache().localJoinCachesContext();
+
+                if (locJoinCtx != null) {
+                    exchActs = new ExchangeActions();
+
+                    exchActs.localJoinContext(locJoinCtx);
+                }
+            }
+
+            exchFut = exchangeFuture(exchId, evt, cache, exchActs, null);
         }
         else {
             DiscoveryCustomMessage customMsg = ((DiscoveryCustomEvent)evt).customMessage();
@@ -555,7 +572,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             GridDhtPartitionExchangeId exchId = initialExchangeId();
 
-            fut = exchangeFuture(exchId, discoEvt, discoCache, null, null);
+            fut = exchangeFuture(
+                exchId,
+                reconnect ? null : discoEvt,
+                reconnect ? null : discoCache,
+                null,
+                null);
         }
         else if (reconnect)
             reconnectExchangeFut.onDone();
@@ -907,6 +929,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
+     * @param caches Caches to stop.
+     * @return Future that will be completed when caches are stopped from the exchange thread.
+     */
+    public IgniteInternalFuture<Void> deferStopCachesOnClientReconnect(Collection<GridCacheAdapter> caches) {
+        assert cctx.discovery().localNode().isClient();
+
+        return exchWorker.deferStopCachesOnClientReconnect(caches);
+    }
+
+    /**
      * Schedules next full partitions update.
      */
     public void scheduleResendPartitions() {
@@ -926,6 +958,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * for non coordinator -  {@link GridDhtPartitionsSingleMessage SingleMessages} send
      */
     private void refreshPartitions() {
+        // TODO https://issues.apache.org/jira/browse/IGNITE-6857
+        if (cctx.snapshot().snapshotOperationInProgress())
+            return;
+
         ClusterNode oldest = cctx.discovery().oldestAliveServerNode(AffinityTopologyVersion.NONE);
 
         if (oldest == null) {
@@ -2042,6 +2078,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         /**
+         * @param caches Caches to stop.
+         */
+        IgniteInternalFuture<Void> deferStopCachesOnClientReconnect(Collection<GridCacheAdapter> caches) {
+            StopCachesOnClientReconnectExchangeTask task = new StopCachesOnClientReconnectExchangeTask(caches);
+
+            futQ.add(task);
+
+            return task;
+        }
+
+        /**
          * @param exchFut Exchange future.
          */
         void addExchangeFuture(GridDhtPartitionsExchangeFuture exchFut) {
@@ -2169,7 +2216,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             int cnt = 0;
 
             for (CachePartitionExchangeWorkerTask task : futQ) {
-                if (isExchangeTask(task)) {
+                if (task instanceof GridDhtPartitionsExchangeFuture) {
                     U.warn(log, ">>> " + ((GridDhtPartitionsExchangeFuture)task).shortInfo());
 
                     if (++cnt == 10)
@@ -2344,13 +2391,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (!cctx.kernalContext().clientNode()) {
                             assignsMap = new HashMap<>();
 
-                            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+                            IgniteCacheSnapshotManager snp = cctx.snapshot();
+
+                            for (final CacheGroupContext grp : cctx.cache().cacheGroups()) {
                                 long delay = grp.config().getRebalanceDelay();
+
+                                boolean disableRebalance = snp.partitionsAreFrozen(grp);
 
                                 GridDhtPreloaderAssignments assigns = null;
 
                                 // Don't delay for dummy reassigns to avoid infinite recursion.
-                                if (delay == 0 || forcePreload)
+                                if ((delay == 0 || forcePreload) && !disableRebalance)
                                     assigns = grp.preloader().assign(exchId, exchFut);
 
                                 assignsMap.put(grp.groupId(), assigns);

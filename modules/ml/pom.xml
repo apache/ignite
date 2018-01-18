@@ -33,11 +33,6 @@
     <version>2.4.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <netlibjava.version>1.1.2</netlibjava.version>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>org.apache.ignite</groupId>
@@ -108,7 +103,6 @@
     <profiles>
         <profile>
             <id>lgpl</id>
-
             <dependencies>
                 <dependency>
                     <groupId>com.github.fommil.netlib</groupId>
@@ -119,16 +113,4 @@
             </dependencies>
         </profile>
     </profiles>
-
-    <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>

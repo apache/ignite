@@ -53,6 +53,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Sql\LinqExample.cs" />
+    <Compile Include="Sql\SqlDdlExample.cs" />
     <Compile Include="Sql\SqlDmlExample.cs" />
     <Compile Include="Sql\SqlExample.cs" />
     <Compile Include="ThinClient\ThinClientPutGetExample.cs" />
@@ -82,6 +83,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\IMapService.cs" />
     <Compile Include="Services\ServicesExample.cs" />
+    <Compile Include="ThinClient\ThinClientSqlExample.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Apache.Ignite.ExamplesDll\Apache.Ignite.ExamplesDll.csproj">

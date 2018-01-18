@@ -53,7 +53,7 @@ import org.apache.ignite.ml.trainers.group.ResultAndUpdates;
  * @param <V> Type of cache values.
  * @param <I> Type of input of this chain.
  * @param <O> Type of output of this chain.
- * // TODO: IGNITE-7350 check if it is possible to integrate with {@link EntryProcessor}.
+ * // TODO: IGNITE-7405 check if it is possible to integrate with {@link EntryProcessor}.
  */
 @FunctionalInterface
 public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> {
@@ -229,7 +229,7 @@ public interface ComputationsChain<L extends HasTrainingUUID, K, V, I, O> {
     }
 
     /**
-     * Combine two this chain to other: feed this chain as input to other, pass same context as second argument to both chains
+     * Combine this chain with other: feed this chain as input to other, pass same context as second argument to both chains
      * process method.
      *
      * @param next Next chain.
