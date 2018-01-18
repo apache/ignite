@@ -531,9 +531,4 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
             throw new RuntimeException(e);
         }
     }
-
-    // TODO: Remove.
-    @Override protected long getTestTimeout() {
-        return Long.MAX_VALUE;
-    }
 }

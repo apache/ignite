@@ -250,8 +250,6 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
     protected IgniteConfiguration config(String name, boolean cli, boolean filter) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setNetworkTimeout(1000); // TODO: Remove?
-
         cfg.setIgniteInstanceName(name);
         cfg.setClientMode(cli);
         cfg.setLocalHost("127.0.0.1");

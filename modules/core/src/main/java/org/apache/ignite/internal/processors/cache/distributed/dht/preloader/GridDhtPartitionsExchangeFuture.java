@@ -563,8 +563,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             crd = srvNodes.isEmpty() ? null : srvNodes.get(0);
 
-//            System.out.println("CRD CHANGE 3 " + cctx.igniteInstanceName() + " " + crd.id());
-
             boolean crdNode = crd != null && crd.isLocal();
 
             exchCtx = new ExchangeContext(crdNode, this);
