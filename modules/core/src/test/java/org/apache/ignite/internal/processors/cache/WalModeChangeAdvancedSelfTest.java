@@ -64,7 +64,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
     public void testCacheCleanup() throws Exception {
         Ignite srv = startGrid(config(SRV_1, false, false));
 
-        srv.active(true);
+        srv.cluster().active(true);
 
         IgniteCache cache1 = srv.getOrCreateCache(cacheConfig(CACHE_NAME, PARTITIONED, TRANSACTIONAL));
         IgniteCache cache2 = srv.getOrCreateCache(cacheConfig(CACHE_NAME_2, PARTITIONED, TRANSACTIONAL));
@@ -112,7 +112,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         srv = startGrid(config(SRV_1, false, false));
 
-        srv.active(true);
+        srv.cluster().active(true);
 
         cache1 = srv.cache(CACHE_NAME);
         cache2 = srv.cache(CACHE_NAME_2);
@@ -120,8 +120,8 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
         assertForAllNodes(CACHE_NAME, true);
         assertForAllNodes(CACHE_NAME_2, false);
 
-        assertEquals(cache1.size(), 30);
-        assertEquals(cache2.size(), 0);
+        assertEquals(30, cache1.size());
+        assertEquals(0, cache2.size());
     }
 
     /**
@@ -152,7 +152,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
         // Start node and disable WAL.
         Ignite srv = startGrid(config(SRV_1, false, crdFiltered));
 
-        srv.active(true);
+        srv.cluster().active(true);
 
         srv.getOrCreateCache(cacheConfig(PARTITIONED));
         assertForAllNodes(CACHE_NAME, true);
@@ -233,7 +233,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         Ignite cli = startGrid(config(CLI, true, false));
 
-        cli.active(true);
+        cli.cluster().active(true);
 
         cli.getOrCreateCache(cacheConfig(PARTITIONED));
 
@@ -327,7 +327,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         final Ignite cacheCli = startGrid(config(CLI_2, true, false));
 
-        cacheCli.active(true);
+        cacheCli.cluster().active(true);
 
         final IgniteCache cache = cacheCli.getOrCreateCache(cacheConfig(PARTITIONED));
 

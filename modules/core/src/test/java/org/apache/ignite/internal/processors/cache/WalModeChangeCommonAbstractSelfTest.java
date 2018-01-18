@@ -171,7 +171,7 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
      *
      * @param cacheName Cache name.
      * @param expState Expected state.
-     * @throws IgniteCheckedException If fialed.
+     * @throws IgniteCheckedException If failed.
      */
     protected void assertForAllNodes(String cacheName, boolean expState) throws IgniteCheckedException {
         for (final Ignite node : Ignition.allGrids()) {

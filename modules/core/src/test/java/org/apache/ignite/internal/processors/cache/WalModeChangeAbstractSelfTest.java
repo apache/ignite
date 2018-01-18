@@ -71,7 +71,7 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
 
         Ignite cli = startGrid(config(CLI, true, false));
 
-        cli.active(true);
+        cli.cluster().active(true);
     }
 
     /** {@inheritDoc} */
