@@ -1970,7 +1970,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointReadLock();
 
         try {
-            restorePartitionState(partStates);
+            // TODO: IGNITE-7003: What to pass here?
+            restorePartitionState(partStates, Collections.emptySet());
         }
         finally {
             checkpointReadUnlock();
