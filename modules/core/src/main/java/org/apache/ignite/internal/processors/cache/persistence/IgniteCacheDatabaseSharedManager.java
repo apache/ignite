@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolde
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.F;
@@ -105,12 +106,16 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** Page size from memory configuration, may be set only for fake(standalone) IgniteCacheDataBaseSharedManager */
     private int pageSize;
 
+    private MetaStorageOnheap metaStorage;
+
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        if (cctx.kernalContext().clientNode() && cctx.kernalContext().config().getDataStorageConfiguration() == null)
+        GridKernalContext ctx = cctx.kernalContext();
+
+        if (ctx.clientNode() && ctx.config().getDataStorageConfiguration() == null)
             return;
 
-        DataStorageConfiguration memCfg = cctx.kernalContext().config().getDataStorageConfiguration();
+        DataStorageConfiguration memCfg = ctx.config().getDataStorageConfiguration();
 
         assert memCfg != null;
 
@@ -119,6 +124,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         pageSize = memCfg.getPageSize();
 
         initDataRegions(memCfg);
+
+        metaStorage = new MetaStorageOnheap();
+
+        for (MetastorageLifecycleListener lsnr : ctx.internalSubscriptionProcessor().getMetastorageSubscribers()) {
+            lsnr.onReadyForRead(metaStorage);
+            lsnr.onReadyForReadWrite(metaStorage);
+        }
     }
 
     /**

@@ -257,7 +257,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     private void writeBaselineTopology(BaselineTopology blt, BaselineTopologyHistoryItem prevBltHistItem) throws IgniteCheckedException {
         assert metastorage != null;
 
-        sharedCtx.database().checkpointReadLock();
+        if (sharedCtx != null)
+            sharedCtx.database().checkpointReadLock();
 
         try {
             if (blt != null) {
@@ -282,7 +283,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             }
         }
         finally {
-            sharedCtx.database().checkpointReadUnlock();
+            if (sharedCtx != null)
+                sharedCtx.database().checkpointReadUnlock();
         }
     }
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.authentication;
 
 import com.sun.org.apache.xml.internal.security.utils.Base64;
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -29,9 +30,13 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  */
-public class User {
+public class User implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Salt length. */
     private static final int SALT_LEN = 16;
+
     /** Random. */
     private static final SecureRandom random = new SecureRandom();
 
@@ -43,6 +48,9 @@ public class User {
 
     /** Salt. */
     private byte[] salt;
+
+    /** Accepted on cluster. */
+    private boolean accepted;
 
     /**
      * @param name User name.
@@ -98,6 +106,20 @@ public class User {
         return encPasswd.equals(password(passwd, salt));
     }
 
+    /**
+     * @return Accepted on cluster flag.
+     */
+    public boolean accepted() {
+        return accepted;
+    }
+
+    /**
+     * @param accepted Accepted flag.
+     */
+    public void accepted(boolean accepted) {
+        this.accepted = accepted;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -106,7 +128,7 @@ public class User {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        User u = (User )o;
+        User u = (User)o;
 
         return F.eq(name, u.name) &&
             F.eq(salt, u.salt) &&

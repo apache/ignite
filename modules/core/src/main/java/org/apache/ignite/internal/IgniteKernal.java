@@ -926,8 +926,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
                 startProcessor(createComponent(IgniteCacheObjectProcessor.class, ctx));
                 startProcessor(createComponent(IGridClusterStateProcessor.class, ctx));
+                startProcessor(new IgniteAuthenticationProcessor(ctx));
                 startProcessor(new GridCacheProcessor(ctx));
                 startProcessor(new GridQueryProcessor(ctx));
+                startProcessor(new ClientListenerProcessor(ctx));
                 startProcessor(new GridServiceProcessor(ctx));
                 startProcessor(new GridTaskSessionProcessor(ctx));
                 startProcessor(new GridJobProcessor(ctx));
@@ -941,8 +943,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startProcessor(new DataStructuresProcessor(ctx));
                 startProcessor(createComponent(PlatformProcessor.class, ctx));
                 startProcessor(new GridMarshallerMappingProcessor(ctx));
-                startProcessor(new IgniteAuthenticationProcessor(ctx));
-                startProcessor(new ClientListenerProcessor(ctx));
 
                 // Start plugins.
                 for (PluginProvider provider : ctx.plugins().allProviders()) {

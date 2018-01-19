@@ -17,12 +17,27 @@
 
 package org.apache.ignite.internal.processors.authentication;
 
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
+ *
  */
-public class UserStorage {
-    /** User map. */
-    private final ConcurrentHashMap<String, User> users = new ConcurrentHashMap<>();
+class UserAction {
+    /** User. */
+    private final User usr;
 
+    /** User. */
+    private final ActionType type;
+
+    /**
+     * @param usr User.
+     * @param type Action type.
+     */
+    public UserAction(User usr, ActionType type) {
+        this.usr = usr;
+        this.type = type;
+    }
+
+    /**
+     * User action type.
+     */
+    public enum ActionType {ADD, UPDATE, REMOVE};
 }

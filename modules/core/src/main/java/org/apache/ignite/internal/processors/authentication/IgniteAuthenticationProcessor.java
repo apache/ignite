@@ -17,26 +17,47 @@
 
 package org.apache.ignite.internal.processors.authentication;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteAuthenticationException;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 
 /**
  */
-public class IgniteAuthenticationProcessor extends GridProcessorAdapter {
+public class IgniteAuthenticationProcessor extends GridProcessorAdapter implements MetastorageLifecycleListener {
+    /** Default user. */
+    private static final User DFLT_USER = User.create("ignite", "ignite");
+
     /** User map. */
     private final Map<String, User> users = new HashMap<>();
+
+    /** User map. */
+    private final List<Long> history = new ArrayList<>();
 
     /** Map monitor. */
     private final Object mux = new Object();
 
+    /** Metastorage. */
+    private ReadWriteMetastorage metastorage;
     /**
      * @param ctx Kernal context.
      */
     public IgniteAuthenticationProcessor(GridKernalContext ctx) {
         super(ctx);
+
+        ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteCheckedException {
+        super.start();
     }
 
     /**
@@ -111,5 +132,15 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter {
             return usr;
 
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
+        // TODO: init local storage
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onReadyForReadWrite(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
+        this.metastorage = metastorage;
     }
 }
