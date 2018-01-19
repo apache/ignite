@@ -75,8 +75,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
                 new DataRegionConfiguration()
                     .setInitialSize(INIT_REGION_SIZE)
                     .setPersistenceEnabled(true)
-                    .setMetricsEnabled(true)
-                    .setPageEvictionMode(RANDOM_2_LRU));
+                    .setMetricsEnabled(true));
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -149,7 +148,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
             assert currMetrics.getPhysicalMemoryPages() > initMetrics.getPhysicalMemoryPages();
             assert currMetrics.getTotalAllocatedPages() > initMetrics.getTotalAllocatedPages();
 
-            node.close();
+            stopGrid(0, true);
         }
     }
 
@@ -192,7 +191,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         checkMetricsConsistency(node1, getDfltRegGroupIds(node1));
         checkMetricsConsistency(node2, getDfltRegGroupIds(node2));
 
-        stopGrid(1);
+        stopGrid(1, true);
 
         awaitPartitionMapExchange(true, true, node0.cluster().nodes());
 
@@ -226,22 +225,18 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static void checkMetricsConsistency (
+    private static void checkMetricsConsistency(
         final IgniteEx node,
-        final Set<Integer> grpIds
-    ) throws Exception
-    {
-        boolean storageMatches = GridTestUtils.waitForCondition(new PA() {
-            @Override public boolean apply() {
-                long pagesInStore = 0;
+        final Set<Integer> grpIds) throws Exception {
+        boolean storageMatches = GridTestUtils.waitForCondition((PA)() -> {
+            long pagesInStore = 0;
 
-                for (int grpId : grpIds)
-                    pagesInStore += node.context().cache().context().pageStore().pagesAllocated(grpId);
+            for (int grpId : grpIds)
+                pagesInStore += node.context().cache().context().pageStore().pagesAllocated(grpId);
 
-                long allocated = getDfltRegionMetrics(node).getTotalAllocatedPages();
+            long allocated = getDfltRegionMetrics(node).getTotalAllocatedPages();
 
-                return allocated == pagesInStore;
-            }
+            return allocated == pagesInStore;
         }, 1000);
 
         assert storageMatches;
