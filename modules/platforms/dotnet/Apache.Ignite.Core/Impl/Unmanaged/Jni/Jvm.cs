@@ -240,6 +240,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// </summary>
         private static IntPtr CreateJvm(IList<string> options)
         {
+            // TODO: Detect Java version and append Java9 args only when needed.
+            // TODO: JvmDll.Instance.GetDefaultJvmInitArgs()
+
             options = options == null
                 ? Java9Options.ToList()
                 : new List<string>(options.Concat(Java9Options));

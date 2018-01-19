@@ -41,6 +41,11 @@ namespace Apache.Ignite.Core.Tests
             Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
             Debug.AutoFlush = true;
 
+            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                //JvmDllPath = @"c:\Program Files\Java\jdk1.8.0_111\jre\bin\server\jvm.dll"
+            });
+
             if (args.Length == 1 && args[0] == "-basicTests")
             {
                 RunBasicTests();

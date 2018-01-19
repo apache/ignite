@@ -85,6 +85,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         private unsafe delegate JniResult CreateJvmDel(out IntPtr pvm, out IntPtr penv, JvmInitArgs* args);
 
         /** */
+        private unsafe delegate JniResult GetDefaultArgsDel(JvmInitArgs* args);
+
+        /** */
         private delegate JniResult GetCreatedJvmsDel(out IntPtr pvm, int size, out int size2);
 
         /** */
@@ -92,6 +95,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
         /** */
         private readonly GetCreatedJvmsDel _getCreatedJvms;
+
+        /** */
+        private readonly GetDefaultArgsDel _getDefaultArgs;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JvmDll"/> class.
@@ -126,6 +132,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             {
                 _createJvm = JniNativeMethodsWindows.JNI_CreateJavaVM;
                 _getCreatedJvms = JniNativeMethodsWindows.JNI_GetCreatedJavaVMs;
+                _getDefaultArgs = JniNativeMethodsWindows.JNI_GetDefaultJavaVMInitArgs;
             }
             else
             {
@@ -156,6 +163,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         public JniResult GetCreatedJvms(out IntPtr pvm, int size, out int size2)
         {
             return _getCreatedJvms(out pvm, size, out size2);
+        }
+
+        /// <summary>
+        /// Gets the default JVM init args.
+        /// </summary>
+        public unsafe JniResult GetDefaultJvmInitArgs(JvmInitArgs* args)
+        {
+            return _getDefaultArgs(args);
         }
 
         /// <summary>
@@ -398,6 +413,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             [DllImport("jvm.dll", CallingConvention = CallingConvention.StdCall)]
             internal static extern JniResult JNI_GetCreatedJavaVMs(out IntPtr pvm, int size,
                 [Out] out int size2);
+
+            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
+            [DllImport("jvm.dll", CallingConvention = CallingConvention.StdCall)]
+            internal static extern JniResult JNI_GetDefaultJavaVMInitArgs(JvmInitArgs* args);
         }
 
         /// <summary>
