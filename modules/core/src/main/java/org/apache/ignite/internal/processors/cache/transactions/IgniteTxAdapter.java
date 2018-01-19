@@ -1099,7 +1099,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 if (state != ACTIVE && state != SUSPENDED)
                     seal();
 
-                if (cctx.wal() != null && cctx.tm().logTxRecords() /*todo check*/) {
+                if (cctx.wal() != null && cctx.tm().logTxRecords()) {
                     // Log tx state change to WAL.
                     if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
                         assert txNodes != null || state == ROLLED_BACK : "txNodes=" + txNodes + " state=" + state;
