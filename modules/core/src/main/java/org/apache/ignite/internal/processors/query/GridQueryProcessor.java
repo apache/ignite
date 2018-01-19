@@ -39,7 +39,6 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
@@ -777,7 +776,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 // Warn about possible implicit deserialization.
                 if (!mustDeserializeClss.isEmpty()) {
-                    U.warn(log, "Some classes in query configuration cannot be written in binary format " +
+                    U.warnDevOnly(log, "Some classes in query configuration cannot be written in binary format " +
                         "because they either implement Externalizable interface or have writeObject/readObject " +
                         "methods. Instances of these classes will be deserialized in order to build indexes. Please " +
                         "ensure that all nodes have these classes in classpath. To enable binary serialization " +
