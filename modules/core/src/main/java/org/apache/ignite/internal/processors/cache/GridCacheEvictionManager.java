@@ -146,7 +146,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
 
             cache.removeEntry(entry);
 
-            if (cache.configuration().isStatisticsEnabled())
+            if (cctx.statisticsEnabled())
                 cache.metrics0().onEvict();
 
             if (recordable)

@@ -139,7 +139,7 @@ namespace Apache.Ignite.Examples
         /// <param name="cache">Cache.</param>
         private static void SqlFieldsQueryExample(ICache<int, Employee> cache)
         {
-            var qry = cache.QueryFields(new SqlFieldsQuery("select name, salary from Employee"));
+            var qry = cache.Query(new SqlFieldsQuery("select name, salary from Employee"));
 
             Console.WriteLine();
             Console.WriteLine(">>> Employee names and their salaries:");

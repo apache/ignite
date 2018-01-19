@@ -67,6 +67,29 @@ public class IgniteNativeIoLib {
     */
     public static final int POSIX_FADV_DONTNEED = 4;
 
+    /** Flag for newly created files: user has read permission. */
+    public static final int S_IRUSR = 00400;
+
+    /** Flag for newly created files: user has write permission. */
+    public static final int S_IWUSR = 00200;
+
+    /** Flag for newly created files: group has read permission. */
+    public static final int S_IRGRP = 00040;
+
+    /** Flag for newly created files: others have read permission. */
+    public static final int S_IROTH = 00004;
+
+    /** Default access mask for newly created files. */
+    public static final int DEFAULT_OPEN_MODE = S_IRUSR | S_IWUSR | S_IROTH | S_IRGRP;
+
+    /** Invalid argument. */
+    public static final int E_INVAL = 22;
+
+    /** Seek option: set file offset to offset */
+    public static final int SEEK_SET = 0;
+
+    /** Seek option: change file position to offset */
+    public static final int SEEK_CUR = 1;
 
     /** JNA library available and initialized. Always {@code false} for non linux systems. */
     private static boolean jnaAvailable;
@@ -345,28 +368,38 @@ public class IgniteNativeIoLib {
      *
      * The advice applies to a (not necessarily existent) region starting at
      * {@code off} and extending for {@code len} bytes (or until the end of the file if len is 0)
-     * within the file referred to by {@code fd}.
+     * within the file referred to by fd.
      *
-     * See "man 2 posix_fadvise", and code sample http://elixir.free-electrons.com/linux/latest/source/mm/fadvise.c#L117
+     * See "man 2 posix_fadvise".
      *
      * @param fd file descriptor.
      * @param off region start.
      * @param len region end.
      * @param flag advice (option) to apply.
-     * @return On success, zero is returned. On error, an error number is returned.
+     * @return On success, zero is returned.  On error, an error number is returned.
      */
     public static native int posix_fadvise(int fd, long off, long len, int flag);
 
     /**
-     * The function posix_fallocate() ensures that disk space is allocated for the file referred to by the file
-     * descriptor fd for the bytes in the range starting at offset and continuing for len bytes. After a
-     * successful call to posix_fallocate(), subsequent writes to bytes in the specified range are guaranteed
-     * not to fail because of lack of disk space.
+     * Causes regular file referenced by fd to be truncated to a size of precisely length bytes.
      *
-     * @param fd file descriptor.
-     * @param off region start.
-     * @param len region end.
-     * @return On success, zero is returned. On error, an error number is returned.
+     * If the file previously was larger than this size, the extra data is lost.
+     * If the file previously was shorter, it is extended, and the extended part reads as null bytes ('\0').
+     * The file offset is not changed.
+     *
+     * @param fd  file descriptor.
+     * @param len required length.
+     * @return On success, zero is returned. On error, -1 is returned, and errno is set appropriately.
      */
-    public static native int posix_fallocate(int fd, long off, long len);
+    public static native int ftruncate(int fd, long len);
+
+    /**
+     * Repositions the file offset of the open file description associated with the file descriptor {@code fd}
+     * to the argument offset according to the directive {@code whence}
+     * @param fd file descriptor.
+     * @param off required position offset.
+     * @param whence position base.
+     * @return  On error, the value -1 is returned and errno is set to indicate the error.
+     */
+    public static native long lseek(int fd, long off, int whence);
 }

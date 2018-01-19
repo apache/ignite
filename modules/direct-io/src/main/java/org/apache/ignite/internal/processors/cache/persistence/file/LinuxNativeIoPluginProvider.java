@@ -215,18 +215,18 @@ public class LinuxNativeIoPluginProvider implements PluginProvider {
     private void adviceFileDontNeed(FileIO fileIO, long size)   {
         try {
             if(fileIO instanceof RandomAccessFileIO) {
-                RandomAccessFileIO channelIo = (RandomAccessFileIO)fileIO;
+                RandomAccessFileIO chIo = (RandomAccessFileIO)fileIO;
 
-                FileChannel ch = U.field(channelIo, "ch");
+                FileChannel ch = U.field(chIo, "ch");
 
                 FileDescriptor fd = U.field(ch, "fd");
 
-                int fdValue = U.field(fd, "fd");
+                int fdVal = U.field(fd, "fd");
 
-                int retVal = IgniteNativeIoLib.posix_fadvise(fdValue, 0, size, IgniteNativeIoLib.POSIX_FADV_DONTNEED);
+                int retVal = IgniteNativeIoLib.posix_fadvise(fdVal, 0, size, IgniteNativeIoLib.POSIX_FADV_DONTNEED);
 
                 if (retVal != 0) {
-                    U.warn(log, "Unable to apply fadvice on WAL file descriptor [fd=" + fdValue + "]:" +
+                    U.warn(log, "Unable to apply fadvice on WAL file descriptor [fd=" + fdVal + "]:" +
                         IgniteNativeIoLib.strerror(retVal));
                 }
             }

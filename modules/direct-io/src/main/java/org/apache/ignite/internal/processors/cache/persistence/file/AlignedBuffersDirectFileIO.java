@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
@@ -69,6 +70,9 @@ public class AlignedBuffersDirectFileIO implements FileIO {
     /** Number of instances to cache */
     private static final int CACHED_LONGS = 512;
 
+    /** Value used as divisor in {@link #nativeLongCache}. Native longs divisible by this value will be cached. */
+    private static final int NL_CACHE_DIVISOR = 4096;
+
     /** Native long instance cache. */
     private static final AtomicReferenceArray<NativeLong> nativeLongCache = new AtomicReferenceArray<>(CACHED_LONGS);
 
@@ -103,10 +107,32 @@ public class AlignedBuffersDirectFileIO implements FileIO {
 
         String pathname = file.getAbsolutePath();
 
-        int fd = IgniteNativeIoLib.open(pathname, setupOpenFlags(modes, log), 00644);
+        int openFlags = setupOpenFlags(modes, log, true);
+        int mode = IgniteNativeIoLib.DEFAULT_OPEN_MODE;
+        int fd = IgniteNativeIoLib.open(pathname, openFlags, mode);
 
-        if (fd < 0)
-            throw new IOException("Error opening file [" + pathname + "], got error [" + getLastError() + "]");
+        if (fd < 0) {
+            int error = Native.getLastError();
+            String msg = "Error opening file [" + pathname + "] with flags [0x"
+                + String.format("%2X", openFlags) + ": DIRECT & " + Arrays.asList(modes)
+                + "], got error [" + error + ": " + getLastError() + "]";
+
+            if (error == IgniteNativeIoLib.E_INVAL) {
+                openFlags = setupOpenFlags(modes, log, false);
+                fd = IgniteNativeIoLib.open(pathname, openFlags, mode);
+
+                if (fd > 0) {
+                    U.warn(log, "Disable Direct IO mode for path " + file.getParentFile() +
+                        "(probably incompatible file system selected, for example, tmpfs): " + msg);
+
+                    this.fd = fd;
+
+                    return;
+                }
+            }
+
+            throw new IOException(msg);
+        }
 
         this.fd = fd;
     }
@@ -116,10 +142,11 @@ public class AlignedBuffersDirectFileIO implements FileIO {
      *
      * @param modes java options.
      * @param log logger.
-     * @return native flags with {@link IgniteNativeIoLib#O_DIRECT} enabled.
+     * @param enableDirect flag for enabling option {@link IgniteNativeIoLib#O_DIRECT} .
+     * @return native flags for open method.
      */
-    private static int setupOpenFlags(OpenOption[] modes, IgniteLogger log) {
-        int flags = IgniteNativeIoLib.O_DIRECT;
+    private static int setupOpenFlags(OpenOption[] modes, IgniteLogger log, boolean enableDirect) {
+        int flags = enableDirect ? IgniteNativeIoLib.O_DIRECT : 0;
         List<OpenOption> openOptionList = Arrays.asList(modes);
 
         for (OpenOption mode : openOptionList) {
@@ -148,12 +175,22 @@ public class AlignedBuffersDirectFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public long position() throws IOException {
-        throw new UnsupportedOperationException("Not implemented");
+        long position = IgniteNativeIoLib.lseek(fdCheckOpened(), 0, IgniteNativeIoLib.SEEK_CUR);
+
+        if (position < 0) {
+            throw new IOException(String.format("Error checking file [%s] position: %s",
+                file, getLastError()));
+        }
+
+        return position;
     }
 
     /** {@inheritDoc} */
     @Override public void position(long newPosition) throws IOException {
-        throw new UnsupportedOperationException("Not implemented");
+        if (IgniteNativeIoLib.lseek(fdCheckOpened(), newPosition, IgniteNativeIoLib.SEEK_SET) < 0) {
+            throw new IOException(String.format("Error setting file [%s] position to [%s]: %s",
+                file, Long.toString(newPosition), getLastError()));
+        }
     }
 
     /** {@inheritDoc} */
@@ -351,31 +388,36 @@ public class AlignedBuffersDirectFileIO implements FileIO {
                 file, filePos == FILE_POS_USE_CURRENT ? "current" : Long.toString(filePos), getLastError()));
         }
 
+        if ((pos + wr) > limit) {
+            throw new IllegalStateException(String.format("Write illegal state for file [%s]: pos=%d, wr=%d, limit=%d",
+                file, pos, wr, limit));
+        }
+
         srcBuf.position(pos + wr);
 
         return wr;
     }
 
     /**
-     * @param value value to box to native long.
+     * @param val value to box to native long.
      * @return native long.
      */
-    @NotNull private NativeLong nl(long value) {
-        if (value % pageSize == 0 && value < CACHED_LONGS * pageSize) {
-            int cacheIdx = (int)(value / pageSize);
+    @NotNull private static NativeLong nl(long val) {
+        if (val % NL_CACHE_DIVISOR == 0 && val < CACHED_LONGS * NL_CACHE_DIVISOR) {
+            int cacheIdx = (int)(val / NL_CACHE_DIVISOR);
 
             NativeLong curCached = nativeLongCache.get(cacheIdx);
 
             if (curCached != null)
                 return curCached;
 
-            NativeLong nl = new NativeLong(value);
+            NativeLong nl = new NativeLong(val);
 
             nativeLongCache.compareAndSet(cacheIdx, null, nl);
 
             return nl;
         }
-        return new NativeLong(value);
+        return new NativeLong(val);
     }
 
     /**
@@ -383,7 +425,7 @@ public class AlignedBuffersDirectFileIO implements FileIO {
      * *nix platforms.
      * @return displayable string with OS error info.
      */
-    public static String getLastError() {
+    private static String getLastError() {
         return IgniteNativeIoLib.strerror(Native.getLastError());
     }
 
@@ -418,6 +460,11 @@ public class AlignedBuffersDirectFileIO implements FileIO {
     }
 
     /** {@inheritDoc} */
+    @Override public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
+        throw new UnsupportedOperationException("AsynchronousFileChannel doesn't support mmap.");
+    }
+
+    /** {@inheritDoc} */
     @Override public void force() throws IOException {
         if (IgniteNativeIoLib.fsync(fdCheckOpened()) < 0)
             throw new IOException(String.format("Error fsync()'ing %s, got %s", file, getLastError()));
@@ -430,7 +477,28 @@ public class AlignedBuffersDirectFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public void clear() throws IOException {
-        throw new UnsupportedOperationException("Not implemented");
+        truncate(0);
+    }
+
+    /**
+     * Truncates this channel's file to the given size.
+     *
+     * <p> If the given size is less than the file's current size then the file
+     * is truncated, discarding any bytes beyond the new end of the file. If
+     * the given size is greater than or equal to the file's current size then
+     * the file is not modified. In either case, if this channel's file
+     * position is greater than the given size then it is set to that size.
+     * </p>
+     *
+     * @param  size The new size, a non-negative byte count
+     *
+     */
+    private void truncate(long size) throws IOException {
+        if (IgniteNativeIoLib.ftruncate(fdCheckOpened(), size) < 0)
+            throw new IOException(String.format("Error truncating file %s, got %s", file, getLastError()));
+
+        if (position() > size)
+            position(size);
     }
 
     /** {@inheritDoc} */

@@ -17,8 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.h2.dml;
 
+import java.lang.reflect.Array;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.Date;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
@@ -29,11 +35,6 @@ import org.h2.value.Value;
 import org.h2.value.ValueDate;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
-
-import java.lang.reflect.Array;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.util.Date;
 
 /**
  * DML utility methods.
@@ -101,12 +102,30 @@ public class DmlUtils {
                 return newArr;
             }
 
-            return H2Utils.convert(val, desc, type);
+            Object res = H2Utils.convert(val, desc, type);
+
+            if (res instanceof Date && res.getClass() != Date.class && expCls == Date.class) {
+                // We can get a Timestamp instead of Date when converting a String to Date
+                // without query - let's handle this
+                return new Date(((Date) res).getTime());
+            }
+
+            return res;
         }
         catch (Exception e) {
             throw new IgniteSQLException("Value conversion failed [from=" + currCls.getName() + ", to=" +
                 expCls.getName() +']', IgniteQueryErrorCode.CONVERSION_FAILED, e);
         }
+    }
+
+    /**
+     * Check whether query is batched.
+     *
+     * @param qry Query.
+     * @return {@code True} if batched.
+     */
+    public static boolean isBatched(SqlFieldsQuery qry) {
+        return (qry instanceof SqlFieldsQueryEx) && ((SqlFieldsQueryEx)qry).isBatched();
     }
 
     /**

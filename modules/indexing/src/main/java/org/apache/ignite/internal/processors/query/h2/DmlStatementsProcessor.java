@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -32,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -43,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -51,7 +54,7 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlBatchSender;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlDistributedPlanInfo;
-import org.apache.ignite.internal.processors.query.h2.dml.FastUpdate;
+import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
@@ -72,6 +75,7 @@ import org.h2.command.dml.Merge;
 import org.h2.command.dml.Update;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
 
@@ -148,26 +152,12 @@ public class DmlStatementsProcessor {
         GridCacheContext<?, ?> cctx = plan.cacheContext();
 
         for (int i = 0; i < DFLT_DML_RERUN_ATTEMPTS; i++) {
-            CacheOperationContext opCtx = cctx.operationContextPerCall();
-
-            // Force keepBinary for operation context to avoid binary deserialization inside entry processor
-            if (cctx.binaryMarshaller()) {
-                CacheOperationContext newOpCtx = null;
-
-                if (opCtx == null)
-                    // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
-                    newOpCtx = new CacheOperationContext(false, null, true, null, false, null, false);
-                else if (!opCtx.isKeepBinary())
-                    newOpCtx = opCtx.keepBinary();
-
-                if (newOpCtx != null)
-                    cctx.operationContextPerCall(newOpCtx);
-            }
+            CacheOperationContext opCtx = setKeepBinaryContext(cctx);
 
             UpdateResult r;
 
             try {
-                r = executeUpdateStatement(schemaName, cctx, conn, prepared, fieldsQry, loc, filters, cancel, errKeys);
+                r = executeUpdateStatement(schemaName, cctx, conn, prepared, fieldsQry, loc, filters, cancel);
             }
             finally {
                 cctx.operationContextPerCall(opCtx);
@@ -191,6 +181,125 @@ public class DmlStatementsProcessor {
     }
 
     /**
+     * Execute DML statement, possibly with few re-attempts in case of concurrent data modifications.
+     *
+     * @param schemaName Schema.
+     * @param conn Connection.
+     * @param prepared Prepared statement.
+     * @param fieldsQry Original query.
+     * @param loc Query locality flag.
+     * @param filters Cache name and key filter.
+     * @param cancel Cancel.
+     * @return Update result (modified items count and failed keys).
+     * @throws IgniteCheckedException if failed.
+     */
+    private Collection<UpdateResult> updateSqlFieldsBatched(String schemaName, Connection conn, Prepared prepared,
+        SqlFieldsQueryEx fieldsQry, boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel)
+        throws IgniteCheckedException {
+        List<Object[]> argss = fieldsQry.batchedArguments();
+
+        UpdatePlan plan = getPlanForStatement(schemaName, conn, prepared, fieldsQry, loc, null);
+
+        if (plan.hasRows() && plan.mode() == UpdateMode.INSERT) {
+            GridCacheContext<?, ?> cctx = plan.cacheContext();
+
+            CacheOperationContext opCtx = setKeepBinaryContext(cctx);
+
+            try {
+                List<List<List<?>>> cur = plan.createRows(argss);
+
+                List<UpdateResult> res = processDmlSelectResultBatched(plan, cur, fieldsQry.getPageSize());
+
+                return res;
+            }
+            finally {
+                cctx.operationContextPerCall(opCtx);
+            }
+        }
+        else {
+            // Fallback to previous mode.
+            Collection<UpdateResult> ress = new ArrayList<>(argss.size());
+
+            SQLException batchException = null;
+
+            int[] cntPerRow = new int[argss.size()];
+
+            int cntr = 0;
+
+            for (Object[] args : argss) {
+                SqlFieldsQueryEx qry0 = (SqlFieldsQueryEx)fieldsQry.copy();
+
+                qry0.clearBatchedArgs();
+                qry0.setArgs(args);
+
+                UpdateResult res;
+
+                try {
+                    res = updateSqlFields(schemaName, conn, prepared, qry0, loc, filters, cancel);
+
+                    cntPerRow[cntr++] = (int)res.counter();
+
+                    ress.add(res);
+                }
+                catch (Exception e ) {
+                    String sqlState;
+
+                    int code;
+
+                    if (e instanceof IgniteSQLException) {
+                        sqlState = ((IgniteSQLException)e).sqlState();
+
+                        code = ((IgniteSQLException)e).statusCode();
+                    } else {
+                        sqlState = SqlStateCode.INTERNAL_ERROR;
+
+                        code = IgniteQueryErrorCode.UNKNOWN;
+                    }
+
+                    batchException = chainException(batchException, new SQLException(e.getMessage(), sqlState, code, e));
+
+                    cntPerRow[cntr++] = Statement.EXECUTE_FAILED;
+                }
+            }
+
+            if (batchException != null) {
+                BatchUpdateException e = new BatchUpdateException(batchException.getMessage(),
+                    batchException.getSQLState(), batchException.getErrorCode(), cntPerRow, batchException);
+
+                throw new IgniteCheckedException(e);
+            }
+
+            return ress;
+        }
+    }
+
+    /**
+     * Makes current operation context as keepBinary.
+     *
+     * @param cctx Cache context.
+     * @return Old operation context.
+     */
+    private CacheOperationContext setKeepBinaryContext(GridCacheContext<?, ?> cctx) {
+        CacheOperationContext opCtx = cctx.operationContextPerCall();
+
+        // Force keepBinary for operation context to avoid binary deserialization inside entry processor
+        if (cctx.binaryMarshaller()) {
+            CacheOperationContext newOpCtx = null;
+
+            if (opCtx == null)
+                // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
+                newOpCtx = new CacheOperationContext(false, null, true, null, false, null, false);
+            else if (!opCtx.isKeepBinary())
+                newOpCtx = opCtx.keepBinary();
+
+            if (newOpCtx != null)
+                cctx.operationContextPerCall(newOpCtx);
+        }
+
+        return opCtx;
+    }
+
+    /**
      * @param schemaName Schema.
      * @param c Connection.
      * @param p Prepared statement.
@@ -200,18 +309,43 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("unchecked")
-    QueryCursorImpl<List<?>> updateSqlFieldsDistributed(String schemaName, Connection c, Prepared p,
+    List<QueryCursorImpl<List<?>>> updateSqlFieldsDistributed(String schemaName, Connection c, Prepared p,
         SqlFieldsQuery fieldsQry, GridQueryCancel cancel) throws IgniteCheckedException {
-        UpdateResult res = updateSqlFields(schemaName, c, p, fieldsQry, false, null, cancel);
+        if (DmlUtils.isBatched(fieldsQry)) {
+            Collection<UpdateResult> ress = updateSqlFieldsBatched(schemaName, c, p, (SqlFieldsQueryEx)fieldsQry,
+                false, null, cancel);
 
-        checkUpdateResult(res);
+            ArrayList<QueryCursorImpl<List<?>>> resCurs = new ArrayList<>(ress.size());
 
-        QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
-            (Collections.singletonList(res.counter())), cancel, false);
+            for (UpdateResult res : ress) {
+                checkUpdateResult(res);
 
-        resCur.fieldsMeta(UPDATE_RESULT_META);
+                QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
+                    (Collections.singletonList(res.counter())), cancel, false);
 
-        return resCur;
+                resCur.fieldsMeta(UPDATE_RESULT_META);
+
+                resCurs.add(resCur);
+            }
+
+            return resCurs;
+        }
+        else {
+            UpdateResult res = updateSqlFields(schemaName, c, p, fieldsQry, false, null, cancel);
+
+            ArrayList<QueryCursorImpl<List<?>>> resCurs = new ArrayList<>(1);
+
+            checkUpdateResult(res);
+
+            QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
+                (Collections.singletonList(res.counter())), cancel, false);
+
+            resCur.fieldsMeta(UPDATE_RESULT_META);
+
+            resCurs.add(resCur);
+
+            return resCurs;
+        }
     }
 
     /**
@@ -247,15 +381,13 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    long streamUpdateQuery(IgniteDataStreamer streamer, PreparedStatement stmt, Object[] args)
+    long streamUpdateQuery(IgniteDataStreamer streamer, PreparedStatement stmt, final Object[] args)
         throws IgniteCheckedException {
-        args = U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY);
-
         Prepared p = GridSqlQueryParser.prepared(stmt);
 
         assert p != null;
 
-        UpdatePlan plan = UpdatePlanBuilder.planForStatement(p, true, idx, null, null, null);
+        final UpdatePlan plan = UpdatePlanBuilder.planForStatement(p, true, idx, null, null, null);
 
         if (!F.eq(streamer.cacheName(), plan.cacheContext().name()))
             throw new IgniteSQLException("Cross cache streaming is not supported, please specify cache explicitly" +
@@ -270,14 +402,22 @@ public class DmlStatementsProcessor {
 
             final ArrayList<List<?>> data = new ArrayList<>(plan.rowCount());
 
-            final GridQueryFieldsResult res = idx.queryLocalSqlFields(idx.schema(cctx.name()), plan.selectQuery(),
-                F.asList(args), null, false, 0, null);
-
             QueryCursorImpl<List<?>> stepCur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
                     try {
-                        return new GridQueryCacheObjectsIterator(res.iterator(), idx.objectContext(),
-                            cctx.keepBinary());
+                        Iterator<List<?>> it;
+
+                        if (!F.isEmpty(plan.selectQuery())) {
+                            GridQueryFieldsResult res = idx.queryLocalSqlFields(idx.schema(cctx.name()),
+                                plan.selectQuery(), F.asList(U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY)),
+                                null, false, 0, null);
+
+                            it = res.iterator();
+                        }
+                        else
+                            it = plan.createRows(U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY)).iterator();
+
+                        return new GridQueryCacheObjectsIterator(it, idx.objectContext(), cctx.keepBinary());
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -329,27 +469,23 @@ public class DmlStatementsProcessor {
      * @param loc Local query flag.
      * @param filters Cache name and key filter.
      * @param cancel Query cancel state holder.
-     * @param failedKeys Keys to restrict UPDATE and DELETE operations with. Null or empty array means no restriction.
      * @return Pair [number of successfully processed items; keys that have failed to be processed]
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
     private UpdateResult executeUpdateStatement(String schemaName, final GridCacheContext cctx, Connection c,
-        Prepared prepared, SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters,
-        GridQueryCancel cancel, Object[] failedKeys) throws IgniteCheckedException {
+        Prepared prepared, SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel)
+        throws IgniteCheckedException {
         int mainCacheId = cctx.cacheId();
 
         Integer errKeysPos = null;
 
         UpdatePlan plan = getPlanForStatement(schemaName, c, prepared, fieldsQry, loc, errKeysPos);
 
-        FastUpdate fastUpdate = plan.fastUpdate();
+        UpdateResult fastUpdateRes = plan.processFast(fieldsQry.getArgs());
 
-        if (fastUpdate != null) {
-            assert F.isEmpty(failedKeys) && errKeysPos == null;
-
-            return fastUpdate.execute(plan.cacheContext().cache(), fieldsQry.getArgs());
-        }
+        if (fastUpdateRes != null)
+            return fastUpdateRes;
 
         if (plan.distributedPlan() != null) {
             UpdateResult result = doDistributedUpdate(schemaName, fieldsQry, plan, cancel);
@@ -359,13 +495,13 @@ public class DmlStatementsProcessor {
                 return result;
         }
 
-        assert !F.isEmpty(plan.selectQuery());
-
-        QueryCursorImpl<List<?>> cur;
+        Iterable<List<?>> cur;
 
         // Do a two-step query only if locality flag is not set AND if plan's SELECT corresponds to an actual
         // sub-query and not some dummy stuff like "select 1, 2, 3;"
         if (!loc && !plan.isLocalSubquery()) {
+            assert !F.isEmpty(plan.selectQuery());
+
             SqlFieldsQuery newFieldsQry = new SqlFieldsQuery(plan.selectQuery(), fieldsQry.isCollocated())
                 .setArgs(fieldsQry.getArgs())
                 .setDistributedJoins(fieldsQry.isDistributedJoins())
@@ -374,9 +510,10 @@ public class DmlStatementsProcessor {
                 .setPageSize(fieldsQry.getPageSize())
                 .setTimeout(fieldsQry.getTimeout(), TimeUnit.MILLISECONDS);
 
-            cur = (QueryCursorImpl<List<?>>)idx.queryDistributedSqlFields(schemaName, newFieldsQry, true,
-                cancel, mainCacheId, true).get(0);
+            cur = idx.queryDistributedSqlFields(schemaName, newFieldsQry, true, cancel, mainCacheId, true).get(0);
         }
+        else if (plan.hasRows())
+            cur = plan.createRows(fieldsQry.getArgs());
         else {
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(schemaName, plan.selectQuery(),
                 F.asList(fieldsQry.getArgs()), filters, fieldsQry.isEnforceJoinOrder(), fieldsQry.getTimeout(), cancel);
@@ -396,6 +533,30 @@ public class DmlStatementsProcessor {
         int pageSize = loc ? 0 : fieldsQry.getPageSize();
 
         return processDmlSelectResult(cctx, plan, cur, pageSize);
+    }
+
+    /**
+     * Performs the planned update.
+     * @param plan Update plan.
+     * @param rows Rows to update.
+     * @param pageSize Page size.
+     * @return {@link List} of update results.
+     * @throws IgniteCheckedException If failed.
+     */
+    private List<UpdateResult> processDmlSelectResultBatched(UpdatePlan plan, List<List<List<?>>> rows, int pageSize)
+        throws IgniteCheckedException {
+        switch (plan.mode()) {
+            case MERGE:
+                // TODO
+                throw new IgniteCheckedException("Unsupported, fix");
+
+            case INSERT:
+                return doInsertBatched(plan, rows, pageSize);
+
+            default:
+                throw new IgniteSQLException("Unexpected batched DML operation [mode=" + plan.mode() + ']',
+                    IgniteQueryErrorCode.UNEXPECTED_OPERATION);
+        }
     }
 
     /**
@@ -488,7 +649,7 @@ public class DmlStatementsProcessor {
     @SuppressWarnings({"unchecked", "ConstantConditions", "ThrowableResultOfMethodCallIgnored"})
     private UpdateResult doDelete(GridCacheContext cctx, Iterable<List<?>> cursor, int pageSize)
         throws IgniteCheckedException {
-        DmlBatchSender sender = new DmlBatchSender(cctx, pageSize);
+        DmlBatchSender sender = new DmlBatchSender(cctx, pageSize, 1);
 
         for (List<?> row : cursor) {
             if (row.size() != 2) {
@@ -497,7 +658,7 @@ public class DmlStatementsProcessor {
                 continue;
             }
 
-            sender.add(row.get(0), new ModifyingEntryProcessor(row.get(1), RMV));
+            sender.add(row.get(0), new ModifyingEntryProcessor(row.get(1), RMV),  0);
         }
 
         sender.flush();
@@ -536,7 +697,7 @@ public class DmlStatementsProcessor {
         throws IgniteCheckedException {
         GridCacheContext cctx = plan.cacheContext();
 
-        DmlBatchSender sender = new DmlBatchSender(cctx, pageSize);
+        DmlBatchSender sender = new DmlBatchSender(cctx, pageSize, 1);
 
         for (List<?> row : cursor) {
             T3<Object, Object, Object> row0 = plan.processRowForUpdate(row);
@@ -545,7 +706,7 @@ public class DmlStatementsProcessor {
             Object oldVal = row0.get2();
             Object newVal = row0.get3();
 
-            sender.add(key, new ModifyingEntryProcessor(oldVal, new EntryValueUpdater(newVal)));
+            sender.add(key, new ModifyingEntryProcessor(oldVal, new EntryValueUpdater(newVal)), 0);
         }
 
         sender.flush();
@@ -636,16 +797,16 @@ public class DmlStatementsProcessor {
                 return 1;
             else
                 throw new IgniteSQLException("Duplicate key during INSERT [key=" + t.getKey() + ']',
-                    IgniteQueryErrorCode.DUPLICATE_KEY);
+                    DUPLICATE_KEY);
         }
         else {
             // Keys that failed to INSERT due to duplication.
-            DmlBatchSender sender = new DmlBatchSender(cctx, pageSize);
+            DmlBatchSender sender = new DmlBatchSender(cctx, pageSize, 1);
 
             for (List<?> row : cursor) {
                 final IgniteBiTuple keyValPair = plan.processRow(row);
 
-                sender.add(keyValPair.getKey(), new InsertEntryProcessor(keyValPair.getValue()));
+                sender.add(keyValPair.getKey(), new InsertEntryProcessor(keyValPair.getValue()),  0);
             }
 
             sender.flush();
@@ -668,6 +829,117 @@ public class DmlStatementsProcessor {
                 throw new IgniteSQLException(resEx);
 
             return sender.updateCount();
+        }
+    }
+
+    /**
+     * Execute INSERT statement plan.
+     *
+     * @param plan Plan to execute.
+     * @param cursor Cursor to take inserted data from. I.e. list of batch arguments for each query.
+     * @param pageSize Batch size for streaming, anything <= 0 for single page operations.
+     * @return Number of items affected.
+     * @throws IgniteCheckedException if failed, particularly in case of duplicate keys.
+     */
+    private List<UpdateResult> doInsertBatched(UpdatePlan plan, List<List<List<?>>> cursor, int pageSize)
+        throws IgniteCheckedException {
+        GridCacheContext cctx = plan.cacheContext();
+
+        DmlBatchSender snd = new DmlBatchSender(cctx, pageSize, cursor.size());
+
+        int rowNum = 0;
+
+        SQLException resEx = null;
+
+        for (List<List<?>> qryRow : cursor) {
+            for (List<?> row : qryRow) {
+                try {
+                    final IgniteBiTuple keyValPair = plan.processRow(row);
+
+                    snd.add(keyValPair.getKey(), new InsertEntryProcessor(keyValPair.getValue()), rowNum);
+                }
+                catch (Exception e) {
+                    String sqlState;
+
+                    int code;
+
+                    if (e instanceof IgniteSQLException) {
+                        sqlState = ((IgniteSQLException)e).sqlState();
+
+                        code = ((IgniteSQLException)e).statusCode();
+                    } else {
+                        sqlState = SqlStateCode.INTERNAL_ERROR;
+
+                        code = IgniteQueryErrorCode.UNKNOWN;
+                    }
+
+                    resEx = chainException(resEx, new SQLException(e.getMessage(), sqlState, code, e));
+
+                    snd.setFailed(rowNum);
+                }
+            }
+
+            rowNum++;
+        }
+
+        try {
+            snd.flush();
+        }
+        catch (Exception e) {
+            resEx = chainException(resEx, new SQLException(e.getMessage(), SqlStateCode.INTERNAL_ERROR,
+                IgniteQueryErrorCode.UNKNOWN, e));
+        }
+
+        resEx = chainException(resEx, snd.error());
+
+        if (!F.isEmpty(snd.failedKeys())) {
+            SQLException e = new SQLException("Failed to INSERT some keys because they are already in cache [keys=" +
+                snd.failedKeys() + ']', SqlStateCode.CONSTRAINT_VIOLATION, DUPLICATE_KEY);
+
+            resEx = chainException(resEx, e);
+        }
+
+        if (resEx != null) {
+            BatchUpdateException e = new BatchUpdateException(resEx.getMessage(), resEx.getSQLState(),
+                resEx.getErrorCode(), snd.perRowCounterAsArray(), resEx);
+
+            throw new IgniteCheckedException(e);
+        }
+
+        int[] cntPerRow = snd.perRowCounterAsArray();
+
+        List<UpdateResult> res = new ArrayList<>(cntPerRow.length);
+
+        for (int i = 0; i < cntPerRow.length; i++ ) {
+            int cnt = cntPerRow[i];
+
+            res.add(new UpdateResult(cnt , X.EMPTY_OBJECT_ARRAY));
+        }
+
+        return res;
+    }
+
+    /**
+     * Adds exception to the chain.
+     *
+     * @param main Exception to add another exception to.
+     * @param add Exception which should be added to chain.
+     * @return Chained exception.
+     */
+    private SQLException chainException(SQLException main, SQLException add) {
+        if (main == null) {
+            if (add != null) {
+                main = add;
+
+                return main;
+            }
+            else
+                return null;
+        }
+        else {
+            main.setNextException(add);
+
+            return main;
         }
     }
 

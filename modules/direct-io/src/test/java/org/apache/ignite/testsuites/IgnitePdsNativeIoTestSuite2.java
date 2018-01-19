@@ -17,8 +17,6 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.testsuites.IgnitePdsTestSuite;
-import org.apache.ignite.testsuites.IgnitePdsTestSuite2;
 
 /**
  * Same as {@link IgnitePdsTestSuite2} but is started with direct-oi jar in classpath.
@@ -29,9 +27,9 @@ public class IgnitePdsNativeIoTestSuite2 extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite");
+        TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite 2 (Native IO)");
 
-        suite.addTest(IgnitePdsTestSuite2.suite());
+        IgnitePdsTestSuite2.addRealPageStoreTests(suite);
 
         return suite;
     }

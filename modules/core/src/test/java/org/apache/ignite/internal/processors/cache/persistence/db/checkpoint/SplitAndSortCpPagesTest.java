@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -35,7 +34,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.AsyncCheckpointer;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointScope;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.FullPageIdsBuffer;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesStripedConcurrentHashSet;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -53,9 +52,6 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
  * Test for async splitting and sorting pages.
  */
 public class SplitAndSortCpPagesTest {
-    /** Test collection size. */
-    private static final int PAGES_MILLIONS = 2;
-
     /** Logger. */
     private IgniteLogger log = new NullLogger();
 
@@ -74,15 +70,18 @@ public class SplitAndSortCpPagesTest {
 
         int sz = 0;
 
-        List<FullPageId[]> res = new ArrayList<>();
+        Collection<FullPageId[]> res = new ArrayList<>();
 
         for (FullPageIdsBuffer next : ids) {
             sz += next.remaining();
-            res.add(next.toArray());
+            FullPageId[] e = next.toArray();
+            
+            res.add(e);
+
+            validateOrder(Collections.singletonList(e));
         }
 
         assertEquals(sz, coll.totalCpPages());
-        validateOrder(res);
     }
 
     /**
@@ -96,19 +95,15 @@ public class SplitAndSortCpPagesTest {
 
         final AtomicInteger totalPagesAfterSort = new AtomicInteger();
 
-        final IgniteClosure<FullPageId[], Callable<Void>> taskFactory = new IgniteClosure<FullPageId[], Callable<Void>>() {
-            @Override public Callable<Void> apply(final FullPageId[] ids) {
-                return new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        final int len = ids.length;
+        final IgniteClosure<FullPageIdsBuffer, Callable<Void>> taskFactory =  ids -> new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                final int len = ids.remaining();
 
-                        totalPagesAfterSort.addAndGet(len);
+                totalPagesAfterSort.addAndGet(len);
 
-                        validateOrder(Collections.singletonList(ids));
+                validateOrder(Collections.singletonList(ids.toArray()));
 
-                        return null;
-                    }
-                };
+                return null;
             }
         };
 
@@ -126,25 +121,22 @@ public class SplitAndSortCpPagesTest {
 
         AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(6, getClass().getSimpleName(), log);
 
-        final IgniteClosure<FullPageId[], Callable<Void>> taskFactory = new IgniteClosure<FullPageId[], Callable<Void>>() {
-            @Override public Callable<Void> apply(final FullPageId[] ids) {
-                return new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        return null;
-                    }
-                };
-            }
-        };
+        final IgniteClosure<FullPageIdsBuffer, Callable<Void>> taskFactory
+            = ids -> () -> null;
 
-        FullPageIdsBuffer pageIds = scope.toBuffer();
+        List<FullPageIdsBuffer> pageIds = scope.toBuffers();
 
-        asyncCheckpointer.quickSortAndWritePages(pageIds, taskFactory).get();
+        asyncCheckpointer.quickSortAndWritePages(scope, taskFactory).get();
 
-        validateOrder(Collections.singletonList(pageIds.toArray()));
+        for (FullPageIdsBuffer next : pageIds) {
+            validateOrder(Collections.singletonList(next.toArray()));
+        }
+
     }
 
     /**
-     * @param ids sorted IDs
+     * Checks if order of element is correct.
+     * @param ids sorted IDs.
      */
     private static void validateOrder(Iterable<FullPageId[]> ids) {
         FullPageId prevId = null;
@@ -168,11 +160,11 @@ public class SplitAndSortCpPagesTest {
     /**
      * @return test configuration
      */
-    @NotNull private IgniteConfiguration config() {
-        final IgniteConfiguration cfg = new IgniteConfiguration();
-        final DataStorageConfiguration dsCfg = new DataStorageConfiguration();
-        cfg.setDataStorageConfiguration(dsCfg);
-        return cfg;
+    private IgniteConfiguration config() {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration();
+
+        return cfg.setDataStorageConfiguration(dsCfg);
     }
 
     /**
@@ -181,22 +173,18 @@ public class SplitAndSortCpPagesTest {
      */
     @Test
     public void testAsyncAllPagesArePresent() throws Exception {
-        final CheckpointScope scope = getTestCollection();
+        CheckpointScope scope = getTestCollection();
         final ConcurrentHashMap<FullPageId, FullPageId> map = createCopyAsMap(scope);
 
-        final AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(16, getClass().getSimpleName(), log);
+        AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(16, getClass().getSimpleName(), log);
 
-        final IgniteClosure<FullPageId[], Callable<Void>> taskFactory = new IgniteClosure<FullPageId[], Callable<Void>>() {
-            @Override public Callable<Void> apply(final FullPageId[] ids) {
-                return new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        for (FullPageId id : ids) {
-                            map.remove(id);
-                        }
+        IgniteClosure<FullPageIdsBuffer, Callable<Void>> taskFactory = ids -> new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                for (FullPageId id : ids.toArray()) {
+                    map.remove(id);
+                }
 
-                        return null;
-                    }
-                };
+                return null;
             }
         };
 
@@ -208,16 +196,19 @@ public class SplitAndSortCpPagesTest {
     }
 
     /**
-     * @param scope
-     * @return
+     * @param scope Checkpoint scope.
+     * @return map with scope pages.
      */
     private ConcurrentHashMap<FullPageId, FullPageId> createCopyAsMap(CheckpointScope scope) {
-        final ConcurrentHashMap<FullPageId, FullPageId> map = new ConcurrentHashMap<>();
-        FullPageIdsBuffer ids = scope.toBuffer();
+        ConcurrentHashMap<FullPageId, FullPageId> map = new ConcurrentHashMap<>();
+        List<FullPageIdsBuffer> ids = scope.toBuffers();
 
-        for (FullPageId id : ids.toArray()) {
-            map.put(id, id);
+        for (FullPageIdsBuffer next : ids) {
+            for (FullPageId id : next.toArray()) {
+                map.put(id, id);
+            }
         }
+
         return map;
     }
 
@@ -227,36 +218,32 @@ public class SplitAndSortCpPagesTest {
      */
     @Test
     public void testIndexGrowing() throws Exception {
-        final CheckpointScope scope = getTestCollection(1, 1024);
+        CheckpointScope scope = getTestCollection(1024);
 
-        final AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(16, getClass().getSimpleName(), log);
+        AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(16, getClass().getSimpleName(), log);
 
-        final IgniteClosure<FullPageId[], Callable<Void>> taskFactory = new IgniteClosure<FullPageId[], Callable<Void>>() {
-            @Override public Callable<Void> apply(final FullPageId[] ids) {
-                return new Callable<Void>() {
-                    @Override public Void call() throws Exception {
+        final IgniteClosure<FullPageIdsBuffer, Callable<Void>> taskFactory =  ids -> new Callable<Void>() {
+            @Override public Void call() throws Exception {
 
-                        long prevIdx = -1;
-                        long prevPart = -1;
+                long prevIdx = -1;
+                long prevPart = -1;
 
-                        for (FullPageId id : ids) {
-                            long partId = partId(id.pageId());
-                            long idx = pageIndex(id.pageId());
-                            //System.out.println(partId + " idx= " + idx);
-                            if (prevIdx >= 0 && prevPart >= 0) {
-                                if (partId < prevPart)
-                                    throw new IllegalStateException("Invalid order " + partId + " idx=" + prevPart);
+                for (FullPageId id : ids.toArray()) {
+                    long partId = partId(id.pageId());
+                    long idx = pageIndex(id.pageId());
+                    //System.out.println(partId + " idx= " + idx);
+                    if (prevIdx >= 0 && prevPart >= 0) {
+                        if (partId < prevPart)
+                            throw new IllegalStateException("Invalid order " + partId + " idx=" + prevPart);
 
-                                if (idx < prevIdx && partId == prevPart)
-                                    throw new IllegalStateException("Invalid order " + prevIdx + " idx=" + idx);
-                            }
-
-                            prevPart = partId;
-                            prevIdx = idx;
-                        }
-                        return null;
+                        if (idx < prevIdx && partId == prevPart)
+                            throw new IllegalStateException("Invalid order " + prevIdx + " idx=" + idx);
                     }
-                };
+
+                    prevPart = partId;
+                    prevIdx = idx;
+                }
+                return null;
             }
         };
 
@@ -271,36 +258,35 @@ public class SplitAndSortCpPagesTest {
     @Test
     public void testWithEviction() throws Exception {
         final CheckpointScope scope = getTestCollection();
-        final ConcurrentHashMap<FullPageId, FullPageId> controlMap = createCopyAsMap(scope);
+        final ConcurrentHashMap<FullPageId, FullPageId> ctrlMap = createCopyAsMap(scope);
 
         final CountDownLatch evictingThreadStarted = new CountDownLatch(1);
         final Random random = new Random();
         final Thread thread = new Thread(new Runnable() {
             @Override public void run() {
-                final List<GridMultiCollectionWrapper<FullPageId>> pages = U.field(scope, "pages");
                 while(!Thread.currentThread().isInterrupted()) {
                     evictingThreadStarted.countDown();
+
+                    List<GridMultiCollectionWrapper<FullPageId>> pages = U.field(scope, "pages");
                     try {
-                        final int i = random.nextInt(pages.size());
-                        final GridMultiCollectionWrapper<FullPageId> ids = pages.get(i);
-                        final int i1 = ids.collectionsSize();
+                        int i = random.nextInt(pages.size());
+                        GridMultiCollectionWrapper<FullPageId> ids = pages.get(i);
+                        int i1 = ids.collectionsSize();
 
-                        final int i2 = random.nextInt(i1);
-                        final Collection<FullPageId> destCollection = ids.innerCollection(i2);
-                        final Set<FullPageId> cpPages = (GridConcurrentHashSet<FullPageId>)destCollection;
+                        int i2 = random.nextInt(i1);
+                        Collection<FullPageId> cpPages = ids.innerCollection(i2);
 
-                        final int size = cpPages.size();
-                        if(size==0)
+                        int size = cpPages.size();
+                        if (size == 0)
                             continue;
-                        final int i3 = random.nextInt(size);
 
-                        final FullPageId page = cpPages.iterator().next();
-                        final boolean remove = cpPages.remove(page);
+                        FullPageId page = cpPages.iterator().next();
 
-                        controlMap.remove(page);
+                        cpPages.remove(page);
+                        ctrlMap.remove(page);
                     }
-                    catch (Exception ignored) {
-                        ignored.printStackTrace();
+                    catch (Exception e) {
+                        e.printStackTrace();
                     }
                 }
             }
@@ -311,58 +297,58 @@ public class SplitAndSortCpPagesTest {
 
         final AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(16, getClass().getSimpleName(), log);
 
-        final IgniteClosure<FullPageId[], Callable<Void>> taskFactory = new IgniteClosure<FullPageId[], Callable<Void>>() {
-            @Override public Callable<Void> apply(final FullPageId[] ids) {
-                return new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        for (FullPageId id : ids) {
-                            controlMap.remove(id);
-                        }
-
-                        return null;
-                    }
-                };
+        final IgniteClosure<FullPageIdsBuffer, Callable<Void>> taskFactory =  ids -> () -> {
+            for (FullPageId id : ids.toArray()) {
+                ctrlMap.remove(id);
             }
+
+            return null;
         };
 
         asyncCheckpointer.quickSortAndWritePages(scope, taskFactory).get();
         thread.interrupt();
 
-        boolean empty = controlMap.isEmpty();
+        boolean empty = ctrlMap.isEmpty();
+
         if (!empty)
-            assertTrue("Control map should be empty: " + controlMap.toString(), empty);
+            assertTrue("Control map should be empty: " + ctrlMap.toString(), empty);
     }
 
     /**
      * @return test pages set
      */
     @NotNull static CheckpointScope getTestCollection() {
-        return getTestCollection(PAGES_MILLIONS, 1024);
+        int pow = (int)Math.pow(10, 7);
+
+        return getTestCollection(pow / CheckpointScope.EXPECTED_SEGMENTS_COUNT);
     }
 
     /**
      * @return test pages set
      */
-    @NotNull private static CheckpointScope getTestCollection(int pagesMillions, int segmentsCnt) {
-        final int regions = 1024;
-        final CheckpointScope scope = new CheckpointScope(regions);
-        final Random random = new Random();
+    private static CheckpointScope getTestCollection(int pagesPerSegment) {
+        int regions = 1;
+        CheckpointScope scope = new CheckpointScope(regions);
+        Random random = new Random();
 
-        for (int i = 0; i < regions; i++) {
-            final Collection[] segments = new Collection[segmentsCnt];
+        for (int r = 0; r < regions; r++) {
+            int segments = CheckpointScope.EXPECTED_SEGMENTS_COUNT;
 
-            for (int j = 0; j < segmentsCnt; j++) {
-                final Collection<FullPageId> innerColl = new GridConcurrentHashSet<>();
-                segments[j] = innerColl;
-                for (int k = 0; k < pagesMillions; k++) {
+            PagesStripedConcurrentHashSet[] arrFromRegion = new PagesStripedConcurrentHashSet[segments];
+
+            for (int s = 0; s < segments; s++) {
+                PagesStripedConcurrentHashSet set = arrFromRegion[s] = new PagesStripedConcurrentHashSet();
+                 
+                for (int p = 0; p < pagesPerSegment; p++) {
                     long pageId = randomPageId(random);
 
-                    innerColl.add(new FullPageId(pageId, 123));
+                    set.add(new FullPageId(pageId, 123));
                 }
             }
 
-            scope.addCpPages(new GridMultiCollectionWrapper<FullPageId>(segments));
+            scope.addDataRegionCpPages(arrFromRegion);
         }
+
         return scope;
     }
 
@@ -373,6 +359,7 @@ public class SplitAndSortCpPagesTest {
     private static long randomPageId(Random random) {
         int partId = random.nextInt(1024);
         int pageIdx = random.nextInt(1000000);
+
         return PageIdUtils.pageId(
             partId,
             (byte)0,

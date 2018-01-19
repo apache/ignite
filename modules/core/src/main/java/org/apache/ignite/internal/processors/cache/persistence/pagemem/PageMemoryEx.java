@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.lang.GridPredicate3;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,17 +32,17 @@ import org.jetbrains.annotations.Nullable;
 public interface PageMemoryEx extends PageMemory {
     /**
      *
-     * @param cacheId Cache ID.
+     * @param grpId Group ID.
      * @param pageId Page ID.
      * @param page Page pointer.
      * @param restore Determines if the page is locked for restore.
      * @return ByteBuffer for modifying the page.
      */
-    long writeLock(int cacheId, long pageId, long page, boolean restore);
+    long writeLock(int grpId, long pageId, long page, boolean restore);
 
     /**
      *
-     * @param cacheId Cache ID.
+     * @param grpId Group ID.
      * @param pageId Page ID.
      * @param page Page pointer.
      * @param walPlc {@code True} if page should be recorded to WAL, {@code false} if the page must not
@@ -51,27 +50,27 @@ public interface PageMemoryEx extends PageMemory {
      * @param dirtyFlag Determines whether the page was modified since the last checkpoint.
      * @param restore Determines if the page is locked for restore.
      */
-    void writeUnlock(int cacheId, long pageId, long page, Boolean walPlc,
+    void writeUnlock(int grpId, long pageId, long page, Boolean walPlc,
         boolean dirtyFlag, boolean restore);
 
     /**
-     * Gets or allocates metadata page for specified cacheId.
+     * Gets or allocates metadata page for specified grpId.
      *
-     * @param cacheId Cache ID.
-     * @return Meta page for cacheId.
+     * @param grpId Group ID.
+     * @return Meta page for grpId.
      * @throws IgniteCheckedException If failed.
      */
-    public long metaPageId(int cacheId) throws IgniteCheckedException;
+    public long metaPageId(int grpId) throws IgniteCheckedException;
 
     /**
-     * Gets or allocates partition metadata page for specified cacheId and partId.
+     * Gets or allocates partition metadata page for specified grpId and partId.
      *
-     * @param cacheId Cache ID.
+     * @param grpId Group ID.
      * @param partId Partition ID.
-     * @return Meta page for cacheId and partId.
+     * @return Meta page for grpId and partId.
      * @throws IgniteCheckedException If failed.
      */
-    public long partitionMetaPageId(int cacheId, int partId) throws IgniteCheckedException;
+    public long partitionMetaPageId(int grpId, int partId) throws IgniteCheckedException;
 
     /**
      * @see #acquirePage(int, long)
@@ -86,7 +85,7 @@ public interface PageMemoryEx extends PageMemory {
     public long acquirePage(int grpId, long pageId, boolean restore) throws IgniteCheckedException;
 
     /**
-     * Heuristic method which allows a thread to check if it safe to start memory struture modifications
+     * Heuristic method which allows a thread to check if it safe to start memory structure modifications
      * in regard with checkpointing.
      *
      * @return {@code False} if there are too many dirty pages and a thread should wait for a
@@ -100,10 +99,10 @@ public interface PageMemoryEx extends PageMemory {
      * be flushed to the main memory after the checkpointing finished. This method must be called when no
      * concurrent operations on pages are performed.
      *
-     * @return Collection of dirty page IDs.
+     * @return Arrays of collections of dirty page IDs, number of elements is the same with segments count.
      * @throws IgniteException If checkpoint has been already started and was not finished.
      */
-    public GridMultiCollectionWrapper<FullPageId> beginCheckpoint() throws IgniteException;
+    public PageIdCollection[] beginCheckpoint() throws IgniteException;
 
     /**
      * Finishes checkpoint operation.
@@ -125,11 +124,11 @@ public interface PageMemoryEx extends PageMemory {
     /**
      * Marks partition as invalid / outdated.
      *
-     * @param cacheId Cache ID.
+     * @param grpId Group ID.
      * @param partId Partition ID.
      * @return New partition tag (growing 1-based partition file version).
      */
-    public int invalidate(int cacheId, int partId);
+    public int invalidate(int grpId, int partId);
 
     /**
      * Clears internal metadata of destroyed cache group.

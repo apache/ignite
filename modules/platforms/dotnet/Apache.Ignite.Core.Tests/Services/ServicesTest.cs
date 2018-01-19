@@ -30,7 +30,6 @@ namespace Apache.Ignite.Core.Tests.Services
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Services;
-    using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
 
     /// <summary>
@@ -72,7 +71,6 @@ namespace Apache.Ignite.Core.Tests.Services
         public void SetUp()
         {
             StartGrids();
-            EventsTestHelper.ListenResult = true;
         }
 
         /// <summary>
@@ -96,8 +94,6 @@ namespace Apache.Ignite.Core.Tests.Services
             }
             finally
             {
-                EventsTestHelper.AssertFailures();
-
                 if (TestContext.CurrentContext.Test.Name.StartsWith("TestEventTypes"))
                     StopGrids(); // clean events for other tests
             }
@@ -292,7 +288,6 @@ namespace Apache.Ignite.Core.Tests.Services
 
             // Check proxy properties
             Assert.IsNotNull(prx);
-            Assert.AreEqual(prx.GetType(), svc.GetType());
             Assert.AreEqual(prx.ToString(), svc.ToString());
             Assert.AreEqual(17, prx.TestProperty);
             Assert.IsTrue(prx.Initialized);
@@ -352,8 +347,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             // .. but setter does not
             var ex = Assert.Throws<ServiceInvocationException>(() => { prx.TestProperty = new object(); });
-            Assert.IsNotNull(ex.InnerException);
-            Assert.AreEqual("Specified cast is not valid.", ex.InnerException.Message);
+            Assert.IsInstanceOf<InvalidCastException>(ex.InnerException);
         }
 
         /// <summary>
@@ -375,7 +369,6 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(1, desc.AffinityKey);
             Assert.AreEqual(1, desc.MaxPerNodeCount);
             Assert.AreEqual(1, desc.TotalCount);
-            Assert.AreEqual(typeof(TestIgniteServiceSerializable), desc.Type);
             Assert.AreEqual(Grid1.GetCluster().GetLocalNode().Id, desc.OriginNodeId);
 
             var top = desc.TopologySnapshot;
@@ -747,11 +740,6 @@ namespace Apache.Ignite.Core.Tests.Services
             // Verify decriptor
             var descriptor = Services.GetServiceDescriptors().Single(x => x.Name == javaSvcName);
             Assert.AreEqual(javaSvcName, descriptor.Name);
-            Assert.Throws<ServiceInvocationException>(() =>
-            {
-                // ReSharper disable once UnusedVariable
-                var type = descriptor.Type;
-            });
 
             var svc = Services.GetServiceProxy<IJavaService>(javaSvcName, false);
             var binSvc = Services.WithKeepBinary().WithServerKeepBinary()
@@ -833,9 +821,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             foreach (var grid in Grids)
             {
-#if !NETCOREAPP2_0
                 Assert.AreEqual(CompactFooter, ((Impl.Ignite) grid).Marshaller.CompactFooter);
-#endif
                 Assert.AreEqual(CompactFooter, grid.GetConfiguration().BinaryConfiguration.CompactFooter);
             }
         }
@@ -848,9 +834,9 @@ namespace Apache.Ignite.Core.Tests.Services
             if (Grid1 != null)
                 return;
 
-            Grid1 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid1.xml"));
-            Grid2 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid2.xml"));
-            Grid3 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid3.xml"));
+            Grid1 = Ignition.Start(GetConfiguration("Config\\Compute\\compute-grid1.xml"));
+            Grid2 = Ignition.Start(GetConfiguration("Config\\Compute\\compute-grid2.xml"));
+            Grid3 = Ignition.Start(GetConfiguration("Config\\Compute\\compute-grid3.xml"));
 
             Grids = new[] { Grid1, Grid2, Grid3 };
         }
@@ -895,14 +881,16 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         private IgniteConfiguration GetConfiguration(string springConfigUrl)
         {
+#if !NETCOREAPP2_0
             if (!CompactFooter)
-                springConfigUrl = ComputeApiTestFullFooter.ReplaceFooterSetting(springConfigUrl);
+            {
+                springConfigUrl = Compute.ComputeApiTestFullFooter.ReplaceFooterSetting(springConfigUrl);
+            }
+#endif
 
-            return new IgniteConfiguration
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = springConfigUrl,
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
                 BinaryConfiguration = new BinaryConfiguration(
                     typeof (TestIgniteServiceBinarizable),
                     typeof (TestIgniteServiceBinarizableErr),
@@ -952,7 +940,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Test service interface for proxying.
         /// </summary>
-        private interface ITestIgniteService
+        public interface ITestIgniteService
         {
             int TestProperty { get; set; }
 
@@ -982,7 +970,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Test service interface for proxy usage.
         /// Has some of the original interface members with different signatures.
         /// </summary>
-        private interface ITestIgniteServiceProxyInterface
+        public interface ITestIgniteServiceProxyInterface
         {
             /** */
             Guid NodeId { get; }
@@ -1199,7 +1187,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Java service proxy interface.
         /// </summary>
         [SuppressMessage("ReSharper", "InconsistentNaming")]
-        private interface IJavaService
+        public interface IJavaService
         {
             /** */
             bool isCancelled();
@@ -1315,7 +1303,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Interop class.
         /// </summary>
-        private class PlatformComputeBinarizable
+        public class PlatformComputeBinarizable
         {
             /** */
             public int Field { get; set; }

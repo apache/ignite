@@ -133,7 +133,7 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
      * @param size buffer size to allocate.
      * @return new byte buffer.
      */
-    @NotNull public ByteBuffer createManagedBuffer(int size) {
+    @NotNull ByteBuffer createManagedBuffer(int size) {
         assert !useBackupFactory : "Direct IO is disabled, aligned managed buffer creation is disabled now";
         assert managedAlignedBuffers != null : "Direct buffers not available";
 

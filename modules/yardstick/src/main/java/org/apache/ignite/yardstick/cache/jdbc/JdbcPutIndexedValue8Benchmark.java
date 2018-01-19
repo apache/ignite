@@ -20,10 +20,7 @@ package org.apache.ignite.yardstick.cache.jdbc;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Map;
-
 import org.apache.ignite.IgniteException;
-
-import static org.apache.ignite.yardstick.IgniteAbstractBenchmark.nextRandom;
 
 /**
  * JDBC benchmark that performs raw SQL insert into a table with 8 btree indexed columns

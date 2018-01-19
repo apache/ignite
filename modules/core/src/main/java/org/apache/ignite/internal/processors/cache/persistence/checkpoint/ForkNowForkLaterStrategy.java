@@ -22,8 +22,8 @@ package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
  */
 public interface ForkNowForkLaterStrategy {
     /**
-     * @return {@code true} if now is reasonable to create new task now, {@code false} is returned to go to deeper
-     * recursion first instead of spoil waiting queue.
+     * @return {@code true} if now is reasonable to create and submit to execution new task now. <br> If {@code false}
+     * is returned it is reasonable to go to deeper recursion first instead of spoil waiting queue.
      */
     boolean forkNow();
 }

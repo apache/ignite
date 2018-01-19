@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -229,6 +230,7 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
         private final int v2;
 
         /** */
+        @SuppressWarnings("unused")
         private byte[] payload = new byte[400 + ThreadLocalRandom.current().nextInt(20)];
 
         /**
@@ -315,6 +317,11 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
                         LockSupport.parkNanos(5_000_000);
 
                     delegate.write(buf, off, len);
+                }
+
+                /** {@inheritDoc} */
+                @Override public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
+                    return delegate.map(maxWalSegmentSize);
                 }
             };
         }

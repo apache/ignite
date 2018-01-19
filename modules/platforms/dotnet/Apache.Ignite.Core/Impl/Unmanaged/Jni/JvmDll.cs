@@ -282,6 +282,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// </summary>
         private static IEnumerable<KeyValuePair<string, string>> GetJvmDllPathsWindows()
         {
+#if !NETCOREAPP2_0
             if (!Os.IsWindows)
             {
                 yield break;
@@ -311,6 +312,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                     }
                 }
             }
+#else
+            yield break;
+#endif
         }
 
         /// <summary>

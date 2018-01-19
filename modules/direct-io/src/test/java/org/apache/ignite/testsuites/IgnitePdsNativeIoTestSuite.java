@@ -17,20 +17,21 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.testsuites.IgnitePdsTestSuite;
+import org.apache.ignite.internal.processors.cache.persistence.file.IgniteNativeIoWithNoPersistenceTest;
 
 /**
- * Same as {@link IgnitePdsTestSuite} but is started with direct-oi jar in classpath.
+ * Subset of {@link IgnitePdsTestSuite} suite test, started with direct-oi jar in classpath.
  */
 public class IgnitePdsNativeIoTestSuite extends TestSuite {
     /**
      * @return Suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite");
+    public static TestSuite suite() {
+        TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite (with Direct IO)");
 
-        suite.addTest(IgnitePdsTestSuite.suite());
+        IgnitePdsTestSuite.addRealPageStoreTests(suite);
+
+        suite.addTestSuite(IgniteNativeIoWithNoPersistenceTest.class);
 
         return suite;
     }

@@ -47,8 +47,6 @@ module.exports = {
 
         const mail = nconf.get('mail') || {};
 
-        mail.address = (username, email) => username ? '"' + username + '" <' + email + '>' : email;
-
         const packaged = __dirname.startsWith('/snapshot/') || __dirname.startsWith('C:\\snapshot\\');
 
         const dfltAgentDists = packaged ? 'libs/agent_dists' : 'agent_dists';

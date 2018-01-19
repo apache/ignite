@@ -20,7 +20,7 @@ import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Count down future, but allows to increment waiting tasks count.
+ * Count down future. In addition to superclass this implementation allows to increment waiting tasks count.
  */
 class CountDownDynamicFuture extends CountDownFuture {
     /**

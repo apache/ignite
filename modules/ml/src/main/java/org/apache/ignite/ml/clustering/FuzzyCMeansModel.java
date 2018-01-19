@@ -64,7 +64,7 @@ public class FuzzyCMeansModel implements ClusterizationModel<Vector, Integer>, E
      * @param val Vector.
      * @return Index of the closest center or -1 if it can't be found.
      */
-    @Override public Integer predict(Vector val) {
+    @Override public Integer apply(Vector val) {
         int idx = -1;
         double minDistance = Double.POSITIVE_INFINITY;
 

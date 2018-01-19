@@ -21,20 +21,30 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
+import java.util.PriorityQueue;
+import java.util.function.BiConsumer;
 import org.apache.ignite.internal.pagemem.FullPageId;
 
 /**
- * Full Pages IDs buffer.
+ * Full Pages IDs buffer. Wraps array of pages and start-end position. <br> Usage of this class allows to save arrays
+ * allocation. <br> Several page IDs buffers can share same array but with different offset and length.
  */
 public class FullPageIdsBuffer {
-    /** Source array. May be shared between different buffers */
+    /** Source array. May be shared between different buffers. */
     private final FullPageId[] arr;
 
-    /** Start position. Index of first element inclusive. */
+    /** Start position. Index of first element, inclusive. */
     private final int position;
 
-    /** Limit. Index of last element exclusive. */
+    /** Limit. Index of last element, exclusive. */
     private final int limit;
+
+    /** Cached comparator used for sorting this buffer. */
+    private Comparator<FullPageId> sortedUsingComparator;
+
+    /** empty for caching instance. */
+    private static FullPageIdsBuffer EMPTY_BUFFER = new FullPageIdsBuffer(new FullPageId[]{}, 0,0);
 
     /**
      * @param arr Array.
@@ -48,53 +58,61 @@ public class FullPageIdsBuffer {
     }
 
     /**
-     * @return
+     * @return copy of buffer data as array. Causes new instance allocation.
      */
     public FullPageId[] toArray() {
         return Arrays.copyOfRange(arr, position, limit);
     }
 
     /**
-     * @return
+     * @return Number of remaining (contained) page identifiers.
      */
     public int remaining() {
         return limit - position;
     }
 
     /**
-     * @param comp
+     * Sorts underlying sub array with provided comparator.
+     *
+     * @param comp the comparator to determine the order of elements in the buffer.
      */
     public void sort(Comparator<FullPageId> comp) {
         Arrays.sort(arr, position, limit, comp);
+
+        setSortedUsingComparator(comp);
     }
 
     /**
-     * @return
+     * @return shared array of pages. Operating on this array outside bounds may be unsafe.
      */
     public FullPageId[] internalArray() {
         return arr;
     }
 
     /**
-     * @return
+     * @return Start position. Index of first element, inclusive.
      */
     public int position() {
         return position;
     }
 
     /**
-     * @return
+     * @return Limit. Index of last element, exclusive.
      */
     public int limit() {
         return limit;
     }
 
     /**
-     * @param position
-     * @param limit
-     * @return
+     * Creates buffer from current buffer range.
+     *
+     * @param position required start position, absolute - counted from array start, inclusive. <br> May not be less
+     * that current buffer {@link #position}.
+     * @param limit required buffer limit, absolute - counted from internal array start position, exclusive. <br> May
+     * not be greater that current buffer {@link #limit}.
+     * @return buffer created. Shares array with initial buffer.
      */
-    public FullPageIdsBuffer bufferOfRange(int position, int limit) {
+    FullPageIdsBuffer bufferOfRange(int position, int limit) {
         assert position >= this.position;
         assert limit <= this.limit;
 
@@ -102,9 +120,10 @@ public class FullPageIdsBuffer {
     }
 
     /**
-     * Splits pages to {@code pagesSubArrays} sub-buffer. If any thread will be faster, it will help slower threads.
+     * Splits pages to {@code pagesSubArrays} sub-buffer. This buffer is to be used as one or several tasks in executor
+     * service. If any thread will be faster, it will help slower threads.
      *
-     * @param pagesSubArrays required subArraysCount.
+     * @param pagesSubArrays required sub arrays count.
      * @return full page arrays to be processed as standalone tasks.
      */
     public Collection<FullPageIdsBuffer> split(int pagesSubArrays) {
@@ -113,8 +132,9 @@ public class FullPageIdsBuffer {
         if (pagesSubArrays == 1)
             return Collections.singletonList(this);
 
-        final Collection<FullPageIdsBuffer> res = new ArrayList<>();
-        final int totalSize = remaining();
+        Collection<FullPageIdsBuffer> res = new ArrayList<>(pagesSubArrays);
+
+        int totalSize = remaining();
 
         for (int i = 0; i < pagesSubArrays; i++) {
             int from = totalSize * i / (pagesSubArrays);
@@ -123,6 +143,183 @@ public class FullPageIdsBuffer {
 
             res.add(bufferOfRange(position + from, position + to));
         }
+
         return res;
+    }
+
+    /**
+     * Marks buffer elements as sorted using exact comparator instance.
+     *
+     * @param comp comparator used for sorting.
+     */
+    private FullPageIdsBuffer setSortedUsingComparator(Comparator<FullPageId> comp) {
+        sortedUsingComparator = comp;
+
+        return this;
+    }
+
+    /**
+     * Checks if this buffer was already sorted by provided comparator instance.
+     *
+     * @param comp comparator probably used for sorting.
+     * @return {@code True} if buffer elements are sorted using exactly the same comparator.
+     */
+    boolean isSortedUsingComparator(Comparator<FullPageId> comp) {
+        return sortedUsingComparator != null && sortedUsingComparator == comp;
+    }
+
+    /**
+     * @param multiColl Multiple collections to create buffer from. Collection elements may be removed during this
+     * method operation.
+     * @return buffer with element from all collections
+     */
+    static FullPageIdsBuffer createBufferFromMultiCollection(Iterable<? extends Collection<FullPageId>> multiColl) {
+        int size = 0;
+
+        for (Collection<FullPageId> next : multiColl) {
+            size += next.size();
+        }
+
+        if (size == 0)
+            return EMPTY_BUFFER;
+
+        FullPageId[] pageIds = new FullPageId[size];
+        int locIdx = 0;
+
+        for (Collection<FullPageId> set : multiColl) {
+            for (FullPageId pageId : set) {
+                pageIds[locIdx] = pageId;
+                locIdx++;
+            }
+        }
+
+        //actual number of pages may be less then initial calculated size
+        return new FullPageIdsBuffer(pageIds, 0, locIdx);
+    }
+
+    /**
+     * @param multiColl multi collections, each collection is already ordered using comparator {@code comp}.
+     * @param comp comparator used for ordering provided {@code multiColl}.
+     * @param subBufSize size of elements to provide to subBufferConsumer
+      *@param subBufConsumer handler for sub buffers collected (called earlier than all collection is merged). May be null.
+     * @return buffer with all found collections elements.
+     */
+    static FullPageIdsBuffer createBufferFromSortedCollections(Iterable<? extends Collection<FullPageId>> multiColl,
+        Comparator<FullPageId> comp,
+        int subBufSize,
+        BiConsumer<Boolean, FullPageIdsBuffer> subBufConsumer) {
+        PriorityQueue<ComparableIterator<FullPageId>> queue = new PriorityQueue<>();
+        int size = 0;
+
+        for (Collection<FullPageId> list : multiColl) {
+            int curListSize = list.size();
+
+            size += curListSize;
+            if (curListSize > 0)
+                queue.add(new ComparableIterator<>(comp, list.iterator()));
+        }
+
+        if (size == 0)
+            return EMPTY_BUFFER;
+
+        FullPageId[] arr = new FullPageId[size];
+        int locIdx = 0;
+        int curStartPosition = 0;
+
+        while (!queue.isEmpty()) {
+            ComparableIterator<FullPageId> next = queue.remove();
+            FullPageId element = next.next();
+
+            if (element != null) { // here null is possible because of parallel removal from underlying collections
+                arr[locIdx] = element;
+                locIdx++;
+
+                if (subBufSize > 0 && subBufConsumer != null && (locIdx - curStartPosition >= subBufSize)) {
+                    FullPageIdsBuffer buf = new FullPageIdsBuffer(arr, curStartPosition, locIdx).setSortedUsingComparator(comp);
+
+                    subBufConsumer.accept(locIdx < size, buf);
+
+                    curStartPosition = locIdx;
+                }
+            }
+
+            if (next.hasNext())
+                queue.add(next);
+        }
+
+        if (subBufSize > 0 && subBufConsumer != null && locIdx > curStartPosition) {
+            FullPageIdsBuffer buf = new FullPageIdsBuffer(arr, curStartPosition, locIdx).setSortedUsingComparator(comp);
+            subBufConsumer.accept(false, buf);
+        }
+
+        //actual number of pages may be less then precalculated size
+        return new FullPageIdsBuffer(arr, 0, locIdx).setSortedUsingComparator(comp);
+    }
+
+    /**
+     * @return true if buffer has data
+     */
+    public boolean isFilled() {
+        return remaining() > 0;
+    }
+
+    /**
+     * Comparable iterator, which uses peeked elements values for actual comparing iterators.
+     *
+     * @param <E> element for iterating
+     */
+    private static class ComparableIterator<E> implements Iterator<E>, Comparable<ComparableIterator<E>> {
+        /** Peek element. */
+        private E peekElem;
+
+        /** Comparator for element. */
+        private Comparator<E> comp;
+
+        /** Iterator */
+        private Iterator<? extends E> it;
+
+        /**
+         * @param comp compactor for elements.
+         * @param it underlying iterator to obtain next elements.
+         */
+        ComparableIterator(Comparator<E> comp, Iterator<? extends E> it) {
+            this.comp = comp;
+            this.it = it;
+
+            peekElem = it.hasNext() ? it.next() : null;
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public boolean hasNext() {
+            return peekElem != null;
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public E next() {
+            E ret = peekElem;
+
+            peekElem = it.hasNext() ? it.next() : null;
+
+            return ret;
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public int compareTo(ComparableIterator<E> o) {
+            return peekElem == null ? 1 : comp.compare(peekElem, o.peekElem);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object obj) {
+            return obj.getClass() == ComparableIterator.class && compareTo((ComparableIterator)obj) == 0;
+        }
     }
 }
