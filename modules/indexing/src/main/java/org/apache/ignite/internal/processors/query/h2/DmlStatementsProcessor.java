@@ -91,7 +91,7 @@ import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UP
  */
 public class DmlStatementsProcessor {
     /** Default number of attempts to re-run DELETE and UPDATE queries in case of concurrent modifications of values. */
-    private final static int DFLT_DML_RERUN_ATTEMPTS = 4;
+    private static final int DFLT_DML_RERUN_ATTEMPTS = 4;
 
     /** Indexing. */
     private IgniteH2Indexing idx;
@@ -206,6 +206,10 @@ public class DmlStatementsProcessor {
         List<Object[]> argss = fieldsQry.batchedArguments();
 
         UpdatePlan plan = getPlanForStatement(schemaName, conn, prepared, fieldsQry, loc, null);
+
+        if (plan.cacheContext().mvccEnabled())
+            throw new IgniteSQLException("Failed to execute batch update with MVCC enabled. " +
+                "Operation is unsupported at the moment.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         if (plan.hasRows() && plan.mode() == UpdateMode.INSERT) {
             GridCacheContext<?, ?> cctx = plan.cacheContext();
