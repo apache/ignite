@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -321,12 +320,11 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
      * @throws IgniteCheckedException If failed.
      */
     public static int getRowSize(CacheDataRow row, boolean withCacheId) throws IgniteCheckedException {
-        KeyCacheObject key = row.key();
-        CacheObject val = row.value();
+        int len = row.key().valueBytesLength(null);
 
-        int keyLen = key.valueBytesLength(null);
-        int valLen = val.valueBytesLength(null);
+        if (!row.removed())
+            len += row.value().valueBytesLength(null) + CacheVersionIO.size(row.version(), false) + 8;
 
-        return keyLen + valLen + CacheVersionIO.size(row.version(), false) + 8 + (withCacheId ? 4 : 0);
+        return len + (withCacheId ? 4 : 0);
     }
 }
