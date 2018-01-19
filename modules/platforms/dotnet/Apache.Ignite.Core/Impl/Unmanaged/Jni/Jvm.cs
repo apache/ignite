@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Security;
@@ -36,6 +37,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /** */
         // ReSharper disable once InconsistentNaming
         private const int JNI_VERSION_1_6 = 0x00010006;
+
+        /** Options to enable startup on Java 9. */
+        private static readonly string[] Java9Options =
+        {
+            "--add-exports java.base/jdk.internal.misc=ALL-UNNAMED",
+            "--add-exports java.base/sun.nio.ch=ALL-UNNAMED",
+            "--add-exports java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED",
+            "--add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED"
+        };
 
         /** */
         private readonly IntPtr _jvmPtr;
@@ -63,6 +73,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
         /** Console writer flag. */
         private int _isConsoleWriterEnabled;
+
 
         /// <summary>
         /// Initializes a new instance of the <see cref="_instance"/> class.
@@ -205,6 +216,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// </summary>
         private static IntPtr GetJvmPtr(IList<string> options)
         {
+            Debug.Assert(options != null);
+
             IntPtr jvm;
             int existingJvmCount;
 
@@ -220,26 +233,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 return jvm;
             }
 
-            var args = new JvmInitArgs
-            {
-                version = JNI_VERSION_1_6
-            };
+            options = new List<string>(options.Concat(Java9Options));
 
-            if (options != null && options.Count > 0)
-            {
-                args.nOptions = options.Count;
-                var opt = new JvmOption[options.Count];
-
-                for (int i = 0; i < options.Count; i++)
-                {
-                    opt[i].optionString = Marshal.StringToHGlobalAnsi(options[i]);
-                }
-
-                fixed (JvmOption* a = &opt[0])
-                {
-                    args.options = a;
-                }
-            }
+            var args = GetJvmInitArgs(options);
 
             IntPtr env;
             res = JvmDll.Instance.CreateJvm(out jvm, out env, &args);
@@ -249,6 +245,33 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             }
 
             return jvm;
+        }
+
+        /// <summary>
+        /// Gets the JVM initialize arguments.
+        /// </summary>
+        private static JvmInitArgs GetJvmInitArgs(IList<string> options)
+        {
+            var args = new JvmInitArgs
+            {
+                version = JNI_VERSION_1_6,
+                nOptions = options.Count
+            };
+
+            var opt = new JvmOption[options.Count];
+
+            for (var i = 0; i < options.Count; i++)
+            {
+                // TODO: Free memory.
+                opt[i].optionString = Marshal.StringToHGlobalAnsi(options[i]);
+            }
+
+            fixed (JvmOption* a = &opt[0])
+            {
+                args.options = a;
+            }
+
+            return args;
         }
 
         /// <summary>
