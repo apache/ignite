@@ -959,8 +959,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     private void refreshPartitions() {
         // TODO https://issues.apache.org/jira/browse/IGNITE-6857
-        if (cctx.snapshot().snapshotOperationInProgress())
+        if (cctx.snapshot().snapshotOperationInProgress()) {
+            scheduleResendPartitions();
+
             return;
+        }
 
         ClusterNode oldest = cctx.discovery().oldestAliveServerNode(AffinityTopologyVersion.NONE);
 

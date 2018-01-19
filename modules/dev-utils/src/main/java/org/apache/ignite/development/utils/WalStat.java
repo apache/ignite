@@ -249,8 +249,9 @@ public class WalStat {
         catch (IgniteCheckedException ignored) {
         }
         finally {
-            ((DirectBuffer)buf).cleaner().clean();
+            GridUnsafe.cleanDirectBuffer(buf);
         }
+
         return "";
     }
 

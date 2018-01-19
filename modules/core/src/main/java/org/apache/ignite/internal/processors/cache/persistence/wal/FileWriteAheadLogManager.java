@@ -85,6 +85,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetric
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
@@ -226,7 +227,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** */
     private final boolean alwaysWriteFullPages;
 
-    /** WAL segment size in bytes */
+    /** WAL segment size in bytes. . This is maximum value, actual segments may be shorter. */
     private final long maxWalSegmentSize;
 
     /** */
@@ -267,7 +268,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private volatile long lastTruncatedArchiveIdx = -1L;
 
     /** Factory to provide I/O interfaces for read/write operations with files */
-    private final FileIOFactory ioFactory;
+    private FileIOFactory ioFactory;
 
     /** Next segment archived monitor. */
     private final Object nextSegmentArchivedMonitor = new Object();
@@ -308,7 +309,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private AtomicLong lastRecordLoggedMs = new AtomicLong();
 
     /**
-     * Cancellable task for {@link WALMode#BACKGROUND}, should be cancelled at shutdown Null for non background modes
+     * Cancellable task for {@link WALMode#BACKGROUND}, should be cancelled at shutdown.
+     * Null for non background modes.
      */
     @Nullable private volatile GridTimeoutProcessor.CancelableTask backgroundFlushSchedule;
 
@@ -320,6 +322,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** WAL writer worker. */
     private WALWriter walWriter;
+
+    /**
+     * Listener invoked for each segment file IO initializer.
+     */
+    @Nullable private volatile IgniteInClosure<FileIO> createWalFileListener;
 
     /**
      * @param ctx Kernal context.
@@ -338,9 +345,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         flushFreq = dsCfg.getWalFlushFrequency();
         fsyncDelay = dsCfg.getWalFsyncDelayNanos();
         alwaysWriteFullPages = dsCfg.isAlwaysWriteFullPages();
-        ioFactory = dsCfg.getFileIOFactory();
+        ioFactory = new RandomAccessFileIOFactory();
         walAutoArchiveAfterInactivity = dsCfg.getWalAutoArchiveAfterInactivity();
         evt = ctx.event();
+    }
+
+    /** For test purposes only. */
+    public void setFileIOFactory(FileIOFactory ioFactory) {
+        this.ioFactory = ioFactory;
     }
 
     /** {@inheritDoc} */
@@ -1042,6 +1054,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         try {
             FileIO fileIO = ioFactory.create(curFile);
 
+            IgniteInClosure<FileIO> lsnr = createWalFileListener;
+
+            if (lsnr != null)
+                lsnr.apply(fileIO);
+
             try {
                 int serVer = serializerVer;
 
@@ -1130,6 +1147,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             while (true) {
                 try {
                     fileIO = ioFactory.create(nextFile);
+
+                    IgniteInClosure<FileIO> lsnr = createWalFileListener;
+                    if (lsnr != null)
+                        lsnr.apply(fileIO);
 
                     if (mmap) {
                         try {
@@ -1332,6 +1353,21 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (envFailed != null)
             throw new StorageException("Failed to flush WAL buffer (environment was invalidated by a " +
                 "previous error)", envFailed);
+    }
+
+    /**
+     * Setup listener for WAL segment write File IO creation.
+     * @param createWalFileListener Listener to be invoked for new segment file IO creation.
+     */
+    public void setCreateWalFileListener(@Nullable IgniteInClosure<FileIO> createWalFileListener) {
+        this.createWalFileListener = createWalFileListener;
+    }
+
+    /**
+     * @return {@link #maxWalSegmentSize}.
+     */
+    public long maxWalSegmentSize() {
+        return maxWalSegmentSize;
     }
 
     /**

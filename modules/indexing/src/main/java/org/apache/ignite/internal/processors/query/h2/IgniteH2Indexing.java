@@ -960,6 +960,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             final PreparedStatement stmt = preparedStatementWithParams(conn, qry, params, true);
 
+            if (GridSqlQueryParser.checkMultipleStatements(stmt))
+                throw new IgniteSQLException("Multiple statements queries are not supported for local queries");
+
             Prepared p = GridSqlQueryParser.prepared(stmt);
 
             if (DmlStatementsProcessor.isDmlStatement(p)) {
@@ -1899,7 +1902,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                                     cachesCreated = true;
                                 }
                                 else
-                                    throw new IgniteSQLException("Failed to parse query: " + sqlQry,
+                                    throw new IgniteSQLException("Failed to parse query. " + e.getMessage(),
                                         IgniteQueryErrorCode.PARSING, e);
                             }
                         }

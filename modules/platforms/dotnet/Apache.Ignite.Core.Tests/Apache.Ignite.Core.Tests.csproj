@@ -75,6 +75,7 @@
     <Compile Include="ApiParity\CacheParityTest.cs" />
     <Compile Include="ApiParity\ClientConnectorConfigurationParityTest.cs" />
     <Compile Include="ApiParity\ClusterMetricsParityTest.cs" />
+    <Compile Include="ApiParity\ClusterNodeParityTest.cs" />
     <Compile Include="ApiParity\ClusterParityTest.cs" />
     <Compile Include="ApiParity\ComputeParityTest.cs" />
     <Compile Include="ApiParity\DataRegionConfigurationParityTest.cs" />

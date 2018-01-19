@@ -52,6 +52,7 @@
         <module>modules/tools</module>
         <module>modules/core</module>
         <module>modules/dev-utils</module>
+        <module>modules/direct-io</module>
         <module>modules/hadoop</module>
         <module>modules/extdata/p2p</module>
         <module>modules/extdata/uri</module>

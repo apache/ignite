@@ -103,8 +103,8 @@ public class GridCacheSharedContext<K, V> {
     /** Deployment manager. */
     private GridCacheDeploymentManager<K, V> depMgr;
 
-    /** Write ahead log manager. */
-    private IgniteWriteAheadLogManager walMgr;
+    /** Write ahead log manager. {@code Null} if persistence is not enabled. */
+    @Nullable private IgniteWriteAheadLogManager walMgr;
 
     /** Database manager. */
     private IgniteCacheDatabaseSharedManager dbMgr;
@@ -112,8 +112,8 @@ public class GridCacheSharedContext<K, V> {
     /** Snp manager. */
     private IgniteCacheSnapshotManager snpMgr;
 
-    /** Page store manager. */
-    private IgnitePageStoreManager pageStoreMgr;
+    /** Page store manager. {@code Null} if persistence is not enabled. */
+    @Nullable private IgnitePageStoreManager pageStoreMgr;
 
     /** Affinity manager. */
     private CacheAffinitySharedManager affMgr;
@@ -168,6 +168,8 @@ public class GridCacheSharedContext<K, V> {
      * @param txMgr Transaction manager.
      * @param verMgr Version manager.
      * @param mvccMgr MVCC manager.
+     * @param pageStoreMgr Page store manager. {@code Null} if persistence is not enabled.
+     * @param walMgr WAL manager. {@code Null} if persistence is not enabled.
      * @param depMgr Deployment manager.
      * @param exchMgr Exchange manager.
      * @param affMgr Affinity manager.
@@ -181,8 +183,8 @@ public class GridCacheSharedContext<K, V> {
         IgniteTxManager txMgr,
         GridCacheVersionManager verMgr,
         GridCacheMvccManager mvccMgr,
-        IgnitePageStoreManager pageStoreMgr,
-        IgniteWriteAheadLogManager walMgr,
+        @Nullable IgnitePageStoreManager pageStoreMgr,
+        @Nullable IgniteWriteAheadLogManager walMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
         IgniteCacheSnapshotManager snpMgr,
         GridCacheDeploymentManager<K, V> depMgr,
@@ -411,6 +413,7 @@ public class GridCacheSharedContext<K, V> {
      * @param jtaMgr JTA manager.
      * @param verMgr Version manager.
      * @param mvccMgr MVCC manager.
+     * @param pageStoreMgr Page store manager. {@code Null} if persistence is not enabled.
      * @param depMgr Deployment manager.
      * @param exchMgr Exchange manager.
      * @param affMgr Affinity manager.
@@ -422,7 +425,7 @@ public class GridCacheSharedContext<K, V> {
         CacheJtaManagerAdapter jtaMgr,
         GridCacheVersionManager verMgr,
         GridCacheMvccManager mvccMgr,
-        IgnitePageStoreManager pageStoreMgr,
+        @Nullable IgnitePageStoreManager pageStoreMgr,
         IgniteWriteAheadLogManager walMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
         IgniteCacheSnapshotManager snpMgr,
@@ -680,9 +683,9 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
-     * @return Page store manager.
+     * @return Page store manager. {@code Null} if persistence is not enabled.
      */
-    public IgnitePageStoreManager pageStore() {
+    @Nullable public IgnitePageStoreManager pageStore() {
         return pageStoreMgr;
     }
 
