@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOF
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -209,7 +210,7 @@ public class DataStorageConfiguration implements Serializable {
     private int walTlbSize = DFLT_TLB_SIZE;
 
     /** WAl buffer size. */
-    private int walBuffSize/* = DFLT_WAL_BUFF_SIZE*/;
+    private int walBuffSize;
 
     /** Wal flush frequency in milliseconds. */
     private long walFlushFreq = DFLT_WAL_FLUSH_FREQ;
@@ -225,7 +226,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /** Factory to provide I/O interface for files */
     private FileIOFactory fileIOFactory =
-        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY, false) ?
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY, true) ?
             new AsyncFileIOFactory() : new RandomAccessFileIOFactory();
 
     /**
@@ -901,5 +902,10 @@ public class DataStorageConfiguration implements Serializable {
         this.walCompactionEnabled = walCompactionEnabled;
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DataStorageConfiguration.class, this);
     }
 }

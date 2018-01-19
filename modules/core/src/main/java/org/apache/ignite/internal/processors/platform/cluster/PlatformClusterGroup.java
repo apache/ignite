@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.cluster;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.UUID;
-
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCache;
@@ -31,9 +27,9 @@ import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.cluster.ClusterGroupEx;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.cluster.ClusterGroupEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
@@ -45,6 +41,10 @@ import org.apache.ignite.internal.processors.platform.services.PlatformServices;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.UUID;
 
 /**
  * Interop projection.
@@ -344,7 +344,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
             case OP_PING_NODE:
                 return pingNode(reader.readUuid()) ? TRUE : FALSE;
 
-            case OP_RESET_LOST_PARTITIONS:
+            case OP_RESET_LOST_PARTITIONS: {
                 int cnt = reader.readInt();
 
                 Collection<String> cacheNames = new ArrayList<>(cnt);
@@ -356,6 +356,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 platformCtx.kernalContext().grid().resetLostPartitions(cacheNames);
 
                 return TRUE;
+            }
 
             default:
                 return super.processInStreamOutLong(type, reader);

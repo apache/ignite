@@ -532,6 +532,11 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestTxDeadlockDetection()
         {
+            if (LocalCache())
+            {
+                return;
+            }
+
             var cache = Cache();
 
             var keys0 = Enumerable.Range(1, 100).ToArray();

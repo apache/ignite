@@ -39,7 +39,8 @@ public class SimpleUpdater implements Updater {
     /**
      * {@inheritDoc}
      */
-    @Override public Vector compute(Vector oldWeights, Vector oldGradient, Vector weights, Vector gradient, int iteration) {
+    @Override public Vector compute(Vector oldWeights, Vector oldGradient, Vector weights, Vector gradient,
+        int iteration) {
         return weights.minus(gradient.times(learningRate));
     }
 }

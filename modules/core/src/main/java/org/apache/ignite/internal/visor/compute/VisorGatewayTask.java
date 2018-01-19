@@ -301,6 +301,9 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                 return res;
             }
 
+            if (cls.isEnum())
+                return Enum.valueOf(cls, val);
+
             return val;
         }
 
@@ -360,10 +363,11 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                             // Length of arguments that required to constructor by influence of nested complex objects.
                             int needArgs = args;
 
-                            for (Class type: types)
+                            for (Class type: types) {
                                 // When constructor required specified types increase length of required arguments.
                                 if (TYPE_ARG_LENGTH.containsKey(type))
                                     needArgs += TYPE_ARG_LENGTH.get(type);
+                            }
 
                             if (needArgs == beanArgsCnt) {
                                 Object[] initArgs = new Object[args];
