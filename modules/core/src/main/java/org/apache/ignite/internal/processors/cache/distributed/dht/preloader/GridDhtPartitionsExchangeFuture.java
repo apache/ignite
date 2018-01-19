@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -2081,6 +2082,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param top Topology to assign.
      */
     private void assignPartitionStates(GridDhtPartitionTopology top) {
+        if (cctx.cache().cacheGroup(top.groupId()).cacheOrGroupName().equals("cache"))
+            log.error("PROCESS: " + top.groupId());
+
         Map<Integer, CounterWithNodes> maxCntrs = new HashMap<>();
         Map<Integer, Long> minCntrs = new HashMap<>();
 
@@ -2103,6 +2107,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 long cntr = state == GridDhtPartitionState.MOVING ?
                     nodeCntrs.initialUpdateCounterAt(i) :
                     nodeCntrs.updateCounterAt(i);
+
+                if (cctx.cache().cacheGroup(top.groupId()).cacheOrGroupName().equals("cache"))
+                    log.error("STATE: " + uuid + " " + p + " " + state + " " + cntr);
 
                 Long minCntr = minCntrs.get(p);
 
@@ -2129,6 +2136,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 continue;
 
             final long cntr = state == GridDhtPartitionState.MOVING ? part.initialUpdateCounter() : part.updateCounter();
+
+            if (cctx.cache().cacheGroup(top.groupId()).cacheOrGroupName().equals("cache"))
+                log.error("STATE: " + cctx.localNodeId() + " " + part.id() + " " + state + " " + cntr);
 
             Long minCntr = minCntrs.get(part.id());
 
@@ -2556,6 +2566,112 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
     }
 
+    private void validatePartitionsCountersAndSizes(GridDhtPartitionTopology top) throws IgniteCheckedException {
+        final Set<UUID> ignoringNodes = context().events().events()
+                .stream()
+                .filter(evt -> evt.type() == EVT_NODE_JOINED)
+                .map(evt -> evt.eventNode().id())
+                .collect(Collectors.toSet());
+
+        validatePartitionsUpdateCounters(top, Collections.emptySet());
+        validatePartitionsSizes(top, Collections.emptySet());
+    }
+
+    private void validatePartitionsUpdateCounters(GridDhtPartitionTopology top, Set<UUID> ignoringNodes) throws IgniteCheckedException {
+        Map<Integer, Long> updateCountersByPartitions = new HashMap<>();
+        Map<Integer, UUID> updateCounterNodesByPartitions = new HashMap<>();
+
+        // Populate counters statistics from local node partitions.
+        for (GridDhtLocalPartition part : top.currentLocalPartitions()) {
+            if (top.partitionState(cctx.localNodeId(), part.id()) != GridDhtPartitionState.OWNING)
+                continue;
+
+            updateCountersByPartitions.put(part.id(), part.updateCounter());
+            updateCounterNodesByPartitions.put(part.id(), cctx.localNodeId());
+        }
+
+        // Then process and validate counters from other nodes.
+        for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
+            UUID nodeId = e.getKey();
+            if (ignoringNodes.contains(nodeId))
+                continue;
+
+            GridDhtPartitionsSingleMessage msg = e.getValue();
+            CachePartitionPartialCountersMap countersMap = msg.partitionUpdateCounters(top.groupId(), top.partitions());
+
+            for (int i = 0; i < countersMap.size(); i++) {
+                int part = countersMap.partitionAt(i);
+
+                if (top.partitionState(nodeId, part) != GridDhtPartitionState.OWNING)
+                    continue;
+
+                long currentCounter = countersMap.updateCounterAt(i);
+
+                Long existingCounter = updateCountersByPartitions.get(part);
+                if (existingCounter == null) {
+                    updateCountersByPartitions.put(part, currentCounter);
+                    updateCounterNodesByPartitions.put(part, nodeId);
+                }
+                else {
+                    if (existingCounter != currentCounter) {
+                        UUID updateCounterNode = updateCounterNodesByPartitions.get(part);
+
+                        throw new IgniteCheckedException("Partition " + part + " was validation failed. " +
+                                "Update counters for nodes=[" + updateCounterNode + "," + nodeId + "] " +
+                                "have different values=[" + existingCounter + "," + currentCounter + "]");
+                    }
+                }
+            }
+        }
+    }
+
+    private void validatePartitionsSizes(GridDhtPartitionTopology top, Set<UUID> ignoringNodes) throws IgniteCheckedException {
+        Map<Integer, Long> sizesByPartitions = new HashMap<>();
+        Map<Integer, UUID> sizeNodesByPartitions = new HashMap<>();
+
+        // Populate sizes statistics from local node partitions.
+        for (GridDhtLocalPartition part : top.currentLocalPartitions()) {
+            if (top.partitionState(cctx.localNodeId(), part.id()) != GridDhtPartitionState.OWNING)
+                continue;
+
+            sizesByPartitions.put(part.id(), part.fullSize());
+            sizeNodesByPartitions.put(part.id(), cctx.localNodeId());
+        }
+
+        // Then process and validate counters from other nodes.
+        for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
+            UUID nodeId = e.getKey();
+            if (ignoringNodes.contains(nodeId))
+                continue;
+
+            GridDhtPartitionsSingleMessage msg = e.getValue();
+            Map<Integer, Long> sizesMap = msg.partitionSizes(top.groupId());
+            for (Map.Entry<Integer, Long> entry : sizesMap.entrySet()) {
+                int part = entry.getKey();
+
+                if (top.partitionState(nodeId, part) != GridDhtPartitionState.OWNING)
+                    continue;
+
+                long currentSize = entry.getValue();
+                Long existingSize = sizesByPartitions.get(part);
+                if (existingSize == null) {
+                    sizesByPartitions.put(part, currentSize);
+                    sizeNodesByPartitions.put(part, nodeId);
+                }
+                else {
+                    if (existingSize != currentSize) {
+                        UUID updateCounterNode = sizeNodesByPartitions.get(part);
+
+                        throw new IgniteCheckedException("Partition " + part + "was  validation failed. " +
+                                "Cache sizes for nodes=[" + updateCounterNode + "," + nodeId + "] " +
+                                "have different values=[" + existingSize + "," + currentSize + "]");
+                    }
+                }
+
+            }
+        }
+    }
+
     /**
      *
      */
@@ -2573,6 +2689,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             GridDhtPartitionTopology top = grpCtx != null ?
                 grpCtx.topology() :
                 cctx.exchange().clientTopology(e.getKey(), events().discoveryCache());
+
+            try {
+                validatePartitionsCountersAndSizes(top);
+            } catch (IgniteCheckedException ex) {
+                log.error("Partition states validation was failed for cache " + grpDesc.cacheOrGroupName(), ex);
+
+                //TODO: Do something with such cache.
+            }
 
             assignPartitionStates(top);
         }

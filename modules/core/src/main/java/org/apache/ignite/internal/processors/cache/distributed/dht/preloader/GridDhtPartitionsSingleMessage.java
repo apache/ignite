@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.util.Collection;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -66,6 +66,12 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
     /** Serialized partitions counters. */
     private byte[] partCntrsBytes;
+
+    @GridToStringInclude
+    @GridDirectTransient
+    private Map<Integer, Map<Integer, Long>> partSizes;
+
+    private byte[] partSizesBytes;
 
     /** Partitions history reservation counters. */
     @GridToStringInclude
@@ -219,6 +225,23 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         return CachePartitionPartialCountersMap.fromCountersMap(map, partsCnt);
     }
 
+    public void addPartitionSizes(int grpId, Map<Integer, Long> partSizesMap) {
+        if (partSizesMap.isEmpty())
+            return;
+
+        if (partSizes == null)
+            partSizes = new HashMap<>();
+
+        partSizes.put(grpId, partSizesMap);
+    }
+
+    public Map<Integer, Long> partitionSizes(int grpId) {
+        if (partSizes == null)
+            return Collections.emptyMap();
+
+        return partSizes.getOrDefault(grpId, Collections.emptyMap());
+    }
+
     /**
      * @param grpId Cache group ID.
      * @param cntrMap Partition history counters.
@@ -246,13 +269,10 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      * @return Partition history counters.
      */
     Map<Integer, Long> partitionHistoryCounters(int grpId) {
-        if (partHistCntrs != null) {
-            Map<Integer, Long> res = partHistCntrs.get(grpId);
+        if (partHistCntrs == null)
+            return Collections.emptyMap();
 
-            return res != null ? res : Collections.<Integer, Long>emptyMap();
-        }
-
-        return Collections.emptyMap();
+        return partHistCntrs.getOrDefault(grpId, Collections.emptyMap());
     }
 
     /**
@@ -287,12 +307,14 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         boolean marshal = (parts != null && partsBytes == null) ||
             (partCntrs != null && partCntrsBytes == null) ||
             (partHistCntrs != null && partHistCntrsBytes == null) ||
+            (partSizes != null && partSizesBytes == null) ||
             (err != null && errBytes == null);
 
         if (marshal) {
             byte[] partsBytes0 = null;
             byte[] partCntrsBytes0 = null;
             byte[] partHistCntrsBytes0 = null;
+            byte[] partSizesBytes0 = null;
             byte[] errBytes0 = null;
 
             if (parts != null && partsBytes == null)
@@ -304,6 +326,9 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             if (partHistCntrs != null && partHistCntrsBytes == null)
                 partHistCntrsBytes0 = U.marshal(ctx, partHistCntrs);
 
+            if (partSizes != null && partSizesBytes == null)
+                partSizesBytes0 = U.marshal(ctx, partSizes);
+
             if (err != null && errBytes == null)
                 errBytes0 = U.marshal(ctx, err);
 
@@ -314,11 +339,13 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                     byte[] partsBytesZip = U.zip(partsBytes0);
                     byte[] partCntrsBytesZip = U.zip(partCntrsBytes0);
                     byte[] partHistCntrsBytesZip = U.zip(partHistCntrsBytes0);
+                    byte[] partSizesBytesZip = U.zip(partSizesBytes0);
                     byte[] exBytesZip = U.zip(errBytes0);
 
                     partsBytes0 = partsBytesZip;
                     partCntrsBytes0 = partCntrsBytesZip;
                     partHistCntrsBytes0 = partHistCntrsBytesZip;
+                    partSizesBytes0 = partSizesBytesZip;
                     errBytes0 = exBytesZip;
 
                     compressed(true);
@@ -331,6 +358,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             partsBytes = partsBytes0;
             partCntrsBytes = partCntrsBytes0;
             partHistCntrsBytes = partHistCntrsBytes0;
+            partSizesBytes = partSizesBytes0;
             errBytes = errBytes0;
         }
     }
@@ -358,6 +386,13 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                 partHistCntrs = U.unmarshalZip(ctx.marshaller(), partHistCntrsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
             else
                 partHistCntrs = U.unmarshal(ctx, partHistCntrsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+        }
+
+        if (partSizesBytes != null && partSizes == null) {
+            if (compressed())
+                partSizes = U.unmarshalZip(ctx.marshaller(), partSizesBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+            else
+                partSizes = U.unmarshal(ctx, partSizesBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
         }
 
         if (errBytes != null && err == null) {
@@ -451,6 +486,11 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
                 writer.incrementState();
 
+            case 13:
+                if (!writer.writeByteArray("partsSizesBytes", partSizesBytes))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -531,6 +571,13 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
                 reader.incrementState();
 
+            case 13:
+                partSizesBytes = reader.readByteArray("partsSizesBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridDhtPartitionsSingleMessage.class);
@@ -543,7 +590,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 13;
+        return 14;
     }
 
     /** {@inheritDoc} */

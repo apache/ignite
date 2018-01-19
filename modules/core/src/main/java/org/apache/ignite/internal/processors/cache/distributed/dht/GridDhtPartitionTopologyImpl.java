@@ -30,6 +30,8 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -2370,35 +2372,38 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         lock.readLock().lock();
 
         try {
-            int locPartCnt = 0;
+            final int locPartCnt = (int) IntStream.range(0, locParts.length())
+                    .filter(partId -> locParts.get(partId) != null)
+                    .count();
 
-            for (int i = 0; i < locParts.length(); i++) {
-                GridDhtLocalPartition part = locParts.get(i);
-
-                if (part != null)
-                    locPartCnt++;
-            }
-
-            CachePartitionPartialCountersMap res = new CachePartitionPartialCountersMap(locPartCnt);
-
-            for (int i = 0; i < locParts.length(); i++) {
-                GridDhtLocalPartition part = locParts.get(i);
-
-                if (part == null)
-                    continue;
-
-                long updCntr = part.updateCounter();
-                long initCntr = part.initialUpdateCounter();
-
-                if (skipZeros && initCntr == 0L && updCntr == 0L)
-                    continue;
-
-                res.add(part.id(), initCntr, updCntr);
-            }
+            CachePartitionPartialCountersMap res = IntStream.range(0, locParts.length())
+                    .filter(partId -> locParts.get(partId) != null)
+                    .mapToObj(locParts::get)
+                    .filter(part -> !skipZeros || part.initialUpdateCounter() > 0 || part.updateCounter() > 0)
+                    .collect(
+                            () -> new CachePartitionPartialCountersMap(locPartCnt),
+                            (map, part) -> map.add(part.id(), part.initialUpdateCounter(), part.updateCounter()),
+                            (a, b) -> { }
+                    );
 
             res.trim();
 
             return res;
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<Integer, Long> partitionSizes() {
+        lock.readLock().lock();
+
+        try {
+            return IntStream.range(0, locParts.length())
+                    .filter(part -> locParts.get(part) != null)
+                    .mapToObj(locParts::get)
+                    .collect(Collectors.toMap(GridDhtLocalPartition::id, GridDhtLocalPartition::fullSize));
         }
         finally {
             lock.readLock().unlock();
@@ -2467,7 +2472,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (part == null)
                     continue;
 
-                int size = part.dataStore().fullSize();
+                long size = part.dataStore().fullSize();
 
                 if (size >= threshold)
                     X.println(">>>   Local partition [part=" + part.id() + ", size=" + size + ']');

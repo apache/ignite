@@ -190,7 +190,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             freeList.saveMetadata();
 
             long updCntr = store.updateCounter();
-            int size = store.fullSize();
+            long size = store.fullSize();
             long rmvId = globalRemoveId().get();
 
             PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
@@ -319,7 +319,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                 partMetaId,
                                 updCntr,
                                 rmvId,
-                                size,
+                                (int)size, // TODO: Partition size may be long
                                 cntrsPageId,
                                 state == null ? -1 : (byte)state.ordinal(),
                                 pageCnt
@@ -522,7 +522,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             final int cacheId,
             final int partId,
             final int currAllocatedPageCnt,
-            final int partSize
+            final long partSize
     ) {
         if (part != null) {
             boolean reserved = part.reserve();
@@ -1206,7 +1206,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public int fullSize() {
+        @Override public long fullSize() {
             try {
                 CacheDataStore delegate0 = init0(true);
 
@@ -1218,7 +1218,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public int cacheSize(int cacheId) {
+        @Override public long cacheSize(int cacheId) {
             try {
                 CacheDataStore delegate0 = init0(true);
 
