@@ -220,8 +220,9 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
      *
      * @throws Exception If failed.
      */
-    public void _testServerRestartCoordinator() throws Exception {
-        // TODO: Fail with proper ticket number.
+    public void testServerRestartCoordinator() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7472");
+
         checkNodeRestart(true);
     }
 
