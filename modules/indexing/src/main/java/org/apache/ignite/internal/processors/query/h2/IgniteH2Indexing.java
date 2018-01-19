@@ -112,6 +112,9 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
+import org.apache.ignite.internal.processors.query.h2.views.GridH2SysView;
+import org.apache.ignite.internal.processors.query.h2.views.GridH2SysViewCaches;
+import org.apache.ignite.internal.processors.query.h2.views.GridH2SysViewTableEngine;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
@@ -2234,6 +2237,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 cleanupConnections();
             }
         }, CLEANUP_CONNECTIONS_PERIOD, CLEANUP_CONNECTIONS_PERIOD);
+
+        try (Connection c = connectionForSchema(GridH2SysView.TABLE_SCHEMA_NAME)) {
+            GridH2SysViewTableEngine.registerView(c, new GridH2SysViewCaches(ctx));
+        }
+        catch (SQLException e) {
+            throw new IgniteCheckedException(e);
+        }
     }
 
     /**
