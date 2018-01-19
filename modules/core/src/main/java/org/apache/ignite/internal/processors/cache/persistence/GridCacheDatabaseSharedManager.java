@@ -2662,32 +2662,37 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             }*/
 
 
-                            fsyncScope.stripes().stream().parallel()
+                            fsyncScope.stripes().stream()
+                                .parallel()
                                 .map(stripe -> {
                                     try {
-                                        return stripe.waitAndCheckForErrors();
+                                        Set<Map.Entry<PageStore, LongAdder>> entries = stripe.waitAndCheckForErrors();
+
+                                        if (log.isInfoEnabled()) {
+                                            log.info("Starting fsync for [" + entries.size() + "] page stores " +
+                                                "for one from [" + fsyncScope.stripesCount() + "] remaining stripes");
+                                        }
+
+                                        return entries;
                                     }
                                     catch (IgniteCheckedException e) {
                                         throw new RuntimeException(e);
                                     }
-                                }).forEach(
-                                    entries -> {
+                                })
+                                .flatMap(Collection::stream)
+                                .forEach(
+                                    updStoreEntry -> {
                                         try {
-                                            if (log.isInfoEnabled()) {
-                                                log.info("Starting fsync for [" + entries.size() + "] page stores " +
-                                                    "for one from [" + fsyncScope.stripesCount() + "] remaining stripes");
-                                            }
-                                            for (Map.Entry<PageStore, LongAdder> updStoreEntry : entries) {
-                                                updStoreEntry.getKey().sync();
 
-                                                syncedPagesCntr.addAndGet(updStoreEntry.getValue().intValue());
-                                            }
+                                            updStoreEntry.getKey().sync();
+
+                                            syncedPagesCntr.addAndGet(updStoreEntry.getValue().intValue());
                                         }
                                         catch (IgniteCheckedException e) {
                                             throw new RuntimeException(e);
                                         }
                                     }
-                            );
+                                );
 
                             /* //todo
                             List<CheckpointFsyncScope.Stripe> stripes = fsyncScope.stripes();

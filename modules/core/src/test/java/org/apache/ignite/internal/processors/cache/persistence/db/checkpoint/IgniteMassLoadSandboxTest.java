@@ -108,7 +108,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
-        ccfg.setAffinity(new RendezvousAffinityFunction(false, 128));
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 1024));
         ccfg.setNodeFilter(new RemoteNodeFilter());
         ccfg.setIndexedTypes(Integer.class, IndexedObject.class);
         ccfg.setName(CACHE_NAME);
@@ -155,6 +155,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
         dsCfg.setWalMode(customWalMode != null ? customWalMode : WALMode.LOG_ONLY);
         dsCfg.setWalHistorySize(1);
+        dsCfg.setWalSegments(25);
 
         cfg.setDataStorageConfiguration(dsCfg);
 
