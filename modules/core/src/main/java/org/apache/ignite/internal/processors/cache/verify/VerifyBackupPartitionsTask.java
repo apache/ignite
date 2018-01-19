@@ -250,11 +250,13 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
 
                     i++;
                 }
-                catch (InterruptedException e) {
-                    throw new IgniteInterruptedException(e);
-                }
-                catch (ExecutionException e) {
-                    if (e.getCause() instanceof IgniteException)
+                catch (InterruptedException | ExecutionException e) {
+                    for (int j = i + 1; j < partHashCalcFutures.size(); j++)
+                        partHashCalcFutures.get(j).cancel(false);
+
+                    if (e instanceof InterruptedException)
+                        throw new IgniteInterruptedException((InterruptedException)e);
+                    else if (e.getCause() instanceof IgniteException)
                         throw (IgniteException)e.getCause();
                     else
                         throw new IgniteException(e.getCause());
