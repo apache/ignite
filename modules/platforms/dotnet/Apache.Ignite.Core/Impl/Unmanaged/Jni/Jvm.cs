@@ -231,16 +231,38 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 return jvm;
             }
 
+            return CreateJvm(options);
+        }
+
+        /// <summary>
+        /// Creates the JVM.
+        /// </summary>
+        private static IntPtr CreateJvm(IList<string> options)
+        {
             options = options == null
                 ? Java9Options.ToList()
                 : new List<string>(options.Concat(Java9Options));
 
-            var args = GetJvmInitArgs(options);
+            var args = new JvmInitArgs
+            {
+                version = JNI_VERSION_1_6,
+                nOptions = options.Count
+            };
+
+            var opts = GetJvmOptions(options);
 
             try
             {
-                IntPtr env;
-                res = JvmDll.Instance.CreateJvm(out jvm, out env, &args);
+                JniResult res;
+                IntPtr jvm;
+
+                fixed (JvmOption* optPtr = &opts[0])
+                {
+                    args.options = optPtr;
+                    IntPtr env;
+                    res = JvmDll.Instance.CreateJvm(out jvm, out env, &args);
+                }
+
                 if (res != JniResult.Success)
                 {
                     throw new IgniteException("JNI_CreateJavaVM failed: " + res);
@@ -248,38 +270,28 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
                 return jvm;
             }
-            finally 
+            finally
             {
-                // TODO: Release unmanaged.
+                foreach (var opt in opts)
+                {
+                    Marshal.FreeHGlobal(opt.optionString);
+                }
             }
         }
 
         /// <summary>
-        /// Gets the JVM initialize arguments.
+        /// Gets the JVM options.
         /// </summary>
-        private static JvmInitArgs GetJvmInitArgs(IList<string> options)
+        private static JvmOption[] GetJvmOptions(IList<string> options)
         {
-            var args = new JvmInitArgs
-            {
-                version = JNI_VERSION_1_6,
-                nOptions = options.Count
-            };
-
             var opt = new JvmOption[options.Count];
 
             for (var i = 0; i < options.Count; i++)
             {
-                // TODO: Free memory.
                 opt[i].optionString = Marshal.StringToHGlobalAnsi(options[i]);
             }
 
-            fixed (JvmOption* a = &opt[0])
-            {
-                // TODO: This is troublesome
-                args.options = a;
-            }
-
-            return args;
+            return opt;
         }
 
         /// <summary>
