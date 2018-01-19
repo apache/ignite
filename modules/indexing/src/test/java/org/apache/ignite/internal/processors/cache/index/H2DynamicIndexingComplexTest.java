@@ -187,7 +187,7 @@ public abstract class H2DynamicIndexingComplexTest extends DynamicIndexAbstractS
             @Override public Object call() throws Exception {
                 return executeSql("SELECT * from Person");
             }
-        }, IgniteSQLException.class, "Failed to parse query: SELECT * from Person");
+        }, IgniteSQLException.class, "Table \"PERSON\" not found");
     }
 
     /**

@@ -46,7 +46,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
 
                 return null;
             }
-        }, "08001");
+        }, "08001", "Failed to connect to Ignite cluster [host=unknown.host");
     }
 
     /**
@@ -61,7 +61,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
 
                 return null;
             }
-        }, "08001");
+        }, "08001", "Property cannot be upper than 65535");
     }
 
     /**
@@ -74,7 +74,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
             @Override public void run(Connection conn) throws Exception {
                 conn.setTransactionIsolation(1000);
             }
-        }, "0700E");
+        }, "0700E", "Invalid transaction isolation level.");
     }
 
     /**
@@ -102,6 +102,9 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
                     assertEquals(1, updCnt);
 
                 assertEquals("42000", e.getSQLState());
+
+                assertTrue("Unexpected error message: " + e.getMessage(), e.getMessage() != null &&
+                    e.getMessage().contains("Failed to parse query. Column \"ID1\" not found"));
             }
         }
     }
