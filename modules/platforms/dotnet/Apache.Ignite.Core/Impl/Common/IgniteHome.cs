@@ -116,16 +116,22 @@ namespace Apache.Ignite.Core.Impl.Common
                 // * Binary release home (libs\ignite-core-x.y.z.jar)
                 // * NuGet home (libs\ignite-core-x.y.z.jar).
 
-                return dir.Exists &&
-                       (dir.EnumerateDirectories().Count(x => x.Name == "examples" || x.Name == "bin") == 2 &&
-                        dir.EnumerateDirectories().Count(x => x.Name == "modules" || x.Name == "platforms") == 1)
-                       || // NuGet home
-                       (dir.EnumerateDirectories().Any(x => x.Name == "libs") &&
-                        (dir.EnumerateFiles("Apache.Ignite.Core.dll").Any() ||
-                         dir.EnumerateFiles("Apache.Ignite.*.nupkg").Any() ||
-                         dir.EnumerateFiles("apache.ignite.*.nupkg").Any() ||  // Lowercase on Linux
-                         dir.EnumerateFiles("apache.ignite.nuspec").Any() ||  // Lowercase on Linux
-                         dir.EnumerateFiles("Apache.Ignite.nuspec").Any()));
+                if (!dir.Exists)
+                {
+                    return false;
+                }
+
+                // Binary release or NuGet home:
+                var jar = Path.Combine(dir.FullName, "libs", "ignite-core-*.jar");
+
+                if (File.Exists(jar))
+                {
+                    return true;
+                }
+
+                // Source release:
+                // TODO
+                return false;
             }
             catch (IOException)
             {
