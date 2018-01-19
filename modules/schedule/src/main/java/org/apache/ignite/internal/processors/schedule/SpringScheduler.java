@@ -17,15 +17,13 @@
  *
  */
 
-package org.apache.ignite.internal.processors.schedule.impl;
+package org.apache.ignite.internal.processors.schedule;
 
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.ignite.internal.processors.schedule.IScheduler;
-import org.apache.ignite.internal.processors.schedule.exception.IgniteSchedulerException;
-import org.apache.ignite.internal.processors.schedule.exception.IgniteSchedulerParseException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.jsr166.ConcurrentHashMap8;
 import org.springframework.core.task.TaskRejectedException;
@@ -35,13 +33,14 @@ import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.util.StringUtils;
 
 /**
- * Delegates scheduling to Spring ThreadPoolTaskScheduler
+ * Delegates scheduling to Spring {@link ThreadPoolTaskScheduler}
  */
-public class SpringScheduler implements IScheduler {
+public class SpringScheduler {
 
     /** Counter to generate Task ida. */
     private AtomicInteger cntr = new AtomicInteger();
 
+    /** Spring Task scheduler implementation. */
     @GridToStringExclude
     private ThreadPoolTaskScheduler taskScheduler;
 
@@ -71,26 +70,38 @@ public class SpringScheduler implements IScheduler {
             return cron;
     }
 
-    /** {@inheritDoc} */
-    @Override public void start() {
+    /**
+     * Start scheduler
+     */
+    public void start() {
         taskScheduler.setThreadNamePrefix("task-scheduler-#");
         taskScheduler.initialize();
         started = true;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isStarted() {
+    /**
+     * @return state of scheduler
+     */
+    public boolean isStarted() {
         return started;
     }
 
-    /** {@inheritDoc} */
-    @Override public void stop() {
+    /**
+     * Stop scheduler
+     */
+    public void stop() {
         started = false;
         taskScheduler.shutdown();
     }
 
-    /** {@inheritDoc} */
-    @Override public String schedule(String cron, Runnable run) throws IgniteSchedulerException {
+    /**
+     * @param cron expression
+     * @param run scheduling code
+     * @return task id
+     * @throws IgniteException if cron expression is not valid or
+     * if the given task was not accepted for internal reasons (e.g. a pool overload handling policy or a pool shutdown in progress)
+     */
+    public String schedule(String cron, Runnable run) throws IgniteException {
         try {
             CronTrigger trigger = new CronTrigger(addDoW(cron));
 
@@ -102,24 +113,26 @@ public class SpringScheduler implements IScheduler {
 
             return id.toString();
         }
-        catch (IllegalStateException e) {
-            throw new IgniteSchedulerParseException(e);
-        }
-        catch (TaskRejectedException e) {
-            throw new IgniteSchedulerException(e);
+        catch (IllegalStateException | TaskRejectedException e) {
+            throw new IgniteException(e);
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void deschedule(String id) {
+    /**
+     * @param id Task id to remove from the scheduler
+     */
+    public void deschedule(String id) {
         ScheduledFuture<?> fut = schedFuts.remove(Integer.valueOf(id));
 
         if (fut != null)
             fut.cancel(false);
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isValid(String cron) {
+    /**
+     * @param cron expression
+     * @return true if expression is valid, otherwise false
+     */
+    public boolean isValid(String cron) {
         try {
             new CronSequenceGenerator(addDoW(cron));
 
@@ -130,19 +143,28 @@ public class SpringScheduler implements IScheduler {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void validate(String cron) throws IgniteSchedulerParseException {
+    /**
+     * @param cron expression
+     * @throws IgniteException if cron expression is not valid
+     */
+    public void validate(String cron) throws IgniteException {
         try {
             new CronSequenceGenerator(addDoW(cron));
         }
         catch (IllegalArgumentException e) {
-            throw new IgniteSchedulerParseException(e);
+            throw new IgniteException(e);
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public long[] getNextExecutionTimes(String cron, int cnt,
-        long start) throws IgniteSchedulerParseException {
+    /**
+     * @param cron expression
+     * @param cnt count of executions
+     * @param start time in milliseconds
+     * @return array long[cnt] of the next execition times in milliseconds
+     * @throws IgniteException if cron expression is not valid
+     */
+    public long[] getNextExecutionTimes(String cron, int cnt,
+        long start) throws IgniteException {
         long[] times = new long[cnt];
 
         try {
@@ -157,7 +179,7 @@ public class SpringScheduler implements IScheduler {
             }
         }
         catch (IllegalArgumentException e) {
-            throw new IgniteSchedulerParseException(e);
+            throw new IgniteException(e);
         }
         return times;
     }

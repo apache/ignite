@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.schedule.exception.IgniteSchedulerParseException;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -451,7 +450,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
             fail("IgniteException must have been thrown");
         }
-        catch (IgniteSchedulerParseException e) {
+        catch (IgniteException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -461,7 +460,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
             fail("IgniteException must have been thrown");
         }
-        catch (IgniteSchedulerParseException e) {
+        catch (IgniteException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -471,7 +470,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
             fail("IgniteException must have been thrown");
         }
-        catch (IgniteSchedulerParseException e) {
+        catch (IgniteException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -481,7 +480,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
             fail("IgniteException must have been thrown");
         }
-        catch (IgniteSchedulerParseException e) {
+        catch (IgniteException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -491,7 +490,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
             fail("IgniteException must have been thrown");
         }
-        catch (IgniteSchedulerParseException e) {
+        catch (IgniteException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -501,7 +500,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
             fail("IgniteException must have been thrown");
         }
-        catch (IgniteSchedulerParseException e) {
+        catch (IgniteException e) {
             info("Caught expected exception: " + e);
         }
     }
@@ -523,7 +522,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
             fail("Accepted wrong cron expression");
         }
-        catch (IgniteSchedulerParseException e) {
+        catch (IgniteException e) {
             info("Caught expected exception: " + e);
         }
 

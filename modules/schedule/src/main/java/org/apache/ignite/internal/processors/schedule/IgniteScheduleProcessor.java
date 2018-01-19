@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.schedule.impl.SpringScheduler;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteCallable;
@@ -35,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IgniteScheduleProcessor extends IgniteScheduleProcessorAdapter {
     /** Cron scheduler. */
-    private IScheduler sched;
+    private SpringScheduler sched;
 
     /** Schedule futures. */
     private Set<SchedulerFuture<?>> schedFuts = new GridConcurrentHashSet<>();
@@ -66,11 +65,11 @@ public class IgniteScheduleProcessor extends IgniteScheduleProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> SchedulerFuture<R> schedule(Callable<R> c, String ptrn) {
+    @Override public <R> SchedulerFuture<R> schedule(Callable<R> c, String pattern) {
         assert c != null;
-        assert ptrn != null;
+        assert pattern != null;
 
-        ScheduleFutureImpl<R> fut = new ScheduleFutureImpl<>(sched, ctx, ptrn);
+        ScheduleFutureImpl<R> fut = new ScheduleFutureImpl<>(sched, ctx, pattern);
 
         fut.schedule(c);
 
