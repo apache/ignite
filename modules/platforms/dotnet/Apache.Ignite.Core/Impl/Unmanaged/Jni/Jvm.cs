@@ -237,14 +237,21 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
             var args = GetJvmInitArgs(options);
 
-            IntPtr env;
-            res = JvmDll.Instance.CreateJvm(out jvm, out env, &args);
-            if (res != JniResult.Success)
+            try
             {
-                throw new IgniteException("JNI_CreateJavaVM failed: " + res);
-            }
+                IntPtr env;
+                res = JvmDll.Instance.CreateJvm(out jvm, out env, &args);
+                if (res != JniResult.Success)
+                {
+                    throw new IgniteException("JNI_CreateJavaVM failed: " + res);
+                }
 
-            return jvm;
+                return jvm;
+            }
+            finally 
+            {
+                // TODO: Release unmanaged.
+            }
         }
 
         /// <summary>
@@ -268,6 +275,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
             fixed (JvmOption* a = &opt[0])
             {
+                // TODO: This is troublesome
                 args.options = a;
             }
 
