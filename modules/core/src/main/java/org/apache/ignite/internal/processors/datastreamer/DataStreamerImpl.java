@@ -366,6 +366,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             ctx.grid().getOrCreateCache(ccfg);
         }
+
+        ensureCacheStarted();
     }
 
     /**
@@ -560,8 +562,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         checkSecurityPermission(SecurityPermission.CACHE_PUT);
 
-        ensureCacheStarted();
-
         enterBusy();
 
         try {
@@ -672,8 +672,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             checkSecurityPermission(SecurityPermission.CACHE_REMOVE);
         else
             checkSecurityPermission(SecurityPermission.CACHE_PUT);
-
-        ensureCacheStarted();
 
         KeyCacheObject key0;
         CacheObject val0;
