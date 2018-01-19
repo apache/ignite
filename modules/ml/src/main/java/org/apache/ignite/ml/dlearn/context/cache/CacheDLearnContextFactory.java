@@ -42,7 +42,7 @@ public class CacheDLearnContextFactory<K, V> implements DLearnContextFactory<Cac
     /** */
     private static final long serialVersionUID = 2903867793242785702L;
 
-    /** */
+    /** Template for learning context cache name. */
     private static final String CONTEXT_CACHE_NAME = "%s_LEARNING_CONTEXT_%s";
 
     /** */

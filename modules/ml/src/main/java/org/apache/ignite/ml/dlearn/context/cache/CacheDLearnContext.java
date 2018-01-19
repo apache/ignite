@@ -42,22 +42,30 @@ import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
  * @param <P> type of learning context partition
  */
 public class CacheDLearnContext<P extends AutoCloseable> implements DLearnContext<P> {
-    /** */
+    /** Ignite instance. */
     private final Ignite ignite;
 
-    /** */
+    /** Learning context cache name. */
     private final String learningCtxCacheName;
 
-    /** */
+    /** Partition factory. */
     private final DLearnPartitionFactory<P> partFactory;
 
-    /** */
+    /** Learning context id. */
     private final UUID learningCtxId;
 
-    /** */
+    /** Names of caches which partitions are reserved during computations. */
     private final Collection<String> cacheNames;
 
-    /** */
+    /**
+     * Constructs a new instance of cache learning context.
+     *
+     * @param ignite Ignite instance
+     * @param learningCtxCacheName learning context cache name
+     * @param partFactory partition factory
+     * @param learningCtxId learning context id
+     * @param cacheNames names of caches which partitions are reserved during computations
+     */
     public CacheDLearnContext(Ignite ignite, String learningCtxCacheName, DLearnPartitionFactory<P> partFactory,
         UUID learningCtxId, Collection<String> cacheNames) {
         this.ignite = ignite;
@@ -150,7 +158,15 @@ public class CacheDLearnContext<P extends AutoCloseable> implements DLearnContex
         return transformer.wrapContext(newCtx);
     }
 
-    /** */
+    /**
+     * Reduces results into a single final result.
+     *
+     * @param results results
+     * @param reducer reducer function
+     * @param identity identity
+     * @param <R> type of result
+     * @return single final result
+     */
     private <R> R reduce(Collection<R> results, IgniteBinaryOperator<R> reducer, R identity) {
         R res = identity;
 
@@ -165,7 +181,11 @@ public class CacheDLearnContext<P extends AutoCloseable> implements DLearnContex
         compute(this::closePartition);
     }
 
-    /** */
+    /**
+     * Closes partition.
+     *
+     * @param part partition to be closed
+     */
     private void closePartition(P part) {
         try {
             part.close();
