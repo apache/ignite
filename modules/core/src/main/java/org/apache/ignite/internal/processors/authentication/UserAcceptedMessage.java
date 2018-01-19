@@ -22,7 +22,6 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.marshaller.MappingProposedMessage;
-import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -40,13 +39,13 @@ public class UserAcceptedMessage implements DiscoveryCustomMessage {
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
     /** */
-    private final UserAction usrAction;
+    private final UserManagementOperation op;
 
     /**
-     * @param usrAction User Action
+     * @param op User Action
      */
-    UserAcceptedMessage(UserAction usrAction) {
-        this.usrAction = usrAction;
+    UserAcceptedMessage(UserManagementOperation op) {
+        this.op = op;
     }
 
     /** {@inheritDoc} */
@@ -73,8 +72,8 @@ public class UserAcceptedMessage implements DiscoveryCustomMessage {
     /**
      * @return User action.
      */
-    UserAction userAction() {
-        return usrAction;
+    UserManagementOperation operation() {
+        return op;
     }
 
     /** {@inheritDoc} */

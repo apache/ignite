@@ -18,13 +18,12 @@
 package org.apache.ignite.internal.processors.authentication;
 
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
- import org.apache.ignite.internal.processors.authentication.User;
- import org.apache.ignite.internal.processors.marshaller.MappingAcceptedMessage;
-import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
+import org.apache.ignite.internal.processors.marshaller.MappingAcceptedMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -44,8 +43,9 @@ public class UserProposedMessage implements DiscoveryCustomMessage {
     private enum ProposalStatus {
         /** */
         SUCCESSFUL,
+
         /** */
-        IN_CONFLICT,
+        ERROR,
     }
 
     /** */
@@ -59,19 +59,22 @@ public class UserProposedMessage implements DiscoveryCustomMessage {
 
     /** */
     @GridToStringInclude
-    private final UserAction usrAction;
+    private final UserManagementOperation op;
+
+    /** Error info. */
+    private IgniteCheckedException err;
 
     /** */
     private ProposalStatus status = ProposalStatus.SUCCESSFUL;
 
     /**
-     * @param usrAction User action.
+     * @param op User action.
      * @param origNodeId Orig node id.
      */
-    UserProposedMessage(UserAction usrAction, UUID origNodeId) {
+    UserProposedMessage(UserManagementOperation op, UUID origNodeId) {
         assert origNodeId != null;
 
-        this.usrAction = usrAction;
+        this.op = op;
         this.origNodeId = origNodeId;
     }
 
@@ -85,7 +88,7 @@ public class UserProposedMessage implements DiscoveryCustomMessage {
      */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         if (status == ProposalStatus.SUCCESSFUL)
-            return new UserAcceptedMessage(usrAction);
+            return new UserAcceptedMessage(op);
         else
             return null;
     }
@@ -104,8 +107,8 @@ public class UserProposedMessage implements DiscoveryCustomMessage {
     /**
      * @return User action.
      */
-    UserAction userAction() {
-        return usrAction;
+    UserManagementOperation operation() {
+        return op;
     }
 
     /**
@@ -116,15 +119,30 @@ public class UserProposedMessage implements DiscoveryCustomMessage {
     }
 
     /**
-     * @return {@code true} if conflicted.
+     * @return {@code true} on error.
      */
-    boolean inConflict() {
-        return status == ProposalStatus.IN_CONFLICT;
+    public boolean isError() {
+        return status == ProposalStatus.ERROR;
+    }
+
+    /**
+     * @param err Error info.
+     */
+    public void error(IgniteCheckedException err) {
+        status = ProposalStatus.ERROR;
+
+        this.err = err;
+    }
+
+    /**
+     * @return Error info.
+     */
+    public IgniteCheckedException error() {
+        return err;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(UserProposedMessage.class, this);
     }
-
 }

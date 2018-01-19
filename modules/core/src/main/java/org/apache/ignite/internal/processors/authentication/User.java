@@ -25,7 +25,10 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Objects;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -44,9 +47,11 @@ public class User implements Serializable {
     private final String name;
 
     /** Encrypted password. */
+    @GridToStringExclude
     private String encPasswd;
 
     /** Salt. */
+    @GridToStringExclude
     private byte[] salt;
 
     /** Accepted on cluster. */
@@ -61,6 +66,13 @@ public class User implements Serializable {
         this.name = name;
         this.encPasswd = encPasswd;
         this.salt = salt;
+    }
+
+    /**
+     * @return User name.
+     */
+    public String name() {
+        return name;
     }
 
     /**
@@ -139,5 +151,10 @@ public class User implements Serializable {
     @Override public int hashCode() {
         int result = Objects.hash(name, encPasswd, salt);
         return result;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(User.class, this);
     }
 }
