@@ -1537,13 +1537,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     ) {
         final Map<Integer, Map<Integer, CheckpointEntry>> res = new HashMap<>();
 
+        if (F.isEmpty(part4reserve))
+            return res;
+
         for (Long cpTs : checkpointHist.checkpoints()) {
+            CheckpointEntry chpEntry = null;
+
             try {
-                final CheckpointEntry chpEntry = checkpointHist.entry(cpTs);
+                chpEntry = checkpointHist.entry(cpTs);
 
                 Map<Integer, CheckpointEntry.GroupState> grpsState = chpEntry.groupState(cctx);
 
-                if (grpsState.isEmpty()){
+                if (F.isEmpty(grpsState)) {
                     res.clear();
 
                     continue;
@@ -1579,7 +1584,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     }
                 }
             }
-            catch (IgniteCheckedException ignore) {
+            catch (IgniteCheckedException ex) {
+                String msg = chpEntry != null ?
+                    ", chpId=" + chpEntry.cpId + " ptr=" + chpEntry.cpMark + " ts=" + chpEntry.cpTs : "";
+
+                U.error(log, "Failed to read checkpoint entry" + msg, ex);
+
                 // Treat exception the same way as a gap.
                 res.clear();
             }
@@ -3849,10 +3859,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 AtomicIntegerFieldUpdater.newUpdater(GroupStateLazyStore.class, "initGuard");
 
             /** Cache states. Initialized lazily. */
-            private Map<Integer, GroupState> grpStates;
+            private volatile Map<Integer, GroupState> grpStates;
 
             /** */
-            private volatile CountDownLatch latch;
+            private final CountDownLatch latch;
 
             /** */
             @SuppressWarnings("unused")
@@ -3920,7 +3930,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             private Long partitionCounter(int grpId, int part) {
                 assert initGuard != 0 : initGuard;
 
-                if (initEx != null)
+                if (initEx != null || grpStates == null)
                     return null;
 
                 GroupState state = grpStates.get(grpId);
@@ -3963,6 +3973,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     }
                     catch (IgniteCheckedException e) {
                         initEx = e;
+
+                        throw e;
                     }
                     finally {
                         latch.countDown();
