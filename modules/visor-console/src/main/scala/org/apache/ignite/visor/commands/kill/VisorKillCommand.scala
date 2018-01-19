@@ -127,9 +127,7 @@ class VisorKillCommand extends VisorConsoleCommand {
      * @param args Command arguments.
      */
     def kill(args: String) = breakable {
-        if (!isConnected)
-            adviseToConnect()
-        else {
+        if (checkConnected()) {
             val argLst = parseArgs(args)
 
             val iNodes = hasArgFlag("in", argLst)

@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.datastructures.AtomicDataStructureProxy;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -58,7 +59,7 @@ public class AtomicCacheAffinityConfigurationTest extends GridCommonAbstractTest
 
                 IgniteAtomicLong atomic = igniteEx.atomicLong("test", 0, true);
 
-                GridCacheContext cctx = GridTestUtils.getFieldValue(atomic, "ctx");
+                GridCacheContext cctx = GridTestUtils.getFieldValue(atomic, AtomicDataStructureProxy.class, "ctx");
 
                 AffinityFunction aff = cctx.config().getAffinity();
 
@@ -90,7 +91,7 @@ public class AtomicCacheAffinityConfigurationTest extends GridCommonAbstractTest
 
                 IgniteAtomicLong atomic = igniteEx.atomicLong("test", 0, true);
 
-                GridCacheContext cctx = GridTestUtils.getFieldValue(atomic, "ctx");
+                GridCacheContext cctx = GridTestUtils.getFieldValue(atomic, AtomicDataStructureProxy.class, "ctx");
 
                 TestAffinityFunction aff = (TestAffinityFunction) cctx.config().getAffinity();
 
@@ -122,7 +123,7 @@ public class AtomicCacheAffinityConfigurationTest extends GridCommonAbstractTest
 
                 IgniteAtomicLong atomic = igniteEx.atomicLong("test", 0, true);
 
-                GridCacheContext cctx = GridTestUtils.getFieldValue(atomic, "ctx");
+                GridCacheContext cctx = GridTestUtils.getFieldValue(atomic, AtomicDataStructureProxy.class, "ctx");
 
                 AffinityFunction aff = cctx.config().getAffinity();
 

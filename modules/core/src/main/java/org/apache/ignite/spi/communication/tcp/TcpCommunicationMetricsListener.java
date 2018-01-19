@@ -56,13 +56,13 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
     private final ConcurrentMap<String, LongAdder8> rcvdMsgsCntByType = new ConcurrentHashMap<>();
 
     /** Received messages count grouped by sender. */
-    private final ConcurrentMap<String, LongAdder8> rcvdMsgsCntByNode = new ConcurrentHashMap<>();
+    private final ConcurrentMap<UUID, LongAdder8> rcvdMsgsCntByNode = new ConcurrentHashMap<>();
 
     /** Sent messages count grouped by message type. */
     private final ConcurrentMap<String, LongAdder8> sentMsgsCntByType = new ConcurrentHashMap<>();
 
     /** Sent messages count grouped by receiver. */
-    private final ConcurrentMap<String, LongAdder8> sentMsgsCntByNode = new ConcurrentHashMap<>();
+    private final ConcurrentMap<UUID, LongAdder8> sentMsgsCntByNode = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override public void onBytesSent(int bytesCnt) {
@@ -90,7 +90,7 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
             msg = ((GridIoMessage)msg).message();
 
         LongAdder8 cntByType = F.addIfAbsent(sentMsgsCntByType, msg.getClass().getSimpleName(), LONG_ADDER_FACTORY);
-        LongAdder8 cntByNode = F.addIfAbsent(sentMsgsCntByNode, nodeId.toString(), LONG_ADDER_FACTORY);
+        LongAdder8 cntByNode = F.addIfAbsent(sentMsgsCntByNode, nodeId, LONG_ADDER_FACTORY);
 
         cntByType.increment();
         cntByNode.increment();
@@ -112,7 +112,7 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
             msg = ((GridIoMessage)msg).message();
 
         LongAdder8 cntByType = F.addIfAbsent(rcvdMsgsCntByType, msg.getClass().getSimpleName(), LONG_ADDER_FACTORY);
-        LongAdder8 cntByNode = F.addIfAbsent(rcvdMsgsCntByNode, nodeId.toString(), LONG_ADDER_FACTORY);
+        LongAdder8 cntByNode = F.addIfAbsent(rcvdMsgsCntByNode, nodeId, LONG_ADDER_FACTORY);
 
         cntByType.increment();
         cntByNode.increment();
@@ -160,12 +160,11 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
      * @param srcStat Internal statistics representation.
      * @return Result map.
      */
-    private Map<String, Long> convertStatistics(Map<String, LongAdder8> srcStat) {
-        Map<String, Long> destStat = U.newHashMap(srcStat.size());
+    private <T> Map<T, Long> convertStatistics(Map<T, LongAdder8> srcStat) {
+        Map<T, Long> destStat = U.newHashMap(srcStat.size());
 
-        for (Map.Entry<String, LongAdder8> entry : srcStat.entrySet()) {
+        for (Map.Entry<T, LongAdder8> entry : srcStat.entrySet())
             destStat.put(entry.getKey(), entry.getValue().longValue());
-        }
 
         return destStat;
     }
@@ -184,7 +183,7 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
      *
      * @return Map containing sender nodes and respective counts.
      */
-    public Map<String, Long> receivedMessagesByNode() {
+    public Map<UUID, Long> receivedMessagesByNode() {
         return convertStatistics(rcvdMsgsCntByNode);
     }
 
@@ -202,7 +201,7 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
      *
      * @return Map containing receiver nodes and respective counts.
      */
-    public Map<String, Long> sentMessagesByNode() {
+    public Map<UUID, Long> sentMessagesByNode() {
         return convertStatistics(sentMsgsCntByNode);
     }
 

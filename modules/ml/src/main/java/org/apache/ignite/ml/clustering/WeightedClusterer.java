@@ -33,6 +33,6 @@ public interface WeightedClusterer<P, M extends Model> extends Clusterer<P, M> {
      * @param k count of centers.
      * @param weights Weights.
      */
-    public KMeansModel cluster(P points, int k, List<Double> weights) throws
+    public M cluster(P points, int k, List<Double> weights) throws
         MathIllegalArgumentException, ConvergenceException;
 }

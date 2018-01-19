@@ -387,6 +387,20 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
+    @Override public List<FieldsQueryCursor<List<?>>> queryMultipleStatements(SqlFieldsQuery qry) {
+        GridCacheGateway<K, V> gate = gate();
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
+
+        try {
+            return delegate.queryMultipleStatements(qry);
+        }
+        finally {
+            onLeave(gate, prev);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public <T, R> QueryCursor<R> query(Query<T> qry, IgniteClosure<T, R> transformer) {
         GridCacheGateway<K, V> gate = gate();
 
@@ -1618,6 +1632,20 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void enableStatistics(boolean enabled) {
+        GridCacheGateway<K, V> gate = gate();
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
+
+        try {
+            delegate.enableStatistics(enabled);
+        }
+        finally {
+            onLeave(gate, prev);
+        }
+    }
+
     /**
      * Safely get CacheGateway.
      *
@@ -1640,11 +1668,11 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
         if (delegate instanceof IgniteCacheProxyImpl)
             ((IgniteCacheProxyImpl) delegate).checkRestart();
-        
+
         if (gate == null)
             throw new IllegalStateException("Gateway is unavailable. Probably cache has been destroyed, but proxy is not closed.");
     }
-    
+
     /**
      * @param gate Cache gateway.
      * @param opCtx Cache operation context to guard.
@@ -1652,7 +1680,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
      */
     private CacheOperationContext onEnter(@Nullable GridCacheGateway<K, V> gate, CacheOperationContext opCtx) {
         checkProxyIsValid(gate);
-        
+
         return lock ? gate.enter(opCtx) : gate.enterNoLock(opCtx);
     }
 

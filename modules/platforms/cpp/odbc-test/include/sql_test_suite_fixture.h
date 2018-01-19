@@ -112,7 +112,6 @@ namespace ignite
          * Run query returning single result and check it to be equal to expected.
          *
          * @param request SQL request.
-         * @param expected Expected result.
          * @param type Result type.
          */
         template<typename T>

@@ -75,23 +75,17 @@ public class EventsExample {
 
         Ignite ignite = Ignition.ignite();
 
-        IgnitePredicate<TaskEvent> lsnr = new IgnitePredicate<TaskEvent>() {
-            @Override public boolean apply(TaskEvent evt) {
-                System.out.println("Received task event [evt=" + evt.name() + ", taskName=" + evt.taskName() + ']');
+        IgnitePredicate<TaskEvent> lsnr = evt -> {
+            System.out.println("Received task event [evt=" + evt.name() + ", taskName=" + evt.taskName() + ']');
 
-                return true; // Return true to continue listening.
-            }
+            return true; // Return true to continue listening.
         };
 
         // Register event listener for all local task execution events.
         ignite.events().localListen(lsnr, EVTS_TASK_EXECUTION);
 
         // Generate task events.
-        ignite.compute().withName("example-event-task").run(new IgniteRunnable() {
-            @Override public void run() {
-                System.out.println("Executing sample job.");
-            }
-        });
+        ignite.compute().withName("example-event-task").run(() -> System.out.println("Executing sample job."));
 
         // Unsubscribe local task event listener.
         ignite.events().stopLocalListen(lsnr);
@@ -108,23 +102,17 @@ public class EventsExample {
 
         // This optional local callback is called for each event notification
         // that passed remote predicate listener.
-        IgniteBiPredicate<UUID, TaskEvent> locLsnr = new IgniteBiPredicate<UUID, TaskEvent>() {
-            @Override public boolean apply(UUID nodeId, TaskEvent evt) {
-                // Remote filter only accepts tasks whose name being with "good-task" prefix.
-                assert evt.taskName().startsWith("good-task");
+        IgniteBiPredicate<UUID, TaskEvent> locLsnr = (nodeId, evt) -> {
+            // Remote filter only accepts tasks whose name being with "good-task" prefix.
+            assert evt.taskName().startsWith("good-task");
 
-                System.out.println("Received task event [evt=" + evt.name() + ", taskName=" + evt.taskName());
+            System.out.println("Received task event [evt=" + evt.name() + ", taskName=" + evt.taskName());
 
-                return true; // Return true to continue listening.
-            }
+            return true; // Return true to continue listening.
         };
 
         // Remote filter which only accepts tasks whose name begins with "good-task" prefix.
-        IgnitePredicate<TaskEvent> rmtLsnr = new IgnitePredicate<TaskEvent>() {
-            @Override public boolean apply(TaskEvent evt) {
-                return evt.taskName().startsWith("good-task");
-            }
-        };
+        IgnitePredicate<TaskEvent> rmtLsnr = evt -> evt.taskName().startsWith("good-task");
 
         Ignite ignite = Ignition.ignite();
 

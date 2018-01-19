@@ -659,7 +659,9 @@ public interface Ignite extends AutoCloseable {
      * Checks Ignite grid is active or not active.
      *
      * @return {@code True} if grid is active. {@code False} If grid is not active.
+     * @deprecated Use {@link IgniteCluster#active()} instead.
      */
+    @Deprecated
     public boolean active();
 
     /**
@@ -667,7 +669,9 @@ public interface Ignite extends AutoCloseable {
      *
      * @param active If {@code True} start activation process. If {@code False} start deactivation process.
      * @throws IgniteException If there is an already started transaction or lock in the same thread.
+     * @deprecated Use {@link IgniteCluster#active(boolean)} instead.
      */
+    @Deprecated
     public void active(boolean active);
 
     /**

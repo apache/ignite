@@ -34,7 +34,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Impl.Plugin;
 
     /// <summary>
-    /// Thin client implementation
+    /// Thin client implementation.
     /// </summary>
     internal class IgniteClient : IIgniteInternal, IIgniteClient
     {
@@ -47,6 +47,12 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Binary processor. */
         private readonly IBinaryProcessor _binProc;
 
+        /** Binary. */
+        private readonly IBinary _binary;
+
+        /** Configuration. */
+        private readonly IgniteClientConfiguration _configuration;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteClient"/> class.
         /// </summary>
@@ -55,14 +61,18 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             Debug.Assert(clientConfiguration != null);
 
-            _socket = new ClientSocket(clientConfiguration);
+            _configuration = new IgniteClientConfiguration(clientConfiguration);
 
-            _marsh = new Marshaller(clientConfiguration.BinaryConfiguration)
+            _socket = new ClientSocket(_configuration);
+
+            _marsh = new Marshaller(_configuration.BinaryConfiguration)
             {
                 Ignite = this
             };
 
-            _binProc = clientConfiguration.BinaryProcessor ?? new BinaryProcessorClient(_socket);
+            _binProc = _configuration.BinaryProcessor ?? new BinaryProcessorClient(_socket);
+
+            _binary = new Binary(_marsh);
         }
 
         /// <summary>
@@ -154,7 +164,14 @@ namespace Apache.Ignite.Core.Impl.Client
         /** <inheritDoc /> */
         public IBinary GetBinary()
         {
-            throw GetClientNotSupportedException();
+            return _binary;
+        }
+
+        /** <inheritDoc /> */
+        public IgniteClientConfiguration GetConfiguration()
+        {
+            // Return a copy to allow modifications by the user.
+            return new IgniteClientConfiguration(_configuration);
         }
 
         /** <inheritDoc /> */

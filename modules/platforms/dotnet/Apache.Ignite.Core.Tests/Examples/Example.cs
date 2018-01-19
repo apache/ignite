@@ -73,7 +73,8 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             var examplesAsm = typeof (ClosureExample).Assembly;
 
-            var sourceFiles = Directory.GetFiles(PathUtil.ExamplesSourcePath, "*.cs", SearchOption.AllDirectories);
+            var sourceFiles = Directory.GetFiles(PathUtil.ExamplesSourcePath, "*.cs", SearchOption.AllDirectories)
+                .Where(x => !x.Contains("dotnetcore")).ToArray();
 
             Assert.IsTrue(sourceFiles.Any());
 
@@ -102,7 +103,9 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// </summary>
         private static Action GetRunAction(Type type)
         {
-            return (Action) Delegate.CreateDelegate(typeof (Action), type.GetMethod("Main"));
+            var mainMethod = type.GetMethod("Main");
+            Assert.IsNotNull(mainMethod);
+            return (Action) Delegate.CreateDelegate(typeof (Action), mainMethod);
         }
 
         /// <summary>

@@ -23,7 +23,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.typedef.X;
@@ -116,7 +115,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      * @param entry Entry to add.
      */
     void addTrackedEntry(GridNearCacheEntry entry) {
-        assert Thread.holdsLock(entry);
+        assert entry.lockedByCurrentThread();
 
         EntryWrapper e = new EntryWrapper(entry);
 
@@ -127,7 +126,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      * @param entry Entry to remove.
      */
     void removeTrackedEntry(GridNearCacheEntry entry) {
-        assert Thread.holdsLock(entry);
+        assert entry.lockedByCurrentThread();
 
         pendingEntries.remove(new EntryWrapper(entry));
     }
@@ -145,7 +144,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         try {
             X.println(">>>");
             X.println(">>> TTL processor memory stats [igniteInstanceName=" + cctx.igniteInstanceName() +
-            ", cache=" + cctx.name() + ']');
+                ", cache=" + cctx.name() + ']');
             X.println(">>>   pendingEntriesSize: " + pendingSize());
         }
         catch (IgniteCheckedException e) {

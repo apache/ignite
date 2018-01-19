@@ -117,7 +117,14 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
                         // Set the tokens to the newly allocated container:
                         ctx.setTokens(allTokens.duplicate());
 
-                    Map<String, String> env = new HashMap<>(System.getenv());
+                    Map<String, String> env = new HashMap<>(ctx.getEnvironment());
+
+                    Map<String, String> systemEnv = System.getenv();
+
+                    for (String key : systemEnv.keySet()) {
+                        if (key.matches("^IGNITE_[_0-9A-Z]+$"))
+                            env.put(key, systemEnv.get(key));
+                    }
 
                     env.put("IGNITE_TCP_DISCOVERY_ADDRESSES", getAddress(c.getNodeId().getHost()));
 

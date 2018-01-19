@@ -20,12 +20,17 @@ package org.apache.ignite.ml;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.function.Function;
 import org.apache.ignite.ml.clustering.KMeansLocalClusterer;
 import org.apache.ignite.ml.clustering.KMeansModel;
-import org.apache.ignite.ml.math.EuclideanDistance;
+import org.apache.ignite.ml.knn.models.KNNModel;
+import org.apache.ignite.ml.knn.models.KNNModelFormat;
+import org.apache.ignite.ml.knn.models.KNNStrategy;
+import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.junit.After;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
+import org.apache.ignite.ml.structures.LabeledDataset;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -34,39 +39,63 @@ import org.junit.Test;
  */
 public class LocalModelsTest {
     /** */
-    private String mdlFilePath = "model.mlmod";
-
-    /**
-     *
-     */
-    @After
-    public void cleanUp() throws IOException {
-        Files.deleteIfExists(Paths.get(mdlFilePath));
-    }
-
-    /**
-     *
-     */
     @Test
-    public void importExportKMeansModelTest() {
-        Path mdlPath = Paths.get(mdlFilePath);
+    public void importExportKMeansModelTest() throws IOException {
+        executeModelTest(mdlFilePath -> {
+            KMeansModel mdl = getClusterModel();
 
-        KMeansModel mdl = getClusterModel();
+            Exporter<KMeansModelFormat, String> exporter = new FileExporter<>();
 
-        Exporter<KMeansModelFormat, String> exporter = new FileExporter<>();
-        mdl.saveModel(exporter, mdlFilePath);
+            mdl.saveModel(exporter, mdlFilePath);
 
-        Assert.assertTrue(String.format("File %s not found.", mdlPath.toString()), Files.exists(mdlPath));
+            KMeansModelFormat load = exporter.load(mdlFilePath);
 
-        KMeansModelFormat load = exporter.load(mdlFilePath);
-        KMeansModel importedMdl = new KMeansModel(load.getCenters(), load.getDistance());
+            Assert.assertNotNull(load);
 
-        Assert.assertTrue("", mdl.equals(importedMdl));
+            KMeansModel importedMdl = new KMeansModel(load.getCenters(), load.getDistance());
+
+            Assert.assertTrue("", mdl.equals(importedMdl));
+
+            return null;
+        });
     }
 
-    /**
-     *
-     */
+    /** */
+    @Test
+    public void importExportLinearRegressionModelTest() throws IOException {
+        executeModelTest(mdlFilePath -> {
+            LinearRegressionModel model = new LinearRegressionModel(new DenseLocalOnHeapVector(new double[]{1, 2}), 3);
+            Exporter<LinearRegressionModel, String> exporter = new FileExporter<>();
+            model.saveModel(exporter, mdlFilePath);
+
+            LinearRegressionModel load = exporter.load(mdlFilePath);
+
+            Assert.assertNotNull(load);
+            Assert.assertEquals("", model, load);
+
+            return null;
+        });
+    }
+
+    /** */
+    private void executeModelTest(Function<String, Void> code) throws IOException {
+        Path mdlPath = Files.createTempFile(null, null);
+
+        Assert.assertNotNull(mdlPath);
+
+        try {
+            String mdlFilePath = mdlPath.toAbsolutePath().toString();
+
+            Assert.assertTrue(String.format("File %s not found.", mdlFilePath), Files.exists(mdlPath));
+
+            code.apply(mdlFilePath);
+        }
+        finally {
+            Files.deleteIfExists(mdlPath);
+        }
+    }
+
+    /** */
     private KMeansModel getClusterModel() {
         KMeansLocalClusterer clusterer = new KMeansLocalClusterer(new EuclideanDistance(), 1, 1L);
 
@@ -76,5 +105,38 @@ public class LocalModelsTest {
         DenseLocalOnHeapMatrix points = new DenseLocalOnHeapMatrix(new double[][] {v1, v2});
 
         return clusterer.cluster(points, 1);
+    }
+
+    /** */
+    @Test
+    public void importExportKNNModelTest() throws IOException {
+        executeModelTest(mdlFilePath -> {
+            double[][] mtx =
+                new double[][] {
+                    {1.0, 1.0},
+                    {1.0, 2.0},
+                    {2.0, 1.0},
+                    {-1.0, -1.0},
+                    {-1.0, -2.0},
+                    {-2.0, -1.0}};
+            double[] lbs = new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0};
+
+            LabeledDataset training = new LabeledDataset(mtx, lbs);
+
+            KNNModel mdl = new KNNModel(3, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
+
+            Exporter<KNNModelFormat, String> exporter = new FileExporter<>();
+            mdl.saveModel(exporter, mdlFilePath);
+
+            KNNModelFormat load = exporter.load(mdlFilePath);
+
+            Assert.assertNotNull(load);
+
+            KNNModel importedMdl = new KNNModel(load.getK(), load.getDistanceMeasure(), load.getStgy(), load.getTraining());
+
+            Assert.assertTrue("", mdl.equals(importedMdl));
+
+            return null;
+        });
     }
 }
