@@ -178,7 +178,8 @@ public class CacheDLearnContextTest extends GridCommonAbstractTest {
             }, (a, b) -> 42)).start();
             // wait all computations to start
 
-            while (numOfStartedComputations.get() < partitions) {}
+            while (numOfStartedComputations.get() < partitions) {
+            }
 
             assertTrue("During computation all partitions should be reserved",
                 areAllPartitionsReserved(data.getName(), ctx.getLearningCtxCacheName()));
@@ -223,7 +224,8 @@ public class CacheDLearnContextTest extends GridCommonAbstractTest {
             })).start();
             // wait all computations to start
 
-            while (numOfStartedComputations.get() < partitions) {}
+            while (numOfStartedComputations.get() < partitions) {
+            }
 
             assertTrue("During computation all partitions should be reserved",
                 areAllPartitionsReserved(data.getName(), ctx.getLearningCtxCacheName()));
@@ -250,7 +252,7 @@ public class CacheDLearnContextTest extends GridCommonAbstractTest {
         CacheDLearnContextFactory<Integer, String> ctxFactory = new CacheDLearnContextFactory<>(ignite, data);
         CacheDLearnContext<CacheDLearnPartition<Integer, String>> ctx = ctxFactory.createContext();
 
-        DLearnDataset<?> dataset = ctx.transform(DLearnContextTransformers.cacheToDataset( (k, v) -> new double[10] ));
+        DLearnDataset<?> dataset = ctx.transform(DLearnContextTransformers.cacheToDataset((k, v) -> new double[10]));
 
         assertTrue("Before computation all partitions should not be reserved",
             areAllPartitionsNotReserved(data.getName(), ctx.getLearningCtxCacheName()));
@@ -272,7 +274,8 @@ public class CacheDLearnContextTest extends GridCommonAbstractTest {
             }, (a, b) -> 42)).start();
             // wait all computations to start
 
-            while (numOfStartedComputations.get() < partitions) {}
+            while (numOfStartedComputations.get() < partitions) {
+            }
 
             assertTrue("During computation all partitions of the context cache should be reserved",
                 areAllPartitionsReserved(ctx.getLearningCtxCacheName()));
@@ -301,7 +304,7 @@ public class CacheDLearnContextTest extends GridCommonAbstractTest {
         CacheDLearnContextFactory<Integer, String> ctxFactory = new CacheDLearnContextFactory<>(ignite, data);
         CacheDLearnContext<CacheDLearnPartition<Integer, String>> ctx = ctxFactory.createContext();
 
-        DLearnDataset<?> dataset = ctx.transform(DLearnContextTransformers.cacheToDataset( (k, v) -> new double[10] ));
+        DLearnDataset<?> dataset = ctx.transform(DLearnContextTransformers.cacheToDataset((k, v) -> new double[10]));
 
         assertTrue("Before computation all partitions should not be reserved",
             areAllPartitionsNotReserved(data.getName(), ctx.getLearningCtxCacheName()));
@@ -322,7 +325,8 @@ public class CacheDLearnContextTest extends GridCommonAbstractTest {
             })).start();
             // wait all computations to start
 
-            while (numOfStartedComputations.get() < partitions) {}
+            while (numOfStartedComputations.get() < partitions) {
+            }
 
             assertTrue("During computation all partitions of the context cache should be reserved",
                 areAllPartitionsReserved(ctx.getLearningCtxCacheName()));
@@ -400,7 +404,7 @@ public class CacheDLearnContextTest extends GridCommonAbstractTest {
             Map<UUID, IgniteInstancePartitionsState> instances = new HashMap<>();
 
             for (Ignite ignite : G.allGrids()) {
-                IgniteKernal igniteKernal = (IgniteKernal) ignite;
+                IgniteKernal igniteKernal = (IgniteKernal)ignite;
                 IgniteCacheProxy<?, ?> cache = igniteKernal.context().cache().jcache(cacheName);
 
                 GridDhtCacheAdapter<?, ?> dht = dht(cache);
@@ -442,9 +446,12 @@ public class CacheDLearnContextTest extends GridCommonAbstractTest {
                     .append(instanceState.topVer.minorTopologyVersion())
                     .append("] contains following partitions:")
                     .append("\n\n");
-                builder.append("\t\t-----------------------------------------------------------------------------------------------------\n");
-                builder.append("\t\t|  ID  |   STATE  |  RELOAD  |  RESERVATIONS  |  SHOULD BE RENTING  |  PRIMARY  |  DATA STORE SIZE  |\n");
-                builder.append("\t\t-----------------------------------------------------------------------------------------------------\n");
+                builder.append("\t\t---------------------------------------------------------------------------------");
+                builder.append("--------------------\n");
+                builder.append("\t\t|  ID  |   STATE  |  RELOAD  |  RESERVATIONS  |  SHOULD BE RENTING  |  PRIMARY  |");
+                builder.append("  DATA STORE SIZE  |\n");
+                builder.append("\t\t---------------------------------------------------------------------------------");
+                builder.append("--------------------\n");
                 for (GridDhtLocalPartition partition : instanceState.parts)
                     if (partition != null) {
                         builder.append("\t\t")
@@ -456,7 +463,8 @@ public class CacheDLearnContextTest extends GridCommonAbstractTest {
                             .append(String.format(" %8s  |", partition.primary(instanceState.topVer)))
                             .append(String.format(" %16d  |", partition.dataStore().fullSize()))
                             .append("\n");
-                        builder.append("\t\t-----------------------------------------------------------------------------------------------------\n");
+                        builder.append("\t\t-------------------------------------------------------------------------");
+                        builder.append("----------------------------\n");
                     }
             }
             return builder.toString();
