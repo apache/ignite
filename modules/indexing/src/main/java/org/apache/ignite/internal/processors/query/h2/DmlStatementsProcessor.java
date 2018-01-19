@@ -1001,12 +1001,18 @@ public class DmlStatementsProcessor {
         }
     }
 
-    public BulkLoadContext bulkLoad(SqlBulkLoadCommand cmd) {
+    public BulkLoadContext bulkLoad(SqlBulkLoadCommand cmd) throws IgniteCheckedException {
         BulkLoadParser inputParser = BulkLoadParser.createParser(cmd.inputFormat());
 
         GridH2Table table = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
-        BulkLoadEntryConverter dataConverter = new H2BulkLoadEntryConvertor(table);
+        final UpdatePlan plan = UpdatePlanBuilder.planForBulkLoad(cmd, idx);
+
+        BulkLoadEntryConverter dataConverter = new BulkLoadEntryConverter() {
+            @Override public IgniteBiTuple<?, ?> convertRecord(List<?> record) throws IgniteCheckedException {
+                return plan.processRow(record);
+            }
+        };
 
         GridCacheContext cache = table.cache();
 

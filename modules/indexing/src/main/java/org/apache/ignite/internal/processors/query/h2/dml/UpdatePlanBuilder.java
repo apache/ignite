@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUnion;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUpdate;
+import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -114,6 +115,168 @@ public final class UpdatePlanBuilder {
     @SuppressWarnings("ConstantConditions")
     private static UpdatePlan planForInsert(GridSqlStatement stmt, boolean loc, IgniteH2Indexing idx,
         @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQuery) throws IgniteCheckedException {
+        GridSqlQuery sel;
+
+        GridSqlElement target;
+
+        GridSqlColumn[] cols;
+
+        boolean isTwoStepSubqry;
+
+        int rowsNum;
+
+        GridSqlTable tbl;
+
+        GridH2RowDescriptor desc;
+
+        List<GridSqlElement[]> elRows = null;
+
+        if (stmt instanceof GridSqlInsert) {
+            GridSqlInsert ins = (GridSqlInsert) stmt;
+            target = ins.into();
+
+            tbl = DmlAstUtils.gridTableForElement(target);
+            desc = tbl.dataTable().rowDescriptor();
+
+            cols = ins.columns();
+            sel = DmlAstUtils.selectForInsertOrMerge(cols, ins.rows(), ins.query());
+
+            if (sel == null)
+                elRows = ins.rows();
+
+            isTwoStepSubqry = (ins.query() != null);
+            rowsNum = isTwoStepSubqry ? 0 : ins.rows().size();
+        }
+        else if (stmt instanceof GridSqlMerge) {
+            GridSqlMerge merge = (GridSqlMerge) stmt;
+
+            target = merge.into();
+
+            tbl = DmlAstUtils.gridTableForElement(target);
+            desc = tbl.dataTable().rowDescriptor();
+
+            cols = merge.columns();
+            sel = DmlAstUtils.selectForInsertOrMerge(cols, merge.rows(), merge.query());
+
+            if (sel == null)
+                elRows = merge.rows();
+
+            isTwoStepSubqry = (merge.query() != null);
+            rowsNum = isTwoStepSubqry ? 0 : merge.rows().size();
+        }
+        else {
+            throw new IgniteSQLException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
+                IgniteQueryErrorCode.UNEXPECTED_OPERATION);
+        }
+
+        // Let's set the flag only for subqueries that have their FROM specified.
+        isTwoStepSubqry &= (sel != null && (sel instanceof GridSqlUnion ||
+            (sel instanceof GridSqlSelect && ((GridSqlSelect) sel).from() != null)));
+
+        int keyColIdx = -1;
+        int valColIdx = -1;
+
+        boolean hasKeyProps = false;
+        boolean hasValProps = false;
+
+        if (desc == null)
+            throw new IgniteSQLException("Row descriptor undefined for table '" + tbl.dataTable().getName() + "'",
+                IgniteQueryErrorCode.NULL_TABLE_DESCRIPTOR);
+
+        GridCacheContext<?, ?> cctx = desc.context();
+
+        String[] colNames = new String[cols.length];
+
+        int[] colTypes = new int[cols.length];
+
+        for (int i = 0; i < cols.length; i++) {
+            GridSqlColumn col = cols[i];
+
+            String colName = col.columnName();
+
+            colNames[i] = colName;
+
+            colTypes[i] = col.resultType().type();
+
+            int colId = col.column().getColumnId();
+            if (desc.isKeyColumn(colId)) {
+                keyColIdx = i;
+                continue;
+            }
+
+            if (desc.isValueColumn(colId)) {
+                valColIdx = i;
+                continue;
+            }
+
+            GridQueryProperty prop = desc.type().property(colName);
+
+            assert prop != null : "Property '" + colName + "' not found.";
+
+            if (prop.key())
+                hasKeyProps = true;
+            else
+                hasValProps = true;
+        }
+
+        KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true, false);
+        KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false, false);
+
+        String selectSql = sel != null ? sel.getSQL() : null;
+
+        DmlDistributedPlanInfo distributed = (rowsNum == 0 && !F.isEmpty(selectSql)) ?
+            checkPlanCanBeDistributed(idx, conn, fieldsQuery, loc, selectSql, tbl.dataTable().cacheName()) : null;
+
+        UpdateMode mode = stmt instanceof GridSqlMerge ? UpdateMode.MERGE : UpdateMode.INSERT;
+
+        List<List<DmlArgument>> rows = null;
+
+        if (elRows != null) {
+            assert sel == null;
+
+            rows = new ArrayList<>(elRows.size());
+
+            for (GridSqlElement[] elRow : elRows) {
+                List<DmlArgument> row = new ArrayList<>(cols.length);
+
+                for (GridSqlElement el : elRow) {
+                    DmlArgument arg = DmlArguments.create(el);
+
+                    row.add(arg);
+                }
+
+                rows.add(row);
+            }
+        }
+
+        return new UpdatePlan(
+            mode,
+            tbl.dataTable(),
+            colNames,
+            colTypes,
+            keySupplier,
+            valSupplier,
+            keyColIdx,
+            valColIdx,
+            selectSql,
+            !isTwoStepSubqry,
+            rows,
+            rowsNum,
+            null,
+            distributed
+        );
+    }
+
+    /**
+     * Prepare update plan for COPY command (AKA bulk load).
+     *
+     * @param cmd Bulk load command
+     * @param idx Ignite indexing meta-object.
+     * @return The update plan for this
+     * @throws IgniteCheckedException if failed.
+     */
+    @SuppressWarnings("ConstantConditions")
+    public static UpdatePlan planForBulkLoad(SqlBulkLoadCommand cmd, IgniteH2Indexing idx) throws IgniteCheckedException {
         GridSqlQuery sel;
 
         GridSqlElement target;
