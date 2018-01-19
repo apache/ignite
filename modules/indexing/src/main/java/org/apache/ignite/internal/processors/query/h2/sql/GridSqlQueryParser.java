@@ -408,10 +408,13 @@ public class GridSqlQueryParser {
     /** */
     private static final Getter<Command, String> REMAINING;
 
+    /** */
+    public static final String ORG_H2_COMMAND_COMMAND_LIST = "org.h2.command.CommandList";
+
     static {
         try {
             CLS_COMMAND_LIST = (Class<? extends Command>)CommandContainer.class.getClassLoader()
-                .loadClass("org.h2.command.CommandList");
+                .loadClass(ORG_H2_COMMAND_COMMAND_LIST);
 
             LIST_COMMAND = getter(CLS_COMMAND_LIST, "command");
 
@@ -517,6 +520,16 @@ public class GridSqlQueryParser {
     }
 
     /**
+     * @param stmt Prepared statement to check.
+     * @return {@code true} in case of multiple statements.
+     */
+    public static boolean checkMultipleStatements(PreparedStatement stmt) {
+        Command cmd = COMMAND.get((JdbcPreparedStatement)stmt);
+
+        return ORG_H2_COMMAND_COMMAND_LIST.equals(cmd.getClass().getName());
+    }
+
+    /**
      * @param stmt Prepared statement.
      * @return Parsed select.
      */
@@ -540,7 +553,7 @@ public class GridSqlQueryParser {
         else {
             Class<?> cmdCls = cmd.getClass();
 
-            if (cmdCls.getName().equals("org.h2.command.CommandList")) {
+            if (cmdCls.getName().equals(ORG_H2_COMMAND_COMMAND_LIST)) {
                 return new PreparedWithRemaining(PREPARED.get(LIST_COMMAND.get(cmd)), REMAINING.get(cmd));
             }
             else
@@ -1495,7 +1508,7 @@ public class GridSqlQueryParser {
         try {
             return Integer.parseInt(val);
         }
-        catch (NumberFormatException e) {
+        catch (NumberFormatException ignored) {
             throw new IgniteSQLException("Parameter value must be an integer [name=" + name + ", value=" + val + ']',
                 IgniteQueryErrorCode.PARSING);
         }

@@ -52,7 +52,8 @@ public interface FileIO extends AutoCloseable {
      *
      * @param destBuf Destination byte buffer.
      *
-     * @return Number of read bytes.
+     * @return Number of read bytes, or <tt>-1</tt> if the
+     *          given position is greater than or equal to the file's current size
      *
      * @throws IOException If some I/O error occurs.
      */
@@ -65,7 +66,9 @@ public interface FileIO extends AutoCloseable {
      * @param destBuf Destination byte buffer.
      * @param position Starting position of file.
      *
-     * @return Number of read bytes.
+     * @return Number of read bytes, possibly zero, or <tt>-1</tt> if the
+     *          given position is greater than or equal to the file's current
+     *          size
      *
      * @throws IOException If some I/O error occurs.
      */

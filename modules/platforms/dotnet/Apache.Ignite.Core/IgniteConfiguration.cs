@@ -1095,7 +1095,7 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Gets or sets the user attributes for this node.
         /// <para />
-        /// These attributes can be retrieved later via <see cref="IClusterNode.GetAttributes"/>.
+        /// These attributes can be retrieved later via <see cref="IBaselineNode.Attributes"/>.
         /// Environment variables are added to node attributes automatically.
         /// NOTE: attribute names starting with "org.apache.ignite" are reserved for internal use.
         /// </summary>
@@ -1377,7 +1377,7 @@ namespace Apache.Ignite.Core
 
         /// <summary>
         /// Gets or sets a value indicating whether grid should be active on start.
-        /// See also <see cref="IIgnite.IsActive"/> and <see cref="IIgnite.SetActive"/>.
+        /// See also <see cref="ICluster.IsActive"/> and <see cref="ICluster.SetActive"/>.
         /// <para />
         /// This property is ignored when <see cref="DataStorageConfiguration"/> is present:
         /// cluster is always inactive on start when Ignite Persistence is enabled.

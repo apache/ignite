@@ -325,7 +325,7 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
      */
     private CacheMetricsMXBean mxBean(int nodeIdx, String cacheName, Class<? extends CacheMetricsMXBean> clazz)
         throws MalformedObjectNameException {
-        ObjectName mbeanName = U.makeCacheMBeanName(getTestIgniteInstanceName(nodeIdx), cacheName,
+        ObjectName mbeanName = U.makeMBeanName(getTestIgniteInstanceName(nodeIdx), cacheName,
             clazz.getName());
 
         MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();

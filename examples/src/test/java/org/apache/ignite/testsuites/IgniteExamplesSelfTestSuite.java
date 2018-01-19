@@ -50,7 +50,7 @@ import org.apache.ignite.examples.TaskExamplesSelfTest;
 /**
  * Examples test suite.
  * <p>
- * Contains only Spring ignite examples tests.
+ * Contains all Ignite examples tests.</p>
  */
 public class IgniteExamplesSelfTestSuite extends TestSuite {
     /**
@@ -95,6 +95,9 @@ public class IgniteExamplesSelfTestSuite extends TestSuite {
         // Binary.
         suite.addTest(new TestSuite(CacheClientBinaryExampleTest.class));
         suite.addTest(new TestSuite(ComputeClientBinaryExampleTest.class));
+
+        // ML Grid.
+        suite.addTest(IgniteExamplesMLTestSuite.suite());
 
         return suite;
     }
