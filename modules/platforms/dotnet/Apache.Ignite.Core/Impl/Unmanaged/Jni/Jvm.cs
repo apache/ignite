@@ -41,10 +41,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /** Options to enable startup on Java 9. */
         private static readonly string[] Java9Options =
         {
-            "--add-exports java.base/jdk.internal.misc=ALL-UNNAMED",
-            "--add-exports java.base/sun.nio.ch=ALL-UNNAMED",
-            "--add-exports java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED",
-            "--add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED"
+            "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED",
+            "--add-exports=java.base/sun.nio.ch=ALL-UNNAMED",
+            "--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED",
+            "--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED"
         };
 
         /** */
