@@ -3042,7 +3042,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 writtenPagesCntr = null;
 
-                syncedPagesCntr = null;
+                // syncedPagesCntr = null;
 
                 currCheckpointPagesCnt = 0;
             }
