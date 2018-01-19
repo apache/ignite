@@ -139,7 +139,7 @@ class QuickSortRecursiveTask implements Callable<Void> {
             Callable<Void> t2 = new QuickSortRecursiveTask(buf.bufferOfRange(centerIdx, limit), settings);
 
             if (settings.stgy.forkNow()) {
-                settings.forkSubmitter.apply(t2); //not all threads working or half of threads are already write
+                settings.forkSubmitter.apply(t2); //not all threads working
                 t1.call();
             }
             else {

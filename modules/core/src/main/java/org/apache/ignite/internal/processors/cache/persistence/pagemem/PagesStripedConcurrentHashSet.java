@@ -207,7 +207,9 @@ public class PagesStripedConcurrentHashSet extends AbstractSet<FullPageId> imple
          */
         private FullPageIdsIterator() {
             advanceSet();
-            advance();
+
+            if (curSetIter != null)
+                advance();
         }
 
         /**
