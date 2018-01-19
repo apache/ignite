@@ -17,18 +17,21 @@
 
 package org.apache.ignite.ml.dlearn.context.cache;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
-import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.ml.dlearn.DLearnContext;
 import org.apache.ignite.ml.dlearn.DLearnPartitionFactory;
 import org.apache.ignite.ml.dlearn.DLearnPartitionStorage;
-import org.apache.ignite.ml.dlearn.utils.DLearnContextPartitionKey;
 import org.apache.ignite.ml.dlearn.context.transformer.DLearnContextTransformer;
+import org.apache.ignite.ml.dlearn.utils.DLearnContextPartitionKey;
 import org.apache.ignite.ml.math.functions.IgniteBiConsumer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
@@ -52,62 +55,79 @@ public class CacheDLearnContext<P extends AutoCloseable> implements DLearnContex
     private final UUID learningCtxId;
 
     /** */
+    private final Collection<String> cacheNames;
+
+    /** */
     public CacheDLearnContext(Ignite ignite, String learningCtxCacheName, DLearnPartitionFactory<P> partFactory,
-        UUID learningCtxId) {
+        UUID learningCtxId, Collection<String> cacheNames) {
         this.ignite = ignite;
         this.learningCtxCacheName = learningCtxCacheName;
         this.partFactory = partFactory;
         this.learningCtxId = learningCtxId;
+        this.cacheNames = cacheNames;
     }
 
     /** {@inheritDoc} */
-    public <R> R compute(IgniteBiFunction<P, Integer, R> mapper, IgniteBinaryOperator<R> reducer) {
+    public <R> R compute(IgniteBiFunction<P, Integer, R> mapper, IgniteBinaryOperator<R> reducer, R identity) {
         ClusterGroup clusterGrp = ignite.cluster().forDataNodes(learningCtxCacheName);
 
-        Collection<R> results = ignite.compute(clusterGrp).broadcast(() -> {
-            IgniteCache<DLearnContextPartitionKey, byte[]> learningCtxCache = ignite.cache(learningCtxCacheName);
+        IgniteCache<DLearnContextPartitionKey, byte[]> learningCtxCache = ignite.cache(learningCtxCacheName);
 
-            Affinity<?> affinity = ignite.affinity(learningCtxCacheName);
-            ClusterNode locNode = ignite.cluster().localNode();
+        Affinity<?> affinity = ignite.affinity(learningCtxCacheName);
 
-            int[] partitions = affinity.primaryPartitions(locNode);
-            R res = null;
+        List<IgniteFuture<R>> futures = new ArrayList<>(affinity.partitions());
 
-            for (int part : partitions) {
-                DLearnPartitionStorage storage = new CacheDLearnPartitionStorage(learningCtxCache, learningCtxId, part);
+        for (int part = 0; part < affinity.partitions(); part++) {
+            int currPart = part;
+            IgniteFuture<R> fut = ignite.compute(clusterGrp).affinityCallAsync(
+                cacheNames,
+                part,
+                () -> {
+                    DLearnPartitionStorage storage = new CacheDLearnPartitionStorage(learningCtxCache, learningCtxId, currPart);
 
-                P learningCtxPart = partFactory.createPartition(storage);
-                R partRes = mapper.apply(learningCtxPart, part);
+                    P learningCtxPart = partFactory.createPartition(storage);
 
-                res = reducer.apply(res, partRes);
-            }
+                    return mapper.apply(learningCtxPart, currPart);
+                }
+            );
+            futures.add(fut);
+        }
 
-            return res;
-        });
+        List<R> results = new ArrayList<>(affinity.partitions());
+        for (IgniteFuture<R> future : futures)
+            results.add(future.get());
 
-        return reduce(results, reducer);
+        return reduce(results, reducer, identity);
     }
 
     /** {@inheritDoc} */
     @Override public void compute(IgniteBiConsumer<P, Integer> mapper) {
         ClusterGroup clusterGrp = ignite.cluster().forDataNodes(learningCtxCacheName);
 
-        ignite.compute(clusterGrp).broadcast(() -> {
-            IgniteCache<DLearnContextPartitionKey, byte[]> learningCtxCache = ignite.cache(learningCtxCacheName);
+        IgniteCache<DLearnContextPartitionKey, byte[]> learningCtxCache = ignite.cache(learningCtxCacheName);
 
-            Affinity<?> affinity = ignite.affinity(learningCtxCacheName);
-            ClusterNode locNode = ignite.cluster().localNode();
+        Affinity<?> affinity = ignite.affinity(learningCtxCacheName);
 
-            int[] partitions = affinity.primaryPartitions(locNode);
+        List<IgniteFuture<Void>> futures = new ArrayList<>(affinity.partitions());
 
-            for (int part : partitions) {
-                DLearnPartitionStorage storage = new CacheDLearnPartitionStorage(learningCtxCache, learningCtxId, part);
+        for (int part = 0; part < affinity.partitions(); part++) {
+            int currPart = part;
+            IgniteFuture<Void> fut = ignite.compute(clusterGrp).affinityRunAsync(
+                cacheNames,
+                part,
+                () -> {
+                    DLearnPartitionStorage storage = new CacheDLearnPartitionStorage(learningCtxCache, learningCtxId, currPart);
 
-                P learningCtxPart = partFactory.createPartition(storage);
+                    P learningCtxPart = partFactory.createPartition(storage);
 
-                mapper.accept(learningCtxPart, part);
-            }
-        });
+                    mapper.accept(learningCtxPart, currPart);
+                }
+            );
+            futures.add(fut);
+        }
+
+        for (IgniteFuture<Void> future : futures)
+            future.get();
     }
 
     /** {@inheritDoc} */
@@ -124,14 +144,15 @@ public class CacheDLearnContext<P extends AutoCloseable> implements DLearnContex
             transformer.transform(part, newPart);
         });
 
-        DLearnContext<T> newCtx = new CacheDLearnContext<>(ignite, learningCtxCacheName, transformer, newLearnCtxId);
+        DLearnContext<T> newCtx = new CacheDLearnContext<>(ignite, learningCtxCacheName, transformer, newLearnCtxId,
+            Collections.singletonList(learningCtxCacheName));
 
         return transformer.wrapContext(newCtx);
     }
 
     /** */
-    private <R> R reduce(Collection<R> results, IgniteBinaryOperator<R> reducer) {
-        R res = null;
+    private <R> R reduce(Collection<R> results, IgniteBinaryOperator<R> reducer, R identity) {
+        R res = identity;
 
         for (R partRes : results)
             res = reducer.apply(res, partRes);

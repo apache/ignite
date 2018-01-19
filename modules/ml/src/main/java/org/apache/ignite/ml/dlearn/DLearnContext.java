@@ -39,10 +39,40 @@ public interface DLearnContext<P extends AutoCloseable> extends AutoCloseable {
      *
      * @param mapper mapper function applied on every partition
      * @param reducer reducer of the results
+     * @param identity identity value
      * @param <R> result type
      * @return final reduced result
      */
-    public <R> R compute(IgniteBiFunction<P, Integer, R> mapper, IgniteBinaryOperator<R> reducer);
+    public <R> R compute(IgniteBiFunction<P, Integer, R> mapper, IgniteBinaryOperator<R> reducer, R identity);
+
+    /**
+     * Computes a given function on every d-learn partition in current learning context independently and then reduces
+     * results into one final single result. The goal of this approach is to perform {@code mapper} locally on the nodes
+     * where partitions are placed and do not involve network subsystem where it's possible.
+     *
+     * @param mapper mapper function applied on every partition
+     * @param reducer reducer of the results
+     * @param <R> result type
+     * @return final reduced result
+     */
+    default public <R> R compute(IgniteBiFunction<P, Integer, R> mapper, IgniteBinaryOperator<R> reducer) {
+        return compute(mapper, reducer, null);
+    }
+
+    /**
+     * Computes a given function on every d-learn partition in current learning context independently and then reduces
+     * results into one final single result. The goal of this approach is to perform {@code mapper} locally on the nodes
+     * where partitions are placed and do not involve network subsystem where it's possible.
+     *
+     * @param mapper mapper function applied on every partition
+     * @param reducer reducer of the results
+     * @param identity identity value
+     * @param <R> result type
+     * @return final reduced result
+     */
+    default public <R> R compute(IgniteFunction<P, R> mapper, IgniteBinaryOperator<R> reducer, R identity) {
+        return compute((part, partIdx) -> mapper.apply(part), reducer, identity);
+    }
 
     /**
      * Computes a given function on every d-learn partition in current learning context independently and then reduces

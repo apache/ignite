@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.dlearn.context.cache;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -75,7 +76,8 @@ public class CacheDLearnContextFactory<K, V> implements DLearnContextFactory<Cac
             part.setPart(partIdx);
         }
 
-        return new CacheDLearnContext<>(ignite, learningCtxCache.getName(), CacheDLearnPartition::new, learningCtxId);
+        return new CacheDLearnContext<>(ignite, learningCtxCache.getName(), CacheDLearnPartition::new, learningCtxId,
+            Arrays.asList(upstreamCache.getName(), learningCtxCache.getName()));
     }
 
     /**

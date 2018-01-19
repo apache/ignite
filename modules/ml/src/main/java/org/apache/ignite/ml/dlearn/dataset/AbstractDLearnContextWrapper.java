@@ -45,8 +45,9 @@ public class AbstractDLearnContextWrapper<P extends AutoCloseable> implements DL
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R compute(IgniteBiFunction<P, Integer, R> mapper, IgniteBinaryOperator<R> reducer) {
-        return delegate.compute(mapper, reducer);
+    @Override public <R> R compute(IgniteBiFunction<P, Integer, R> mapper, IgniteBinaryOperator<R> reducer,
+        R identity) {
+        return delegate.compute(mapper, reducer, identity);
     }
 
     /** {@inheritDoc} */

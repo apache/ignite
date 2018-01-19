@@ -56,8 +56,9 @@ public class LocalDLearnContext<P extends AutoCloseable> implements DLearnContex
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R compute(IgniteBiFunction<P, Integer, R> mapper, IgniteBinaryOperator<R> reducer) {
-        R res = null;
+    @Override public <R> R compute(IgniteBiFunction<P, Integer, R> mapper, IgniteBinaryOperator<R> reducer,
+        R identity) {
+        R res = identity;
         for (int partIdx = 0; partIdx < partitions; partIdx++) {
             DLearnPartitionStorage storage = new LocalDLearnPartitionStorage(learningCtxMap, learningCtxId, partIdx);
 

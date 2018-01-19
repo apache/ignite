@@ -17,12 +17,27 @@
 
 package org.apache.ignite.ml.dlearn.context.cache;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.ml.dlearn.context.transformer.DLearnContextTransformers;
 import org.apache.ignite.ml.dlearn.dataset.DLearnDataset;
 import org.apache.ignite.ml.dlearn.utils.DLearnContextPartitionKey;
@@ -131,6 +146,352 @@ public class CacheDLearnContextTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests that partitions of upstream cache and context cache are reserved during computations on base learning
+     * context. Reservation means that partitions won't be unloaded from the node before computation will be completed.
+     */
+    public void testPartitionExchangeDuringComputeWithReturnCallOnBaseContext() {
+        int partitions = 4;
+
+        IgniteCache<Integer, String> data = generateTestData(4, 0);
+
+        // create learning context
+        CacheDLearnContextFactory<Integer, String> ctxFactory = new CacheDLearnContextFactory<>(ignite, data);
+        CacheDLearnContext<CacheDLearnPartition<Integer, String>> ctx = ctxFactory.createContext();
+
+        assertTrue("Before computation all partitions should not be reserved",
+            areAllPartitionsNotReserved(data.getName(), ctx.getLearningCtxCacheName()));
+
+        IgniteAtomicLong numOfStartedComputations = ignite.atomicLong(UUID.randomUUID().toString(), 0, true);
+
+        IgniteLock computationsLock = ignite.reentrantLock(UUID.randomUUID().toString(), false, true, true);
+
+        // lock computations lock to stop computations in the middle
+        computationsLock.lock();
+
+        try {
+            new Thread(() -> ctx.compute((part, partIndex) -> {
+                // track number of started computations
+                numOfStartedComputations.incrementAndGet();
+                computationsLock.lock();
+                computationsLock.unlock();
+                return 42;
+            }, (a, b) -> 42)).start();
+            // wait all computations to start
+
+            while (numOfStartedComputations.get() < partitions) {}
+
+            assertTrue("During computation all partitions should be reserved",
+                areAllPartitionsReserved(data.getName(), ctx.getLearningCtxCacheName()));
+        }
+        finally {
+            computationsLock.unlock();
+        }
+
+        assertTrue("All partitions should be released",
+            areAllPartitionsNotReserved(data.getName(), ctx.getLearningCtxCacheName()));
+    }
+
+    /**
+     * Tests that partitions of upstream cache and context cache are reserved during computations on base learning
+     * context. Reservation means that partitions won't be unloaded from the node before computation will be completed.
+     */
+    public void testPartitionExchangeDuringComputeCallOnBaseContext() {
+        int partitions = 4;
+
+        IgniteCache<Integer, String> data = generateTestData(4, 0);
+
+        // create learning context
+        CacheDLearnContextFactory<Integer, String> ctxFactory = new CacheDLearnContextFactory<>(ignite, data);
+        CacheDLearnContext<CacheDLearnPartition<Integer, String>> ctx = ctxFactory.createContext();
+
+        assertTrue("Before computation all partitions should not be reserved",
+            areAllPartitionsNotReserved(data.getName(), ctx.getLearningCtxCacheName()));
+
+        IgniteAtomicLong numOfStartedComputations = ignite.atomicLong(UUID.randomUUID().toString(), 0, true);
+
+        IgniteLock computationsLock = ignite.reentrantLock(UUID.randomUUID().toString(), false, true, true);
+
+        // lock computations lock to stop computations in the middle
+        computationsLock.lock();
+
+        try {
+            new Thread(() -> ctx.compute((part, partIndex) -> {
+                // track number of started computations
+                numOfStartedComputations.incrementAndGet();
+                computationsLock.lock();
+                computationsLock.unlock();
+            })).start();
+            // wait all computations to start
+
+            while (numOfStartedComputations.get() < partitions) {}
+
+            assertTrue("During computation all partitions should be reserved",
+                areAllPartitionsReserved(data.getName(), ctx.getLearningCtxCacheName()));
+        }
+        finally {
+            computationsLock.unlock();
+        }
+
+        assertTrue("All partitions should be released",
+            areAllPartitionsNotReserved(data.getName(), ctx.getLearningCtxCacheName()));
+    }
+
+    /**
+     * Tests that only partitions of context cache are reserved during computations on base learning
+     * context. Reservation means that partitions won't be unloaded from the node before computation will be completed.
+     * Partitions of the upstream cache should not be reserved.
+     */
+    public void testPartitionExchangeDuringComputeWithReturnCallOnDerivativeContext() throws InterruptedException {
+        int partitions = 4;
+
+        IgniteCache<Integer, String> data = generateTestData(4, 0);
+
+        // create learning context
+        CacheDLearnContextFactory<Integer, String> ctxFactory = new CacheDLearnContextFactory<>(ignite, data);
+        CacheDLearnContext<CacheDLearnPartition<Integer, String>> ctx = ctxFactory.createContext();
+
+        DLearnDataset<?> dataset = ctx.transform(DLearnContextTransformers.cacheToDataset( (k, v) -> new double[10] ));
+
+        assertTrue("Before computation all partitions should not be reserved",
+            areAllPartitionsNotReserved(data.getName(), ctx.getLearningCtxCacheName()));
+
+        IgniteAtomicLong numOfStartedComputations = ignite.atomicLong(UUID.randomUUID().toString(), 0, true);
+
+        IgniteLock computationsLock = ignite.reentrantLock(UUID.randomUUID().toString(), false, true, true);
+
+        // lock computations lock to stop computations in the middle
+        computationsLock.lock();
+
+        try {
+            new Thread(() -> dataset.compute((part, partIndex) -> {
+                // track number of started computations
+                numOfStartedComputations.incrementAndGet();
+                computationsLock.lock();
+                computationsLock.unlock();
+                return 42;
+            }, (a, b) -> 42)).start();
+            // wait all computations to start
+
+            while (numOfStartedComputations.get() < partitions) {}
+
+            assertTrue("During computation all partitions of the context cache should be reserved",
+                areAllPartitionsReserved(ctx.getLearningCtxCacheName()));
+            assertTrue("During computation all partitions of the data cache should be reserved",
+                areAllPartitionsNotReserved(data.getName()));
+        }
+        finally {
+            computationsLock.unlock();
+        }
+
+        assertTrue("All partitions should be released",
+            areAllPartitionsNotReserved(data.getName(), ctx.getLearningCtxCacheName()));
+    }
+
+    /**
+     * Tests that only partitions of context cache are reserved during computations on base learning
+     * context. Reservation means that partitions won't be unloaded from the node before computation will be completed.
+     * Partitions of the upstream cache should not be reserved.
+     */
+    public void testPartitionExchangeDuringComputeCallOnDerivativeContext() throws InterruptedException {
+        int partitions = 4;
+
+        IgniteCache<Integer, String> data = generateTestData(4, 0);
+
+        // create learning context
+        CacheDLearnContextFactory<Integer, String> ctxFactory = new CacheDLearnContextFactory<>(ignite, data);
+        CacheDLearnContext<CacheDLearnPartition<Integer, String>> ctx = ctxFactory.createContext();
+
+        DLearnDataset<?> dataset = ctx.transform(DLearnContextTransformers.cacheToDataset( (k, v) -> new double[10] ));
+
+        assertTrue("Before computation all partitions should not be reserved",
+            areAllPartitionsNotReserved(data.getName(), ctx.getLearningCtxCacheName()));
+
+        IgniteAtomicLong numOfStartedComputations = ignite.atomicLong(UUID.randomUUID().toString(), 0, true);
+
+        IgniteLock computationsLock = ignite.reentrantLock(UUID.randomUUID().toString(), false, true, true);
+
+        // lock computations lock to stop computations in the middle
+        computationsLock.lock();
+
+        try {
+            new Thread(() -> dataset.compute((part, partIndex) -> {
+                // track number of started computations
+                numOfStartedComputations.incrementAndGet();
+                computationsLock.lock();
+                computationsLock.unlock();
+            })).start();
+            // wait all computations to start
+
+            while (numOfStartedComputations.get() < partitions) {}
+
+            assertTrue("During computation all partitions of the context cache should be reserved",
+                areAllPartitionsReserved(ctx.getLearningCtxCacheName()));
+            assertTrue("During computation all partitions of the data cache should be reserved",
+                areAllPartitionsNotReserved(data.getName()));
+        }
+        finally {
+            computationsLock.unlock();
+        }
+
+        assertTrue("All partitions should be released",
+            areAllPartitionsNotReserved(data.getName(), ctx.getLearningCtxCacheName()));
+    }
+
+    /**
+     * Checks that all partitions of all specified caches are not reserved.
+     *
+     * @param cacheNames cache names to be checked
+     * @return {@code true} if all partitions are not reserved, otherwise {@code false}
+     */
+    private boolean areAllPartitionsNotReserved(String... cacheNames) {
+        return checkAllPartitions(partition -> partition.reservations() == 0, cacheNames);
+    }
+
+    /**
+     * Checks that all partitions of all specified caches not reserved.
+     *
+     * @param cacheNames cache names to be checked
+     * @return {@code true} if all partitions are reserved, otherwise {@code false}
+     */
+    private boolean areAllPartitionsReserved(String... cacheNames) {
+        return checkAllPartitions(partition -> partition.reservations() != 0, cacheNames);
+    }
+
+    /**
+     * Checks that all partitions of all specified caches satisfies the given predicate.
+     *
+     * @param pred predicate
+     * @param cacheNames cache names
+     * @return {@code true} if all partitions satisfies the given predicate
+     */
+    private boolean checkAllPartitions(IgnitePredicate<GridDhtLocalPartition> pred, String... cacheNames) {
+        boolean flag = false;
+        long checkingStartTs = System.currentTimeMillis();
+
+        while (!flag && (System.currentTimeMillis() - checkingStartTs) < 30_000) {
+            LockSupport.parkNanos(200 * 1000 * 1000);
+            flag = true;
+
+            for (String cacheName : cacheNames) {
+                IgniteClusterPartitionsState state = IgniteClusterPartitionsState.getCurrentState(cacheName);
+
+                for (IgniteInstancePartitionsState instanceState : state.instances.values())
+                    for (GridDhtLocalPartition partition : instanceState.parts)
+                        if (partition != null)
+                            flag &= pred.apply(partition);
+            }
+        }
+
+        return flag;
+    }
+
+    /**
+     * Aggregated data about cache partitions in Ignite cluster.
+     */
+    private static class IgniteClusterPartitionsState {
+        /** */
+        private final String cacheName;
+
+        /** */
+        private final Map<UUID, IgniteInstancePartitionsState> instances;
+
+        /** */
+        static IgniteClusterPartitionsState getCurrentState(String cacheName) {
+            Map<UUID, IgniteInstancePartitionsState> instances = new HashMap<>();
+
+            for (Ignite ignite : G.allGrids()) {
+                IgniteKernal igniteKernal = (IgniteKernal) ignite;
+                IgniteCacheProxy<?, ?> cache = igniteKernal.context().cache().jcache(cacheName);
+
+                GridDhtCacheAdapter<?, ?> dht = dht(cache);
+
+                GridDhtPartitionTopology top = dht.topology();
+
+                AffinityTopologyVersion topVer = dht.context().shared().exchange().readyAffinityVersion();
+                List<GridDhtLocalPartition> parts = new ArrayList<>();
+                for (int p = 0; p < cache.context().config().getAffinity().partitions(); p++) {
+                    GridDhtLocalPartition part = top.localPartition(p, AffinityTopologyVersion.NONE, false);
+                    parts.add(part);
+                }
+                instances.put(ignite.cluster().localNode().id(), new IgniteInstancePartitionsState(topVer, parts));
+            }
+
+            return new IgniteClusterPartitionsState(cacheName, instances);
+        }
+
+        /** */
+        IgniteClusterPartitionsState(String cacheName,
+            Map<UUID, IgniteInstancePartitionsState> instances) {
+            this.cacheName = cacheName;
+            this.instances = instances;
+        }
+
+        /** */
+        @Override public String toString() {
+            StringBuilder builder = new StringBuilder();
+            builder.append("Cache ").append(cacheName).append(" is in following state:").append("\n");
+            for (Map.Entry<UUID, IgniteInstancePartitionsState> e : instances.entrySet()) {
+                UUID instanceId = e.getKey();
+                IgniteInstancePartitionsState instanceState = e.getValue();
+                builder.append("\n\t")
+                    .append("Node ")
+                    .append(instanceId)
+                    .append(" with topology version [")
+                    .append(instanceState.topVer.topologyVersion())
+                    .append(", ")
+                    .append(instanceState.topVer.minorTopologyVersion())
+                    .append("] contains following partitions:")
+                    .append("\n\n");
+                builder.append("\t\t-----------------------------------------------------------------------------------------------------\n");
+                builder.append("\t\t|  ID  |   STATE  |  RELOAD  |  RESERVATIONS  |  SHOULD BE RENTING  |  PRIMARY  |  DATA STORE SIZE  |\n");
+                builder.append("\t\t-----------------------------------------------------------------------------------------------------\n");
+                for (GridDhtLocalPartition partition : instanceState.parts)
+                    if (partition != null) {
+                        builder.append("\t\t")
+                            .append(String.format("| %3d  |", partition.id()))
+                            .append(String.format(" %7s  |", partition.state()))
+                            .append(String.format(" %7s  |", partition.reload()))
+                            .append(String.format(" %13s  |", partition.reservations()))
+                            .append(String.format(" %18s  |", partition.shouldBeRenting()))
+                            .append(String.format(" %8s  |", partition.primary(instanceState.topVer)))
+                            .append(String.format(" %16d  |", partition.dataStore().fullSize()))
+                            .append("\n");
+                        builder.append("\t\t-----------------------------------------------------------------------------------------------------\n");
+                    }
+            }
+            return builder.toString();
+        }
+    }
+
+    /**
+     * Aggregated data about cache partitions in Ignite instance.
+     */
+    private static class IgniteInstancePartitionsState {
+        /** */
+        private final AffinityTopologyVersion topVer;
+
+        /** */
+        private final List<GridDhtLocalPartition> parts;
+
+        /** */
+        IgniteInstancePartitionsState(AffinityTopologyVersion topVer,
+            List<GridDhtLocalPartition> parts) {
+            this.topVer = topVer;
+            this.parts = parts;
+        }
+
+        /** */
+        public AffinityTopologyVersion getTopVer() {
+            return topVer;
+        }
+
+        /** */
+        public List<GridDhtLocalPartition> getParts() {
+            return parts;
+        }
+    }
+
+    /**
      * Generates Ignite Cache with data for tests.
      *
      * @return Ignite Cache with data for tests
@@ -144,10 +505,8 @@ public class CacheDLearnContextTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, String> cache = ignite.createCache(cacheConfiguration);
 
-        cache.put(1, "TEST1");
-        cache.put(2, "TEST2");
-        cache.put(3, "TEST3");
-        cache.put(4, "TEST4");
+        for (int i = 0; i < 1000; i++)
+            cache.put(i, "TEST" + i);
 
         return cache;
     }

@@ -23,14 +23,15 @@ import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.ml.dlearn.DLearnContext;
 import org.apache.ignite.ml.dlearn.DLearnPartitionStorage;
 import org.apache.ignite.ml.dlearn.context.cache.CacheDLearnContextFactory;
 import org.apache.ignite.ml.dlearn.context.cache.CacheDLearnPartition;
+import org.apache.ignite.ml.dlearn.context.transformer.DLearnContextTransformer;
 import org.apache.ignite.ml.dlearn.dataset.DLearnDataset;
 import org.apache.ignite.ml.dlearn.dataset.part.DLeanDatasetPartition;
-import org.apache.ignite.ml.dlearn.context.transformer.DLearnContextTransformer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
@@ -99,9 +100,11 @@ public class CacheDatasetDLearnPartitionTransformer<K, V>
      */
     private List<Cache.Entry<K, V>> queryPartDataIntoList(CacheDLearnPartition<K, V> oldPart) {
         List<Cache.Entry<K, V>> partData = new ArrayList<>();
-        for (Cache.Entry<K, V> entry : queryPartData(oldPart))
-            partData.add(entry);
-        return partData;
+        try (QueryCursor<Cache.Entry<K, V>> cursor = queryPartData(oldPart)) {
+            for (Cache.Entry<K, V> entry : cursor)
+                partData.add(entry);
+            return partData;
+        }
     }
 
     /**
@@ -110,7 +113,7 @@ public class CacheDatasetDLearnPartitionTransformer<K, V>
      * @param oldPart partition
      * @return cursor
      */
-    private Iterable<Cache.Entry<K, V>> queryPartData(CacheDLearnPartition<K, V> oldPart) {
+    private QueryCursor<Cache.Entry<K, V>> queryPartData(CacheDLearnPartition<K, V> oldPart) {
         Ignite ignite = Ignition.localIgnite();
         IgniteCache<K, V> upstreamCache = ignite.cache(oldPart.getUpstreamCacheName());
 
