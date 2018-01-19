@@ -99,7 +99,7 @@ public class SqlAlterTableCommand implements SqlCommand  {
     }
 
     /**
-     * Check if statemtnt contain any commands.
+     * Check if statement contain any commands.
      *
      * @return {@code True} if statement is not dummy and contains at least one command.
      */
