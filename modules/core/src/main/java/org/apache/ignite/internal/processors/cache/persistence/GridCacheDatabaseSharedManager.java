@@ -2968,7 +2968,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     snapFut = snapshotMgr.onMarkCheckPointBegin(curr.snapshotOperation, map);
 
                 for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                    if (grp.isLocal())
+                    if (grp.isLocal() || !grp.walEnabled())
                         continue;
 
                     List<GridDhtLocalPartition> locParts = new ArrayList<>();
