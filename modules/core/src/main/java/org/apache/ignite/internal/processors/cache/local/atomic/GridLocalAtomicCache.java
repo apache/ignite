@@ -60,7 +60,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.resource.GridResourceIoc;
 import org.apache.ignite.internal.util.F0;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -1354,7 +1353,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         for (int i = 0; i < entries.size(); i++) {
             GridCacheEntryEx entry = entries.get(i);
 
-            assert Thread.holdsLock(entry);
+            assert entry.lockedByCurrentThread();
 
             if (entry.obsolete() ||
                 (storeErr != null && storeErr.failedKeys().contains(entry.key().value(ctx.cacheObjectContext(), false))))
@@ -1434,12 +1433,12 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
             for (int i = 0; i < locked.size(); i++) {
                 GridCacheEntryEx entry = locked.get(i);
 
-                GridUnsafe.monitorEnter(entry);
+                entry.lockEntry();
 
                 if (entry.obsolete()) {
                     // Unlock all locked.
                     for (int j = 0; j <= i; j++)
-                        GridUnsafe.monitorExit(locked.get(j));
+                        locked.get(j).unlockEntry();
 
                     // Clear entries.
                     locked.clear();
@@ -1470,7 +1469,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
      */
     private void unlockEntries(Iterable<GridCacheEntryEx> locked) {
         for (GridCacheEntryEx entry : locked)
-            GridUnsafe.monitorExit(entry);
+            entry.unlockEntry();
 
         AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 

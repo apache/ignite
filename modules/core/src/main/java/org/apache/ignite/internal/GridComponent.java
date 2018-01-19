@@ -149,6 +149,9 @@ public interface GridComponent {
      */
     @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node);
 
+    /** */
+    @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag.JoiningNodeDiscoveryData discoData);
+
     /**
      * Gets unique component type to distinguish components providing discovery data. Must return non-null value
      * if component implements any of methods {@link #collectJoiningNodeData(DiscoveryDataBag)}

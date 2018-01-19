@@ -198,6 +198,7 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
         IgniteConfiguration cfg = getConfiguration(name);
 
         cfg.setConsistentId(node);
+        cfg.setAutoActivationEnabled(false);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(backUpIpFinder);
 

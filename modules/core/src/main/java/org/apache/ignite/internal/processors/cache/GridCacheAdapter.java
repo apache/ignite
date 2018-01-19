@@ -829,6 +829,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 ctx.shared().database().checkpointReadLock();
 
                 if (e != null) {
+                    ctx.shared().database().checkpointReadLock();
+
                     try {
                         cacheVal = e.peek(modes.heap, modes.offheap, topVer, plc);
                     }
@@ -2062,7 +2064,15 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                                             try {
                                                 ctx.shared().database().ensureFreeSpace(ctx.dataRegion());
+                                            }
+                                            catch (IgniteCheckedException e) {
+                                                // Wrap errors (will be unwrapped).
+                                                throw new GridClosureException(e);
+                                            }
 
+                                            ctx.shared().database().checkpointReadLock();
+
+                                            try {
                                                 entry = entryEx(key);
 
                                                 entry.unswap();
@@ -2106,6 +2116,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                             catch (IgniteCheckedException e) {
                                                 // Wrap errors (will be unwrapped).
                                                 throw new GridClosureException(e);
+                                            }
+                                            finally {
+                                                ctx.shared().database().checkpointReadUnlock();
                                             }
                                         }
                                     }

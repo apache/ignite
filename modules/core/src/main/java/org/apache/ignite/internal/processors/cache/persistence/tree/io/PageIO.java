@@ -25,9 +25,10 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.MetadataStorage;
+import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwareDataInnerIO;
@@ -197,6 +198,33 @@ public abstract class PageIO {
     /** */
     public static final short T_PART_CNTRS = 20;
 
+    /** */
+    public static final short T_DATA_METASTORAGE = 21;
+
+    /** */
+    public static final short T_DATA_REF_METASTORAGE_INNER = 22;
+
+    /** */
+    public static final short T_DATA_REF_METASTORAGE_LEAF = 23;
+
+    /** */
+    public static final short T_DATA_REF_MVCC_INNER = 24;
+
+    /** */
+    public static final short T_DATA_REF_MVCC_LEAF = 25;
+
+    /** */
+    public static final short T_CACHE_ID_DATA_REF_MVCC_INNER = 26;
+
+    /** */
+    public static final short T_CACHE_ID_DATA_REF_MVCC_LEAF = 27;
+
+    /** */
+    public static final short T_H2_MVCC_REF_LEAF = 28;
+
+    /** */
+    public static final short T_H2_MVCC_REF_INNER = 29;
+
     /** Index for payload == 1. */
     public static final short T_H2_EX_REF_LEAF_START = 10_000;
 
@@ -220,24 +248,6 @@ public abstract class PageIO {
 
     /** */
     public static final short T_H2_EX_REF_MVCC_INNER_END = T_H2_EX_REF_MVCC_INNER_START + MAX_PAYLOAD_SIZE - 1;
-
-    /** */
-    public static final short T_DATA_REF_MVCC_INNER = 21;
-
-    /** */
-    public static final short T_DATA_REF_MVCC_LEAF = 22;
-
-    /** */
-    public static final short T_CACHE_ID_DATA_REF_MVCC_INNER = 23;
-
-    /** */
-    public static final short T_CACHE_ID_DATA_REF_MVCC_LEAF = 24;
-
-    /** */
-    public static final short T_H2_MVCC_REF_LEAF = 25;
-
-    /** */
-    public static final short T_H2_MVCC_REF_INNER = 26;
 
     /** */
     private final int ver;
@@ -520,6 +530,9 @@ public abstract class PageIO {
             case T_PAGE_UPDATE_TRACKING:
                 return (Q)TrackingPageIO.VERSIONS.forVersion(ver);
 
+            case T_DATA_METASTORAGE:
+                return (Q)SimpleDataPageIO.VERSIONS.forVersion(ver);
+
             default:
                 return (Q)getBPlusIO(type, ver);
         }
@@ -607,10 +620,10 @@ public abstract class PageIO {
                 return (Q)MvccDataLeafIO.VERSIONS.forVersion(ver);
 
             case T_METASTORE_INNER:
-                return (Q)MetadataStorage.MetaStoreInnerIO.VERSIONS.forVersion(ver);
+                return (Q)IndexStorageImpl.MetaStoreInnerIO.VERSIONS.forVersion(ver);
 
             case T_METASTORE_LEAF:
-                return (Q)MetadataStorage.MetaStoreLeafIO.VERSIONS.forVersion(ver);
+                return (Q)IndexStorageImpl.MetaStoreLeafIO.VERSIONS.forVersion(ver);
 
             case T_PENDING_REF_INNER:
                 return (Q)PendingEntryInnerIO.VERSIONS.forVersion(ver);
@@ -623,6 +636,12 @@ public abstract class PageIO {
 
             case T_CACHE_ID_AWARE_PENDING_REF_LEAF:
                 return (Q)CacheIdAwarePendingEntryLeafIO.VERSIONS.forVersion(ver);
+
+            case T_DATA_REF_METASTORAGE_INNER:
+                return (Q)MetastorageTree.MetastorageInnerIO.VERSIONS.forVersion(ver);
+
+            case T_DATA_REF_METASTORAGE_LEAF:
+                return (Q)MetastorageTree.MetastoreLeafIO.VERSIONS.forVersion(ver);
 
             default:
                 // For tests.

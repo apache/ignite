@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,24 +35,31 @@ public class GridCacheUpdateTxResult {
     /** */
     private GridLongList mvccWaitTxs;
 
+    /** */
+    private WALPointer logPtr;
+
     /**
      * Constructor.
      *
      * @param success Success flag.
+     * @param logPtr Logger WAL pointer for the update.
      */
-    GridCacheUpdateTxResult(boolean success) {
+    GridCacheUpdateTxResult(boolean success, WALPointer logPtr) {
         this.success = success;
+        this.logPtr = logPtr;
     }
 
     /**
      * Constructor.
      *
      * @param success Success flag.
+     * @param logPtr Logger WAL pointer for the update.
      */
-    GridCacheUpdateTxResult(boolean success, long updateCntr, @Nullable GridLongList mvccWaitTxs) {
+    GridCacheUpdateTxResult(boolean success, long updateCntr, WALPointer logPtr, @Nullable GridLongList mvccWaitTxs) {
         this.success = success;
         this.updateCntr = updateCntr;
         this.mvccWaitTxs = mvccWaitTxs;
+        this.logPtr = logPtr;
     }
 
     /**
@@ -66,6 +74,13 @@ public class GridCacheUpdateTxResult {
      */
     public boolean success() {
         return success;
+    }
+
+    /**
+     * @return Logged WAL pointer for the update if persistence is enabled.
+     */
+    public WALPointer loggedPointer() {
+        return logPtr;
     }
 
     /**

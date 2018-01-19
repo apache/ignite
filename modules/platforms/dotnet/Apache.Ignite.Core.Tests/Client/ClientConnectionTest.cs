@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -157,6 +157,23 @@ namespace Apache.Ignite.Core.Tests.Client
                 Assert.AreEqual("Failed to establish Ignite thin client connection, " +
                                 "examine inner exceptions for details.", ex.Message.Substring(0, 88));
             }
+
+            // Disable only thin client.
+            servCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                ClientConnectorConfiguration = new ClientConnectorConfiguration
+                {
+                    ThinClientEnabled = false
+                }
+            };
+
+            using (Ignition.Start(servCfg))
+            {
+                var ex = Assert.Throws<IgniteClientException>(() => Ignition.StartClient(clientCfg));
+                Assert.AreEqual("Client handshake failed: 'Thin client connection is not allowed, " +
+                                "see ClientConnectorConfiguration.thinClientEnabled.'.", 
+                                ex.Message.Substring(0, 118));
+            }
         }
 
         /// <summary>
@@ -299,6 +316,21 @@ namespace Apache.Ignite.Core.Tests.Client
                 // Idle check frequency is 2 seconds.
                 Thread.Sleep(4000);
                 var ex = Assert.Throws<SocketException>(() => cache.Get(1));
+                Assert.AreEqual(SocketError.ConnectionAborted, ex.SocketErrorCode);
+            }
+        }
+
+        /// <summary>
+        /// Tests the protocol mismatch behavior: attempt to connect to an HTTP endpoint.
+        /// </summary>
+        [Test]
+        public void TestProtocolMismatch()
+        {
+            using (Ignition.Start(TestUtils.GetTestConfiguration()))
+            {
+                // Connect to Ignite REST endpoint.
+                var cfg = new IgniteClientConfiguration {Host = "127.0.0.1", Port = 11211 };
+                var ex = Assert.Throws<SocketException>(() => Ignition.StartClient(cfg));
                 Assert.AreEqual(SocketError.ConnectionAborted, ex.SocketErrorCode);
             }
         }

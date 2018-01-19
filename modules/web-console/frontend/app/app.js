@@ -216,6 +216,7 @@ angular.module('ignite-console', [
     listEditable.name,
     clusterSelector.name,
     connectedClusters.name,
+    igniteListOfRegisteredUsers.name,
     // Ignite modules.
     IgniteModules.name
 ])
@@ -241,7 +242,6 @@ angular.module('ignite-console', [
 .directive(...igniteRetainSelection)
 .directive('igniteOnFocusOut', igniteOnFocusOut)
 .directive('igniteRestoreInputFocus', igniteRestoreInputFocus)
-.directive('igniteListOfRegisteredUsers', igniteListOfRegisteredUsers)
 .directive('btnIgniteLinkDashedSuccess', btnIgniteLink)
 .directive('btnIgniteLinkDashedSecondary', btnIgniteLink)
 // Services.

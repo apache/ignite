@@ -40,6 +40,7 @@ import org.apache.ignite.spi.discovery.ClusterMetricsSnapshotSerializeSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.thread.GridThreadPoolExecutorServiceSelfTest;
 import org.apache.ignite.thread.IgniteThreadPoolSizeTest;
+import org.apache.ignite.util.GridCommandHandlerTest;
 import org.apache.ignite.util.GridIntListSelfTest;
 import org.apache.ignite.util.GridLongListSelfTest;
 import org.apache.ignite.util.GridMessageCollectionTest;
@@ -48,6 +49,7 @@ import org.apache.ignite.util.GridQueueSelfTest;
 import org.apache.ignite.util.GridSpinReadWriteLockSelfTest;
 import org.apache.ignite.util.GridStringBuilderFactorySelfTest;
 import org.apache.ignite.util.mbeans.GridMBeanDisableSelfTest;
+import org.apache.ignite.util.mbeans.GridMBeanExoticNamesSelfTest;
 import org.apache.ignite.util.mbeans.GridMBeanSelfTest;
 
 /**
@@ -81,6 +83,7 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridByteArrayListSelfTest.class);
         suite.addTestSuite(GridMBeanSelfTest.class);
         suite.addTestSuite(GridMBeanDisableSelfTest.class);
+        suite.addTestSuite(GridMBeanExoticNamesSelfTest.class);
         suite.addTestSuite(GridLongListSelfTest.class);
         suite.addTestSuite(GridIntListSelfTest.class);
         suite.addTestSuite(GridArraysSelfTest.class);
@@ -108,6 +111,9 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
 
         //dbx
         suite.addTestSuite(PageIdUtilsSelfTest.class);
+
+        // control.sh
+        suite.addTestSuite(GridCommandHandlerTest.class);
 
         return suite;
     }
