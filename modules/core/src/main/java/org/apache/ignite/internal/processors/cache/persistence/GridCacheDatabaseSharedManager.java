@@ -41,6 +41,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,7 +51,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.management.ObjectName;
@@ -106,6 +109,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalP
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.AsyncCheckpointer;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointFsyncScope;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointScope;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.FullPageIdsBuffer;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -125,10 +129,8 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -143,7 +145,6 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -351,6 +352,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** Counter for written checkpoint pages. Not null only if checkpoint is running. */
     private volatile AtomicInteger writtenPagesCntr = null;
+
+    /** Counter for fsynced checkpoint pages. Not null only if checkpoint is running. */
+    private volatile AtomicInteger syncedPagesCntr = null;
 
     /** Number of pages in current checkpoint. */
     private volatile int currCheckpointPagesCnt;
@@ -2417,6 +2421,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         return writtenPagesCntr;
     }
 
+
+    /**
+     * Counter for written checkpoint pages. Not null only if checkpoint is running.
+     */
+    public AtomicInteger syncedPagesCounter() {
+        return syncedPagesCntr;
+    }
+
+
     /**
      * @return Number of pages in current checkpoint. If checkpoint is not running, returns 0.
      */
@@ -2572,36 +2585,36 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 currCheckpointPagesCnt = chp.pagesSize();
 
                 writtenPagesCntr = new AtomicInteger();
+                syncedPagesCntr = new AtomicInteger();
 
                 boolean interrupted = true;
 
                 try {
                     if (chp.hasDelta()) {
                         // Identity stores set.
-                        final GridConcurrentHashSet<PageStore> updStores = new GridConcurrentHashSet<>();
 
                         final int totalPagesToWriteCnt = chp.pagesSize();
 
                         // This factory creates callable to write provided pages IDs array to page store.
-                        final IgniteClosure<FullPageIdsBuffer, Callable<Void>> wrCpPagesFactory =
-                            idsBuf -> new WriteCheckpointPages(
+                        final BiFunction<FullPageIdsBuffer, ConcurrentHashMap<PageStore, LongAdder>, Callable<Void>> wrCpPagesFactory =
+                            (idsBuf, map) -> new WriteCheckpointPages(
                                 tracker,
                                 idsBuf,
-                                updStores,
+                                map,
                                 totalPagesToWriteCnt
                             );
 
                         tracker.onPagesWriteStart();
 
+                        CheckpointFsyncScope fsyncScope;
                         if (asyncCheckpointer != null) {
-                            CountDownFuture wrCompleteFut;
 
                             if (persistenceCfg.getCheckpointWriteOrder() == CheckpointWriteOrder.SEQUENTIAL
                                 && PageMemoryImpl.isParallelDirtyPages()) {
                                 if (log.isInfoEnabled())
                                     log.info(String.format("Activated parallel dirty page processing. [pages=%d]", chp.pagesSize()));
 
-                                wrCompleteFut = asyncCheckpointer.quickSortAndWritePages(
+                                fsyncScope = asyncCheckpointer.quickSortAndWritePages(
                                     chp.cpScope,
                                     wrCpPagesFactory);
                             }
@@ -2609,21 +2622,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 Collection<FullPageIdsBuffer> cpPages
                                     = chp.cpScope.splitAndSortCpPagesIfNeeded(persistenceCfg);
 
-                                wrCompleteFut = new CountDownFuture(cpPages.size());
+                                fsyncScope = new CheckpointFsyncScope();
+                                CheckpointFsyncScope.Stripe stripe = fsyncScope.newStripe();
 
                                 for (FullPageIdsBuffer next : cpPages) {
-                                    asyncCheckpointer.execute(wrCpPagesFactory.apply(next), wrCompleteFut);
+                                    asyncCheckpointer.fork(wrCpPagesFactory.apply(next, stripe.fsyncScope), stripe.future);
                                 }
                             }
-
-                            // Wait and check for errors.
-                            wrCompleteFut.get();
                         }
                         else {
+                            fsyncScope = new CheckpointFsyncScope();
+                            CheckpointFsyncScope.Stripe stripe = fsyncScope.newStripe();
+                            stripe.incrementTasksCount();
                             // Single-threaded checkpoint.
                             for (FullPageIdsBuffer next : chp.cpScope.splitAndSortCpPagesIfNeeded(persistenceCfg)) {
-                                ((WriteCheckpointPages)wrCpPagesFactory.apply(next)).call();
+                                ((WriteCheckpointPages)wrCpPagesFactory.apply(next, stripe.fsyncScope)).call();
                             }
+                            stripe.decrementTasksCount(); //emulate end of async exec
                         }
 
                         // Must re-check shutdown flag here because threads may have skipped some pages.
@@ -2634,18 +2649,79 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             return;
                         }
 
-                        tracker.onFsyncStart();
-
                         if (!skipSync) {
-                            for (PageStore updStore : updStores) {
-                                if (shutdownNow) {
-                                    chp.progress.cpFinishFut.onDone(new NodeStoppingException("Node is stopping."));
+                            //todo
+                            /*fsyncScope.get();
 
-                                    return;
+                            tracker.onFsyncStart();
+
+                            for (Map.Entry<PageStore, LongAdder> entry : fsyncScope.updatedStores()) {
+                                entry.getKey().sync();
+
+                                syncedPagesCntr.addAndGet(entry.getValue().intValue());
+                            }*/
+
+
+                            fsyncScope.stripes().stream().parallel()
+                                .map(stripe -> {
+                                    try {
+                                        return stripe.waitAndCheckForErrors();
+                                    }
+                                    catch (IgniteCheckedException e) {
+                                        throw new RuntimeException(e);
+                                    }
+                                }).forEach(
+                                    entries -> {
+                                        try {
+                                            if (log.isInfoEnabled()) {
+                                                log.info("Starting fsync for [" + entries.size() + "] page stores " +
+                                                    "for one from [" + fsyncScope.stripesCount() + "] remaining stripes");
+                                            }
+                                            for (Map.Entry<PageStore, LongAdder> updStoreEntry : entries) {
+                                                updStoreEntry.getKey().sync();
+
+                                                syncedPagesCntr.addAndGet(updStoreEntry.getValue().intValue());
+                                            }
+                                        }
+                                        catch (IgniteCheckedException e) {
+                                            throw new RuntimeException(e);
+                                        }
+                                    }
+                            );
+
+                            /* //todo
+                            List<CheckpointFsyncScope.Stripe> stripes = fsyncScope.stripes();
+                            while (!stripes.isEmpty()) {
+                                for (Iterator<CheckpointFsyncScope.Stripe> iterator = stripes.iterator(); iterator.hasNext(); ) {
+                                    CheckpointFsyncScope.Stripe stripe = iterator.next();
+
+                                    Set<Map.Entry<PageStore, LongAdder>> entries = stripe.tryWaitAndCheckForErrors(500/16);
+
+                                    if (entries != null) {
+                                        if (log.isInfoEnabled()) {
+                                            log.info("Starting fsync for [" + entries.size() + "] page stores " +
+                                                "for one from [" + fsyncScope.stripesCount() + "] remaining stripes");
+                                        }
+                                        for (Map.Entry<PageStore, LongAdder> updStoreEntry : entries) {
+                                            updStoreEntry.getKey().sync();
+
+                                            syncedPagesCntr.addAndGet(updStoreEntry.getValue().intValue());
+                                        }
+
+                                        iterator.remove();
+                                    }
+
+                                    if (shutdownNow) {
+                                        chp.progress.cpFinishFut.onDone(new NodeStoppingException("Node is stopping."));
+
+                                        return;
+                                    }
                                 }
-
-                                updStore.sync();
                             }
+                            */
+
+                        } else {
+                            fsyncScope.get();
                         }
                     }
                     else {
@@ -2961,6 +3037,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 writtenPagesCntr = null;
 
+                syncedPagesCntr = null;
+
                 currCheckpointPagesCnt = 0;
             }
 
@@ -3059,15 +3137,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private FullPageIdsBuffer writePageIds;
 
         /** */
-        private GridConcurrentHashSet<PageStore> updStores;
+        private ConcurrentHashMap<PageStore, LongAdder> updStores;
 
         /** Total pages to write, counter may be greater than {@link #writePageIds} size. */
         private final int totalPagesToWrite;
 
         /**
          * Creates task for write pages.
-         *
-         * @param tracker metrics tracked.
+         *  @param tracker metrics tracked.
          * @param writePageIds Array of page IDs to write.
          * @param updStores set of page stores updated.
          * @param totalPagesToWrite total pages to be written under this checkpoint.
@@ -3075,7 +3152,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private WriteCheckpointPages(
             final CheckpointMetricsTracker tracker,
             final FullPageIdsBuffer writePageIds,
-            final GridConcurrentHashSet<PageStore> updStores,
+            final ConcurrentHashMap<PageStore, LongAdder> updStores,
             final int totalPagesToWrite) {
             this.tracker = tracker;
             this.writePageIds = writePageIds;
@@ -3152,12 +3229,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     PageStore store = storeMgr.writeInternal(grpId, fullId.pageId(), tmpWriteBuf, tag, false);
 
-                    updStores.add(store);
+                    updStores
+                        .computeIfAbsent(store, k -> new LongAdder())
+                        .increment();
                 }
             }
 
             if (log.isDebugEnabled())
-                log.debug("Completed write of chunk [" + writePageIds.remaining() + "]");
+                log.debug("Completed write of chunk [" + writePageIds.remaining() + "] pages," +
+                    " affecting [" + updStores.size() + "] page stores");
 
             return null;
         }
