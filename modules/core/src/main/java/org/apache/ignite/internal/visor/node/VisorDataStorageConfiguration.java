@@ -122,12 +122,6 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     /** If true, threads that generate dirty pages too fast during ongoing checkpoint will be throttled. */
     private boolean writeThrottlingEnabled;
 
-    /** Size of WAL buffer. */
-    private int walBufSize;
-
-    /** If true, system filters and compresses WAL archive in background. */
-    private boolean walCompactionEnabled;
-
     /**
      * Default constructor.
      */
@@ -168,7 +162,6 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
         metricsEnabled = cfg.isMetricsEnabled();
         walMode = cfg.getWalMode();
         walTlbSize = cfg.getWalThreadLocalBufferSize();
-        walBufSize = cfg.getWalBufferSize();
         walFlushFreq = cfg.getWalFlushFrequency();
         walFsyncDelay = cfg.getWalFsyncDelayNanos();
         walRecordIterBuffSize = cfg.getWalRecordIteratorBufferSize();
@@ -178,7 +171,6 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
         metricsRateTimeInterval = cfg.getMetricsRateTimeInterval();
         walAutoArchiveAfterInactivity = cfg.getWalAutoArchiveAfterInactivity();
         writeThrottlingEnabled = cfg.isWriteThrottlingEnabled();
-        walCompactionEnabled = cfg.isWalCompactionEnabled();
     }
 
     /**
@@ -377,24 +369,6 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
         return writeThrottlingEnabled;
     }
 
-    /**
-     * @return Size of WAL buffer.
-     */
-    public int getWalBufferSize() {
-        return walBufSize;
-    }
-
-    /**
-     * @return If true, system filters and compresses WAL archive in background
-     */
-    public boolean isWalCompactionEnabled() {
-        return walCompactionEnabled;
-    }
-
-    @Override public byte getProtocolVersion() {
-        return V2;
-    }
-
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeLong(sysRegionInitSize);
@@ -426,8 +400,6 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
         out.writeLong(metricsRateTimeInterval);
         out.writeLong(walAutoArchiveAfterInactivity);
         out.writeBoolean(writeThrottlingEnabled);
-        out.writeInt(walBufSize);
-        out.writeBoolean(walCompactionEnabled);
     }
 
     /** {@inheritDoc} */
@@ -461,11 +433,6 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
         metricsRateTimeInterval = in.readLong();
         walAutoArchiveAfterInactivity = in.readLong();
         writeThrottlingEnabled = in.readBoolean();
-
-        if (protoVer > V1) {
-            walBufSize = in.readInt();
-            walCompactionEnabled = in.readBoolean();
-        }
     }
 
     /** {@inheritDoc} */
