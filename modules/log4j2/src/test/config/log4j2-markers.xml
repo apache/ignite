@@ -19,30 +19,20 @@
 
 <Configuration>
     <Appenders>
-        <Console name="CONSOLE_ERR" target="SYSTEM_ERR">
+        <File name="FILTERED" fileName="${sys:IGNITE_HOME}/work/log/filtered.log" append="false">
             <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
-        </Console>
+            <MarkerFilter marker="IGNORE_ME" onMatch="DENY" onMismatch="NEUTRAL"/>
+        </File>
 
-        <Routing name="FILE">
-            <Routes pattern="$${sys:nodeId}">
-                <Route>
-                    <RollingFile name="Rolling-${sys:nodeId}" fileName="${sys:IGNITE_HOME}/work/log/ignite-${sys:nodeId}.log"
-                                 filePattern="${sys:IGNITE_HOME}/work/log/ignite-${sys:nodeId}-%i-%d{yyyy-MM-dd}.log.gz">
-                        <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
-                        <Policies>
-                            <TimeBasedTriggeringPolicy interval="6" modulate="true" />
-                            <SizeBasedTriggeringPolicy size="10 MB" />
-                        </Policies>
-                    </RollingFile>
-                </Route>
-            </Routes>
-        </Routing>
+        <File name="ALL" fileName="${sys:IGNITE_HOME}/work/log/all.log"  append="false">
+            <PatternLayout pattern="[%d{ISO8601}][%-5p]%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
+        </File>
     </Appenders>
 
     <Loggers>
-        <Root level="INFO">
-            <AppenderRef ref="CONSOLE_ERR" level="WARN"/>
-            <AppenderRef ref="FILE" level="DEBUG"/>
+        <Root level="TRACE">
+            <AppenderRef ref="FILTERED"/>
+            <AppenderRef ref="ALL"/>
         </Root>
     </Loggers>
 </Configuration>
