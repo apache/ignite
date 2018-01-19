@@ -297,7 +297,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
             GridDhtLocalPartition part
         ) {
             if (!part.reserve())
-                Collections.emptyMap();
+                return Collections.emptyMap();
 
             int partHash = 0;
             long partSize;
@@ -305,7 +305,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
 
             try {
                 if (part.state() != GridDhtPartitionState.OWNING)
-                    Collections.emptyMap();
+                    return Collections.emptyMap();
 
                 updateCntrBefore = part.updateCounter();
 
