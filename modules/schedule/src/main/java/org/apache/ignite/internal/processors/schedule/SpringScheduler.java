@@ -23,6 +23,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.jsr166.ConcurrentHashMap8;
@@ -145,14 +146,14 @@ public class SpringScheduler {
 
     /**
      * @param cron expression
-     * @throws IgniteException if cron expression is not valid
+     * @throws IgniteCheckedException if cron expression is not valid
      */
-    public void validate(String cron) throws IgniteException {
+    public void validate(String cron) throws IgniteCheckedException {
         try {
             new CronSequenceGenerator(addDoW(cron));
         }
         catch (IllegalArgumentException e) {
-            throw new IgniteException(e);
+            throw new IgniteCheckedException("Invalid cron expression in schedule pattern: " + cron, e);
         }
     }
 

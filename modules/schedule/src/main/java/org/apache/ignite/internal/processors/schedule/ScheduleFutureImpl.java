@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
@@ -203,7 +204,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
         try {
             parsePatternParameters();
         }
-        catch (IgniteException e) {
+        catch (IgniteCheckedException e) {
             onEnd(resLatch, null, e, true);
         }
     }
@@ -334,9 +335,9 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
     /**
      * Parse delay, number of task calls and mere cron expression from extended pattern
      *  that looks like  "{n1,n2} * * * * *".
-     * @throws IgniteException Thrown if pattern is invalid.
+     * @throws IgniteCheckedException Thrown if pattern is invalid.
      */
-    private void parsePatternParameters() throws IgniteException {
+    private void parsePatternParameters() throws IgniteCheckedException {
         assert pat != null;
 
         String regEx = "(\\{(\\*|\\d+),\\s*(\\*|\\d+)\\})?(.*)";
@@ -354,7 +355,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
                         delay = Integer.valueOf(delayStr);
                     }
                     catch (NumberFormatException e) {
-                        throw new IgniteException("Invalid delay parameter in schedule pattern [delay=" +
+                        throw new IgniteCheckedException("Invalid delay parameter in schedule pattern [delay=" +
                             delayStr + ", pattern=" + pat + ']', e);
                     }
 
@@ -370,12 +371,12 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
                         maxCalls0 = Integer.valueOf(numOfCallsStr);
                     }
                     catch (NumberFormatException e) {
-                        throw new IgniteException("Invalid number of calls parameter in schedule pattern [numOfCalls=" +
+                        throw new IgniteCheckedException("Invalid number of calls parameter in schedule pattern [numOfCalls=" +
                             numOfCallsStr + ", pattern=" + pat + ']', e);
                     }
 
                     if (maxCalls0 <= 0)
-                        throw new IgniteException("Number of calls must be greater than 0 or must be equal to \"*\"" +
+                        throw new IgniteCheckedException("Number of calls must be greater than 0 or must be equal to \"*\"" +
                             " in schedule pattern [numOfCalls=" + maxCalls0 + ", pattern=" + pat + ']');
                 }
 
@@ -391,12 +392,12 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
 
             // Cron expression should never be empty and should be of correct format.
             if (cron == null || cron.isEmpty())
-                throw new IgniteException("Invalid cron expression in schedule pattern: " + pat);
+                throw new IgniteCheckedException("Invalid cron expression in schedule pattern: " + pat);
 
             sched.validate(cron);
         }
         else
-            throw new IgniteException("Invalid schedule pattern: " + pat);
+            throw new IgniteCheckedException("Invalid schedule pattern: " + pat);
     }
 
     /** {@inheritDoc} */
@@ -514,12 +515,8 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
     /** {@inheritDoc} */
     @Override public R last() throws IgniteException {
         synchronized (mux) {
-            if (lastErr != null) {
-                if (lastErr instanceof IgniteException)
-                    throw (IgniteException)lastErr;
-                else
-                    throw U.convertException(U.cast(lastErr));
-            }
+            if (lastErr != null)
+                throw U.convertException(U.cast(lastErr));
 
             return lastRes;
         }

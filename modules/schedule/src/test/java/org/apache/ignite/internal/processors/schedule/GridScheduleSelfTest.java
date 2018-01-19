@@ -137,11 +137,13 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
                 new Runnable() {
                     @Override public void run() {
                         latch.countDown();
+
                         info(">>> EXECUTING SCHEDULED RUNNABLE! <<<");
                     }
                 },
                 "{2, 2} * * * * *");
-            assertNotDone(fut);
+
+            assert !fut.isDone();
             assert !fut.isCancelled();
             assert fut.last() == null;
 
@@ -209,7 +211,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
             assertEquals(0, latch.getCount());
 
-            assertNotDone(fut);
+            assert !fut.isDone();
             assert !fut.isCancelled();
             assert fut.last() == null;
             assertFalse(chained1.isDone());
@@ -241,8 +243,8 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
     public void testScheduleCallable() throws Exception {
         SchedulerFuture<Integer> fut = null;
 
-        long freq = 60; // 1 minute frequency.
-        long delay = 1; // 1 seconds delay.
+        long freq = 1; // 1 second frequency.
+        long delay = 2; // 2 seconds delay.
         Integer cnt = 7;
         try {
             fut = grid(0).scheduler().scheduleLocal(new Callable<Integer>() {
@@ -251,7 +253,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
                 @Override public Integer call() {
                     info(">>> EXECUTING SCHEDULED CALLABLE! <<<");
 
-                    return ++this.cnt;
+                    return ++cnt;
                 }
             }, "{1, " + cnt + "} * * * * * ?"); //with Day of week
 
@@ -263,32 +265,35 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
                 }
             });
 
-            assertNotDone(fut);
+            assert !fut.isDone();
             assert !fut.isCancelled();
             assert fut.last() == null;
+
             assertEquals(0, fut.count());
 
             long timeTillRun = freq + delay;
+
             for (int i = 1; i < cnt; i++) {
                 info("Going to wait for the " + i + "th run: " + timeTillRun);
 
                 assertEquals((Integer)i, fut.get(timeTillRun, SECONDS));
                 assertEquals((Integer)i, fut.last());
                 assertEquals(i, fut.count());
-                assertNotDone(fut);
-                assert !fut.isCancelled();
+
+                assertFalse(fut.isDone());
+                assertFalse(fut.isCancelled());
             }
             info("Going to wait for the last run: " + timeTillRun);
 
             assertEquals(cnt, fut.get(timeTillRun, SECONDS));
             assertEquals(cnt, fut.last());
-            assertEquals(cnt, (Integer)notifyCnt.get());
 
-            assert fut.isDone();
-            assert !fut.isCancelled();
+            assertTrue(fut.isDone());
+
+            assertFalse(fut.isCancelled());
         }
         finally {
-            assert fut != null;
+            assertNotNull(fut);
 
             fut.cancel();
         }
@@ -297,7 +302,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testRunnableCancelAfterFirstLaunch() throws Exception {
+    public void testCancelAfterFirstLaunch() throws Exception {
         SchedulerFuture<Integer> fut = null;
 
         long freq = 1; // 1 second frequency.
@@ -323,8 +328,8 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
                 }
             });
 
-            assertNotDone(fut);
-            assert !fut.isCancelled();
+            assertFalse(fut.isDone());
+            assertFalse(fut.isCancelled());
             assertNull(fut.last());
             assertEquals(0, fut.count());
 
@@ -335,14 +340,15 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             assertEquals((Integer)1, fut.get(timeTillRun, SECONDS));
             assertEquals((Integer)1, fut.last());
             assertEquals(1, fut.count());
-            assertNotDone(fut);
-            assert !fut.isCancelled();
+
+            assertFalse(fut.isDone());
+            assertFalse(fut.isCancelled());
 
             info("Cancelling ScheduledFuture");
             fut.cancel();
 
-            assert fut.isCancelled();
-            assert fut.isDone();
+            assertTrue(fut.isCancelled());
+            assertTrue(fut.isDone());
 
             try {
                 fut.get();
@@ -361,11 +367,8 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             catch (IgniteException e) {
                 info("Caught expected exception: " + e);
             }
-            assertEquals(Integer.valueOf(1), fut.last());
-            //wait to check not executed by schedule
-            Thread.sleep(timeTillRun * 1000);
+            assertEquals((Integer)1, fut.last());
             assertEquals(1, execCnt.get());
-            assertEquals(1, notifyCnt.get());
         }
         finally {
             assert fut != null;
@@ -515,22 +518,24 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        SchedulerFuture<Integer> fut = grid(0).scheduler().scheduleLocal(run, "{55} 53 3/5 * * *");
+        SchedulerFuture<Integer> future = grid(0).scheduler().scheduleLocal(run, "{55} 53 3/5 * * *");
 
         try {
-            fut.get();
+            future.get();
 
             fail("Accepted wrong cron expression");
         }
         catch (IgniteException e) {
-            info("Caught expected exception: " + e);
+            if (!e.getMessage().startsWith("Invalid cron expression in schedule pattern")) {
+                fail("unexpected exception ");
+            }
         }
 
-        assertTrue(fut.isDone());
+        assertTrue(future.isDone());
 
-        assertEquals(0, fut.nextExecutionTime());
+        assertEquals(0, future.nextExecutionTime());
 
-        assertEquals(0, fut.nextExecutionTimes(2, System.currentTimeMillis()).length);
+        assertEquals(0, future.nextExecutionTimes(2, System.currentTimeMillis()).length);
     }
 
     /**
@@ -546,21 +551,17 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
         SchedulerFuture<Integer> fut = grid(0).scheduler().scheduleLocal(run, "{1, 5} * * * * *");
 
         fut.get();
+
         assertFalse(fut.isDone());
 
         assertTrue(fut.nextExecutionTime() != 0);
 
         long[] times = fut.nextExecutionTimes(10, System.currentTimeMillis());
+
         assertEquals(5, times.length);
+
         for (long time : times) {
             info("execution at :" + new Date(time));
-        }
-    }
-
-    private void assertNotDone(SchedulerFuture<?> fut) {
-        if (fut.isDone()) {
-            fut.last();// throw an exception if available
-            assert false : "must not be done ";
         }
     }
 
