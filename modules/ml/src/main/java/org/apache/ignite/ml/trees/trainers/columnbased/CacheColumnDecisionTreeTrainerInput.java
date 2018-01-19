@@ -31,7 +31,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 
 /**
- * Adapter of a given cache to {@see CacheColumnDecisionTreeTrainerInput}
+ * Adapter of a given cache to {@link CacheColumnDecisionTreeTrainerInput}
  *
  * @param <K> Class of keys of the cache.
  * @param <V> Class of values of the cache.
@@ -66,11 +66,10 @@ public abstract class CacheColumnDecisionTreeTrainerInput<K, V> implements Colum
     private final IgniteFunction<V, DoubleStream> labelsMapper;
 
     /**
-     * Constructs input for {@see org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainer}.
+     * Constructs input for {@link ColumnDecisionTreeTrainer}.
      *
      * @param c Cache.
-     * @param valuesMapper Function for mapping cache entry to stream used by {@link
-     * org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainer}.
+     * @param valuesMapper Function for mapping cache entry to stream used by {@link ColumnDecisionTreeTrainer}.
      * @param labelsMapper Function used for mapping cache value to labels array.
      * @param keyMapper Function used for mapping feature index to the cache key.
      * @param catFeaturesInfo Information about which features are categorical in form of feature index -> number of

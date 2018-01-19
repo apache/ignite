@@ -1427,15 +1427,18 @@ export default class IgniteConfigurationGenerator {
 
         storageBean.stringProperty('storagePath')
             .intProperty('checkpointFrequency')
-            .longProperty('checkpointPageBufferSize')
             .intProperty('checkpointThreads')
             .enumProperty('walMode')
             .stringProperty('walPath')
             .stringProperty('walArchivePath')
             .intProperty('walSegments')
             .intProperty('walSegmentSize')
-            .intProperty('walHistorySize')
-            .longProperty('walFlushFrequency')
+            .intProperty('walHistorySize');
+
+        if (available('2.4.0'))
+            storageBean.intProperty('walBufferSize');
+
+        storageBean.longProperty('walFlushFrequency')
             .longProperty('walFsyncDelayNanos')
             .intProperty('walRecordIteratorBufferSize')
             .longProperty('lockWaitTime')
@@ -1446,6 +1449,9 @@ export default class IgniteConfigurationGenerator {
             .boolProperty('metricsEnabled')
             .boolProperty('alwaysWriteFullPages')
             .boolProperty('writeThrottlingEnabled');
+
+        if (available('2.4.0'))
+            storageBean.boolProperty('walCompactionEnabled');
 
         const fileIOFactory = _.get(dataStorageCfg, 'fileIOFactory');
 
@@ -1479,7 +1485,8 @@ export default class IgniteConfigurationGenerator {
                 .boolProperty('cacheSanityCheckEnabled');
         }
 
-        cfg.boolProperty('lateAffinityAssignment');
+        if (available(['1.0.0', '2.1.0']))
+            cfg.boolProperty('lateAffinityAssignment');
 
         return cfg;
     }
@@ -1509,30 +1516,34 @@ export default class IgniteConfigurationGenerator {
 
     // Generate marshaller group.
     static clusterMarshaller(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
-        const kind = _.get(cluster.marshaller, 'kind');
-        const settings = _.get(cluster.marshaller, kind);
+        if (available(['1.0.0', '2.1.0'])) {
+            const kind = _.get(cluster.marshaller, 'kind');
+            const settings = _.get(cluster.marshaller, kind);
 
-        let bean;
+            let bean;
 
-        switch (kind) {
-            case 'OptimizedMarshaller':
-                bean = new Bean('org.apache.ignite.marshaller.optimized.OptimizedMarshaller', 'marshaller', settings)
-                    .intProperty('poolSize')
-                    .intProperty('requireSerializable');
+            switch (kind) {
+                case 'OptimizedMarshaller':
+                    if (available(['1.0.0', '2.0.0'])) {
+                        bean = new Bean('org.apache.ignite.marshaller.optimized.OptimizedMarshaller', 'marshaller', settings)
+                            .intProperty('poolSize')
+                            .intProperty('requireSerializable');
+                    }
 
-                break;
+                    break;
 
-            case 'JdkMarshaller':
-                bean = new Bean('org.apache.ignite.marshaller.jdk.JdkMarshaller', 'marshaller', settings);
+                case 'JdkMarshaller':
+                    bean = new Bean('org.apache.ignite.marshaller.jdk.JdkMarshaller', 'marshaller', settings);
 
-                break;
+                    break;
 
-            default:
+                default:
                 // No-op.
-        }
+            }
 
-        if (bean)
-            cfg.beanProperty('marshaller', bean);
+            if (bean)
+                cfg.beanProperty('marshaller', bean);
+        }
 
         cfg.intProperty('marshalLocalJobs');
 
@@ -1881,40 +1892,59 @@ export default class IgniteConfigurationGenerator {
     /**
      * Generate eviction policy object.
      * @param {Object} ccfg Parent configuration.
-     * @param {String} name Property name.
+     * @param {Function} available Function to check feature is supported in Ignite current version.
+     * @param {Boolean} near Near cache flag.
      * @param {Object} src Source.
      * @param {Object} dflt Default.
      * @returns {Object} Parent configuration.
      * @private
      */
-    static _evictionPolicy(ccfg, name, src, dflt) {
-        let bean;
+    static _evictionPolicy(ccfg, available, near, src, dflt) {
+        let propName;
+        let beanProps;
 
-        switch (_.get(src, 'kind')) {
-            case 'LRU':
-                bean = new Bean('org.apache.ignite.cache.eviction.lru.LruEvictionPolicy', 'evictionPlc',
-                    src.LRU, dflt.LRU);
+        if (available('2.4.0')) {
+            switch (_.get(src, 'kind')) {
+                case 'LRU': beanProps = {cls: 'org.apache.ignite.cache.eviction.lru.LruEvictionPolicyFactory', src: src.LRU };
+                    break;
 
-                break;
-            case 'FIFO':
-                bean = new Bean('org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy', 'evictionPlc',
-                    src.FIFO, dflt.FIFO);
+                case 'FIFO': beanProps = {cls: 'org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicyFactory', src: src.FIFO };
+                    break;
 
-                break;
-            case 'SORTED':
-                bean = new Bean('org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicy', 'evictionPlc',
-                    src.SORTED, dflt.SORTED);
+                case 'SORTED': beanProps = {cls: 'org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicyFactory', src: src.SORTED };
+                    break;
 
-                break;
-            default:
-                return ccfg;
+                default:
+                    return ccfg;
+            }
+
+            propName = (near ? 'nearEviction' : 'eviction') + 'PolicyFactory';
         }
+        else {
+            switch (_.get(src, 'kind')) {
+                case 'LRU': beanProps = {cls: 'org.apache.ignite.cache.eviction.lru.LruEvictionPolicy', src: src.LRU };
+                    break;
+
+                case 'FIFO': beanProps = {cls: 'org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy', src: src.FIFO };
+                    break;
+
+                case 'SORTED': beanProps = {cls: 'org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicy', src: src.SORTED };
+                    break;
+
+                default:
+                    return ccfg;
+            }
+
+            propName = (near ? 'nearEviction' : 'eviction') + 'Policy';
+        }
+
+        const bean = new Bean(beanProps.cls, propName, beanProps.src, dflt);
 
         bean.intProperty('batchSize')
             .intProperty('maxMemorySize')
             .intProperty('maxSize');
 
-        ccfg.beanProperty(name, bean);
+        ccfg.beanProperty(propName, bean);
 
         return ccfg;
     }
@@ -2013,7 +2043,7 @@ export default class IgniteConfigurationGenerator {
                 .emptyBeanProperty('evictionFilter');
         }
 
-        this._evictionPolicy(ccfg, 'evictionPolicy', cache.evictionPolicy, cacheDflts.evictionPolicy);
+        this._evictionPolicy(ccfg, available, false, cache.evictionPolicy, cacheDflts.evictionPolicy);
 
         // Removed in ignite 2.0
         if (available(['1.0.0', '2.0.0'])) {
@@ -2249,15 +2279,14 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate server near cache group.
-    static cacheNearServer(cache, ccfg = this.cacheConfigurationBean(cache)) {
+    static cacheNearServer(cache, available, ccfg = this.cacheConfigurationBean(cache)) {
         if (ccfg.valueOf('cacheMode') === 'PARTITIONED' && _.get(cache, 'nearConfiguration.enabled')) {
             const bean = new Bean('org.apache.ignite.configuration.NearCacheConfiguration', 'nearConfiguration',
                 cache.nearConfiguration, cacheDflts.nearConfiguration);
 
             bean.intProperty('nearStartSize');
 
-            this._evictionPolicy(bean, 'nearEvictionPolicy',
-                bean.valueOf('nearEvictionPolicy'), cacheDflts.evictionPolicy);
+            this._evictionPolicy(bean, available, true, bean.valueOf('nearEvictionPolicy'), cacheDflts.evictionPolicy);
 
             ccfg.beanProperty('nearConfiguration', bean);
         }
@@ -2266,7 +2295,7 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate client near cache group.
-    static cacheNearClient(cache, ccfg = this.cacheConfigurationBean(cache)) {
+    static cacheNearClient(cache, available, ccfg = this.cacheConfigurationBean(cache)) {
         if (ccfg.valueOf('cacheMode') === 'PARTITIONED' && _.get(cache, 'clientNearConfiguration.enabled')) {
             const bean = new Bean('org.apache.ignite.configuration.NearCacheConfiguration',
                 javaTypes.toJavaName('nearConfiguration', ccfg.valueOf('name')),
@@ -2274,8 +2303,7 @@ export default class IgniteConfigurationGenerator {
 
             bean.intProperty('nearStartSize');
 
-            this._evictionPolicy(bean, 'nearEvictionPolicy',
-                bean.valueOf('nearEvictionPolicy'), cacheDflts.evictionPolicy);
+            this._evictionPolicy(bean, available, true, bean.valueOf('nearEvictionPolicy'), cacheDflts.evictionPolicy);
 
             return bean;
         }
@@ -2319,7 +2347,7 @@ export default class IgniteConfigurationGenerator {
         this.cacheNodeFilter(cache, igfs ? [igfs] : [], ccfg);
         this.cacheConcurrency(cache, available, ccfg);
         this.cacheRebalance(cache, ccfg);
-        this.cacheNearServer(cache, ccfg);
+        this.cacheNearServer(cache, available, ccfg);
         this.cacheStatistics(cache, ccfg);
         this.cacheDomains(cache.domains, available, ccfg);
 

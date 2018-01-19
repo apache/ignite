@@ -49,7 +49,8 @@ public class PagesWriteThrottle {
     }
 
     /**
-     *
+     * Callback to apply throttling delay.
+     * @param isInCheckpoint flag indicating if checkpoint is running.
      */
     public void onMarkDirty(boolean isInCheckpoint) {
         assert dbSharedMgr.checkpointLockIsHeldByThread();

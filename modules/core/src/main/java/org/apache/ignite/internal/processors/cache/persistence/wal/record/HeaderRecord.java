@@ -25,10 +25,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class HeaderRecord extends WALRecord {
     /** Magic of regular WAL segment. */
-    public static final long REGULAR_MAGIC = 0xB0D045A_CE7ED045AL;
+    public static final long REGULAR_MAGIC = 0xB0D045AC_E7ED045AL;
 
     /** Magic of WAL segment with skipped physical records. */
-    public static final long COMPACTED_MAGIC = 0x4E07AE0_E573A694EL;
+    public static final long COMPACTED_MAGIC = 0x4E07AE0E_573A694EL;
 
     /** Serializer version */
     private final int ver;

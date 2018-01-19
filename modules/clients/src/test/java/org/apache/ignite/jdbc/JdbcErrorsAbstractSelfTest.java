@@ -107,7 +107,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
     public void testDmlErrors() throws SQLException {
         checkErrorState("INSERT INTO \"test\".INTEGER(_key, _val) values(1, null)", "22004");
 
-        checkErrorState("INSERT INTO \"test\".INTEGER(_key, _val) values(1, 'zzz')", "50000");
+        checkErrorState("INSERT INTO \"test\".INTEGER(_key, _val) values(1, 'zzz')", "0700B");
     }
 
     /**
@@ -115,7 +115,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
      * @throws SQLException if failed.
      */
     public void testUnsupportedSql() throws SQLException {
-        checkErrorState("ALTER TABLE \"test\".Integer DROP COLUMN _key", "0A000");
+        checkErrorState("ALTER TABLE \"test\".Integer MODIFY COLUMN _key CHAR", "0A000");
     }
 
     /**

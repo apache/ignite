@@ -82,6 +82,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
+import static org.apache.ignite.testframework.GridTestUtils.mergeExchangeWaitVersion;
 
 /**
  *
@@ -1175,15 +1176,6 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
         });
 
         return latch;
-    }
-
-    /**
-     * @param node Node.
-     * @param topVer Ready exchange version to wait for before trying to merge exchanges.
-     */
-    private void mergeExchangeWaitVersion(Ignite node, long topVer) {
-        ((IgniteKernal)node).context().cache().context().exchange().mergeExchangesTestWaitVersion(
-            new AffinityTopologyVersion(topVer, 0));
     }
 
     /**
