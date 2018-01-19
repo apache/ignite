@@ -40,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
@@ -57,9 +58,13 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         cfg.setClientMode(client);
 
+        cfg.setConsistentId("NODE$" + gridName.charAt(gridName.length() - 1));
+
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024).setPersistenceEnabled(true))
+                new DataRegionConfiguration()
+                    .setMaxSize(200 * 1024 * 1024)
+                    .setPersistenceEnabled(true))
             .setWalMode(WALMode.LOG_ONLY);
 
         cfg.setDataStorageConfiguration(memCfg);
@@ -104,9 +109,13 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
         final int entryCnt = 10_000;
         final int initGridCnt = 4;
 
-        final IgniteEx ig0 = (IgniteEx)startGrids(initGridCnt);
+        final IgniteEx ig0 = (IgniteEx)startGrids(initGridCnt + 1);
 
         ig0.active(true);
+
+        stopGrid(initGridCnt);
+
+        Assert.assertEquals(5, ig0.context().state().clusterState().baselineTopology().consistentIds().size());
 
         long start = U.currentTimeMillis();
 
