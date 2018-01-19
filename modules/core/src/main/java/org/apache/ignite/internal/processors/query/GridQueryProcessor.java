@@ -2466,15 +2466,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     *
-     * @param cacheName Cache name.
+     * @param schemaName Schema name.
      * @param sql Query.
      * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
+     * @throws SQLException On error.
      */
-    public PreparedStatement prepareNativeStatement(String cacheName, String sql) throws SQLException {
+    public PreparedStatement prepareNativeStatement(String schemaName, String sql) throws SQLException {
         checkxEnabled();
-
-        String schemaName = idx.schema(cacheName);
 
         return idx.prepareNativeStatement(schemaName, sql);
     }
