@@ -112,6 +112,10 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             try
             {
+                // * Source release home (ignite.bat??? see C++ logic)
+                // * Binary release home (libs\ignite-core-x.y.z.jar)
+                // * NuGet home (libs\ignite-core-x.y.z.jar).
+
                 return dir.Exists &&
                        (dir.EnumerateDirectories().Count(x => x.Name == "examples" || x.Name == "bin") == 2 &&
                         dir.EnumerateDirectories().Count(x => x.Name == "modules" || x.Name == "platforms") == 1)
