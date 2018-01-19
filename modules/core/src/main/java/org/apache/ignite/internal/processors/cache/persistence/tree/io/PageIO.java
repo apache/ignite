@@ -207,6 +207,23 @@ public abstract class PageIO {
     /** */
     public static final short T_DATA_REF_METASTORAGE_LEAF = 23;
 
+    /** */
+    public static final short T_DATA_REF_MVCC_INNER = 24;
+
+    /** */
+    public static final short T_DATA_REF_MVCC_LEAF = 25;
+
+    /** */
+    public static final short T_CACHE_ID_DATA_REF_MVCC_INNER = 26;
+
+    /** */
+    public static final short T_CACHE_ID_DATA_REF_MVCC_LEAF = 27;
+
+    /** */
+    public static final short T_H2_MVCC_REF_LEAF = 28;
+
+    /** */
+    public static final short T_H2_MVCC_REF_INNER = 29;
 
     /** Index for payload == 1. */
     public static final short T_H2_EX_REF_LEAF_START = 10_000;
@@ -231,24 +248,6 @@ public abstract class PageIO {
 
     /** */
     public static final short T_H2_EX_REF_MVCC_INNER_END = T_H2_EX_REF_MVCC_INNER_START + MAX_PAYLOAD_SIZE - 1;
-
-    /** */
-    public static final short T_DATA_REF_MVCC_INNER = 21;
-
-    /** */
-    public static final short T_DATA_REF_MVCC_LEAF = 22;
-
-    /** */
-    public static final short T_CACHE_ID_DATA_REF_MVCC_INNER = 23;
-
-    /** */
-    public static final short T_CACHE_ID_DATA_REF_MVCC_LEAF = 24;
-
-    /** */
-    public static final short T_H2_MVCC_REF_LEAF = 25;
-
-    /** */
-    public static final short T_H2_MVCC_REF_INNER = 26;
 
     /** */
     private final int ver;

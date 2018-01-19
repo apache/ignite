@@ -820,7 +820,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     /** {@inheritDoc} */
     @Override public void addDiagnosticRequest(IgniteDiagnosticPrepareContext ctx) {
         if (!isDone()) {
-            for (IgniteInternalFuture<GridNearTxPrepareResponse> fut : futures()) {
+            for (IgniteInternalFuture fut : futures()) {
                 if (!fut.isDone()) {
                     if (fut instanceof MiniFuture) {
                         MiniFuture miniFut = (MiniFuture)fut;
