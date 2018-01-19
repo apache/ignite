@@ -201,7 +201,7 @@ if "%MAIN_CLASS%" == "" set MAIN_CLASS=org.apache.ignite.internal.commandline.Co
 ::
 :: Final JVM_OPTS for Java 9 compatibility
 ::
-"%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr /R /c:"java version .9\..*" > nul && set JVM_OPTS=--add-exports java.base/jdk.internal.misc=ALL-UNNAMED --add-exports java.base/sun.nio.ch=ALL-UNNAMED --add-exports java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED %JVM_OPTS%
+"%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr /R /c:"java version .9\..*" > nul && set JVM_OPTS=--add-exports java.base/jdk.internal.misc=ALL-UNNAMED --add-exports java.base/sun.nio.ch=ALL-UNNAMED --add-exports java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED  --add-modules java.xml.bind %JVM_OPTS%
 
 if "%INTERACTIVE%" == "1" (
     "%JAVA_HOME%\bin\java.exe" %JVM_OPTS% %QUIET% %RESTART_SUCCESS_OPT% %JMX_MON% ^
