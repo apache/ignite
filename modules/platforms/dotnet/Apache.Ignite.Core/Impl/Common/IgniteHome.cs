@@ -112,10 +112,6 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             try
             {
-                // * Source release home (ignite.bat??? see C++ logic)
-                // * Binary release home (libs\ignite-core-x.y.z.jar)
-                // * NuGet home (libs\ignite-core-x.y.z.jar).
-
                 if (!dir.Exists)
                 {
                     return false;
@@ -129,9 +125,11 @@ namespace Apache.Ignite.Core.Impl.Common
                     return true;
                 }
 
-                // Source release:
-                // TODO
-                return false;
+                // Source release home:
+                var javaSrc = Path.Combine(dir.FullName,
+                    "modules", "core", "src", "main", "java", "org", "apache", "ignite");
+
+                return Directory.Exists(javaSrc);
             }
             catch (IOException)
             {
