@@ -242,16 +242,19 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         {
             // TODO: Detect Java version and append Java9 args only when needed.
             // TODO: JvmDll.Instance.GetDefaultJvmInitArgs()
+            var args = new JvmInitArgs
+            {
+                version = JNI_VERSION_1_6
+            };
+
+            JvmDll.Instance.GetDefaultJvmInitArgs(&args);
+            Console.WriteLine(args.version);
 
             options = options == null
                 ? Java9Options.ToList()
                 : new List<string>(options.Concat(Java9Options));
 
-            var args = new JvmInitArgs
-            {
-                version = JNI_VERSION_1_6,
-                nOptions = options.Count
-            };
+            args.nOptions = options.Count;
 
             var opts = GetJvmOptions(options);
 
