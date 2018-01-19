@@ -543,6 +543,10 @@ public abstract class IgniteUtils {
      */
     private static final Field urlClsLdrField = urlClassLoaderField();
 
+    /** Dev only logging disabled. */
+    private static boolean devOnlyLogDisabled =
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DEV_ONLY_LOGGING_DISABLED);
+
     /*
      * Initializes enterprise check.
      */
@@ -4286,7 +4290,7 @@ public abstract class IgniteUtils {
         assert msg != null;
 
         // don't log message if DEV_ONLY messages are disabled
-        if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DEV_ONLY_LOGGING_DISABLED))
+        if (devOnlyLogDisabled)
             return;
 
         if (log != null)
