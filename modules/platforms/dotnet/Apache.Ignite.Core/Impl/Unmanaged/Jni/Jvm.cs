@@ -248,7 +248,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             };
 
             JvmDll.Instance.GetDefaultJvmInitArgs(&args);
-            Console.WriteLine(args.version);
+            Debug.Assert(args.version == JNI_VERSION_1_6);  // Looks like Java 9 is the same :(
 
             options = options == null
                 ? Java9Options.ToList()
