@@ -43,6 +43,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Pattern;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -118,6 +119,7 @@ import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisito
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.internal.sql.SqlParser;
+import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
@@ -1381,7 +1383,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private List<FieldsQueryCursor<List<?>>> tryQueryDistributedSqlFieldsNative(String schemaName, SqlFieldsQuery qry) {
         // Heuristic check for fast return.
-        if (!qry.getSql().toUpperCase().contains("INDEX"))
+        if (!Pattern.compile("INDEX|^COPY ").matcher(qry.getSql().trim().toUpperCase()).find())
             return null;
 
         // Parse.
@@ -1397,7 +1399,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 return null;
 
             // Only CREATE/DROP INDEX is supported for now.
-            if (!(cmd instanceof SqlCreateIndexCommand || cmd instanceof SqlDropIndexCommand))
+            if (!(cmd instanceof SqlCreateIndexCommand || cmd instanceof SqlDropIndexCommand ||
+                cmd instanceof SqlBulkLoadCommand))
                 return null;
         }
         catch (Exception e) {
@@ -1417,17 +1420,36 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         // Execute.
-        try {
-            List<FieldsQueryCursor<List<?>>> ress = new ArrayList<>(1);
 
-            FieldsQueryCursor<List<?>> res = ddlProc.runDdlStatement(qry.getSql(), cmd);
+        if (cmd instanceof SqlBulkLoadCommand) {
+            // DML
+            try {
+                List<FieldsQueryCursor<List<?>>> cursors = new ArrayList<>(1);
 
-            ress.add(res);
+                FieldsQueryCursor<List<?>> cursor = dmlProc.runDmlStatement(qry.getSql(), cmd);
 
-            return ress;
+                cursors.add(cursor);
+
+                return cursors;
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + qry.getSql() + ']', e);
+            }
         }
-        catch (IgniteCheckedException e) {
-            throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + qry.getSql() + ']', e);
+        else {
+            // DDL
+            try {
+                List<FieldsQueryCursor<List<?>>> ress = new ArrayList<>(1);
+
+                FieldsQueryCursor<List<?>> res = ddlProc.runDdlStatement(qry.getSql(), cmd);
+
+                ress.add(res);
+
+                return ress;
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + qry.getSql() + ']', e);
+            }
         }
     }
 

@@ -113,7 +113,7 @@ public class BulkLoadCsvParser extends BulkLoadParser {
                 convertedFields.add(field);
             }
 
-            result.add(Arrays.asList(fields));
+            result.add(convertedFields);
         }
 
         return result;

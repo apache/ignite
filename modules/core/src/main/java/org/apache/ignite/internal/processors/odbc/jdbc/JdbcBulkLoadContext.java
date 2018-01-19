@@ -17,29 +17,18 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.internal.processors.bulkload.BulkLoadEntryConverter;
-import org.apache.ignite.internal.processors.bulkload.BulkLoadParser;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadContext;
 
 /** FIXME SHQ */
 public class JdbcBulkLoadContext {
 
     private final JdbcFilesToSendResult cmdParsingResult;
 
-    private final BulkLoadParser inputParser;
+    private final BulkLoadContext loadContext;
 
-    private final BulkLoadEntryConverter dataConverter;
-
-    private final IgniteDataStreamer<Object, Object> outputStreamer;
-
-    public JdbcBulkLoadContext(JdbcFilesToSendResult cmdParsingResult,
-        BulkLoadParser inputParser, BulkLoadEntryConverter dataConverter,
-        IgniteDataStreamer<Object, Object> outputStreamer) {
-
+    public JdbcBulkLoadContext(JdbcFilesToSendResult cmdParsingResult, BulkLoadContext context) {
         this.cmdParsingResult = cmdParsingResult;
-        this.inputParser = inputParser;
-        this.dataConverter = dataConverter;
-        this.outputStreamer = outputStreamer;
+        loadContext = context;
     }
 
     /**
@@ -49,10 +38,6 @@ public class JdbcBulkLoadContext {
      */
     public long queryId() {
         return cmdParsingResult.queryId();
-    }
-
-    public void queryId(long id) {
-        cmdParsingResult.queryId(id);
     }
 
     /**
@@ -65,29 +50,11 @@ public class JdbcBulkLoadContext {
     }
 
     /**
-     * Returns the inputParser.
+     * Returns the loadContext.
      *
-     * @return inputParser.
+     * @return loadContext.
      */
-    public BulkLoadParser inputParser() {
-        return inputParser;
-    }
-
-    /**
-     * Returns the dataConverter.
-     *
-     * @return dataConverter.
-     */
-    public BulkLoadEntryConverter dataConverter() {
-        return dataConverter;
-    }
-
-    /**
-     * Returns the outputStreamer.
-     *
-     * @return outputStreamer.
-     */
-    public IgniteDataStreamer<Object, Object> outputStreamer() {
-        return outputStreamer;
+    public BulkLoadContext loadContext() {
+        return loadContext;
     }
 }

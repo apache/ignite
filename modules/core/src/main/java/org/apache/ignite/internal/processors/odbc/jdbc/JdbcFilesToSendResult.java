@@ -27,19 +27,19 @@ import java.util.UUID;
 public class JdbcFilesToSendResult extends JdbcResult {
 
     /** Query ID for matching this command on server in further {@link JdbcSendFileBatchRequest} commands. */
-    private long queryId;
+    private final long queryId;
 
     /** Local name of the file to send to server */
-    private String locFileName;
+    private final String locFileName;
 
     /**
      * Constructs a request from server (in form of reply) to send files from client to server.
      *
      * @param locFileName the local name of file to send.
      */
-    public JdbcFilesToSendResult(String locFileName) {
+    public JdbcFilesToSendResult(long queryId, String locFileName) {
         super(SEND_FILE);
-        this.queryId = -1;
+        this.queryId = queryId;
         this.locFileName = locFileName;
     }
 
@@ -50,10 +50,6 @@ public class JdbcFilesToSendResult extends JdbcResult {
      */
     public long queryId() {
         return queryId;
-    }
-
-    public void queryId(long id) {
-        queryId = id;
     }
 
     /**

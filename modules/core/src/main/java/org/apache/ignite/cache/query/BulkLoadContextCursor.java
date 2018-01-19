@@ -17,9 +17,11 @@
 
 package org.apache.ignite.cache.query;
 
+import org.apache.ignite.internal.processors.bulkload.BulkLoadContext;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadContext;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -27,18 +29,21 @@ import java.util.List;
 /** FIXME SHQ */
 public class BulkLoadContextCursor implements FieldsQueryCursor<List<?>> {
 
-    private JdbcBulkLoadContext bulkLoadContext;
+    private BulkLoadContext bulkLoadContext;
 
-    public BulkLoadContextCursor(JdbcBulkLoadContext bulkLoadContext) {
+    public BulkLoadContextCursor(BulkLoadContext bulkLoadContext) {
         this.bulkLoadContext = bulkLoadContext;
     }
 
-    public JdbcBulkLoadContext bulkLoadContext() {
+    public BulkLoadContext bulkLoadContext() {
         return bulkLoadContext;
     }
 
     @Override public List<List<?>> getAll() {
-        return Collections.singletonList(Collections.singletonList(bulkLoadContext()));
+        // With Java generics it's not possible to convert this using two singletonList() calls
+        List<List<?>> result = new ArrayList<>();
+        result.add(Collections.singletonList(bulkLoadContext));
+        return result;
     }
 
     @NotNull @Override public Iterator<List<?>> iterator() {
@@ -50,7 +55,7 @@ public class BulkLoadContextCursor implements FieldsQueryCursor<List<?>> {
     }
 
     @Override public String getFieldName(int idx) {
-        return "bulkLoadCursor"; // dummy stub
+        return "bulkLoadContext"; // dummy stub
     }
 
     @Override public int getColumnsCount() {
