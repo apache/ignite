@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryMetricsUpdater;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
@@ -71,6 +72,9 @@ public class FilePageStore implements PageStore {
     /** */
     private final AtomicLong allocated;
 
+    /** Region metrics updater. */
+    private final PageMemoryMetricsUpdater metricsUpdater;
+
     /** */
     private final int pageSize;
 
@@ -92,16 +96,19 @@ public class FilePageStore implements PageStore {
     /**
      * @param file File.
      */
-    public FilePageStore(byte type, File file, FileIOFactory factory, DataStorageConfiguration cfg) {
+    public FilePageStore(
+        byte type,
+        File file,
+        FileIOFactory factory,
+        DataStorageConfiguration cfg,
+        PageMemoryMetricsUpdater metricsUpdater) {
         this.type = type;
-
-        cfgFile = file;
-        dbCfg = cfg;
-        ioFactory = factory;
-
-        allocated = new AtomicLong();
-
-        pageSize = dbCfg.getPageSize();
+        this.cfgFile = file;
+        this.dbCfg = cfg;
+        this.ioFactory = factory;
+        this.allocated = new AtomicLong();
+        this.pageSize = dbCfg.getPageSize();
+        this.metricsUpdater = metricsUpdater;
     }
 
     /** {@inheritDoc} */
@@ -261,7 +268,15 @@ public class FilePageStore implements PageStore {
 
             fileIO.clear();
 
-            allocated.set(initFile());
+            long newAlloc = initFile();
+
+            allocated.set(newAlloc);
+
+            long delta = newAlloc - allocated.get();
+
+            assert delta % pageSize == 0;
+
+            metricsUpdater.updateTotalAllocatedPages(delta / pageSize);
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);
@@ -294,8 +309,17 @@ public class FilePageStore implements PageStore {
         try {
             // Since we always have a meta-page in the store, never revert allocated counter to a value smaller than
             // header + page.
-            if (inited)
-                allocated.set(Math.max(headerSize() + pageSize, fileIO.size()));
+            if (inited) {
+                long newSize = Math.max(headerSize() + pageSize, fileIO.size());
+
+                long delta = newSize - allocated.get();
+
+                assert delta % pageSize == 0;
+
+                metricsUpdater.updateTotalAllocatedPages(delta / pageSize);
+
+                allocated.set(newSize);
+            }
 
             recover = false;
         }
@@ -407,10 +431,17 @@ public class FilePageStore implements PageStore {
                     try {
                         this.fileIO = fileIO = ioFactory.create(cfgFile, CREATE, READ, WRITE);
 
-                        if (cfgFile.length() == 0)
-                            allocated.set(initFile());
-                        else
-                            allocated.set(checkFile());
+                        long newSize = cfgFile.length() == 0 ? initFile() : checkFile();
+
+                        assert allocated.get() == 0;
+
+                        long delta = newSize - headerSize();
+
+                        assert delta % pageSize == 0;
+
+                        metricsUpdater.updateTotalAllocatedPages(delta / pageSize);
+
+                        allocated.set(newSize);
 
                         inited = true;
                     }
@@ -550,8 +581,11 @@ public class FilePageStore implements PageStore {
         do {
             off = allocated.get();
 
-            if (allocated.compareAndSet(off, off + pageSize))
+            if (allocated.compareAndSet(off, off + pageSize)) {
+                metricsUpdater.updateTotalAllocatedPages(1);
+
                 break;
+            }
         }
         while (true);
 

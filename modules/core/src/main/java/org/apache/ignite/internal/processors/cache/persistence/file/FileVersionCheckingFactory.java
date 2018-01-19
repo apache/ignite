@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryMetricsUpdater;
 
 /**
  * Checks version in files if it's present on the disk, creates store with latest version otherwise.
@@ -67,15 +68,18 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public FilePageStore createPageStore(byte type, File file) throws IgniteCheckedException {
+    @Override public FilePageStore createPageStore(
+        byte type,
+        File file,
+        PageMemoryMetricsUpdater metricsUpdater) throws IgniteCheckedException {
         if (!file.exists())
-            return createPageStore(type, file, latestVersion());
+            return createPageStore(type, file, latestVersion(), metricsUpdater);
 
         try (FileIO fileIO = fileIOFactoryStoreV1.create(file)) {
             int minHdr = FilePageStore.HEADER_SIZE;
 
             if (fileIO.size() < minHdr)
-                return createPageStore(type, file, latestVersion());
+                return createPageStore(type, file, latestVersion(), metricsUpdater);
 
             ByteBuffer hdr = ByteBuffer.allocate(minHdr).order(ByteOrder.LITTLE_ENDIAN);
 
@@ -88,7 +92,7 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
 
             int ver = hdr.getInt();
 
-            return createPageStore(type, file, ver);
+            return createPageStore(type, file, ver, metricsUpdater);
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Error while creating file page store [file=" + file + "]:", e);
@@ -116,14 +120,19 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
      * @param type Type.
      * @param file File.
      * @param ver Version.
+     * @param metricsUpdater Metrics updater
      */
-    public FilePageStore createPageStore(byte type, File file, int ver) {
+    public FilePageStore createPageStore(
+        byte type,
+        File file,
+        int ver,
+        PageMemoryMetricsUpdater metricsUpdater) {
         switch (ver) {
             case FilePageStore.VERSION:
-                return new FilePageStore(type, file, fileIOFactoryStoreV1, memCfg);
+                return new FilePageStore(type, file, fileIOFactoryStoreV1, memCfg, metricsUpdater);
 
             case FilePageStoreV2.VERSION:
-                return new FilePageStoreV2(type, file, fileIOFactory, memCfg);
+                return new FilePageStoreV2(type, file, fileIOFactory, memCfg, metricsUpdater);
 
             default:
                 throw new IllegalArgumentException("Unknown version of file page store: " + ver + " for file [" + file.getAbsolutePath() + "]");

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryMetricsUpdater;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -28,7 +29,7 @@ import org.jsr166.LongAdder8;
 /**
  *
  */
-public class DataRegionMetricsImpl implements DataRegionMetrics {
+public class DataRegionMetricsImpl implements DataRegionMetrics, PageMemoryMetricsUpdater {
     /** */
     private final IgniteOutClosure<Float> fillFactorProvider;
 
@@ -210,8 +211,13 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
      * Increments totalAllocatedPages counter.
      */
     public void incrementTotalAllocatedPages() {
+        updateTotalAllocatedPages(1);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void updateTotalAllocatedPages(long delta) {
         if (metricsEnabled) {
-            totalAllocatedPages.increment();
+            totalAllocatedPages.add(delta);
 
             updateAllocationRateMetrics();
         }
