@@ -36,6 +36,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import junit.framework.TestCase;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
@@ -60,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesWriteThrottle;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -82,7 +84,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     /** Cache name. */
     public static final String CACHE_NAME = "partitioned" + new Random().nextInt(10000000);
     public static final int OBJECT_SIZE = 40000;
-    public static final int CONTINUOUS_PUT_RECS_CNT = 250_000;
+    public static final int CONTINUOUS_PUT_RECS_CNT = 200_000;
     public static final String PUT_THREAD = "put-thread";
     public static final String GET_THREAD = "get-thread";
 
@@ -237,6 +239,11 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
         private Ignite ignite;
         private volatile boolean stopping;
 
+        private final AtomicLong prevCnt = new AtomicLong();
+        private final AtomicLong prevMsElapsed = new AtomicLong();
+        private final AtomicLong prevCpWrittenPages = new AtomicLong();
+        private final AtomicReference<FileWALPointer> prevWalPtrRef = new AtomicReference<>();
+
         ProgressWatchdog(Ignite ignite) throws IgniteCheckedException, IOException {
             this(ignite, "put");
         }
@@ -245,7 +252,10 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             this.ignite = ignite;
             this.operation = operation;
             txtWriter = new FileWriter(new File(getTempDirFile(), "watchdog-" + operation + ".txt"));
-            line("sec", "cur." + operation + "/sec", "avg." + operation + "/sec",
+            line("sec", "cur." + operation + "/sec",
+                "cp. speed, MB/sec",
+                "WAL speed, MB/sec",
+                "avg." + operation + "/sec",
                 "dirtyPages", "cpWrittenPages", "threshold");
         }
 
@@ -263,21 +273,24 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
         }
 
         public void start() {
-            final AtomicLong prevCnt = new AtomicLong();
-            final AtomicLong prevMsElapsed = new AtomicLong();
             final long msStart = U.currentTimeMillis();
             prevMsElapsed.set(0);
-            int checkPeriodSec = 1;
+            prevCnt.set(0);
+            int checkPeriodMsec = 500;
             svc.scheduleAtFixedRate(
-                () -> tick(msStart, prevCnt, prevMsElapsed),
-                checkPeriodSec, checkPeriodSec, TimeUnit.SECONDS);
+                () -> tick(msStart),
+                checkPeriodMsec, checkPeriodMsec, TimeUnit.MILLISECONDS);
         }
 
-        private void tick(long msStart, AtomicLong prevCnt, AtomicLong prevMsElapsed) {
+        private void tick(long msStart) {
             long elapsedMs = U.currentTimeMillis() - msStart;
             final long totalCnt = longAdder8.longValue();
             final long averagePutPerSec = totalCnt * 1000 / elapsedMs;
-            final long currPutPerSec = ((totalCnt - prevCnt.getAndSet(totalCnt)) * 1000) / (elapsedMs - prevMsElapsed.getAndSet(elapsedMs));
+            long elapsedMsFromPrevTick = elapsedMs - prevMsElapsed.getAndSet(elapsedMs);
+            if (elapsedMsFromPrevTick == 0)
+                return;
+
+            final long currPutPerSec = ((totalCnt - prevCnt.getAndSet(totalCnt)) * 1000) / elapsedMsFromPrevTick;
             boolean slowProgress = currPutPerSec < averagePutPerSec / 10 && !stopping;
             final String fileNameWithDump = slowProgress ? reactNoProgress(msStart) : "";
 
@@ -306,6 +319,11 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             AtomicInteger cntr = ((GridCacheDatabaseSharedManager)(cacheSctx.database())).writtenPagesCounter();
 
             cpWrittenPages = cntr == null ? 0 : cntr.get();
+
+            long currBytesWritten = detectDelta(elapsedMsFromPrevTick, cpWrittenPages, prevCpWrittenPages)
+                    * (pageMemory == null ? 0 : pageMemory.pageSize());
+
+            String walSpeed = "";
             double threshold = 0;
             int idx = -1;
             try {
@@ -319,13 +337,28 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                 }
 
                 FileWriteAheadLogManager wal = (FileWriteAheadLogManager)cacheSctx.wal();
-                // idx = wal.currentIndex();
+                FileWALPointer ptr = wal.currentWritePointer();
+                long maxWalSegmentSize = wal.maxWalSegmentSize();
+
+                FileWALPointer prevWalPtr = this.prevWalPtrRef.getAndSet(ptr);
+
+                if (prevWalPtr != null) {
+                    long idxDiff = ptr.index() - prevWalPtr.index();
+                    long offDiff = ptr.fileOffset() - prevWalPtr.fileOffset();
+                    long bytesDiff = idxDiff * maxWalSegmentSize + offDiff;
+
+                    long bytesPerSec = (bytesDiff * 1000) / elapsedMsFromPrevTick;
+
+                    walSpeed = getMBytesPrintable(bytesPerSec);
+                } else
+                    walSpeed = "0";
             }
             catch (Exception ignored) {
                 //e.printStackTrace();
             }
 
             String thresholdStr = String.format("%.2f", threshold);
+            String cpMbPsStr = getMBytesPrintable(currBytesWritten);
             X.println(" >> " +
                 operation +
                 " done: " + totalCnt + ", time " + elapsedMs + " ms, " +
@@ -336,9 +369,33 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                 "cpBufP.=" + cpBufPages + " " +
                 "threshold=" + thresholdStr + " " +
                 "walIdx=" + idx + " " +
+                "cpMbPs=" + cpMbPsStr + " " +
+                "walSpeed= " + walSpeed + " " +
                 fileNameWithDump);
 
-            line(elapsedMs/1000, currPutPerSec, averagePutPerSec, dirtyPages, cpWrittenPages, thresholdStr);
+            line(elapsedMs/1000,
+                currPutPerSec,
+                cpMbPsStr,
+                walSpeed,
+                averagePutPerSec,
+                dirtyPages,
+                cpWrittenPages,
+                thresholdStr);
+        }
+
+        private String getMBytesPrintable(long currBytesWritten) {
+            double cpMbPs = 1.0 * currBytesWritten / (1024 * 1024);
+            return String.format("%.2f", cpMbPs);
+        }
+
+        private long detectDelta(long elapsedMsFromPrevTick,
+            long absValue,
+            AtomicLong cnt) {
+            long cpPagesChange = absValue - cnt.getAndSet(absValue);
+            if (cpPagesChange < 0)
+                cpPagesChange = 0;
+
+            return (cpPagesChange * 1000) / elapsedMsFromPrevTick;
         }
 
         private String reactNoProgress(long msStart) {
@@ -396,7 +453,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
     public void testContinuousPutMultithreaded() throws Exception {
         try {
-            System.setProperty(IgniteSystemProperties.IGNITE_DIRTY_PAGES_PARALLEL, "false");
+            System.setProperty(IgniteSystemProperties.IGNITE_DIRTY_PAGES_PARALLEL, "true");
             System.setProperty(IgniteSystemProperties.IGNITE_DIRTY_PAGES_SORTED_STORAGE, "true");
 
             //setWalArchAndWorkToSameValue = true;
@@ -435,10 +492,10 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             stopGrid(1);
             watchdog.stop();
 
-            System.out.println("Please clear page cache");
-            Thread.sleep(10000);
+            // System.out.println("Please clear page cache");
+            //Thread.sleep(10000);
 
-            runVerification(threads, recsPerThread);
+            //runVerification(threads, recsPerThread);
         }
         finally {
             stopAllGrids();
