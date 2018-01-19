@@ -26,6 +26,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -454,15 +455,36 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 }
                 else {
                     if (F.eq(msg.enable(), grpCtx.walEnabled()))
+                        // Nothing changed -> no-op.
                         res = new WalStateResult(msg, false);
                     else {
-                        // TODO: 1. Change group context state here.
-                        // TODO: 2. Initiate checkpoint and await for mark stage synchronously (see GridDhtPartitionsExchangeFuture#tryToPerformLocalSnapshotOperation)
-                        // TODO: 3. Await for checkpoint completion in worker thread, then complete.
+                        // Wait for checkpoint mark synchronously before releasing the control.
+                        CheckpointFuture cpFut = forceCheckpoint(msg.groupId());
 
-                        WalStateChangeWorker worker = new WalStateChangeWorker(msg);
+                        if (cpFut != null) {
+                            try {
+                                cpFut.beginFuture().get();
 
-                        new IgniteThread(worker).start();
+                                // Change state in exchange thread, no cache operations are possible at this point.
+                                grpCtx.walEnabled(msg.enable());
+
+                                // Wait for checkpoint complete in a separate thread.
+                                WalStateChangeWorker worker = new WalStateChangeWorker(msg, cpFut);
+
+                                new IgniteThread(worker).start();
+                            }
+                            catch (Exception e) {
+                                U.warn(log, "Failed to change WAL mode due to unexpected exception [" +
+                                    "msg=" + msg + ']', e);
+
+                                res = new WalStateResult(msg, "Failed to change WAL mode due to unexpected " +
+                                    "exception (see server logs for more information): " + e.getMessage());
+                            }
+                        }
+                        else {
+                            res = new WalStateResult(msg,
+                                "Failed to initiate a checkpoint (checkpoint thread is not available).");
+                        }
                     }
                 }
             }
@@ -808,21 +830,35 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Force checkpoint.
+     *
+     * @param grpId Group ID.
+     * @return Checkpoint future or {@code null} if failed to get checkpointer.
+     */
+    @Nullable private CheckpointFuture forceCheckpoint(int grpId) {
+        return cctx.database().forceCheckpoint("wal-state-change-grp-" + grpId);
+    }
+
+    /**
      * WAL state change worker.
      */
     private class WalStateChangeWorker extends GridWorker {
         /** Message. */
         private final WalStateProposeMessage msg;
 
+        /** Checkpoint future. */
+        private final CheckpointFuture cpFut;
+
         /**
          * Constructor.
          *
          * @param msg Propose message.
          */
-        private WalStateChangeWorker(WalStateProposeMessage msg) {
+        private WalStateChangeWorker(WalStateProposeMessage msg, CheckpointFuture cpFut) {
             super(cctx.igniteInstanceName(), "wal-state-change-worker-" + msg.groupId(), WalStateManager.this.log);
 
             this.msg = msg;
+            this.cpFut = cpFut;
         }
 
         /** {@inheritDoc} */
@@ -832,23 +868,10 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             try {
                 assert msg.affinityNode();
 
-                // Flush checkpoint.
-                IgniteInternalFuture cpFut = cacheProcessor().context().database().doCheckpoint("wal-state-change");
+                if (cpFut != null)
+                    cpFut.finishFuture().get();
 
-                cpFut.get();
-
-                // Change logging state.
-                CacheGroupContext grpCtx = cacheProcessor().cacheGroup(msg.groupId());
-
-                if (grpCtx == null) {
-                    res = new WalStateResult(msg, "Failed to change WAL mode because some caches no longer " +
-                        "exist: " + msg.caches().keySet());
-                }
-                else {
-                    grpCtx.walEnabled(msg.enable());
-
-                    res = new WalStateResult(msg, true);
-                }
+                res = new WalStateResult(msg, true);
             }
             catch (Exception e) {
                 U.warn(log, "Failed to change WAL mode due to unexpected exception [msg=" + msg + ']', e);

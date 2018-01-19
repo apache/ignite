@@ -1543,18 +1543,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture doCheckpoint(String reason) throws IgniteCheckedException {
+    @Override public CheckpointFuture forceCheckpoint(String reason) {
         Checkpointer cp = checkpointer;
 
         if (cp == null)
-            throw new IgniteCheckedException("Checkpointer missed");
+            return null;
 
-        CheckpointProgressSnapshot progSnapshot = cp.wakeupForCheckpoint(0, reason);
-
-        while (progSnapshot.started)
-            progSnapshot = cp.wakeupForCheckpoint(0, reason);
-
-        return progSnapshot.cpFinishFut;
+        return cp.wakeupForCheckpoint(0, reason);
     }
 
     /**
@@ -3497,7 +3492,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      *
      */
-    private static class CheckpointProgressSnapshot {
+    private static class CheckpointProgressSnapshot implements CheckpointFuture {
         /** */
         private final boolean started;
 
@@ -3512,6 +3507,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             started = cpProgress.started;
             cpBeginFut = cpProgress.cpBeginFut;
             cpFinishFut = cpProgress.cpFinishFut;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFutureAdapter beginFuture() {
+            return cpBeginFut;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFutureAdapter finishFuture() {
+            return cpFinishFut;
         }
     }
 

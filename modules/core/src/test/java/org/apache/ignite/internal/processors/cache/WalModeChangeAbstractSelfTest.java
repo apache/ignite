@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 
 import java.util.concurrent.Callable;
@@ -154,7 +155,10 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
     public void testPersistenceDisabled() throws Exception {
         forAllNodes(new IgniteInClosureX<Ignite>() {
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
-                createCache(ignite, cacheConfig(PARTITIONED).setDataRegionName(REGION_VOLATILE));
+                CacheConfiguration ccfg = cacheConfig(PARTITIONED).setDataRegionName(REGION_VOLATILE);
+
+                destroyCache(ignite, ccfg.getName());
+                createCache(ignite, ccfg);
 
                 assertThrows(new Callable<Void>() {
                     @Override public Void call() throws Exception {

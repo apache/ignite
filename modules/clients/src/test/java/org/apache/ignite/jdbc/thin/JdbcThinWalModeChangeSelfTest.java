@@ -55,6 +55,7 @@ public class JdbcThinWalModeChangeSelfTest extends WalModeChangeAbstractSelfTest
         execute(node, cmd);
     }
 
+    /** {@inheritDoc} */
     @Override protected void destroyCache(Ignite node, String cacheName) {
         String cmd = "DROP TABLE IF EXISTS " + cacheName;
 
