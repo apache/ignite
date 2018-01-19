@@ -1090,6 +1090,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
             srvs.get(1).restart();
 
+            U.sleep(4000);
+
             startGrid(4);
 
             waitForTopology(4);
@@ -4064,7 +4066,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
                 return true;
             }
-        }, 10000));
+        }, 30000));
     }
 
     /**
