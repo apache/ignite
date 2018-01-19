@@ -1166,6 +1166,7 @@ module.exports.factory = function(settings, mongoose) {
 
     // Connect to mongoDB database.
     return mongoose.connect(settings.mongoUrl, {server: {poolSize: 4}})
+        .then(() => defineSchema(mongoose))
         .catch(() => {
             console.log('Failed to connect to local MongoDB, will try to download and start embedded MongoDB');
 
