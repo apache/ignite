@@ -80,7 +80,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
             cache2.put(i, i);
         }
 
-        srv.cluster().walDisable(CACHE_NAME);
+        srv.cluster().disableWal(CACHE_NAME);
 
         assertForAllNodes(CACHE_NAME, false);
         assertForAllNodes(CACHE_NAME_2, true);
@@ -90,7 +90,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
             cache2.put(i, i);
         }
 
-        srv.cluster().walDisable(CACHE_NAME_2);
+        srv.cluster().disableWal(CACHE_NAME_2);
 
         assertForAllNodes(CACHE_NAME, false);
         assertForAllNodes(CACHE_NAME_2, false);
@@ -103,7 +103,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
         assertEquals(cache1.size(), 30);
         assertEquals(cache2.size(), 30);
 
-        srv.cluster().walEnable(CACHE_NAME);
+        srv.cluster().enableWal(CACHE_NAME);
 
         assertForAllNodes(CACHE_NAME, true);
         assertForAllNodes(CACHE_NAME_2, false);
@@ -161,7 +161,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
         assertForAllNodes(CACHE_NAME, true);
 
         if (!crdFiltered) {
-            srv.cluster().walDisable(CACHE_NAME);
+            srv.cluster().disableWal(CACHE_NAME);
             assertForAllNodes(CACHE_NAME, false);
         }
 
@@ -170,7 +170,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
         assertForAllNodes(CACHE_NAME, false);
 
         if (crdFiltered) {
-            srv.cluster().walDisable(CACHE_NAME);
+            srv.cluster().disableWal(CACHE_NAME);
             assertForAllNodes(CACHE_NAME, false);
         }
 
@@ -186,7 +186,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
         stopGrid(CLI, true);
 
         if (!crdFiltered) {
-            srv.cluster().walEnable(CACHE_NAME);
+            srv.cluster().enableWal(CACHE_NAME);
             assertForAllNodes(CACHE_NAME, true);
         }
 
@@ -195,7 +195,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
         assertForAllNodes(CACHE_NAME, true);
 
         if (crdFiltered) {
-            srv.cluster().walEnable(CACHE_NAME);
+            srv.cluster().enableWal(CACHE_NAME);
             assertForAllNodes(CACHE_NAME, true);
         }
 
@@ -285,9 +285,9 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
         while (restartCnt.get() < restarts && !Thread.currentThread().isInterrupted()) {
             try {
                 if (state)
-                    cli.cluster().walDisable(CACHE_NAME);
+                    cli.cluster().disableWal(CACHE_NAME);
                 else
-                    cli.cluster().walEnable(CACHE_NAME);
+                    cli.cluster().enableWal(CACHE_NAME);
 
                 state = !state;
             }
@@ -322,9 +322,9 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
                 while (!done.get()) {
                     try {
                         if (state)
-                            cli.cluster().walEnable(CACHE_NAME);
+                            cli.cluster().enableWal(CACHE_NAME);
                         else
-                            cli.cluster().walDisable(CACHE_NAME);
+                            cli.cluster().disableWal(CACHE_NAME);
                     }
                     catch (IgniteException e) {
                         String msg = e.getMessage();
@@ -388,9 +388,9 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
                 while (!done.get()) {
                     try {
                         if (state)
-                            cli.cluster().walEnable(CACHE_NAME);
+                            cli.cluster().enableWal(CACHE_NAME);
                         else
-                            cli.cluster().walDisable(CACHE_NAME);
+                            cli.cluster().disableWal(CACHE_NAME);
                     }
                     catch (IgniteException e) {
                         String msg = e.getMessage();
@@ -518,9 +518,9 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         while (!done.get()) {
             if (state)
-                node.cluster().walEnable(CACHE_NAME);
+                node.cluster().enableWal(CACHE_NAME);
             else
-                node.cluster().walDisable(CACHE_NAME);
+                node.cluster().disableWal(CACHE_NAME);
 
             state = !state;
         }

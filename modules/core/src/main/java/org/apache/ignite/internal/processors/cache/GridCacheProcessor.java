@@ -2980,6 +2980,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Future completed when operation finished.
      */
     public IgniteInternalFuture<Boolean> changeWalMode(Collection<String> cacheNames, boolean enabled) {
+        if (transactions().tx() != null || sharedCtx.lockedTopologyVersion(null) != null)
+            throw new IgniteException("Cache WAL mode cannot be changed within lock or transaction.");
+
         return sharedCtx.walState().init(cacheNames, enabled);
     }
 

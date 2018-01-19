@@ -134,7 +134,7 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
      * @return Result.
      */
     protected boolean walEnable(Ignite node, String cacheName) {
-        return node.cluster().walEnable(cacheName);
+        return node.cluster().enableWal(cacheName);
     }
 
     /**
@@ -145,7 +145,7 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
      * @return Result.
      */
     protected boolean walDisable(Ignite node, String cacheName) {
-        return node.cluster().walDisable(cacheName);
+        return node.cluster().disableWal(cacheName);
     }
 
     /**

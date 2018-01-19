@@ -184,9 +184,9 @@ public class DdlStatementsProcessor {
                 IgniteCluster cluster = ctx.grid().cluster();
 
                 if (logging)
-                    cluster.walEnable(tbl.cacheName());
+                    cluster.enableWal(tbl.cacheName());
                 else
-                    cluster.walDisable(tbl.cacheName());
+                    cluster.disableWal(tbl.cacheName());
 
                 fut = new GridFinishedFuture();
             }
