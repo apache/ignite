@@ -19,7 +19,7 @@ export default class {
     static $inject = ['IgniteVersion'];
 
     constructor(Version) {
-        this.titleSuffix = ' – Apache Ignite Web Console';
+        this.titleSuffix = ' - Apache Ignite Web Console';
 
         this.headerLogo = '/images/ignite-logo.svg';
 
@@ -29,7 +29,7 @@ export default class {
 
         this.footerHtml = [
             `<p>Apache Ignite Web Console (${Version.webConsole})</p>`,
-            '<p>© 2017 The Apache Software Foundation.</p>',
+            '<p>© 2018 The Apache Software Foundation.</p>',
             '<p>Apache, Apache Ignite, the Apache feather and the Apache Ignite logo are trademarks of The Apache Software Foundation.</p>'
         ].join('\n');
 

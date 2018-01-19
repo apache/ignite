@@ -17,12 +17,14 @@
 
 package org.apache.ignite.mxbean;
 
+import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.cluster.ClusterMetrics;
 
 /**
- * MBean for local node metrics.
+ * Cluster metrics MBean.
  */
-@MXBeanDescription("MBean that provides access to all local node metrics.")
+@MXBeanDescription("MBean that provides access to aggregated cluster metrics.")
 public interface ClusterMetricsMXBean extends ClusterMetrics {
     /** {@inheritDoc} */
     @MXBeanDescription("Last update time of this node metrics.")
@@ -254,4 +256,62 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
     /** {@inheritDoc} */
     @MXBeanDescription("Total number of nodes.")
     public int getTotalNodes();
+
+    /**
+     * Get count of server nodes.
+     *
+     * @return Count of server nodes.
+     */
+    @MXBeanDescription("Server nodes count.")
+    public int getTotalServerNodes();
+
+    /**
+     * Get count of client nodes.
+     *
+     * @return Count of client nodes.
+     */
+    @MXBeanDescription("Client nodes count.")
+    public int getTotalClientNodes();
+
+    /**
+     * Get current topology version.
+     *
+     * @return Current topology version.
+     */
+    @MXBeanDescription("Current topology version.")
+    public long getTopologyVersion();
+
+    /**
+     * Get distinct attribute names for given nodes projection.
+     */
+    @MXBeanDescription("Distinct attrubute names for given nodes projection.")
+    public Set<String> attributeNames();
+
+
+    /**
+     * Get distinct attribute values for given nodes projection.
+     *
+     * @param attrName Attribute name.
+     */
+    @MXBeanDescription("Distinct attrubute values for given nodes projection.")
+    @MXBeanParametersNames("attrName")
+    @MXBeanParametersDescriptions("Attribute name.")
+    public Set<String> attributeValues(String attrName);
+
+     /**
+      * Get node IDs with the given attribute value.
+      *
+      * @param attrName Attribute name.
+      * @param attrVal Attribute value.
+      * @param includeSrvs Include server nodes.
+      * @param includeClients Include client nodes.
+      */
+     @MXBeanDescription("Get node IDs with the given attribute value.")
+     @MXBeanParametersNames(
+         {"attrName", "attrValue", "includeSrvs", "includeClients"}
+     )
+     @MXBeanParametersDescriptions(
+         {"Attribute name.", "Attribute value.", "Include server nodes.", "Include client nodes."}
+     )
+     public Set<UUID> nodeIdsForAttribute(String attrName, String attrVal, boolean includeSrvs, boolean includeClients);
 }

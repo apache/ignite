@@ -96,12 +96,14 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
     private Logger impl;
 
     /** Path to configuration file. */
-    private final String path;
+    @GridToStringExclude
+    private final String cfg;
 
     /** Quiet flag. */
     private final boolean quiet;
 
     /** Node ID. */
+    @GridToStringExclude
     private UUID nodeId;
 
     /**
@@ -140,7 +142,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
         else
             quiet = true;
 
-        path = null;
+        cfg = null;
     }
 
     /**
@@ -148,10 +150,8 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
      *
      * @param impl Log4j implementation to use.
      */
-    public GridTestLog4jLogger(final Logger impl) {
+    protected GridTestLog4jLogger(final Logger impl) {
         assert impl != null;
-
-        path = null;
 
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
@@ -160,6 +160,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
         });
 
         quiet = quiet0;
+        cfg = null;
     }
 
     /**
@@ -172,7 +173,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
         if (path == null)
             throw new IgniteCheckedException("Configuration XML file for Log4j must be specified.");
 
-        this.path = path;
+        this.cfg = path;
 
         final URL cfgUrl = U.resolveIgniteUrl(path);
 
@@ -204,12 +205,12 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
         if (!cfgFile.exists() || cfgFile.isDirectory())
             throw new IgniteCheckedException("Log4j configuration path was not found or is a directory: " + cfgFile);
 
-        path = cfgFile.getAbsolutePath();
+        cfg = cfgFile.getAbsolutePath();
 
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
                 if (init)
-                    DOMConfigurator.configure(path);
+                    DOMConfigurator.configure(cfg);
 
                 return Logger.getRootLogger();
             }
@@ -228,7 +229,7 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
         if (cfgUrl == null)
             throw new IgniteCheckedException("Configuration XML file for Log4j must be specified.");
 
-        path = null;
+        cfg = cfgUrl.getPath();
 
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
@@ -519,6 +520,6 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTestLog4jLogger.class, this);
+        return S.toString(GridTestLog4jLogger.class, this, "config", cfg);
     }
 }

@@ -17,8 +17,14 @@
 
 package org.apache.ignite.internal;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.UUID;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 
@@ -297,7 +303,6 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
         return metrics().getTotalJobsExecutionTime();
     }
 
-
     /** {@inheritDoc} */
     @Override public long getTotalIdleTime() {
         return metrics().getTotalIdleTime();
@@ -351,6 +356,79 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
     /** {@inheritDoc} */
     @Override public int getTotalNodes() {
         return metrics().getTotalNodes();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getTotalServerNodes() {
+        return cluster.forServers().nodes().size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getTotalClientNodes() {
+        return cluster.forClients().nodes().size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTopologyVersion() {
+        return cluster.ignite().cluster().topologyVersion();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<String> attributeNames() {
+        Set<String> attrs = new TreeSet<>();
+
+        for (ClusterNode node : cluster.nodes())
+            attrs.addAll(node.attributes().keySet());
+
+        return attrs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<String> attributeValues(String attrName) {
+        Set<String> values = new TreeSet<>();
+
+        for (ClusterNode node : cluster.nodes()) {
+            Object val = node.attribute(attrName);
+
+            if (val != null)
+                values.add(val.toString());
+        }
+
+        return values;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<UUID> nodeIdsForAttribute(String attrName, String attrVal, boolean includeSrvs,
+        boolean includeClients) {
+        Set<UUID> nodes = new TreeSet<>();
+
+        for (ClusterNode node : nodesList(includeSrvs, includeClients)) {
+            Object val = node.attribute(attrName);
+
+            if (val != null && val.toString().equals(attrVal))
+                nodes.add(node.id());
+        }
+
+        return nodes;
+    }
+
+    /**
+     * Get list with the specified node types.
+     *
+     * @param srv {@code True} to include server nodes.
+     * @param client {@code True} to include client nodes.
+     * @return List with the specified node types.
+     */
+    private List<ClusterNode> nodesList(boolean srv, boolean client) {
+        List<ClusterNode> nodes = new ArrayList<>();
+
+        if (srv)
+            nodes.addAll(cluster.forServers().nodes());
+
+        if (client)
+            nodes.addAll(cluster.forClients().nodes());
+
+        return nodes;
     }
 
     /** {@inheritDoc} */

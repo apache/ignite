@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOF
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -124,6 +125,9 @@ public class DataStorageConfiguration implements Serializable {
     /** Default thread local buffer size. */
     public static final int DFLT_TLB_SIZE = 128 * 1024;
 
+    /** Default thread local buffer size. */
+    public static final int DFLT_WAL_BUFF_SIZE = DFLT_WAL_SEGMENT_SIZE / 4;
+
     /** Default Wal flush frequency. */
     public static final int DFLT_WAL_FLUSH_FREQ = 2000;
 
@@ -144,6 +148,9 @@ public class DataStorageConfiguration implements Serializable {
 
     /** Default write throttling enabled. */
     public static final boolean DFLT_WRITE_THROTTLING_ENABLED = false;
+
+    /** Default wal compaction enabled. */
+    public static final boolean DFLT_WAL_COMPACTION_ENABLED = false;
 
     /** Size of a memory chunk reserved for system cache initially. */
     private long sysRegionInitSize = DFLT_SYS_CACHE_INIT_SIZE;
@@ -202,6 +209,9 @@ public class DataStorageConfiguration implements Serializable {
     /** WAl thread local buffer size. */
     private int walTlbSize = DFLT_TLB_SIZE;
 
+    /** WAl buffer size. */
+    private int walBuffSize;
+
     /** Wal flush frequency in milliseconds. */
     private long walFlushFreq = DFLT_WAL_FLUSH_FREQ;
 
@@ -216,7 +226,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /** Factory to provide I/O interface for files */
     private FileIOFactory fileIOFactory =
-        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY, false) ?
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY, true) ?
             new AsyncFileIOFactory() : new RandomAccessFileIOFactory();
 
     /**
@@ -227,7 +237,7 @@ public class DataStorageConfiguration implements Serializable {
      * rate-based metrics when next sub-interval has to be recycled but introduces bigger
      * calculation overhead.
      */
-    private int metricsSubIntervalCount = DFLT_SUB_INTERVALS;
+    private int metricsSubIntervalCnt = DFLT_SUB_INTERVALS;
 
     /** Time interval (in milliseconds) for rate-based metrics. */
     private long metricsRateTimeInterval = DFLT_RATE_TIME_INTERVAL_MILLIS;
@@ -241,6 +251,12 @@ public class DataStorageConfiguration implements Serializable {
      * If true, threads that generate dirty pages too fast during ongoing checkpoint will be throttled.
      */
     private boolean writeThrottlingEnabled = DFLT_WRITE_THROTTLING_ENABLED;
+
+    /**
+     * Flag to enable WAL compaction. If true, system filters and compresses WAL archive in background.
+     * Compressed WAL archive gets automatically decompressed on demand.
+     */
+    private boolean walCompactionEnabled = DFLT_WAL_COMPACTION_ENABLED;
 
     /**
      * Initial size of a data region reserved for system cache.
@@ -639,7 +655,7 @@ public class DataStorageConfiguration implements Serializable {
      * @return The number of sub-intervals for history tracking.
      */
     public int getMetricsSubIntervalCount() {
-        return metricsSubIntervalCount;
+        return metricsSubIntervalCnt;
     }
 
     /**
@@ -648,7 +664,7 @@ public class DataStorageConfiguration implements Serializable {
      * @param metricsSubIntervalCnt The number of sub-intervals for history tracking.
      */
     public DataStorageConfiguration setMetricsSubIntervalCount(int metricsSubIntervalCnt) {
-        this.metricsSubIntervalCount = metricsSubIntervalCnt;
+        this.metricsSubIntervalCnt = metricsSubIntervalCnt;
 
         return this;
     }
@@ -693,6 +709,25 @@ public class DataStorageConfiguration implements Serializable {
      */
     public DataStorageConfiguration setWalThreadLocalBufferSize(int walTlbSize) {
         this.walTlbSize = walTlbSize;
+
+        return this;
+    }
+
+    /**
+     * Property defines size of WAL buffer.
+     * Each WAL record will be serialized to this buffer before write in WAL file.
+     *
+     * @return WAL buffer size.
+     */
+    public int getWalBufferSize() {
+        return walBuffSize <= 0 ? getWalSegmentSize() / 4 : walBuffSize;
+    }
+
+    /**
+     * @param walBuffSize WAL buffer size.
+     */
+    public DataStorageConfiguration setWalBufferSize(int walBuffSize) {
+        this.walBuffSize = walBuffSize;
 
         return this;
     }
@@ -849,5 +884,28 @@ public class DataStorageConfiguration implements Serializable {
         this.checkpointWriteOrder = checkpointWriteOrder;
 
         return this;
+    }
+
+    /**
+     * @return Flag indicating whether WAL compaction is enabled.
+     */
+    public boolean isWalCompactionEnabled() {
+        return walCompactionEnabled;
+    }
+
+    /**
+     * Sets flag indicating whether WAL compaction is enabled.
+     *
+     * @param walCompactionEnabled Wal compaction enabled flag.
+     */
+    public DataStorageConfiguration setWalCompactionEnabled(boolean walCompactionEnabled) {
+        this.walCompactionEnabled = walCompactionEnabled;
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DataStorageConfiguration.class, this);
     }
 }

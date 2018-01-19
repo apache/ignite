@@ -71,7 +71,7 @@ public class SqlParserUtils {
     }
 
     /**
-     * Skip commr or right parenthesis.
+     * Skip comma or right parenthesis.
      *
      * @param lex Lexer.
      * @return {@code True} if right parenthesis is found.
@@ -130,7 +130,7 @@ public class SqlParserUtils {
      * @return Name.
      */
     public static String parseIdentifier(SqlLexer lex, String... additionalExpTokens) {
-        if (lex.shift() && isVaildIdentifier(lex))
+        if (lex.shift() && isValidIdentifier(lex))
             return lex.token();
 
         throw errorUnexpectedToken(lex, "[identifier]", additionalExpTokens);
@@ -144,7 +144,7 @@ public class SqlParserUtils {
      * @return Qualified name.
      */
     public static SqlQualifiedName parseQualifiedIdentifier(SqlLexer lex, String... additionalExpTokens) {
-        if (lex.shift() && isVaildIdentifier(lex)) {
+        if (lex.shift() && isValidIdentifier(lex)) {
             SqlQualifiedName res = new SqlQualifiedName();
 
             String first = lex.token();
@@ -171,7 +171,7 @@ public class SqlParserUtils {
      * @param token Token.
      * @return {@code True} if we are standing on possible identifier.
      */
-    public static boolean isVaildIdentifier(SqlLexerToken token) {
+    public static boolean isValidIdentifier(SqlLexerToken token) {
         switch (token.tokenType()) {
             case DEFAULT:
                 char c = token.tokenFirstChar();

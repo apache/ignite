@@ -201,6 +201,9 @@ public class SqlKeyword {
     /** Keyword: YEAR. */
     public static final String YEAR = "YEAR";
 
+    /** Keyword: PARALLEL. */
+    public static final String PARALLEL = "PARALLEL";
+
     /** All keywords. */
     private static final HashSet<String> KEYWORDS;
 

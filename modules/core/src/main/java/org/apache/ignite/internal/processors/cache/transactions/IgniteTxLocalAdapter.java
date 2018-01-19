@@ -487,7 +487,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         checkValid();
 
-        Collection<IgniteTxEntry> commitEntries = near() ? allEntries() : writeEntries();
+        Collection<IgniteTxEntry> commitEntries = (near() || cctx.snapshot().needTxReadLogging()) ? allEntries() : writeEntries();
 
         boolean empty = F.isEmpty(commitEntries);
 
@@ -648,19 +648,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     if (dhtVer == null)
                                         dhtVer = explicitVer != null ? explicitVer : writeVersion();
 
-                                    if (cacheCtx.group().persistenceEnabled() && !writeEntries().isEmpty()
-                                        && op != NOOP && op != RELOAD && op != READ)
-                                        ptr = cctx.wal().log(new DataRecord(new DataEntry(
-                                            cacheCtx.cacheId(),
-                                            txEntry.key(),
-                                            val,
-                                            op,
-                                            nearXidVersion(),
-                                            writeVersion(),
-                                            0,
-                                            txEntry.key().partition(),
-                                            txEntry.updateCounter())));
-
                                     if (op == CREATE || op == UPDATE) {
                                         assert val != null : txEntry;
 
@@ -689,6 +676,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                                         if (updRes.success())
                                             txEntry.updateCounter(updRes.updatePartitionCounter());
+
+                                        if (updRes.loggedPointer() != null)
+                                            ptr = updRes.loggedPointer();
 
                                         if (nearCached != null && updRes.success()) {
                                             nearCached.innerSet(
@@ -738,6 +728,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         if (updRes.success())
                                             txEntry.updateCounter(updRes.updatePartitionCounter());
 
+                                        if (updRes.loggedPointer() != null)
+                                            ptr = updRes.loggedPointer();
+
                                         if (nearCached != null && updRes.success()) {
                                             nearCached.innerRemove(
                                                 null,
@@ -766,6 +759,19 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             nearCached.innerReload();
                                     }
                                     else if (op == READ) {
+                                        if (cacheCtx.group().persistenceEnabled() && cctx.snapshot().needTxReadLogging()) {
+                                            ptr = cctx.wal().log(new DataRecord(new DataEntry(
+                                                cacheCtx.cacheId(),
+                                                txEntry.key(),
+                                                val,
+                                                op,
+                                                nearXidVersion(),
+                                                writeVersion(),
+                                                0,
+                                                txEntry.key().partition(),
+                                                txEntry.updateCounter())));
+                                        }
+
                                         ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
 
                                         if (expiry != null) {
@@ -866,7 +872,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     }
                 }
 
-                if (ptr != null)
+                if (ptr != null && !cctx.tm().logTxRecords())
                     cctx.wal().fsync(ptr);
             }
             catch (StorageException e) {

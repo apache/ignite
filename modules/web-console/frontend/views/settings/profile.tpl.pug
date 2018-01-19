@@ -17,6 +17,9 @@
 mixin lbl(txt)
     label.col-sm-2.required.labelFormField #{txt}
 
+mixin lbl-not-required(txt)
+    label.col-sm-2.labelFormField #{txt}
+
 .row(ng-controller='profileController')
     .docs-content
         .docs-header
@@ -36,7 +39,11 @@ mixin lbl(txt)
                     .details-row
                         +lbl('Email:')
                         .col-xs-5.col-sm-4
-                            input#profile-email.form-control(ignite-on-enter-focus-move='profile-company' type='email' ng-model='user.email' placeholder='Input email' required)
+                            input#profile-email.form-control(ignite-on-enter-focus-move='profile-phone' type='email' ng-model='user.email' placeholder='Input email' required)
+                    .details-row
+                        +lbl-not-required('Phone:')
+                        .col-xs-5.col-sm-4
+                            input#profile-phone.form-control(ignite-on-enter-focus-move='profile-company' type='tel' ng-model='user.phone' placeholder='Input phone')
                     .details-row
                         +lbl('Company:')
                         .col-xs-5.col-sm-4

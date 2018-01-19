@@ -18,10 +18,12 @@
 namespace Apache.Ignite.Core.Impl
 {
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// Shell utils (cmd/bash).
     /// </summary>
+    [ExcludeFromCodeCoverage]
     internal static class Shell
     {
         /// <summary>
