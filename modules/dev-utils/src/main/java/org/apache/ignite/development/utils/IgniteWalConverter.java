@@ -18,6 +18,7 @@
 package org.apache.ignite.development.utils;
 
 import java.io.File;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -32,6 +33,7 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2MvccInnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2MvccLeafIO;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.NullLogger;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Print WAL log data in human-readable form.
@@ -44,13 +46,16 @@ public class IgniteWalConverter {
     public static void main(String[] args) throws Exception {
         if (args.length < 2)
             throw new IllegalArgumentException("\nYou need to provide:\n" +
-                    "\t1. Size of pages (1024, 2048, etc).\n" +
+                    "\t1. Size of pages, which was selected for file store (1024, 2048, 4096, etc).\n" +
                     "\t2. Path to dir with wal files.\n" +
                     "\t3. (Optional) Path to dir with archive wal files.");
 
         PageIO.registerH2(H2InnerIO.VERSIONS, H2LeafIO.VERSIONS, H2MvccInnerIO.VERSIONS, H2MvccLeafIO.VERSIONS);
         H2ExtrasInnerIO.register();
         H2ExtrasLeafIO.register();
+
+        boolean printRecords = IgniteSystemProperties.getBoolean("PRINT_RECORDS", false);
+        boolean printStat = IgniteSystemProperties.getBoolean("PRINT_STAT", true);
 
         final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(new NullLogger(),
             Integer.parseInt(args[0]),
@@ -65,11 +70,20 @@ public class IgniteWalConverter {
         if (workFiles == null)
             throw new IllegalArgumentException("No .wal files in dir: " + args[1]);
 
+        @Nullable final WalStat stat = printStat ? new WalStat() : null;
+
         try (WALIterator stIt = factory.iteratorWorkFiles(workFiles)) {
             while (stIt.hasNextX()) {
                 IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
 
-                System.out.println("[W] " + next.get2());
+                final WALPointer pointer = next.get1();
+                final WALRecord record = next.get2();
+
+                if (stat != null)
+                    stat.registerRecord(record, pointer, true);
+
+                if (printRecords)
+                    System.out.println("[W] " + record);
             }
         }
 
@@ -80,9 +94,21 @@ public class IgniteWalConverter {
                 while (stIt.hasNextX()) {
                     IgniteBiTuple<WALPointer, WALRecord> next = stIt.nextX();
 
-                    System.out.println("[A] " + next.get2());
+                    final WALPointer pointer = next.get1();
+                    final WALRecord record = next.get2();
+
+                    if (stat != null)
+                        stat.registerRecord(record, pointer, false);
+
+                    if (printRecords)
+                        System.out.println("[A] " + record);
                 }
             }
         }
+
+        System.err.flush();
+
+        if (stat != null)
+            System.out.println("Statistic collected:\n" + stat.toString());
     }
 }

@@ -221,7 +221,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
         protected Collection<IgniteTxKey> lockKeys = new GridConcurrentHashSet<>();
 
         /** */
-        private volatile boolean allKeysAdded;
+        protected volatile boolean allKeysAdded;
 
         /**
          * @param key Key to track for locking.

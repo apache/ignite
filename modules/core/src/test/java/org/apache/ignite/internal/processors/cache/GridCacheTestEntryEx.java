@@ -468,7 +468,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     {
         rawPut(val, ttl);
 
-        return new GridCacheUpdateTxResult(true);
+        return new GridCacheUpdateTxResult(true, null);
     }
 
     /** {@inheritDoc} */
@@ -553,7 +553,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
         val = null;
 
-        return new GridCacheUpdateTxResult(true);
+        return new GridCacheUpdateTxResult(true, null);
     }
 
     /** @inheritDoc */
