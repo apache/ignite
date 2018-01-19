@@ -216,8 +216,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// </summary>
         private static IntPtr GetJvmPtr(IList<string> options)
         {
-            Debug.Assert(options != null);
-
             IntPtr jvm;
             int existingJvmCount;
 
@@ -233,7 +231,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 return jvm;
             }
 
-            options = new List<string>(options.Concat(Java9Options));
+            options = options == null
+                ? Java9Options.ToList()
+                : new List<string>(options.Concat(Java9Options));
 
             var args = GetJvmInitArgs(options);
 
