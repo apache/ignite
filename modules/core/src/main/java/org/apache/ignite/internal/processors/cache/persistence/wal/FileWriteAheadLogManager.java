@@ -228,7 +228,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** */
     private final boolean alwaysWriteFullPages;
 
-    /** WAL segment size in bytes */
+    /** WAL segment size in bytes. . This is maximum value, actual segments may be shorter. */
     private final long maxWalSegmentSize;
 
     /** */
@@ -310,7 +310,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private AtomicLong lastRecordLoggedMs = new AtomicLong();
 
     /**
-     * Cancellable task for {@link WALMode#BACKGROUND}, should be cancelled at shutdown Null for non background modes
+     * Cancellable task for {@link WALMode#BACKGROUND}, should be cancelled at shutdown.
+     * Null for non background modes.
      */
     @Nullable private volatile GridTimeoutProcessor.CancelableTask backgroundFlushSchedule;
 
@@ -322,6 +323,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** WAL writer worker. */
     private WALWriter walWriter;
+
+    /**
+     * Listener invoked for each segment file IO initializer.
+     */
+    @Nullable private volatile IgniteInClosure<FileIO> createWalFileListener;
 
     /**
      * @param ctx Kernal context.
@@ -1056,6 +1062,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         try {
             FileIO fileIO = ioFactory.create(curFile);
 
+            IgniteInClosure<FileIO> lsnr = createWalFileListener;
+
+            if (lsnr != null)
+                lsnr.apply(fileIO);
+
             try {
                 int serVer = serializerVer;
 
@@ -1144,6 +1155,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             while (true) {
                 try {
                     fileIO = ioFactory.create(nextFile);
+
+                    IgniteInClosure<FileIO> lsnr = createWalFileListener;
+                    if (lsnr != null)
+                        lsnr.apply(fileIO);
 
                     if (mmap) {
                         try {
@@ -1346,6 +1361,21 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (envFailed != null)
             throw new StorageException("Failed to flush WAL buffer (environment was invalidated by a " +
                 "previous error)", envFailed);
+    }
+
+    /**
+     * Setup listener for WAL segment write File IO creation.
+     * @param createWalFileListener Listener to be invoked for new segment file IO creation.
+     */
+    public void setCreateWalFileListener(@Nullable IgniteInClosure<FileIO> createWalFileListener) {
+        this.createWalFileListener = createWalFileListener;
+    }
+
+    /**
+     * @return {@link #maxWalSegmentSize}.
+     */
+    public long maxWalSegmentSize() {
+        return maxWalSegmentSize;
     }
 
     /**

@@ -64,9 +64,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
@@ -800,7 +798,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 // Warn about possible implicit deserialization.
                 if (!mustDeserializeClss.isEmpty()) {
-                    U.warn(log, "Some classes in query configuration cannot be written in binary format " +
+                    U.warnDevOnly(log, "Some classes in query configuration cannot be written in binary format " +
                         "because they either implement Externalizable interface or have writeObject/readObject " +
                         "methods. Instances of these classes will be deserialized in order to build indexes. Please " +
                         "ensure that all nodes have these classes in classpath. To enable binary serialization " +
@@ -2468,15 +2466,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     *
-     * @param cacheName Cache name.
+     * @param schemaName Schema name.
      * @param sql Query.
      * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
+     * @throws SQLException On error.
      */
-    public PreparedStatement prepareNativeStatement(String cacheName, String sql) throws SQLException {
+    public PreparedStatement prepareNativeStatement(String schemaName, String sql) throws SQLException {
         checkxEnabled();
-
-        String schemaName = idx.schema(cacheName);
 
         return idx.prepareNativeStatement(schemaName, sql);
     }

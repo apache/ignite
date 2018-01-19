@@ -31,6 +31,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+
 /**
  *
  */
@@ -40,7 +42,7 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-            new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024));
+            new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024).setPersistenceEnabled(true));
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -55,6 +57,13 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 
     /** {@inheritDoc} */
