@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
+    using System.Diagnostics;
     using System.Linq;
     using System.IO;
     using System.Reflection;
@@ -73,6 +74,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </returns>
         private static string Resolve(ILogger log)
         {
+            // TODO: Directories can be the same.
             var probeDirs = new[]
             {
                 Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
@@ -118,9 +120,10 @@ namespace Apache.Ignite.Core.Impl.Common
                 }
 
                 // Binary release or NuGet home:
-                var jar = Path.Combine(dir.FullName, "libs", "ignite-core-*.jar");
+                var libs = Path.Combine(dir.FullName, "libs");
 
-                if (File.Exists(jar))
+                if (Directory.Exists(libs) &&
+                    Directory.EnumerateFiles(libs, "ignite-core-*.jar", SearchOption.TopDirectoryOnly).Any())
                 {
                     return true;
                 }
