@@ -149,7 +149,7 @@ public final class IgniteQueryErrorCode {
             case UNEXPECTED_OPERATION:
             case UNEXPECTED_ELEMENT_TYPE:
             case KEY_UPDATE:
-                return SqlStateCode.PARSING_EXCEPTION;
+                return SqlStateCode.SYNTAX_ERROR_OR_ACCESS_VIOLATION;
 
             default:
                 return SqlStateCode.INTERNAL_ERROR;

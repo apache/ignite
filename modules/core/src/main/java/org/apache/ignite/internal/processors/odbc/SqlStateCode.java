@@ -62,7 +62,7 @@ public final class SqlStateCode {
     public final static String UNSUPPORTED_OPERATION = "0A000";
 
     /** Parsing exception. */
-    public final static String PARSING_EXCEPTION = "42000";
+    public final static String SYNTAX_ERROR_OR_ACCESS_VIOLATION = "42000";
 
     /** Internal error. */
     public final static String INTERNAL_ERROR = "50000";  // Generic value for custom "50" class.

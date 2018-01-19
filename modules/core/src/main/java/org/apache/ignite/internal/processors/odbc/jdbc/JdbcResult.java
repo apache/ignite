@@ -65,6 +65,9 @@ public class JdbcResult implements JdbcRawBinarylizable {
     /** Columns metadata result V3. */
     static final byte META_COLUMNS_V3 = 15;
 
+    /** Request to send file from client to server. */
+    static final byte SEND_FILE = 16;
+
     /** Success status. */
     private byte type;
 

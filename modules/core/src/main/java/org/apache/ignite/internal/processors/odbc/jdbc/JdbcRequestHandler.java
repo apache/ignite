@@ -32,11 +32,13 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadEntryConverter;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
@@ -70,6 +72,7 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_CL
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_EXEC;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_FETCH;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_META;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.FILE_BATCH;
 
 /**
  * JDBC request handler.
@@ -92,6 +95,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
     /** Current queries cursors. */
     private final ConcurrentHashMap<Long, JdbcQueryCursor> qryCursors = new ConcurrentHashMap<>();
+
+    /** Current queries cursors. */
+    private final ConcurrentHashMap<Long, JdbcBulkLoadContext> bulkLoadRequests = new ConcurrentHashMap<>();
 
     /** Distributed joins flag. */
     private final boolean distributedJoins;
@@ -197,6 +203,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 case META_SCHEMAS:
                     return getSchemas((JdbcMetaSchemasRequest)req);
+
+                case FILE_BATCH:
+                    return processFileBatch((JdbcSendFileBatchRequest)req);
             }
 
             return new JdbcResponse(IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
@@ -204,6 +213,35 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         }
         finally {
             busyLock.leaveBusy();
+        }
+    }
+
+    private ClientListenerResponse processFileBatch(JdbcSendFileBatchRequest req) {
+
+        JdbcBulkLoadContext ctx = bulkLoadRequests.get(req.queryId());
+
+        if (ctx == null)
+            return new JdbcResponse(IgniteQueryErrorCode.UNEXPECTED_OPERATION, "Unknown query ID: " + req.queryId()
+                    + ". Bulk load session may have been reclaimed due to timeout.");
+
+        try {
+            Iterable<List<Object>> inputRecords = ctx.inputParser().processBatch(ctx, req);
+            BulkLoadEntryConverter converter = ctx.dataConverter();
+
+            int updateCnt = 0;
+            for (List<Object> record : inputRecords) {
+                IgniteBiTuple<Object, Object> kv = converter.convertRecord(record);
+
+                ctx.outputStreamer().addData(kv.getKey(), kv.getValue());
+
+                updateCnt++;
+            }
+
+            return new JdbcResponse(new JdbcQueryExecuteResult(req.queryId(), updateCnt));
+        }
+        catch (RuntimeException e) {
+            return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Server error: " + e.getMessage());
+
         }
     }
 
@@ -307,35 +345,54 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             qry.setSchema(schemaName);
 
-            List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFieldsNoCache(qry, true,
+            List<? extends FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFieldsNoCache(qry, true,
                 protocolVer.compareTo(VER_2_3_0) < 0);
 
             if (results.size() == 1) {
-                FieldsQueryCursor<List<?>> qryCur = results.get(0);
 
-                JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(), (QueryCursorImpl)qryCur);
+                FieldsQueryCursor<List<?>> cursor = results.get(0);
 
-                JdbcQueryExecuteResult res;
+                if (cursor instanceof BulkLoadContextCursor) {
 
-                if (cur.isQuery())
-                    res = new JdbcQueryExecuteResult(qryId, cur.fetchRows(), !cur.hasNext());
-                else {
-                    List<List<Object>> items = cur.fetchRows();
+                    JdbcBulkLoadContext bulkCtx = ((BulkLoadContextCursor)cursor).bulkLoadContext();
 
-                    assert items != null && items.size() == 1 && items.get(0).size() == 1
-                        && items.get(0).get(0) instanceof Long :
-                        "Invalid result set for not-SELECT query. [qry=" + sql +
-                            ", res=" + S.toString(List.class, items) + ']';
+                    bulkCtx.queryId(qryId);
 
-                    res = new JdbcQueryExecuteResult(qryId, (Long)items.get(0).get(0));
+                    if (bulkLoadRequests.containsKey(bulkCtx.queryId()))
+                        return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
+                            "Query ID already exists: " + bulkCtx.queryId());
+
+                    bulkLoadRequests.put(bulkCtx.queryId(), bulkCtx);
+
+                    return new JdbcResponse(bulkCtx.initialResultToSend());
                 }
+                else {
+                    FieldsQueryCursor<List<?>> qryCur = cursor;
 
-                if (res.last() && (!res.isQuery() || autoCloseCursors))
-                    cur.close();
-                else
-                    qryCursors.put(qryId, cur);
+                    JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(), (QueryCursorImpl)qryCur);
 
-                return new JdbcResponse(res);
+                    JdbcQueryExecuteResult res;
+
+                    if (cur.isQuery())
+                        res = new JdbcQueryExecuteResult(qryId, cur.fetchRows(), !cur.hasNext());
+                    else {
+                        List<List<Object>> items = cur.fetchRows();
+
+                        assert items != null && items.size() == 1 && items.get(0).size() == 1
+                            && items.get(0).get(0) instanceof Long :
+                            "Invalid result set for not-SELECT query. [qry=" + sql +
+                                ", res=" + S.toString(List.class, items) + ']';
+
+                        res = new JdbcQueryExecuteResult(qryId, (Long)items.get(0).get(0));
+                    }
+
+                    if (res.last() && (!res.isQuery() || autoCloseCursors))
+                        cur.close();
+                    else
+                        qryCursors.put(qryId, cur);
+
+                    return new JdbcResponse(res);
+                }
             }
             else {
                 List<JdbcResultInfo> jdbcResults = new ArrayList<>(results.size());

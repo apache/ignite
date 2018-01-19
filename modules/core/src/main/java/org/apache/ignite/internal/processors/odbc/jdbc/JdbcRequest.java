@@ -60,6 +60,8 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     /** Get schemas metadata request. */
     static final byte META_SCHEMAS = 12;
 
+    /** Send file from client to server */
+    static final byte FILE_BATCH = 13;
 
     /** Request type. */
     private byte type;
@@ -153,6 +155,9 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
                 req = new JdbcMetaSchemasRequest();
 
                 break;
+
+            case FILE_BATCH:
+                req = new JdbcSendFileBatchRequest();
 
             default:
                 throw new IgniteException("Unknown SQL listener request ID: [request ID=" + reqType + ']');

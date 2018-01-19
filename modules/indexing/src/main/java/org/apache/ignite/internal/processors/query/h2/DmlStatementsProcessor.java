@@ -40,13 +40,18 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadEntryConverter;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadParser;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadContext;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcFilesToSendResult;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
@@ -58,7 +63,9 @@ import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
+import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
 import org.apache.ignite.internal.util.typedef.F;
@@ -917,6 +924,26 @@ public class DmlStatementsProcessor {
         }
 
         return res;
+    }
+
+    public JdbcBulkLoadContext bulkLoad(SqlQuery qry) {
+        // parse
+
+        SqlBulkLoadCommand cmd = new SqlBulkLoadCommand(); // parse
+
+        BulkLoadParser inputParser = BulkLoadParser.createParser(cmd.inputFormat());
+
+        GridH2Table table = idx.dataTable(cmd.schemaName(), cmd.tableName());
+
+        JdbcFilesToSendResult cmdParsingResult = new JdbcFilesToSendResult(cmd.localFileName());
+
+        BulkLoadEntryConverter dataConverter = new H2BulkLoadEntryConvertor(table);
+
+        GridCacheContext cache = table.cache();
+
+        IgniteDataStreamer<Object, Object> outputStreamer = cache.grid().dataStreamer(cache.name());
+
+        return new JdbcBulkLoadContext(cmdParsingResult, inputParser, dataConverter, outputStreamer);
     }
 
     /**
