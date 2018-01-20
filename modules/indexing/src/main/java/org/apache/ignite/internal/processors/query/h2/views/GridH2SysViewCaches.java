@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.h2.views;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -50,7 +52,21 @@ public class GridH2SysViewCaches extends GridH2SysView {
     @Override public Iterable<Row> getRows(Session ses, SearchRow first, SearchRow last) {
         List<Row> rows = new ArrayList<>();
 
-        for(IgniteInternalCache<?, ?> cache : ctx.cache().caches()) {
+        ColumnCondition nameCond = conditionForColumn("NAME", first, last);
+
+        Collection<IgniteInternalCache<?, ?>> caches;
+
+        if (nameCond.isEquality()) {
+            IgniteInternalCache<?, ?> cache = ctx.cache().cache(nameCond.getValue().getString());
+            if (cache == null)
+                caches = Collections.emptySet();
+            else
+                caches = Collections.singleton(cache);
+        }
+        else
+            caches = ctx.cache().caches();
+
+        for(IgniteInternalCache<?, ?> cache : caches) {
             rows.add(
                 createRow(ses, rows.size(),
                     cache.name(),

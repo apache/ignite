@@ -37,7 +37,9 @@ public class GridH2SysViewTable extends TableBase {
     /** Scan index. */
     protected final GridH2SysViewIndex scanIdx;
 
+    /** System view. */
     protected final GridH2SysView sysView;
+
     /**
      *  Indexes.
      *
@@ -79,7 +81,7 @@ public class GridH2SysViewTable extends TableBase {
 
     /** {@inheritDoc} */
     @Override public String getCreateSQL() {
-        return null;
+        return sysView.getCreateSQL();
     }
 
     /** {@inheritDoc} */

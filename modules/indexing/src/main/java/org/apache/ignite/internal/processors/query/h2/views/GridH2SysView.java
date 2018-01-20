@@ -170,7 +170,7 @@ public abstract class GridH2SysView {
      */
     public String getCreateSQL() {
         StringBuilder sql = new StringBuilder();
-        sql.append("CREATE TABLE " + TABLE_SCHEMA_NAME + '.' + getTableName() + '(');
+        sql.append("CREATE TABLE " + getTableName() + '(');
 
         boolean isFirst = true;
         for (Column col : getColumns()) {
@@ -185,5 +185,137 @@ public abstract class GridH2SysView {
         sql.append(')');
 
         return sql.toString();
+    }
+
+    /**
+     * Gets column index by name.
+     *
+     * @param colName Column name.
+     */
+    protected int getColumnIndex(String colName) {
+        assert colName != null;
+
+        for (int i = 0; i < cols.length; i++)
+            if (colName.equalsIgnoreCase(cols[i].getName()))
+                return i;
+
+        return -1;
+    }
+
+    /**
+     * Parse condition for column.
+     *
+     * @param colName Column name.
+     * @param first First.
+     * @param last Last.
+     */
+    protected ColumnCondition conditionForColumn(String colName, SearchRow first, SearchRow last) {
+        return ColumnCondition.forColumn(getColumnIndex(colName), first, last);
+    }
+
+    /**
+     * Column condition.
+     */
+    protected static class ColumnCondition {
+        /** Is equality. */
+        private final boolean isEquality;
+
+        /** Is range. */
+        private final boolean isRange;
+
+        /** Value 1. */
+        private final Value val1;
+
+        /** Value 2. */
+        private final Value val2;
+
+        /**
+         * @param isEquality Is equality.
+         * @param isRange Is range.
+         * @param val1 Value 1.
+         * @param val2 Value 2.
+         */
+        private ColumnCondition(boolean isEquality, boolean isRange, Value val1, Value val2) {
+            this.isEquality = isEquality;
+            this.isRange = isRange;
+            this.val1 = val1;
+            this.val2 = val2;
+        }
+
+        /**
+         * Parse condition for column.
+         *
+         * @param colIdx Column index.
+         * @param start Start row values.
+         * @param end End row values.
+         */
+        public static ColumnCondition forColumn(int colIdx, SearchRow start, SearchRow end) {
+            boolean isEquality = false;
+            boolean isRange = false;
+
+            Value val1 = null;
+            Value val2 = null;
+
+            if (start != null && colIdx >= 0 && colIdx < start.getColumnCount())
+                val1 = start.getValue(colIdx);
+
+            if (end != null && colIdx >= 0 && colIdx < end.getColumnCount())
+                val2 = end.getValue(colIdx);
+
+            if (val1 != null && val2 != null) {
+                if (val1.equals(val2))
+                    isEquality = true;
+                else
+                    isRange = true;
+            }
+            else if (val1 != null || val2 != null)
+                isRange = true;
+
+            return new ColumnCondition(isEquality, isRange, val1, val2);
+        }
+
+        /**
+         * Checks whether the condition is equality.
+         */
+        public boolean isEquality() {
+            return isEquality;
+        }
+
+        /**
+         * Checks whether the condition is range.
+         */
+        public boolean isRange() {
+            return isRange;
+        }
+
+        /**
+         * Gets value, if condition is equality.
+         */
+        public Value getValue() {
+            if (isEquality)
+                return val1;
+
+            return null;
+        }
+
+        /**
+         * Gets start value, if condition is range.
+         */
+        public Value getMinValue() {
+            if (isRange)
+                return val1;
+
+            return null;
+        }
+
+        /**
+         * Gets end value, if condition is range.
+         */
+        public Value getMaxValue() {
+            if (isRange)
+                return val2;
+
+            return null;
+        }
     }
 }

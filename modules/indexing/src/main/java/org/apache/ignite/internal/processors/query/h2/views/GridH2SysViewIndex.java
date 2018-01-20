@@ -37,9 +37,6 @@ import org.h2.table.TableFilter;
  * Sys view index
  */
 public class GridH2SysViewIndex extends BaseIndex {
-    /** Full scan initial cost. */
-    private static final double FULL_SCAN_INITIAL_COST = 1000d;
-
     /** Indexed column. */
     private final Column indexedCol;
 
@@ -49,10 +46,12 @@ public class GridH2SysViewIndex extends BaseIndex {
      */
     GridH2SysViewIndex(GridH2SysViewTable tbl, Column col) {
         this.indexedCol = col;
-        IndexColumn[] idxCols = null;
+        IndexColumn[] idxCols;
 
         if (col != null)
-            IndexColumn.wrap(new Column[] { col });
+            idxCols = IndexColumn.wrap(new Column[] { col });
+        else
+            idxCols = new IndexColumn[0];
 
         initBaseIndex(tbl, 0, null, idxCols, IndexType.createNonUnique(false));
     }
@@ -86,11 +85,14 @@ public class GridH2SysViewIndex extends BaseIndex {
     /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder,
         HashSet<Column> allColsSet) {
-        if (indexedCol != null)
-            if ((masks[indexedCol.getColumnId()] & IndexCondition.EQUALITY) == IndexCondition.EQUALITY)
+        if (indexedCol != null) {
+            if ((masks[indexedCol.getColumnId()] & IndexCondition.EQUALITY) != 0)
                 return 1d;
+            else if ((masks[indexedCol.getColumnId()] & IndexCondition.RANGE) != 0)
+                return 10d;
+        }
 
-        return FULL_SCAN_INITIAL_COST + getRowCountApproximation();
+        return 100d + getRowCountApproximation();
     }
 
     /** {@inheritDoc} */

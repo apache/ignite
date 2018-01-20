@@ -2238,7 +2238,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
         }, CLEANUP_CONNECTIONS_PERIOD, CLEANUP_CONNECTIONS_PERIOD);
 
-        try (Connection c = connectionForSchema(GridH2SysView.TABLE_SCHEMA_NAME)) {
+        Connection c = connectionForSchema(GridH2SysView.TABLE_SCHEMA_NAME);
+        try {
             GridH2SysViewTableEngine.registerView(c, new GridH2SysViewCaches(ctx));
         }
         catch (SQLException e) {
@@ -2710,9 +2711,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             for (QueryTable tblKey : twoStepQry.tables()) {
                 GridH2Table tbl = dataTable(tblKey);
 
-                int cacheId = tbl.cacheId();
+                if (tbl != null) {
+                    int cacheId = tbl.cacheId();
 
-                caches0.add(cacheId);
+                    caches0.add(cacheId);
+                }
             }
         }
 
