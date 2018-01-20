@@ -28,6 +28,7 @@ import org.apache.ignite.ml.genetic.GAGrid;
 import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
 
+
 /**
  * This example demonstrates how to use the GAGrid framework.
  *
@@ -78,6 +79,9 @@ public class HelloWorldGAExample {
             // create and set TerminateCriteria
             HelloWorldTerminateCriteria termCriteria = new HelloWorldTerminateCriteria(ignite);
             gaConfig.setTerminateCriteria(termCriteria);
+
+            //gaConfig.setSelectionMethod(GAGridConstants.SELECTION_METHOD.SELECTON_METHOD_ELETISM);
+            //gaConfig.setElitismCount(10);
 
             ignite.log();
 

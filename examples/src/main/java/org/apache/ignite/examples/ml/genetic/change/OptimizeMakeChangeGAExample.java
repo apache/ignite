@@ -75,6 +75,12 @@ public class OptimizeMakeChangeGAExample {
         sbErrorMessage.append(" ");
         sbErrorMessage.append("IE: -DAMOUNTCHANGE=75");
 
+        //Check if -DAMOUNTCHANGE JVM system variable is provided
+        if (sAmountChange == null) {
+            System.out.println(sbErrorMessage);
+            System.exit(1);
+        }
+
         try {
 
             //Create an Ignite instance as you would in any other use case.
@@ -89,7 +95,8 @@ public class OptimizeMakeChangeGAExample {
             List<Gene> genes = getGenePool();
 
             // set selection method
-            gaConfig.setSelectionMethod(GAGridConstants.SELECTION_METHOD.SELECTION_METHOD_TRUNCATION);
+            gaConfig.setSelectionMethod(GAGridConstants.SELECTION_METHOD.SELECTON_METHOD_ELETISM);
+            gaConfig.setElitismCount(10);
 
             // set the Chromosome Length to '4' since we have 4 coins.
             gaConfig.setChromosomeLength(4);
@@ -116,7 +123,7 @@ public class OptimizeMakeChangeGAExample {
             // create and set TerminateCriteria
             OptimizeMakeChangeTerminateCriteria termCriteria = new OptimizeMakeChangeTerminateCriteria(ignite);
 
-            ChromosomeCriteria chromosomeCritiera = new ChromosomeCriteria();
+            ChromosomeCriteria chromosomeCriteria = new ChromosomeCriteria();
 
             List values = new ArrayList();
 
@@ -125,9 +132,9 @@ public class OptimizeMakeChangeGAExample {
             values.add("coinType=NICKEL");
             values.add("coinType=PENNY");
 
-            chromosomeCritiera.setCriteria(values);
+            chromosomeCriteria.setCriteria(values);
 
-            gaConfig.setChromosomeCritiera(chromosomeCritiera);
+            gaConfig.setChromosomeCriteria(chromosomeCriteria);
             gaConfig.setTerminateCriteria(termCriteria);
 
             // initialize GAGrid
