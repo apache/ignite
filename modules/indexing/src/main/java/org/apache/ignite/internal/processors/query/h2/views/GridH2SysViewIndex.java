@@ -34,7 +34,7 @@ import org.h2.table.MetaTable;
 import org.h2.table.TableFilter;
 
 /**
- * Sys view index
+ * System view H2 index.
  */
 public class GridH2SysViewIndex extends BaseIndex {
     /** Indexed column. */
@@ -147,8 +147,8 @@ public class GridH2SysViewIndex extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public String getPlanSQL() {
-        return this.getClass().getSimpleName() + indexedCol == null ? " scan index"
-            : " index for " + indexedCol.getName();
+        return this.getClass().getSimpleName() + ((indexedCol == null) ? " scan index"
+            : " index for " + indexedCol.getName());
     }
 }
 

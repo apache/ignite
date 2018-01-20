@@ -29,7 +29,7 @@ import org.h2.result.SearchRow;
 import org.h2.value.Value;
 
 /**
- * Sys view caches.
+ * System view: caches.
  */
 public class GridH2SysViewImplCaches extends GridH2SysView {
     /**
@@ -57,11 +57,17 @@ public class GridH2SysViewImplCaches extends GridH2SysView {
         Collection<IgniteInternalCache<?, ?>> caches;
 
         if (nameCond.isEquality()) {
+            log.debug("Get caches: cache name");
+
             IgniteInternalCache<?, ?> cache = ctx.cache().cache(nameCond.getValue().getString());
+
             caches = Collections.<IgniteInternalCache<?, ?>>singleton(cache);
         }
-        else
+        else {
+            log.debug("Get caches: full scan");
+
             caches = ctx.cache().caches();
+        }
 
         for(IgniteInternalCache<?, ?> cache : caches) {
             if (cache != null)

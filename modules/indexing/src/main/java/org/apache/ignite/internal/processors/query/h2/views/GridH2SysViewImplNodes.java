@@ -31,7 +31,7 @@ import org.h2.result.SearchRow;
 import org.h2.value.Value;
 
 /**
- * Sys view caches.
+ * System view: nodes.
  */
 public class GridH2SysViewImplNodes extends GridH2SysView {
     /**
@@ -56,20 +56,30 @@ public class GridH2SysViewImplNodes extends GridH2SysView {
         ColumnCondition locCond = conditionForColumn("IS_LOCAL", first, last);
         ColumnCondition idCond = conditionForColumn("ID", first, last);
 
-        if (locCond.isEquality() && locCond.getValue().getBoolean())
+        if (locCond.isEquality() && locCond.getValue().getBoolean()) {
+            log.debug("Get nodes: local node");
+
             nodes = Collections.singleton(ctx.discovery().localNode());
+        }
         else if (idCond.isEquality()) {
             try {
+                log.debug("Get nodes: node id");
+
                 UUID nodeId = UUID.fromString(idCond.getValue().getString());
 
                 nodes = Collections.singleton(ctx.discovery().node(nodeId));
             }
             catch (Exception e) {
+                log.warning("Failed to get node by nodeId: " + idCond.getValue().getString(), e);
+
                 nodes = Collections.emptySet();
             }
         }
-        else
+        else {
+            log.debug("Get nodes: full scan");
+
             nodes = ctx.discovery().allNodes();
+        }
 
         for(ClusterNode node : nodes) {
             if (node != null)

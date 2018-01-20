@@ -31,7 +31,7 @@ import org.h2.result.SearchRow;
 import org.h2.value.Value;
 
 /**
- * Sys view views.
+ * System view: system views.
  */
 public class GridH2SysViewImplViews extends GridH2SysView {
     /** System view processor. */
@@ -53,6 +53,8 @@ public class GridH2SysViewImplViews extends GridH2SysView {
     /** {@inheritDoc} */
     @Override public Iterable<Row> getRows(Session ses, SearchRow first, SearchRow last) {
         List<Row> rows = new ArrayList<>();
+
+        log.debug("Get system views: full scan");
 
         for(GridH2SysView view : proc.getRegisteredViews()) {
             if (view != null)

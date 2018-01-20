@@ -25,7 +25,7 @@ import org.h2.command.ddl.CreateTableData;
 import org.h2.table.Table;
 
 /**
- * Sys view table engine.
+ * System view H2 table engine.
  */
 public class GridH2SysViewTableEngine implements TableEngine {
     /** */

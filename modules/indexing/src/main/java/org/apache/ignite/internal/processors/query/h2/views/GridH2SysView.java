@@ -28,7 +28,7 @@ import org.h2.value.ValueNull;
 import org.h2.value.ValueString;
 
 /**
- *
+ * System view base class.
  */
 public abstract class GridH2SysView {
     /** Table name prefix. */

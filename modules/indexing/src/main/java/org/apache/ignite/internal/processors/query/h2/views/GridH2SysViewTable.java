@@ -31,7 +31,7 @@ import org.h2.table.TableBase;
 import org.h2.table.TableType;
 
 /**
- * Grid sys view table.
+ * System view H2 table.
  */
 public class GridH2SysViewTable extends TableBase {
     /** Scan index. */

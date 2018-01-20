@@ -30,12 +30,6 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
  * System views processor.
  */
 public class GridH2SysViewProcessor {
-    /** Grid context. */
-    private volatile GridKernalContext ctx;
-
-    /** Indexing. */
-    private volatile IgniteH2Indexing idx;
-
     /** Logger. */
     private volatile IgniteLogger log;
 
@@ -49,9 +43,6 @@ public class GridH2SysViewProcessor {
      * @param idx indexing.
      */
     public void start(GridKernalContext ctx, IgniteH2Indexing idx) {
-        this.ctx = ctx;
-        this.idx = idx;
-
         log = ctx.log(GridH2SysViewProcessor.class);
         log.info("Starting system view processor");
 
@@ -62,6 +53,7 @@ public class GridH2SysViewProcessor {
             viewsToRegister.add(new GridH2SysViewImplViews(ctx, this));
             viewsToRegister.add(new GridH2SysViewImplCaches(ctx));
             viewsToRegister.add(new GridH2SysViewImplNodes(ctx));
+            viewsToRegister.add(new GridH2SysViewImplNodeAttributes(ctx));
 
             for (GridH2SysView view : viewsToRegister) {
                 GridH2SysViewTableEngine.registerView(c, view);
