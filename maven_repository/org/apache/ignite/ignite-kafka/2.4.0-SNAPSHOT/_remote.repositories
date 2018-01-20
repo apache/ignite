@@ -1,6 +1,0 @@
-#NOTE: This is an Aether internal implementation file, its format can be changed without prior notice.
-#Tue Jan 09 14:59:03 CST 2018
-ignite-kafka-2.4.0-SNAPSHOT-javadoc.jar>=
-ignite-kafka-2.4.0-SNAPSHOT.jar>=
-ignite-kafka-2.4.0-SNAPSHOT-sources.jar>=
-ignite-kafka-2.4.0-SNAPSHOT.pom>=

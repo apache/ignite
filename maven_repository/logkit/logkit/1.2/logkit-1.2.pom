@@ -1,6 +1,0 @@
-<project>
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>logkit</groupId>
-  <artifactId>logkit</artifactId>
-  <version>1.2</version>
-</project>

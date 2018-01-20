@@ -1,6 +1,0 @@
-<project>
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>javax.resource</groupId>
-  <artifactId>connector-api</artifactId>
-  <version>1.5</version>
-</project>
