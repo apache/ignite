@@ -127,14 +127,19 @@ public abstract class GridH2SysView {
     }
 
     /**
-     * @param data Data.
+     * @param ses Session.
+     * @param key Key.
+     * @param data Data for each column.
      */
     protected Row createRow(Session ses, long key, Object... data) {
         Value[] values = new Value[data.length];
 
         for (int i = 0; i < data.length; i++) {
-            Object s = data[i];
-            Value v = (s == null) ? ValueNull.INSTANCE : ValueString.get(s.toString());
+            Object o = data[i];
+
+            Value v = (o == null) ? ValueNull.INSTANCE :
+                (o instanceof Value) ? (Value)o : ValueString.get(o.toString());
+
             values[i] = cols[i].convert(v);
         }
 
@@ -146,6 +151,8 @@ public abstract class GridH2SysView {
     }
 
     /**
+     * Gets view content.
+     *
      * @param ses Session.
      * @param first First.
      * @param last Last.

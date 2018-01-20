@@ -50,8 +50,14 @@ public class GridH2SysViewProcessor {
 
         try {
             Collection<GridH2SysView> viewsToRegister = new ArrayList<>();
+
             viewsToRegister.add(new GridH2SysViewImplViews(ctx, this));
+            viewsToRegister.add(new GridH2SysViewImplInstance(ctx));
+            viewsToRegister.add(new GridH2SysViewImplJvmThreads(ctx));
+            viewsToRegister.add(new GridH2SysViewImplJvmRuntime(ctx));
+            viewsToRegister.add(new GridH2SysViewImplJvmOS(ctx));
             viewsToRegister.add(new GridH2SysViewImplCaches(ctx));
+            viewsToRegister.add(new GridH2SysViewImplCacheGroups(ctx));
             viewsToRegister.add(new GridH2SysViewImplNodes(ctx));
             viewsToRegister.add(new GridH2SysViewImplNodeAttributes(ctx));
 

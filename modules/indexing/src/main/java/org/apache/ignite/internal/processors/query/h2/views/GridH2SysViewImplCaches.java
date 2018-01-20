@@ -38,13 +38,13 @@ public class GridH2SysViewImplCaches extends GridH2SysView {
     public GridH2SysViewImplCaches(GridKernalContext ctx) {
         super("CACHES", "Ignite caches", ctx, "NAME",
             newColumn("NAME"),
-            newColumn("CACHE_MODE"),
-            newColumn("GROUP_NAME"),
-            newColumn("ATOMICITY_MODE"),
-            newColumn("BACKUPS", Value.INT),
-            newColumn("REBALANCE_MODE"),
-            newColumn("REBALANCE_DELAY", Value.LONG),
-            newColumn("SQL_SCHEMA")
+            newColumn("CONFIG_CACHE_MODE"),
+            newColumn("CONFIG_GROUP_NAME"),
+            newColumn("CONFIG_ATOMICITY_MODE"),
+            newColumn("CONFIG_BACKUPS", Value.INT),
+            newColumn("CONFIG_REBALANCE_MODE"),
+            newColumn("CONFIG_REBALANCE_DELAY", Value.LONG),
+            newColumn("CONFIG_SQL_SCHEMA")
         );
     }
 

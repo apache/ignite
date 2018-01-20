@@ -147,8 +147,8 @@ public class GridH2SysViewIndex extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public String getPlanSQL() {
-        return this.getClass().getSimpleName() + ((indexedCol == null) ? " scan index"
-            : " index for " + indexedCol.getName());
+        return getTable().getName() + ((indexedCol == null) ? " full scan"
+            : " using index " + indexedCol.getName());
     }
 }
 
