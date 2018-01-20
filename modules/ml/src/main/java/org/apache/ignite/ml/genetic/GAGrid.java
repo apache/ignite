@@ -230,18 +230,13 @@ public class GAGrid {
         List<Long> orderChromKeysByFittest = new ArrayList();
         String orderDirection = "desc";
 
-        GAGridConstants.FITNESS_EVALUATER_TYPE evaluatorType = config.getFitnessEvaluator();
-
-        switch (evaluatorType) {
-            case LOWEST_FITNESS_VALUE_IS_FITTER:
+        if(config.isHigherFitnessValueFitter()==false)
+         {
                 orderDirection = "asc";
-                break;
-            default:
-                break;
-        }
+         }
         String fittestSQL = "select _key from Chromosome order by fitnessScore " + orderDirection;
 
-        // Execute query to keys for ALL Chromosomes by fittnessScore
+        // Execute query to retrieve keys for ALL Chromosomes by fittnessScore
         QueryCursor<List<?>> cursor = populationCache.query(new SqlFieldsQuery(fittestSQL));
 
         List<List<?>> res = cursor.getAll();

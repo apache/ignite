@@ -28,13 +28,6 @@ public interface GAGridConstants {
     /** populationCache constant */
     public static final String GENE_CACHE = "geneCache";
 
-    /** Fitness evaluator type **/
-    public static enum FITNESS_EVALUATER_TYPE {
-        HIGHEST_FITNESS_VALUE_IS_FITTER, LOWEST_FITNESS_VALUE_IS_FITTER
-    }
-
-    ;
-
     /** Selection Method type **/
     public static enum SELECTION_METHOD {
         SELECTON_METHOD_ELETISM, SELECTION_METHOD_TRUNCATION

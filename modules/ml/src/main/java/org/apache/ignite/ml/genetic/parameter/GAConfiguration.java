@@ -61,14 +61,12 @@ public class GAConfiguration {
      * NOTE: This parameter is only considered when selectionMethod is SELECTON_METHOD_ELETISM.
      */
     private int elitismCount = 0;
+
     /**
-     * Indicates how chromosome fitness values should be evaluated
-     *
-     * <br/> IE: A chromosome with HIGHEST_FITNESS_VALUE_IS_FITTER is considered fittest. A chromosome with
-     * LOWEST_FITNESS_VALUE_IS_FITTER is considered fittest.
+     * Indicates how chromosome fitness values should be evaluated. </br> A chromosome with
+     * isHigherFitnessValueFitter=true is considered fittest.
      */
-    private GAGridConstants.FITNESS_EVALUATER_TYPE fittnessEvaluator =
-        GAGridConstants.FITNESS_EVALUATER_TYPE.HIGHEST_FITNESS_VALUE_IS_FITTER;
+    private boolean isHigherFitnessValueFitter = true;
     /**
      * Population size represents the number of potential solutions (ie: chromosomes) between each generation Default
      * size is 500
@@ -133,6 +131,22 @@ public class GAConfiguration {
     }
 
     /**
+     * set Boolean value for FitnessValueFitter
+     *
+     * @param isHigherFitnessValueFitter
+     */
+    public void setIsHigherFitnessValueFitter(boolean isHigherFitnessValueFitter) {
+        this.isHigherFitnessValueFitter = isHigherFitnessValueFitter;
+    }
+
+    /**
+     * @return Boolean value indicating how fitness values should be evaluated.
+     */
+    public boolean isHigherFitnessValueFitter() {
+        return this.isHigherFitnessValueFitter;
+    }
+
+    /**
      * Retrieve the chromosome length
      *
      * @return Size of Chromosome
@@ -184,24 +198,6 @@ public class GAConfiguration {
      */
     public void setElitismCount(int elitismCount) {
         this.elitismCount = elitismCount;
-    }
-
-    /**
-     * Retrieve FITNESS_EVALUATER_TYPE
-     *
-     * @return Fitness Evaluator type
-     */
-    public GAGridConstants.FITNESS_EVALUATER_TYPE getFitnessEvaluator() {
-        return fittnessEvaluator;
-    }
-
-    /**
-     * Set value for FITNESS_EVALUATER_TYPE
-     *
-     * @param fittnessIndicator FITNESS_EVALUATER_TYPE
-     */
-    public void setFitnessEvaluator(GAGridConstants.FITNESS_EVALUATER_TYPE fittnessIndicator) {
-        this.fittnessEvaluator = fittnessEvaluator;
     }
 
     /**
