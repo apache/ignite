@@ -80,9 +80,6 @@ public class HelloWorldGAExample {
             HelloWorldTerminateCriteria termCriteria = new HelloWorldTerminateCriteria(ignite);
             gaConfig.setTerminateCriteria(termCriteria);
 
-            //gaConfig.setSelectionMethod(GAGridConstants.SELECTION_METHOD.SELECTON_METHOD_ELETISM);
-            //gaConfig.setElitismCount(10);
-
             ignite.log();
 
             gaGrid = new GAGrid(gaConfig, ignite);
