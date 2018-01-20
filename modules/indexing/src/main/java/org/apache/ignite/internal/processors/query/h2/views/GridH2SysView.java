@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.views;
 
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.h2.engine.Session;
 import org.h2.result.Row;
@@ -36,11 +37,20 @@ public abstract class GridH2SysView {
     /** Table schema name. */
     public static final String TABLE_SCHEMA_NAME = "INFORMATION_SCHEMA";
 
+    /** Default row count approximation. */
+    protected static final long DEFAULT_ROW_COUNT_APPROXIMATION = 100L;
+
     /** Table name. */
     protected final String tblName;
 
+    /** Description. */
+    protected final String desc;
+
     /** Grid context. */
     protected final GridKernalContext ctx;
+
+    /** Logger. */
+    protected final IgniteLogger log;
 
     /** Columns. */
     protected final Column[] cols;
@@ -50,11 +60,12 @@ public abstract class GridH2SysView {
 
     /**
      * @param tblName Table name.
+     * @param desc Description.
      * @param ctx Context.
      * @param indexedCols Indexed columns.
      * @param cols Columns.
      */
-    public GridH2SysView(String tblName, GridKernalContext ctx, String[] indexedCols, Column... cols) {
+    public GridH2SysView(String tblName, String desc, GridKernalContext ctx, String[] indexedCols, Column... cols) {
         assert tblName != null;
         assert ctx != null;
         assert cols != null;
@@ -64,25 +75,29 @@ public abstract class GridH2SysView {
         this.ctx = ctx;
         this.cols = cols;
         this.indexedCols = indexedCols;
+        this.desc = desc;
+        this.log = ctx.log(this.getClass());
     }
 
     /**
      * @param tblName Table name.
+     * @param desc Description.
      * @param ctx Context.
      * @param indexedCol Indexed column.
      * @param cols Columns.
      */
-    public GridH2SysView(String tblName, GridKernalContext ctx, String indexedCol, Column... cols) {
-        this(tblName, ctx, new String[] {indexedCol}, cols);
+    public GridH2SysView(String tblName, String desc, GridKernalContext ctx, String indexedCol, Column... cols) {
+        this(tblName, desc, ctx, new String[] {indexedCol}, cols);
     }
 
     /**
      * @param tblName Table name.
+     * @param desc Description.
      * @param ctx Context.
      * @param cols Columns.
      */
-    public GridH2SysView(String tblName, GridKernalContext ctx, Column... cols) {
-        this(tblName, ctx, new String[] {}, cols);
+    public GridH2SysView(String tblName, String desc, GridKernalContext ctx, Column... cols) {
+        this(tblName, desc, ctx, new String[] {}, cols);
     }
 
     /**
@@ -138,10 +153,33 @@ public abstract class GridH2SysView {
     public abstract Iterable<Row> getRows(Session ses, SearchRow first, SearchRow last);
 
     /**
+     * Gets row count for this view (or approximated row count, if real value can't be calculated quickly).
+     */
+    public long getRowCount() {
+        return DEFAULT_ROW_COUNT_APPROXIMATION;
+    }
+
+    /**
+     * Check if the row count can be retrieved quickly.
+     *
+     * @return true if it can
+     */
+    public boolean canGetRowCount() {
+        return false;
+    }
+
+    /**
      * Gets table name.
      */
     public String getTableName() {
         return tblName;
+    }
+
+    /**
+     * Gets description.
+     */
+    public String getDescription() {
+        return desc;
     }
 
     /**

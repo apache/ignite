@@ -142,12 +142,17 @@ public class GridH2SysViewTable extends TableBase {
 
     /** {@inheritDoc} */
     @Override public long getRowCount(Session ses) {
-        throw DbException.throwInternalError(toString());
+        return sysView.getRowCount();
     }
 
     /** {@inheritDoc} */
     @Override public boolean canGetRowCount() {
-        return false;
+        return sysView.canGetRowCount();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRowCountApproximation() {
+        return sysView.getRowCount();
     }
 
     /** {@inheritDoc} */
@@ -178,11 +183,6 @@ public class GridH2SysViewTable extends TableBase {
     /** {@inheritDoc} */
     @Override public long getMaxDataModificationId() {
         return Long.MAX_VALUE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getRowCountApproximation() {
-        return 1;
     }
 
     /** {@inheritDoc} */

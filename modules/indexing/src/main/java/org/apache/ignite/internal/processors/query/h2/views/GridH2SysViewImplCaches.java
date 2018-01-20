@@ -31,12 +31,12 @@ import org.h2.value.Value;
 /**
  * Sys view caches.
  */
-public class GridH2SysViewCaches extends GridH2SysView {
+public class GridH2SysViewImplCaches extends GridH2SysView {
     /**
      * @param ctx Grid context.
      */
-    public GridH2SysViewCaches(GridKernalContext ctx) {
-        super("CACHES", ctx, "NAME",
+    public GridH2SysViewImplCaches(GridKernalContext ctx) {
+        super("CACHES", "Ignite caches", ctx, "NAME",
             newColumn("NAME"),
             newColumn("CACHE_MODE"),
             newColumn("GROUP_NAME"),
@@ -58,29 +58,37 @@ public class GridH2SysViewCaches extends GridH2SysView {
 
         if (nameCond.isEquality()) {
             IgniteInternalCache<?, ?> cache = ctx.cache().cache(nameCond.getValue().getString());
-            if (cache == null)
-                caches = Collections.emptySet();
-            else
-                caches = Collections.singleton(cache);
+            caches = Collections.<IgniteInternalCache<?, ?>>singleton(cache);
         }
         else
             caches = ctx.cache().caches();
 
         for(IgniteInternalCache<?, ?> cache : caches) {
-            rows.add(
-                createRow(ses, rows.size(),
-                    cache.name(),
-                    cache.configuration().getCacheMode().name(),
-                    cache.configuration().getGroupName(),
-                    cache.configuration().getAtomicityMode().name(),
-                    cache.configuration().getBackups(),
-                    cache.configuration().getRebalanceMode().name(),
-                    cache.configuration().getRebalanceDelay(),
-                    cache.configuration().getSqlSchema()
-                )
-            );
+            if (cache != null)
+                rows.add(
+                    createRow(ses, rows.size(),
+                        cache.name(),
+                        cache.configuration().getCacheMode().name(),
+                        cache.configuration().getGroupName(),
+                        cache.configuration().getAtomicityMode().name(),
+                        cache.configuration().getBackups(),
+                        cache.configuration().getRebalanceMode().name(),
+                        cache.configuration().getRebalanceDelay(),
+                        cache.configuration().getSqlSchema()
+                    )
+                );
         }
 
         return rows;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean canGetRowCount() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRowCount() {
+        return ctx.cache().caches().size();
     }
 }

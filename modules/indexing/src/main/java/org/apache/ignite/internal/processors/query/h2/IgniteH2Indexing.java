@@ -113,7 +113,9 @@ import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecut
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.processors.query.h2.views.GridH2SysView;
-import org.apache.ignite.internal.processors.query.h2.views.GridH2SysViewCaches;
+import org.apache.ignite.internal.processors.query.h2.views.GridH2SysViewImplCaches;
+import org.apache.ignite.internal.processors.query.h2.views.GridH2SysViewImplNodes;
+import org.apache.ignite.internal.processors.query.h2.views.GridH2SysViewProcessor;
 import org.apache.ignite.internal.processors.query.h2.views.GridH2SysViewTableEngine;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
@@ -336,6 +338,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** */
     private DdlStatementsProcessor ddlProc;
+
+    /** */
+    private GridH2SysViewProcessor sysViewProc;
 
     /** */
     private final ConcurrentMap<QueryTable, GridH2Table> dataTables = new ConcurrentHashMap8<>();
@@ -2222,9 +2227,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             dmlProc = new DmlStatementsProcessor();
             ddlProc = new DdlStatementsProcessor();
+            sysViewProc = new GridH2SysViewProcessor();
 
             dmlProc.start(ctx, this);
             ddlProc.start(ctx, this);
+            sysViewProc.start(ctx, this);
         }
 
         if (JdbcUtils.serializer != null)
@@ -2237,14 +2244,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 cleanupConnections();
             }
         }, CLEANUP_CONNECTIONS_PERIOD, CLEANUP_CONNECTIONS_PERIOD);
-
-        Connection c = connectionForSchema(GridH2SysView.TABLE_SCHEMA_NAME);
-        try {
-            GridH2SysViewTableEngine.registerView(c, new GridH2SysViewCaches(ctx));
-        }
-        catch (SQLException e) {
-            throw new IgniteCheckedException(e);
-        }
     }
 
     /**

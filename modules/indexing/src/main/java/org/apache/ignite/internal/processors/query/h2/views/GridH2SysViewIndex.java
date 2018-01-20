@@ -132,12 +132,12 @@ public class GridH2SysViewIndex extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public long getRowCount(Session ses) {
-        return MetaTable.ROW_COUNT_APPROXIMATION;
+        return table.getRowCount(ses);
     }
 
     /** {@inheritDoc} */
     @Override public long getRowCountApproximation() {
-        return MetaTable.ROW_COUNT_APPROXIMATION;
+        return table.getRowCountApproximation();
     }
 
     /** {@inheritDoc} */
@@ -147,7 +147,8 @@ public class GridH2SysViewIndex extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public String getPlanSQL() {
-        return "meta";
+        return this.getClass().getSimpleName() + indexedCol == null ? " scan index"
+            : " index for " + indexedCol.getName();
     }
 }
 
