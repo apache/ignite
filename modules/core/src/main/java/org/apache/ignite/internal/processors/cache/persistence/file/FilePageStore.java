@@ -292,8 +292,10 @@ public class FilePageStore implements PageStore {
         lock.writeLock().lock();
 
         try {
+            // Since we always have a meta-page in the store, never revert allocated counter to a value smaller than
+            // header + page.
             if (inited)
-                allocated.set(fileIO.size());
+                allocated.set(Math.max(headerSize() + pageSize, fileIO.size()));
 
             recover = false;
         }
@@ -449,7 +451,8 @@ public class FilePageStore implements PageStore {
 
             assert pageBuf.capacity() == pageSize;
             assert pageBuf.position() == 0;
-            assert pageBuf.order() == ByteOrder.nativeOrder();
+            assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order()
+                + " should be same with " + ByteOrder.nativeOrder();
             assert PageIO.getType(pageBuf) != 0 : "Invalid state. Type is 0! pageId = " + U.hexLong(pageId);
             assert PageIO.getVersion(pageBuf) != 0 : "Invalid state. Version is 0! pageId = " + U.hexLong(pageId);
 

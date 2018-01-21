@@ -356,7 +356,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         /// </summary>
         /// <param name="data">Data pointer.</param>
         /// <returns>Int value</returns>
-        private static int ReadInt0(byte* data) {
+        public static int ReadInt0(byte* data) {
             int val;
 
             if (LittleEndian)

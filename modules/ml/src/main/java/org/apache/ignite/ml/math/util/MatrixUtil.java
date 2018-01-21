@@ -22,6 +22,8 @@ import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.impls.matrix.CacheMatrix;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.matrix.MatrixView;
@@ -209,6 +211,66 @@ public class MatrixUtil {
                 mtx.setX(i, j, fArr[!isRowMode ? i * colsCnt + j : j * rowsCnt + i]);
     }
 
+    /**
+     * Zip two vectors with given tri-function taking as third argument position in vector
+     * (i.e. apply binary function to both vector elementwise and construct vector from results).
+     * Example zipWith({200, 400, 600}, {100, 300, 500}, plusAndMultiplyByIndex) = {(200 + 100) * 0, (400 + 300) * 1, (600 + 500) * 3}.
+     * Length of result is length of shortest of vectors.
+     *
+     * @param v1 First vector.
+     * @param v2 Second vector.
+     * @param f Function to zip with.
+     * @return Result of zipping.
+     */
+    public static Vector zipWith(Vector v1, Vector v2, IgniteTriFunction<Double, Double, Integer, Double> f) {
+        int size = Math.min(v1.size(), v2.size());
+
+        Vector res = v1.like(size);
+
+        for (int row = 0; row < size; row++)
+            res.setX(row, f.apply(v1.getX(row), v2.getX(row), row));
+
+        return res;
+    }
+
+    /**
+     * Zips two matrices by column-by-column with specified function. Result is matrix same flavour as first matrix.
+     *
+     * @param mtx1 First matrix.
+     * @param mtx2 Second matrix.
+     * @param fun Function to zip with.
+     * @return Vector consisting from values resulted from zipping column-by-column.
+     */
+    public static Vector zipFoldByColumns(Matrix mtx1, Matrix mtx2, IgniteBiFunction<Vector, Vector, Double> fun) {
+        int cols = Math.min(mtx1.columnSize(), mtx2.columnSize());
+
+        Vector vec = mtx1.likeVector(cols);
+
+        for (int i = 0; i < cols; i++)
+            vec.setX(i, fun.apply(mtx1.getCol(i), mtx2.getCol(i)));
+
+        return vec;
+    }
+
+    /**
+     * Zips two matrices by row-by-row with specified function. Result is matrix same flavour as first matrix.
+     *
+     * @param mtx1 First matrix.
+     * @param mtx2 Second matrix.
+     * @param fun Function to zip with.
+     * @return Vector consisting from values resulted from zipping row-by-row.
+     */
+    public static Vector zipFoldByRows(Matrix mtx1, Matrix mtx2, IgniteBiFunction<Vector, Vector, Double> fun) {
+        int rows = Math.min(mtx1.rowSize(), mtx2.rowSize());
+
+        Vector vec = mtx1.likeVector(rows);
+
+        for (int i = 0; i < rows; i++)
+            vec.setX(i, fun.apply(mtx1.viewRow(i), mtx2.viewRow(i)));
+
+        return vec;
+    }
+
     /** */
     public static double[] flatten(double[][] arr, int stoMode) {
         assert arr != null;
@@ -230,5 +292,31 @@ public class MatrixUtil {
                 res[isRowMode ? j * iLim + i : i * jLim + j] = arr[i][j];
 
         return res;
+    }
+
+    /**
+     * Performs in-place matrix subtraction.
+     *
+     * @param mtx1 Operand to be changed and subtracted from.
+     * @param mtx2 Operand to subtract.
+     * @return Updated first operand.
+     */
+    public static Matrix elementWiseMinus(Matrix mtx1, Matrix mtx2) {
+        mtx1.map(mtx2, (a, b) -> a - b);
+
+        return mtx1;
+    }
+
+    /**
+     * Performs in-place matrix multiplication.
+     *
+     * @param mtx1 Operand to be changed and first multiplication operand.
+     * @param mtx2 Second multiplication operand.
+     * @return Updated first operand.
+     */
+    public static Matrix elementWiseTimes(Matrix mtx1, Matrix mtx2) {
+        mtx1.map(mtx2, (a, b) -> a * b);
+
+        return mtx1;
     }
 }

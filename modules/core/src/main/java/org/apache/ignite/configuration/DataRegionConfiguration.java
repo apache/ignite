@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 import java.io.Serializable;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
@@ -430,5 +431,10 @@ public final class DataRegionConfiguration implements Serializable {
         this.checkpointPageBufSize = checkpointPageBufSize;
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DataRegionConfiguration.class, this);
     }
 }

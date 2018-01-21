@@ -23,10 +23,13 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.stream.StreamTransformer;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -157,6 +160,14 @@ public final class IgniteSystemProperties {
      * Setting to {@code true} enables writing sensitive information in {@code toString()} output.
      */
     public static final String IGNITE_TO_STRING_INCLUDE_SENSITIVE = "IGNITE_TO_STRING_INCLUDE_SENSITIVE";
+
+    /** Maximum length for {@code toString()} result. */
+    public static final String IGNITE_TO_STRING_MAX_LENGTH = "IGNITE_TO_STRING_MAX_LENGTH";
+
+    /**
+     * Limit collection (map, array) elements number to output.
+     */
+    public static final String IGNITE_TO_STRING_COLLECTION_LIMIT = "IGNITE_TO_STRING_COLLECTION_LIMIT";
 
     /**
      * If this property is set to {@code true} (default) and Ignite is launched
@@ -558,6 +569,19 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_SERVICES_COMPATIBILITY_MODE = "IGNITE_SERVICES_COMPATIBILITY_MODE";
 
     /**
+     * Manages backward compatibility of {@link StreamTransformer#from(CacheEntryProcessor)} method.
+     * <p>
+     * If the property is {@code true}, then the wrapped {@link CacheEntryProcessor} won't be able to be loaded over
+     * P2P class loading.
+     * <p>
+     * If the property is {@code false}, then another implementation of {@link StreamTransformer} will be returned,
+     * that fixes P2P class loading for {@link CacheEntryProcessor}, but it will be incompatible with old versions
+     * of Ignite.
+     */
+    public static final String IGNITE_STREAM_TRANSFORMER_COMPATIBILITY_MODE =
+        "IGNITE_STREAM_TRANSFORMER_COMPATIBILITY_MODE";
+
+    /**
      * When set to {@code true} tree-based data structures - {@code TreeMap} and {@code TreeSet} - will not be
      * wrapped into special holders introduced to overcome serialization issue caused by missing {@code Comparable}
      * interface on {@code BinaryObject}.
@@ -751,11 +775,52 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_WAL_SERIALIZER_VERSION = "IGNITE_WAL_SERIALIZER_VERSION";
 
     /**
+     * If the property is set Ignite will use legacy node comparator (based on node order) inste
+     *
+     * Default value is {@code false}.
+     */
+    public static final String IGNITE_USE_LEGACY_NODE_COMPARATOR = "IGNITE_USE_LEGACY_NODE_COMPARATOR";
+
+    /**
+     * Property that indicates should be mapped byte buffer used or not.
+     * Possible values: {@code true} and {@code false}.
+     */
+    public static final String IGNITE_WAL_MMAP = "IGNITE_WAL_MMAP";
+
+    /**
      * When set to {@code true}, Data store folders are generated only by consistent id, and no consistent ID will be
      * set based on existing data store folders. This option also enables compatible folder generation mode as it was
      * before 2.3.
      */
     public static final String IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID = "IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID";
+
+    /**
+     * Default value is {@code false}.
+     */
+    public static final String IGNITE_WAL_DEBUG_LOG_ON_RECOVERY = "IGNITE_WAL_DEBUG_LOG_ON_RECOVERY";
+
+    /**
+     * Number of checkpoint history entries held in memory.
+     */
+    public static final String IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE = "IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE";
+
+    /**
+     * If this property is set to {@code true} enable logging in {@link GridClient}.
+     */
+    public static final String IGNITE_GRID_CLIENT_LOG_ENABLED = "IGNITE_GRID_CLIENT_LOG_ENABLED";
+
+    /**
+     * When set to {@code true}, direct IO may be enabled. Direct IO enabled only if JAR file with corresponding
+     * feature is available in classpath and OS and filesystem settings allows to enable this mode.
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_DIRECT_IO_ENABLED = "IGNITE_DIRECT_IO_ENABLED";
+
+    /**
+     * When set to {@code true}, warnings that are intended for development environments and not for production
+     * (such as coding mistakes in code using Ignite) will not be logged.
+     */
+    public static final String IGNITE_DEV_ONLY_LOGGING_DISABLED = "IGNITE_DEV_ONLY_LOGGING_DISABLED";
 
     /**
      * Enforces singleton.

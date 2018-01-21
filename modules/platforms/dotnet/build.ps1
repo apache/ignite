@@ -27,7 +27,7 @@ Builds all parts of Apache Ignite.NET: Java, .NET, NuGet. Copies results to 'bin
 
 Requirements:
 * PowerShell 3
-* JDK 7+
+* JDK 8+
 * MAVEN_HOME environment variable or mvn.bat in PATH
 
 .PARAMETER skipJava
@@ -182,7 +182,7 @@ if (!$skipDotNet) {
 
 	# Restore NuGet packages
 	echo "Restoring NuGet..."
-	& $ng restore
+	& $ng restore Apache.Ignite.sln
 
 	# Build
 	$targets = if ($clean) {"Clean;Rebuild"} else {"Build"}

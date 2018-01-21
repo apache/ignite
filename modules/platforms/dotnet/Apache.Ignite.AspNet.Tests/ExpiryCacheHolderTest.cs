@@ -419,6 +419,11 @@ namespace Apache.Ignite.AspNet.Tests
                 throw new NotImplementedException();
             }
 
+            public IFieldsQueryCursor Query(SqlFieldsQuery qry)
+            {
+                throw new NotImplementedException();
+            }
+
             public IQueryCursor<IList> QueryFields(SqlFieldsQuery qry)
             {
                 throw new NotImplementedException();
