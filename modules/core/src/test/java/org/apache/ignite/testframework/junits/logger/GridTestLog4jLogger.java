@@ -462,6 +462,11 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
+    @Override public void trace(String marker, String msg) {
+        trace(msg);
+    }
+
+    /** {@inheritDoc} */
     @Override public void debug(String msg) {
         if (!impl.isDebugEnabled())
             warning("Logging at DEBUG level without checking if DEBUG level is enabled: " + msg);
@@ -470,11 +475,21 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
+    @Override public void debug(String marker, String msg) {
+        debug(msg);
+    }
+
+    /** {@inheritDoc} */
     @Override public void info(String msg) {
         if (!impl.isInfoEnabled())
             warning("Logging at INFO level without checking if INFO level is enabled: " + msg);
 
         impl.info(msg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void info(String marker, String msg) {
+        info(msg);
     }
 
     /** {@inheritDoc} */
@@ -488,6 +503,11 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
     }
 
     /** {@inheritDoc} */
+    @Override public void warning(String marker, String msg, @Nullable Throwable e) {
+        warning(msg, e);
+    }
+
+    /** {@inheritDoc} */
     @Override public void error(String msg) {
         impl.error(msg);
     }
@@ -495,6 +515,11 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
     /** {@inheritDoc} */
     @Override public void error(String msg, @Nullable Throwable e) {
         impl.error(msg, e);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void error(String marker, String msg, @Nullable Throwable e) {
+        error(msg, e);
     }
 
     /** {@inheritDoc} */

@@ -34,6 +34,8 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.logger.LoggerNodeIdAware;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
@@ -203,6 +205,21 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
         quiet = quiet0;
     }
 
+
+    /**
+     * Cleans up the logger configuration. Should be used in unit tests only for sequential tests run with
+     * different configurations
+     *
+     */
+    static void cleanup() {
+        synchronized (mux) {
+            if (inited)
+                LogManager.shutdown();
+
+            inited = false;
+        }
+    }
+
     /**
      * Sets level for internal log4j implementation.
      *
@@ -353,8 +370,13 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
 
         Configuration cfg = ctx.getConfiguration();
 
-        PatternLayout layout = PatternLayout.createLayout("[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n", null, null,
-            Charset.defaultCharset(), false, false, null, null);
+        PatternLayout.Builder builder = PatternLayout.newBuilder()
+            .withPattern("[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n")
+            .withCharset(Charset.defaultCharset())
+            .withAlwaysWriteExceptions(false)
+            .withNoConsoleNoAnsi(false);
+
+        PatternLayout layout = builder.build();
 
         final Appender consoleApp = ConsoleAppender.createAppender(layout, null, null, CONSOLE_APPENDER, null, null);
         consoleApp.start();
@@ -422,10 +444,15 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
 
     /** {@inheritDoc} */
     @Override public void trace(String msg) {
+        trace(null, msg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void trace(@Nullable String marker, String msg) {
         if (!isTraceEnabled())
             warning("Logging at TRACE level without checking if TRACE level is enabled: " + msg);
 
-        impl.trace(msg);
+        impl.trace(getMarkerOrNull(marker), msg);
 
         if (consoleLog != null)
             consoleLog.trace(msg);
@@ -433,10 +460,15 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
 
     /** {@inheritDoc} */
     @Override public void debug(String msg) {
+        debug(null, msg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void debug(@Nullable String marker, String msg) {
         if (!isDebugEnabled())
             warning("Logging at DEBUG level without checking if DEBUG level is enabled: " + msg);
 
-        impl.debug(msg);
+        impl.debug(getMarkerOrNull(marker), msg);
 
         if (consoleLog != null)
             consoleLog.debug(msg);
@@ -444,10 +476,15 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
 
     /** {@inheritDoc} */
     @Override public void info(String msg) {
+        info(null, msg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void info(@Nullable String marker, String msg) {
         if (!isInfoEnabled())
             warning("Logging at INFO level without checking if INFO level is enabled: " + msg);
 
-        impl.info(msg);
+        impl.info(getMarkerOrNull(marker), msg);
 
         if (consoleLog != null)
             consoleLog.info(msg);
@@ -455,15 +492,17 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
 
     /** {@inheritDoc} */
     @Override public void warning(String msg) {
-        impl.warn(msg);
-
-        if (consoleLog != null)
-            consoleLog.warn(msg);
+        warning(null, msg, null);
     }
 
     /** {@inheritDoc} */
     @Override public void warning(String msg, @Nullable Throwable e) {
-        impl.warn(msg, e);
+        warning(null, msg, e);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void warning(@Nullable String marker, String msg, @Nullable Throwable e) {
+        impl.warn(getMarkerOrNull(marker), msg, e);
 
         if (consoleLog != null)
             consoleLog.warn(msg, e);
@@ -471,18 +510,25 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
 
     /** {@inheritDoc} */
     @Override public void error(String msg) {
-        impl.error(msg);
-
-        if (consoleLog != null)
-            consoleLog.error(msg);
+        error(null, msg, null);
     }
 
     /** {@inheritDoc} */
     @Override public void error(String msg, @Nullable Throwable e) {
-        impl.error(msg, e);
+        error(null, msg, e);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void error(@Nullable String marker, String msg, @Nullable Throwable e) {
+        impl.error(getMarkerOrNull(marker), msg, e);
 
         if (consoleLog != null)
             consoleLog.error(msg, e);
+    }
+
+    /** Returns Marker object for the specified name, or null if the name is null */
+    private Marker getMarkerOrNull(@Nullable String marker) {
+        return marker != null ? MarkerManager.getMarker(marker) : null;
     }
 
     /** {@inheritDoc} */
