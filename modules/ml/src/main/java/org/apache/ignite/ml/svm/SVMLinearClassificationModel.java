@@ -46,25 +46,41 @@ public class SVMLinearClassificationModel implements Model<Vector, Double>, Expo
         this.intercept = intercept;
     }
 
-    /** */
+    /**
+     * Set up the output label format.
+     * @param isKeepingRawLabels The parameter value.
+     * @return Model with new isKeepingRawLabels parameter value.
+     */
     public SVMLinearClassificationModel withRawLabels(boolean isKeepingRawLabels) {
         this.isKeepingRawLabels = isKeepingRawLabels;
         return this;
     }
 
-    /** */
+    /**
+     * Set up the threshold.
+     * @param threshold The parameter value.
+     * @return Model with new threshold parameter value.
+     */
     public SVMLinearClassificationModel withThreshold(double threshold) {
         this.threshold = threshold;
         return this;
     }
 
-    /** */
+    /**
+     * Set up the weights.
+     * @param weights The parameter value.
+     * @return Model with new weights parameter value.
+     */
     public SVMLinearClassificationModel withWeights(Vector weights) {
         this.weights = weights;
         return this;
     }
 
-    /** */
+    /**
+     * Set up the intercept.
+     * @param intercept The parameter value.
+     * @return Model with new intercept parameter value.
+     */
     public SVMLinearClassificationModel withIntercept(double intercept) {
         this.intercept = intercept;
         return this;
@@ -79,22 +95,34 @@ public class SVMLinearClassificationModel implements Model<Vector, Double>, Expo
             return res - threshold > 0 ? 1.0 : -1.0;
     }
 
-    /** */
+    /**
+     * Gets the output label format mode.
+     * @return The parameter value.
+     */
     public boolean isKeepingRawLabels() {
         return isKeepingRawLabels;
     }
 
-    /** */
+    /**
+     * Gets the threshold.
+     * @return The parameter value.
+     */
     public double threshold() {
         return threshold;
     }
 
-    /** */
+    /**
+     * Gets the weights.
+     * @return The parameter value.
+     */
     public Vector weights() {
         return weights;
     }
 
-    /** */
+    /**
+     * Gets the intercept.
+     * @return The parameter value.
+     */
     public double intercept() {
         return intercept;
     }

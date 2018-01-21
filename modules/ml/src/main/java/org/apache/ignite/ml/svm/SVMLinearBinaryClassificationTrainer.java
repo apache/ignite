@@ -33,16 +33,16 @@ import org.jetbrains.annotations.NotNull;
  * here https://arxiv.org/abs/1409.1458.
  */
 public class SVMLinearBinaryClassificationTrainer implements Trainer<SVMLinearClassificationModel, LabeledDataset> {
-    /** Amount of iterations. */
+    /** Amount of outer SDCA algorithm iterations. */
     private int amountOfIterations = 20;
 
-    /** Amount of local SDCA iterations. */
+    /** Amount of local SDCA algorithm iterations. */
     private int amountOfLocIterations = 50;
 
     /** Regularization parameter. */
     private double lambda = 0.2;
 
-    /** */
+    /** This flag enables distributed mode for this algorithm. */
     private boolean isDistributed;
 
     /**
@@ -58,7 +58,7 @@ public class SVMLinearBinaryClassificationTrainer implements Trainer<SVMLinearCl
         final int weightVectorSizeWithIntercept = data.colSize() + 1;
         Vector weights = initializeWeightsWithZeros(weightVectorSizeWithIntercept);
 
-        for (int i = 0; i < amountOfIterations; i++) {
+        for (int i = 0; i < this.getAmountOfIterations(); i++) {
             Vector deltaWeights = calculateUpdates(data, weights);
             weights = weights.plus(deltaWeights); // creates new vector
         }
@@ -85,7 +85,7 @@ public class SVMLinearBinaryClassificationTrainer implements Trainer<SVMLinearCl
         Vector tmpAlphas = initializeWeightsWithZeros(amountOfObservation);
         Vector deltaAlphas = initializeWeightsWithZeros(amountOfObservation);
 
-        for (int i = 0; i < amountOfLocIterations; i++) {
+        for (int i = 0; i < this.getAmountOfLocIterations(); i++) {
             int randomIdx = ThreadLocalRandom.current().nextInt(amountOfObservation);
 
             Deltas deltas = getDeltas(data, copiedWeights, amountOfObservation, tmpAlphas, randomIdx);
@@ -143,7 +143,7 @@ public class SVMLinearBinaryClassificationTrainer implements Trainer<SVMLinearCl
             double qii = v.dot(v);
             double newAlpha = calcNewAlpha(alpha, gradient, qii);
 
-            Vector deltaWeights = v.times(lb * (newAlpha - alpha) / (lambda * amountOfObservation));
+            Vector deltaWeights = v.times(lb * (newAlpha - alpha) / (this.lambda() * amountOfObservation));
 
             return new Deltas(newAlpha - alpha, deltaWeights);
         }
@@ -162,7 +162,7 @@ public class SVMLinearBinaryClassificationTrainer implements Trainer<SVMLinearCl
     /** */
     private double calcGradient(double lb, Vector v, Vector weights, int amountOfObservation) {
         double dotProduct = v.dot(weights);
-        return (lb * dotProduct - 1.0) * (lambda * amountOfObservation);
+        return (lb * dotProduct - 1.0) * (this.lambda() * amountOfObservation);
     }
 
     /** */
@@ -177,42 +177,63 @@ public class SVMLinearBinaryClassificationTrainer implements Trainer<SVMLinearCl
             return gradient;
     }
 
-    /** */
+    /**
+     * Set up the regularization parameter.
+     * @param lambda The regularization parameter. Should be more than 0.0.
+     * @return Trainer with new lambda parameter value.
+     */
     public SVMLinearBinaryClassificationTrainer withLambda(double lambda) {
         assert lambda > 0.0;
         this.lambda = lambda;
         return this;
     }
 
-    /** */
+    /**
+     * Gets the regularization lambda.
+     * @return The parameter value.
+     */
     public double lambda() {
         return lambda;
     }
 
-    /** */
+    /**
+     * Gets the amount of outer iterations of SCDA algorithm.
+     * @return The parameter value.
+     */
     public int getAmountOfIterations() {
         return amountOfIterations;
     }
 
-    /** */
+    /**
+     * Set up the amount of outer iterations of SCDA algorithm.
+     * @param amountOfIterations The parameter value.
+     * @return Trainer with new amountOfIterations parameter value.
+     */
     public SVMLinearBinaryClassificationTrainer withAmountOfIterations(int amountOfIterations) {
         this.amountOfIterations = amountOfIterations;
         return this;
     }
 
-    /** */
+    /**
+     * Gets the amount of local iterations of SCDA algorithm.
+     * @return The parameter value.
+     */
     public int getAmountOfLocIterations() {
         return amountOfLocIterations;
     }
 
-    /** */
+    /**
+     * Set up the amount of local iterations of SCDA algorithm.
+     * @param amountOfLocIterations The parameter value.
+     * @return Trainer with new amountOfLocIterations parameter value.
+     */
     public SVMLinearBinaryClassificationTrainer withAmountOfLocIterations(int amountOfLocIterations) {
         this.amountOfLocIterations = amountOfLocIterations;
         return this;
     }
 }
 
-/** */
+/** This is a helper class to handle pair results which are returned from the calculation method. */
 class Deltas {
     /** */
     public double deltaAlpha;

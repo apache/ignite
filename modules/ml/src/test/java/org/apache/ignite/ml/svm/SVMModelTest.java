@@ -22,6 +22,7 @@ import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
+import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -51,6 +52,9 @@ public class SVMModelTest {
 
         observation = new DenseLocalOnHeapVector(new double[]{1.0, -2.0});
         TestUtils.assertEquals(1.0 + 2.0 * 1.0 - 3.0 * 2.0, mdl.apply(observation), PRECISION);
+
+        Assert.assertEquals(true, mdl.isKeepingRawLabels());
+
     }
 
     /** */
@@ -73,6 +77,12 @@ public class SVMModelTest {
 
         observation = new DenseLocalOnHeapVector(new double[]{-1.0, -2.0});
         TestUtils.assertEquals(-1.0, mdl.apply(observation), PRECISION);
+
+        mdl.withIntercept(-2.0).withWeights(new DenseLocalOnHeapVector(new double[]{-2.0, -2.0}));
+        observation = new DenseLocalOnHeapVector(new double[]{-1.0, -2.0});
+        TestUtils.assertEquals(1.0, mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(-2.0, mdl.intercept(), PRECISION);
+
     }
 
     /** */
@@ -86,6 +96,8 @@ public class SVMModelTest {
 
         observation = new DenseLocalOnHeapVector(new double[]{3.0, 4.0});
         TestUtils.assertEquals(1.0, mdl.apply(observation), PRECISION);
+
+        TestUtils.assertEquals(5, mdl.threshold(), PRECISION);
     }
 
     /** */
