@@ -86,7 +86,7 @@ public class GridH2SysViewImplNodes extends GridH2SysView {
             nodes = ctx.grid().cluster().nodes();
         }
 
-        for(ClusterNode node : nodes) {
+        for (ClusterNode node : nodes) {
             if (node != null)
                 rows.add(
                     createRow(ses, rows.size(),

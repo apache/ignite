@@ -58,7 +58,7 @@ public class GridH2SysViewImplTasks extends GridH2SysView {
 
         log.debug("Get tasks: full scan");
 
-        for(ComputeTaskFuture fut : tasks.values()) {
+        for (ComputeTaskFuture fut : tasks.values()) {
             ComputeTaskSession taskSes;
 
             try {

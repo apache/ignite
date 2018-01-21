@@ -92,7 +92,7 @@ public class GridH2SysViewImplJvmThreads extends GridH2SysView {
                 mxBean.isSynchronizerUsageSupported());
         }
 
-        for(ThreadInfo thread : threads) {
+        for (ThreadInfo thread : threads) {
             if (thread != null)
                 rows.add(
                     createRow(ses, rows.size(),

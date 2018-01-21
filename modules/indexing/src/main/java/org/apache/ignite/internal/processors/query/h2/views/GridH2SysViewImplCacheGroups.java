@@ -72,7 +72,7 @@ public class GridH2SysViewImplCacheGroups extends GridH2SysView {
             cacheGroups = ctx.cache().cacheGroups();;
         }
 
-        for(CacheGroupContext grp : cacheGroups) {
+        for (CacheGroupContext grp : cacheGroups) {
             if (grp != null)
                 rows.add(
                     createRow(ses, rows.size(),

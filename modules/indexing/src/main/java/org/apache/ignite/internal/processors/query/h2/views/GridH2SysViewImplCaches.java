@@ -69,7 +69,7 @@ public class GridH2SysViewImplCaches extends GridH2SysView {
             caches = ctx.cache().caches();
         }
 
-        for(IgniteInternalCache<?, ?> cache : caches) {
+        for (IgniteInternalCache<?, ?> cache : caches) {
             if (cache != null)
                 rows.add(
                     createRow(ses, rows.size(),

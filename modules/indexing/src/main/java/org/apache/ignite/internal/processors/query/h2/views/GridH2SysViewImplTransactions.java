@@ -37,7 +37,7 @@ public class GridH2SysViewImplTransactions extends GridH2SysView {
      */
     public GridH2SysViewImplTransactions(GridKernalContext ctx) {
         super("TRANSACTIONS", "Active transactions", ctx,
-            newColumn("XID", Value.UUID),
+            newColumn("XID"),
             newColumn("START_NODE_ID", Value.UUID),
             newColumn("START_THREAD_ID", Value.LONG),
             newColumn("START_TIME", Value.TIMESTAMP),
@@ -66,11 +66,6 @@ public class GridH2SysViewImplTransactions extends GridH2SysView {
             newColumn("IS_USER", Value.BOOLEAN),
             newColumn("SUBJECT_ID", Value.UUID),
             newColumn("IS_DONE", Value.BOOLEAN),
-            newColumn("IS_OPTIMISTIC", Value.BOOLEAN),
-            newColumn("IS_PESSIMISTIC", Value.BOOLEAN),
-            newColumn("IS_READ_COMMITED", Value.BOOLEAN),
-            newColumn("IS_REPEATABLE_READ", Value.BOOLEAN),
-            newColumn("IS_SERIALIZABLE", Value.BOOLEAN),
             newColumn("IS_INTERNAL", Value.BOOLEAN),
             newColumn("IS_ONE_PHASE_COMMIT", Value.BOOLEAN)
         );
@@ -84,7 +79,7 @@ public class GridH2SysViewImplTransactions extends GridH2SysView {
 
         log.debug("Get transactions: full scan");
 
-        for(IgniteInternalTx tx : txs) {
+        for (IgniteInternalTx tx : txs) {
             rows.add(
                 createRow(ses, rows.size(),
                     tx.xid(),
@@ -116,11 +111,6 @@ public class GridH2SysViewImplTransactions extends GridH2SysView {
                     tx.user(),
                     tx.subjectId(),
                     tx.done(),
-                    tx.optimistic(),
-                    tx.pessimistic(),
-                    tx.readCommitted(),
-                    tx.repeatableRead(),
-                    tx.serializable(),
                     tx.internal(),
                     tx.onePhaseCommit()
                 )
