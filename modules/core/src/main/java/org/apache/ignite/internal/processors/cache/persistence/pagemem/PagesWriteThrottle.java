@@ -62,6 +62,8 @@ public class PagesWriteThrottle {
      */
     private volatile double lastDirtyRatioThreshold;
 
+    private volatile double pageMemThrottleRatio;
+
     /**
      * @param pageMemory Page memory.
      * @param dbSharedMgr Database manager.
@@ -120,8 +122,9 @@ public class PagesWriteThrottle {
 
                 boolean cpStartedToWrite = lastObservedWritten.compareAndSet(0, cpWrittenPages);
 
+                double dirtyPagesRatio = pageMemory.getDirtyPagesRatio();
                 if (cpStartedToWrite) {
-                    double newMinRatio = pageMemory.getDirtyPagesRatio();
+                    double newMinRatio = dirtyPagesRatio;
 
                     if (newMinRatio < MIN_RATIO_NO_THROTTLE)
                         newMinRatio = MIN_RATIO_NO_THROTTLE;
@@ -140,7 +143,9 @@ public class PagesWriteThrottle {
 
                 lastDirtyRatioThreshold = dirtyRatioThreshold;
 
-                shouldThrottle = pageMemory.shouldThrottle(dirtyRatioThreshold);
+                pageMemThrottleRatio = dirtyPagesRatio / dirtyRatioThreshold;
+
+                shouldThrottle = dirtyPagesRatio > dirtyRatioThreshold;
             }
         }
 
@@ -149,11 +154,10 @@ public class PagesWriteThrottle {
 
             long lastArchIdx = wal.lastAbsArchivedIdx();
 
-            if (lastArchIdx >= 0) {
+            int maxSegments = dsCfg.getWalSegments();
+            if (lastArchIdx >= 0 && maxSegments > 1) {
                 long segSize = wal.maxWalSegmentSize();
                 long curWorkIdx = pointer.index();
-
-                int maxSegments = dsCfg.getWalSegments();
 
                 long seqInWork = curWorkIdx - lastArchIdx;
                 long segRemained = maxSegments - seqInWork;
@@ -163,7 +167,7 @@ public class PagesWriteThrottle {
                 long bytesRemained = segRemained * segSize + bytesInCurSeq;
 
                 //todo test throttle
-                shouldThrottle = 1.0 * bytesRemained < 0.25 * maxBytesInWorkDir;
+                shouldThrottle = 1.0 * bytesRemained < 0.2 * maxBytesInWorkDir;
             }
         }
 
@@ -188,5 +192,9 @@ public class PagesWriteThrottle {
      */
     public int throttleLevel() {
         return exponentialBackoffCntr.get();
+    }
+
+    public double getPageMemThrottleRatio() {
+        return pageMemThrottleRatio;
     }
 }

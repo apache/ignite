@@ -260,6 +260,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                 "cp. speed, MB/sec",
                 "cp. sync., MB/sec",
                 "WAL work seg.",
+                "pageMemThrRatio",
                 "throttleLevel",
                 "avg." + operation + "/sec",
                 "dirtyPages",
@@ -343,6 +344,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             String walSpeed = "";
             double threshold = 0;
             int throttleLevel = 0;
+            double pageMemThrottleRatio = 0.0;
             long idx = -1;
             long lastArchIdx = -1;
             int walArchiveSegments = 0;
@@ -356,6 +358,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
                     threshold = U.field(throttle, "lastDirtyRatioThreshold");
                     throttleLevel = throttle.throttleLevel();
+                    pageMemThrottleRatio = throttle.getPageMemThrottleRatio() ;
                 }
 
                 FileWriteAheadLogManager wal = (FileWriteAheadLogManager)cacheSctx.wal();
@@ -389,7 +392,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
 
 
-            String thresholdStr = String.format("%.2f", threshold).replace(",", ".");
+            String thresholdStr = formatDbl(threshold);
             String cpWriteSpeed = getMBytesPrintable(currBytesWritten);
             String cpSyncSpeed = getMBytesPrintable(currBytesSynced);
             long elapsedSecs = elapsedMs / 1000;
@@ -417,6 +420,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                 cpWriteSpeed,
                 cpSyncSpeed,
                 walWorkSegments,
+                formatDbl(pageMemThrottleRatio),
                 throttleLevel,
                 averagePutPerSec,
                 dirtyPages,
@@ -428,9 +432,13 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                 );
         }
 
+        private String formatDbl(double threshold) {
+            return String.format("%.2f", threshold).replace(",", ".");
+        }
+
         private String getMBytesPrintable(long currBytesWritten) {
             double cpMbPs = 1.0 * currBytesWritten / (1024 * 1024);
-            return String.format("%.2f", cpMbPs).replace(",", ".");
+            return formatDbl(cpMbPs);
         }
 
         private long detectDelta(long elapsedMsFromPrevTick,
