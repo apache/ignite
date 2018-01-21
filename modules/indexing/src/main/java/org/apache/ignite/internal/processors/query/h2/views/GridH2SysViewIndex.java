@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.views;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.h2.engine.Session;
@@ -44,14 +45,18 @@ public class GridH2SysViewIndex extends BaseIndex {
      * @param tbl Table.
      * @param col Column.
      */
-    GridH2SysViewIndex(GridH2SysViewTable tbl, Column col) {
-        this.indexedCol = col;
+    GridH2SysViewIndex(GridH2SysViewTable tbl, Column... col) {
         IndexColumn[] idxCols;
 
-        if (col != null)
-            idxCols = IndexColumn.wrap(new Column[] { col });
-        else
+        if (col != null && col.length > 0) {
+            indexedCol = col[0];
+
+            idxCols = IndexColumn.wrap(col);
+        } else {
+            indexedCol = null;
+
             idxCols = new IndexColumn[0];
+        }
 
         initBaseIndex(tbl, 0, null, idxCols, IndexType.createNonUnique(false));
     }
@@ -148,7 +153,7 @@ public class GridH2SysViewIndex extends BaseIndex {
     /** {@inheritDoc} */
     @Override public String getPlanSQL() {
         return getTable().getName() + ((indexedCol == null) ? " full scan"
-            : " using index " + indexedCol.getName());
+            : " using index " + Arrays.toString(columns));
     }
 }
 

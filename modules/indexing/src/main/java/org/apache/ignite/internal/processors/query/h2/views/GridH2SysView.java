@@ -26,6 +26,7 @@ import org.h2.table.Column;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
 import org.h2.value.ValueString;
+import org.h2.value.ValueTime;
 
 /**
  * System view base class.
@@ -56,25 +57,25 @@ public abstract class GridH2SysView {
     protected final Column[] cols;
 
     /** Indexed column names. */
-    protected final String[] indexedCols;
+    protected final String[] indexes;
 
     /**
      * @param tblName Table name.
      * @param desc Description.
      * @param ctx Context.
-     * @param indexedCols Indexed columns.
+     * @param indexes Indexed columns.
      * @param cols Columns.
      */
-    public GridH2SysView(String tblName, String desc, GridKernalContext ctx, String[] indexedCols, Column... cols) {
+    public GridH2SysView(String tblName, String desc, GridKernalContext ctx, String[] indexes, Column... cols) {
         assert tblName != null;
         assert ctx != null;
         assert cols != null;
-        assert indexedCols != null;
+        assert indexes != null;
 
         this.tblName = TABLE_NAME_PREFIX + tblName;
         this.ctx = ctx;
         this.cols = cols;
-        this.indexedCols = indexedCols;
+        this.indexes = indexes;
         this.desc = desc;
         this.log = ctx.log(this.getClass());
     }
@@ -83,11 +84,11 @@ public abstract class GridH2SysView {
      * @param tblName Table name.
      * @param desc Description.
      * @param ctx Context.
-     * @param indexedCol Indexed column.
+     * @param indexedCols Indexed column.
      * @param cols Columns.
      */
-    public GridH2SysView(String tblName, String desc, GridKernalContext ctx, String indexedCol, Column... cols) {
-        this(tblName, desc, ctx, new String[] {indexedCol}, cols);
+    public GridH2SysView(String tblName, String desc, GridKernalContext ctx, String indexedCols, Column... cols) {
+        this(tblName, desc, ctx, new String[] {indexedCols}, cols);
     }
 
     /**
@@ -124,6 +125,19 @@ public abstract class GridH2SysView {
      */
     protected static Column newColumn(String name, int type, long precision, int scale, int displaySize) {
         return new Column(name, type, precision, scale, displaySize);
+    }
+
+    /**
+     * Convert millis to ValueTime
+     *
+     * @param millis Millis.
+     */
+    protected static Value valueTimeFromMillis(long millis) {
+        if (millis == -1L)
+            return ValueNull.INSTANCE;
+        else
+            // Note: ValueTime.fromMillis(long) method trying to convert time using timezone and return wrong result.
+            return ValueTime.fromNanos(millis * 1_000_000L);
     }
 
     /**
@@ -206,8 +220,8 @@ public abstract class GridH2SysView {
     /**
      * Gets indexed column names.
      */
-    public String[] getIndexedColumns() {
-        return indexedCols;
+    public String[] getIndexes() {
+        return indexes;
     }
 
     /**

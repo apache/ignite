@@ -44,6 +44,7 @@ public class GridH2SysViewImplJvmRuntime extends GridH2SysView {
      */
     public GridH2SysViewImplJvmRuntime(GridKernalContext ctx) {
         super("JVM_RUNTIME", "JVM runtime", ctx,
+            newColumn("PID", Value.INT),
             newColumn("NAME"),
             newColumn("UPTIME", Value.TIME),
             newColumn("START_TIME", Value.TIMESTAMP),
@@ -51,6 +52,7 @@ public class GridH2SysViewImplJvmRuntime extends GridH2SysView {
             newColumn("JVM_IMPL_VENDOR"),
             newColumn("JVM_IMPL_VERSION"),
             newColumn("JVM_SPEC_VERSION"),
+            newColumn("INPUT_ARGUMENTS"),
             newColumn("CLASS_PATH"),
             newColumn("LIBRARY_PATH")
         );
@@ -64,13 +66,15 @@ public class GridH2SysViewImplJvmRuntime extends GridH2SysView {
 
         rows.add(
             createRow(ses, 1L,
+                U.jvmPid(),
                 mxBean.getName(),
-                ValueTime.fromNanos(mxBean.getUptime() * 1_000_000L),
+                valueTimeFromMillis(mxBean.getUptime()),
                 ValueTimestamp.fromMillis(mxBean.getStartTime()),
                 mxBean.getVmName(),
                 mxBean.getVmVendor(),
                 mxBean.getVmVersion(),
                 mxBean.getSpecVersion(),
+                mxBean.getInputArguments(),
                 mxBean.getClassPath(),
                 mxBean.getLibraryPath()
             )

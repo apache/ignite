@@ -39,7 +39,9 @@ public class GridH2SysViewImplJvmOS extends GridH2SysView {
         super("JVM_OS", "JVM operating system", ctx,
             newColumn("OS_NAME"),
             newColumn("OS_VERSION"),
-            newColumn("ARCH")
+            newColumn("ARCH"),
+            newColumn("AVAILABLE_PROCESSORS", Value.INT),
+            newColumn("SYSTEM_LOAD_AVG", Value.DOUBLE)
         );
     }
 
@@ -53,7 +55,9 @@ public class GridH2SysViewImplJvmOS extends GridH2SysView {
             createRow(ses, 1L,
                 mxBean.getName(),
                 mxBean.getVersion(),
-                mxBean.getArch()
+                mxBean.getArch(),
+                mxBean.getAvailableProcessors(),
+                mxBean.getSystemLoadAverage()
             )
         );
 

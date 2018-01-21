@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2.views;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
@@ -38,7 +40,7 @@ public class GridH2SysViewImplNodeAttributes extends GridH2SysView {
      * @param ctx Grid context.
      */
     public GridH2SysViewImplNodeAttributes(GridKernalContext ctx) {
-        super("NODE_ATTRIBUTES", "Node attributes", ctx, "NODE_ID",
+        super("NODE_ATTRIBUTES", "Node attributes", ctx, new String[] {"NODE_ID,NAME", "NAME"},
             newColumn("NODE_ID", Value.UUID),
             newColumn("NAME"),
             newColumn("VALUE")
@@ -50,6 +52,7 @@ public class GridH2SysViewImplNodeAttributes extends GridH2SysView {
         Collection<ClusterNode> nodes;
 
         ColumnCondition idCond = conditionForColumn("NODE_ID", first, last);
+        ColumnCondition nameCond = conditionForColumn("NAME", first, last);
 
         if (idCond.isEquality()) {
             try {
@@ -57,7 +60,12 @@ public class GridH2SysViewImplNodeAttributes extends GridH2SysView {
 
                 UUID nodeId = UUID.fromString(idCond.getValue().getString());
 
-                nodes = Collections.singleton(ctx.discovery().node(nodeId));
+                ClusterNode node = ctx.grid().cluster().node(nodeId);
+
+                if (node != null)
+                    nodes = Collections.singleton(node);
+                else
+                    nodes = Collections.emptySet();
             }
             catch (Exception e) {
                 log.warning("Failed to get node by nodeId: " + idCond.getValue().getString(), e);
@@ -66,12 +74,36 @@ public class GridH2SysViewImplNodeAttributes extends GridH2SysView {
             }
         }
         else {
-            log.debug("Get node attributes: full scan");
+            log.debug("Get node attributes: nodes full scan");
 
-            nodes = ctx.discovery().allNodes();
+            nodes = ctx.grid().cluster().nodes();
         }
 
-        return new NodeAttributesIterable(ses, nodes);
+        if (nameCond.isEquality()) {
+            log.debug("Get node attributes: attribute name");
+
+            String attrName = nameCond.getValue().getString();
+
+            List<Row> rows = new ArrayList<>();
+
+            for (ClusterNode node : nodes) {
+                if (node.attributes().containsKey(attrName))
+                    rows.add(
+                        createRow(ses, rows.size(),
+                            node.id(),
+                            attrName,
+                            node.attribute(attrName)
+                        )
+                    );
+            }
+
+            return rows;
+        }
+        else {
+            log.debug("Get node attributes: attributes full scan");
+
+            return new NodeAttributesIterable(ses, nodes);
+        }
     }
 
     /**

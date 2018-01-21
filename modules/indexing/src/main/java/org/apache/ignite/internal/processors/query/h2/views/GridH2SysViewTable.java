@@ -60,15 +60,20 @@ public class GridH2SysViewTable extends TableBase {
 
         this.setColumns(sysView.getColumns());
 
-        scanIdx = new GridH2SysViewIndex(this, null);
+        scanIdx = new GridH2SysViewIndex(this);
 
         indexes = new ArrayList<>();
         indexes.add(scanIdx);
 
-        for (String indexedCol : sysView.getIndexedColumns()) {
-            Column col = getColumn(indexedCol);
+        for (String index : sysView.getIndexes()) {
+            String[] indexedCols = index.split(",");
 
-            GridH2SysViewIndex idx = new GridH2SysViewIndex(this, col);
+            Column[] cols = new Column[indexedCols.length];
+
+            for (int i = 0; i < indexedCols.length; i++)
+                cols[i] = getColumn(indexedCols[i]);
+
+            GridH2SysViewIndex idx = new GridH2SysViewIndex(this, cols);
 
             indexes.add(idx);
         }

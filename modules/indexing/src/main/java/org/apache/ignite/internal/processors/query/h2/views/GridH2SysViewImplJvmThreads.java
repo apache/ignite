@@ -132,19 +132,4 @@ public class GridH2SysViewImplJvmThreads extends GridH2SysView {
 
         return sb.toString();
     }
-
-
-    /**
-     * Convert millis to ValueTime
-     *
-     * @param millis Millis.
-     */
-    private static Value valueTimeFromMillis(long millis) {
-        if (millis == -1L)
-            return ValueNull.INSTANCE;
-        else
-            // Note: ValueTime.fromMillis(long) method trying to convert time using timezone and return wrong result.
-            return ValueTime.fromNanos(millis * 1_000_000L);
-    }
-
 }

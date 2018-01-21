@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.views;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -41,9 +42,13 @@ public class GridH2SysViewImplNodes extends GridH2SysView {
         super("NODES", "Nodes in topology", ctx, new String[] {"ID", "IS_LOCAL"},
             newColumn("ID", Value.UUID),
             newColumn("CONSISTENT_ID"),
+            newColumn("VERSION"),
             newColumn("IS_LOCAL", Value.BOOLEAN),
             newColumn("IS_CLIENT", Value.BOOLEAN),
-            newColumn("IS_DAEMON", Value.BOOLEAN)
+            newColumn("IS_DAEMON", Value.BOOLEAN),
+            newColumn("ORDER", Value.INT),
+            newColumn("ADDRESSES"),
+            newColumn("HOST_NAMES")
         );
     }
 
@@ -87,9 +92,13 @@ public class GridH2SysViewImplNodes extends GridH2SysView {
                     createRow(ses, rows.size(),
                         node.id(),
                         node.consistentId(),
+                        node.version(),
                         node.isLocal(),
                         node.isClient(),
-                        node.isDaemon()
+                        node.isDaemon(),
+                        node.order(),
+                        node.addresses(),
+                        node.hostNames()
                     )
                 );
         }

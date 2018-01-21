@@ -46,8 +46,8 @@ public class GridH2SysViewImplInstance extends GridH2SysView {
             newColumn("VERSION"),
             newColumn("CLUSTER_LATEST_VERSION"),
             newColumn("ACTIVE", Value.BOOLEAN),
-            newColumn("LOCAL_NODE_ID", Value.UUID)
-
+            newColumn("LOCAL_NODE_ID", Value.UUID),
+            newColumn("CONFIGURATION")
         );
     }
 
@@ -63,8 +63,9 @@ public class GridH2SysViewImplInstance extends GridH2SysView {
                 ctx.grid().version(),
                 ctx.grid().latestVersion(),
                 ctx.grid().cluster().active(),
-                ctx.grid().localNode().id()
-                )
+                ctx.grid().localNode().id(),
+                ctx.grid().configuration().toString()
+            )
         );
 
         return rows;

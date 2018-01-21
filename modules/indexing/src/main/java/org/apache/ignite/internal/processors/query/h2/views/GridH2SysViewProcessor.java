@@ -60,6 +60,7 @@ public class GridH2SysViewProcessor {
             viewsToRegister.add(new GridH2SysViewImplCacheGroups(ctx));
             viewsToRegister.add(new GridH2SysViewImplNodes(ctx));
             viewsToRegister.add(new GridH2SysViewImplNodeAttributes(ctx));
+            viewsToRegister.add(new GridH2SysViewImplNodeMetrics(ctx));
 
             for (GridH2SysView view : viewsToRegister) {
                 GridH2SysViewTableEngine.registerView(c, view);
