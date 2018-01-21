@@ -128,7 +128,7 @@ public class GridH2SysViewImplNodeMetrics extends GridH2SysView {
             nodes = ctx.grid().cluster().nodes();
         }
 
-        for(ClusterNode node : nodes) {
+        for (ClusterNode node : nodes) {
             if (node != null) {
                 ClusterMetrics metrics = node.metrics();
 

@@ -73,6 +73,7 @@ public class GridH2SysViewProcessor {
             viewsToRegister.add(new GridH2SysViewImplNodeAttributes(ctx));
             viewsToRegister.add(new GridH2SysViewImplNodeMetrics(ctx));
             viewsToRegister.add(new GridH2SysViewImplTransactions(ctx));
+            viewsToRegister.add(new GridH2SysViewImplTransactionEntries(ctx));
             viewsToRegister.add(new GridH2SysViewImplTasks(ctx));
 
             for (GridH2SysView view : viewsToRegister) {

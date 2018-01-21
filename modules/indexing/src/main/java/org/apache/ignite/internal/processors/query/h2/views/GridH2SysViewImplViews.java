@@ -56,7 +56,7 @@ public class GridH2SysViewImplViews extends GridH2SysView {
 
         log.debug("Get system views: full scan");
 
-        for(GridH2SysView view : proc.getRegisteredViews()) {
+        for (GridH2SysView view : proc.getRegisteredViews()) {
             if (view != null)
                 rows.add(
                     createRow(ses, rows.size(),
