@@ -19,9 +19,11 @@ import angular from 'angular';
 
 import component from './component';
 import listEditableCols from './components/list-editable-cols';
+import transclude from './components/list-editable-transclude';
 
 export default angular
     .module('ignite-console.list-editable', [
-        listEditableCols.name
+        listEditableCols.name,
+        transclude.name
     ])
     .component('listEditable', component);

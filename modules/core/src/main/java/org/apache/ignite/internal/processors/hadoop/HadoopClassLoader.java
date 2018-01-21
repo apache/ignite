@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.hadoop;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.ClassCache;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -60,10 +61,10 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
         "org.apache.ignite.internal.processors.hadoop.impl.v2.HadoopShutdownHookManager";
 
     /** */
-    private static final URLClassLoader APP_CLS_LDR = (URLClassLoader)HadoopClassLoader.class.getClassLoader();
+    private static final ClassLoader APP_CLS_LDR = HadoopClassLoader.class.getClassLoader();
 
     /** */
-    private static final Collection<URL> appJars = F.asList(APP_CLS_LDR.getURLs());
+    private static final Collection<URL> appJars = F.asList(IgniteUtils.classLoaderUrls(APP_CLS_LDR));
 
     /** Mutex for native libraries initialization. */
     private static final Object LIBS_MUX = new Object();
@@ -391,15 +392,8 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
             // First, check if the class has already been loaded
             Class c = findLoadedClass(name);
 
-            if (c == null) {
-                long t1 = System.nanoTime();
-
+            if (c == null)
                 c = findClass(name);
-
-                // this is the defining class loader; record the stats
-                sun.misc.PerfCounter.getFindClassTime().addElapsedTimeFrom(t1);
-                sun.misc.PerfCounter.getFindClasses().increment();
-            }
 
             if (resolve)
                 resolveClass(c);

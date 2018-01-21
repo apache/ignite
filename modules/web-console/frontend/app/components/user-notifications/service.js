@@ -25,10 +25,12 @@ export default class UserNotificationsService {
         Object.assign(this, {$http, $modal, $q, Messages});
 
         this.message = null;
+        this.isShown = false;
     }
 
     set notification(notification) {
         this.message = _.get(notification, 'message');
+        this.isShown = _.get(notification, 'isShown');
     }
 
     editor() {
@@ -38,7 +40,8 @@ export default class UserNotificationsService {
             templateUrl,
             resolve: {
                 deferred: () => deferred,
-                message: () => this.message
+                message: () => this.message,
+                isShown: () => this.isShown
             },
             controller,
             controllerAs: '$ctrl'
@@ -50,8 +53,8 @@ export default class UserNotificationsService {
 
         return deferred.promise
             .finally(modalHide)
-            .then((newMsg) => {
-                this.$http.put('/api/v1/admin/notifications', {message: newMsg})
+            .then(({ message, isShown }) => {
+                this.$http.put('/api/v1/admin/notifications', { message, isShown })
                     .catch((err) => this.Messages.showError(err));
             });
     }

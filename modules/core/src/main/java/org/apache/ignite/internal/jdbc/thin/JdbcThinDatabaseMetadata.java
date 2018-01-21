@@ -852,7 +852,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         row.add(10);                            // 10. NUM_PREC_RADIX
         row.add(colMeta.isNullable() ? columnNullable : columnNoNulls);  // 11. NULLABLE
         row.add((String)null);                  // 12. REMARKS
-        row.add((String)null);                  // 13. COLUMN_DEF
+        row.add(colMeta.defaultValue());        // 13. COLUMN_DEF
         row.add(colMeta.dataType());            // 14. SQL_DATA_TYPE
         row.add((Integer)null);                 // 15. SQL_DATETIME_SUB
         row.add(Integer.MAX_VALUE);             // 16. CHAR_OCTET_LENGTH

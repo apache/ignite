@@ -621,6 +621,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 case CACHE_PUT_ALL:
                 case CACHE_REMOVE:
                 case CACHE_REMOVE_ALL:
+                case CACHE_CLEAR:
                 case CACHE_REPLACE:
                 case ATOMIC_INCREMENT:
                 case ATOMIC_DECREMENT:
@@ -776,6 +777,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
             case CACHE_REMOVE:
             case CACHE_REMOVE_ALL:
+            case CACHE_CLEAR:
             case CACHE_GET_AND_REMOVE:
             case CACHE_REMOVE_VALUE:
                 perm = SecurityPermission.CACHE_REMOVE;
