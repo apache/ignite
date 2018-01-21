@@ -131,10 +131,11 @@ public class GridH2SysViewImplNodeMetrics extends GridH2SysView {
         for(ClusterNode node : nodes) {
             if (node != null) {
                 ClusterMetrics metrics = node.metrics();
+
                 rows.add(
                     createRow(ses, rows.size(),
                         node.id(),
-                        ValueTimestamp.fromMillis(metrics.getLastUpdateTime()),
+                        valueTimestampFromMillis(metrics.getLastUpdateTime()),
                         metrics.getMaximumActiveJobs(),
                         metrics.getCurrentActiveJobs(),
                         metrics.getAverageActiveJobs(),
@@ -178,8 +179,8 @@ public class GridH2SysViewImplNodeMetrics extends GridH2SysView {
                         metrics.getNonHeapMemoryMaximum(),
                         metrics.getNonHeapMemoryTotal(),
                         valueTimeFromMillis(metrics.getUpTime()),
-                        ValueTimestamp.fromMillis(metrics.getStartTime()),
-                        ValueTimestamp.fromMillis(metrics.getNodeStartTime()),
+                        valueTimestampFromMillis(metrics.getStartTime()),
+                        valueTimestampFromMillis(metrics.getNodeStartTime()),
                         metrics.getCurrentThreadCount(),
                         metrics.getMaximumThreadCount(),
                         metrics.getTotalStartedThreadCount(),

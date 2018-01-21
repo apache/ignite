@@ -466,6 +466,9 @@ public final class IgniteSystemProperties {
     /** Disable fallback to H2 SQL parser if the internal SQL parser fails to parse the statement. */
     public static final String IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK = "IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK";
 
+    /** Disable ignite H2 SQL system (diagnostic) views. */
+    public static final String IGNITE_SQL_DISABLE_SYSTEM_VIEWS = "IGNITE_SQL_DISABLE_SYSTEM_VIEWS";
+
     /** Maximum size for affinity assignment history. */
     public static final String IGNITE_AFFINITY_HISTORY_SIZE = "IGNITE_AFFINITY_HISTORY_SIZE";
 

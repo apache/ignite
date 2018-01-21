@@ -27,6 +27,7 @@ import org.h2.value.Value;
 import org.h2.value.ValueNull;
 import org.h2.value.ValueString;
 import org.h2.value.ValueTime;
+import org.h2.value.ValueTimestamp;
 
 /**
  * System view base class.
@@ -133,11 +134,23 @@ public abstract class GridH2SysView {
      * @param millis Millis.
      */
     protected static Value valueTimeFromMillis(long millis) {
-        if (millis == -1L)
+        if (millis == -1L || millis == Long.MAX_VALUE)
             return ValueNull.INSTANCE;
         else
             // Note: ValueTime.fromMillis(long) method trying to convert time using timezone and return wrong result.
             return ValueTime.fromNanos(millis * 1_000_000L);
+    }
+
+    /**
+     * Convert millis to ValueTimestamp
+     *
+     * @param millis Millis.
+     */
+    protected static Value valueTimestampFromMillis(long millis) {
+        if (millis == -1L || millis == Long.MAX_VALUE)
+            return ValueNull.INSTANCE;
+        else
+            return ValueTimestamp.fromMillis(millis);
     }
 
     /**

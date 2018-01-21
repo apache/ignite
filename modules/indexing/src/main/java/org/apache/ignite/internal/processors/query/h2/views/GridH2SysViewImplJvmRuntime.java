@@ -69,7 +69,7 @@ public class GridH2SysViewImplJvmRuntime extends GridH2SysView {
                 U.jvmPid(),
                 mxBean.getName(),
                 valueTimeFromMillis(mxBean.getUptime()),
-                ValueTimestamp.fromMillis(mxBean.getStartTime()),
+                valueTimestampFromMillis(mxBean.getStartTime()),
                 mxBean.getVmName(),
                 mxBean.getVmVendor(),
                 mxBean.getVmVersion(),

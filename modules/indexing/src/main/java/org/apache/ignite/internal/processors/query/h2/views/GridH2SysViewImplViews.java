@@ -77,6 +77,6 @@ public class GridH2SysViewImplViews extends GridH2SysView {
 
     /** {@inheritDoc} */
     @Override public long getRowCount() {
-        return ctx.discovery().allNodes().size();
+        return proc.getRegisteredViews().size();
     }
 }

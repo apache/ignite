@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 
@@ -30,6 +31,10 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
  * System views processor.
  */
 public class GridH2SysViewProcessor {
+    /** System views are disabled on this instance. */
+    private static final boolean DISABLE_SYS_VIEWS =
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS);
+
     /** Logger. */
     private volatile IgniteLogger log;
 
@@ -46,6 +51,12 @@ public class GridH2SysViewProcessor {
         log = ctx.log(GridH2SysViewProcessor.class);
         log.info("Starting system view processor");
 
+        if (DISABLE_SYS_VIEWS) {
+            log.info("System views are disabled");
+
+            return;
+        }
+
         Connection c = idx.connectionForSchema(GridH2SysView.TABLE_SCHEMA_NAME);
 
         try {
@@ -61,6 +72,8 @@ public class GridH2SysViewProcessor {
             viewsToRegister.add(new GridH2SysViewImplNodes(ctx));
             viewsToRegister.add(new GridH2SysViewImplNodeAttributes(ctx));
             viewsToRegister.add(new GridH2SysViewImplNodeMetrics(ctx));
+            viewsToRegister.add(new GridH2SysViewImplTransactions(ctx));
+            viewsToRegister.add(new GridH2SysViewImplTasks(ctx));
 
             for (GridH2SysView view : viewsToRegister) {
                 GridH2SysViewTableEngine.registerView(c, view);
