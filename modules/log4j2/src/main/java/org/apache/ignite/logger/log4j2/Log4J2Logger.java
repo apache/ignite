@@ -355,8 +355,13 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
 
         Configuration cfg = ctx.getConfiguration();
 
-        PatternLayout layout = PatternLayout.createLayout("[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n", null, null,
-            Charset.defaultCharset(), false, false, null, null);
+        PatternLayout.Builder builder = PatternLayout.newBuilder()
+            .withPattern("[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n")
+            .withCharset(Charset.defaultCharset())
+            .withAlwaysWriteExceptions(false)
+            .withNoConsoleNoAnsi(false);
+
+        PatternLayout layout = builder.build();
 
         final Appender consoleApp = ConsoleAppender.createAppender(layout, null, null, CONSOLE_APPENDER, null, null);
         consoleApp.start();
