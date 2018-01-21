@@ -17,6 +17,8 @@
 
 'use strict';
 
+const fs = require('fs');
+
 // Fire me up!
 
 /**
@@ -24,8 +26,8 @@
  */
 module.exports = {
     implements: 'settings',
-    inject: ['nconf', 'require(fs)'],
-    factory(nconf, fs) {
+    inject: ['nconf'],
+    factory(nconf) {
         /**
          * Normalize a port into a number, string, or false.
          */

@@ -39,6 +39,8 @@
         <mysql.connector.version>5.1.39</mysql.connector.version>
         <postgres.connector.version>9.4.1208.jre7</postgres.connector.version>
         <spring.version>4.1.0.RELEASE</spring.version>
+        <!-- Will be changed by profile activation. Allows to combine profiles. -->
+        <ml.folder>src/main/java</ml.folder>
     </properties>
 
     <dependencies>
@@ -121,8 +123,62 @@
         </dependency>
     </dependencies>
 
+    <profiles>
+        <profile>
+            <id>ml</id>
+
+            <activation>
+                <jdk>[1.8,)</jdk>
+            </activation>
+
+            <properties>
+                <ml.folder>src/main/ml</ml.folder>
+                <java.ver>1.8</java.ver>
+            </properties>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-ml</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <configuration>
+                            <source>1.8</source>
+                            <target>1.8</target>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>add-sources</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${ml.folder}</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>com.mycila</groupId>
                 <artifactId>license-maven-plugin</artifactId>

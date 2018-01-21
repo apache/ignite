@@ -15,7 +15,6 @@
     limitations under the License.
 
 .list-editable-cols__header(
-    ng-show='$ctrl.ngModel.$viewValue.length'
     ng-class='::$ctrl.rowClass'
 )
     .list-editable-cols__header-cell(ng-repeat='col in ::$ctrl.colDefs' ng-class='::col.cellClass')

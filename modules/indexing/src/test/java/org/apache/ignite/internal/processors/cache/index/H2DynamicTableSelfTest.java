@@ -491,7 +491,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @param additionalParams Supplemental parameters to append to {@code CREATE TABLE} SQL.
      */
     private void doTestCreateTable(String tplCacheName, String cacheGrp, CacheMode cacheMode,
-        CacheWriteSynchronizationMode writeSyncMode, String... additionalParams) {
+        CacheWriteSynchronizationMode writeSyncMode, String... additionalParams) throws SQLException {
         doTestCreateTable(tplCacheName, cacheGrp, cacheMode, writeSyncMode, false, additionalParams);
     }
 
@@ -506,7 +506,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @param additionalParams Supplemental parameters to append to {@code CREATE TABLE} SQL.
      */
     private void doTestCreateTable(String tplCacheName, String cacheGrp, CacheMode cacheMode,
-        CacheWriteSynchronizationMode writeSyncMode, boolean useLegacyCacheGrpParamName, String... additionalParams) {
+        CacheWriteSynchronizationMode writeSyncMode, boolean useLegacyCacheGrpParamName, String... additionalParams)
+        throws SQLException {
         String cacheGrpParamName = useLegacyCacheGrpParamName ? "cacheGroup" : "cache_group";
 
         String sql = "CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar," +
@@ -547,30 +548,48 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             if (writeSyncMode != null)
                 assertEquals(writeSyncMode, cacheDesc.cacheConfiguration().getWriteSynchronizationMode());
 
-            QueryTypeDescriptorImpl desc = typeExisting(node, cacheName, "Person");
+            List<String> colNames = new ArrayList<>(5);
 
-            assertEquals(Object.class, desc.keyClass());
-            assertEquals(Object.class, desc.valueClass());
+            List<Class<?>> colTypes = new ArrayList<>(5);
 
-            assertTrue(desc.valueTypeName(), desc.valueTypeName().contains("Person"));
+            List<String> pkColNames = new ArrayList<>(2);
 
-            assertTrue(desc.keyTypeName(), desc.keyTypeName().startsWith(desc.valueTypeName()));
-            assertTrue(desc.keyTypeName(), desc.keyTypeName().endsWith("KEY"));
+            try (Connection c = connect(node)) {
+                try (ResultSet rs = c.getMetaData().getColumns(null, QueryUtils.DFLT_SCHEMA, "Person", null)) {
+                    for (int j = 0; j < 5; j++) {
+                        assertTrue(rs.next());
 
-            assertEquals(
-                F.asList("id", "city", "name", "surname", "age"),
-                new ArrayList<>(desc.fields().keySet())
-            );
+                        colNames.add(rs.getString("COLUMN_NAME"));
 
-            assertProperty(desc, "id", Integer.class, true);
-            assertProperty(desc, "city", String.class, true);
-            assertProperty(desc, "name", String.class, false);
-            assertProperty(desc, "surname", String.class, false);
-            assertProperty(desc, "age", Integer.class, false);
+                        try {
+                            colTypes.add(Class.forName(DataType.getTypeClassName(DataType
+                                .convertSQLTypeToValueType(rs.getInt("DATA_TYPE")))));
+                        }
+                        catch (ClassNotFoundException e) {
+                            throw new AssertionError(e);
+                        }
+                    }
 
-            GridH2Table tbl = ((IgniteH2Indexing)node.context().query().getIndexing()).dataTable("PUBLIC", "Person");
+                    assertFalse(rs.next());
+                }
 
-            assertNotNull(tbl);
+                try (ResultSet rs = c.getMetaData().getPrimaryKeys(null, QueryUtils.DFLT_SCHEMA, "Person")) {
+                    for (int j = 0; j < 2; j++) {
+                        assertTrue(rs.next());
+
+                        pkColNames.add(rs.getString("COLUMN_NAME"));
+                    }
+
+                    assertFalse(rs.next());
+                }
+            }
+
+            assertEqualsCollections(F.asList("id", "city", "name", "surname", "age"), colNames);
+
+            assertEqualsCollections(F.<Class<?>>asList(Integer.class, String.class, String.class, String.class,
+                Integer.class), colTypes);
+
+            assertEqualsCollections(F.asList("id", "city"), pkColNames);
         }
     }
 

@@ -670,7 +670,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
             }
         });
 
-        assertIndex(cli, true, CACHE_NAME, TBL_NAME, IDX_NAME_1,
+        assertIndex(cli, CACHE_NAME, TBL_NAME, IDX_NAME_1,
             QueryIndex.DFLT_INLINE_SIZE, field(FIELD_NAME_1));
         assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
 
@@ -690,8 +690,9 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         queryProcessor(srv).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, false, 0).get();
 
-        assertIndex(cli, true, CACHE_NAME, TBL_NAME, IDX_NAME_2, QueryIndex.DFLT_INLINE_SIZE,
+        assertIndex(cli, CACHE_NAME, TBL_NAME, IDX_NAME_2, QueryIndex.DFLT_INLINE_SIZE,
             field(aliasUnescaped(FIELD_NAME_2)));
+
         assertIndexUsed(IDX_NAME_2, SQL_SIMPLE_FIELD_2, SQL_ARG_2);
 
         reconnectClientNode(srv, cli, restartCache, new RunnableX() {

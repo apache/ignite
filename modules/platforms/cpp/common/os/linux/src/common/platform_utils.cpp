@@ -20,6 +20,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <dlfcn.h>
+#include <glob.h>
 
 #include <ignite/common/utils.h>
 
@@ -51,25 +52,42 @@ namespace ignite
             return localtime_r(&in, &out) == 0;
         }
 
-        bool GetEnv(const std::string& name, std::string& val)
+        std::string GetEnv(const std::string& name)
+        {
+            static const std::string empty;
+
+            return GetEnv(name, empty);
+        }
+
+        std::string GetEnv(const std::string& name, const std::string& dflt)
         {
             char* val0 = std::getenv(name.c_str());
 
             if (!val0)
-                return false;
+                return dflt;
 
-            val = val0;
-
-            return true;
+            return std::string(val0);
         }
 
         bool FileExists(const std::string& path)
         {
-            struct stat s;
+            glob_t gs;
 
-            int res = stat(path.c_str(), &s);
+            int res = glob(path.c_str(), 0, 0, &gs);
 
-            return res != -1;
+            globfree(&gs);
+
+            return res == 0;
+        }
+
+        bool IsValidDirectory(const std::string& path)
+        {
+            if (path.empty())
+                return false;
+
+            struct stat pathStat;
+
+            return stat(path.c_str(), &pathStat) != -1 && S_ISDIR(pathStat.st_mode);
         }
     }
 }

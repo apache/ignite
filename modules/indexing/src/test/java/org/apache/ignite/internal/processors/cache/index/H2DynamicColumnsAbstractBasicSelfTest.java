@@ -94,6 +94,18 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     }
 
     /**
+     * Check table state on default node.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param cols Columns to look for.
+     * @throws SQLException if failed.
+     */
+    private void checkTableState(String schemaName, String tblName, QueryField... cols) throws SQLException {
+        checkTableState(grid(nodeIndex()), schemaName, tblName, cols);
+    }
+
+    /**
      * Test column addition to the end of the columns list.
      */
     public void testAddColumnSimple() throws SQLException {
@@ -114,7 +126,8 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
         doSleep(500);
 
-        checkTableState(QueryUtils.DFLT_SCHEMA, "PERSON", c("AGE", Integer.class.getName()), c("city", String.class.getName()));
+        checkTableState(QueryUtils.DFLT_SCHEMA, "PERSON", c("AGE", Integer.class.getName()),
+            c("city", String.class.getName()));
     }
 
     /**

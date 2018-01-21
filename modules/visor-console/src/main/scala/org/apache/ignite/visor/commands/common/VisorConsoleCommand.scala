@@ -20,6 +20,7 @@
 package org.apache.ignite.visor.commands.common
 
 import org.apache.ignite.visor.visor.NA
+import org.apache.ignite.visor.visor
 
 import scala.collection.JavaConversions._
 
@@ -41,8 +42,8 @@ trait VisorConsoleCommand {
         assert(warnMsgs != null)
 
         warnMsgs.foreach{
-            case ex: Throwable => println(s"(wrn) <visor>: ${ex.getMessage}")
-            case line => println(s"(wrn) <visor>: $line")
+            case ex: Throwable => visor.warn(ex.getMessage)
+            case line => visor.warn(line)
         }
     }
 

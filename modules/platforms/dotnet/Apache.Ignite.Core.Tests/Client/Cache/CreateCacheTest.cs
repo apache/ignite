@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Configuration;
-    using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Tests.Cache;
     using NUnit.Framework;
 
@@ -87,7 +86,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var ex = Assert.Throws<IgniteClientException>(() => Client.CreateCache<int, int>(cache.Name));
             Assert.AreEqual(
                 "Failed to start cache (a cache with the same name is already started): foobar", ex.Message);
-            Assert.AreEqual((int) ClientStatus.CacheExists, ex.ErrorCode);
+            Assert.AreEqual(ClientStatusCode.CacheExists, ex.StatusCode);
 
             // Template: custom configuration.
             cache = Client.CreateCache<int, int>(TemplateCacheName.Replace("*", "1"));
@@ -140,7 +139,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var ex = Assert.Throws<IgniteClientException>(() => Client.CreateCache<int, int>(cfg));
             Assert.AreEqual(
                 "Failed to start cache (a cache with the same name is already started): a", ex.Message);
-            Assert.AreEqual((int) ClientStatus.CacheExists, ex.ErrorCode);
+            Assert.AreEqual(ClientStatusCode.CacheExists, ex.StatusCode);
 
             // Custom config.
             cfg = GetFullCacheConfiguration("b");

@@ -140,6 +140,11 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+    }
+
     /**
      * Gets CacheGroupMetricsMXBean for given node and group name.
      *
@@ -218,6 +223,13 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
         CacheGroupMetricsMXBean mxBean0Grp3 = mxBean(0, "cache4");
         CacheGroupMetricsMXBean mxBean1Grp1 = mxBean(1, "group1");
         CacheGroupMetricsMXBean mxBean2Grp1 = mxBean(2, "group1");
+
+        assertEquals("group1", mxBean0Grp1.getGroupName());
+        assertEquals(null, mxBean0Grp3.getGroupName());
+
+        assertEquals(3, mxBean0Grp1.getBackups());
+
+        assertEquals(10, mxBean0Grp1.getPartitions());
 
         assertEquals(1, mxBean0Grp1.getMinimumNumberOfPartitionCopies());
         assertEquals(3, mxBean0Grp1.getMaximumNumberOfPartitionCopies());

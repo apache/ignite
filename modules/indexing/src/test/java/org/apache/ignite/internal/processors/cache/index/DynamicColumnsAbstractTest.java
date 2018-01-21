@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.index;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -32,7 +31,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -46,6 +44,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.value.DataType;
+
+import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.connect;
 
 /**
  * Common stuff for dynamic columns tests.
@@ -62,25 +62,16 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
 
     /**
      * Check that given columns are seen by client.
+     * @param node Node to check.
      * @param schemaName Schema name to look for the table in.
      * @param tblName Table name to check.
      * @param cols Columns whose presence must be checked.
      */
-    static void checkTableState(String schemaName, String tblName, QueryField... cols) throws SQLException {
-        checkTableState(schemaName, tblName, ClientConnectorConfiguration.DFLT_PORT, cols);
-    }
-
-    /**
-     * Check that given columns are seen by client.
-     * @param schemaName Schema name to look for the table in.
-     * @param tblName Table name to check.
-     * @param port Port number.
-     * @param cols Columns whose presence must be checked.
-     */
-    static void checkTableState(String schemaName, String tblName, int port, QueryField... cols) throws SQLException {
+    static void checkTableState(IgniteEx node, String schemaName, String tblName, QueryField... cols)
+        throws SQLException {
         List<QueryField> flds = new ArrayList<>();
 
-        try (Connection c = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + port)) {
+        try (Connection c = connect(node)) {
             try (ResultSet rs = c.getMetaData().getColumns(null, schemaName, tblName, "%")) {
                 while (rs.next()) {
                     String name = rs.getString("COLUMN_NAME");
@@ -110,8 +101,7 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
 
             assertEquals(exp.typeName(), act.typeName());
 
-            // TODO uncomment after IGNITE-6529 is implemented.
-            //assertEquals(exp.isNullable(), act.isNullable());
+            assertEquals(exp.isNullable(), act.isNullable());
         }
     }
 

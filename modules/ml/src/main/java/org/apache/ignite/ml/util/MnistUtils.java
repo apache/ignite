@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
@@ -40,14 +41,14 @@ public class MnistUtils {
      * @param rnd Random numbers generatror.
      * @param cnt Count of samples to read.
      * @return Stream of MNIST samples.
-     * @throws IOException
+     * @throws IOException In case of exception.
      */
     public static Stream<DenseLocalOnHeapVector> mnist(String imagesPath, String labelsPath, Random rnd, int cnt)
         throws IOException {
         FileInputStream isImages = new FileInputStream(imagesPath);
         FileInputStream isLabels = new FileInputStream(labelsPath);
 
-        int magic = read4Bytes(isImages); // Skip magic number.
+        read4Bytes(isImages); // Skip magic number.
         int numOfImages = read4Bytes(isImages);
         int imgHeight = read4Bytes(isImages);
         int imgWidth = read4Bytes(isImages);
@@ -56,10 +57,6 @@ public class MnistUtils {
         read4Bytes(isLabels); // Skip number of labels.
 
         int numOfPixels = imgHeight * imgWidth;
-
-        System.out.println("Magic: " + magic);
-        System.out.println("Num of images: " + numOfImages);
-        System.out.println("Num of pixels: " + numOfPixels);
 
         double[][] vecs = new double[numOfImages][numOfPixels + 1];
 
@@ -88,7 +85,7 @@ public class MnistUtils {
      * @param outPath Path to output path.
      * @param rnd Random numbers generator.
      * @param cnt Count of samples to read.
-     * @throws IOException
+     * @throws IOException In case of exception.
      */
     public static void asLIBSVM(String imagesPath, String labelsPath, String outPath, Random rnd, int cnt)
         throws IOException {
@@ -109,7 +106,7 @@ public class MnistUtils {
 
                 }
                 catch (IOException e) {
-                    e.printStackTrace();
+                    throw new IgniteException("Error while converting to LIBSVM.");
                 }
             });
         }
@@ -119,7 +116,7 @@ public class MnistUtils {
      * Utility method for reading 4 bytes from input stream.
      *
      * @param is Input stream.
-     * @throws IOException
+     * @throws IOException In case of exception.
      */
     private static int read4Bytes(FileInputStream is) throws IOException {
         return (is.read() << 24) | (is.read() << 16) | (is.read() << 8) | (is.read());

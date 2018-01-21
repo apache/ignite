@@ -7,6 +7,15 @@ mvn clean package
 
 Artifacts can be found in `/target/assembly directory.`
 
+Building from standalone sources with ML Grid benchmarks
+====================================================
+
+You need Java 8 or higher and "ml" profile enabled. Run
+
+mvn clean package -Pml
+
+See also: https://apacheignite.readme.io/docs/machine-learning#section-getting-started
+
 
 Writing Ignite Benchmarks
 =========================

@@ -30,6 +30,9 @@ public enum GridTaskThreadContextKey {
     /** Projection for the task. */
     TC_SUBGRID,
 
+    /** Projection predicate for the task. */
+    TC_SUBGRID_PREDICATE,
+
     /** Timeout in milliseconds associated with the task. */
     TC_TIMEOUT,
 

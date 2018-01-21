@@ -19,6 +19,7 @@ package org.apache.ignite.ml.trees;
 
 import java.util.stream.DoubleStream;
 import org.apache.ignite.ml.trees.trainers.columnbased.vectors.SplitInfo;
+import org.apache.ignite.ml.trees.trainers.columnbased.vectors.ContinuousFeatureProcessor;
 
 /**
  * This class is used for calculation of best split by continuous feature.
@@ -31,7 +32,7 @@ public interface ContinuousSplitCalculator<C extends ContinuousRegionInfo> {
      *
      * @param s Stream of labels in this region.
      * @param l Index of sample projection on this feature in array sorted by this projection value and intervals
-     * bitsets. ({@see org.apache.ignite.ml.trees.trainers.columnbased.vectors.ContinuousFeatureProcessor}).
+     * bitsets. ({@link ContinuousFeatureProcessor}).
      * @return Region info.
      */
     C calculateRegionInfo(DoubleStream s, int l);

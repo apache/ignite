@@ -290,7 +290,7 @@ class VisorConfigurationCommand extends VisorConsoleCommand {
         execSvcT += ("Peer-to-Peer thread pool size", safe(execCfg.getPeerClassLoadingThreadPoolSize))
         execSvcT += ("Rebalance Thread Pool size", execCfg.getRebalanceThreadPoolSize)
         execSvcT += ("REST thread pool size", safe(execCfg.getRestThreadPoolSize))
-        execSvcT += ("SQL processor thread pool size", safe(execCfg.getSqlConnectorConfigurationThreadPoolSize))
+        execSvcT += ("Client connector thread pool size", safe(execCfg.getClientConnectorConfigurationThreadPoolSize))
 
         execSvcT.render()
 
