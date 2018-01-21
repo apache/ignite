@@ -84,7 +84,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     /** Cache name. */
     public static final String CACHE_NAME = "partitioned" + new Random().nextInt(10000000);
     public static final int OBJECT_SIZE = 40000;
-    public static final int CONTINUOUS_PUT_RECS_CNT = 200_000;
+    public static final int CONTINUOUS_PUT_RECS_CNT = 100_000;
     public static final String PUT_THREAD = "put-thread";
     public static final String GET_THREAD = "get-thread";
 
@@ -153,7 +153,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
         dsCfg.setWalMode(customWalMode != null ? customWalMode : WALMode.LOG_ONLY);
         dsCfg.setWalHistorySize(1);
-        dsCfg.setWalSegments(25);
+        dsCfg.setWalSegments(10);
         if (walSegmentSize != 0)
             dsCfg.setWalSegmentSize(walSegmentSize);
 
@@ -260,6 +260,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                 "cp. speed, MB/sec",
                 "cp. sync., MB/sec",
                 "WAL work seg.",
+                "throttleLevel",
                 "avg." + operation + "/sec",
                 "dirtyPages",
                 "cpWrittenPages",
@@ -341,6 +342,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
             String walSpeed = "";
             double threshold = 0;
+            int throttleLevel = 0;
             long idx = -1;
             long lastArchIdx = -1;
             int walArchiveSegments = 0;
@@ -353,14 +355,14 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                     PagesWriteThrottle throttle = U.field(pageMemory, "writeThrottle");
 
                     threshold = U.field(throttle, "lastDirtyRatioThreshold");
+                    throttleLevel = throttle.throttleLevel();
                 }
 
                 FileWriteAheadLogManager wal = (FileWriteAheadLogManager)cacheSctx.wal();
                 FileWALPointer ptr = wal.currentWritePointer();
                 idx = ptr.index();
 
-                Object archiver = U.field(wal, "archiver");
-                lastArchIdx = U.field(archiver, "lastAbsArchivedIdx");
+                lastArchIdx =wal.lastAbsArchivedIdx();
 
                 walArchiveSegments = wal.walArchiveSegments();
                 int maxWorkSegments = dsCfg.getWalSegments();
@@ -387,7 +389,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
 
 
-            String thresholdStr = String.format("%.2f", threshold);
+            String thresholdStr = String.format("%.2f", threshold).replace(",", ".");
             String cpWriteSpeed = getMBytesPrintable(currBytesWritten);
             String cpSyncSpeed = getMBytesPrintable(currBytesSynced);
             long elapsedSecs = elapsedMs / 1000;
@@ -415,6 +417,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                 cpWriteSpeed,
                 cpSyncSpeed,
                 walWorkSegments,
+                throttleLevel,
                 averagePutPerSec,
                 dirtyPages,
                 cpWrittenPages,
@@ -427,7 +430,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
         private String getMBytesPrintable(long currBytesWritten) {
             double cpMbPs = 1.0 * currBytesWritten / (1024 * 1024);
-            return String.format("%.2f", cpMbPs);
+            return String.format("%.2f", cpMbPs).replace(",", ".");
         }
 
         private long detectDelta(long elapsedMsFromPrevTick,

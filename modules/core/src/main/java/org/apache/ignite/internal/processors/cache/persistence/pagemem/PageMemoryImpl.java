@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -65,6 +63,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridLongList;
@@ -344,8 +343,18 @@ public class PageMemoryImpl implements PageMemoryEx {
             throttleEnabled = false;
         }
 
+        if(!(ctx.wal() instanceof FileWriteAheadLogManager)) {
+            log.error("Write throttle can't start. Unexpected class of WAL manager: " +
+                ctx.wal().getClass());
+
+            throttleEnabled = false;
+        }
+
         if (throttleEnabled)
-            writeThrottle = new PagesWriteThrottle(this, (GridCacheDatabaseSharedManager)ctx.database());
+            writeThrottle = new PagesWriteThrottle(this,
+                (GridCacheDatabaseSharedManager)ctx.database(),
+                (FileWriteAheadLogManager)ctx.wal(),
+                ctx.gridConfig().getDataStorageConfiguration());
     }
 
     /** {@inheritDoc} */

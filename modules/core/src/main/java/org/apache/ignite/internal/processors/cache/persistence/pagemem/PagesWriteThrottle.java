@@ -18,7 +18,10 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 
 /**
  * Throttles threads that generate dirty pages during ongoing checkpoint.
@@ -30,6 +33,8 @@ public class PagesWriteThrottle {
 
     /** Database manager. */
     private final GridCacheDatabaseSharedManager dbSharedMgr;
+    private FileWriteAheadLogManager wal;
+    private DataStorageConfiguration dsCfg;
 
     /** Starting throttle time. Limits write speed to 1000 MB/s. */
     private static final long STARTING_THROTTLE_NANOS = 4000;
@@ -60,10 +65,16 @@ public class PagesWriteThrottle {
     /**
      * @param pageMemory Page memory.
      * @param dbSharedMgr Database manager.
+     * @param wal
+     * @param dsCfg
      */
-    public PagesWriteThrottle(PageMemoryImpl pageMemory, GridCacheDatabaseSharedManager dbSharedMgr) {
+    public PagesWriteThrottle(PageMemoryImpl pageMemory,
+        GridCacheDatabaseSharedManager dbSharedMgr,
+        FileWriteAheadLogManager wal, DataStorageConfiguration dsCfg) {
         this.pageMemory = pageMemory;
         this.dbSharedMgr = dbSharedMgr;
+        this.wal = wal;
+        this.dsCfg = dsCfg;
     }
 
     /**
@@ -133,6 +144,28 @@ public class PagesWriteThrottle {
             }
         }
 
+        if(!shouldThrottle) {
+            FileWALPointer pointer = wal.currentWritePointer();
+
+            long lastArchIdx = wal.lastAbsArchivedIdx();
+
+            if (lastArchIdx >= 0) {
+                long segSize = wal.maxWalSegmentSize();
+                long curWorkIdx = pointer.index();
+
+                int maxSegments = dsCfg.getWalSegments();
+
+                long seqInWork = curWorkIdx - lastArchIdx;
+                long segRemained = maxSegments - seqInWork;
+                long bytesInCurSeq = segSize - pointer.fileOffset();
+
+                long maxBytesInWorkDir = maxSegments * segSize;
+                long bytesRemained = segRemained * segSize + bytesInCurSeq;
+
+                //todo test throttle
+                shouldThrottle = 1.0 * bytesRemained < 0.25 * maxBytesInWorkDir;
+            }
+        }
 
         if (shouldThrottle) {
             int throttleLevel = exponentialBackoffCntr.getAndIncrement();
@@ -148,5 +181,12 @@ public class PagesWriteThrottle {
      */
     public void onFinishCheckpoint() {
         exponentialBackoffCntr.set(0);
+    }
+
+    /**
+     *
+     */
+    public int throttleLevel() {
+        return exponentialBackoffCntr.get();
     }
 }
