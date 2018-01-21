@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  * Wal snapshot record.
  */
@@ -49,10 +51,20 @@ public class SnapshotRecord extends WALRecord {
         return full;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean rollOver() {
+        return true;
+    }
+
     /**
      *
      */
     @Override public RecordType type() {
         return RecordType.SNAPSHOT;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(SnapshotRecord.class, this, "super", super.toString());
     }
 }

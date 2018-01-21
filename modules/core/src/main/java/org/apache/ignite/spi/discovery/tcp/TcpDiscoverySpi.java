@@ -972,17 +972,23 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
 
             initAddresses();
 
-            final Serializable cfgId = ignite.configuration().getConsistentId();
+            IgniteConfiguration cfg = ignite.configuration();
+
+            final Serializable cfgId = cfg.getConsistentId();
 
             if (cfgId == null) {
-                final List<String> sortedAddrs = new ArrayList<>(addrs.get1());
+                if (cfg.isClientMode() == Boolean.TRUE)
+                    consistentId = cfg.getNodeId();
+                else {
+                    List<String> sortedAddrs = new ArrayList<>(addrs.get1());
 
-                Collections.sort(sortedAddrs);
+                    Collections.sort(sortedAddrs);
 
-                if (getBoolean(IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT))
-                    consistentId = U.consistentId(sortedAddrs);
-                else
-                    consistentId = U.consistentId(sortedAddrs, impl.boundPort());
+                    if (getBoolean(IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT))
+                        consistentId = U.consistentId(sortedAddrs);
+                    else
+                        consistentId = U.consistentId(sortedAddrs, impl.boundPort());
+                }
             }
             else
                 consistentId = cfgId;
