@@ -88,7 +88,7 @@
         <jtidy.version>r938</jtidy.version>
         <kafka.version>0.10.0.1</kafka.version>
         <karaf.version>4.0.2</karaf.version>
-        <log4j.version>2.4.1</log4j.version>
+        <log4j.version>2.6</log4j.version>
         <lucene.bundle.version>3.5.0_1</lucene.bundle.version>
         <lucene.version>3.5.0</lucene.version>
         <oro.bundle.version>2.0.8_6</oro.bundle.version>

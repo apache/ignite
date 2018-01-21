@@ -38,6 +38,8 @@ public class Log4j2LoggerMarkerTest extends TestCase {
     @Override protected void setUp() throws Exception {
         super.setUp();
 
+        Log4J2Logger.cleanup();
+
         deleteLogs();
     }
 

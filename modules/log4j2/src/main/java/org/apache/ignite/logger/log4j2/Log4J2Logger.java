@@ -205,6 +205,21 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
         quiet = quiet0;
     }
 
+
+    /**
+     * Cleans up the logger configuration. Should be used in unit tests only for sequential tests run with
+     * different configurations
+     *
+     */
+    static void cleanup() {
+        synchronized (mux) {
+            if (inited)
+                LogManager.shutdown();
+
+            inited = false;
+        }
+    }
+
     /**
      * Sets level for internal log4j implementation.
      *
