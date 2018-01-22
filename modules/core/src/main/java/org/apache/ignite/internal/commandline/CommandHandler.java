@@ -44,6 +44,8 @@ import org.apache.ignite.internal.visor.baseline.VisorBaselineOperation;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskArg;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
+import org.apache.ignite.plugin.security.SecurityCredentials;
+import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
@@ -71,6 +73,12 @@ public class CommandHandler {
 
     /** */
     private static final String CMD_PORT = "--port";
+
+    /** */
+    private static final String CMD_LOGIN = "--login";
+
+    /** */
+    private static final String CMD_PASSWORD = "--password";
 
     /** */
     private static final String CMD_ACTIVATE = "--activate";
@@ -165,7 +173,7 @@ public class CommandHandler {
      */
     private void usage(String desc, String cmd) {
         log(desc);
-        log("    control.sh [--host HOST_OR_IP] [--port PORT] " + cmd);
+        log("    control.sh [--host HOST_OR_IP] [--port PORT] [--login LOGIN] [--password PASSWORD] " + cmd);
         nl();
     }
 
@@ -544,6 +552,10 @@ public class CommandHandler {
 
             String port = DFLT_PORT;
 
+            String login = null;
+
+            String pwd = null;
+
             String baselineAct = "";
 
             String baselineArgs = "";
@@ -573,7 +585,12 @@ public class CommandHandler {
                             throw new IllegalArgumentException("Invalid value for port: " + port);
                         }
                         break;
-
+                    case CMD_LOGIN:
+                        login = nextArg(it, "Expected login name");
+                        break;
+                    case CMD_PASSWORD:
+                        pwd = nextArg(it, "Expected password");
+                        break;
                     case CMD_ACTIVATE:
                     case CMD_DEACTIVATE:
                     case CMD_STATE:
@@ -608,6 +625,10 @@ public class CommandHandler {
             GridClientConfiguration cfg = new GridClientConfiguration();
 
             cfg.setServers(Collections.singletonList(host + ":" + port));
+
+            if (login != null)
+                cfg.setSecurityCredentialsProvider(
+                    new SecurityCredentialsBasicProvider(new SecurityCredentials(login, pwd)));
 
             try (GridClient client = GridClientFactory.start(cfg)) {
                 String cmd = commands.get(0);

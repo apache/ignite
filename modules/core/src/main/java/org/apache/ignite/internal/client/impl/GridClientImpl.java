@@ -40,6 +40,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientCacheMode;
 import org.apache.ignite.internal.client.GridClientClosedException;
+import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientCompute;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientData;
@@ -48,7 +49,6 @@ import org.apache.ignite.internal.client.GridClientDataConfiguration;
 import org.apache.ignite.internal.client.GridClientDisconnectedException;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFactory;
-import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridClientPartitionAffinity;
 import org.apache.ignite.internal.client.GridClientPredicate;
@@ -72,7 +72,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 public class GridClientImpl implements GridClient {
     /** Enterprise connection manager class name. */
     private static final String ENT_CONN_MGR_CLS =
-        "org.apache.ignite.internal.client.impl.connection.GridClientConnectionManagerEntImpl";
+        "org.gridgain.grid.internal.client.impl.connection.GridClientConnectionManagerEntImpl";
 
     /** Null mask object. */
     private static final Object NULL_MASK = new Object();
