@@ -1715,7 +1715,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (!DmlUtils.isBatched(qry) && paramsCnt > 0) {
             if (argsOrig == null || argsOrig.length < firstArg + paramsCnt) {
                 throw new IgniteException("Invalid number of query parameters. " +
-                    "Cannot find " + (argsOrig.length + 1 - firstArg) + " parameter.");
+                    "Cannot find " + (argsOrig != null ? argsOrig.length + 1 - firstArg : 1) + " parameter.");
             }
 
             args = Arrays.copyOfRange(argsOrig, firstArg, firstArg + paramsCnt);
@@ -1927,31 +1927,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         IgniteQueryErrorCode.PARSING, e);
             }
         }
-
-        /*
-                                    break;
-                        }
-                        catch (SQLException e) {
-                            if (!cachesCreated && (
-                                e.getErrorCode() == ErrorCode.SCHEMA_NOT_FOUND_1 ||
-                                    e.getErrorCode() == ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1 ||
-                                    e.getErrorCode() == ErrorCode.INDEX_NOT_FOUND_1)
-                                ) {
-                                try {
-                                    ctx.cache().createMissingQueryCaches();
-                                }
-                                catch (IgniteCheckedException ignored) {
-                                    throw new CacheException("Failed to create missing caches.", e);
-                                }
-
-                                cachesCreated = true;
-                            }
-                            else
-                                throw new IgniteSQLException("Failed to parse query. " + e.getMessage(),
-                                    IgniteQueryErrorCode.PARSING, e);
-                        }
-                    }
-         */
     }
 
     /**
