@@ -41,8 +41,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NavigableMap;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -270,8 +268,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Factory to provide I/O interfaces for read/write operations with files */
     private FileIOFactory ioFactory;
 
-    /** Next segment archived monitor. */
-    private final Object nextSegmentArchivedMonitor = new Object();
+    /** Next WAL segment archived monitor. */
+    private final SegmentArchivedMonitor archivedMonitor = new SegmentArchivedMonitor();
+
+    /** Segment reserve storage. */
+    private final SegmentReservationStorage segmentReserve = new SegmentReservationStorage();
 
     /** Updater for {@link #currHnd}, used for verify there are no concurrent update for current log segment handle */
     private static final AtomicReferenceFieldUpdater<FileWriteAheadLogManager, FileWriteHandle> CURR_HND_UPD =
@@ -282,9 +283,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * release. For mode archive and work folders set to equal value, archiver is not created.
      */
     @Nullable private volatile FileArchiver archiver;
-
-    /** Segment reserve storage. */
-    private volatile SegmentReserve segmentReserve;
 
     /** Compressor. */
     private volatile FileCompressor compressor;
@@ -394,12 +392,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             lastTruncatedArchiveIdx = tup == null ? -1 : tup.get1() - 1;
 
+            long lastAbsArchivedIdx = tup == null ? -1 : tup.get2();
+
             if (isArchiverEnabled())
-                archiver = new FileArchiver(tup == null ? -1 : tup.get2());
+                archiver = new FileArchiver(lastAbsArchivedIdx);
             else
                 archiver = null;
 
-            segmentReserve = new SegmentReserve();
+            if (lastAbsArchivedIdx > 0)
+                archivedMonitor.setLastArchivedAbsoluteIndex(lastAbsArchivedIdx);
 
             if (dsCfg.isWalCompactionEnabled()) {
                 compressor = new FileCompressor();
@@ -436,11 +437,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      *
      */
     public Collection<File> getAndReserveWalFiles(FileWALPointer low, FileWALPointer high) throws IgniteCheckedException {
-        @Nullable FileArchiver archiver0 = archiver;
-
         final long awaitIdx = high.index() - 1;
 
-        awaitSegmentArchived(archiver0, awaitIdx);
+        archivedMonitor.awaitSegmentArchived(awaitIdx);
 
         if (!reserve(low))
             throw new IgniteCheckedException("WAL archive segment has been deleted [idx=" + low.index() + "]");
@@ -461,24 +460,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
 
         return res;
-    }
-
-    /**
-     * @param archiver0 Archiver.
-     * @param awaitIdx Method will wait archivation of that index.
-     */
-    private void awaitSegmentArchived(@Nullable FileArchiver archiver0, long awaitIdx) throws IgniteInterruptedCheckedException {
-        //todo archiver is null
-        synchronized (nextSegmentArchivedMonitor) {
-            while (archiver0.lastArchivedAbsoluteIndex() < awaitIdx) {
-                try {
-                    nextSegmentArchivedMonitor.wait(2000);
-                }
-                catch (InterruptedException e) {
-                    throw new IgniteInterruptedCheckedException(e);
-                }
-            }
-        }
     }
 
     /**
@@ -809,15 +790,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (mode == WALMode.NONE)
             return false;
 
-        SegmentReserve reserve0 = segmentReserve;
-
-        if (reserve0 == null)
-            throw new IgniteCheckedException("Could not reserve WAL segment: segmentReserve == null");
-
-        reserve0.reserve(((FileWALPointer)start).index());
+        segmentReserve.reserve(((FileWALPointer)start).index());
 
         if (!hasIndex(((FileWALPointer)start).index())) {
-            reserve0.release(((FileWALPointer)start).index());
+            segmentReserve.release(((FileWALPointer)start).index());
 
             return false;
         }
@@ -832,12 +808,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (mode == WALMode.NONE)
             return;
 
-        SegmentReserve reserve0 = segmentReserve;
-
-        if (reserve0 == null)
-            throw new IgniteCheckedException("Could not release WAL segment: segmentReserve == null");
-
-        reserve0.release(((FileWALPointer)start).index());
+        segmentReserve.release(((FileWALPointer)start).index());
     }
 
     /**
@@ -878,8 +849,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         int deleted = 0;
 
-        @Nullable FileArchiver archiver0 = archiver;
-
         for (FileDescriptor desc : descs) {
             if (lowPtr != null && desc.idx < lowPtr.index())
                 continue;
@@ -888,7 +857,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (segmentReservedOrLocked(desc.idx))
                 return deleted;
 
-            long lastArchived = archiver0 != null ? archiver0.lastArchivedAbsoluteIndex() : lastArchivedIndex();
+            long archivedAbsIdx = archivedMonitor.lastArchivedAbsoluteIndex();
+
+            long lastArchived = archivedAbsIdx >= 0 ? archivedAbsIdx : lastArchivedIndex();
 
             // We need to leave at least one archived segment to correctly determine the archive index.
             if (desc.idx < highPtr.index() && desc.idx < lastArchived) {
@@ -916,10 +887,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     private boolean segmentReservedOrLocked(long absIdx) {
         FileArchiver archiver0 = archiver;
-        SegmentReserve reserve0 = segmentReserve;
 
         return ((archiver0 != null) && archiver0.locked(absIdx))
-            || (reserve0 != null && reserve0.reserved(absIdx));
+            || (segmentReserve.reserved(absIdx));
 
     }
 
@@ -933,7 +903,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     @Override public int walArchiveSegments() {
         long lastTruncated = lastTruncatedArchiveIdx;
 
-        long lastArchived = archiver.lastArchivedAbsoluteIndex();
+        long lastArchived = archivedMonitor.lastArchivedAbsoluteIndex();
 
         if (lastArchived == -1)
             return 0;
@@ -1150,6 +1120,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 if (archiver0 != null)
                     archiver0.currentWalIndex(absIdx);
+                else
+                    archivedMonitor.setLastArchivedAbsoluteIndex(absIdx - 1);
 
                 return hnd;
             }
@@ -1365,8 +1337,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private File pollNextFile(long curIdx) throws IgniteCheckedException {
         FileArchiver archiver0 = archiver;
 
-        if (archiver0 == null)
+        if (archiver0 == null) {
+            archivedMonitor.setLastArchivedAbsoluteIndex(curIdx);
+
             return new File(walWorkDir, FileDescriptor.fileName(curIdx + 1));
+        }
 
         // Signal to archiver that we are done with the segment and it can be archived.
         long absNextIdx = archiver0.nextAbsoluteSegmentIndex(curIdx);
@@ -1422,47 +1397,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * Protects WAL segments from deletion during WAL log cleanup.
-     */
-    private static class SegmentReserve {
-        /**
-         * Maps absolute segment index to reservation counter. If counter > 0 then we wouldn't delete all segments
-         * which has index >= reserved segment index. Guarded by {@code this}.
-         */
-        private NavigableMap<Long, Integer> reserved = new TreeMap<>();
-
-        /**
-         * @param absIdx Index for reservation.
-         */
-        private synchronized void reserve(long absIdx) {
-            reserved.merge(absIdx, 1, (a, b) -> a + b);
-        }
-
-        /**
-         * Checks if segment is currently reserved (protected from deletion during WAL cleanup).
-         * @param absIdx Index for check reservation.
-         * @return {@code True} if index is reserved.
-         */
-        public synchronized boolean reserved(long absIdx) {
-            return reserved.floorKey(absIdx) != null;
-        }
-
-        /**
-         * @param absIdx Reserved index.
-         */
-        private synchronized void release(long absIdx) {
-            Integer cur = reserved.get(absIdx);
-
-            assert cur != null && cur >= 1 : cur;
-
-            if (cur == 1)
-                reserved.remove(absIdx);
-            else
-                reserved.put(absIdx, cur - 1);
-        }
-    }
-
-    /**
      * File archiver operates on absolute segment indexes. For any given absolute segment index N we can calculate the
      * work WAL segment: S(N) = N % dsCfg.walSegments. When a work segment is finished, it is given to the archiver. If
      * the absolute index of last archived segment is denoted by A and the absolute index of next segment we want to
@@ -1506,13 +1440,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             super("wal-file-archiver%" + cctx.igniteInstanceName());
 
             this.lastAbsArchivedIdx = lastAbsArchivedIdx;
-        }
-
-        /**
-         * @return Last archived segment absolute index.
-         */
-        private long lastArchivedAbsoluteIndex() {
-            return lastAbsArchivedIdx;
         }
 
         /**
@@ -1637,9 +1564,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (compressor != null)
                 compressor.onNextSegmentArchived();
 
-            synchronized (nextSegmentArchivedMonitor) {
-                nextSegmentArchivedMonitor.notifyAll();
-            }
+            archivedMonitor.setLastArchivedAbsoluteIndex(idx);
         }
 
         /**
@@ -1883,9 +1808,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private long tryReserveNextSegmentOrWait() throws InterruptedException, IgniteCheckedException {
             long segmentToCompress = lastCompressedIdx + 1;
 
-            //todo archiver is null
             synchronized (this) {
-                while (segmentToCompress > Math.min(lastAllowedToCompressIdx, archiver.lastArchivedAbsoluteIndex())) {
+                while (segmentToCompress > Math.min(lastAllowedToCompressIdx, archivedMonitor.lastArchivedAbsoluteIndex())) {
                     wait();
 
                     if (stopped)
