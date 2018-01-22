@@ -244,7 +244,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         final AtomicInteger restartCnt = new AtomicInteger();
 
-        final int restarts = 20;
+        final int restarts = 10;
 
         Thread t = new Thread(new Runnable() {
             @Override public void run() {
