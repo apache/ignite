@@ -1668,6 +1668,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @throws IgniteCheckedException If registration failed.
      */
     private void registerStripedExecutorMBean(StripedExecutor stripedExecSvc) throws IgniteCheckedException {
+        if(U.IGNITE_MBEANS_DISABLED)
+            return;
+
         if (stripedExecSvc != null) {
             String name = "StripedExecutor";
 
