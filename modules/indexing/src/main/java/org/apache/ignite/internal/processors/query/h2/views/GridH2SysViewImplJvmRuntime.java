@@ -19,21 +19,14 @@ package org.apache.ignite.internal.processors.query.h2.views;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
-import java.lang.management.ThreadInfo;
-import java.lang.management.ThreadMXBean;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.Collection;
+import java.util.Collections;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.value.Value;
-import org.h2.value.ValueTime;
-import org.h2.value.ValueTimestamp;
 
 /**
  * System view: JVM runtime.
@@ -60,11 +53,9 @@ public class GridH2SysViewImplJvmRuntime extends GridH2SysView {
 
     /** {@inheritDoc} */
     @Override public Iterable<Row> getRows(Session ses, SearchRow first, SearchRow last) {
-        List<Row> rows = new ArrayList<>(1);
-
         RuntimeMXBean mxBean = ManagementFactory.getRuntimeMXBean();
 
-        rows.add(
+        Collection<Row> rows = Collections.singleton(
             createRow(ses, 1L,
                 U.jvmPid(),
                 mxBean.getName(),
@@ -90,6 +81,6 @@ public class GridH2SysViewImplJvmRuntime extends GridH2SysView {
 
     /** {@inheritDoc} */
     @Override public long getRowCount() {
-        return 1;
+        return 1L;
     }
 }

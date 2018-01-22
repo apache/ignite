@@ -38,6 +38,8 @@ public class GridH2SysViewImplCaches extends GridH2SysView {
     public GridH2SysViewImplCaches(GridKernalContext ctx) {
         super("CACHES", "Ignite caches", ctx, "NAME",
             newColumn("NAME"),
+            newColumn("GROUP_ID", Value.INT),
+            newColumn("IS_STARTED", Value.BOOLEAN),
             newColumn("CONFIG_CACHE_MODE"),
             newColumn("CONFIG_GROUP_NAME"),
             newColumn("CONFIG_ATOMICITY_MODE"),
@@ -74,6 +76,8 @@ public class GridH2SysViewImplCaches extends GridH2SysView {
                 rows.add(
                     createRow(ses, rows.size(),
                         cache.name(),
+                        cache.context().groupId(),
+                        cache.context().started(),
                         cache.configuration().getCacheMode().name(),
                         cache.configuration().getGroupName(),
                         cache.configuration().getAtomicityMode().name(),

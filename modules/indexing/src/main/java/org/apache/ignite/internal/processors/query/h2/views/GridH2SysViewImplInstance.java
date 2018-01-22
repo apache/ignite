@@ -17,21 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.h2.views;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
-import java.lang.management.ThreadMXBean;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.Collection;
+import java.util.Collections;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.value.Value;
-import org.h2.value.ValueNull;
 
 /**
  * System view: ignite instance.
@@ -41,7 +33,7 @@ public class GridH2SysViewImplInstance extends GridH2SysView {
      * @param ctx Grid context.
      */
     public GridH2SysViewImplInstance(GridKernalContext ctx) {
-        super("INSTANCE", "Ignite intance", ctx,
+        super("INSTANCE", "Ignite instance", ctx,
             newColumn("INSTANCE_NAME"),
             newColumn("VERSION"),
             newColumn("CLUSTER_LATEST_VERSION"),
@@ -53,11 +45,7 @@ public class GridH2SysViewImplInstance extends GridH2SysView {
 
     /** {@inheritDoc} */
     @Override public Iterable<Row> getRows(Session ses, SearchRow first, SearchRow last) {
-        List<Row> rows = new ArrayList<>(1);
-
-        log.debug("Get instance information");
-
-        rows.add(
+        Collection<Row> rows = Collections.singleton(
             createRow(ses, 1L,
                 ctx.igniteInstanceName(),
                 ctx.grid().version(),
@@ -71,22 +59,6 @@ public class GridH2SysViewImplInstance extends GridH2SysView {
         return rows;
     }
 
-    /**
-     * Converts stack trace to string.
-     *
-     * @param stackTrace Stack trace.
-     */
-    private String stackTraceToString(StackTraceElement[] stackTrace) {
-        StringBuilder sb = new StringBuilder();
-
-        for (StackTraceElement element : stackTrace ){
-            sb.append(element);
-            sb.append(U.nl());
-        }
-
-        return sb.toString();
-    }
-
     /** {@inheritDoc} */
     @Override public boolean canGetRowCount() {
         return true;
@@ -94,6 +66,6 @@ public class GridH2SysViewImplInstance extends GridH2SysView {
 
     /** {@inheritDoc} */
     @Override public long getRowCount() {
-        return 1;
+        return 1L;
     }
 }

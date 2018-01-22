@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -58,7 +57,7 @@ public class GridH2SysViewImplTransactionEntries extends GridH2SysView {
     @Override public Iterable<Row> getRows(Session ses, SearchRow first, SearchRow last) {
         List<Row> rows = new ArrayList<>();
 
-        // TODO: Check for concurrent modification
+        // TODO: Check for thread safety
 
         Collection<IgniteInternalTx> txs = ctx.cache().context().tm().activeTransactions();
 

@@ -19,9 +19,8 @@ package org.apache.ignite.internal.processors.query.h2.views;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
-import java.lang.management.RuntimeMXBean;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.Collections;
 import org.apache.ignite.internal.GridKernalContext;
 import org.h2.engine.Session;
 import org.h2.result.Row;
@@ -47,11 +46,9 @@ public class GridH2SysViewImplJvmOS extends GridH2SysView {
 
     /** {@inheritDoc} */
     @Override public Iterable<Row> getRows(Session ses, SearchRow first, SearchRow last) {
-        List<Row> rows = new ArrayList<>(1);
-
         OperatingSystemMXBean mxBean = ManagementFactory.getOperatingSystemMXBean();
 
-        rows.add(
+        Collection<Row> rows = Collections.singleton(
             createRow(ses, 1L,
                 mxBean.getName(),
                 mxBean.getVersion(),
@@ -71,6 +68,6 @@ public class GridH2SysViewImplJvmOS extends GridH2SysView {
 
     /** {@inheritDoc} */
     @Override public long getRowCount() {
-        return 1;
+        return 1L;
     }
 }

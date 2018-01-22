@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.query.h2.views;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
@@ -30,23 +32,16 @@ import org.h2.result.SearchRow;
 import org.h2.value.Value;
 
 /**
- * System view: nodes.
+ * System view: node hosts.
  */
-public class GridH2SysViewImplNodes extends GridH2SysView {
+public class GridH2SysViewImplNodeHosts extends GridH2SysView {
     /**
      * @param ctx Grid context.
      */
-    public GridH2SysViewImplNodes(GridKernalContext ctx) {
-        super("NODES", "Nodes in topology", ctx, new String[] {"ID", "IS_LOCAL"},
-            newColumn("ID", Value.UUID),
-            newColumn("CONSISTENT_ID"),
-            newColumn("VERSION"),
-            newColumn("IS_LOCAL", Value.BOOLEAN),
-            newColumn("IS_CLIENT", Value.BOOLEAN),
-            newColumn("IS_DAEMON", Value.BOOLEAN),
-            newColumn("ORDER", Value.INT),
-            newColumn("ADDRESSES"),
-            newColumn("HOST_NAMES")
+    public GridH2SysViewImplNodeHosts(GridKernalContext ctx) {
+        super("NODE_HOSTS", "Node hosts", ctx, "NODE_ID",
+            newColumn("NODE_ID", Value.UUID),
+            newColumn("HOST_NAME")
         );
     }
 
@@ -56,17 +51,11 @@ public class GridH2SysViewImplNodes extends GridH2SysView {
 
         Collection<ClusterNode> nodes;
 
-        ColumnCondition locCond = conditionForColumn("IS_LOCAL", first, last);
-        ColumnCondition idCond = conditionForColumn("ID", first, last);
+        ColumnCondition idCond = conditionForColumn("NODE_ID", first, last);
 
-        if (locCond.isEquality() && locCond.getValue().getBoolean()) {
-            log.debug("Get nodes: local node");
-
-            nodes = Collections.singleton(ctx.grid().localNode());
-        }
-        else if (idCond.isEquality()) {
+        if (idCond.isEquality()) {
             try {
-                log.debug("Get nodes: node id");
+                log.debug("Get node hosts: node id");
 
                 UUID nodeId = UUID.fromString(idCond.getValue().getString());
 
@@ -79,38 +68,28 @@ public class GridH2SysViewImplNodes extends GridH2SysView {
             }
         }
         else {
-            log.debug("Get nodes: full scan");
+            log.debug("Get node hosts: full scan");
 
             nodes = ctx.grid().cluster().nodes();
         }
 
         for (ClusterNode node : nodes) {
-            if (node != null)
-                rows.add(
-                    createRow(ses, rows.size(),
-                        node.id(),
-                        node.consistentId(),
-                        node.version(),
-                        node.isLocal(),
-                        node.isClient(),
-                        node.isDaemon(),
-                        node.order(),
-                        node.addresses(),
-                        node.hostNames()
-                    )
-                );
+            if (node != null) {
+                // Get unique hosts per node
+                Set<String> hosts = new HashSet<>();
+
+                hosts.addAll(node.hostNames());
+
+                for (String host : hosts)
+                    rows.add(
+                        createRow(ses, rows.size(),
+                            node.id(),
+                            host
+                        )
+                    );
+            }
         }
 
         return rows;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean canGetRowCount() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getRowCount() {
-        return ctx.grid().cluster().nodes().size();
     }
 }

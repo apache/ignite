@@ -31,8 +31,6 @@ import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.value.Value;
-import org.h2.value.ValueNull;
-import org.h2.value.ValueTime;
 
 /**
  * System view: JVM threads.

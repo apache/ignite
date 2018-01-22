@@ -18,17 +18,11 @@
 package org.apache.ignite.internal.processors.query.h2.views;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
-import org.h2.value.Value;
 
 /**
  * System view: system views.
