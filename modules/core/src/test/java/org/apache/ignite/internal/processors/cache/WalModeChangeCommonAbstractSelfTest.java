@@ -62,6 +62,9 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
     /** Cache name 2. */
     protected static final String CACHE_NAME_2 = "cache_2";
 
+    /** Cache name 2. */
+    protected static final String CACHE_NAME_3 = "cache_3";
+
     /** Volatile data region. */
     protected static final String REGION_VOLATILE = "volatile";
 
@@ -101,7 +104,7 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
             Collection<String> cacheNames = node0.cacheNames();
 
             for (String cacheName : cacheNames)
-                node0.destroyCache(cacheName);
+                destroyCache(node0, cacheName);
         }
     }
 

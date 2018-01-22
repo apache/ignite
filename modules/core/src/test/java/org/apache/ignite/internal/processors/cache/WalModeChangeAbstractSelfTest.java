@@ -155,14 +155,14 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
     public void testPersistenceDisabled() throws Exception {
         forAllNodes(new IgniteInClosureX<Ignite>() {
             @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
-                CacheConfiguration ccfg = cacheConfig(CACHE_NAME_2, PARTITIONED, TRANSACTIONAL)
+                CacheConfiguration ccfg = cacheConfig(CACHE_NAME_3, PARTITIONED, TRANSACTIONAL)
                     .setDataRegionName(REGION_VOLATILE);
 
                 createCache(ignite, ccfg);
 
                 assertThrows(new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        walDisable(ignite, CACHE_NAME_2);
+                        walDisable(ignite, CACHE_NAME_3);
 
                         return null;
                     }
@@ -170,13 +170,13 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
 
                 assertThrows(new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        walEnable(ignite, CACHE_NAME_2);
+                        walEnable(ignite, CACHE_NAME_3);
 
                         return null;
                     }
                 }, IgniteException.class, "Cannot change WAL mode because persistence is not enabled for cache(s)");
 
-                assert !ignite.cluster().isWalEnabled(CACHE_NAME_2);
+                assert !ignite.cluster().isWalEnabled(CACHE_NAME_3);
             }
         });
     }
