@@ -1778,7 +1778,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * Sets baseline topology.
      */
-    public void baseline() {
+    public void resetBaselineTopology() {
         Ignite node = G.allGrids().get(0);
 
         node.cluster().setBaselineTopology(node.cluster().topologyVersion());
