@@ -14,27 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
-import java.io.Serializable;
-import java.util.Map;
+package org.apache.ignite.internal.processors.cache.persistence;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
 /**
- *
+ * Checkpoint futures.
  */
-public interface ReadOnlyMetastorage {
-    /** */
-    Serializable read(String key) throws IgniteCheckedException;
+public interface CheckpointFuture  {
+    /**
+     * @return Begin future.
+     */
+    public GridFutureAdapter beginFuture();
 
     /**
-     * Read all keys matching provided predicate.
-     *
-     * @param keyPred Key predicate.
-     * @return Matched key-value pairs.
-     * @throws IgniteCheckedException If failed.
+     * @return Finish future.
      */
-    Map<String, Serializable> readForPredicate(IgnitePredicate<String> keyPred) throws IgniteCheckedException;
+    public GridFutureAdapter finishFuture();
 }

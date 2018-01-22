@@ -14,27 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
-import java.io.Serializable;
-import java.util.Map;
-
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.lang.IgnitePredicate;
+package org.apache.ignite.internal.pagemem.wal.record;
 
 /**
- *
+ * WAL record related to specific cache group.
  */
-public interface ReadOnlyMetastorage {
-    /** */
-    Serializable read(String key) throws IgniteCheckedException;
-
+public interface WalRecordCacheGroupAware {
     /**
-     * Read all keys matching provided predicate.
-     *
-     * @param keyPred Key predicate.
-     * @return Matched key-value pairs.
-     * @throws IgniteCheckedException If failed.
+     * @return Cache group ID.
      */
-    Map<String, Serializable> readForPredicate(IgnitePredicate<String> keyPred) throws IgniteCheckedException;
+    public int groupId();
 }
