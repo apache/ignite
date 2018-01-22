@@ -353,29 +353,28 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             qry.setSchema(schemaName);
 
-            List<? extends FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFieldsNoCache(qry, true,
+            List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFieldsNoCache(qry, true,
                 protocolVer.compareTo(VER_2_3_0) < 0);
+
+            FieldsQueryCursor<List<?>> fieldsCur = (FieldsQueryCursor<List<?>>) results.get(0);
 
             if (results.size() == 1) {
 
-                FieldsQueryCursor<?> cursor = results.get(0);
+                if (fieldsCur instanceof BulkLoadContextCursor) {
 
-                if (cursor instanceof BulkLoadContextCursor) {
+                    BulkLoadContext bctx = ((BulkLoadContextCursor)fieldsCur).bulkLoadContext();
 
-                    BulkLoadContext bctx = ((BulkLoadContextCursor)cursor).bulkLoadContext();
+                    JdbcFilesToSendResult filesToSendResult = new JdbcFilesToSendResult(qryId, bctx.localFileName());
 
-                    JdbcFilesToSendResult result = new JdbcFilesToSendResult(qryId, bctx.localFileName());
+                    JdbcBulkLoadContext jdbcBulkCtx = new JdbcBulkLoadContext(filesToSendResult, bctx);
 
-                    JdbcBulkLoadContext jbctx = new JdbcBulkLoadContext(result, bctx);
+                    bulkLoadRequests.put(qryId, jdbcBulkCtx);
 
-                    bulkLoadRequests.put(qryId, jbctx);
-
-                    return new JdbcResponse(result);
+                    return new JdbcResponse(filesToSendResult);
                 }
                 else {
-                    FieldsQueryCursor<List<?>> qryCur = (FieldsQueryCursor<List<?>>)cursor;
-
-                    JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(), (QueryCursorImpl)qryCur);
+                    JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(),
+                        (QueryCursorImpl)fieldsCur);
 
                     JdbcQueryExecuteResult res;
 

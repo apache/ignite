@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.sql;
 
+import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
@@ -99,6 +100,11 @@ public class SqlParser {
                             cmd = processDrop();
 
                             break;
+
+                        case SqlKeyword.COPY:
+                            cmd = processCopy();
+
+                            break;
                     }
 
                     if (cmd != null) {
@@ -121,6 +127,15 @@ public class SqlParser {
                     throw errorUnexpectedToken(lex);
             }
         }
+    }
+
+    /**
+     * Processes COPY command.
+     *
+     * @return The {@link org.apache.ignite.internal.sql.command.SqlBulkLoadCommand} command.
+     */
+    private SqlCommand processCopy() {
+        return new SqlBulkLoadCommand().parse(lex);
     }
 
     /**

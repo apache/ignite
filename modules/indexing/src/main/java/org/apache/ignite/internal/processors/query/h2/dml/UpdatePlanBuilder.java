@@ -451,10 +451,6 @@ public final class UpdatePlanBuilder {
 
             colNames[i] = colName;
 
-            GridQueryProperty prop = desc.type().property(colName);
-
-            assert prop != null : "Property '" + colName + "' not found.";
-
             Column h2Col = tbl.getColumn(colName);
 
             colTypes[i] = h2Col.getType();
@@ -469,6 +465,10 @@ public final class UpdatePlanBuilder {
                 valColIdx = i;
                 continue;
             }
+
+            GridQueryProperty prop = desc.type().property(colName);
+
+            assert prop != null : "Property '" + colName + "' not found.";
 
             if (prop.key())
                 hasKeyProps = true;

@@ -137,7 +137,7 @@ public class JdbcBulkLoadSelfTest extends GridCommonAbstractTest {
 
         Statement stmt = conn.createStatement();
 
-        int updatesCnt = stmt.executeUpdate("copy from \"dummy.csv\" into Integer(_key, _val) format csv");
+        int updatesCnt = stmt.executeUpdate("copy from \"dummy.csv\" into \"INTEGER\" (_key, _val) format csv");
 
         // Closing connection makes it wait for streamer close
         // and thus for data load completion as well

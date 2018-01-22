@@ -188,6 +188,9 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType
  */
 @SuppressWarnings({"UnnecessaryFullyQualifiedName", "NonFinalStaticVariableUsedInClassInitialization"})
 public class IgniteH2Indexing implements GridQueryIndexing {
+
+    public static final Pattern INTERNAL_CMD_RE = Pattern.compile("INDEX|^COPY ", Pattern.CASE_INSENSITIVE);
+
     /*
      * Register IO for indexes.
      */
@@ -1383,7 +1386,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private List<FieldsQueryCursor<List<?>>> tryQueryDistributedSqlFieldsNative(String schemaName, SqlFieldsQuery qry) {
         // Heuristic check for fast return.
-        if (!Pattern.compile("INDEX|^COPY ").matcher(qry.getSql().trim().toUpperCase()).find())
+        if (!INTERNAL_CMD_RE.matcher(qry.getSql().trim()).find())
             return null;
 
         // Parse.

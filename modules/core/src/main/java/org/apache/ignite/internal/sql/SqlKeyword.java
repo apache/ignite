@@ -51,6 +51,9 @@ public class SqlKeyword {
     /** Keyword: CHARACTER. */
     public static final String CHARACTER = "CHARACTER";
 
+    /** Keyword: COPY. */
+    public static final String COPY = "COPY";
+
     /** Keyword: CREATE. */
     public static final String CREATE = "CREATE";
 
