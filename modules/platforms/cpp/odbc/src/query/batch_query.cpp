@@ -72,7 +72,7 @@ namespace ignite
                     res = MakeRequestExecuteBatch(processed, processed + currentPageSize, lastPage);
 
                     processed += currentPageSize;
-                } while (res == SqlResult::AI_SUCCESS && processed < rowNum);
+                } while ((res == SqlResult::AI_SUCCESS || res == SqlResult::AI_SUCCESS_WITH_INFO) && processed < rowNum);
 
                 params.SetParamsProcessed(static_cast<SqlUlen>(rowsAffected.size()));
 

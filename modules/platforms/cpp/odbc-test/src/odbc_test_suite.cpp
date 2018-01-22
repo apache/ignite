@@ -470,7 +470,7 @@ namespace ignite
 
             inserted = InsertTestBatch(0, recordsNum, splitAt);
 
-            BOOST_REQUIRE_EQUAL(inserted, splitAt);
+            BOOST_REQUIRE_EQUAL(inserted, recordsNum);
 
             int64_t key = 0;
             char strField[1024] = {0};
