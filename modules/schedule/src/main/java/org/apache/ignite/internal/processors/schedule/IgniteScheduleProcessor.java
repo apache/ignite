@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
  * Schedules cron-based execution of grid tasks and closures.
  */
 public class IgniteScheduleProcessor extends IgniteScheduleProcessorAdapter {
-    /** Cron scheduler. */
+    /** Spring scheduler. */
     private SpringScheduler sched;
 
     /** Schedule futures. */
