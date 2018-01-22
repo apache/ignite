@@ -938,6 +938,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         final PreparedStatement stmt = preparedStatementWithParams(conn, qry, params, true);
 
+        if (GridSqlQueryParser.checkMultipleStatements(stmt))
+            throw new IgniteSQLException("Multiple statements queries are not supported for local queries");
+
         Prepared p = GridSqlQueryParser.prepared(stmt);
 
         if (DmlStatementsProcessor.isDmlStatement(p)) {
@@ -1924,6 +1927,31 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         IgniteQueryErrorCode.PARSING, e);
             }
         }
+
+        /*
+                                    break;
+                        }
+                        catch (SQLException e) {
+                            if (!cachesCreated && (
+                                e.getErrorCode() == ErrorCode.SCHEMA_NOT_FOUND_1 ||
+                                    e.getErrorCode() == ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1 ||
+                                    e.getErrorCode() == ErrorCode.INDEX_NOT_FOUND_1)
+                                ) {
+                                try {
+                                    ctx.cache().createMissingQueryCaches();
+                                }
+                                catch (IgniteCheckedException ignored) {
+                                    throw new CacheException("Failed to create missing caches.", e);
+                                }
+
+                                cachesCreated = true;
+                            }
+                            else
+                                throw new IgniteSQLException("Failed to parse query. " + e.getMessage(),
+                                    IgniteQueryErrorCode.PARSING, e);
+                        }
+                    }
+         */
     }
 
     /**
