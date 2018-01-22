@@ -137,7 +137,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
             throw new IllegalStateException("Must not fail on empty providers list.", e);
         }
 
-        this.marshallerCtx = new MarshallerContextImpl(null);
+        this.marshallerCtx = new MarshallerContextImpl(null, null);
         this.cfg = prepareIgniteConfiguration();
 
         // Fake folder provided to perform processor startup on empty folder.
