@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
     {
         /** */
         // ReSharper disable once InconsistentNaming
-        private const int JNI_VERSION_1_6 = 0x00010006;
+        private const int JNI_VERSION_1_8 = 0x00010008;
 
         /** */
         // ReSharper disable once InconsistentNaming
@@ -252,14 +252,16 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         private static IntPtr CreateJvm(IList<string> options)
         {
             // TODO: Detect Java version and append Java9 args only when needed.
-            // TODO: JvmDll.Instance.GetDefaultJvmInitArgs()
             var args = new JvmInitArgs
             {
+                // We request JNI_9, but on 8 we should get back JNI_VERSION_1_8
                 version = JNI_VERSION_9
             };
 
             JvmDll.Instance.GetDefaultJvmInitArgs(&args);
-            Debug.Assert(args.version == JNI_VERSION_1_6);  // Looks like Java 9 is the same :(
+            Debug.Assert(args.version == JNI_VERSION_1_8);  // Looks like Java 9 is the same :(
+
+            // TODO: Throw exception if less than Java 8?
 
             options = options == null
                 ? Java9Options.ToList()
