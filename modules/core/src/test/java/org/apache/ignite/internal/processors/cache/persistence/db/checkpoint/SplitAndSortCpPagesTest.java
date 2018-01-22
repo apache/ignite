@@ -25,11 +25,14 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.function.BiFunction;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.AsyncCheckpointer;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointScope;
@@ -95,7 +98,8 @@ public class SplitAndSortCpPagesTest {
 
         final AtomicInteger totalPagesAfterSort = new AtomicInteger();
 
-        final IgniteClosure<FullPageIdsBuffer, Callable<Void>> taskFactory =  ids -> new Callable<Void>() {
+        BiFunction<FullPageIdsBuffer, ConcurrentHashMap<PageStore, LongAdder>, Callable<Void>> taskFactory
+            = (ids, map) -> new Callable<Void>() {
             @Override public Void call() throws Exception {
                 final int len = ids.remaining();
 
@@ -121,8 +125,9 @@ public class SplitAndSortCpPagesTest {
 
         AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(6, getClass().getSimpleName(), log);
 
-        final IgniteClosure<FullPageIdsBuffer, Callable<Void>> taskFactory
-            = ids -> () -> null;
+
+        BiFunction<FullPageIdsBuffer, ConcurrentHashMap<PageStore, LongAdder>, Callable<Void>> taskFactory
+            = (ids, map) -> () -> null;
 
         List<FullPageIdsBuffer> pageIds = scope.toBuffers();
 
@@ -178,14 +183,13 @@ public class SplitAndSortCpPagesTest {
 
         AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(16, getClass().getSimpleName(), log);
 
-        IgniteClosure<FullPageIdsBuffer, Callable<Void>> taskFactory = ids -> new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                for (FullPageId id : ids.toArray()) {
-                    map.remove(id);
-                }
-
-                return null;
+        BiFunction<FullPageIdsBuffer, ConcurrentHashMap<PageStore, LongAdder>, Callable<Void>> taskFactory
+            = (ids, map1) -> () -> {
+            for (FullPageId id : ids.toArray()) {
+                map.remove(id);
             }
+
+            return null;
         };
 
         asyncCheckpointer.quickSortAndWritePages(scope, taskFactory).get();
@@ -222,7 +226,9 @@ public class SplitAndSortCpPagesTest {
 
         AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(16, getClass().getSimpleName(), log);
 
-        final IgniteClosure<FullPageIdsBuffer, Callable<Void>> taskFactory =  ids -> new Callable<Void>() {
+
+        BiFunction<FullPageIdsBuffer, ConcurrentHashMap<PageStore, LongAdder>, Callable<Void>> taskFactory
+            =  (ids, map) -> new Callable<Void>() {
             @Override public Void call() throws Exception {
 
                 long prevIdx = -1;
@@ -297,13 +303,14 @@ public class SplitAndSortCpPagesTest {
 
         final AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(16, getClass().getSimpleName(), log);
 
-        final IgniteClosure<FullPageIdsBuffer, Callable<Void>> taskFactory =  ids -> () -> {
-            for (FullPageId id : ids.toArray()) {
-                ctrlMap.remove(id);
-            }
+        BiFunction<FullPageIdsBuffer, ConcurrentHashMap<PageStore, LongAdder>, Callable<Void>> taskFactory =
+            (ids, map) -> () -> {
+                for (FullPageId id : ids.toArray()) {
+                    ctrlMap.remove(id);
+                }
 
-            return null;
-        };
+                return null;
+            };
 
         asyncCheckpointer.quickSortAndWritePages(scope, taskFactory).get();
         thread.interrupt();

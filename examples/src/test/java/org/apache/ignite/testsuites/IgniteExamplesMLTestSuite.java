@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.testsuites;
+package org.apache.ignite.testsuites;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,11 +38,19 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 /**
  * Examples test suite.
  * <p>
- * Contains only Spring ignite examples tests.
+ * Contains only ML Grid Ignite examples tests.</p>
  */
 public class IgniteExamplesMLTestSuite extends TestSuite {
+    /** Base package to create test classes in. */
+    private static final String basePkgForTests = "org.apache.ignite.examples.ml";
+
+    /** Test class name pattern. */
+    private static final String clsNamePtrn = ".*Example$";
+
     /**
-     * @return Suite.
+     * Creates test suite for Ignite ML examples.
+     *
+     * @return Created suite.
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
@@ -51,8 +59,8 @@ public class IgniteExamplesMLTestSuite extends TestSuite {
 
         TestSuite suite = new TestSuite("Ignite ML Examples Test Suite");
 
-        for (Class clazz : getClasses("org.apache.ignite.examples.ml", ".*Example$"))
-            suite.addTest(new TestSuite(makeTestClass(clazz, "org.apache.ignite.ml.examples")));
+        for (Class clazz : getClasses(basePkgForTests))
+            suite.addTest(new TestSuite(makeTestClass(clazz)));
 
         return suite;
     }
@@ -60,13 +68,12 @@ public class IgniteExamplesMLTestSuite extends TestSuite {
     /**
      * Creates test class for given example.
      *
-     * @param exampleCls Class of the example to be tested
-     * @param basePkgForTests Base package to create test classes in
-     * @return Test class
-     * @throws NotFoundException if class not found
-     * @throws CannotCompileException if test class cannot be compiled
+     * @param exampleCls Class of the example to be tested.
+     * @return Test class.
+     * @throws NotFoundException If class not found.
+     * @throws CannotCompileException If test class cannot be compiled.
      */
-    private static Class makeTestClass(Class<?> exampleCls, String basePkgForTests)
+    private static Class makeTestClass(Class<?> exampleCls)
         throws NotFoundException, CannotCompileException {
         ClassPool cp = ClassPool.getDefault();
         cp.insertClassPath(new ClassClassPath(IgniteExamplesMLTestSuite.class));
@@ -87,12 +94,12 @@ public class IgniteExamplesMLTestSuite extends TestSuite {
     /**
      * Scans all classes accessible from the context class loader which belong to the given package and subpackages.
      *
-     * @param pkgName The base package
-     * @return The classes
-     * @throws ClassNotFoundException if some classes not found
-     * @throws IOException if some resources unavailable
+     * @param pkgName The base package.
+     * @return The classes.
+     * @throws ClassNotFoundException If some classes not found.
+     * @throws IOException If some resources unavailable.
      */
-    private static List<Class> getClasses(String pkgName, String clsNamePtrn) throws ClassNotFoundException, IOException {
+    private static List<Class> getClasses(String pkgName) throws ClassNotFoundException, IOException {
         String path = pkgName.replace('.', '/');
 
         Enumeration<URL> resources = Thread.currentThread()
@@ -111,15 +118,17 @@ public class IgniteExamplesMLTestSuite extends TestSuite {
     }
 
     /**
-     * Recursive method used to find all classes in a given directory and subdirs.
+     * Recursive method used to find all classes in a given directory and sub-dirs.
      *
-     * @param dir The base directory
-     * @param pkgName The package name for classes found inside the base directory
-     * @return The classes
-     * @throws ClassNotFoundException if class not found
+     * @param dir The base directory.
+     * @param pkgName The package name for classes found inside the base directory.
+     * @param clsNamePtrn Class name pattern.
+     * @return The classes.
+     * @throws ClassNotFoundException If class not found.
      */
     private static List<Class> findClasses(File dir, String pkgName, String clsNamePtrn) throws ClassNotFoundException {
         List<Class> classes = new ArrayList<>();
+
         if (!dir.exists())
             return classes;
 
@@ -130,6 +139,7 @@ public class IgniteExamplesMLTestSuite extends TestSuite {
                     classes.addAll(findClasses(file, pkgName + "." + file.getName(), clsNamePtrn));
                 else if (file.getName().endsWith(".class")) {
                     String clsName = pkgName + '.' + file.getName().substring(0, file.getName().length() - 6);
+
                     if (clsName.matches(clsNamePtrn))
                         classes.add(Class.forName(clsName));
                 }

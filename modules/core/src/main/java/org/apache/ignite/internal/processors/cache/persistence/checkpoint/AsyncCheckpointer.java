@@ -18,12 +18,15 @@
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.function.BiFunction;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -105,7 +108,7 @@ public class AsyncCheckpointer {
      * @param task task to run.
      * @param doneReportFut Count down future to report this runnable completion.
      */
-    public void execute(Callable<Void> task, CountDownFuture doneReportFut) {
+    private void execute(Callable<Void> task, CountDownFuture doneReportFut) {
         execute(wrapRunnableWithDoneReporting(task, doneReportFut));
     }
 
@@ -135,12 +138,9 @@ public class AsyncCheckpointer {
      * @param taskFactory write pages task factory. Should provide callable to write given pages array.
      * @return future will be completed when background writing is done.
      */
-    public CountDownFuture quickSortAndWritePages(CheckpointScope cpScope,
-        final IgniteClosure<FullPageIdsBuffer, Callable<Void>> taskFactory) {
+    public CheckpointFsyncScope quickSortAndWritePages(CheckpointScope cpScope,
+        BiFunction<FullPageIdsBuffer, ConcurrentHashMap<PageStore, LongAdder>, Callable<Void>> taskFactory) {
 
-        // init counter 1 protects here from premature completing
-        final CountDownDynamicFuture cntDownDynamicFut = new CountDownDynamicFuture(1);
-        final IgniteInClosure<Callable<Void>> submitter = callable -> fork(callable, cntDownDynamicFut);
         final ForkNowForkLaterStrategy stgy = () -> {
             if (asyncRunner.getActiveCount() < checkpointThreads) {
                 if (log.isTraceEnabled())
@@ -159,17 +159,24 @@ public class AsyncCheckpointer {
             return false; // sufficient queue and pool is already busy, don't flood queue
         };
 
+        CheckpointFsyncScope scope = new CheckpointFsyncScope();
         cpScope.independentSets().forEach(set -> {
+            CheckpointFsyncScope.Stripe stripeScope = scope.newStripe();
+
+            IgniteInClosure<Callable<Void>> submitter
+                = callable -> fork(callable, stripeScope.future);
+
+            IgniteClosure<FullPageIdsBuffer, Callable<Void>> factoryForStripe
+                = buffer -> taskFactory.apply(buffer, stripeScope.fsyncScope);
+
             submitter.apply(new QuickSortRecursiveTask(set,
                 SEQUENTIAL_CP_PAGE_COMPARATOR,
-                taskFactory,
+                factoryForStripe,
                 submitter,
                 stgy));
         });
 
-        cntDownDynamicFut.onDone((Void)null); //submit of all tasks completed
-
-        return cntDownDynamicFut;
+        return scope;
     }
 
     /**
@@ -178,7 +185,7 @@ public class AsyncCheckpointer {
      * @param task task to run.
      * @param cntDownDynamicFut Count down future to register job and then report this runnable completion.
      */
-    private void fork(Callable<Void> task, CountDownDynamicFuture cntDownDynamicFut) {
+    public void fork(Callable<Void> task, CountDownDynamicFuture cntDownDynamicFut) {
         cntDownDynamicFut.incrementTasksCount(); // for created task about to be forked
 
         execute(task, cntDownDynamicFut);

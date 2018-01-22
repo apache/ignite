@@ -1383,6 +1383,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
+     *
+     * @return archived index, -1 means no files were archived
+     */
+    public long lastAbsArchivedIdx() {
+        return archiver == null ? -1 : archiver.lastAbsArchivedIdx;
+    }
+
+    /**
      * File archiver operates on absolute segment indexes. For any given absolute segment index N we can calculate the
      * work WAL segment: S(N) = N % dsCfg.walSegments. When a work segment is finished, it is given to the archiver. If
      * the absolute index of last archived segment is denoted by A and the absolute index of next segment we want to

@@ -95,7 +95,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     private String cacheName;
 
     /** */
-    private int walSegmentSize = 64 * 1024 * 1024;
+    private int walSegmentSize = 48 * 1024 * 1024;
     /** Custom wal mode. */
     protected WALMode customWalMode;
     private int checkpointFrequency = 5 * 1000;
@@ -108,7 +108,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
-        ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 1024));
         ccfg.setNodeFilter(new RemoteNodeFilter());
         ccfg.setIndexedTypes(Integer.class, IndexedObject.class);
         ccfg.setName(CACHE_NAME);
@@ -130,8 +130,6 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
         dsCfg.setWriteThrottlingEnabled(true);
 
-        if (walSegmentSize != 0)
-            dsCfg.setWalSegmentSize(walSegmentSize);
 
         dsCfg.setCheckpointFrequency(checkpointFrequency);
 
@@ -155,6 +153,9 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
         dsCfg.setWalMode(customWalMode != null ? customWalMode : WALMode.LOG_ONLY);
         dsCfg.setWalHistorySize(1);
+        dsCfg.setWalSegments(10);
+        if (walSegmentSize != 0)
+            dsCfg.setWalSegmentSize(walSegmentSize);
 
         cfg.setDataStorageConfiguration(dsCfg);
 
@@ -242,6 +243,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
         private final AtomicLong prevCnt = new AtomicLong();
         private final AtomicLong prevMsElapsed = new AtomicLong();
         private final AtomicLong prevCpWrittenPages = new AtomicLong();
+        private final AtomicLong prevCpSyncedPages = new AtomicLong();
         private final AtomicReference<FileWALPointer> prevWalPtrRef = new AtomicReference<>();
 
         ProgressWatchdog(Ignite ignite) throws IgniteCheckedException, IOException {
@@ -252,11 +254,21 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             this.ignite = ignite;
             this.operation = operation;
             txtWriter = new FileWriter(new File(getTempDirFile(), "watchdog-" + operation + ".txt"));
-            line("sec", "cur." + operation + "/sec",
+            line("sec",
+                "cur." + operation + "/sec",
+                "WAL speed, MB/s.",
                 "cp. speed, MB/sec",
-                "WAL speed, MB/sec",
+                "cp. sync., MB/sec",
+                "WAL work seg.",
+                "pageMemThrRatio",
+                "throttleLevel",
                 "avg." + operation + "/sec",
-                "dirtyPages", "cpWrittenPages", "threshold");
+                "dirtyPages",
+                "cpWrittenPages",
+                "threshold",
+                "WAL idx",
+                "Arch. idx",
+                "WAL Archive seg.");
         }
 
         private void line(Object... parms) {
@@ -294,7 +306,10 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             boolean slowProgress = currPutPerSec < averagePutPerSec / 10 && !stopping;
             final String fileNameWithDump = slowProgress ? reactNoProgress(msStart) : "";
 
-            String defRegName = ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName();
+            DataStorageConfiguration dsCfg = ignite.configuration().getDataStorageConfiguration();
+
+
+            String defRegName = dsCfg.getDefaultDataRegionConfiguration().getName();
             long dirtyPages = -1;
             for (DataRegionMetrics m : ignite.dataRegionMetrics())
              if (m.getName().equals(defRegName))
@@ -314,18 +329,26 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
             long cpBufPages = 0;
 
-            long cpWrittenPages;
+            GridCacheDatabaseSharedManager database = (GridCacheDatabaseSharedManager)(cacheSctx.database());
+            AtomicInteger wrPageCntr = database.writtenPagesCounter();
+            long cpWrittenPages = wrPageCntr == null ? 0 : wrPageCntr.get();
 
-            AtomicInteger cntr = ((GridCacheDatabaseSharedManager)(cacheSctx.database())).writtenPagesCounter();
+            AtomicInteger syncedPagesCounter = database.syncedPagesCounter();
+            int cpSyncedPages = syncedPagesCounter == null ? 0 : syncedPagesCounter.get();
 
-            cpWrittenPages = cntr == null ? 0 : cntr.get();
+            int pageSize = pageMemory == null ? 0 : pageMemory.pageSize();
+            long currBytesWritten = detectDelta(elapsedMsFromPrevTick, cpWrittenPages, prevCpWrittenPages) * pageSize;
 
-            long currBytesWritten = detectDelta(elapsedMsFromPrevTick, cpWrittenPages, prevCpWrittenPages)
-                    * (pageMemory == null ? 0 : pageMemory.pageSize());
+            long currBytesSynced = detectDelta(elapsedMsFromPrevTick, cpSyncedPages, prevCpSyncedPages) * pageSize;
 
             String walSpeed = "";
             double threshold = 0;
-            int idx = -1;
+            int throttleLevel = 0;
+            double pageMemThrottleRatio = 0.0;
+            long idx = -1;
+            long lastArchIdx = -1;
+            int walArchiveSegments = 0;
+            long walWorkSegments = 0;
             try {
 
                 if (pageMemory != null) {
@@ -334,10 +357,20 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                     PagesWriteThrottle throttle = U.field(pageMemory, "writeThrottle");
 
                     threshold = U.field(throttle, "lastDirtyRatioThreshold");
+                    throttleLevel = throttle.throttleLevel();
+                    pageMemThrottleRatio = throttle.getPageMemThrottleRatio() ;
                 }
 
                 FileWriteAheadLogManager wal = (FileWriteAheadLogManager)cacheSctx.wal();
                 FileWALPointer ptr = wal.currentWritePointer();
+                idx = ptr.index();
+
+                lastArchIdx =wal.lastAbsArchivedIdx();
+
+                walArchiveSegments = wal.walArchiveSegments();
+                int maxWorkSegments = dsCfg.getWalSegments();
+                walWorkSegments = idx - lastArchIdx;
+
                 long maxWalSegmentSize = wal.maxWalSegmentSize();
 
                 FileWALPointer prevWalPtr = this.prevWalPtrRef.getAndSet(ptr);
@@ -357,35 +390,55 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                 //e.printStackTrace();
             }
 
-            String thresholdStr = String.format("%.2f", threshold);
-            String cpMbPsStr = getMBytesPrintable(currBytesWritten);
+
+
+            String thresholdStr = formatDbl(threshold);
+            String cpWriteSpeed = getMBytesPrintable(currBytesWritten);
+            String cpSyncSpeed = getMBytesPrintable(currBytesSynced);
+            long elapsedSecs = elapsedMs / 1000;
             X.println(" >> " +
                 operation +
-                " done: " + totalCnt + ", time " + elapsedMs + " ms, " +
-                "Avg. " + operation + " " + averagePutPerSec + " recs/sec, " +
+                " done: " + totalCnt + "/" + elapsedSecs + "s, " +
                 "Cur. " + operation + " " + currPutPerSec + " recs/sec " +
+                "cpWriteSpeed=" + cpWriteSpeed + " " +
+                "cpSyncSpeed=" + cpSyncSpeed + " " +
+                "walSpeed= " + walSpeed + " " +
+                "walWorkSeg.="+walWorkSegments + " " +
+                "Avg. " + operation + " " + averagePutPerSec + " recs/sec, " +
                 "dirtyP=" + dirtyPages + ", " +
                 "cpWrittenP.=" + cpWrittenPages + ", " +
                 "cpBufP.=" + cpBufPages + " " +
                 "threshold=" + thresholdStr + " " +
                 "walIdx=" + idx + " " +
-                "cpMbPs=" + cpMbPsStr + " " +
-                "walSpeed= " + walSpeed + " " +
+                "archWalIdx=" + lastArchIdx + " " +
+                "walArchiveSegments=" + walArchiveSegments + " " +
                 fileNameWithDump);
 
-            line(elapsedMs/1000,
+            line(elapsedSecs,
                 currPutPerSec,
-                cpMbPsStr,
                 walSpeed,
+                cpWriteSpeed,
+                cpSyncSpeed,
+                walWorkSegments,
+                formatDbl(pageMemThrottleRatio),
+                throttleLevel,
                 averagePutPerSec,
                 dirtyPages,
                 cpWrittenPages,
-                thresholdStr);
+                thresholdStr,
+                idx,
+                lastArchIdx,
+                walArchiveSegments
+                );
+        }
+
+        private String formatDbl(double threshold) {
+            return String.format("%.2f", threshold).replace(",", ".");
         }
 
         private String getMBytesPrintable(long currBytesWritten) {
             double cpMbPs = 1.0 * currBytesWritten / (1024 * 1024);
-            return String.format("%.2f", cpMbPs);
+            return formatDbl(cpMbPs);
         }
 
         private long detectDelta(long elapsedMsFromPrevTick,
