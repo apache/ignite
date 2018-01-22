@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.IntBinaryOperator;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
@@ -176,8 +177,17 @@ public class PagesWriteThrottle {
 
             LockSupport.parkNanos((long)(STARTING_THROTTLE_NANOS * Math.pow(BACKOFF_RATIO, throttleLevel)));
         }
-        else
-            exponentialBackoffCntr.set(0);
+        else {
+            int newLevel = exponentialBackoffCntr.accumulateAndGet(-1, (left, right) -> {
+                int sum = left + right;
+
+                return sum > 0 ? sum : 0;
+            });
+
+            if (newLevel > 0)
+                LockSupport.parkNanos((long)(STARTING_THROTTLE_NANOS * Math.pow(BACKOFF_RATIO, newLevel)));
+            //todo: return or remove: exponentialBackoffCntr.set(0);
+        }
     }
 
     /**
