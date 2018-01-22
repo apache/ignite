@@ -416,15 +416,12 @@ public final class UpdatePlanBuilder {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("ConstantConditions")
-    public static UpdatePlan planForBulkLoad(SqlBulkLoadCommand cmd, IgniteH2Indexing idx) throws IgniteCheckedException {
+    public static UpdatePlan planForBulkLoad(SqlBulkLoadCommand cmd, GridH2Table tbl, IgniteH2Indexing idx) throws IgniteCheckedException {
         GridSqlQuery sel;
 
         List<String> cols;
 
-        GridH2Table tbl;
         GridH2RowDescriptor desc;
-
-        tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
         desc = tbl.rowDescriptor();
 

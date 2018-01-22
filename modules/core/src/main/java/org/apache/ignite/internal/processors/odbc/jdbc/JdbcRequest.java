@@ -61,7 +61,7 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     static final byte META_SCHEMAS = 12;
 
     /** Send file from client to server */
-    static final byte FILE_BATCH = 13;
+    static final byte BULK_LOAD_BATCH = 13;
 
     /** Request type. */
     private byte type;
@@ -156,8 +156,8 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
                 break;
 
-            case FILE_BATCH:
-                req = new JdbcSendFileBatchRequest();
+            case BULK_LOAD_BATCH:
+                req = new JdbcBulkLoadFileBatchRequest();
 
             default:
                 throw new IgniteException("Unknown SQL listener request ID: [request ID=" + reqType + ']');

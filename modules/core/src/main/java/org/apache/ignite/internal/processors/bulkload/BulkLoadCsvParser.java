@@ -19,12 +19,10 @@ package org.apache.ignite.internal.processors.bulkload;
 
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadContext;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcSendFileBatchRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadFileBatchRequest;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -41,7 +39,7 @@ public class BulkLoadCsvParser extends BulkLoadParser {
         lastBatchNum = 0;
     }
 
-    @Override public Iterable<List<Object>> processBatch(JdbcBulkLoadContext ctx, JdbcSendFileBatchRequest req) {
+    @Override public Iterable<List<Object>> processBatch(JdbcBulkLoadContext ctx, JdbcBulkLoadFileBatchRequest req) {
 
         switch (req.cmd()) {
             case CONTINUE:
@@ -66,7 +64,7 @@ public class BulkLoadCsvParser extends BulkLoadParser {
         }
     }
 
-    private void addBatch(JdbcSendFileBatchRequest req) {
+    private void addBatch(JdbcBulkLoadFileBatchRequest req) {
         inputBatches.addLast(req.data());
     }
 

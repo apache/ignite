@@ -75,7 +75,7 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_CL
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_EXEC;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_FETCH;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_META;
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.FILE_BATCH;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BULK_LOAD_BATCH;
 
 /**
  * JDBC request handler.
@@ -207,8 +207,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 case META_SCHEMAS:
                     return getSchemas((JdbcMetaSchemasRequest)req);
 
-                case FILE_BATCH:
-                    return processFileBatch((JdbcSendFileBatchRequest)req);
+                case BULK_LOAD_BATCH:
+                    return processFileBatch((JdbcBulkLoadFileBatchRequest)req);
             }
 
             return new JdbcResponse(IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
@@ -219,7 +219,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         }
     }
 
-    private ClientListenerResponse processFileBatch(JdbcSendFileBatchRequest req) {
+    private ClientListenerResponse processFileBatch(JdbcBulkLoadFileBatchRequest req) {
 
         JdbcBulkLoadContext ctx = bulkLoadRequests.get(req.queryId());
 

@@ -1001,13 +1001,13 @@ public class DmlStatementsProcessor {
     public BulkLoadContext bulkLoad(SqlBulkLoadCommand cmd) throws IgniteCheckedException {
         BulkLoadParser inputParser = BulkLoadParser.createParser(cmd.inputFormat());
 
-        GridH2Table table = idx.dataTable(cmd.schemaName(), cmd.tableName());
+        GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
-        if (table == null)
+        if (tbl == null)
             throw new IgniteSQLException("Table does not exist: " + cmd.tableName(),
                 IgniteQueryErrorCode.TABLE_NOT_FOUND);
 
-        final UpdatePlan plan = UpdatePlanBuilder.planForBulkLoad(cmd, idx);
+        final UpdatePlan plan = UpdatePlanBuilder.planForBulkLoad(cmd, tbl, idx);
 
         BulkLoadEntryConverter dataConverter = new BulkLoadEntryConverter() {
             @Override public IgniteBiTuple<?, ?> convertRecord(List<?> record) throws IgniteCheckedException {
@@ -1015,11 +1015,11 @@ public class DmlStatementsProcessor {
             }
         };
 
-        GridCacheContext cache = table.cache();
+        GridCacheContext cache = tbl.cache();
 
         IgniteDataStreamer<Object, Object> outputStreamer = cache.grid().dataStreamer(cache.name());
 
-        return new BulkLoadContext(inputParser, dataConverter, outputStreamer);
+        return new BulkLoadContext(cmd.localFileName(), inputParser, dataConverter, outputStreamer);
     }
 
     /** */

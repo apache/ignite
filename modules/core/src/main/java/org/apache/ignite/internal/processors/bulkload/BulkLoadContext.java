@@ -31,9 +31,10 @@ public class BulkLoadContext {
 
     private final IgniteDataStreamer<Object, Object> outputStreamer;
 
-    public BulkLoadContext(BulkLoadParser inputParser, BulkLoadEntryConverter updatePlan,
+    public BulkLoadContext(String locFileName, BulkLoadParser inputParser, BulkLoadEntryConverter updatePlan,
         IgniteDataStreamer<Object, Object> outputStreamer) {
 
+        this.locFileName = locFileName;
         this.inputParser = inputParser;
         this.updatePlan = updatePlan;
         this.outputStreamer = outputStreamer;

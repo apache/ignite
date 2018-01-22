@@ -23,10 +23,8 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.UUID;
-
 /** FIXME SHQ */
-public class JdbcSendFileBatchRequest extends JdbcRequest {
+public class JdbcBulkLoadFileBatchRequest extends JdbcRequest {
 
     public enum Command {
         CONTINUE,
@@ -39,11 +37,11 @@ public class JdbcSendFileBatchRequest extends JdbcRequest {
     @NotNull private Command cmd;
     @NotNull private byte[] data;
 
-    public JdbcSendFileBatchRequest() {
-        super(FILE_BATCH);
+    public JdbcBulkLoadFileBatchRequest() {
+        super(BULK_LOAD_BATCH);
     }
 
-    public JdbcSendFileBatchRequest(long queryId, int num, Command error) {
+    public JdbcBulkLoadFileBatchRequest(long queryId, int num, Command error) {
         this(queryId, num, error, new byte[0]);
     }
 
@@ -53,8 +51,8 @@ public class JdbcSendFileBatchRequest extends JdbcRequest {
      * @param cmd
      * @param data
      */
-    public JdbcSendFileBatchRequest(long queryId, int batchNum, Command cmd, byte[] data) {
-        super(FILE_BATCH);
+    public JdbcBulkLoadFileBatchRequest(long queryId, int batchNum, Command cmd, byte[] data) {
+        super(BULK_LOAD_BATCH);
         this.queryId = queryId;
         this.batchNum = batchNum;
         this.cmd = cmd;
@@ -103,7 +101,8 @@ public class JdbcSendFileBatchRequest extends JdbcRequest {
 
         writer.writeLong(queryId);
         writer.writeInt(batchNum);
-        writer.writeEnum(cmd);
+        //writer.writeEnum(cmd); FIXME SHQ
+        writer.writeInt(cmd.ordinal());
         writer.writeByteArray(data);
     }
 
@@ -113,13 +112,14 @@ public class JdbcSendFileBatchRequest extends JdbcRequest {
 
         queryId = reader.readLong();
         batchNum = reader.readInt();
-        cmd = reader.readEnum();
+        // cmd = reader.readEnum(); FIXME SHQ
+        cmd = Command.values()[reader.readInt()];
         data = reader.readByteArray();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcSendFileBatchRequest.class, this);
+        return S.toString(JdbcBulkLoadFileBatchRequest.class, this);
     }
 
 }

@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class JdbcFilesToSendResult extends JdbcResult {
 
-    /** Query ID for matching this command on server in further {@link JdbcSendFileBatchRequest} commands. */
+    /** Query ID for matching this command on server in further {@link JdbcBulkLoadFileBatchRequest} commands. */
     private long queryId;
 
     /** Local name of the file to send to server */

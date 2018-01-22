@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.bulkload;
 
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadContext;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcSendFileBatchRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadFileBatchRequest;
 
 import java.util.List;
 
@@ -32,7 +32,7 @@ public abstract class BulkLoadParser {
         this.format = format;
     }
 
-    public abstract Iterable<List<Object>> processBatch(JdbcBulkLoadContext ctx, JdbcSendFileBatchRequest req);
+    public abstract Iterable<List<Object>> processBatch(JdbcBulkLoadContext ctx, JdbcBulkLoadFileBatchRequest req);
 
     public static BulkLoadParser createParser(BulkLoadFormat format) {
         if (format instanceof BulkLoadCsvFormat)

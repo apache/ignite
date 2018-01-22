@@ -45,7 +45,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResultInfo;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcSendFileBatchRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadFileBatchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 
 
@@ -202,59 +202,48 @@ public class JdbcThinStatement implements Statement {
         String fileName = cmdResult.localFileName();
         int batchNum = 0;
 
-        try (InputStream input = new BufferedInputStream(new FileInputStream(fileName))) {
+        try {
+            try (InputStream input = new BufferedInputStream(new FileInputStream(fileName))) {
+                byte[] buf = new byte[BATCH_SIZE_BYTES];
 
-            byte[] buf = new byte[BATCH_SIZE_BYTES];
+                int readBytes;
+                while ((readBytes = input.read(buf)) != -1) {
+                    if (readBytes == 0)
+                        continue;
 
-            int readBytes;
-            while ((readBytes = input.read(buf)) != -1) {
-                if (readBytes == 0)
-                    continue;
+                    JdbcResult res = conn.sendRequest(new JdbcBulkLoadFileBatchRequest(
+                        cmdResult.queryId(),
+                        batchNum,
+                        JdbcBulkLoadFileBatchRequest.Command.CONTINUE,
+                        readBytes == buf.length ? buf : Arrays.copyOf(buf, readBytes)));
 
-                JdbcResult res = conn.sendRequest(new JdbcSendFileBatchRequest(
+                    if (!(res instanceof JdbcQueryExecuteResult))
+                        throw new SQLException("Unknown response sent by the server: " + res);
+
+                    batchNum++;
+                }
+
+                return conn.sendRequest(new JdbcBulkLoadFileBatchRequest(
                     cmdResult.queryId(),
                     batchNum,
-                    JdbcSendFileBatchRequest.Command.CONTINUE,
-                    readBytes == buf.length ? buf : Arrays.copyOf(buf, readBytes)));
-
-                if (!(res instanceof JdbcQueryExecuteResult))
-                    throw new SQLException("Unknown response sent by the server: " + res);
-
-                batchNum++;
+                    JdbcBulkLoadFileBatchRequest.Command.FINISHED_EOF, null));
             }
-
-            return conn.sendRequest(new JdbcSendFileBatchRequest(
-                cmdResult.queryId(),
-                batchNum,
-                JdbcSendFileBatchRequest.Command.FINISHED_EOF, null));
         }
-        catch (IOException e) {
+        catch (SQLException | IOException e) {
             try {
-                conn.sendRequest(new JdbcSendFileBatchRequest(
+                conn.sendRequest(new JdbcBulkLoadFileBatchRequest(
                     cmdResult.queryId(),
                     batchNum,
-                    JdbcSendFileBatchRequest.Command.FINISHED_ERROR));
+                    JdbcBulkLoadFileBatchRequest.Command.FINISHED_ERROR));
             }
             catch (SQLException e1) {
                 throw new SQLException("Cannot send finalization request: " + e1.getMessage(), e);
             }
 
-            throw new SQLException("Failed to read file: '" + fileName + "'",
-                SqlStateCode.INTERNAL_ERROR, e);
-        }
-        catch (SQLException e) {
-            try {
-                conn.sendRequest(new JdbcSendFileBatchRequest(
-                    cmdResult.queryId(),
-                    batchNum,
-                    JdbcSendFileBatchRequest.Command.FINISHED_ERROR, null));
-            }
-            catch (SQLException e1) {
-                throw new SQLException("Cannot send finalization request: " + e1.getMessage(),
-                    SqlStateCode.INTERNAL_ERROR, e);
-            }
-
-            throw e;
+            if (e instanceof IOException)
+                throw new SQLException("Failed to read file: '" + fileName + "'", SqlStateCode.INTERNAL_ERROR, e);
+            else
+                throw (SQLException) e;
         }
     }
 
