@@ -41,8 +41,6 @@ namespace Apache.Ignite.Core.Tests
             Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
             Debug.AutoFlush = true;
 
-            Environment.SetEnvironmentVariable("JAVA_HOME", @"c:\Program Files\Java\jdk1.8.0_111");
-
             if (args.Length == 1 && args[0] == "-basicTests")
             {
                 RunBasicTests();
