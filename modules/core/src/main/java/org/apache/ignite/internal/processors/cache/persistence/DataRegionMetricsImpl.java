@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryMetricsUpdater;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -29,7 +28,7 @@ import org.jsr166.LongAdder8;
 /**
  *
  */
-public class DataRegionMetricsImpl implements DataRegionMetrics, PageMemoryMetricsUpdater {
+public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTracker {
     /** */
     private final IgniteOutClosure<Float> fillFactorProvider;
 

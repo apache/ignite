@@ -30,7 +30,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryMetricsUpdater;
+import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
@@ -73,7 +73,7 @@ public class FilePageStore implements PageStore {
     private final AtomicLong allocated;
 
     /** Region metrics updater. */
-    private final PageMemoryMetricsUpdater metricsUpdater;
+    private final AllocatedPageTracker allocatedTracked;
 
     /** */
     private final int pageSize;
@@ -101,14 +101,14 @@ public class FilePageStore implements PageStore {
         File file,
         FileIOFactory factory,
         DataStorageConfiguration cfg,
-        PageMemoryMetricsUpdater metricsUpdater) {
+        AllocatedPageTracker allocatedTracked) {
         this.type = type;
         this.cfgFile = file;
         this.dbCfg = cfg;
         this.ioFactory = factory;
         this.allocated = new AtomicLong();
         this.pageSize = dbCfg.getPageSize();
-        this.metricsUpdater = metricsUpdater;
+        this.allocatedTracked = allocatedTracked;
     }
 
     /** {@inheritDoc} */
@@ -274,7 +274,7 @@ public class FilePageStore implements PageStore {
 
             assert delta % pageSize == 0;
 
-            metricsUpdater.updateTotalAllocatedPages(delta / pageSize);
+            allocatedTracked.updateTotalAllocatedPages(delta / pageSize);
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);
@@ -314,7 +314,7 @@ public class FilePageStore implements PageStore {
 
                 assert delta % pageSize == 0;
 
-                metricsUpdater.updateTotalAllocatedPages(delta / pageSize);
+                allocatedTracked.updateTotalAllocatedPages(delta / pageSize);
             }
 
             recover = false;
@@ -435,7 +435,7 @@ public class FilePageStore implements PageStore {
 
                         assert delta % pageSize == 0;
 
-                        metricsUpdater.updateTotalAllocatedPages(delta / pageSize);
+                        allocatedTracked.updateTotalAllocatedPages(delta / pageSize);
 
                         allocated.set(newSize);
 
@@ -578,7 +578,7 @@ public class FilePageStore implements PageStore {
             off = allocated.get();
 
             if (allocated.compareAndSet(off, off + pageSize)) {
-                metricsUpdater.updateTotalAllocatedPages(1);
+                allocatedTracked.updateTotalAllocatedPages(1);
 
                 break;
             }

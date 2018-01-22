@@ -50,7 +50,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryMetricsUpdater;
+import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -375,27 +375,27 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         File cacheWorkDir = cacheWorkDir(ccfg);
 
-        PageMemoryMetricsUpdater metricsUpdater =
+        AllocatedPageTracker allocatedTracker =
             cctx.database().dataRegion(grpDesc.config().getDataRegionName()).memoryMetrics();
 
         return initDir(cacheWorkDir,
             grpDesc.groupId(),
             grpDesc.config().getAffinity().partitions(),
-            metricsUpdater);
+            allocatedTracker);
     }
 
     /**
      * @param cacheWorkDir Work directory.
      * @param grpId Group ID.
      * @param partitions Number of partitions.
-     * @param metricsUpdater Metrics updater
+     * @param allocatedTracker Metrics updater
      * @return Cache store holder.
      * @throws IgniteCheckedException If failed.
      */
     private CacheStoreHolder initDir(File cacheWorkDir,
         int grpId,
         int partitions,
-        PageMemoryMetricsUpdater metricsUpdater) throws IgniteCheckedException {
+        AllocatedPageTracker allocatedTracker) throws IgniteCheckedException {
         boolean dirExisted = checkAndInitCacheWorkDir(cacheWorkDir);
 
         File idxFile = new File(cacheWorkDir, INDEX_FILE_NAME);
@@ -410,7 +410,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             pageStoreFactory.createPageStore(
                 PageMemory.FLAG_IDX,
                 idxFile,
-                metricsUpdater);
+                allocatedTracker);
 
         FilePageStore[] partStores = new FilePageStore[partitions];
 
@@ -419,7 +419,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 pageStoreFactory.createPageStore(
                     PageMemory.FLAG_DATA,
                     getPartitionFile(cacheWorkDir, partId),
-                    metricsUpdater);
+                    allocatedTracker);
 
             partStores[partId] = partStore;
         }
