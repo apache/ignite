@@ -167,6 +167,11 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     }
 
     /** {@inheritDoc} */
+    @Override public void onReconnected(boolean active) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         // No-op.
     }
@@ -184,6 +189,11 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     /** {@inheritDoc} */
     @Override public boolean hasIndexStore(int grpId) {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void beforeCacheGroupStart(CacheGroupDescriptor grpDesc) {
+        // No-op.
     }
 
     /** {@inheritDoc} */
