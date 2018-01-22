@@ -1519,6 +1519,11 @@ public class PageMemoryImpl implements PageMemoryEx {
         return U.safeAbs(hash) % segments;
     }
 
+    /** */
+    public IgnitePageStoreManager storeManager() {
+        return storeMgr;
+    }
+
     /**
      *
      */
