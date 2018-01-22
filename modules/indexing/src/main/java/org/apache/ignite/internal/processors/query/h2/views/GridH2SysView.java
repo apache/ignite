@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.query.h2.views;
 import java.util.Iterator;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.lang.IgniteBiClosure;
+import org.apache.ignite.lang.IgniteClosure;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
@@ -392,52 +394,97 @@ public abstract class GridH2SysView {
             return null;
         }
     }
+
     /**
-     * Parent-child iterable.
+     * Parent-child Row iterable.
+     *
+     * @param <P> Parent class.
+     * @param <C> Child class
      */
-    protected abstract class ParentChildIterable<P> implements Iterable<Row> {
+    protected class ParentChildRowIterable<P, C> implements Iterable<Row> {
         /** Session. */
         private final Session ses;
 
         /** Parent iterable. */
         private final Iterable<P> parents;
 
+        /** Child iterator closure. */
+        private final IgniteClosure<P, Iterator<C>> cloChildIter;
+
+        /** Result from parent and child closure. */
+        private final IgniteBiClosure<P, C, Object[]> cloRowFromParentChild;
+
         /**
          * @param ses Session.
          * @param parents Parents.
+         * @param cloChildIter Child iterator closure.
+         * @param cloRowFromParentChild Row columns from parent and child closure.
          */
-        public ParentChildIterable(Session ses, Iterable<P> parents) {
+        public ParentChildRowIterable(Session ses, Iterable<P> parents,
+            IgniteClosure<P, Iterator<C>> cloChildIter,
+            IgniteBiClosure<P, C, Object[]> cloRowFromParentChild) {
             this.ses = ses;
             this.parents = parents;
+            this.cloChildIter = cloChildIter;
+            this.cloRowFromParentChild = cloRowFromParentChild;
         }
 
         /** {@inheritDoc} */
         @NotNull @Override public Iterator<Row> iterator() {
-            return parentChildIterator(ses, parents.iterator());
+            return new ParentChildRowIterator(ses, parents.iterator(), cloChildIter, cloRowFromParentChild);
         }
+    }
 
+    /**
+     * Parent-child Row iterator.
+     *
+     * @param <P> Parent class.
+     * @param <C> Child class
+     */
+    protected class ParentChildRowIterator<P, C> extends ParentChildIterator<P, C, Row> {
         /**
-         * @param ses Session.
+         * @param ses
          * @param parentIter Parent iterator.
+         * @param cloChildIter
+         * @param cloResFromParentChild
          */
-        protected abstract Iterator<Row> parentChildIterator(Session ses, Iterator<P> parentIter);
+        public ParentChildRowIterator(final Session ses, Iterator<P> parentIter,
+            IgniteClosure<P, Iterator<C>> cloChildIter,
+            final IgniteBiClosure<P, C, Object[]> cloResFromParentChild) {
+            super(parentIter, cloChildIter, new IgniteBiClosure<P, C, Row>() {
+                    /** Row count. */
+                    private int rowCnt = 0;
+
+                    @Override public Row apply(P p, C c) {
+                        return GridH2SysView.this.createRow(ses, ++rowCnt, cloResFromParentChild.apply(p, c));
+                    }
+            });
+        }
     }
 
     /**
      * Parent-child iterator.
+     * Lazy 2 levels iterator, which iterates over child items for each parent item.
+     *
+     * @param <P> Parent class.
+     * @param <C> Child class.
+     * @param <R> Result item class.
      */
-    protected abstract class ParentChildIterator<P, C, R> implements Iterator<R> {
-        /** Session. */
-        private final Session ses;
-
+    protected class ParentChildIterator<P, C, R> implements Iterator<R> {
         /** Parent iterator. */
         private final Iterator<P> parentIter;
 
+        /** Child iterator closure. This closure helps to get child iterator for each parent item. */
+        private final IgniteClosure<P, Iterator<C>> cloChildIter;
+
+        /**
+         * Result from parent and child closure. This closure helps to produce resulting item from parent and child
+         * items.
+         */
+        private final IgniteBiClosure<P, C, R> cloResFromParentChild;
+
         /** Child iterator. */
         private Iterator<C> childIter;
-
-        /** Counter. */
-        private long rowCnt = 0;
 
         /** Next parent. */
         private P nextParent;
@@ -448,9 +495,13 @@ public abstract class GridH2SysView {
         /**
          * @param parentIter Parent iterator.
          */
-        public ParentChildIterator(Session ses, Iterator<P> parentIter) {
-            this.ses = ses;
+        public ParentChildIterator(Iterator<P> parentIter,
+            IgniteClosure<P, Iterator<C>> cloChildIter,
+            IgniteBiClosure<P, C, R> cloResFromParentChild) {
+
             this.parentIter = parentIter;
+            this.cloChildIter = cloChildIter;
+            this.cloResFromParentChild = cloResFromParentChild;
 
             moveChild();
         }
@@ -461,7 +512,7 @@ public abstract class GridH2SysView {
         protected void moveParent() {
             nextParent = parentIter.next();
 
-            childIter = childIterator(nextParent);
+            childIter = cloChildIter.apply(nextParent);
         }
 
         /**
@@ -479,7 +530,6 @@ public abstract class GridH2SysView {
             while (childIter.hasNext() || parentIter.hasNext()) {
                 if (childIter.hasNext()) {
                     nextChild = childIter.next();
-                    rowCnt++;
 
                     return;
                 }
@@ -500,7 +550,7 @@ public abstract class GridH2SysView {
             if (nextChild == null)
                 return null;
 
-            R res = resultByParentChild(nextParent, nextChild);
+            R res = cloResFromParentChild.apply(nextParent, nextChild);
 
             moveChild();
 
@@ -511,34 +561,5 @@ public abstract class GridH2SysView {
         @Override public void remove() {
             throw new UnsupportedOperationException();
         }
-
-        /**
-         * Gets current row number.
-         */
-        protected long getRowCount() {
-            return rowCnt;
-        }
-
-        /**
-         * Gets session.
-         */
-        public Session getSession() {
-            return ses;
-        }
-
-        /**
-         * Gets child iterator by parent
-         *
-         * @param parent Parent.
-         */
-        protected abstract Iterator<C> childIterator(P parent);
-
-        /**
-         * Get result by parent and child items.
-         *
-         * @param parent Parent.
-         * @param child Child.
-         */
-        protected abstract R resultByParentChild(P parent, C child);
     }
 }

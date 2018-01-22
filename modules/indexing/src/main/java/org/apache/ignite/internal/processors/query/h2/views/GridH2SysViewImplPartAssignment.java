@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.views;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -27,15 +26,15 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.util.lang.GridTuple;
-import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.apache.ignite.lang.IgniteBiClosure;
+import org.apache.ignite.lang.IgniteClosure;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.value.Value;
 
 /**
- * System view: cache groups.
+ * System view: partition assignment map.
  */
 public class GridH2SysViewImplPartAssignment extends GridH2SysView {
     /**
@@ -44,6 +43,7 @@ public class GridH2SysViewImplPartAssignment extends GridH2SysView {
     public GridH2SysViewImplPartAssignment(GridKernalContext ctx) {
         super("PART_ASSIGNMENT", "Partition assignment map", ctx, "CACHE_GROUP_ID",
             newColumn("CACHE_GROUP_ID"),
+            newColumn("TOPOLOGY_VERSION", Value.LONG),
             newColumn("PARTITION"),
             newColumn("NODE_ID", Value.UUID),
             newColumn("IS_PRIMARY", Value.BOOLEAN)
@@ -51,7 +51,7 @@ public class GridH2SysViewImplPartAssignment extends GridH2SysView {
     }
 
     /** {@inheritDoc} */
-    @Override public Iterable<Row> getRows(Session ses, SearchRow first, SearchRow last) {
+    @Override public Iterable<Row> getRows(final Session ses, SearchRow first, SearchRow last) {
         ColumnCondition idCond = conditionForColumn("CACHE_GROUP_ID", first, last);
 
         Collection<CacheGroupContext> cacheGroups;
@@ -69,35 +69,39 @@ public class GridH2SysViewImplPartAssignment extends GridH2SysView {
         else {
             log.debug("Get part assignment map: full group scan");
 
-            cacheGroups = ctx.cache().cacheGroups();;
+            cacheGroups = ctx.cache().cacheGroups();
         }
 
-        return new GroupPartitionIterable(ses, cacheGroups);
-    }
+        return new ParentChildRowIterable<CacheGroupContext, PartitionAssignment>(
+            ses, cacheGroups,
+            new IgniteClosure<CacheGroupContext, Iterator<PartitionAssignment>>() {
+                @Override public Iterator<PartitionAssignment> apply(CacheGroupContext grp) {
+                    AffinityAssignment assignment = grp.affinity().cachedAffinity(AffinityTopologyVersion.NONE);
 
-    /**
-     * Group-partition iterable.
-     */
-    private class GroupPartitionIterable extends ParentChildIterable<CacheGroupContext> {
-        /**
-         * @param ses Session.
-         * @param groups Cache groups.
-         */
-        public GroupPartitionIterable(Session ses, Iterable<CacheGroupContext> groups) {
-            super(ses, groups);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Iterator<Row> parentChildIterator(Session ses, Iterator<CacheGroupContext> groups) {
-            return new GroupPartitionIterator(ses, groups);
-        }
+                    return new PartitionAssignmentIterator(assignment.assignment().iterator(),
+                        assignment.topologyVersion());
+                }
+            },
+            new IgniteBiClosure<CacheGroupContext, PartitionAssignment, Object[]>() {
+                @Override public Object[] apply(CacheGroupContext grp,
+                    PartitionAssignment partAssignment) {
+                    return new Object[] {
+                        grp.groupId(),
+                        partAssignment.getTopologyVersion().topologyVersion(),
+                        partAssignment.getPartition(),
+                        partAssignment.getNode().id(),
+                        partAssignment.isPrimary()
+                    };
+                }
+            }
+        );
     }
 
     /**
      * Partition assignment iterator.
      */
     private class PartitionAssignmentIterator extends ParentChildIterator<List<ClusterNode>, ClusterNode,
-        GridTuple3<Integer, ClusterNode, Boolean>> {
+        PartitionAssignment> {
         /** Partition. */
         private int part = 0;
 
@@ -113,22 +117,31 @@ public class GridH2SysViewImplPartAssignment extends GridH2SysView {
         }
 
         /**
-         * @param ses
          * @param partAssignmentIter Partitions assignment iterator.
          */
-        public PartitionAssignmentIterator(Session ses, Iterator<List<ClusterNode>> partAssignmentIter) {
-            super(ses, partAssignmentIter);
+        public PartitionAssignmentIterator(final Iterator<List<ClusterNode>> partAssignmentIter,
+            final AffinityTopologyVersion topVer) {
+            super(partAssignmentIter,
+                new IgniteClosure<List<ClusterNode>, Iterator<ClusterNode>>() {
+                    @Override public Iterator<ClusterNode> apply(List<ClusterNode> nodes) {
+                        return nodes.iterator();
+                    }
+                },
+                new IgniteBiClosure<List<ClusterNode>, ClusterNode, PartitionAssignment>() {
+                    @Override public PartitionAssignment apply(List<ClusterNode> nodes,
+                        ClusterNode node) {
+                        return new PartitionAssignment(topVer, node);
+                    }
+                }
+            );
         }
 
         /** {@inheritDoc} */
-        @Override protected Iterator<ClusterNode> childIterator(List<ClusterNode> partAssignment) {
-            return partAssignment.iterator();
-        }
+        @Override public PartitionAssignment next() {
+            PartitionAssignment res = super.next();
 
-        /** {@inheritDoc} */
-        @Override protected GridTuple3<Integer, ClusterNode, Boolean> resultByParentChild(
-            List<ClusterNode> partAssignment, ClusterNode node) {
-            GridTuple3<Integer, ClusterNode, Boolean> res = new GridTuple3<>(part, node, isPrimary);
+            res.setPart(part);
+            res.setPrimary(isPrimary);
 
             isPrimary = Boolean.FALSE;
 
@@ -137,34 +150,70 @@ public class GridH2SysViewImplPartAssignment extends GridH2SysView {
     }
 
     /**
-     * Group-assignment iterator.
+     * Partition assignment row.
      */
-    private class GroupPartitionIterator extends ParentChildIterator<CacheGroupContext, GridTuple3<Integer,
-        ClusterNode, Boolean>, Row> {
+    private class PartitionAssignment {
+        /** Topology version. */
+        private AffinityTopologyVersion topVer;
+
+        /** Partition. */
+        private Integer part;
+
+        /** Node. */
+        private ClusterNode node;
+
+        /** Is primary. */
+        private Boolean isPrimary;
+
         /**
-         * @param ses
-         * @param grpIter Groups iterator.
+         * @param topVer Topology version.
+         * @param node Node.
          */
-        public GroupPartitionIterator(Session ses, Iterator<CacheGroupContext> grpIter) {
-            super(ses, grpIter);
+        public PartitionAssignment(AffinityTopologyVersion topVer, ClusterNode node) {
+            this.topVer = topVer;
+            this.node = node;
         }
 
-        /** {@inheritDoc} */
-        @Override protected Iterator<GridTuple3<Integer, ClusterNode, Boolean>> childIterator(CacheGroupContext grp) {
-            return new PartitionAssignmentIterator(getSession(),
-                grp.affinity().cachedAffinity(AffinityTopologyVersion.NONE).assignment().iterator());
+        /**
+         * Gets topology version.
+         */
+        public AffinityTopologyVersion getTopologyVersion() {
+            return topVer;
         }
 
-        /** {@inheritDoc} */
-        @Override protected Row resultByParentChild(CacheGroupContext grp, GridTuple3<Integer, ClusterNode, Boolean> t3) {
-            Row row = createRow(getSession(), getRowCount(),
-                grp.groupId(),
-                t3.get1(),
-                t3.get2().id(),
-                t3.get3()
-            );
+        /**
+         * Gets partition.
+         */
+        public Integer getPartition() {
+            return part;
+        }
 
-            return row;
+        /**
+         * Gets node.
+         */
+        public ClusterNode getNode() {
+            return node;
+        }
+
+        /**
+         * Is primary node for partition.
+         */
+        public Boolean isPrimary() {
+            return isPrimary;
+        }
+
+        /**
+         * @param part Partition.
+         */
+        public void setPart(Integer part) {
+            this.part = part;
+        }
+
+        /**
+         * @param primary Primary.
+         */
+        public void setPrimary(Boolean primary) {
+            isPrimary = primary;
         }
     }
 }

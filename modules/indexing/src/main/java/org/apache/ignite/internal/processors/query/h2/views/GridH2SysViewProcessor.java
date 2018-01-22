@@ -78,6 +78,7 @@ public class GridH2SysViewProcessor {
             viewsToRegister.add(new GridH2SysViewImplTransactionEntries(ctx));
             viewsToRegister.add(new GridH2SysViewImplTasks(ctx));
             viewsToRegister.add(new GridH2SysViewImplPartAssignment(ctx));
+            viewsToRegister.add(new GridH2SysViewImplPartAllocation(ctx));
 
             for (GridH2SysView view : viewsToRegister) {
                 GridH2SysViewTableEngine.registerView(c, view);

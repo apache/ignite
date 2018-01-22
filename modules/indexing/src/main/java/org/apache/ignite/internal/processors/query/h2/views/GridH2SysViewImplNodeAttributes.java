@@ -26,11 +26,12 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.lang.IgniteBiClosure;
+import org.apache.ignite.lang.IgniteClosure;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.value.Value;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * System view: node attributes.
@@ -102,54 +103,21 @@ public class GridH2SysViewImplNodeAttributes extends GridH2SysView {
         else {
             log.debug("Get node attributes: attributes full scan");
 
-            return new NodeAttributesIterable(ses, nodes);
-        }
-    }
-
-    /**
-     * Node attributes iterable.
-     */
-    private class NodeAttributesIterable extends ParentChildIterable<ClusterNode> {
-        /**
-         * @param ses Session.
-         * @param nodes Nodes.
-         */
-        public NodeAttributesIterable(Session ses, Iterable<ClusterNode> nodes) {
-            super(ses, nodes);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Iterator<Row> parentChildIterator(Session ses, Iterator<ClusterNode> nodes) {
-            return new NodeAttributesIterator(ses, nodes);
-        }
-    }
-
-    /**
-     * Node attributes iterator.
-     */
-    private class NodeAttributesIterator extends ParentChildIterator<ClusterNode, Map.Entry<String, Object>, Row> {
-        /**
-         * @param ses
-         * @param nodeIter Nodes iterator.
-         */
-        public NodeAttributesIterator(Session ses, Iterator<ClusterNode> nodeIter) {
-            super(ses, nodeIter);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Iterator<Map.Entry<String, Object>> childIterator(ClusterNode node) {
-            return node.attributes().entrySet().iterator();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Row resultByParentChild(ClusterNode node, Map.Entry<String, Object> attr) {
-            Row row = createRow(getSession(), getRowCount(),
-                node.id(),
-                attr.getKey(),
-                attr.getValue()
-            );
-
-            return row;
+            return new ParentChildRowIterable<ClusterNode, Map.Entry<String, Object>>(ses, nodes,
+                new IgniteClosure<ClusterNode, Iterator<Map.Entry<String, Object>>>() {
+                    @Override public Iterator<Map.Entry<String, Object>> apply(ClusterNode node) {
+                        return node.attributes().entrySet().iterator();
+                    }
+                },
+                new IgniteBiClosure<ClusterNode, Map.Entry<String, Object>, Object[]>() {
+                @Override public Object[] apply(ClusterNode node, Map.Entry<String, Object> attr) {
+                    return new Object[] {
+                        node.id(),
+                        attr.getKey(),
+                        attr.getValue()
+                    };
+                }
+            });
         }
     }
 }
