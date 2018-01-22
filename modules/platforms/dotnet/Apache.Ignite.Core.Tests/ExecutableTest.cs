@@ -321,6 +321,17 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestInvalidCmdArgs()
         {
+            var ignoredWarns = new[]
+            {
+                "WARNING: An illegal reflective access operation has occurred",
+                "WARNING: Illegal reflective access by org.apache.ignite.internal.util.GridUnsafe$2 " +
+                "(file:/C:/w/incubator-ignite/modules/core/target/classes/) to field java.nio.Buffer.address",
+                "WARNING: Please consider reporting this to the maintainers of org.apache.ignite.internal.util." +
+                "GridUnsafe$2",
+                "WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations",
+                "WARNING: All illegal access operations will be denied in a future release"
+            };
+
             Action<string, string> checkError = (args, err) =>
             {
                 var reader = new ListDataReader();
@@ -330,7 +341,9 @@ namespace Apache.Ignite.Core.Tests
                 Assert.IsTrue(proc.Join(30000, out exitCode));
                 Assert.AreEqual(-1, exitCode);
 
-                Assert.AreEqual(err, reader.GetOutput().FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)));
+                Assert.AreEqual(err, reader.GetOutput()
+                    .Except(ignoredWarns)
+                    .FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)));
             };
 
             checkError("blabla", "ERROR: Apache.Ignite.Core.Common.IgniteException: Missing argument value: " +
