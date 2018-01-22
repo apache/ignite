@@ -277,8 +277,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private static final AtomicReferenceFieldUpdater<FileWriteAheadLogManager, FileWriteHandle> CURR_HND_UPD =
         AtomicReferenceFieldUpdater.newUpdater(FileWriteAheadLogManager.class, FileWriteHandle.class, "currHnd");
 
-    /** */
-    private volatile FileArchiver archiver;
+    /**
+     * File archiver moves segments from work directory to archive. Locked segments may be kept not moved until
+     * release. For mode archive and work folders set to equal value, archiver is not created.
+     */
+    @Nullable private volatile FileArchiver archiver;
 
     /** Compressor. */
     private volatile FileCompressor compressor;
@@ -428,7 +431,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      *
      */
     public Collection<File> getAndReserveWalFiles(FileWALPointer low, FileWALPointer high) throws IgniteCheckedException {
-        FileArchiver archiver0 = archiver;
+        @Nullable FileArchiver archiver0 = archiver;
 
         final long awaitIdx = high.index() - 1;
 
@@ -459,7 +462,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @param archiver0 Archiver.
      * @param awaitIdx Method will wait archivation of that index.
      */
-    private void awaitSegmentArchived(FileArchiver archiver0, long awaitIdx) throws IgniteInterruptedCheckedException {
+    private void awaitSegmentArchived(@Nullable FileArchiver archiver0, long awaitIdx) throws IgniteInterruptedCheckedException {
         synchronized (nextSegmentArchivedMonitor) {
             while (archiver0.lastArchivedAbsoluteIndex() < awaitIdx) {
                 try {
@@ -536,6 +539,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (!cctx.kernalContext().clientNode()) {
             if (isArchiverEnabled()) {
                 assert archiver != null;
+
                 archiver.start();
             }
 
@@ -799,6 +803,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (mode == WALMode.NONE)
             return false;
 
+        //todo locking not in archiver
         FileArchiver archiver0 = archiver;
 
         if (archiver0 == null)
@@ -822,6 +827,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (mode == WALMode.NONE)
             return;
 
+        //todo implement release for no-archiver mode
         FileArchiver archiver0 = archiver;
 
         if (archiver0 == null)
@@ -2924,7 +2930,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** */
         private final File walArchiveDir;
 
-        /** */
+        /** See {@link FileWriteAheadLogManager#archiver}. */
         @Nullable private final FileArchiver archiver;
 
         /** */
@@ -2949,7 +2955,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @param end Optional end pointer.
          * @param dsCfg Database configuration.
          * @param serializerFactory Serializer factory.
-         * @param archiver Archiver.
+         * @param archiver File Archiver.
          * @param decompressor Decompressor.
          *@param log Logger  @throws IgniteCheckedException If failed to initialize WAL segment.
          */
@@ -2962,7 +2968,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             DataStorageConfiguration dsCfg,
             @NotNull RecordSerializerFactory serializerFactory,
             FileIOFactory ioFactory,
-            FileArchiver archiver,
+            @Nullable FileArchiver archiver,
             FileDecompressor decompressor,
             IgniteLogger log
         ) throws IgniteCheckedException {
