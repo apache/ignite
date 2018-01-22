@@ -17,23 +17,6 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
-import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.internal.processors.bulkload.BulkLoadConstants;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
-import org.apache.ignite.internal.processors.odbc.SqlStateCode;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcFilesToSendResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteMultipleStatementsResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResultInfo;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcSendFileBatchRequest;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
-
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -49,6 +32,23 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcFilesToSendResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteMultipleStatementsResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResultInfo;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcSendFileBatchRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
+
+
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.FETCH_FORWARD;
@@ -58,8 +58,12 @@ import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
  * JDBC statement implementation.
  */
 public class JdbcThinStatement implements Statement {
+
     /** Default queryPage size. */
     private static final int DFLT_PAGE_SIZE = SqlQuery.DFLT_PAGE_SIZE;
+
+    /** Size of a batch for COPY command. */
+    public static final int BATCH_SIZE_BYTES = 512 * 1024;
 
     /** JDBC Connection implementation. */
     protected JdbcThinConnection conn;
@@ -200,7 +204,7 @@ public class JdbcThinStatement implements Statement {
 
         try (InputStream input = new BufferedInputStream(new FileInputStream(fileName))) {
 
-            byte[] buf = new byte[BulkLoadConstants.BATCH_SIZE_BYTES];
+            byte[] buf = new byte[BATCH_SIZE_BYTES];
 
             int readBytes;
             while ((readBytes = input.read(buf)) != -1) {

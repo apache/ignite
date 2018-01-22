@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import java.util.UUID;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * A request from server (in form of reply) to send files from client to server,
@@ -27,10 +30,16 @@ import java.util.UUID;
 public class JdbcFilesToSendResult extends JdbcResult {
 
     /** Query ID for matching this command on server in further {@link JdbcSendFileBatchRequest} commands. */
-    private final long queryId;
+    private long queryId;
 
     /** Local name of the file to send to server */
-    private final String locFileName;
+    private String locFileName;
+
+    public JdbcFilesToSendResult() {
+        super(BULK_LOAD_BATCH);
+        queryId = 0;
+        locFileName = null;
+    }
 
     /**
      * Constructs a request from server (in form of reply) to send files from client to server.
@@ -38,7 +47,7 @@ public class JdbcFilesToSendResult extends JdbcResult {
      * @param locFileName the local name of file to send.
      */
     public JdbcFilesToSendResult(long queryId, String locFileName) {
-        super(SEND_FILE);
+        super(BULK_LOAD_BATCH);
         this.queryId = queryId;
         this.locFileName = locFileName;
     }
@@ -59,5 +68,26 @@ public class JdbcFilesToSendResult extends JdbcResult {
      */
     public String localFileName() {
         return locFileName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
+        super.writeBinary(writer);
+
+        writer.writeLong(queryId);
+        writer.writeString(locFileName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
+        super.readBinary(reader);
+
+        queryId = reader.readLong();
+        locFileName = reader.readString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcFilesToSendResult.class, this);
     }
 }
