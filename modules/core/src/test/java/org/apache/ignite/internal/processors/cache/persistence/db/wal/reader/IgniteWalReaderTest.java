@@ -119,7 +119,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     /** Clear properties in afterTest() method. */
     private boolean clearProperties;
 
-    /** Set WAL and Archive path to same value */
+    /** Set WAL and Archive path to same value. */
     private boolean setWalAndArchiveToSameValue;
 
     /** {@inheritDoc} */
@@ -160,9 +160,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             dsCfg.setWalArchivePath(walAbsPath);
         } else {
             dsCfg.setWalPath(wal.getAbsolutePath());
-
-            final File walArchive = new File(db, "archive");
-            dsCfg.setWalArchivePath(walArchive.getAbsolutePath());
+            dsCfg.setWalArchivePath(new File(wal, "archive").getAbsolutePath());
         }
 
         cfg.setDataStorageConfiguration(dsCfg);
