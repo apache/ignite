@@ -127,6 +127,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 var getJvmsPtr = DllLoader.NativeMethodsMacOs.dlsym(ptr, "JNI_GetCreatedJavaVMs");
                 _getCreatedJvms = (GetCreatedJvmsDel) Marshal.GetDelegateForFunctionPointer(getJvmsPtr,
                     typeof(GetCreatedJvmsDel));
+
+                var getArgsPtr = DllLoader.NativeMethodsMacOs.dlsym(ptr, "JNI_GetDefaultJavaVMInitArgs");
+                _getDefaultArgs = (GetDefaultArgsDel) Marshal.GetDelegateForFunctionPointer(getArgsPtr,
+                    typeof(GetDefaultArgsDel));
             }
             else if (Os.IsWindows)
             {
@@ -138,6 +142,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             {
                 _createJvm = JniNativeMethodsLinux.JNI_CreateJavaVM;
                 _getCreatedJvms = JniNativeMethodsLinux.JNI_GetCreatedJavaVMs;
+                _getDefaultArgs = JniNativeMethodsLinux.JNI_GetDefaultJavaVMInitArgs;
             }
         }
 
@@ -435,6 +440,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             [DllImport("libjvm.so", CallingConvention = CallingConvention.StdCall)]
             internal static extern JniResult JNI_GetCreatedJavaVMs(out IntPtr pvm, int size,
                 [Out] out int size2);
+
+            [SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
+            [DllImport("libjvm.so", CallingConvention = CallingConvention.StdCall)]
+            internal static extern JniResult JNI_GetDefaultJavaVMInitArgs(JvmInitArgs* args);
         }
-   }
+    }
 }
