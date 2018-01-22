@@ -927,7 +927,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     ) {
         memMetrics.persistenceEnabled(false);
 
-        return new PageMemoryNoStoreImpl(
+        PageMemory pageMem = new PageMemoryNoStoreImpl(
             log,
             memProvider,
             cctx,
@@ -936,6 +936,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             memMetrics,
             false
         );
+
+        memMetrics.pageMemory(pageMem);
+
+        return pageMem;
     }
 
     /**

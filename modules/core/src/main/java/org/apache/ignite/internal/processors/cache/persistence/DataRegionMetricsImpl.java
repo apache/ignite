@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -98,7 +99,17 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedPages() {
-        return metricsEnabled ? totalAllocatedPages.longValue() : 0;
+        if (!metricsEnabled)
+            return 0;
+
+        return totalAllocatedPages.longValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalAllocatedSize() {
+        assert pageMem != null;
+
+        return getTotalAllocatedPages() * pageMem.pageSize();
     }
 
     /** {@inheritDoc} */
@@ -169,6 +180,36 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
         assert pageMem != null;
 
         return pageMem.loadedPages();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPhysicalMemorySize() {
+        return getPhysicalMemoryPages() * pageMem.pageSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCheckpointBufferPages() {
+        if (!metricsEnabled)
+            return 0;
+
+        assert pageMem != null;
+
+        return pageMem.checkpointBufferPagesCount();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCheckpointBufferSize() {
+        return getCheckpointBufferPages() * pageMem.pageSize();
+    }
+
+    /** {@inheritDoc} */
+    public int getPageSize() {
+        if (!metricsEnabled)
+            return 0;
+
+        assert pageMem != null;
+
+        return pageMem.pageSize();
     }
 
     /**
