@@ -63,7 +63,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_H
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 
 /**
- *
+ * Zookeeper Discovery Spi.
  */
 @IgniteSpiMultipleInstancesSupport(true)
 @DiscoverySpiOrderSupport(true)

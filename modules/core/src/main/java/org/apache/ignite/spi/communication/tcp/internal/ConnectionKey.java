@@ -21,7 +21,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- *
+ * Connection Key.
  */
 public class ConnectionKey {
     /** */

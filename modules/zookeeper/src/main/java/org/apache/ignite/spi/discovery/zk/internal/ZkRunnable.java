@@ -18,7 +18,7 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 /**
- *
+ * Zk Runnable.
  */
 public abstract class ZkRunnable extends ZkAbstractCallabck implements Runnable {
     /**

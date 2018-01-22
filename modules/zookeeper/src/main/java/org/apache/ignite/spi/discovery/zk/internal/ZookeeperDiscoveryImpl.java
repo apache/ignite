@@ -107,7 +107,7 @@ import static org.apache.zookeeper.CreateMode.EPHEMERAL_SEQUENTIAL;
 import static org.apache.zookeeper.CreateMode.PERSISTENT;
 
 /**
- *
+ * Zookeeper Discovery Impl.
  */
 public class ZookeeperDiscoveryImpl {
     /** */
