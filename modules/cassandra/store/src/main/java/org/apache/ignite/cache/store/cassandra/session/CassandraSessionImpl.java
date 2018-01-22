@@ -192,7 +192,7 @@ public class CassandraSessionImpl implements CassandraSession {
 
         int attempt = 0;
         String errorMsg = "Failed to execute Cassandra " + assistant.operationName() + " operation";
-        Throwable error = null;
+        Throwable error = new IgniteException(errorMsg);
 
         RandomSleeper sleeper = newSleeper();
 
@@ -209,7 +209,6 @@ public class CassandraSessionImpl implements CassandraSession {
                 }
 
                 //clean errors info before next communication with Cassandra
-                error = null;
                 Throwable unknownEx = null;
                 Throwable tblAbsenceEx = null;
                 Throwable hostsAvailEx = null;
@@ -307,7 +306,7 @@ public class CassandraSessionImpl implements CassandraSession {
                     throw new IgniteException(errorMsg, unknownEx);
 
                 // If there are no errors occurred it means that operation successfully completed and we can return.
-                if (tblAbsenceEx == null && hostsAvailEx == null && prepStatEx == null && error == null)
+                if (tblAbsenceEx == null && hostsAvailEx == null && prepStatEx == null && assistant.processedCount() == dataSize)
                     return assistant.processedData();
 
                 if (tblAbsenceEx != null) {
@@ -341,9 +340,6 @@ public class CassandraSessionImpl implements CassandraSession {
         finally {
             decrementSessionRefs();
         }
-
-        if (error == null)
-            error = new IgniteException(errorMsg);
 
         errorMsg = "Failed to process " + (dataSize - assistant.processedCount()) +
             " of " + dataSize + " elements, during " + assistant.operationName() +
