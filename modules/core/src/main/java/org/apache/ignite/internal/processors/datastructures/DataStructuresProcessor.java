@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -74,7 +73,6 @@ import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPR;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -147,8 +145,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                         UUID leftNodeId = discoEvt.eventNode().id();
 
                         for (GridCacheRemovable ds : dsMap.values()) {
-                            if (ds instanceof GridCacheNodeRemoved)
-                                ((GridCacheNodeRemoved)ds).onNodeRemoved(leftNodeId);
+                            if (ds instanceof GridCacheNodeUpdate)
+                                ((GridCacheNodeUpdate)ds).onNodeRemoved(leftNodeId);
                         }
 
                         return null;
@@ -222,14 +220,14 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             if (ds instanceof GridCacheLockEx)
                 ((GridCacheLockEx)ds).onStop();
             
-            if(ds instanceof GridCacheNodeRemoved){
+            if(ds instanceof GridCacheNodeUpdate){
                 ctx.closure().callLocalSafe(
                     new Callable<Object>() {
                         @Override public Object call() throws Exception {
 
                             for (GridCacheRemovable ds : dsMap.values()) {
-                                if (ds instanceof GridCacheNodeRemoved)
-                                        ((GridCacheNodeRemoved)ds).onNodeRemoved(ctx.localNodeId());
+                                if (ds instanceof GridCacheNodeUpdate)
+                                        ((GridCacheNodeUpdate)ds).onNodeRemoved(ctx.localNodeId());
                             }
 
                             return null;

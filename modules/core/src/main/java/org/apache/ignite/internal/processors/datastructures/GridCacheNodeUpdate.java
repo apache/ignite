@@ -22,7 +22,7 @@ import java.util.UUID;
  * Interface used to abstract the NodeRemoved Logic. This 
  * 
  */
-public interface GridCacheNodeRemoved {
+public interface GridCacheNodeUpdate {
 
     /**
      * Callback to notify  on topology changes of node removal.

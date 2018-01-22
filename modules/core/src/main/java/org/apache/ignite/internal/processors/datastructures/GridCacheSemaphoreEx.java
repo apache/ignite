@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import java.util.UUID;
 import org.apache.ignite.IgniteSemaphore;
 
 /**
  * Grid cache semaphore ({@code 'Ex'} stands for external).
  */
-public interface GridCacheSemaphoreEx extends IgniteSemaphore, GridCacheRemovable,GridCacheNodeRemoved {
+public interface GridCacheSemaphoreEx extends IgniteSemaphore, GridCacheRemovable,GridCacheNodeUpdate {
     /**
      * Get current semaphore key.
      *
