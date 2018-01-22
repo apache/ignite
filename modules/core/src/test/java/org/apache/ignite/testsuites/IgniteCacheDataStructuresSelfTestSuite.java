@@ -137,7 +137,6 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(SemaphoreFailoverNoWaitingAcquirerTest.class));
         // TODO IGNITE-3141, enabled when fixed.
         
-        
         // suite.addTest(new TestSuite(IgnitePartitionedLockSelfTest.class));
 
         suite.addTest(new TestSuite(GridCachePartitionedSetFailoverSelfTest.class));

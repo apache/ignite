@@ -14,32 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.processors.datastructures;
 
 import java.util.UUID;
-import org.apache.ignite.IgniteSemaphore;
 
 /**
- * Grid cache semaphore ({@code 'Ex'} stands for external).
+ * Interface used to abstract the NodeRemoved Logic. This 
+ * 
  */
-public interface GridCacheSemaphoreEx extends IgniteSemaphore, GridCacheRemovable,GridCacheNodeRemoved {
-    /**
-     * Get current semaphore key.
-     *
-     * @return Semaphore key.
-     */
-    public GridCacheInternalKey key();
+public interface GridCacheNodeRemoved {
 
     /**
-     * Callback to notify semaphore on changes.
+     * Callback to notify  on topology changes of node removal.
      *
-     * @param val State containing the number of available permissions.
+     * @param nodeId Id of the node that left the grid.
      */
-    public void onUpdate(GridCacheSemaphoreState val);
-
-    /**
-     * Callback to notify local semaphore instance on node stop.
-     */
-    public void stop();
+    public void onNodeRemoved(UUID nodeId);
 }

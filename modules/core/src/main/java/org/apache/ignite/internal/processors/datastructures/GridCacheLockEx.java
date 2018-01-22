@@ -23,7 +23,7 @@ import org.apache.ignite.IgniteLock;
 /**
  * Grid cache reentrant lock ({@code 'Ex'} stands for external).
  */
-public interface GridCacheLockEx extends IgniteLock, GridCacheRemovable {
+public interface GridCacheLockEx extends IgniteLock, GridCacheRemovable, GridCacheNodeRemoved {
     /**
      * Get current reentrant lock latch key.
      *
@@ -38,12 +38,6 @@ public interface GridCacheLockEx extends IgniteLock, GridCacheRemovable {
      */
     public void onUpdate(GridCacheLockState state);
 
-    /**
-     * Callback to notify semaphore on topology changes.
-     *
-     * @param nodeId Id of the node that left the grid.
-     */
-    public void onNodeRemoved(UUID nodeId);
 
     /**
      * Callback to notify local reentrant lock instance on node stop.

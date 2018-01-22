@@ -147,10 +147,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                         UUID leftNodeId = discoEvt.eventNode().id();
 
                         for (GridCacheRemovable ds : dsMap.values()) {
-                            if (ds instanceof GridCacheSemaphoreEx)
-                                ((GridCacheSemaphoreEx)ds).onNodeRemoved(leftNodeId);
-                            else if (ds instanceof GridCacheLockEx)
-                                ((GridCacheLockEx)ds).onNodeRemoved(leftNodeId);
+                            if (ds instanceof GridCacheNodeRemoved)
+                                ((GridCacheNodeRemoved)ds).onNodeRemoved(leftNodeId);
                         }
 
                         return null;
@@ -223,7 +221,24 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
             if (ds instanceof GridCacheLockEx)
                 ((GridCacheLockEx)ds).onStop();
-        }
+            
+            if(ds instanceof GridCacheNodeRemoved){
+                ctx.closure().callLocalSafe(
+                    new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+
+                            for (GridCacheRemovable ds : dsMap.values()) {
+                                if (ds instanceof GridCacheNodeRemoved)
+                                        ((GridCacheNodeRemoved)ds).onNodeRemoved(ctx.localNodeId());
+                            }
+
+                            return null;
+                        }
+                    },
+                    false);
+            }
+                
+        }   
 
         if (initLatch.getCount() > 0) {
             initFailed = true;
