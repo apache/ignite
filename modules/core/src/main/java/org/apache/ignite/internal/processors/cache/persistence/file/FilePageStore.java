@@ -270,9 +270,7 @@ public class FilePageStore implements PageStore {
 
             long newAlloc = initFile();
 
-            allocated.set(newAlloc);
-
-            long delta = newAlloc - allocated.get();
+            long delta = newAlloc - allocated.getAndSet(newAlloc);
 
             assert delta % pageSize == 0;
 
@@ -312,13 +310,11 @@ public class FilePageStore implements PageStore {
             if (inited) {
                 long newSize = Math.max(headerSize() + pageSize, fileIO.size());
 
-                long delta = newSize - allocated.get();
+                long delta = newSize - allocated.getAndSet(newSize);
 
                 assert delta % pageSize == 0;
 
                 metricsUpdater.updateTotalAllocatedPages(delta / pageSize);
-
-                allocated.set(newSize);
             }
 
             recover = false;
