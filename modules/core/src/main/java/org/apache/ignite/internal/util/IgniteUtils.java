@@ -541,6 +541,10 @@ public abstract class IgniteUtils {
      */
     private static final Field urlClsLdrField = urlClassLoaderField();
 
+    /** Dev only logging disabled. */
+    private static boolean devOnlyLogDisabled =
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DEV_ONLY_LOGGING_DISABLED);
+
     /*
      * Initializes enterprise check.
      */
@@ -4268,6 +4272,30 @@ public abstract class IgniteUtils {
         else
             X.println("[" + SHORT_DATE_FMT.format(new java.util.Date()) + "] (wrn) " +
                 compact(shortMsg.toString()));
+    }
+
+    /**
+     * Depending on whether or not log is provided and quiet mode is enabled logs given
+     * messages as quiet message or normal log WARN message with {@link IgniteLogger#DEV_ONLY DEV_ONLY} marker.
+     * If {@code log} is {@code null} or in QUIET mode it will add {@code (wrn)} prefix to the message.
+     * If property {@link IgniteSystemProperties#IGNITE_DEV_ONLY_LOGGING_DISABLED IGNITE_DEV_ONLY_LOGGING_DISABLED}
+     * is set to true, the message will not be logged.
+     *
+     * @param log Optional logger to use when QUIET mode is not enabled.
+     * @param msg Message to log.
+     */
+    public static void warnDevOnly(@Nullable IgniteLogger log, Object msg) {
+        assert msg != null;
+
+        // don't log message if DEV_ONLY messages are disabled
+        if (devOnlyLogDisabled)
+            return;
+
+        if (log != null)
+            log.warning(IgniteLogger.DEV_ONLY, compact(msg.toString()), null);
+        else
+            X.println("[" + SHORT_DATE_FMT.format(new java.util.Date()) + "] (wrn) " +
+                compact(msg.toString()));
     }
 
     /**

@@ -72,6 +72,15 @@ public class ClientConnectorConfiguration {
     /** Idle timeout. */
     private long idleTimeout = DFLT_IDLE_TIMEOUT;
 
+    /** JDBC connections enabled flag. */
+    private boolean jdbcEnabled = true;
+
+    /** ODBC connections enabled flag. */
+    private boolean odbcEnabled = true;
+
+    /** JDBC connections enabled flag. */
+    private boolean thinCliEnabled = true;
+
     /**
      * Creates SQL connector configuration with all default values.
      */
@@ -297,6 +306,81 @@ public class ClientConnectorConfiguration {
      */
     public ClientConnectorConfiguration setIdleTimeout(long idleTimeout) {
         this.idleTimeout = idleTimeout;
+
+        return this;
+    }
+
+    /**
+     * Gets whether access through JDBC is enabled.
+     * <p>
+     * Defaults to {@code true}.
+     *
+     * @return Whether access through JDBC is enabled.
+     */
+    public boolean isJdbcEnabled() {
+        return jdbcEnabled;
+    }
+
+    /**
+     * Sets whether access through JDBC is enabled.
+     * <p>
+     * Defaults to {@code true}.
+     *
+     * @param jdbcEnabled Whether access through JDBC is enabled.
+     * @return {@code this} for chaining.
+     */
+    public ClientConnectorConfiguration setJdbcEnabled(boolean jdbcEnabled) {
+        this.jdbcEnabled = jdbcEnabled;
+
+        return this;
+    }
+
+    /**
+     * Gets whether access through ODBC is enabled.
+     * <p>
+     * Defaults to {@code true}.
+     *
+     * @return Whether access through ODBC is enabled.
+     */
+    public boolean isOdbcEnabled() {
+        return odbcEnabled;
+    }
+
+    /**
+     * Sets whether access through ODBC is enabled.
+     * <p>
+     * Defaults to {@code true}.
+     *
+     * @param odbcEnabled Whether access through ODBC is enabled.
+     * @return {@code this} for chaining.
+     */
+    public ClientConnectorConfiguration setOdbcEnabled(boolean odbcEnabled) {
+        this.odbcEnabled = odbcEnabled;
+
+        return this;
+    }
+
+    /**
+     * Gets whether access through thin client is enabled.
+     * <p>
+     * Defaults to {@code true}.
+     *
+     * @return Whether access through thin client is enabled.
+     */
+    public boolean isThinClientEnabled() {
+        return thinCliEnabled;
+    }
+
+    /**
+     * Sets whether access through thin client is enabled.
+     * <p>
+     * Defaults to {@code true}.
+     *
+     * @param thinCliEnabled Whether access through thin client is enabled.
+     * @return {@code this} for chaining.
+     */
+    public ClientConnectorConfiguration setThinClientEnabled(boolean thinCliEnabled) {
+        this.thinCliEnabled = thinCliEnabled;
 
         return this;
     }
