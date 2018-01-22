@@ -171,21 +171,14 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange(true, true, null);
 
-        node0.context().cache().context().database().waitForCheckpoint("");
-        node1.context().cache().context().database().waitForCheckpoint("");
-
         checkMetricsConsistency(node0, grpIds);
         checkMetricsConsistency(node1, grpIds);
 
         IgniteEx node2 = startGrid(2);
 
-        baseline();
+        resetBaselineTopology();
 
         awaitPartitionMapExchange(true, true, null);
-
-        node0.context().cache().context().database().waitForCheckpoint("");
-        node1.context().cache().context().database().waitForCheckpoint("");
-        node2.context().cache().context().database().waitForCheckpoint("");
 
         checkMetricsConsistency(node0, grpIds);
         checkMetricsConsistency(node1, grpIds);
@@ -193,12 +186,9 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         stopGrid(1, true);
 
-        baseline();
+        resetBaselineTopology();
 
         awaitPartitionMapExchange(true, true, null);
-
-        node0.context().cache().context().database().waitForCheckpoint("");
-        node2.context().cache().context().database().waitForCheckpoint("");
 
         checkMetricsConsistency(node0, grpIds);
         checkMetricsConsistency(node2, grpIds);
