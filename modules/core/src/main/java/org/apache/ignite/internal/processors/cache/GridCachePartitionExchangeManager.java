@@ -481,6 +481,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 exchFut = exchangeFuture(exchId, evt, null, null, null);
             }
+            else if (customMsg instanceof WalStateAbstractMessage
+                && ((WalStateAbstractMessage)customMsg).needExchange()) {
+                exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt);
+
+                exchFut = exchangeFuture(exchId, evt, null, null, null);
+            }
             else {
                 // Process event as custom discovery task if needed.
                 CachePartitionExchangeWorkerTask task =
@@ -509,8 +515,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         notifyNodeFail(evt);
 
         // Notify indexing engine about node leave so that we can re-map coordinator accordingly.
-        if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED)
+        if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {
             exchWorker.addCustomTask(new SchemaNodeLeaveExchangeWorkerTask(evt.eventNode()));
+            exchWorker.addCustomTask(new WalStateNodeLeaveExchangeTask(evt.eventNode()));
+        }
     }
 
     /**
