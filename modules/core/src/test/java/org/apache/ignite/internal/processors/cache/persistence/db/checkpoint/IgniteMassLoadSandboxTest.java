@@ -84,7 +84,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     /** Cache name. */
     public static final String CACHE_NAME = "partitioned" + new Random().nextInt(10000000);
     public static final int OBJECT_SIZE = 40000;
-    public static final int CONTINUOUS_PUT_RECS_CNT = 200_000;
+    public static final int CONTINUOUS_PUT_RECS_CNT = 300_000;
     public static final String PUT_THREAD = "put-thread";
     public static final String GET_THREAD = "get-thread";
 
@@ -388,6 +388,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             }
             catch (Exception ignored) {
                 //e.printStackTrace();
+                System.out.println(ignored.getClass().getSimpleName() + ":" +ignored.getMessage());
             }
 
 
@@ -508,8 +509,9 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
         try {
             System.setProperty(IgniteSystemProperties.IGNITE_DIRTY_PAGES_PARALLEL, "true");
             System.setProperty(IgniteSystemProperties.IGNITE_DIRTY_PAGES_SORTED_STORAGE, "true");
+            System.setProperty(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY, "true");
 
-            //setWalArchAndWorkToSameValue = true;
+            setWalArchAndWorkToSameValue = false;
 
             customWalMode = WALMode.LOG_ONLY;
             final IgniteEx ignite = startGrid(1);

@@ -933,7 +933,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     @Override public int walArchiveSegments() {
         long lastTruncated = lastTruncatedArchiveIdx;
 
-        long lastArchived = archiver.lastArchivedAbsoluteIndex();
+        FileArchiver archiver0 = this.archiver;
+
+        long lastArchived = archiver0 == null ? -1 : archiver0.lastArchivedAbsoluteIndex();
 
         if (lastArchived == -1)
             return 0;
