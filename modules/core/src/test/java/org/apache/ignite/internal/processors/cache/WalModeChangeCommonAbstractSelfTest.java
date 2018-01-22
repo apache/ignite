@@ -101,7 +101,7 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
             Collection<String> cacheNames = node0.cacheNames();
 
             for (String cacheName : cacheNames)
-                destroyCache(node0, cacheName);
+                node0.destroyCache(cacheName);
         }
     }
 
