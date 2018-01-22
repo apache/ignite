@@ -95,6 +95,7 @@
         <lucene.bundle.version>5.5.2_1</lucene.bundle.version>
         <lucene.version>5.5.2</lucene.version>
         <maven.bundle.plugin.version>2.5.4</maven.bundle.plugin.version>
+        <mockito.version>1.10.19</mockito.version>
         <mysql.connector.version>5.1.39</mysql.connector.version>
         <netlibjava.version>1.1.2</netlibjava.version>
         <oro.bundle.version>2.0.8_6</oro.bundle.version>
