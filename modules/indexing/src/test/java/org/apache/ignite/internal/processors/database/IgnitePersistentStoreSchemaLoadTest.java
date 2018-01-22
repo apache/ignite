@@ -193,8 +193,8 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
 
         CountDownLatch cnt = checkpointLatch(node);
 
-        node.context().query().querySqlFieldsNoCache(
-            new SqlFieldsQuery("create table \"Person\" (\"id\" int primary key, \"name\" varchar)"), false).getAll();
+        node.context().query().querySqlFields(
+            new SqlFieldsQuery("create table \"Person\" (\"id\" int primary key, \"name\" varchar)"), false);
 
         assertEquals(0, indexCnt(node, SQL_CACHE_NAME));
 
@@ -212,7 +212,7 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
 
         checkDynamicSchemaChanges(node, SQL_CACHE_NAME);
 
-        node.context().query().querySqlFieldsNoCache(new SqlFieldsQuery("drop table \"Person\""), false).getAll();
+        node.context().query().querySqlFields(new SqlFieldsQuery("drop table \"Person\""), false).getAll();
     }
 
     /** */
@@ -280,15 +280,15 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
      * @param schema Schema name.
      */
     private void makeDynamicSchemaChanges(IgniteEx node, String schema) {
-        node.context().query().querySqlFieldsNoCache(
+        node.context().query().querySqlFields(
             new SqlFieldsQuery("create index \"my_idx\" on \"Person\" (\"id\", \"name\")").setSchema(schema), false)
                 .getAll();
 
-        node.context().query().querySqlFieldsNoCache(
+        node.context().query().querySqlFields(
             new SqlFieldsQuery("alter table \"Person\" add column (\"age\" int, \"city\" char)")
             .setSchema(schema), false).getAll();
 
-        node.context().query().querySqlFieldsNoCache(
+        node.context().query().querySqlFields(
             new SqlFieldsQuery("alter table \"Person\" drop column \"city\"").setSchema(schema), false)
             .getAll();
     }

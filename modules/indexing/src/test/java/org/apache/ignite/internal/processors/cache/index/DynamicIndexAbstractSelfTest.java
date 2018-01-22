@@ -17,20 +17,29 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.io.Serializable;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -38,14 +47,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-
-import javax.cache.Cache;
-import java.io.Serializable;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 
 /**
  * Tests for dynamic index creation.
@@ -179,6 +180,20 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
         ccfg.setBackups(1);
 
         return ccfg;
+    }
+
+    /**
+     * @return Local cache configuration with a pre-configured index.
+     */
+    CacheConfiguration<KeyClass, ValueClass> localCacheConfiguration() {
+        CacheConfiguration<KeyClass, ValueClass> res = cacheConfiguration();
+
+        res.getQueryEntities().iterator().next().setIndexes(Collections.singletonList(
+            new QueryIndex(FIELD_NAME_2_ESCAPED, true, IDX_NAME_LOCAL)));
+
+        res.setCacheMode(CacheMode.LOCAL);
+
+        return res;
     }
 
     /**
