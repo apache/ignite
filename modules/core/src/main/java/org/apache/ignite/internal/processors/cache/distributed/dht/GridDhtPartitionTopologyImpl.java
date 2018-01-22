@@ -1390,6 +1390,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 if (diffIds == null)
                                     diffFromAffinity.put(p, diffIds = U.newHashSet(3));
 
+                                assert !grp.persistenceEnabled() || discoCache.baselineNode(e.getKey());
+
                                 diffIds.add(e.getKey());
                             }
                             else {
@@ -1683,6 +1685,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 if (diffIds == null)
                                     diffFromAffinity.put(p, diffIds = U.newHashSet(3));
 
+                                assert !grp.persistenceEnabled() || discoCache.baselineNode(parts.nodeId());
+
                                 if (diffIds.add(parts.nodeId()))
                                     changed = true;
                             }
@@ -1840,6 +1844,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     if ((state == MOVING || state == OWNING || state == RENTING) && !affAssignment.getIds(p0).contains(nodeId)) {
                         if (ids == null)
                             diffFromAffinity.put(p0, ids = U.newHashSet(3));
+
+                        assert !grp.persistenceEnabled() || discoCache.baselineNode(nodeId);
 
                         ids.add(nodeId);
                     }
@@ -2238,6 +2244,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     if (diffIds == null)
                         diffFromAffinity.put(p, diffIds = U.newHashSet(3));
+
+                    assert !grp.persistenceEnabled() || discoCache.baselineNode(ctx.localNodeId());
 
                     diffIds.add(ctx.localNodeId());
                 }

@@ -213,6 +213,14 @@ public class DiscoCache {
         return baselineNodes;
     }
 
+    /**
+     * @param nodeId Node ID to check.
+     * @return {@code True} if baseline is not set or the node is in the baseline topology.
+     */
+    public boolean baselineNode(UUID nodeId) {
+        return nodeIdToConsIdx == null || nodeIdToConsIdx.containsKey(nodeId);
+    }
+
     /** @return All nodes. */
     public List<ClusterNode> allNodes() {
         return allNodes;
