@@ -40,7 +40,6 @@ import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
-import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -205,24 +204,6 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         assertEquals(nodeId, evt.subjectId());
 
         assert !it.hasNext();
-    }
-
-
-    /**
-     *
-     */
-    public void testTimedOutJob() throws Exception {
-        latch = new CountDownLatch(0);
-
-        System.out.println("Executing job...");
-        grid().compute().withTimeout(100).run(new IgniteRunnable() {
-            @Override public void run() {
-                System.out.println("Sleeping...");
-                doSleep(10_000);
-                System.out.println("Waked up");
-            }
-        });
-        System.out.println("Job executed");
     }
 
     /**
