@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.views;
 
+import java.util.Iterator;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.h2.engine.Session;
@@ -28,6 +29,7 @@ import org.h2.value.ValueNull;
 import org.h2.value.ValueString;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * System view base class.
@@ -389,5 +391,154 @@ public abstract class GridH2SysView {
 
             return null;
         }
+    }
+    /**
+     * Parent-child iterable.
+     */
+    protected abstract class ParentChildIterable<P> implements Iterable<Row> {
+        /** Session. */
+        private final Session ses;
+
+        /** Parent iterable. */
+        private final Iterable<P> parents;
+
+        /**
+         * @param ses Session.
+         * @param parents Parents.
+         */
+        public ParentChildIterable(Session ses, Iterable<P> parents) {
+            this.ses = ses;
+            this.parents = parents;
+        }
+
+        /** {@inheritDoc} */
+        @NotNull @Override public Iterator<Row> iterator() {
+            return parentChildIterator(ses, parents.iterator());
+        }
+
+        /**
+         * @param ses Session.
+         * @param parentIter Parent iterator.
+         */
+        protected abstract Iterator<Row> parentChildIterator(Session ses, Iterator<P> parentIter);
+    }
+
+    /**
+     * Parent-child iterator.
+     */
+    protected abstract class ParentChildIterator<P, C, R> implements Iterator<R> {
+        /** Session. */
+        private final Session ses;
+
+        /** Parent iterator. */
+        private final Iterator<P> parentIter;
+
+        /** Child iterator. */
+        private Iterator<C> childIter;
+
+        /** Counter. */
+        private long rowCnt = 0;
+
+        /** Next parent. */
+        private P nextParent;
+
+        /** Next child. */
+        private C nextChild;
+
+        /**
+         * @param parentIter Parent iterator.
+         */
+        public ParentChildIterator(Session ses, Iterator<P> parentIter) {
+            this.ses = ses;
+            this.parentIter = parentIter;
+
+            moveChild();
+        }
+
+        /**
+         * Move to next parent.
+         */
+        protected void moveParent() {
+            nextParent = parentIter.next();
+
+            childIter = childIterator(nextParent);
+        }
+
+        /**
+         * Move to next child.
+         */
+        protected void moveChild() {
+            // First iteration.
+            if (nextParent == null && parentIter.hasNext())
+                moveParent();
+
+            // Empty parent at first iteration.
+            if (childIter == null)
+                return;
+
+            while (childIter.hasNext() || parentIter.hasNext()) {
+                if (childIter.hasNext()) {
+                    nextChild = childIter.next();
+                    rowCnt++;
+
+                    return;
+                }
+                else
+                    moveParent();
+            }
+
+            nextChild = null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            return nextChild != null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public R next() {
+            if (nextChild == null)
+                return null;
+
+            R res = resultByParentChild(nextParent, nextChild);
+
+            moveChild();
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void remove() {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * Gets current row number.
+         */
+        protected long getRowCount() {
+            return rowCnt;
+        }
+
+        /**
+         * Gets session.
+         */
+        public Session getSession() {
+            return ses;
+        }
+
+        /**
+         * Gets child iterator by parent
+         *
+         * @param parent Parent.
+         */
+        protected abstract Iterator<C> childIterator(P parent);
+
+        /**
+         * Get result by parent and child items.
+         *
+         * @param parent Parent.
+         * @param child Child.
+         */
+        protected abstract R resultByParentChild(P parent, C child);
     }
 }

@@ -109,119 +109,47 @@ public class GridH2SysViewImplNodeAttributes extends GridH2SysView {
     /**
      * Node attributes iterable.
      */
-    private class NodeAttributesIterable implements Iterable<Row> {
-        /** Session. */
-        private final Session ses;
-
-        /** Nodes. */
-        private final Iterable<ClusterNode> nodes;
-
+    private class NodeAttributesIterable extends ParentChildIterable<ClusterNode> {
         /**
          * @param ses Session.
          * @param nodes Nodes.
          */
         public NodeAttributesIterable(Session ses, Iterable<ClusterNode> nodes) {
-            this.ses = ses;
-            this.nodes = nodes;
+            super(ses, nodes);
         }
 
         /** {@inheritDoc} */
-        @NotNull @Override public Iterator<Row> iterator() {
-            return new NodeAttributesIterator(ses, nodes.iterator());
+        @Override protected Iterator<Row> parentChildIterator(Session ses, Iterator<ClusterNode> nodes) {
+            return new NodeAttributesIterator(ses, nodes);
         }
     }
 
     /**
      * Node attributes iterator.
      */
-    private class NodeAttributesIterator implements Iterator<Row> {
-        /** Session. */
-        private final Session ses;
-
-        /** Node iterator. */
-        private final Iterator<ClusterNode> nodeIter;
-
-        /** Attribute iterator. */
-        private Iterator<Map.Entry<String, Object>> attrIter;
-
-        /** Counter. */
-        private long rowCnt = 0;
-
-        /** Next node. */
-        private ClusterNode nextNode;
-
-        /** Next attribute. */
-        private Map.Entry<String, Object> nextAttr;
-
+    private class NodeAttributesIterator extends ParentChildIterator<ClusterNode, Map.Entry<String, Object>, Row> {
         /**
-         * @param nodeIter Node iterator.
+         * @param ses
+         * @param nodeIter Nodes iterator.
          */
         public NodeAttributesIterator(Session ses, Iterator<ClusterNode> nodeIter) {
-            this.ses = ses;
-            this.nodeIter = nodeIter;
-
-            moveAttr();
-        }
-
-        /**
-         * Move to next node.
-         */
-        private void moveNode() {
-            nextNode = nodeIter.next();
-
-            attrIter = nextNode.attributes().entrySet().iterator();
-        }
-
-        /**
-         * Move to next attribute.
-         */
-        private void moveAttr() {
-            // First iteration.
-            if (nextNode == null && nodeIter.hasNext())
-                moveNode();
-
-            // Empty nodes at first iteration.
-            if (attrIter == null)
-                return;
-
-            while (attrIter.hasNext() || nodeIter.hasNext()) {
-                if (attrIter.hasNext()) {
-                    nextAttr = attrIter.next();
-                    rowCnt++;
-
-                    return;
-                }
-                else
-                    moveNode();
-            }
-
-            nextAttr = null;
+            super(ses, nodeIter);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean hasNext() {
-            return nextAttr != null;
+        @Override protected Iterator<Map.Entry<String, Object>> childIterator(ClusterNode node) {
+            return node.attributes().entrySet().iterator();
         }
 
         /** {@inheritDoc} */
-        @Override public Row next() {
-            if (nextAttr == null)
-                return null;
-
-            Row row = GridH2SysViewImplNodeAttributes.this.createRow(ses, rowCnt,
-                nextNode.id(),
-                nextAttr.getKey(),
-                nextAttr.getValue()
+        @Override protected Row resultByParentChild(ClusterNode node, Map.Entry<String, Object> attr) {
+            Row row = createRow(getSession(), getRowCount(),
+                node.id(),
+                attr.getKey(),
+                attr.getValue()
             );
 
-            moveAttr();
-
             return row;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void remove() {
-            throw new UnsupportedOperationException();
         }
     }
 }

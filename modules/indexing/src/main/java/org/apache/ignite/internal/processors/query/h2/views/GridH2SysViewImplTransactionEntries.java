@@ -22,6 +22,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -50,7 +52,7 @@ public class GridH2SysViewImplTransactionEntries extends GridH2SysView {
             newColumn("KEY_PARTITION", Value.INT),
             newColumn("KEY_IS_INTERNAL", Value.BOOLEAN),
             newColumn("NODE_ID", Value.UUID)
-            );
+        );
     }
 
     /** {@inheritDoc} */
@@ -91,124 +93,52 @@ public class GridH2SysViewImplTransactionEntries extends GridH2SysView {
     /**
      * Transaction entries iterable.
      */
-    private class TxEntitiesIterable implements Iterable<Row> {
-        /** Session. */
-        private final Session ses;
-
-        /** Transactions. */
-        private final Iterable<IgniteInternalTx> txs;
-
+    private class TxEntitiesIterable extends ParentChildIterable<IgniteInternalTx> {
         /**
          * @param ses Session.
          * @param txs Transactions.
          */
         public TxEntitiesIterable(Session ses, Iterable<IgniteInternalTx> txs) {
-            this.ses = ses;
-            this.txs = txs;
+            super(ses, txs);
         }
 
         /** {@inheritDoc} */
-        @NotNull @Override public Iterator<Row> iterator() {
-            return new TxEntitiesIterator(ses, txs.iterator());
+        @Override protected Iterator<Row> parentChildIterator(Session ses, Iterator<IgniteInternalTx> txs) {
+            return new TxEntitiesIterator(ses, txs);
         }
     }
 
     /**
      * Transaction entries iterator.
      */
-    private class TxEntitiesIterator implements Iterator<Row> {
-        /** Session. */
-        private final Session ses;
-
-        /** Transaction iterator. */
-        private final Iterator<IgniteInternalTx> txIter;
-
-        /** Entry iterator. */
-        private Iterator<IgniteTxEntry> entryIter;
-
-        /** Counter. */
-        private long rowCnt = 0;
-
-        /** Next transaction. */
-        private IgniteInternalTx nextTx;
-
-        /** Next entry. */
-        private IgniteTxEntry nextEntry;
-
+    private class TxEntitiesIterator extends ParentChildIterator<IgniteInternalTx, IgniteTxEntry, Row> {
         /**
-         * @param txIter Transaction iterator.
+         * @param ses
+         * @param txIter Transactions iterator.
          */
         public TxEntitiesIterator(Session ses, Iterator<IgniteInternalTx> txIter) {
-            this.ses = ses;
-            this.txIter = txIter;
-
-            moveEntry();
-        }
-
-        /**
-         * Move to next transaction.
-         */
-        private void moveTx() {
-            nextTx = txIter.next();
-
-            entryIter = nextTx.allEntries().iterator();
-        }
-
-        /**
-         * Move to next entry.
-         */
-        private void moveEntry() {
-            // First iteration.
-            if (nextTx == null && txIter.hasNext())
-                moveTx();
-
-            // Empty transactions at first iteration.
-            if (entryIter == null)
-                return;
-
-            while (entryIter.hasNext() || txIter.hasNext()) {
-                if (entryIter.hasNext()) {
-                    nextEntry = entryIter.next();
-                    rowCnt++;
-
-                    return;
-                }
-                else
-                    moveTx();
-            }
-
-            nextEntry = null;
+            super(ses, txIter);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean hasNext() {
-            return nextEntry != null;
+        @Override protected Iterator<IgniteTxEntry> childIterator(IgniteInternalTx tx) {
+            return tx.allEntries().iterator();
         }
 
         /** {@inheritDoc} */
-        @Override public Row next() {
-            if (nextEntry == null)
-                return null;
-
-            Row row = createRow(ses, rowCnt,
-                nextTx.xid(),
-                nextEntry.context().name(),
-                nextEntry.op(),
-                nextEntry.locked(),
-                nextEntry.key().hashCode(),
-                nextEntry.key().partition(),
-                nextEntry.key().internal(),
-                nextEntry.nodeId()
+        @Override protected Row resultByParentChild(IgniteInternalTx tx, IgniteTxEntry entry) {
+            Row row = createRow(getSession(), getRowCount(),
+                tx.xid(),
+                entry.context().name(),
+                entry.op(),
+                entry.locked(),
+                entry.key().hashCode(),
+                entry.key().partition(),
+                entry.key().internal(),
+                entry.nodeId()
             );
 
-            moveEntry();
-
             return row;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void remove() {
-            throw new UnsupportedOperationException();
         }
     }
 }

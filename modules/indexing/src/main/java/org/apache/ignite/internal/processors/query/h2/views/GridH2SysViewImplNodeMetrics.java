@@ -38,8 +38,8 @@ public class GridH2SysViewImplNodeMetrics extends GridH2SysView {
      * @param ctx Grid context.
      */
     public GridH2SysViewImplNodeMetrics(GridKernalContext ctx) {
-        super("NODE_METRICS", "Nodes metrics", ctx, "ID",
-            newColumn("ID", Value.UUID),
+        super("NODE_METRICS", "Nodes metrics", ctx, "NODE_ID",
+            newColumn("NODE_ID", Value.UUID),
             newColumn("LAST_UPDATE_TIME", Value.TIMESTAMP),
             newColumn("MAX_ACTIVE_JOBS", Value.INT),
             newColumn("CUR_ACTIVE_JOBS", Value.INT),
@@ -105,7 +105,7 @@ public class GridH2SysViewImplNodeMetrics extends GridH2SysView {
 
         Collection<ClusterNode> nodes;
 
-        ColumnCondition idCond = conditionForColumn("ID", first, last);
+        ColumnCondition idCond = conditionForColumn("NODE_ID", first, last);
 
         if (idCond.isEquality()) {
             try {
