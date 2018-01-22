@@ -40,11 +40,15 @@ Creating NuGet package:
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>NLog Logger for Apache Ignite</description>
         <releaseNotes></releaseNotes>
-        <copyright>Copyright 2017</copyright>
+        <copyright>Copyright 2018</copyright>
         <tags>Apache Ignite In-Memory Distributed Computing SQL NoSQL LINQ Grid Map Reduce Cache NLog logger</tags>
         <dependencies>
             <dependency id="Apache.Ignite" version="[$version$]" />
             <dependency id="NLog" version="[4.0.0, 5.0.0)" />
         </dependencies>    
     </metadata>
+    <files>
+	    <file src="bin\$configuration$\Apache.Ignite.NLog.dll" target="lib\net40" />
+		<file src="bin\$configuration$\Apache.Ignite.NLog.xml" target="lib\net40" />
+    </files>
 </package>

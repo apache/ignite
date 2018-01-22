@@ -185,6 +185,29 @@ final class MarshallerMappingFileStore {
     }
 
     /**
+     * Checks if marshaller mapping for given [platformId, typeId] pair is already presented on disk.
+     * If so verifies that it is the same (if no {@link IgniteCheckedException} is thrown).
+     * If there is not such mapping writes it.
+     *
+     * @param platformId Platform id.
+     * @param typeId Type id.
+     * @param typeName Type name.
+     */
+    void mergeAndWriteMapping(byte platformId, int typeId, String typeName) throws IgniteCheckedException {
+        String existingTypeName = readMapping(platformId, typeId);
+
+        if (existingTypeName != null) {
+            if (!existingTypeName.equals(typeName))
+                throw new IgniteCheckedException("Failed to merge new and existing marshaller mappings." +
+                    " For [platformId=" + platformId + ", typeId=" + typeId + "]" +
+                    " new typeName=" + typeName + ", existing typeName=" + existingTypeName + "." +
+                    " Consider cleaning up persisted mappings from <workDir>/marshaller directory.");
+        }
+        else
+            writeMapping(platformId, typeId, typeName);
+    }
+
+    /**
      * @param fileName Name of file with marshaller mapping information.
      * @throws IgniteCheckedException If file name format is broken.
      */

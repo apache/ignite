@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Cache.Affinity
     using System;
     using System.Diagnostics;
     using System.Linq;
-    using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
 

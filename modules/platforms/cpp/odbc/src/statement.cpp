@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include <limits>
+
 #include "ignite/odbc/system/odbc_constants.h"
 #include "ignite/odbc/query/batch_query.h"
 #include "ignite/odbc/query/data_query.h"
@@ -42,7 +44,8 @@ namespace ignite
             rowsFetched(0),
             rowStatuses(0),
             columnBindOffset(0),
-            parameters()
+            parameters(),
+            timeout(0)
         {
             // No-op.
         }
@@ -282,6 +285,29 @@ namespace ignite
                     break;
                 }
 
+                case SQL_ATTR_QUERY_TIMEOUT:
+                {
+                    SqlUlen uTimeout = reinterpret_cast<SqlUlen>(value);
+
+                    if (uTimeout > INT32_MAX)
+                    {
+                        timeout = INT32_MAX;
+
+                        std::stringstream ss;
+
+                        ss << "Value is too big: " << uTimeout << ", changing to " << timeout << ".";
+                        std::string msg = ss.str();
+
+                        AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, msg);
+
+                        return SqlResult::AI_SUCCESS_WITH_INFO;
+                    }
+
+                    timeout = static_cast<int32_t>(uTimeout);
+
+                    break;
+                }
+
                 default:
                 {
                     AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
@@ -409,6 +435,15 @@ namespace ignite
                     break;
                 }
 
+                case SQL_ATTR_QUERY_TIMEOUT:
+                {
+                    SqlUlen *uTimeout = reinterpret_cast<SqlUlen*>(buf);
+
+                    *uTimeout = static_cast<SqlUlen>(timeout);
+
+                    break;
+                }
+
                 default:
                 {
                     AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
@@ -496,7 +531,7 @@ namespace ignite
             // Resetting parameters types as we are changing the query.
             parameters.Prepare();
 
-            currentQuery.reset(new query::DataQuery(*this, connection, query, parameters));
+            currentQuery.reset(new query::DataQuery(*this, connection, query, parameters, timeout));
 
             return SqlResult::AI_SUCCESS;
         }
@@ -534,13 +569,13 @@ namespace ignite
             {
                 query::DataQuery& qry = static_cast<query::DataQuery&>(*currentQuery);
 
-                currentQuery.reset(new query::BatchQuery(*this, connection, qry.GetSql(), parameters));
+                currentQuery.reset(new query::BatchQuery(*this, connection, qry.GetSql(), parameters, timeout));
             }
             else if (parameters.GetParamSetSize() == 1 && currentQuery->GetType() == query::QueryType::BATCH)
             {
                 query::BatchQuery& qry = static_cast<query::BatchQuery&>(*currentQuery);
 
-                currentQuery.reset(new query::DataQuery(*this, connection, qry.GetSql(), parameters));
+                currentQuery.reset(new query::DataQuery(*this, connection, qry.GetSql(), parameters, timeout));
             }
 
             if (parameters.IsDataAtExecNeeded())

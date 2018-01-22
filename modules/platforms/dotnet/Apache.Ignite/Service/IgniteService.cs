@@ -42,7 +42,7 @@ namespace Apache.Ignite.Service
             Assembly.GetExecutingAssembly().GetName().Version.ToString(4);
 
         /** Service description. */
-        public const string SvcDesc = "Apache Ignite.NET Service.";
+        public const string SvcDesc = "Apache Ignite.NET Service";
 
         /** Current executable name. */
         private static readonly string ExeName =
@@ -152,7 +152,16 @@ namespace Apache.Ignite.Service
             var argString = new StringBuilder(IgniteRunner.Svc);
 
             foreach (var arg in args)
-                argString.Append(" ").AppendFormat("-{0}={1}", arg.Item1, arg.Item2);
+            {
+                var val = arg.Item2;
+
+                if (val.Contains(' '))
+                {
+                    val = '"' + val + '"';
+                }
+
+                argString.Append(" ").AppendFormat("-{0}={1}", arg.Item1, val);
+            }
 
             IgniteServiceInstaller.Args = argString.ToString();
 

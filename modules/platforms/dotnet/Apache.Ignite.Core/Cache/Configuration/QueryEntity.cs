@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -237,6 +237,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
             KeyTypeName = reader.ReadString();
             ValueTypeName = reader.ReadString();
             TableName = reader.ReadString();
+            KeyFieldName = reader.ReadString();
+            ValueFieldName = reader.ReadString();
 
             var count = reader.ReadInt();
             Fields = count == 0
@@ -249,9 +251,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
             count = reader.ReadInt();
             Indexes = count == 0 ? null : Enumerable.Range(0, count).Select(x => new QueryIndex(reader)).ToList();
-
-            KeyFieldName = reader.ReadString();
-            ValueFieldName = reader.ReadString();
         }
 
         /// <summary>
@@ -262,6 +261,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteString(KeyTypeName);
             writer.WriteString(ValueTypeName);
             writer.WriteString(TableName);
+            writer.WriteString(KeyFieldName);
+            writer.WriteString(ValueFieldName);
 
             if (Fields != null)
             {
@@ -303,9 +304,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
             }
             else
                 writer.WriteInt(0);
-
-            writer.WriteString(KeyFieldName);
-            writer.WriteString(ValueFieldName);
         }
 
         /// <summary>
@@ -459,7 +457,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     fields.Add(new QueryField(columnName, memberInfo.Value)
                     {
                         IsKeyField = isKey,
-                        NotNull = attr.NotNull
+                        NotNull = attr.NotNull,
+                        DefaultValue = attr.DefaultValue
                     });
 
                     ScanAttributes(memberInfo.Value, fields, indexes, columnName, visitedTypes, isKey);

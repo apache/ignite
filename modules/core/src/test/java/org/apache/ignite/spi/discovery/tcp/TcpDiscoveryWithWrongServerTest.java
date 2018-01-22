@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -40,14 +41,17 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Client-based discovery SPI test with non-Ignite servers.
  */
 public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
-    /** Non-Ignite Server port. */
+    /** Non-Ignite Server port #1. */
     private final static int SERVER_PORT = 47500;
 
-    /** Non-Ignite Server socket. */
-    private ServerSocket srvSock;
+    /** Non-Ignite Server port #2. */
+    private final static int LAST_SERVER_PORT = SERVER_PORT + 5;
+
+    /** Non-Ignite Server sockets. */
+    private List<ServerSocket> srvSocks = new ArrayList<>();
 
     /** Count of accepted connections to non-Ignite Server. */
-    private int connCnt;
+    private AtomicInteger connCnt = new AtomicInteger(0);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -56,7 +60,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
         TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
 
         ipFinder.setAddresses(Collections.singleton("127.0.0.1:" + Integer.toString(SERVER_PORT) + ".." +
-            Integer.toString(SERVER_PORT + 2)));
+            Integer.toString(LAST_SERVER_PORT)));
 
         cfg.setDiscoverySpi(new TcpDiscoverySpiWithOrderedIps().setIpFinder(ipFinder));
 
@@ -68,7 +72,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        stopTcpThread();
+        stopTcpThreads();
 
         stopAllGrids();
 
@@ -79,15 +83,10 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
      * Starts tcp test thread
      * @param workerFactory one of WorkerFactory
      */
-    private void startTcpThread(final WorkerFactory workerFactory) {
-        connCnt = 0;
+    private void startTcpThread(final WorkerFactory workerFactory, final int port) throws Exception {
+        final ServerSocket srvSock = new ServerSocket(port, 10, InetAddress.getByName("127.0.0.1"));
 
-        try {
-            srvSock = new ServerSocket(SERVER_PORT, 10, InetAddress.getByName("127.0.0.1"));
-        }
-        catch (Exception e) {
-            fail("Unexpected TcpServer exception " + e.getMessage());
-        }
+        srvSocks.add(srvSock);
 
         new GridTestThread(new Runnable() {
             @Override public void run() {
@@ -95,7 +94,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
                     while(!Thread.currentThread().isInterrupted()) {
                         Socket clientSock = srvSock.accept();
 
-                        connCnt++;
+                        connCnt.getAndIncrement();
 
                         // Create a new thread for socket connection.
                         new GridTestThread(workerFactory.newWorker(clientSock)).start();
@@ -103,7 +102,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
                 }
                 catch (Exception e) {
                     if (!srvSock.isClosed())
-                        e.printStackTrace();
+                        log.error("Unexpected error", e);
                 }
             }
         }).start();
@@ -113,9 +112,10 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
      * Stops tcp test thread
      * @throws IOException IOException
      */
-    private void stopTcpThread() throws IOException {
-        if (srvSock != null && !srvSock.isClosed())
-            srvSock.close();
+    private void stopTcpThreads() throws IOException {
+        for (ServerSocket srvSock: srvSocks)
+            if (!srvSock.isClosed())
+                srvSock.close();
     }
 
     /**
@@ -124,7 +124,8 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
      * @throws Exception in case of error.
      */
     public void testWrongHandshakeResponse() throws Exception {
-        startTcpThread(new SomeResponseWorker());
+        startTcpThread(new SomeResponseWorker(), SERVER_PORT);
+        startTcpThread(new SomeResponseWorker(), LAST_SERVER_PORT);
 
         simpleTest();
     }
@@ -135,7 +136,8 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
      * @throws Exception in case of error.
      */
     public void testNoHandshakeResponse() throws Exception {
-        startTcpThread(new NoResponseWorker());
+        startTcpThread(new NoResponseWorker(), SERVER_PORT);
+        startTcpThread(new NoResponseWorker(), LAST_SERVER_PORT);
 
         simpleTest();
     }
@@ -146,7 +148,8 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
      * @throws Exception in case of error.
      */
     public void testDisconnectOnRequest() throws Exception {
-        startTcpThread(new DisconnectOnRequestWorker());
+        startTcpThread(new DisconnectOnRequestWorker(), SERVER_PORT);
+        startTcpThread(new DisconnectOnRequestWorker(), LAST_SERVER_PORT);
 
         simpleTest();
     }
@@ -157,7 +160,8 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
      * @throws Exception in case of error.
      */
     public void testEarlyDisconnect() throws Exception {
-        startTcpThread(new EarlyDisconnectWorker());
+        startTcpThread(new EarlyDisconnectWorker(), SERVER_PORT);
+        startTcpThread(new EarlyDisconnectWorker(), LAST_SERVER_PORT);
 
         simpleTest();
     }
@@ -176,7 +180,7 @@ public class TcpDiscoveryWithWrongServerTest extends GridCommonAbstractTest {
 
             assertEquals(2, srv.cluster().nodes().size());
             assertEquals(2, client.cluster().nodes().size());
-            assertTrue(connCnt >= 2);
+            assertTrue(connCnt.get() >= 2);
 
             srv.getOrCreateCache(DEFAULT_CACHE_NAME).put(1, 1);
 

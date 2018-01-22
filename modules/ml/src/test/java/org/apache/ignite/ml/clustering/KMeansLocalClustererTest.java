@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.clustering;
 
-import org.apache.ignite.ml.math.EuclideanDistance;
+import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.junit.Assert;
 import org.junit.Test;

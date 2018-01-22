@@ -64,6 +64,16 @@ public class IndexingQueryCacheFilter {
     public boolean apply(Object key) {
         int part = aff.partition(key);
 
+        return applyPartition(part);
+    }
+
+    /**
+     * Apply filter.
+     *
+     * @param part Partition.
+     * @return {@code True} if passed.
+     */
+    public boolean applyPartition(int part) {
         if (parts == null)
             return aff.primaryByPartition(locNode, part, topVer);
         else

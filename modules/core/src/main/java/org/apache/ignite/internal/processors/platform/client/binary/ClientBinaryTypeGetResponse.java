@@ -37,8 +37,6 @@ public class ClientBinaryTypeGetResponse extends ClientResponse {
     ClientBinaryTypeGetResponse(long requestId, BinaryMetadata meta) {
         super(requestId);
 
-        assert meta != null;
-
         this.meta = meta;
     }
 
@@ -46,6 +44,12 @@ public class ClientBinaryTypeGetResponse extends ClientResponse {
     @Override public void encode(BinaryRawWriterEx writer) {
         super.encode(writer);
 
-        PlatformUtils.writeBinaryMetadata(writer, meta, true);
+        if (meta != null) {
+            writer.writeBoolean(true);  // Not null.
+
+            PlatformUtils.writeBinaryMetadata(writer, meta, true);
+        } else {
+            writer.writeBoolean(false);  // Null.
+        }
     }
 }

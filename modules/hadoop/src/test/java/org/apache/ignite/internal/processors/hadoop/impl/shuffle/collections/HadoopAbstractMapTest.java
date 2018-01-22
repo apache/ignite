@@ -177,5 +177,11 @@ public abstract class HadoopAbstractMapTest extends GridCommonAbstractTest {
 
             return null;
         }
+
+        @Override public byte[] credentials() {
+            assert false;
+
+            return null;
+        }
     }
 }

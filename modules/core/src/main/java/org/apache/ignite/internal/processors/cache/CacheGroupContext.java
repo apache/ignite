@@ -56,6 +56,7 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -143,6 +144,9 @@ public class CacheGroupContext {
     /** */
     private boolean qryEnabled;
 
+    /** MXBean. */
+    private CacheGroupMetricsMXBean mxBean;
+
     /**
      * @param grpId Group ID.
      * @param ctx Context.
@@ -193,6 +197,8 @@ public class CacheGroupContext {
         log = ctx.kernalContext().log(getClass());
 
         caches = new ArrayList<>();
+
+        mxBean = new CacheGroupMetricsMXBeanImpl(this);
     }
 
     /**
@@ -342,7 +348,9 @@ public class CacheGroupContext {
     public GridCacheContext singleCacheContext() {
         List<GridCacheContext> caches = this.caches;
 
-        assert !sharedGroup() && caches.size() == 1 : ctx.kernalContext().isStopping();
+        assert !sharedGroup() && caches.size() == 1 :
+            "stopping=" +  ctx.kernalContext().isStopping() + ", groupName=" + ccfg.getGroupName() +
+            ", caches=" + caches;
 
         return caches.get(0);
     }
@@ -484,7 +492,7 @@ public class CacheGroupContext {
      * @return {@code True} if fast eviction is allowed.
      */
     public boolean allowFastEviction() {
-        return ctx.database().persistenceEnabled() && !queriesEnabled();
+        return persistenceEnabled() && !queriesEnabled();
     }
 
     /**
@@ -671,7 +679,7 @@ public class CacheGroupContext {
 
     /**
      * @param cctx Cache context.
-     * @param destroy Destroy flag.
+     * @param destroy Destroy data flag. Setting to <code>true</code> will remove all cache data.
      */
     void stopCache(GridCacheContext cctx, boolean destroy) {
         if (top != null)
@@ -971,6 +979,13 @@ public class CacheGroupContext {
             top.onReconnected();
 
         preldr.onReconnected();
+    }
+
+    /**
+     * @return MXBean.
+     */
+    public CacheGroupMetricsMXBean mxBean() {
+        return mxBean;
     }
 
     /** {@inheritDoc} */

@@ -71,7 +71,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Cache active on start or not*/
     private boolean disabledAfterStart;
 
-    /** Destroy. */
+    /** Cache data destroy flag. Setting to <code>true</code> will cause removing all cache data.*/
     private boolean destroy;
 
     /** Whether cache was created through SQL. */
@@ -144,7 +144,7 @@ public class DynamicCacheChangeRequest implements Serializable {
      * @param ctx Context.
      * @param cacheName Cache name.
      * @param sql {@code true} if the cache must be stopped only if it was created by SQL command {@code CREATE TABLE}.
-     * @param destroy Destroy flag.
+     * @param destroy Cache data destroy flag. Setting to <code>true</code> will cause removing all cache data.
      * @return Cache stop request.
      */
     public static DynamicCacheChangeRequest stopRequest(
@@ -226,14 +226,15 @@ public class DynamicCacheChangeRequest implements Serializable {
     }
 
     /**
-     * @return Destroy flag.
+     * @return Cache data destroy flag. Setting to <code>true</code> will remove all cache data.
      */
     public boolean destroy(){
         return destroy;
     }
 
     /**
-     * @param destroy Destroy.
+     * Sets cache data destroy flag. Setting to <code>true</code> will cause removing all cache data.
+     * @param destroy Destroy flag.
      */
     public void destroy(boolean destroy) {
         this.destroy = destroy;
@@ -359,6 +360,8 @@ public class DynamicCacheChangeRequest implements Serializable {
     }
 
     /**
+     * Sets if cache is created using create table.
+     *
      * @param sql New SQL flag.
      */
     public void sql(boolean sql) {

@@ -18,103 +18,105 @@
 export default ['IgniteVersion', 'JavaTransformer', function(Version, java) {
     const ctrl = this;
 
-    delete ctrl.data;
+    this.$onInit = () => {
+        delete ctrl.data;
 
-    const client = ctrl.client === 'true';
+        const client = ctrl.client === 'true';
 
-    const available = Version.available.bind(Version);
+        const available = Version.available.bind(Version);
 
-    // Setup generator.
-    switch (ctrl.generator) {
-        case 'igniteConfiguration':
-            const clsName = client ? 'ClientConfigurationFactory' : 'ServerConfigurationFactory';
+        // Setup generator.
+        switch (ctrl.generator) {
+            case 'igniteConfiguration':
+                const clsName = client ? 'ClientConfigurationFactory' : 'ServerConfigurationFactory';
 
-            ctrl.generate = (cluster) => java.cluster(cluster, Version.currentSbj.getValue(), 'config', clsName, client);
+                ctrl.generate = (cluster) => java.cluster(cluster, Version.currentSbj.getValue(), 'config', clsName, client);
 
-            break;
-        case 'clusterCaches':
-            ctrl.generate = (cluster, caches) => {
-                const clusterCaches = _.reduce(caches, (acc, cache) => {
-                    if (_.includes(cluster.caches, cache.value))
-                        acc.push(cache.cache);
+                break;
+            case 'clusterCaches':
+                ctrl.generate = (cluster, caches) => {
+                    const clusterCaches = _.reduce(caches, (acc, cache) => {
+                        if (_.includes(cluster.caches, cache.value))
+                            acc.push(cache.cache);
 
-                    return acc;
-                }, []);
+                        return acc;
+                    }, []);
 
-                const cfg = java.generator.clusterGeneral(cluster, available);
+                    const cfg = java.generator.clusterGeneral(cluster, available);
 
-                java.generator.clusterCaches(cluster, clusterCaches, null, available, false, cfg);
+                    java.generator.clusterCaches(cluster, clusterCaches, null, available, false, cfg);
 
-                return java.toSection(cfg);
-            };
+                    return java.toSection(cfg);
+                };
 
-            break;
-        case 'cacheStore':
-        case 'cacheQuery':
-            ctrl.generate = (cache, domains) => {
-                const cacheDomains = _.reduce(domains, (acc, domain) => {
-                    if (_.includes(cache.domains, domain.value))
-                        acc.push(domain.meta);
+                break;
+            case 'cacheStore':
+            case 'cacheQuery':
+                ctrl.generate = (cache, domains) => {
+                    const cacheDomains = _.reduce(domains, (acc, domain) => {
+                        if (_.includes(cache.domains, domain.value))
+                            acc.push(domain.meta);
 
-                    return acc;
-                }, []);
+                        return acc;
+                    }, []);
 
-                return java[ctrl.generator](cache, cacheDomains, available);
-            };
+                    return java[ctrl.generator](cache, cacheDomains, available);
+                };
 
-            break;
-        case 'cacheNodeFilter':
-            ctrl.generate = (cache, igfss) => {
-                const cacheIgfss = _.reduce(igfss, (acc, igfs) => {
-                    acc.push(igfs.igfs);
-
-                    return acc;
-                }, []);
-
-                return java.cacheNodeFilter(cache, cacheIgfss);
-            };
-
-            break;
-        case 'clusterServiceConfiguration':
-            ctrl.generate = (cluster, caches) => {
-                const clusterCaches = _.reduce(caches, (acc, cache) => {
-                    if (_.includes(cluster.caches, cache.value))
-                        acc.push(cache.cache);
-
-                    return acc;
-                }, []);
-
-                return java.clusterServiceConfiguration(cluster.serviceConfigurations, clusterCaches);
-            };
-
-            break;
-        case 'clusterCheckpoint':
-            ctrl.generate = (cluster, caches) => {
-                const clusterCaches = _.reduce(caches, (acc, cache) => {
-                    if (_.includes(cluster.caches, cache.value))
-                        acc.push(cache.cache);
-
-                    return acc;
-                }, []);
-
-                return java.clusterCheckpoint(cluster, clusterCaches);
-            };
-
-            break;
-        case 'igfss':
-            ctrl.generate = (cluster, igfss) => {
-                const clusterIgfss = _.reduce(igfss, (acc, igfs) => {
-                    if (_.includes(cluster.igfss, igfs.value))
+                break;
+            case 'cacheNodeFilter':
+                ctrl.generate = (cache, igfss) => {
+                    const cacheIgfss = _.reduce(igfss, (acc, igfs) => {
                         acc.push(igfs.igfs);
 
-                    return acc;
-                }, []);
+                        return acc;
+                    }, []);
 
-                return java.clusterIgfss(clusterIgfss, available);
-            };
+                    return java.cacheNodeFilter(cache, cacheIgfss);
+                };
 
-            break;
-        default:
-            ctrl.generate = (master) => java[ctrl.generator](master, available);
-    }
+                break;
+            case 'clusterServiceConfiguration':
+                ctrl.generate = (cluster, caches) => {
+                    const clusterCaches = _.reduce(caches, (acc, cache) => {
+                        if (_.includes(cluster.caches, cache.value))
+                            acc.push(cache.cache);
+
+                        return acc;
+                    }, []);
+
+                    return java.clusterServiceConfiguration(cluster.serviceConfigurations, clusterCaches);
+                };
+
+                break;
+            case 'clusterCheckpoint':
+                ctrl.generate = (cluster, caches) => {
+                    const clusterCaches = _.reduce(caches, (acc, cache) => {
+                        if (_.includes(cluster.caches, cache.value))
+                            acc.push(cache.cache);
+
+                        return acc;
+                    }, []);
+
+                    return java.clusterCheckpoint(cluster, clusterCaches);
+                };
+
+                break;
+            case 'igfss':
+                ctrl.generate = (cluster, igfss) => {
+                    const clusterIgfss = _.reduce(igfss, (acc, igfs) => {
+                        if (_.includes(cluster.igfss, igfs.value))
+                            acc.push(igfs.igfs);
+
+                        return acc;
+                    }, []);
+
+                    return java.clusterIgfss(clusterIgfss, available);
+                };
+
+                break;
+            default:
+                ctrl.generate = (master) => java[ctrl.generator](master, available);
+        }
+    };
 }];
