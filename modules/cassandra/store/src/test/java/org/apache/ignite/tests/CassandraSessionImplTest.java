@@ -84,7 +84,7 @@ public class CassandraSessionImplTest {
         verify(cluster, times(2)).connect();
         verify(session1, times(1)).prepare(any(String.class));
         verify(session2, times(1)).prepare(any(String.class));
-        assertEquals(9, batchExecutionAssistant.processedCount());
+        assertEquals(10, batchExecutionAssistant.processedCount());
     }
 
     private static PreparedStatement mockPreparedStatement() {
