@@ -247,6 +247,21 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         }
 
         /// <summary>
+        /// Determines whether we are on Java 9.
+        /// </summary>
+        private static bool IsJava9()
+        {
+            var args = new JvmInitArgs
+            {
+                version = JNI_VERSION_9
+            };
+
+            // Returns error on Java 8 and lower.
+            var res = JvmDll.Instance.GetDefaultJvmInitArgs(&args);
+            return res == JniResult.Success;
+        }
+
+        /// <summary>
         /// Creates the JVM.
         /// </summary>
         private static IntPtr CreateJvm(IList<string> options)
@@ -255,10 +270,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             var args = new JvmInitArgs
             {
                 // We request JNI_9, but on 8 we should get back JNI_VERSION_1_8
-                version = JNI_VERSION_9
+                version = JNI_VERSION_1_8
             };
 
-            JvmDll.Instance.GetDefaultJvmInitArgs(&args);
+            var r = JvmDll.Instance.GetDefaultJvmInitArgs(&args);
             Debug.Assert(args.version == JNI_VERSION_1_8);  // Looks like Java 9 is the same :(
 
             // TODO: Throw exception if less than Java 8?
