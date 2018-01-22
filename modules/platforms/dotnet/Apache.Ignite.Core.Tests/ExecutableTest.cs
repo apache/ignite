@@ -409,8 +409,8 @@ namespace Apache.Ignite.Core.Tests
         private static void AssertJvmMaxMemory(long expected, long actual)
         {
             // allow 20% tolerance because max memory in Java is not exactly equal to Xmx parameter value
-            Assert.LessOrEqual(actual, expected);
-            Assert.Greater(actual, expected/5*4);
+            Assert.LessOrEqual(actual, expected / 4 * 5);
+            Assert.Greater(actual, expected / 5 * 4);
         }
 
         /// <summary>
