@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.AreEqual(0, metrics.WalArchiveSegments);
                 Assert.AreEqual(0, metrics.WalFsyncTimeAverage);
 
-                Assert.Greater(metrics.LastCheckpointTotalPagesNumber, 26);
+                Assert.GreaterOrEqual(metrics.LastCheckpointTotalPagesNumber, 26);
                 Assert.AreEqual(0, metrics.LastCheckpointDataPagesNumber);
                 Assert.AreEqual(0, metrics.LastCheckpointCopiedOnWritePagesNumber);
                 Assert.AreEqual(TimeSpan.Zero, metrics.LastCheckpointLockWaitDuration);
