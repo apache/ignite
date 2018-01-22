@@ -38,7 +38,7 @@ import org.springframework.util.StringUtils;
  */
 public class SpringScheduler {
 
-    /** Counter to generate Task ida. */
+    /** Counter to generate Task id. */
     private AtomicInteger cntr = new AtomicInteger();
 
     /** Spring Task scheduler implementation. */
@@ -55,7 +55,7 @@ public class SpringScheduler {
      * Default constructor.
      */
     public SpringScheduler() {
-        this.taskScheduler = new ThreadPoolTaskScheduler();
+        taskScheduler = new ThreadPoolTaskScheduler();
     }
 
     /**
@@ -77,6 +77,7 @@ public class SpringScheduler {
     public void start() {
         taskScheduler.setThreadNamePrefix("task-scheduler-#");
         taskScheduler.initialize();
+
         started = true;
     }
 
@@ -92,6 +93,7 @@ public class SpringScheduler {
      */
     public void stop() {
         started = false;
+
         taskScheduler.shutdown();
     }
 
@@ -108,7 +110,7 @@ public class SpringScheduler {
 
             ScheduledFuture<?> fut = taskScheduler.schedule(run, trigger);
 
-            Integer id = this.cntr.incrementAndGet();
+            Integer id = cntr.incrementAndGet();
 
             schedFuts.put(id, fut);
 
@@ -131,24 +133,11 @@ public class SpringScheduler {
 
     /**
      * @param cron expression
-     * @return true if expression is valid, otherwise false
-     */
-    public boolean isValid(String cron) {
-        try {
-            new CronSequenceGenerator(addDoW(cron));
-
-            return true;
-        }
-        catch (IllegalArgumentException e) {
-            return false;
-        }
-    }
-
-    /**
-     * @param cron expression
      * @throws IgniteCheckedException if cron expression is not valid
      */
     public void validate(String cron) throws IgniteCheckedException {
+        if (cron == null || cron.isEmpty())
+            throw new IgniteCheckedException("Invalid cron expression in schedule pattern: " + cron);
         try {
             new CronSequenceGenerator(addDoW(cron));
         }
@@ -164,8 +153,7 @@ public class SpringScheduler {
      * @return array long[cnt] of the next execition times in milliseconds
      * @throws IgniteException if cron expression is not valid
      */
-    public long[] getNextExecutionTimes(String cron, int cnt,
-        long start) throws IgniteException {
+    public long[] getNextExecutionTimes(String cron, int cnt, long start) throws IgniteException {
         long[] times = new long[cnt];
 
         try {

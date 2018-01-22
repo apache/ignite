@@ -303,6 +303,9 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
             schedule0();
     }
 
+    /**
+     * schedules executing task
+     */
     private void schedule0() {
         assert id == null;
 
@@ -315,7 +318,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
         }
         catch (IgniteException e) {
             // This should never happen as we validated the pattern during parsing.
-            e.printStackTrace();
+            U.error(log, "Invalid scheduling pattern: " + cron, e);
 
             assert false : "Invalid scheduling pattern: " + cron;
         }
@@ -389,10 +392,6 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
 
             if (cron != null)
                 cron = cron.trim();
-
-            // Cron expression should never be empty and should be of correct format.
-            if (cron == null || cron.isEmpty())
-                throw new IgniteCheckedException("Invalid cron expression in schedule pattern: " + pat);
 
             sched.validate(cron);
         }
@@ -682,21 +681,42 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
 
     /** {@inheritDoc} */
     @Nullable @Override public R get() {
-        return get(0, MILLISECONDS);
+        return doGet(0, null);
     }
 
     /** {@inheritDoc} */
     @Override public R get(long timeout) {
-        return get(timeout, MILLISECONDS);
+        return doGet(timeout, MILLISECONDS);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public R get(long timeout, TimeUnit unit) throws IgniteException {
+        A.notNull(unit, "unit");
+        return doGet(timeout, unit);
+    }
+
+    /**
+     * Waits for the completion of the next scheduled execution for
+     * specified amount of time, or indefinitely if the specified {@code unit} == null.
+     *
+     * @param timeout The maximum time to wait.
+     * @param unit The time unit of the {@code timeout} argument.
+     * @return Computation result.
+     * @throws IgniteInterruptedException Subclass of {@link IgniteException} thrown if the wait was interrupted.
+     * @throws IgniteFutureCancelledException Subclass of {@link IgniteException} thrown if computation was cancelled.
+     * @throws IgniteFutureTimeoutException Subclass of {@link IgniteException} thrown if the wait was timed out.
+     * @throws IgniteException If computation failed.
+     */
+    @Nullable private R doGet(long timeout, @Nullable TimeUnit unit) throws IgniteException {
         CountDownLatch latch = ensureGet();
 
         if (latch != null) {
             try {
-                latchAwait(latch, timeout, unit);
+                if (unit == null)
+                    latch.await();
+                else if (!latch.await(timeout, unit))
+                    throw new IgniteFutureTimeoutException("Timed out waiting for completion of next " +
+                        "scheduled computation: " + this);
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -712,14 +732,6 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
         }
 
         return last();
-    }
-
-    private void latchAwait(CountDownLatch latch, long timeout, TimeUnit unit) throws InterruptedException {
-        if (timeout == 0)
-            latch.await();
-        else if (!latch.await(timeout, unit))
-            throw new IgniteFutureTimeoutException("Timed out waiting for completion of next " +
-                "scheduled computation: " + this);
     }
 
     /**
