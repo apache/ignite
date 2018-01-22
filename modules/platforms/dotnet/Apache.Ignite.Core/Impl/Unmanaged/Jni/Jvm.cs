@@ -266,23 +266,18 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// </summary>
         private static IntPtr CreateJvm(IList<string> options)
         {
-            // TODO: Detect Java version and append Java9 args only when needed.
+            if (IsJava9())
+            {
+                options = options == null
+                    ? Java9Options.ToList()
+                    : new List<string>(options.Concat(Java9Options));
+            }
+
             var args = new JvmInitArgs
             {
-                // We request JNI_9, but on 8 we should get back JNI_VERSION_1_8
-                version = JNI_VERSION_1_8
+                version = JNI_VERSION_1_8,
+                nOptions = options.Count
             };
-
-            var r = JvmDll.Instance.GetDefaultJvmInitArgs(&args);
-            Debug.Assert(args.version == JNI_VERSION_1_8);  // Looks like Java 9 is the same :(
-
-            // TODO: Throw exception if less than Java 8?
-
-            options = options == null
-                ? Java9Options.ToList()
-                : new List<string>(options.Concat(Java9Options));
-
-            args.nOptions = options.Count;
 
             var opts = GetJvmOptions(options);
 
