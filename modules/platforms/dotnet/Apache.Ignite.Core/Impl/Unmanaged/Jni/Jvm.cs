@@ -79,7 +79,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /** Console writer flag. */
         private int _isConsoleWriterEnabled;
 
-
         /// <summary>
         /// Initializes a new instance of the <see cref="_instance"/> class.
         /// </summary>
