@@ -155,7 +155,6 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     /** */
     public void testMemoryUsageMultipleNodes() throws Exception {
         IgniteEx node0 = startGrid(0);
-
         IgniteEx node1 = startGrid(1);
 
         node0.cluster().active(true);
@@ -179,6 +178,8 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         IgniteEx node2 = startGrid(2);
 
+        baseline();
+
         awaitPartitionMapExchange(true, true, null);
 
         node0.context().cache().context().database().waitForCheckpoint("");
@@ -190,6 +191,8 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         checkMetricsConsistency(node2, getDfltRegGroupIds(node2));
 
         stopGrid(1, true);
+
+        baseline();
 
         awaitPartitionMapExchange(true, true, null);
 
