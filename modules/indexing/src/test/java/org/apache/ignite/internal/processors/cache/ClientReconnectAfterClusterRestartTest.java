@@ -119,6 +119,8 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
 
             checkTopology(2);
 
+            IgniteCache<Long, BinaryObject> cache = client.getOrCreateCache(CACHE_PARAMS).withKeepBinary();
+
             client.events().localListen(new IgnitePredicate<Event>() {
 
                 @Override public boolean apply(Event event) {
@@ -180,8 +182,6 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
             streamer.keepBinary(true);
             streamer.perNodeBufferSize(10000);
             streamer.perNodeParallelOperations(100);
-
-            IgniteCache<Long, BinaryObject> cache = client.getOrCreateCache(CACHE_PARAMS).withKeepBinary();
 
             builder = client.binary().builder("PARAMS");
             builder.setField("ID", 2L);
