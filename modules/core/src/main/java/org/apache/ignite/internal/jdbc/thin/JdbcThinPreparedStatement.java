@@ -80,7 +80,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
         ResultSet rs = getResultSet();
 
         if (rs == null)
-            throw new SQLException("The query isn't SELECT query: " + sql, SqlStateCode.SYNTAX_ERROR_OR_ACCESS_VIOLATION);
+            throw new SQLException("The query isn't SELECT query: " + sql, SqlStateCode.PARSING_EXCEPTION);
 
         return rs;
     }
@@ -98,7 +98,7 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
         int res = getUpdateCount();
 
         if (res == -1)
-            throw new SQLException("The query is not DML statement: " + sql, SqlStateCode.SYNTAX_ERROR_OR_ACCESS_VIOLATION);
+            throw new SQLException("The query is not DML statement: " + sql, SqlStateCode.PARSING_EXCEPTION);
 
         return res;
     }

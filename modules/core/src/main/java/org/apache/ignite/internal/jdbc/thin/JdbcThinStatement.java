@@ -116,7 +116,7 @@ public class JdbcThinStatement implements Statement {
         ResultSet rs = getResultSet();
 
         if (rs == null)
-            throw new SQLException("The query isn't SELECT query: " + sql, SqlStateCode.SYNTAX_ERROR_OR_ACCESS_VIOLATION);
+            throw new SQLException("The query isn't SELECT query: " + sql, SqlStateCode.PARSING_EXCEPTION);
 
         return rs;
     }
@@ -236,7 +236,7 @@ public class JdbcThinStatement implements Statement {
             }
 
             throw new SQLException("Failed to read file: '" + fileName + "'",
-                SqlStateCode.SYNTAX_ERROR_OR_ACCESS_VIOLATION, e);
+                SqlStateCode.INTERNAL_ERROR, e);
         }
         catch (SQLException e) {
             try {
@@ -247,7 +247,7 @@ public class JdbcThinStatement implements Statement {
             }
             catch (SQLException e1) {
                 throw new SQLException("Cannot send finalization request: " + e1.getMessage(),
-                    SqlStateCode.SYNTAX_ERROR_OR_ACCESS_VIOLATION, e);
+                    SqlStateCode.INTERNAL_ERROR, e);
             }
 
             throw e;

@@ -735,7 +735,7 @@ public class JdbcThinResultSet implements ResultSet {
         Integer order = columnOrder().get(colLb.toUpperCase());
 
         if (order == null)
-            throw new SQLException("Column not found: " + colLb, SqlStateCode.SYNTAX_ERROR_OR_ACCESS_VIOLATION);
+            throw new SQLException("Column not found: " + colLb, SqlStateCode.PARSING_EXCEPTION);
 
         assert order >= 0;
 
@@ -1841,7 +1841,7 @@ public class JdbcThinResultSet implements ResultSet {
             return val;
         }
         catch (IndexOutOfBoundsException e) {
-            throw new SQLException("Invalid column index: " + colIdx, SqlStateCode.SYNTAX_ERROR_OR_ACCESS_VIOLATION, e);
+            throw new SQLException("Invalid column index: " + colIdx, SqlStateCode.PARSING_EXCEPTION, e);
         }
     }
 

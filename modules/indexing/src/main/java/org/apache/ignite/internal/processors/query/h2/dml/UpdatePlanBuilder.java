@@ -268,96 +268,6 @@ public final class UpdatePlanBuilder {
     }
 
     /**
-     * Prepare update plan for COPY command (AKA bulk load).
-     *
-     * @param cmd Bulk load command
-     * @param idx Ignite indexing meta-object.
-     * @return The update plan for this
-     * @throws IgniteCheckedException if failed.
-     */
-    @SuppressWarnings("ConstantConditions")
-    public static UpdatePlan planForBulkLoad(SqlBulkLoadCommand cmd, IgniteH2Indexing idx) throws IgniteCheckedException {
-        GridSqlQuery sel;
-
-        List<String> cols;
-
-        GridH2Table tbl;
-        GridH2RowDescriptor desc;
-
-        tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
-
-        desc = tbl.rowDescriptor();
-
-        if (desc == null)
-            throw new IgniteSQLException("Row descriptor undefined for table '" + tbl.getName() + "'",
-                IgniteQueryErrorCode.NULL_TABLE_DESCRIPTOR);
-
-        cols = cmd.columns();
-
-        int keyColIdx = -1;
-        int valColIdx = -1;
-
-        boolean hasKeyProps = false;
-        boolean hasValProps = false;
-
-        GridCacheContext<?, ?> cctx = desc.context();
-
-        String[] colNames = new String[cols.size()];
-
-        int[] colTypes = new int[cols.size()];
-
-        for (int i = 0; i < cols.size(); i++) {
-            String colName = cols.get(i);
-
-            colNames[i] = colName;
-
-            GridQueryProperty prop = desc.type().property(colName);
-
-            assert prop != null : "Property '" + colName + "' not found.";
-
-            Column h2Col = tbl.getColumn(colName);
-
-            colTypes[i] = h2Col.getType();
-            int colId = h2Col.getColumnId();
-
-            if (desc.isKeyColumn(colId)) {
-                keyColIdx = i;
-                continue;
-            }
-
-            if (desc.isValueColumn(colId)) {
-                valColIdx = i;
-                continue;
-            }
-
-            if (prop.key())
-                hasKeyProps = true;
-            else
-                hasValProps = true;
-        }
-
-        KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true, false);
-        KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false, false);
-
-        return new UpdatePlan(
-            UpdateMode.INSERT,
-            tbl,
-            colNames,
-            colTypes,
-            keySupplier,
-            valSupplier,
-            keyColIdx,
-            valColIdx,
-            null,
-            true, // FIXME SHQ: false?
-            null,
-            0,
-            null,
-            null
-        );
-    }
-
-    /**
      * Prepare update plan for UPDATE or DELETE.
      *
      * @param stmt UPDATE or DELETE statement.
@@ -495,6 +405,96 @@ public final class UpdatePlanBuilder {
                 );
             }
         }
+    }
+
+    /**
+     * Prepare update plan for COPY command (AKA bulk load).
+     *
+     * @param cmd Bulk load command
+     * @param idx Ignite indexing meta-object.
+     * @return The update plan for this
+     * @throws IgniteCheckedException if failed.
+     */
+    @SuppressWarnings("ConstantConditions")
+    public static UpdatePlan planForBulkLoad(SqlBulkLoadCommand cmd, IgniteH2Indexing idx) throws IgniteCheckedException {
+        GridSqlQuery sel;
+
+        List<String> cols;
+
+        GridH2Table tbl;
+        GridH2RowDescriptor desc;
+
+        tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+
+        desc = tbl.rowDescriptor();
+
+        if (desc == null)
+            throw new IgniteSQLException("Row descriptor undefined for table '" + tbl.getName() + "'",
+                IgniteQueryErrorCode.NULL_TABLE_DESCRIPTOR);
+
+        cols = cmd.columns();
+
+        int keyColIdx = -1;
+        int valColIdx = -1;
+
+        boolean hasKeyProps = false;
+        boolean hasValProps = false;
+
+        GridCacheContext<?, ?> cctx = desc.context();
+
+        String[] colNames = new String[cols.size()];
+
+        int[] colTypes = new int[cols.size()];
+
+        for (int i = 0; i < cols.size(); i++) {
+            String colName = cols.get(i);
+
+            colNames[i] = colName;
+
+            GridQueryProperty prop = desc.type().property(colName);
+
+            assert prop != null : "Property '" + colName + "' not found.";
+
+            Column h2Col = tbl.getColumn(colName);
+
+            colTypes[i] = h2Col.getType();
+            int colId = h2Col.getColumnId();
+
+            if (desc.isKeyColumn(colId)) {
+                keyColIdx = i;
+                continue;
+            }
+
+            if (desc.isValueColumn(colId)) {
+                valColIdx = i;
+                continue;
+            }
+
+            if (prop.key())
+                hasKeyProps = true;
+            else
+                hasValProps = true;
+        }
+
+        KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true, false);
+        KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false, false);
+
+        return new UpdatePlan(
+            UpdateMode.INSERT,
+            tbl,
+            colNames,
+            colTypes,
+            keySupplier,
+            valSupplier,
+            keyColIdx,
+            valColIdx,
+            null,
+            true, // FIXME SHQ: false?
+            null,
+            0,
+            null,
+            null
+        );
     }
 
     /**

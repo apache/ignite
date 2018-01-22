@@ -187,7 +187,7 @@ public class JdbcThinBatchSelfTest extends JdbcThinAbstractDmlStatementSelfTest 
                 fail();
             }
 
-            assertEquals("Invalid SQL state.", SqlStateCode.SYNTAX_ERROR_OR_ACCESS_VIOLATION, e.getSQLState());
+            assertEquals("Invalid SQL state.", SqlStateCode.PARSING_EXCEPTION, e.getSQLState());
             assertEquals("Invalid error code.", IgniteQueryErrorCode.STMT_TYPE_MISMATCH, e.getErrorCode());
         }
     }
