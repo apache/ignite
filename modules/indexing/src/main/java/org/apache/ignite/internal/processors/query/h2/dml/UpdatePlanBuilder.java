@@ -279,61 +279,20 @@ public final class UpdatePlanBuilder {
     public static UpdatePlan planForBulkLoad(SqlBulkLoadCommand cmd, IgniteH2Indexing idx) throws IgniteCheckedException {
         GridSqlQuery sel;
 
-        GridSqlElement target;
+        List<String> cols;
 
-        GridSqlColumn[] cols;
-
-        boolean isTwoStepSubqry;
-
-        int rowsNum;
-
-        GridSqlTable tbl;
-
+        GridH2Table tbl;
         GridH2RowDescriptor desc;
 
-        List<GridSqlElement[]> elRows = null;
+        tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
-        if (stmt instanceof GridSqlInsert) {
-            GridSqlInsert ins = (GridSqlInsert) stmt;
-            target = ins.into();
+        desc = tbl.rowDescriptor();
 
-            tbl = DmlAstUtils.gridTableForElement(target);
-            desc = tbl.dataTable().rowDescriptor();
+        if (desc == null)
+            throw new IgniteSQLException("Row descriptor undefined for table '" + tbl.getName() + "'",
+                IgniteQueryErrorCode.NULL_TABLE_DESCRIPTOR);
 
-            cols = ins.columns();
-            sel = DmlAstUtils.selectForInsertOrMerge(cols, ins.rows(), ins.query());
-
-            if (sel == null)
-                elRows = ins.rows();
-
-            isTwoStepSubqry = (ins.query() != null);
-            rowsNum = isTwoStepSubqry ? 0 : ins.rows().size();
-        }
-        else if (stmt instanceof GridSqlMerge) {
-            GridSqlMerge merge = (GridSqlMerge) stmt;
-
-            target = merge.into();
-
-            tbl = DmlAstUtils.gridTableForElement(target);
-            desc = tbl.dataTable().rowDescriptor();
-
-            cols = merge.columns();
-            sel = DmlAstUtils.selectForInsertOrMerge(cols, merge.rows(), merge.query());
-
-            if (sel == null)
-                elRows = merge.rows();
-
-            isTwoStepSubqry = (merge.query() != null);
-            rowsNum = isTwoStepSubqry ? 0 : merge.rows().size();
-        }
-        else {
-            throw new IgniteSQLException("Unexpected DML operation [cls=" + stmt.getClass().getName() + ']',
-                IgniteQueryErrorCode.UNEXPECTED_OPERATION);
-        }
-
-        // Let's set the flag only for subqueries that have their FROM specified.
-        isTwoStepSubqry &= (sel != null && (sel instanceof GridSqlUnion ||
-            (sel instanceof GridSqlSelect && ((GridSqlSelect) sel).from() != null)));
+        cols = cmd.columns();
 
         int keyColIdx = -1;
         int valColIdx = -1;
@@ -341,26 +300,26 @@ public final class UpdatePlanBuilder {
         boolean hasKeyProps = false;
         boolean hasValProps = false;
 
-        if (desc == null)
-            throw new IgniteSQLException("Row descriptor undefined for table '" + tbl.dataTable().getName() + "'",
-                IgniteQueryErrorCode.NULL_TABLE_DESCRIPTOR);
-
         GridCacheContext<?, ?> cctx = desc.context();
 
-        String[] colNames = new String[cols.length];
+        String[] colNames = new String[cols.size()];
 
-        int[] colTypes = new int[cols.length];
+        int[] colTypes = new int[cols.size()];
 
-        for (int i = 0; i < cols.length; i++) {
-            GridSqlColumn col = cols[i];
-
-            String colName = col.columnName();
+        for (int i = 0; i < cols.size(); i++) {
+            String colName = cols.get(i);
 
             colNames[i] = colName;
 
-            colTypes[i] = col.resultType().type();
+            GridQueryProperty prop = desc.type().property(colName);
 
-            int colId = col.column().getColumnId();
+            assert prop != null : "Property '" + colName + "' not found.";
+
+            Column h2Col = tbl.getColumn(colName);
+
+            colTypes[i] = h2Col.getType();
+            int colId = h2Col.getColumnId();
+
             if (desc.isKeyColumn(colId)) {
                 keyColIdx = i;
                 continue;
@@ -371,10 +330,6 @@ public final class UpdatePlanBuilder {
                 continue;
             }
 
-            GridQueryProperty prop = desc.type().property(colName);
-
-            assert prop != null : "Property '" + colName + "' not found.";
-
             if (prop.key())
                 hasKeyProps = true;
             else
@@ -384,48 +339,21 @@ public final class UpdatePlanBuilder {
         KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true, false);
         KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false, false);
 
-        String selectSql = sel != null ? sel.getSQL() : null;
-
-        DmlDistributedPlanInfo distributed = (rowsNum == 0 && !F.isEmpty(selectSql)) ?
-            checkPlanCanBeDistributed(idx, conn, fieldsQuery, loc, selectSql, tbl.dataTable().cacheName()) : null;
-
-        UpdateMode mode = stmt instanceof GridSqlMerge ? UpdateMode.MERGE : UpdateMode.INSERT;
-
-        List<List<DmlArgument>> rows = null;
-
-        if (elRows != null) {
-            assert sel == null;
-
-            rows = new ArrayList<>(elRows.size());
-
-            for (GridSqlElement[] elRow : elRows) {
-                List<DmlArgument> row = new ArrayList<>(cols.length);
-
-                for (GridSqlElement el : elRow) {
-                    DmlArgument arg = DmlArguments.create(el);
-
-                    row.add(arg);
-                }
-
-                rows.add(row);
-            }
-        }
-
         return new UpdatePlan(
-            mode,
-            tbl.dataTable(),
+            UpdateMode.INSERT,
+            tbl,
             colNames,
             colTypes,
             keySupplier,
             valSupplier,
             keyColIdx,
             valColIdx,
-            selectSql,
-            !isTwoStepSubqry,
-            rows,
-            rowsNum,
             null,
-            distributed
+            true, // FIXME SHQ: false?
+            null,
+            0,
+            null,
+            null
         );
     }
 

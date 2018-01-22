@@ -205,7 +205,7 @@ public final class UpdatePlan {
 
         if (key == null) {
             if (F.isEmpty(desc.keyFieldName()))
-                throw new IgniteSQLException("Key for INSERT or MERGE must not be null", IgniteQueryErrorCode.NULL_KEY);
+                throw new IgniteSQLException("Key for INSERT, COPY, or MERGE must not be null", IgniteQueryErrorCode.NULL_KEY);
             else
                 throw new IgniteSQLException("Null value is not allowed for column '" + desc.keyFieldName() + "'",
                     IgniteQueryErrorCode.NULL_KEY);
@@ -213,7 +213,7 @@ public final class UpdatePlan {
 
         if (val == null) {
             if (F.isEmpty(desc.valueFieldName()))
-                throw new IgniteSQLException("Value for INSERT, MERGE, or UPDATE must not be null",
+                throw new IgniteSQLException("Value for INSERT, COPY, MERGE, or UPDATE must not be null",
                     IgniteQueryErrorCode.NULL_VALUE);
             else
                 throw new IgniteSQLException("Null value is not allowed for column '" + desc.valueFieldName() + "'",
