@@ -16,9 +16,9 @@
 */
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
-import java.util.function.IntBinaryOperator;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
@@ -87,6 +87,9 @@ public class PagesWriteThrottle {
     public void onMarkDirty(boolean isInCheckpoint) {
         assert dbSharedMgr.checkpointLockIsHeldByThread();
 
+        //if(throttleWal())
+        //    return;
+
         AtomicInteger writtenPagesCntr = dbSharedMgr.writtenPagesCounter();
 
         if (writtenPagesCntr == null)
@@ -150,44 +153,64 @@ public class PagesWriteThrottle {
             }
         }
 
-        if(!shouldThrottle) {
-            FileWALPointer pointer = wal.currentWritePointer();
-
-            long lastArchIdx = wal.lastAbsArchivedIdx();
-
-            int maxSegments = dsCfg.getWalSegments();
-            if (lastArchIdx >= 0 && maxSegments > 1) {
-                long segSize = wal.maxWalSegmentSize();
-                long curWorkIdx = pointer.index();
-
-                long seqInWork = curWorkIdx - lastArchIdx;
-                long segRemained = maxSegments - seqInWork;
-                long bytesInCurSeq = segSize - pointer.fileOffset();
-
-                long maxBytesInWorkDir = maxSegments * segSize;
-                long bytesRemained = segRemained * segSize + bytesInCurSeq;
-
-                //todo test throttle
-                shouldThrottle = 1.0 * bytesRemained < 0.2 * maxBytesInWorkDir;
-            }
-        }
-
         if (shouldThrottle) {
             int throttleLevel = exponentialBackoffCntr.getAndIncrement();
 
             LockSupport.parkNanos((long)(STARTING_THROTTLE_NANOS * Math.pow(BACKOFF_RATIO, throttleLevel)));
         }
-        else {
-            int newLevel = exponentialBackoffCntr.accumulateAndGet(-1, (left, right) -> {
-                int sum = left + right;
+        else
+            exponentialBackoffCntr.set(0);
+    }
 
-                return sum > 0 ? sum : 0;
-            });
+    private boolean throttleWal() {
+        long throttleNanos = STARTING_THROTTLE_NANOS;
+        boolean shouldThrottle = false;
+        FileWALPointer pointer = wal.currentWritePointer();
 
-            if (newLevel > 0)
-                LockSupport.parkNanos((long)(STARTING_THROTTLE_NANOS * Math.pow(BACKOFF_RATIO, newLevel)));
-            //todo: return or remove: exponentialBackoffCntr.set(0);
+        long lastArchIdx = wal.lastAbsArchivedIdx();
+
+        int maxSegments = dsCfg.getWalSegments();
+        if (lastArchIdx >= 0 && maxSegments > 1) {
+            long segSize = wal.maxWalSegmentSize();
+            long curWorkIdx = pointer.index();
+
+            long seqInWork = curWorkIdx - lastArchIdx;
+            long segRemained = maxSegments - seqInWork;
+            long bytesInCurSeq = segSize - pointer.fileOffset();
+
+            long maxBytesInWorkDir = maxSegments * segSize;
+            long bytesRemained = segRemained * segSize + bytesInCurSeq;
+
+            //todo test throttle
+            shouldThrottle = 1.0 * bytesRemained < maxBytesInWorkDir / 2;
+
+            throttleNanos = (long)(1.0 * STARTING_THROTTLE_NANOS * (maxBytesInWorkDir / 2) / bytesRemained);
+            long maxThrottle = TimeUnit.MILLISECONDS.toNanos(100);
+            if (throttleNanos > maxThrottle) {
+                throttleNanos = maxThrottle;
+            }
         }
+
+        if(shouldThrottle) {
+            int throttleLevel = exponentialBackoffCntr.getAndIncrement();
+
+            long nanos = (long)(throttleNanos * Math.pow(BACKOFF_RATIO, throttleLevel));
+
+            long l = TimeUnit.NANOSECONDS.toMillis(nanos);
+
+            LockSupport.parkNanos(nanos);
+        } else
+            exponentialBackoffCntr.set(0);
+
+        return shouldThrottle;
+    }
+
+    private int decreaseLevel() {
+        return exponentialBackoffCntr.accumulateAndGet(-1, (left, right) -> {
+                    int sum = left + right;
+
+                    return sum > 0 ? sum : 0;
+                });
     }
 
     /**
