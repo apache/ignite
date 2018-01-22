@@ -61,7 +61,7 @@ public class MLPLocalBatchTrainer<P>
      */
     public MLPLocalBatchTrainer(
         IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
-        IgniteSupplier<ParameterUpdateCalculator<MultilayerPerceptron, P>> updaterSupplier,
+        IgniteSupplier<ParameterUpdateCalculator<? super MultilayerPerceptron, P>> updaterSupplier,
         double errorThreshold, int maxIterations) {
         super(loss, updaterSupplier, errorThreshold, maxIterations);
     }
@@ -72,7 +72,7 @@ public class MLPLocalBatchTrainer<P>
      * @return MLPLocalBatchTrainer with default parameters.
      */
     public static MLPLocalBatchTrainer<RPropParameterUpdate> getDefault() {
-        return new MLPLocalBatchTrainer<>(DEFAULT_LOSS, () -> new RPropUpdateCalculator<>(), DEFAULT_ERROR_THRESHOLD,
+        return new MLPLocalBatchTrainer<>(DEFAULT_LOSS, () -> new RPropUpdateCalculator(), DEFAULT_ERROR_THRESHOLD,
             DEFAULT_MAX_ITERATIONS);
     }
 }
