@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.datastructures;
 import java.util.UUID;
 
 /**
- * Interface used to abstract the NodeRemoved Logic. This 
+ * Interface used to abstract the NodeUpdates Logic for datastructures.  
  * 
  */
 public interface GridCacheNodeUpdate {
