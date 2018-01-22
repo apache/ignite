@@ -34,19 +34,26 @@ import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
  * @param <P> type of learning context partition
  */
 public class LocalDLearnContext<P extends AutoCloseable> implements DLearnContext<P> {
-    /** */
+    /** Physical storage of the learning context data. */
     private final Map<DLearnContextPartitionKey, Object> learningCtxMap;
 
-    /** */
+    /** Learning context partition factory. */
     private final DLearnPartitionFactory<P> partFactory;
 
-    /** */
+    /** Learning context id. */
     private final UUID learningCtxId;
 
-    /** */
+    /** Number of partitions. */
     private final int partitions;
 
-    /** */
+    /**
+     * Constructs a new instance of local learning context.
+     *
+     * @param learningCtxMap physical storage of the learning context data
+     * @param partFactory learning context partition factory
+     * @param learningCtxId learning context id
+     * @param partitions number of partitions
+     */
     public LocalDLearnContext(Map<DLearnContextPartitionKey, Object> learningCtxMap,
         DLearnPartitionFactory<P> partFactory, UUID learningCtxId, int partitions) {
         this.learningCtxMap = learningCtxMap;
@@ -104,7 +111,11 @@ public class LocalDLearnContext<P extends AutoCloseable> implements DLearnContex
         compute(this::closePartition);
     }
 
-    /** */
+    /**
+     * Closes partition.
+     *
+     * @param part partition to be closed
+     */
     private void closePartition(P part) {
         try {
             part.close();

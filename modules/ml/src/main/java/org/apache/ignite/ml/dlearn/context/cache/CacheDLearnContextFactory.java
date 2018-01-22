@@ -45,13 +45,18 @@ public class CacheDLearnContextFactory<K, V> implements DLearnContextFactory<Cac
     /** Template for learning context cache name. */
     private static final String CONTEXT_CACHE_NAME = "%s_LEARNING_CONTEXT_%s";
 
-    /** */
+    /** Ignite instance. */
     private final  Ignite ignite;
 
-    /** */
+    /** Upstream cache with data. */
     private final IgniteCache<K, V> upstreamCache;
 
-    /** */
+    /**
+     * Constructs a new instance of cache learning context factory.
+     *
+     * @param ignite Ignite instance
+     * @param upstreamCache upstream cache
+     */
     public CacheDLearnContextFactory(Ignite ignite, IgniteCache<K, V> upstreamCache) {
         this.ignite = ignite;
         this.upstreamCache = upstreamCache;

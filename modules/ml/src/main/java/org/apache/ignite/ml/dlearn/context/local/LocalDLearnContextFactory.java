@@ -35,13 +35,18 @@ public class LocalDLearnContextFactory<K, V> implements DLearnContextFactory<Loc
     /** */
     private static final long serialVersionUID = -7614441997952907675L;
 
-    /** */
+    /** Upstream data. */
     private final Map<K, V> data;
 
-    /** */
+    /** Number of partitions. */
     private final int partitions;
 
-    /** */
+    /**
+     * Constructs a new instance of learning context factory.
+     *
+     * @param data upstream data
+     * @param partitions number of partitions
+     */
     public LocalDLearnContextFactory(Map<K, V> data, int partitions) {
         this.data = data;
         this.partitions = partitions;

@@ -47,13 +47,18 @@ public class CacheLabeledDatasetDLearnPartitionTransformer<K, V, L>
     /** */
     private static final long serialVersionUID = 3479218902890029731L;
 
-    /** */
+    /** Feature extractor. */
     private final IgniteBiFunction<K, V, double[]> featureExtractor;
 
-    /** */
+    /** Label extractor. */
     private final IgniteBiFunction<K, V, L> lbExtractor;
 
-    /** */
+    /**
+     * Constructs a new instance of cache to labeled dataset partition transformer.
+     *
+     * @param featureExtractor feature extractor
+     * @param lbExtractor label extractor
+     */
     public CacheLabeledDatasetDLearnPartitionTransformer(
         IgniteBiFunction<K, V, double[]> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor) {

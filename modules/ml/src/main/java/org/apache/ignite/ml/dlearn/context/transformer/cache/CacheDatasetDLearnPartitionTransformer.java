@@ -47,10 +47,14 @@ public class CacheDatasetDLearnPartitionTransformer<K, V>
     /** */
     private static final long serialVersionUID = -7398727071330763144L;
 
-    /** */
+    /** Feature extractor. */
     private final IgniteBiFunction<K, V, double[]> featureExtractor;
 
-    /** */
+    /**
+     * Constructs a new instance of cache to dataset partition transformer.
+     *
+     * @param featureExtractor feature extractor
+     */
     public CacheDatasetDLearnPartitionTransformer(IgniteBiFunction<K, V, double[]> featureExtractor) {
         this.featureExtractor = featureExtractor;
     }

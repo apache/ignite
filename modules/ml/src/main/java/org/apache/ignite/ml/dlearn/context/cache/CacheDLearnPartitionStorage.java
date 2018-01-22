@@ -31,18 +31,22 @@ import org.apache.ignite.ml.dlearn.utils.DLearnContextPartitionKey;
  * D-learn partition storage based on Ignite cache.
  */
 public class CacheDLearnPartitionStorage implements DLearnPartitionStorage {
-    /**
-     * Storage.
-     */
+    /** Learning context physical storage. */
     private final IgniteCache<DLearnContextPartitionKey, byte[]> learningCtxCache;
 
-    /** */
+    /** Learning context id. */
     private final UUID learningCtxId;
 
-    /** */
+    /** Partition index. */
     private final int part;
 
-    /** */
+    /**
+     * Constructs a new instance of cache learning partition storage.
+     *
+     * @param learningCtxCache learning context physical storage
+     * @param learningCtxId learning context id
+     * @param part partition index
+     */
     public CacheDLearnPartitionStorage(IgniteCache<DLearnContextPartitionKey,
         byte[]> learningCtxCache, UUID learningCtxId, int part) {
         this.learningCtxCache = learningCtxCache;
@@ -66,8 +70,16 @@ public class CacheDLearnPartitionStorage implements DLearnPartitionStorage {
         learningCtxCache.remove(new DLearnContextPartitionKey(part, learningCtxId, key));
     }
 
-    /** */
+    /**
+     * Serializes specified object into byte array.
+     *
+     * @param obj object
+     * @return byte arrays representing serialized object
+     */
     private byte[] serialize(Object obj) {
+        if (obj == null)
+            return null;
+
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
              ObjectOutputStream oos = new ObjectOutputStream(baos)) {
             oos.writeObject(obj);
@@ -79,13 +91,19 @@ public class CacheDLearnPartitionStorage implements DLearnPartitionStorage {
         }
     }
 
-    /** */
+    /**
+     * Deserializes object from specified byte array.
+     *
+     * @param arr byte array representing serialized object
+     * @return object
+     */
     private Object deserialize(byte[] arr) {
         if (arr == null)
             return null;
 
         try (ByteArrayInputStream bais = new ByteArrayInputStream(arr);
              ObjectInputStream ois = new ObjectInputStream(bais)) {
+
             return ois.readObject();
         }
         catch (IOException | ClassNotFoundException e) {

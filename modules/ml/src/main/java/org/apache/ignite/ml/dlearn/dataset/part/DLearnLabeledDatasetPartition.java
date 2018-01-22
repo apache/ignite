@@ -24,13 +24,17 @@ import org.apache.ignite.ml.dlearn.DLearnPartitionStorage;
  * and vector of labels.
  */
 public class DLearnLabeledDatasetPartition<L> extends DLeanDatasetPartition {
-    /** */
+    /** Key of label values. */
     private static final String LABELS_KEY = "labels";
 
-    /** */
+    /** Learning partition storage. */
     private final DLearnPartitionStorage storage;
 
-    /** */
+    /**
+     * Constructs a new instance of labeled dataset partition.
+     *
+     * @param storage learning partition storage.
+     */
     public DLearnLabeledDatasetPartition(DLearnPartitionStorage storage) {
         super(storage);
         this.storage = storage;

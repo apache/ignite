@@ -27,16 +27,20 @@ import org.apache.ignite.ml.dlearn.DLearnPartitionStorage;
  * @param <V> type of values
  */
 public class CacheDLearnPartition<K, V> implements AutoCloseable {
-    /** */
+    /** Key of the upstream cache name values. */
     private static final String UPSTREAM_CACHE_NAME_KEY = "upstream_cache_name";
 
-    /** */
+    /** Key of the partition value. */
     private static final String PART_KEY = "part";
 
-    /** */
+    /** Partition storage. */
     private final DLearnPartitionStorage storage;
 
-    /** */
+    /**
+     * Constructs a new instance of cache learning partition.
+     *
+     * @param storage partition storage
+     */
     public CacheDLearnPartition(DLearnPartitionStorage storage) {
         this.storage = storage;
     }

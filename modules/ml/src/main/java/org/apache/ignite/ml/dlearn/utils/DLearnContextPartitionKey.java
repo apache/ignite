@@ -28,22 +28,22 @@ public class DLearnContextPartitionKey implements Serializable {
     /** */
     private static final long serialVersionUID = 9005844909381326835L;
 
-    /**
-     * Index of partition.
-     */
+    /** Index of partition. */
     private final int part;
 
-    /**
-     * Id of learning context.
-     */
+    /** Id of learning context. */
     private final UUID learningCtxId;
 
-    /**
-     * Key of the object.
-     */
+    /** Key of the object. */
     private final String key;
 
-    /** */
+    /**
+     * Constructs a new instance of learning context partition key.
+     *
+     * @param part partition index
+     * @param learningCtxId learning context id
+     * @param key key
+     */
     public DLearnContextPartitionKey(int part, UUID learningCtxId, String key) {
         this.part = part;
         this.learningCtxId = learningCtxId;

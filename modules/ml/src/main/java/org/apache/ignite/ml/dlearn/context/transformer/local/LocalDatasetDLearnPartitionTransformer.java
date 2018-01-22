@@ -42,10 +42,14 @@ public class LocalDatasetDLearnPartitionTransformer<K, V>
     /** */
     private static final long serialVersionUID = -7567051002880704559L;
 
-    /** */
+    /** Feature extractor. */
     private final IgniteBiFunction<K, V, double[]> featureExtractor;
 
-    /** */
+    /**
+     * Constructs new instance of local to dataset partition transformer.
+     *
+     * @param featureExtractor feature extractor
+     */
     public LocalDatasetDLearnPartitionTransformer(IgniteBiFunction<K, V, double[]> featureExtractor) {
         this.featureExtractor = featureExtractor;
     }

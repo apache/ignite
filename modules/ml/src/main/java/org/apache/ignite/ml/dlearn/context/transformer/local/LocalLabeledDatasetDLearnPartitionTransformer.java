@@ -43,13 +43,18 @@ public class LocalLabeledDatasetDLearnPartitionTransformer<K, V, L>
     /** */
     private static final long serialVersionUID = -8438445094768312331L;
 
-    /** */
+    /** Feature extractor. */
     private final IgniteBiFunction<K, V, double[]> featureExtractor;
 
-    /** */
+    /** Label extractor. */
     private final IgniteBiFunction<K, V, L> lbExtractor;
 
-    /** */
+    /**
+     * Creates new instance of local to labeled dataset transformer.
+     *
+     * @param featureExtractor feature extractor
+     * @param lbExtractor label extractor
+     */
     public LocalLabeledDatasetDLearnPartitionTransformer(IgniteBiFunction<K, V, double[]> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor) {
         this.featureExtractor = featureExtractor;

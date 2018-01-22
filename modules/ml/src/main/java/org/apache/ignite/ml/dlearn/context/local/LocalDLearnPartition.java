@@ -28,13 +28,17 @@ import org.apache.ignite.ml.dlearn.DLearnPartitionStorage;
  * @param <V> type of values
  */
 public class LocalDLearnPartition<K, V> implements AutoCloseable {
-    /** */
+    /** Key of partition data values. */
     private static final String PART_DATA_KEY = "part_data";
 
-    /** */
+    /** Partition storage. */
     private final DLearnPartitionStorage storage;
 
-    /** */
+    /**
+     * Constructs a new instance of local learning partition.
+     *
+     * @param storage partition storage
+     */
     public LocalDLearnPartition(DLearnPartitionStorage storage) {
         this.storage = storage;
     }

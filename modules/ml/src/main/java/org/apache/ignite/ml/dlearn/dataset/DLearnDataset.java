@@ -27,7 +27,7 @@ import org.apache.ignite.ml.dlearn.dataset.part.DLeanDatasetPartition;
  * @param <P> type of a d-learn partition
  */
 public class DLearnDataset<P extends DLeanDatasetPartition> extends AbstractDLearnContextWrapper<P> {
-    /** */
+    /** BLAS (Basic Linear Algebra Subprograms) instance. */
     private static final BLAS blas = BLAS.getInstance();
 
     /** {@inheritDoc} */

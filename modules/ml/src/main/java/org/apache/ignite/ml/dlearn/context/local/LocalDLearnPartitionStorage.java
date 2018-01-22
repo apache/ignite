@@ -27,18 +27,22 @@ import org.apache.ignite.ml.dlearn.utils.DLearnContextPartitionKey;
  * to work.
  */
 public class LocalDLearnPartitionStorage implements DLearnPartitionStorage {
-    /**
-     * Storage.
-     */
+    /** Learning context physical storage. */
     private final Map<DLearnContextPartitionKey, Object> learningCtxMap;
 
-    /** */
+    /** Learning context id. */
     private final UUID learningCtxId;
 
-    /** */
+    /** Partition index. */
     private final int part;
 
-    /** */
+    /**
+     * Constructs a new instance of local learning partition storage.
+     *
+     * @param learningCtxMap learning context physical storage
+     * @param learningCtxId learning context id
+     * @param part partition index
+     */
     public LocalDLearnPartitionStorage(
         Map<DLearnContextPartitionKey, Object> learningCtxMap, UUID learningCtxId, int part) {
         this.learningCtxMap = learningCtxMap;

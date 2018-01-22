@@ -23,16 +23,20 @@ import org.apache.ignite.ml.dlearn.DLearnPartitionStorage;
  * Interface which provides simple dataset API which allows to get or set an underlying feature matrix in flat format.
  */
 public class DLeanDatasetPartition implements AutoCloseable {
-    /** */
+    /** Key of feature values. */
     private static final String FEATURES_KEY = "features";
 
-    /** */
+    /** Key of row values. */
     private static final String ROWS_KEY = "rows";
 
-    /** */
+    /** Learning partition storage. */
     private final DLearnPartitionStorage storage;
 
-    /** */
+    /**
+     * Creates a new instance of learning dataset partition.
+     *
+     * @param storage learning partition storage
+     */
     public DLeanDatasetPartition(DLearnPartitionStorage storage) {
         this.storage = storage;
     }
