@@ -19,7 +19,8 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 
 /**
- * Monitor which is notified each time WAL segment is archived
+ * Next WAL segment archived monitor. Manages last archived index, allows to emulate archivation in no-archiver mode.
+ * Monitor which is notified each time WAL segment is archived.
  */
 class SegmentArchivedMonitor {
     /**

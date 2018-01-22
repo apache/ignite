@@ -192,10 +192,10 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
                         FileWriteAheadLogManager wal = (FileWriteAheadLogManager)ig.context().cache().context().wal();
 
-                        Object archiver = GridTestUtils.getFieldValue(wal, "archiver");
+                        Object reservationStorage = GridTestUtils.getFieldValue(wal, "reservationStorage");
 
-                        synchronized (archiver) {
-                            Map reserved = GridTestUtils.getFieldValue(archiver, "reserved");
+                        synchronized (reservationStorage) {
+                            Map reserved = GridTestUtils.getFieldValue(reservationStorage, "reserved");
 
                             if (reserved.isEmpty())
                                 return false;
@@ -219,10 +219,10 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
                     FileWriteAheadLogManager wal = (FileWriteAheadLogManager)ig.context().cache().context().wal();
 
-                    Object archiver = GridTestUtils.getFieldValue(wal, "archiver");
+                    Object reservationStorage = GridTestUtils.getFieldValue(wal, "reservationStorage");
 
-                    synchronized (archiver) {
-                        Map reserved = GridTestUtils.getFieldValue(archiver, "reserved");
+                    synchronized (reservationStorage) {
+                        Map reserved = GridTestUtils.getFieldValue(reservationStorage, "reserved");
 
                         if (!reserved.isEmpty())
                             return false;
@@ -402,10 +402,10 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
                         FileWriteAheadLogManager wal = (FileWriteAheadLogManager)ig.context().cache().context().wal();
 
-                        Object archiver = GridTestUtils.getFieldValue(wal, "archiver");
+                        Object reservationStorage = GridTestUtils.getFieldValue(wal, "reservationStorage");
 
-                        synchronized (archiver) {
-                            Map reserved = GridTestUtils.getFieldValue(archiver, "reserved");
+                        synchronized (reservationStorage) {
+                            Map reserved = GridTestUtils.getFieldValue(reservationStorage, "reserved");
 
                             if (reserved.isEmpty())
                                 return false;
@@ -431,10 +431,10 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
                     FileWriteAheadLogManager wal = (FileWriteAheadLogManager)ig.context().cache().context().wal();
 
-                    Object archiver = GridTestUtils.getFieldValue(wal, "archiver");
+                    Object reservationStorage = GridTestUtils.getFieldValue(wal, "reservationStorage");
 
-                    synchronized (archiver) {
-                        Map reserved = GridTestUtils.getFieldValue(archiver, "reserved");
+                    synchronized (reservationStorage) {
+                        Map reserved = GridTestUtils.getFieldValue(reservationStorage, "reserved");
 
                         if (!reserved.isEmpty())
                             return false;

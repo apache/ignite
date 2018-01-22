@@ -268,11 +268,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Factory to provide I/O interfaces for read/write operations with files */
     private FileIOFactory ioFactory;
 
-    /** Next WAL segment archived monitor. */
+    /** Next WAL segment archived monitor. Manages last archived index, emulates archivation in no-archiver mode. */
     private final SegmentArchivedMonitor archivedMonitor = new SegmentArchivedMonitor();
 
-    /** Segment reserve storage. */
-    private final SegmentReservationStorage segmentReserve = new SegmentReservationStorage();
+    /** Segment reservations storage: Protects WAL segments from deletion during WAL log cleanup. */
+    private final SegmentReservationStorage reservationStorage = new SegmentReservationStorage();
 
     /** Updater for {@link #currHnd}, used for verify there are no concurrent update for current log segment handle */
     private static final AtomicReferenceFieldUpdater<FileWriteAheadLogManager, FileWriteHandle> CURR_HND_UPD =
@@ -790,10 +790,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (mode == WALMode.NONE)
             return false;
 
-        segmentReserve.reserve(((FileWALPointer)start).index());
+        reservationStorage.reserve(((FileWALPointer)start).index());
 
         if (!hasIndex(((FileWALPointer)start).index())) {
-            segmentReserve.release(((FileWALPointer)start).index());
+            reservationStorage.release(((FileWALPointer)start).index());
 
             return false;
         }
@@ -808,7 +808,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (mode == WALMode.NONE)
             return;
 
-        segmentReserve.release(((FileWALPointer)start).index());
+        reservationStorage.release(((FileWALPointer)start).index());
     }
 
     /**
@@ -889,7 +889,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         FileArchiver archiver0 = archiver;
 
         return ((archiver0 != null) && archiver0.locked(absIdx))
-            || (segmentReserve.reserved(absIdx));
+            || (reservationStorage.reserved(absIdx));
 
     }
 

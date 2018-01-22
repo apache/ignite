@@ -20,7 +20,7 @@ import java.util.NavigableMap;
 import java.util.TreeMap;
 
 /**
- * Protects WAL segments from deletion during WAL log cleanup.
+ * Segment reservations storage: Protects WAL segments from deletion during WAL log cleanup.
  */
 class SegmentReservationStorage {
     /**
