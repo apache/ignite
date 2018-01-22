@@ -1591,8 +1591,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param cancel Query cancel state holder.
      * @return Query result.
      */
-    private List<? extends FieldsQueryCursor<List<?>>> doRunPrepared(String schemaName, Prepared prepared, SqlFieldsQuery qry,
-        GridCacheTwoStepQuery twoStepQry, List<GridQueryFieldMetadata> meta, boolean keepBinary,
+    private List<? extends FieldsQueryCursor<List<?>>> doRunPrepared(String schemaName, Prepared prepared,
+        SqlFieldsQuery qry, GridCacheTwoStepQuery twoStepQry, List<GridQueryFieldMetadata> meta, boolean keepBinary,
         GridQueryCancel cancel) {
         String sqlQry = qry.getSql();
 
@@ -1697,6 +1697,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean loc = qry.isLocal();
 
         PreparedStatement stmt = prepareStatementAndCaches(c, qry.getSql());
+
+        if (loc && GridSqlQueryParser.checkMultipleStatements(stmt))
+            throw new IgniteSQLException("Multiple statements queries are not supported for local queries");
 
         GridSqlQueryParser.PreparedWithRemaining prep = GridSqlQueryParser.preparedWithRemaining(stmt);
 
