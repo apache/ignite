@@ -42,13 +42,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         // ReSharper disable once InconsistentNaming
         private const int JNI_VERSION_9 = 0x00090000;
 
-//#define JNI_VERSION_1_1 0x00010001
-//#define JNI_VERSION_1_2 0x00010002
-//#define JNI_VERSION_1_4 0x00010004
-//#define JNI_VERSION_1_6 0x00010006
-//#define JNI_VERSION_1_8 0x00010008
-//#define JNI_VERSION_9   0x00090000 
-
         /** Options to enable startup on Java 9. */
         private static readonly string[] Java9Options =
         {
