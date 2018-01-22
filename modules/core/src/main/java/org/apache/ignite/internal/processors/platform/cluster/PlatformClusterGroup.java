@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.platform.cluster;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.UUID;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCache;
@@ -41,10 +44,6 @@ import org.apache.ignite.internal.processors.platform.services.PlatformServices;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.UUID;
 
 /**
  * Interop projection.
@@ -551,10 +550,19 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
         writer.writeString(metrics.getName());
         writer.writeLong(metrics.getTotalAllocatedPages());
+        writer.writeLong(metrics.getTotalAllocatedSize());
         writer.writeFloat(metrics.getAllocationRate());
         writer.writeFloat(metrics.getEvictionRate());
         writer.writeFloat(metrics.getLargeEntriesPagesPercentage());
         writer.writeFloat(metrics.getPagesFillFactor());
+        writer.writeLong(metrics.getDirtyPages());
+        writer.writeFloat(metrics.getPagesReplaceRate());
+        writer.writeFloat(metrics.getPagesReplaceAge());
+        writer.writeLong(metrics.getPhysicalMemoryPages());
+        writer.writeLong(metrics.getPhysicalMemorySize());
+        writer.writeLong(metrics.getCheckpointBufferPages());
+        writer.writeLong(metrics.getCheckpointBufferSize());
+        writer.writeInt(metrics.getPageSize());
     }
 
     /**

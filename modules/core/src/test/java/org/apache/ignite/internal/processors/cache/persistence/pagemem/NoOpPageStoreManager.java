@@ -205,4 +205,9 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     @Override public void onDeActivate(GridKernalContext kctx) {
         // No-op.
     }
+
+    /** {@inheritDoc} */
+    @Override public long pagesAllocated(int grpId) {
+        return 0;
+    }
 }
