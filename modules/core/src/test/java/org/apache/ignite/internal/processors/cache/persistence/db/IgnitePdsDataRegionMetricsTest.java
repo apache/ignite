@@ -41,7 +41,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.configuration.DataPageEvictionMode.RANDOM_2_LRU;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 
 /** */
@@ -117,7 +116,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         for (int iter = 0; iter < ITERATIONS; iter++) {
             final IgniteEx node = startGrid(0);
 
-            node.active(true);
+            node.cluster().active(true);
 
             DataRegionMetrics currMetrics = getDfltRegionMetrics(node);
 
@@ -141,10 +140,11 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
                 cache.putAll(map);
 
                 checkMetricsConsistency(node, grpIds);
-
-                currMetrics = getDfltRegionMetrics(node);
             }
 
+            currMetrics = getDfltRegionMetrics(node);
+
+            // Make sure metrics are rising
             assert currMetrics.getPhysicalMemoryPages() > initMetrics.getPhysicalMemoryPages();
             assert currMetrics.getTotalAllocatedPages() > initMetrics.getTotalAllocatedPages();
 
@@ -158,20 +158,18 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         IgniteEx node1 = startGrid(1);
 
-        node0.active(true);
+        node0.cluster().active(true);
 
         final IgniteCache<String, String> cache = node0.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         Map<String, String> map = new HashMap<>();
 
-        int nPuts = BATCH_SIZE_LOW + ThreadLocalRandom.current().nextInt(BATCH_SIZE_HIGH - BATCH_SIZE_LOW);
-
-        for (int i = 0; i < nPuts; i++)
+        for (int i = 0; i < 10_000; i++)
             map.put(UUID.randomUUID().toString(), UUID.randomUUID().toString());
 
         cache.putAll(map);
 
-        awaitPartitionMapExchange(true, true, node0.cluster().nodes());
+        awaitPartitionMapExchange(true, true, null);
 
         node0.context().cache().context().database().waitForCheckpoint("");
         node1.context().cache().context().database().waitForCheckpoint("");
@@ -181,7 +179,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         IgniteEx node2 = startGrid(2);
 
-        awaitPartitionMapExchange(true, true, node0.cluster().nodes());
+        awaitPartitionMapExchange(true, true, null);
 
         node0.context().cache().context().database().waitForCheckpoint("");
         node1.context().cache().context().database().waitForCheckpoint("");
@@ -193,7 +191,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         stopGrid(1, true);
 
-        awaitPartitionMapExchange(true, true, node0.cluster().nodes());
+        awaitPartitionMapExchange(true, true, null);
 
         node0.context().cache().context().database().waitForCheckpoint("");
         node2.context().cache().context().database().waitForCheckpoint("");
