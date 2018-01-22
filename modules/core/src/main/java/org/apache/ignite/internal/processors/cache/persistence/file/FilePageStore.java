@@ -73,7 +73,7 @@ public class FilePageStore implements PageStore {
     private final AtomicLong allocated;
 
     /** Region metrics updater. */
-    private final AllocatedPageTracker allocatedTracked;
+    private final AllocatedPageTracker allocatedTracker;
 
     /** */
     private final int pageSize;
@@ -101,14 +101,14 @@ public class FilePageStore implements PageStore {
         File file,
         FileIOFactory factory,
         DataStorageConfiguration cfg,
-        AllocatedPageTracker allocatedTracked) {
+        AllocatedPageTracker allocatedTracker) {
         this.type = type;
         this.cfgFile = file;
         this.dbCfg = cfg;
         this.ioFactory = factory;
         this.allocated = new AtomicLong();
         this.pageSize = dbCfg.getPageSize();
-        this.allocatedTracked = allocatedTracked;
+        this.allocatedTracker = allocatedTracker;
     }
 
     /** {@inheritDoc} */
@@ -274,7 +274,7 @@ public class FilePageStore implements PageStore {
 
             assert delta % pageSize == 0;
 
-            allocatedTracked.updateTotalAllocatedPages(delta / pageSize);
+            allocatedTracker.updateTotalAllocatedPages(delta / pageSize);
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);
@@ -314,7 +314,7 @@ public class FilePageStore implements PageStore {
 
                 assert delta % pageSize == 0;
 
-                allocatedTracked.updateTotalAllocatedPages(delta / pageSize);
+                allocatedTracker.updateTotalAllocatedPages(delta / pageSize);
             }
 
             recover = false;
@@ -435,7 +435,7 @@ public class FilePageStore implements PageStore {
 
                         assert delta % pageSize == 0;
 
-                        allocatedTracked.updateTotalAllocatedPages(delta / pageSize);
+                        allocatedTracker.updateTotalAllocatedPages(delta / pageSize);
 
                         allocated.set(newSize);
 
@@ -578,7 +578,7 @@ public class FilePageStore implements PageStore {
             off = allocated.get();
 
             if (allocated.compareAndSet(off, off + pageSize)) {
-                allocatedTracked.updateTotalAllocatedPages(1);
+                allocatedTracker.updateTotalAllocatedPages(1);
 
                 break;
             }
