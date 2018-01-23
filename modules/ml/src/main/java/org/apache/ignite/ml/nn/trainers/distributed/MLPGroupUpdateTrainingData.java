@@ -30,7 +30,7 @@ import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalcul
 /** Multilayer perceptron group update training data. */
 public class MLPGroupUpdateTrainingData<U> {
     /** {@link ParameterUpdateCalculator}. */
-    private final ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator;
+    private final ParameterUpdateCalculator<? super MultilayerPerceptron, U> updateCalculator;
 
     /**
      * Count of steps which should be done by each of parallel trainings before sending it's update for combining with
@@ -59,7 +59,7 @@ public class MLPGroupUpdateTrainingData<U> {
 
     /** Construct multilayer perceptron group update training data with all parameters provided. */
     public MLPGroupUpdateTrainingData(
-        ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator, int stepsCnt,
+        ParameterUpdateCalculator<? super MultilayerPerceptron, U> updateCalculator, int stepsCnt,
         IgniteFunction<List<U>, U> updateReducer,
         IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier,
         IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss, double tolerance) {
@@ -72,7 +72,7 @@ public class MLPGroupUpdateTrainingData<U> {
     }
 
     /** Get update calculator. */
-    public ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator() {
+    public ParameterUpdateCalculator<? super MultilayerPerceptron, U> updateCalculator() {
         return updateCalculator;
     }
 

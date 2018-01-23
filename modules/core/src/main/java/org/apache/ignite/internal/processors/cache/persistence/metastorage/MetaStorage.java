@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -47,8 +48,10 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.SimpleDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.NotNull;
@@ -65,6 +68,9 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
 
     /** */
     public static final int METASTORAGE_CACHE_ID = CU.cacheId(METASTORAGE_CACHE_NAME);
+
+    /** Marker for removed entry. */
+    private static final byte[] TOMBSTONE = new byte[0];
 
     /** */
     private final IgniteWriteAheadLogManager wal;
@@ -144,7 +150,63 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         if (data != null)
             result = marshaller.unmarshal(data, getClass().getClassLoader());
 
-        return (Serializable) result;
+        return (Serializable)result;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Serializable> readForPredicate(IgnitePredicate<String> keyPred)
+        throws IgniteCheckedException {
+        Map<String, Serializable> res = null;
+
+        if (readOnly) {
+            if (empty)
+                return Collections.emptyMap();
+
+            if (lastUpdates != null) {
+                for (Map.Entry<String, byte[]> lastUpdate : lastUpdates.entrySet()) {
+                    if (keyPred.apply(lastUpdate.getKey())) {
+                        byte[] valBytes = lastUpdate.getValue();
+
+                        if (valBytes == TOMBSTONE)
+                            continue;
+
+                        if (res == null)
+                            res = new HashMap<>();
+
+                        Serializable val = marshaller.unmarshal(valBytes, getClass().getClassLoader());
+
+                        res.put(lastUpdate.getKey(), val);
+                    }
+                }
+            }
+        }
+
+        GridCursor<MetastorageDataRow> cur = tree.find(null, null);
+
+        while (cur.next()) {
+            MetastorageDataRow row = cur.get();
+
+            String key = row.key();
+            byte[] valBytes = row.value();
+
+            if (keyPred.apply(key)) {
+                // Either already added it, or this is a tombstone -> ignore.
+                if (lastUpdates != null && lastUpdates.containsKey(key))
+                    continue;
+
+                if (res == null)
+                    res = new HashMap<>();
+
+                Serializable val = marshaller.unmarshal(valBytes, getClass().getClassLoader());
+
+                res.put(key, val);
+            }
+        }
+
+        if (res == null)
+            res = Collections.emptyMap();
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -187,10 +249,10 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     public byte[] getData(String key) throws IgniteCheckedException {
         if (readOnly) {
             if (lastUpdates != null) {
-                byte[] lastUpdate = lastUpdates.get(key);
+                byte[] res = lastUpdates.get(key);
 
-                if (lastUpdate != null)
-                    return lastUpdate;
+                if (res != null)
+                    return res != TOMBSTONE ? res : null;
             }
 
             if (empty)
@@ -342,7 +404,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
             if (lastUpdates == null)
                 lastUpdates = new HashMap<>();
 
-            lastUpdates.put(key, value);
+            lastUpdates.put(key, value != null ? value : TOMBSTONE);
         }
         else {
             if (value != null)
