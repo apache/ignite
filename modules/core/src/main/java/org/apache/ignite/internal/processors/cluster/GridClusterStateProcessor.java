@@ -262,7 +262,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         try {
             if (blt != null) {
                 if (log.isInfoEnabled()) {
-                    U.log(log, "Writing BaselineTopology[id=" + blt.id() + ", baseline=" + blt.consistentIds() + "]");
+                    U.log(log, "Writing BaselineTopology[id=" + blt.id() + "]");
 
                     if (prevBltHistItem != null)
                         U.log(log, "Writing BaselineTopologyHistoryItem[id=" + prevBltHistItem.id() + "]");

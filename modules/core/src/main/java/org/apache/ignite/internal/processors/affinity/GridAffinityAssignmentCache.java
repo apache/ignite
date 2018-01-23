@@ -42,7 +42,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -194,20 +193,6 @@ public class GridAffinityAssignmentCache {
     public void initialize(AffinityTopologyVersion topVer, List<List<ClusterNode>> affAssignment) {
         assert topVer.compareTo(lastVersion()) >= 0 : "[topVer = " + topVer + ", last=" + lastVersion() + ']';
         assert idealAssignment != null;
-
-        DiscoCache discoCache = ctx.discovery().discoCache(topVer);
-
-        CacheGroupContext grpCtx = ctx.cache().cacheGroup(grpId);
-
-        if (grpCtx != null && grpCtx.persistenceEnabled() && !grpCtx.isLocal()) {
-            if ("cache3".equals(grpCtx.cacheOrGroupName()))
-                U.debug(log, "Initializing affinity assignment [topVer=" + topVer + ", assign=" + affAssignment + ']');
-
-            for (List<ClusterNode> pNodes : affAssignment) {
-                for (ClusterNode pNode : pNodes)
-                    assert discoCache.baselineNode(pNode.id());
-            }
-        }
 
         GridAffinityAssignment assignment = new GridAffinityAssignment(topVer, affAssignment, idealAssignment);
 
