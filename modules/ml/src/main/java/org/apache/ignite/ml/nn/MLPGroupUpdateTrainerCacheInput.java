@@ -60,7 +60,7 @@ public class MLPGroupUpdateTrainerCacheInput extends AbstractMLPGroupUpdateTrain
     /**
      * Random number generator.
      */
-    private Random rand;
+    private final Random rand;
 
     /**
      * Construct instance of this class with given parameters.
@@ -80,6 +80,7 @@ public class MLPGroupUpdateTrainerCacheInput extends AbstractMLPGroupUpdateTrain
         this.batchSize = batchSize;
         this.cache = cache;
         this.mlp = new MultilayerPerceptron(arch, init);
+        this.rand = rand;
     }
 
     /**
@@ -94,17 +95,17 @@ public class MLPGroupUpdateTrainerCacheInput extends AbstractMLPGroupUpdateTrain
     public MLPGroupUpdateTrainerCacheInput(MLPArchitecture arch, MLPInitializer init,
         int networksCnt, IgniteCache<Integer, LabeledVector<Vector, Vector>> cache,
         int batchSize) {
-        this(arch, init, networksCnt, cache, batchSize, new Random());
+        this(arch, init, networksCnt, cache, batchSize, null);
     }
 
-        /**
-         * Construct instance of this class with given parameters and default initializer.
-         *
-         * @param arch Architecture of multilayer perceptron.
-         * @param networksCnt Count of networks to be trained in parallel by {@link MLPGroupUpdateTrainer}.
-         * @param cache Cache with labeled vectors.
-         * @param batchSize Size of batch to return on each training iteration.
-         */
+    /**
+     * Construct instance of this class with given parameters and default initializer.
+     *
+     * @param arch Architecture of multilayer perceptron.
+     * @param networksCnt Count of networks to be trained in parallel by {@link MLPGroupUpdateTrainer}.
+     * @param cache Cache with labeled vectors.
+     * @param batchSize Size of batch to return on each training iteration.
+     */
     public MLPGroupUpdateTrainerCacheInput(MLPArchitecture arch, int networksCnt,
         IgniteCache<Integer, LabeledVector<Vector, Vector>> cache,
         int batchSize) {
@@ -114,8 +115,9 @@ public class MLPGroupUpdateTrainerCacheInput extends AbstractMLPGroupUpdateTrain
     /** {@inheritDoc} */
     @Override public IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier() {
         String cName = cache.getName();
-        int bs = batchSize;
-        Random r = rand;
+
+        int bs = batchSize; // This line is for prohibiting of 'this' object be caught into serialization context of lambda.
+        Random r = rand; // This line is for prohibiting of 'this' object be caught into serialization context of lambda.
 
         return () -> {
             Ignite ignite = Ignition.localIgnite();
@@ -138,7 +140,7 @@ public class MLPGroupUpdateTrainerCacheInput extends AbstractMLPGroupUpdateTrain
             Matrix groundTruth = new DenseLocalOnHeapMatrix(dimEntry.label().size(), bs);
 
             for (int i = 0; i < selected.length; i++) {
-                LabeledVector<Vector, Vector> labeled = cache.get(selected[i]);
+                LabeledVector<Vector, Vector> labeled = cache.get(keys.get(selected[i]));
 
                 inputs.assignColumn(i, labeled.features());
                 groundTruth.assignColumn(i, labeled.label());
