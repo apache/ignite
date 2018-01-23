@@ -40,8 +40,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * <p>
- * Example of using distributed {@link MultilayerPerceptron}.</p>
+ * Example of using distributed {@link MultilayerPerceptron}.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p>
@@ -57,7 +56,7 @@ public class MLPGroupTrainerExample {
      */
     public static void main(String[] args) throws InterruptedException {
         // IMPL NOTE based on MLPGroupTrainerTest#testXOR
-        System.out.println(">>> Distributed  multilayer perceptron example started.");
+        System.out.println(">>> Distributed multilayer perceptron example started.");
 
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
@@ -68,7 +67,7 @@ public class MLPGroupTrainerExample {
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 MLPGroupTrainerExample.class.getSimpleName(), () -> {
 
-                int samplesCnt = 1000;
+                int samplesCnt = 10000;
 
                 Matrix xorInputs = new DenseLocalOnHeapMatrix(
                     new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}},
@@ -88,7 +87,7 @@ public class MLPGroupTrainerExample {
 
                 try (IgniteDataStreamer<Integer, LabeledVector<Vector, Vector>> streamer =
                          ignite.dataStreamer(cacheName)) {
-                    streamer.perNodeBufferSize(10000);
+                    streamer.perNodeBufferSize(100);
 
                     for (int i = 0; i < samplesCnt; i++) {
                         int col = Math.abs(rnd.nextInt()) % 4;
@@ -99,14 +98,14 @@ public class MLPGroupTrainerExample {
                 int totalCnt = 100;
                 int failCnt = 0;
                 MLPGroupUpdateTrainer<RPropParameterUpdate> trainer = MLPGroupUpdateTrainer.getDefault(ignite).
-                    withSyncRate(3).
+                    withSyncPeriod(3).
                     withTolerance(0.001).
-                    withMaxGlobalSteps(1000);
+                    withMaxGlobalSteps(20);
 
                 for (int i = 0; i < totalCnt; i++) {
 
                     MLPGroupUpdateTrainerCacheInput trainerInput = new MLPGroupUpdateTrainerCacheInput(conf,
-                        new RandomInitializer(rnd), 6, cache, 4);
+                        new RandomInitializer(rnd), 6, cache, 10);
 
                     MultilayerPerceptron mlp = trainer.train(trainerInput);
 
@@ -125,7 +124,7 @@ public class MLPGroupTrainerExample {
 
                 System.out.println("\n>>> Fail percentage: " + (failRatio * 100) + "%.");
 
-                System.out.println("\n>>> Distributed  multilayer perceptron example completed.");
+                System.out.println("\n>>> Distributed multilayer perceptron example completed.");
             });
 
             igniteThread.start();
