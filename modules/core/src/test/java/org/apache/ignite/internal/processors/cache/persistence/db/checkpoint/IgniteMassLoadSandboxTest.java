@@ -84,7 +84,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     /** Cache name. */
     public static final String CACHE_NAME = "partitioned" + new Random().nextInt(10000000);
     public static final int OBJECT_SIZE = 40000;
-    public static final int CONTINUOUS_PUT_RECS_CNT = 300_000;
+    public static final int CONTINUOUS_PUT_RECS_CNT = 400_000;
     public static final String PUT_THREAD = "put-thread";
     public static final String GET_THREAD = "get-thread";
 
@@ -95,7 +95,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     private String cacheName;
 
     /** */
-    private int walSegmentSize = 48 * 1024 * 1024;
+    private int walSegmentSize = 64 * 1024 * 1024;
     /** Custom wal mode. */
     protected WALMode customWalMode;
     private int checkpointFrequency = 15 * 1000;
@@ -123,7 +123,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             .setName("dfltMemPlc")
             .setMetricsEnabled(true);
 
-        regCfg.setMaxSize(10 * 1024L * 1024 * 1024);
+        regCfg.setMaxSize(4 * 1024L * 1024 * 1024);
         regCfg.setPersistenceEnabled(true);
 
         dsCfg.setDefaultDataRegionConfiguration(regCfg);
@@ -511,9 +511,9 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             System.setProperty(IgniteSystemProperties.IGNITE_DIRTY_PAGES_SORTED_STORAGE, "true");
             System.setProperty(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY, "true");
 
-            setWalArchAndWorkToSameValue = false;
+            setWalArchAndWorkToSameValue = true;
 
-            customWalMode = WALMode.LOG_ONLY;
+            customWalMode = WALMode.BACKGROUND;
             final IgniteEx ignite = startGrid(1);
 
             ignite.active(true);
