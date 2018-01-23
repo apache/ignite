@@ -415,6 +415,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 (msg.baselineTopology() == null ? ": null"
                     : "[id=" + msg.baselineTopology().id() + "]"));
 
+        if (msg.baselineTopology() != null)
+            compatibilityMode = false;
+
         if (state.transition()) {
             if (isApplicable(msg, state)) {
                 GridChangeGlobalStateFuture fut = changeStateFuture(msg);
@@ -711,7 +714,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         if (inMemoryMode)
             return changeGlobalState0(activate, null, false);
 
-        BaselineTopology newBlt = compatibilityMode ? null :
+        BaselineTopology newBlt = (compatibilityMode && !forceChangeBaselineTopology) ? null :
             calculateNewBaselineTopology(activate, baselineNodes, forceChangeBaselineTopology);
 
         return changeGlobalState0(activate, newBlt, forceChangeBaselineTopology);
@@ -786,6 +789,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         BaselineTopology blt, boolean forceChangeBaselineTopology) {
         if (ctx.isDaemon() || ctx.clientNode()) {
             GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
+
+            //TODO topology version validation should be performed before sending BaselineTopology set request
 
             sendComputeChangeGlobalState(activate, blt, forceChangeBaselineTopology, fut);
 
