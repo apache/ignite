@@ -1,0 +1,149 @@
+package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
+
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopologyImpl;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstractTest {
+
+    private static final String CACHE_NAME = "cache";
+
+    private static final int PARTITIONS_CNT = 10;
+
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+                .setConsistentId(igniteInstanceName)
+                .setDataStorageConfiguration(
+                        new DataStorageConfiguration()
+                                .setCheckpointFrequency(3_000)
+                                .setDefaultDataRegionConfiguration(
+                                        new DataRegionConfiguration()
+                                                .setPersistenceEnabled(true)
+                                                .setMaxSize(100L * 1024 * 1024)))
+                .setCacheConfiguration(new CacheConfiguration(CACHE_NAME)
+                        .setBackups(2)
+                        .setRebalanceBatchSize(4096) // Force to create several supply messages during rebalancing.
+                        .setAffinity(
+                                new RendezvousAffinityFunction(false, PARTITIONS_CNT)));
+    }
+
+    @Override protected void beforeTest() throws Exception {
+        stopAllGrids();
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+    }
+
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+    }
+
+    private boolean contains(int[] arr, int a) {
+        for (int i : arr)
+            if (i == a)
+                return true;
+
+        return false;
+    }
+
+    /**
+     * Tests that after rebalancing all partition update counters have the same value on all nodes.
+     */
+    public void test() throws Exception {
+        IgniteEx ignite = (IgniteEx)startGrids(3);
+
+        ignite.active(true);
+
+        IgniteCache cache = ignite.cache(CACHE_NAME);
+
+        for (int i = 0; i < 256; i++)
+            cache.put(i, i);
+
+        final int problemNode = 2;
+
+        IgniteEx node = (IgniteEx) ignite(problemNode);
+        int[] primaryPartitions = node.affinity(CACHE_NAME).primaryPartitions(node.cluster().localNode());
+
+        ignite.active(false);
+
+        boolean primaryRemoved = false;
+        for (int i = 0; i < PARTITIONS_CNT; i++) {
+            String nodeName = getTestIgniteInstanceName(problemNode);
+
+            Path dirPath = Paths.get(U.defaultWorkDirectory(), "db", nodeName.replace(".", "_"), CACHE_NAME + "-" + CACHE_NAME);
+
+            info("Path: " + dirPath.toString());
+
+            assertTrue(Files.exists(dirPath));
+
+            for (File f : dirPath.toFile().listFiles()) {
+                if (f.getName().equals("part-" + i + ".bin")) {
+                    if (contains(primaryPartitions, i)) {
+                        info("Removing: " + f.getName());
+
+                        primaryRemoved = true;
+
+                        f.delete();
+                    }
+                }
+                else if (f.getName().equals("index.bin")) {
+                    info("Removing: " + f.getName());
+
+                    f.delete();
+                }
+            }
+        }
+
+        assertTrue(primaryRemoved);
+
+        ignite.active(true);
+        waitForRebalancing();
+
+        List<String> issues = new ArrayList<>();
+        HashMap<Integer, Long> partMap = new HashMap<>();
+
+        for (int i = 0; i < 3; i++)
+            checkUpdCounter((IgniteEx)ignite(i), issues, partMap);
+
+        for (String issue : issues)
+            error(issue);
+
+        assertTrue(issues.isEmpty());
+    }
+
+    private void checkUpdCounter(IgniteEx ignite, List<String> issues, HashMap<Integer, Long> partMap) {
+        final CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(CU.cacheId(CACHE_NAME));
+
+        assertNotNull(grpCtx);
+
+        GridDhtPartitionTopologyImpl top = (GridDhtPartitionTopologyImpl)grpCtx.topology();
+
+        List<GridDhtLocalPartition> locParts = top.localPartitions();
+
+        for (GridDhtLocalPartition part : locParts) {
+            Long cnt = partMap.get(part.id());
+
+            if (cnt == null)
+                partMap.put(part.id(), part.updateCounter());
+
+            if ((cnt != null && part.updateCounter() != cnt) || part.updateCounter() == 0)
+                issues.add("Node name " + ignite.name() + "Part = " + part.id() + " updCounter " + part.updateCounter());
+        }
+    }
+}
