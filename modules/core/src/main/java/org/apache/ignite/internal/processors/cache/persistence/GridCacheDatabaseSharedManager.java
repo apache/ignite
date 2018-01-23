@@ -1508,20 +1508,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         break;
 
                     case PARTITION_DESTROY:
-                        if (apply) {
-                            PartitionDestroyRecord destroyRec = (PartitionDestroyRecord)rec;
+                        PartitionDestroyRecord destroyRec = (PartitionDestroyRecord)rec;
 
-                            final int gId = destroyRec.groupId();
-                            final int pId = destroyRec.partitionId();
+                        final int gId = destroyRec.groupId();
+                        final int pId = destroyRec.partitionId();
 
-                            PageMemoryEx pageMem = getPageMemoryForCacheGroup(gId);
+                        PageMemoryEx pageMem0 = getPageMemoryForCacheGroup(gId);
 
-                            pageMem.clearAsync(new P3<Integer, Long, Integer>() {
-                                @Override public boolean apply(Integer cacheId, Long pageId, Integer tag) {
-                                    return cacheId == gId && PageIdUtils.partId(pageId) == pId;
-                                }
-                            }, true).get();
-                        }
+                        pageMem0.clearAsync(new P3<Integer, Long, Integer>() {
+                            @Override public boolean apply(Integer cacheId, Long pageId, Integer tag) {
+                                return cacheId == gId && PageIdUtils.partId(pageId) == pId;
+                            }
+                        }, true).get();
 
                         break;
 
