@@ -1472,7 +1472,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             tx = txStart(cctx, 0);
 
         if (tx != null)
-            return new MvccQueryTracker(cctx, cctx.shared().coordinators().currentCoordinator(), requestMvccVersion(cctx, tx));
+            return new MvccQueryTracker(cctx, cctx.shared().coordinators().currentCoordinator(),
+                requestMvccVersion(cctx, tx));
 
         final GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
 
@@ -1863,19 +1864,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return null;
     }
 
-    /**
-     * @param schemaName Schema name.
-     * @param qry Sql fields query.
-     * @param keepBinary Keep binary flag.
-     * @param cancel Query cancel.
-     * @param mainCacheId Main cache id.
-     * @param failOnMultipleStmts Fail on multiple statements flag.
-     * @param mvccTracker Mvcc tracker
-     * @return Cursor.
-     *
-    public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
-        boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId, boolean failOnMultipleStmts,
-        MvccQueryTracker mvccTracker) {
+    /** {@inheritDoc} */
+    @SuppressWarnings("StringEquality")
+    @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
+        boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker, GridQueryCancel cancel) {
         GridNearTxLocal tx = null;
 
         try {
@@ -1884,220 +1876,79 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (res != null)
                 return res;
 
-            boolean startTx = autoStartTx(qry);
+            final boolean startTx = autoStartTx(qry);
 
-            Connection c = connectionForSchema(schemaName);
+            {
+                // First, let's check if we already have a two-step query for this statement...
+                H2TwoStepCachedQueryKey cachedQryKey = new H2TwoStepCachedQueryKey(schemaName, qry.getSql(),
+                    qry.isCollocated(), qry.isDistributedJoins(), qry.isEnforceJoinOrder(), qry.isLocal());
 
-            final boolean enforceJoinOrder = qry.isEnforceJoinOrder();
-            final boolean distributedJoins = qry.isDistributedJoins();
-            final boolean grpByCollocated = qry.isCollocated();
+                H2TwoStepCachedQuery cachedQry;
 
-            final DistributedJoinMode distributedJoinMode = distributedJoinMode(qry.isLocal(), distributedJoins);
+                if ((cachedQry = twoStepCache.get(cachedQryKey)) != null) {
+                    checkQueryType(qry, true);
 
-            String sqlQry = qry.getSql();
+                    GridCacheTwoStepQuery twoStepQry = cachedQry.query().copy();
 
-            H2TwoStepCachedQueryKey cachedQryKey = new H2TwoStepCachedQueryKey(schemaName, sqlQry, grpByCollocated,
-                distributedJoins, enforceJoinOrder, qry.isLocal());
+                    List<GridQueryFieldMetadata> meta = cachedQry.meta();
 
-            H2TwoStepCachedQuery cachedQry = twoStepCache.get(cachedQryKey);
+                    res = Collections.singletonList(doRunDistributedQuery(schemaName, qry, twoStepQry, meta, keepBinary,
+                        startTx, tracker, cancel));
 
-            if (cachedQry != null) {
-                checkQueryType(qry, true);
+                    if (!twoStepQry.explain())
+                        twoStepCache.putIfAbsent(cachedQryKey, new H2TwoStepCachedQuery(meta, twoStepQry.copy()));
 
-                GridCacheTwoStepQuery twoStepQry = cachedQry.query().copy();
+                    return res;
+                }
+            }
 
-                List<GridQueryFieldMetadata> meta = cachedQry.meta();
+            {
+                // Second, let's check if we already have a parsed statement...
+                PreparedStatement cachedStmt;
 
-                return Collections.singletonList(executeTwoStepsQuery(schemaName, qry.getPageSize(), qry.getPartitions(),
-                    qry.getArgs(), keepBinary, qry.isLazy(), qry.getTimeout(), cancel, sqlQry, enforceJoinOrder,
-                    startTx, twoStepQry, meta, mvccTracker));
+                if ((cachedStmt = cachedStatement(connectionForSchema(schemaName), qry.getSql())) != null) {
+                    Prepared prepared = GridSqlQueryParser.prepared(cachedStmt);
+
+                    // We may use this cached statement only for local queries and non queries.
+                    if (qry.isLocal() || !prepared.isQuery())
+                        return (List<FieldsQueryCursor<List<?>>>)doRunPrepared(schemaName, prepared, qry, null, null,
+                            keepBinary, startTx, tracker, cancel);
+                }
             }
 
             res = new ArrayList<>(1);
 
-            Object[] argsOrig = qry.getArgs();
             int firstArg = 0;
-            Object[] args;
-            String remainingSql = sqlQry;
+
+            String remainingSql = qry.getSql();
 
             while (remainingSql != null) {
-                args = null;
-                GridCacheTwoStepQuery twoStepQry = null;
-                List<GridQueryFieldMetadata> meta;
+                ParsingResult parseRes = parseAndSplit(schemaName,
+                    remainingSql != qry.getSql() ? cloneFieldsQuery(qry).setSql(remainingSql) : qry, firstArg);
 
-                final UUID locNodeId = ctx.localNodeId();
+                // Let's avoid second reflection getter call by returning Prepared object too
+                Prepared prepared = parseRes.prepared();
 
-                // Here we will just parse the statement, no need to optimize it at all.
-                H2Utils.setupConnection(c, /*distributedJoins*false, /*enforceJoinOrder*true);
+                GridCacheTwoStepQuery twoStepQry = parseRes.twoStepQuery();
 
-                GridH2QueryContext.set(new GridH2QueryContext(locNodeId, locNodeId, 0, PREPARE)
-                    .distributedJoinMode(distributedJoinMode));
+                List<GridQueryFieldMetadata> meta = parseRes.meta();
 
-                PreparedStatement stmt = null;
-                Prepared prepared;
+                SqlFieldsQuery newQry = parseRes.newQuery();
 
-                boolean cachesCreated = false;
+                remainingSql = parseRes.remainingSql();
 
-                try {
-                    try {
-                        while (true) {
-                            try {
-                                // Do not cache this statement because the whole query object will be cached later on.
-                                stmt = prepareStatement(c, remainingSql, false);
+                if (remainingSql != null && failOnMultipleStmts)
+                    throw new IgniteSQLException("Multiple statements queries are not supported");
 
-                                break;
-                            }
-                            catch (SQLException e) {
-                                if (!cachesCreated && (
-                                    e.getErrorCode() == ErrorCode.SCHEMA_NOT_FOUND_1 ||
-                                        e.getErrorCode() == ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1 ||
-                                        e.getErrorCode() == ErrorCode.INDEX_NOT_FOUND_1)
-                                    ) {
-                                    try {
-                                        ctx.cache().createMissingQueryCaches();
-                                    }
-                                    catch (IgniteCheckedException ignored) {
-                                        throw new CacheException("Failed to create missing caches.", e);
-                                    }
+                firstArg += prepared.getParameters().size();
 
-                                    cachesCreated = true;
-                                }
-                                else
-                                    throw new IgniteSQLException("Failed to parse query. " + e.getMessage(),
-                                        IgniteQueryErrorCode.PARSING, e);
-                            }
-                        }
+                res.addAll(doRunPrepared(schemaName, prepared, newQry, twoStepQry, meta, keepBinary, startTx, tracker,
+                    cancel));
 
-                        GridSqlQueryParser.PreparedWithRemaining prep = GridSqlQueryParser.preparedWithRemaining(stmt);
-
-                        // remaining == null if the query string contains single SQL statement.
-                        remainingSql = prep.remainingSql();
-
-                        if (remainingSql != null && failOnMultipleStmts)
-                            throw new IgniteSQLException("Multiple statements queries are not supported");
-
-                        sqlQry = prep.prepared().getSQL();
-
-                        prepared = prep.prepared();
-
-                        int paramsCnt = prepared.getParameters().size();
-
-                        if (!DmlUtils.isBatched(qry) && paramsCnt > 0) {
-                            if (argsOrig == null || argsOrig.length < firstArg + paramsCnt) {
-                                throw new IgniteException("Invalid number of query parameters. " +
-                                    "Cannot find " + (argsOrig.length + 1 - firstArg) + " parameter.");
-                            }
-
-                            args = Arrays.copyOfRange(argsOrig, firstArg, firstArg + paramsCnt);
-
-                            firstArg += paramsCnt;
-                        }
-
-                        cachedQryKey = new H2TwoStepCachedQueryKey(schemaName, sqlQry, grpByCollocated,
-                            distributedJoins, enforceJoinOrder, qry.isLocal());
-
-                        cachedQry = twoStepCache.get(cachedQryKey);
-
-                        if (cachedQry != null) {
-                            checkQueryType(qry, true);
-
-                            twoStepQry = cachedQry.query().copy();
-                            meta = cachedQry.meta();
-
-                            res.add(executeTwoStepsQuery(schemaName, qry.getPageSize(), qry.getPartitions(), args,
-                                keepBinary, qry.isLazy(), qry.getTimeout(), cancel, sqlQry, enforceJoinOrder,
-                                startTx, twoStepQry, meta, mvccTracker));
-
-                            continue;
-                        }
-                        else {
-                            checkQueryType(qry, prepared.isQuery());
-
-                            if (prepared.isQuery()) {
-                                bindParameters(stmt, F.asList(args));
-
-                                twoStepQry = GridSqlQuerySplitter.split(c, prepared, args,
-                                    grpByCollocated, distributedJoins, enforceJoinOrder, this);
-
-                                assert twoStepQry != null;
-                            }
-                        }
-                    }
-                    finally {
-                        GridH2QueryContext.clearThreadLocal();
-                    }
-
-                    // It is a DML statement if we did not create a twoStepQuery.
-                    if (twoStepQry == null) {
-                        if (DmlStatementsProcessor.isDmlStatement(prepared)) {
-                            try {
-                                res.addAll(dmlProc.updateSqlFieldsDistributed(schemaName, c, prepared,
-                                    qry.copy().setSql(sqlQry).setArgs(args), cancel));
-
-                                continue;
-                            }
-                            catch (IgniteCheckedException e) {
-                                throw new IgniteSQLException("Failed to execute DML statement [stmt=" + sqlQry +
-                                    ", params=" + Arrays.deepToString(args) + "]", e);
-                            }
-                        }
-
-                        if (DdlStatementsProcessor.isDdlStatement(prepared)) {
-                            try {
-                                res.add(ddlProc.runDdlStatement(sqlQry, prepared));
-
-                                continue;
-                            }
-                            catch (IgniteCheckedException e) {
-                                throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + sqlQry + ']', e);
-                            }
-                        }
-
-                        if (prepared instanceof NoOperation) {
-                            QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(
-                                Collections.singletonList(Collections.singletonList(0L)), null, false);
-
-                            resCur.fieldsMeta(UPDATE_RESULT_META);
-
-                            res.add(resCur);
-
-                            continue;
-                        }
-                    }
-
-                    assert twoStepQry != null;
-
-                    List<Integer> cacheIds = collectCacheIds(mainCacheId, twoStepQry);
-
-                    if (F.isEmpty(cacheIds))
-                        twoStepQry.local(true);
-                    else {
-                        twoStepQry.cacheIds(cacheIds);
-                        twoStepQry.local(qry.isLocal());
-                    }
-
-                    meta = H2Utils.meta(stmt.getMetaData());
-                }
-                catch (IgniteCheckedException e) {
-                    throw new CacheException("Failed to bind parameters: [qry=" + sqlQry + ", params=" +
-                        Arrays.deepToString(qry.getArgs()) + "]", e);
-                }
-                catch (SQLException e) {
-                    throw new IgniteSQLException(e);
-                }
-                finally {
-                    U.close(stmt, log);
-                }
-
-                res.add(executeTwoStepsQuery(schemaName, qry.getPageSize(), qry.getPartitions(), args, keepBinary,
-                    qry.isLazy(), qry.getTimeout(), cancel, sqlQry, enforceJoinOrder,
-                    startTx, twoStepQry, meta, mvccTracker));
-
-                if (cachedQry == null && !twoStepQry.explain()) {
-                    cachedQry = new H2TwoStepCachedQuery(meta, twoStepQry.copy());
-
-                    twoStepCache.putIfAbsent(cachedQryKey, cachedQry);
-                }
+                if (parseRes.twoStepQuery() != null && parseRes.twoStepQueryKey() != null &&
+                    !parseRes.twoStepQuery().explain())
+                    twoStepCache.putIfAbsent(parseRes.twoStepQueryKey(), new H2TwoStepCachedQuery(meta,
+                        twoStepQry.copy()));
             }
 
             return res;
@@ -2112,89 +1963,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if ((tx != null || (tx = tx()) != null) && tx.isRollbackOnly())
                 U.close(tx, log);
         }
-    }*/
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("StringEquality")
-    @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
-        boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker, GridQueryCancel cancel) {
-        List<FieldsQueryCursor<List<?>>> res = tryQueryDistributedSqlFieldsNative(schemaName, qry);
-
-        if (res != null)
-            return res;
-
-        {
-            // First, let's check if we already have a two-step query for this statement...
-            H2TwoStepCachedQueryKey cachedQryKey = new H2TwoStepCachedQueryKey(schemaName, qry.getSql(),
-                qry.isCollocated(), qry.isDistributedJoins(), qry.isEnforceJoinOrder(), qry.isLocal());
-
-            H2TwoStepCachedQuery cachedQry;
-
-            if ((cachedQry = twoStepCache.get(cachedQryKey)) != null) {
-                checkQueryType(qry, true);
-
-                GridCacheTwoStepQuery twoStepQry = cachedQry.query().copy();
-
-                List<GridQueryFieldMetadata> meta = cachedQry.meta();
-
-                res = Collections.singletonList(doRunDistributedQuery(schemaName, qry, twoStepQry, meta, keepBinary,
-                    false, tracker, cancel));
-
-                if (!twoStepQry.explain())
-                    twoStepCache.putIfAbsent(cachedQryKey, new H2TwoStepCachedQuery(meta, twoStepQry.copy()));
-
-                return res;
-            }
-        }
-
-        {
-            // Second, let's check if we already have a parsed statement...
-            PreparedStatement cachedStmt;
-
-            if ((cachedStmt = cachedStatement(connectionForSchema(schemaName), qry.getSql())) != null) {
-                Prepared prepared = GridSqlQueryParser.prepared(cachedStmt);
-
-                // We may use this cached statement only for local queries and non queries.
-                if (qry.isLocal() || !prepared.isQuery())
-                    return (List<FieldsQueryCursor<List<?>>>)doRunPrepared(schemaName, prepared, qry, null, null,
-                            keepBinary, false, tracker, cancel);
-            }
-        }
-
-            res = new ArrayList<>(1);
-
-        int firstArg = 0;
-
-        String remainingSql = qry.getSql();
-
-        while (remainingSql != null) {
-            ParsingResult parseRes = parseAndSplit(schemaName,
-                remainingSql != qry.getSql() ? cloneFieldsQuery(qry).setSql(remainingSql) : qry, firstArg);
-
-            // Let's avoid second reflection getter call by returning Prepared object too
-            Prepared prepared = parseRes.prepared();
-
-            GridCacheTwoStepQuery twoStepQry = parseRes.twoStepQuery();
-
-            List<GridQueryFieldMetadata> meta = parseRes.meta();
-
-            SqlFieldsQuery newQry = parseRes.newQuery();
-
-            remainingSql = parseRes.remainingSql();
-
-            if (remainingSql != null && failOnMultipleStmts)
-                throw new IgniteSQLException("Multiple statements queries are not supported");
-
-            firstArg += prepared.getParameters().size();
-
-            res.addAll(doRunPrepared(schemaName, prepared, newQry, twoStepQry, meta, keepBinary, false, tracker, cancel));
-
-            if (parseRes.twoStepQuery() != null && parseRes.twoStepQueryKey() != null &&
-                    !parseRes.twoStepQuery().explain())
-                twoStepCache.putIfAbsent(parseRes.twoStepQueryKey(), new H2TwoStepCachedQuery(meta, twoStepQry.copy()));
-        }
-
-        return res;
     }
 
     /**
@@ -2205,8 +1973,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param twoStepQry Two-step query if this query must be executed in a distributed way.
      * @param meta Metadata for {@code twoStepQry}.
      * @param keepBinary Whether binary objects must not be deserialized automatically.
-     * @param startTx
-     * @param tracker
+     * @param startTx Start transactionq flag.
+     * @param tracker MVCC tracker.
      * @param cancel Query cancel state holder.
      * @return Query result.
      */
@@ -2281,7 +2049,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             checkQueryType(qry, true);
 
             return Collections.singletonList(doRunDistributedQuery(schemaName, qry, twoStepQry, meta, keepBinary,
-                false, tracker, cancel));
+                startTx, tracker, cancel));
         }
 
         // We've encountered a local query, let's just run it.
@@ -2472,17 +2240,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         res.pageSize(qry.getPageSize());
 
         return res;
-
-        /*catch (RuntimeException | Error e) {
-            if ((tx = tx()) != null)
-                tx.setRollbackOnly();
-
-            throw e;
-        }
-        finally {
-            if ((tx != null || (tx = tx()) != null) && tx.isRollbackOnly())
-                U.close(tx, log);
-        }*/
     }
 
     /**
