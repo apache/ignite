@@ -117,7 +117,7 @@ namespace ignite
 
             void ParameterSet::SetParamStatus(int64_t idx, SQLUSMALLINT status) const
             {
-                if (idx < 0 || !paramsStatus || idx > paramSetSize)
+                if (idx < 0 || !paramsStatus || idx >= static_cast<int64_t>(paramSetSize))
                     return;
 
                 paramsStatus[idx] = status;
