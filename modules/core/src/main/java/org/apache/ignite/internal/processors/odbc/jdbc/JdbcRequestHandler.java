@@ -246,9 +246,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             switch (req.cmd()) {
                 case FINISHED_ERROR:
                 case FINISHED_EOF:
-                    ctx.close();
-
                     bulkLoadRequests.remove(req.queryId());
+
+                    ctx.close();
 
                     return new JdbcResponse(new JdbcQueryExecuteResult(req.queryId(), ctx.updateCnt()));
 
@@ -296,6 +296,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             {
                 for (JdbcQueryCursor cursor : qryCursors.values())
                     cursor.close();
+
+                for (JdbcBulkLoadContext ctx : bulkLoadRequests.values())
+                    ctx.close();
             }
             finally {
                 busyLock.leaveBusy();
