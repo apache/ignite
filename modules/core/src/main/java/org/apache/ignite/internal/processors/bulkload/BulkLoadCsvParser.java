@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.bulkload;
 
-import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadContext;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadFileBatchRequest;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -26,6 +25,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadFileBatchRequest.CMD_CONTINUE;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadFileBatchRequest.CMD_FINISHED_EOF;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadFileBatchRequest.CMD_FINISHED_ERROR;
 
 /** FIXME SHQ */
 public class BulkLoadCsvParser extends BulkLoadParser {
@@ -40,9 +43,8 @@ public class BulkLoadCsvParser extends BulkLoadParser {
     }
 
     @Override public Iterable<List<Object>> processBatch(JdbcBulkLoadContext ctx, JdbcBulkLoadFileBatchRequest req) {
-
         switch (req.cmd()) {
-            case CONTINUE:
+            case CMD_CONTINUE:
                 if (nextBatchNum != req.batchNum())
                     throw new IgniteSQLException("Batch #" + (nextBatchNum + 1) + " is missing");
 
@@ -52,15 +54,16 @@ public class BulkLoadCsvParser extends BulkLoadParser {
 
                 return Collections.emptyList();
 
-            case FINISHED_ERROR:
+            case CMD_FINISHED_ERROR:
                 clearBatches();
+
                 return Collections.emptyList();
 
-            case FINISHED_EOF:
+            case CMD_FINISHED_EOF:
                 return processFile(joinBatches());
 
             default:
-                throw new IgniteIllegalStateException("Unknown state");
+                throw new IllegalArgumentException();
         }
     }
 
@@ -116,5 +119,4 @@ public class BulkLoadCsvParser extends BulkLoadParser {
 
         return result;
     }
-
 }

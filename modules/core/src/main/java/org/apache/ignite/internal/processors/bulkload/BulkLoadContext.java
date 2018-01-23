@@ -22,31 +22,30 @@ import org.apache.ignite.IgniteDataStreamer;
 /** FIXME SHQ */
 public class BulkLoadContext {
 
-    /** Local name of the file to send to server */
-    private String locFileName;
+    private final BulkLoadParameters params;
 
     private final BulkLoadParser inputParser;
 
-    private final BulkLoadEntryConverter updatePlan;
+    private final BulkLoadEntryConverter dataConverter;
 
     private final IgniteDataStreamer<Object, Object> outputStreamer;
 
-    public BulkLoadContext(String locFileName, BulkLoadParser inputParser, BulkLoadEntryConverter updatePlan,
+    public BulkLoadContext(BulkLoadParameters params, BulkLoadParser inputParser, BulkLoadEntryConverter dataConverter,
         IgniteDataStreamer<Object, Object> outputStreamer) {
 
-        this.locFileName = locFileName;
+        this.params = params;
         this.inputParser = inputParser;
-        this.updatePlan = updatePlan;
+        this.dataConverter = dataConverter;
         this.outputStreamer = outputStreamer;
     }
 
     /**
-     * Returns the local name of file to send.
+     * Returns the params.
      *
-     * @return locFileName the local name of file to send.
+     * @return params.
      */
-    public String localFileName() {
-        return locFileName;
+    public BulkLoadParameters params() {
+        return params;
     }
 
     /**
@@ -59,12 +58,12 @@ public class BulkLoadContext {
     }
 
     /**
-     * Returns the updatePlan.
+     * Returns the dataConverter.
      *
-     * @return updatePlan.
+     * @return dataConverter.
      */
     public BulkLoadEntryConverter dataConverter() {
-        return updatePlan;
+        return dataConverter;
     }
 
     /**

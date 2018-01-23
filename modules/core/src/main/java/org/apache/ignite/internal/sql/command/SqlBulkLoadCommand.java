@@ -19,6 +19,7 @@ package org.apache.ignite.internal.sql.command;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadFormat;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadParameters;
 import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
@@ -28,6 +29,7 @@ import java.util.List;
 
 import static org.apache.ignite.internal.sql.SqlParserUtils.error;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIdentifier;
+import static org.apache.ignite.internal.sql.SqlParserUtils.parseInt;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdentifier;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipCommaOrRightParenthesis;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword;
@@ -35,13 +37,17 @@ import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword
 /** FIXME SHQ */
 public class SqlBulkLoadCommand implements SqlCommand {
 
-    private String schemaName;
-    private String tblName;
     private String localFileName;
+
+    private String schemaName;
+
+    private String tblName;
+
+    private List<String> columns;
 
     private BulkLoadFormat inputFormat;
 
-    private List<String> columns;
+    private Integer batchSize;
 
     @Override public SqlCommand parse(SqlLexer lex) {
         // COPY is already parsed
@@ -55,6 +61,8 @@ public class SqlBulkLoadCommand implements SqlCommand {
         parseOptionalColumns(lex);
 
         parseFormat(lex);
+
+        parseOptionalParameters(lex);
 
         return this;
     }
@@ -105,6 +113,28 @@ public class SqlBulkLoadCommand implements SqlCommand {
         } catch (IgniteCheckedException e) {
             throw error(lex, "Unknown format name: " + name + ". Currently supported formats are: "
                 + BulkLoadFormat.formatNames());
+        }
+    }
+
+    private void parseOptionalParameters(SqlLexer lex) {
+        while (lex.lookAhead().tokenType() == SqlLexerTokenType.DEFAULT) {
+            switch (lex.lookAhead().token()) {
+                case SqlKeyword.BATCH_SIZE:
+                    lex.shift();
+
+                    int sz = parseInt(lex);
+
+                    if (sz < BulkLoadParameters.MIN_BATCH_SIZE || sz > BulkLoadParameters.MAX_BATCH_SIZE)
+                        throw error(lex, "Batch size should be within [" +
+                            BulkLoadParameters.MIN_BATCH_SIZE + ".." + BulkLoadParameters.MAX_BATCH_SIZE + "]: " + sz);
+
+                    batchSize = sz;
+
+                    break;
+
+                default:
+                    return;
+            }
         }
     }
 
@@ -164,5 +194,23 @@ public class SqlBulkLoadCommand implements SqlCommand {
 
     public BulkLoadFormat inputFormat() {
         return inputFormat;
+    }
+
+    /**
+     * Returns the batchSize.
+     *
+     * @return batchSize.
+     */
+    public Integer batchSize() {
+        return batchSize;
+    }
+
+    /**
+     * Sets the batchSize.
+     *
+     * @param batchSize The batchSize.
+     */
+    public void batchSize(int batchSize) {
+        this.batchSize = batchSize;
     }
 }

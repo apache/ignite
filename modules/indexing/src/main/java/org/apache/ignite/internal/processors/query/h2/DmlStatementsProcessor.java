@@ -45,6 +45,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadContext;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadEntryConverter;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadParameters;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadParser;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -999,6 +1000,10 @@ public class DmlStatementsProcessor {
     }
 
     public BulkLoadContext bulkLoad(SqlBulkLoadCommand cmd) throws IgniteCheckedException {
+
+        if (cmd.batchSize() == null)
+            cmd.batchSize(BulkLoadParameters.DEFAULT_BATCH_SIZE);
+
         BulkLoadParser inputParser = BulkLoadParser.createParser(cmd.inputFormat());
 
         GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
@@ -1019,7 +1024,9 @@ public class DmlStatementsProcessor {
 
         IgniteDataStreamer<Object, Object> outputStreamer = cache.grid().dataStreamer(cache.name());
 
-        return new BulkLoadContext(cmd.localFileName(), inputParser, dataConverter, outputStreamer);
+        return new BulkLoadContext(
+            new BulkLoadParameters(cmd.localFileName(), cmd.batchSize()),
+            inputParser, dataConverter, outputStreamer);
     }
 
     /** */

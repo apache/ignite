@@ -25,5 +25,4 @@ import java.util.List;
 public interface BulkLoadEntryConverter {
 
     IgniteBiTuple<?, ?> convertRecord(List<?> record) throws IgniteCheckedException;
-
 }

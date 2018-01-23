@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadParameters;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -32,24 +33,23 @@ public class JdbcFilesToSendResult extends JdbcResult {
     /** Query ID for matching this command on server in further {@link JdbcBulkLoadFileBatchRequest} commands. */
     private long queryId;
 
-    /** Local name of the file to send to server */
-    private String locFileName;
+    private BulkLoadParameters params;
 
     public JdbcFilesToSendResult() {
         super(BULK_LOAD_BATCH);
+
         queryId = 0;
-        locFileName = null;
+        params = null;
     }
 
     /**
      * Constructs a request from server (in form of reply) to send files from client to server.
-     *
-     * @param locFileName the local name of file to send.
      */
-    public JdbcFilesToSendResult(long queryId, String locFileName) {
+    public JdbcFilesToSendResult(long queryId, BulkLoadParameters params) {
         super(BULK_LOAD_BATCH);
+
         this.queryId = queryId;
-        this.locFileName = locFileName;
+        this.params = params;
     }
 
     /**
@@ -62,12 +62,12 @@ public class JdbcFilesToSendResult extends JdbcResult {
     }
 
     /**
-     * Returns the local name of file to send.
+     * Returns the params.
      *
-     * @return locFileName the local name of file to send.
+     * @return params.
      */
-    public String localFileName() {
-        return locFileName;
+    public BulkLoadParameters params() {
+        return params;
     }
 
     /** {@inheritDoc} */
@@ -75,7 +75,8 @@ public class JdbcFilesToSendResult extends JdbcResult {
         super.writeBinary(writer);
 
         writer.writeLong(queryId);
-        writer.writeString(locFileName);
+        writer.writeString(params.localFileName());
+        writer.writeInt(params.batchSize());
     }
 
     /** {@inheritDoc} */
@@ -83,7 +84,14 @@ public class JdbcFilesToSendResult extends JdbcResult {
         super.readBinary(reader);
 
         queryId = reader.readLong();
-        locFileName = reader.readString();
+
+        String locFileName = reader.readString();
+        int batchSize = reader.readInt();
+
+        if (batchSize < BulkLoadParameters.MIN_BATCH_SIZE || batchSize > BulkLoadParameters.MAX_BATCH_SIZE)
+            throw new BinaryObjectException("Invalid batch size: " + batchSize);
+
+        params = new BulkLoadParameters(locFileName, batchSize);
     }
 
     /** {@inheritDoc} */

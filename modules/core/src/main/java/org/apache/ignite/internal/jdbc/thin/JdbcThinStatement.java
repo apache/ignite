@@ -58,12 +58,8 @@ import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
  * JDBC statement implementation.
  */
 public class JdbcThinStatement implements Statement {
-
     /** Default queryPage size. */
     private static final int DFLT_PAGE_SIZE = SqlQuery.DFLT_PAGE_SIZE;
-
-    /** Size of a batch for COPY command. */
-    public static final int BATCH_SIZE_BYTES = 512 * 1024;
 
     /** JDBC Connection implementation. */
     protected JdbcThinConnection conn;
@@ -199,12 +195,14 @@ public class JdbcThinStatement implements Statement {
      */
     private JdbcResult sendFile(JdbcFilesToSendResult cmdResult) throws SQLException {
 
-        String fileName = cmdResult.localFileName();
+        String fileName = cmdResult.params().localFileName();
+        int batchSize = cmdResult.params().batchSize();
+
         int batchNum = 0;
 
         try {
             try (InputStream input = new BufferedInputStream(new FileInputStream(fileName))) {
-                byte[] buf = new byte[BATCH_SIZE_BYTES];
+                byte[] buf = new byte[batchSize];
 
                 int readBytes;
                 while ((readBytes = input.read(buf)) != -1) {
@@ -214,7 +212,7 @@ public class JdbcThinStatement implements Statement {
                     JdbcResult res = conn.sendRequest(new JdbcBulkLoadFileBatchRequest(
                         cmdResult.queryId(),
                         batchNum,
-                        JdbcBulkLoadFileBatchRequest.Command.CONTINUE,
+                        JdbcBulkLoadFileBatchRequest.CMD_CONTINUE,
                         readBytes == buf.length ? buf : Arrays.copyOf(buf, readBytes)));
 
                     if (!(res instanceof JdbcQueryExecuteResult))
@@ -226,7 +224,7 @@ public class JdbcThinStatement implements Statement {
                 return conn.sendRequest(new JdbcBulkLoadFileBatchRequest(
                     cmdResult.queryId(),
                     batchNum,
-                    JdbcBulkLoadFileBatchRequest.Command.FINISHED_EOF, null));
+                    JdbcBulkLoadFileBatchRequest.CMD_FINISHED_EOF, null));
             }
         }
         catch (SQLException | IOException e) {
@@ -234,7 +232,7 @@ public class JdbcThinStatement implements Statement {
                 conn.sendRequest(new JdbcBulkLoadFileBatchRequest(
                     cmdResult.queryId(),
                     batchNum,
-                    JdbcBulkLoadFileBatchRequest.Command.FINISHED_ERROR));
+                    JdbcBulkLoadFileBatchRequest.CMD_FINISHED_ERROR));
             }
             catch (SQLException e1) {
                 throw new SQLException("Cannot send finalization request: " + e1.getMessage(), e);

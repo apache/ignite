@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -44,6 +43,7 @@ import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadContext;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadEntryConverter;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadParameters;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
@@ -64,6 +64,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadFileBatchRequest.CMD_CONTINUE;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadFileBatchRequest.CMD_FINISHED_EOF;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadFileBatchRequest.CMD_FINISHED_ERROR;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_3_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_4_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC;
@@ -240,21 +243,20 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 streamer.addData(kv.getKey(), kv.getValue());
 
                 thisBatchUpdateCnt++;
-
             }
 
+            ctx.incrementUpdateCountBy(thisBatchUpdateCnt);
+
             switch (req.cmd()) {
-                case FINISHED_ERROR:
-                case FINISHED_EOF:
+                case CMD_FINISHED_ERROR:
+                case CMD_FINISHED_EOF:
                     bulkLoadRequests.remove(req.queryId());
 
                     ctx.close();
 
                     return new JdbcResponse(new JdbcQueryExecuteResult(req.queryId(), ctx.updateCnt()));
 
-                case CONTINUE:
-                    ctx.incrementUpdateCountBy(thisBatchUpdateCnt);
-
+                case CMD_CONTINUE:
                     return new JdbcResponse(new JdbcQueryExecuteResult(req.queryId(), thisBatchUpdateCnt));
 
                 default:
@@ -380,7 +382,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                     BulkLoadContext bctx = ((BulkLoadContextCursor)fieldsCur).bulkLoadContext();
 
-                    JdbcFilesToSendResult filesToSendResult = new JdbcFilesToSendResult(qryId, bctx.localFileName());
+                    JdbcFilesToSendResult filesToSendResult = new JdbcFilesToSendResult(qryId, bctx.params());
 
                     JdbcBulkLoadContext jdbcBulkCtx = new JdbcBulkLoadContext(filesToSendResult, bctx);
 

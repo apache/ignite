@@ -26,22 +26,22 @@ import org.jetbrains.annotations.NotNull;
 /** FIXME SHQ */
 public class JdbcBulkLoadFileBatchRequest extends JdbcRequest {
 
-    public enum Command {
-        CONTINUE,
-        FINISHED_ERROR,
-        FINISHED_EOF
-    }
+    public static final int CMD_MIN = 0;
+    public static final int CMD_CONTINUE = 0;
+    public static final int CMD_FINISHED_ERROR = 1;
+    public static final int CMD_FINISHED_EOF = 2;
+    public static final int CMD_MAX = 2;
 
     @NotNull private long queryId;
     @NotNull private int batchNum = 0;
-    @NotNull private Command cmd;
+    @NotNull private int cmd;
     @NotNull private byte[] data;
 
     public JdbcBulkLoadFileBatchRequest() {
         super(BULK_LOAD_BATCH);
     }
 
-    public JdbcBulkLoadFileBatchRequest(long queryId, int num, Command error) {
+    public JdbcBulkLoadFileBatchRequest(long queryId, int num, int error) {
         this(queryId, num, error, new byte[0]);
     }
 
@@ -51,10 +51,11 @@ public class JdbcBulkLoadFileBatchRequest extends JdbcRequest {
      * @param cmd
      * @param data
      */
-    public JdbcBulkLoadFileBatchRequest(long queryId, int batchNum, Command cmd, byte[] data) {
+    public JdbcBulkLoadFileBatchRequest(long queryId, int batchNum, int cmd, byte[] data) {
         super(BULK_LOAD_BATCH);
         this.queryId = queryId;
         this.batchNum = batchNum;
+        assert cmd >= CMD_MIN && cmd <= CMD_MAX;
         this.cmd = cmd;
         this.data = data;
     }
@@ -82,7 +83,7 @@ public class JdbcBulkLoadFileBatchRequest extends JdbcRequest {
      *
      * @return cmd.
      */
-    public Command cmd() {
+    public int cmd() {
         return cmd;
     }
 
@@ -101,8 +102,7 @@ public class JdbcBulkLoadFileBatchRequest extends JdbcRequest {
 
         writer.writeLong(queryId);
         writer.writeInt(batchNum);
-        //writer.writeEnum(cmd); FIXME SHQ
-        writer.writeInt(cmd.ordinal());
+        writer.writeInt(cmd);
         writer.writeByteArray(data);
     }
 
@@ -112,8 +112,14 @@ public class JdbcBulkLoadFileBatchRequest extends JdbcRequest {
 
         queryId = reader.readLong();
         batchNum = reader.readInt();
-        // cmd = reader.readEnum(); FIXME SHQ
-        cmd = Command.values()[reader.readInt()];
+
+        int c = reader.readInt();
+
+        if (c < CMD_MIN || c > CMD_MAX)
+            throw new BinaryObjectException("Invalid command: " + cmd);
+
+        cmd = c;
+
         data = reader.readByteArray();
     }
 
@@ -121,5 +127,4 @@ public class JdbcBulkLoadFileBatchRequest extends JdbcRequest {
     @Override public String toString() {
         return S.toString(JdbcBulkLoadFileBatchRequest.class, this);
     }
-
 }

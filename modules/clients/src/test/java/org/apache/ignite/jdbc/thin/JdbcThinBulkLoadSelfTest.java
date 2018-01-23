@@ -17,18 +17,13 @@
 
 package org.apache.ignite.jdbc.thin;
 
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.testframework.GridTestUtils;
 
-import java.sql.BatchUpdateException;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Arrays;
 import java.util.concurrent.Callable;
-
-import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Statement test.
@@ -43,6 +38,9 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
 
     /** Prepared statement. */
     private PreparedStatement pstmt;
+
+    private String BULKLOAD0_CSV_FILE = System.getProperty("IGNITE_HOME") +
+        "/modules/clients/src/test/resources/bulkload0.csv";
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -83,40 +81,79 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
      * Read error in the middle of reading a file
      *
      */
+    public void testWrongFileName() {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                stmt.executeUpdate(
+                    "copy from \"nonexistent\" into Person (_key, firstName, lastName) format csv");
+
+                return null;
+            }
+        }, SQLException.class, "Failed to read file: 'nonexistent'");
+    }
+
+    /**
+     * @throws SQLException If failed.
+     *
+     * FIXME SHQ: Tests to add
+     * Missing table
+     * Inserting _key, _value of a wrong type
+     * Missing file
+     * Read error in the middle of reading a file
+     *
+     */
     public void testBatch() throws SQLException {
-        final int BATCH_SIZE = 10;
-
-        String csvFileName = System.getProperty("IGNITE_HOME") + "/modules/clients/src/test/resources/bulkload0.csv";
-
         int updatesCnt = stmt.executeUpdate(
-            "copy from \"" + csvFileName + "\" into Person (_key, firstName, lastName) format csv");
+            "copy from \"" + BULKLOAD0_CSV_FILE + "\" into Person (_key, firstName, lastName) format csv");
 
         assertEquals(2, updatesCnt);
+
+        checkBulkload0CsvCacheContents();
     }
 
     /**
-     * @param beginIndex Begin row index.
-     * @param cnt Count of rows.
-     * @return String contains values for 'cnt' rows.
+     * @throws SQLException If failed.
+     *
+     * FIXME SHQ: Tests to add
+     * Missing table
+     * Inserting _key, _value of a wrong type
+     * Missing file
+     * Read error in the middle of reading a file
+     *
      */
-    private String generateValues(int beginIndex, int cnt) {
-        StringBuilder sb = new StringBuilder();
+    public void testBatchSize_1() throws SQLException {
+        int updatesCnt = stmt.executeUpdate(
+            "copy from \"" + BULKLOAD0_CSV_FILE + "\" into Person (_key, firstName, lastName) format csv batch_size 1");
 
-        int lastIdx = beginIndex + cnt - 1;
+        assertEquals(2, updatesCnt);
 
-        for (int i = beginIndex; i < lastIdx; ++i)
-            sb.append(valuesRow(i)).append(',');
-
-        sb.append(valuesRow(lastIdx));
-
-        return sb.toString();
+        checkBulkload0CsvCacheContents();
     }
 
-    /**
-     * @param idx Index of the row.
-     * @return String with row values.
-     */
-    private String valuesRow(int idx) {
-        return String.format("('p%d', %d, 'Name%d', 'Lastname%d', %d)", idx, idx, idx, idx, 20 + idx);
+    private void checkBulkload0CsvCacheContents() throws SQLException {
+        ResultSet rs = stmt.executeQuery("select _key, firstName, lastName from Person");
+
+        assert rs != null;
+
+        int cnt = 0;
+
+        while (rs.next()) {
+            int id = rs.getInt("_key");
+
+            if (id == 123) {
+                assertEquals("FirstName123 MiddleName123", rs.getString("firstName"));
+                assertEquals("LastName123", rs.getString("lastName"));
+            }
+            else if (id == 456) {
+                assertEquals("FirstName456", rs.getString("firstName"));
+                assertEquals("LastName456", rs.getString("lastName"));
+            }
+            else
+                fail("Wrong ID: " + id);
+
+            cnt++;
+        }
+
+        assertEquals(2, cnt);
     }
 }
