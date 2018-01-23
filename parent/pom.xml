@@ -996,7 +996,7 @@
         </profile>
 
         <profile>
-            <id>lin-win-tools.jar</id>
+            <id>tools.jar-default</id>
             <activation>
                 <file>
                     <exists>${java.home}/../lib/tools.jar</exists>
@@ -1014,7 +1014,7 @@
         </profile>
 
         <profile>
-            <id>osx-tools.jar</id>
+            <id>tools.jar-mac</id>
             <activation>
                 <file>
                     <exists>${java.home}/../Classes/classes.jar</exists>
