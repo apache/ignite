@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
 import java.io.File;
@@ -21,12 +37,17 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+/**
+ *
+ */
 public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstractTest {
-
+    /** */
     private static final String CACHE_NAME = "cache";
 
+    /** */
     private static final int PARTITIONS_CNT = 10;
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
                 .setConsistentId(igniteInstanceName)
@@ -44,16 +65,21 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
                                 new RendezvousAffinityFunction(false, PARTITIONS_CNT)));
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
     }
 
+    /**
+     *
+     */
     private boolean contains(int[] arr, int a) {
         for (int i : arr)
             if (i == a)
@@ -127,6 +153,9 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
         assertTrue(issues.isEmpty());
     }
 
+    /**
+     *
+     */
     private void checkUpdCounter(IgniteEx ignite, List<String> issues, HashMap<Integer, Long> partMap) {
         final CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(CU.cacheId(CACHE_NAME));
 
