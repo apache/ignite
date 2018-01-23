@@ -186,7 +186,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      *
      */
     public void testRollbackSync() throws Exception {
-        final Ignite client = startClient();
+        startClient();
 
         for (Ignite ignite : G.allGrids()) {
             testRollbackSync0(ignite);
@@ -297,64 +297,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test a transaction which is rolled back in empty state. All subsequent operations must fail.
-     */
-    public void testRollbackAsyncEmptyState() throws Exception {
-        final Ignite client = startClient();
-
-        final int threadsCnt = 1;
-
-        final CountDownLatch keyLocked = new CountDownLatch(1);
-
-        final CountDownLatch txStarted = new CountDownLatch(threadsCnt);
-
-        final CountDownLatch txCommitted = new CountDownLatch(1);
-
-        final CountDownLatch rollbackLatch = new CountDownLatch(1);
-
-        final List<Transaction> txs = synchronizedList(new ArrayList<Transaction>());
-
-        IgniteInternalFuture<?> tx1 = putAsync(client, keyLocked, txCommitted, 0, true);
-
-        final IgniteInternalFuture<?> tx2 = multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1);
-
-                txs.add(tx);
-
-                txStarted.countDown();
-
-                U.awaitQuiet(keyLocked);
-
-                U.awaitQuiet(rollbackLatch);
-
-                try {
-                    client.cache(CACHE_NAME).get(0);
-
-                    fail("No tx op is allowed after rollback");
-                }
-                catch (Exception e) {
-                    assertTrue(e.getMessage(), X.hasCause(e, TransactionRollbackException.class));
-                }
-            }
-        }, threadsCnt, "tx-async");
-
-        U.awaitQuiet(txStarted);
-
-        txs.get(0).rollback();
-
-        rollbackLatch.countDown();
-
-        txCommitted.countDown();
-
-        tx1.get();
-
-        tx2.get();
-
-        checkFutures();
-    }
-
-    /**
      *
      */
     public void testSynchronousRollback() throws Exception {
@@ -418,7 +360,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                     try (Transaction tx = tryLockNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ,
                         useTimeout ? 500 : 0, 1)) {
-                        // Will wait for lock und must be unblocked by async rollback.
+                        // Will block on lock request until rolled back asynchronously.
                         tryLockNode.cache(CACHE_NAME).get(0);
 
                         fail("Tx must be rolled back asynchronously");
