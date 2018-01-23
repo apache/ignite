@@ -20,10 +20,17 @@ package org.apache.ignite.internal.processors.query.h2.views;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.lang.IgniteBiClosure;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
@@ -41,7 +48,7 @@ public class GridH2SysViewImplCacheMetrics extends GridH2SysView {
      */
     public GridH2SysViewImplCacheMetrics(GridKernalContext ctx, boolean clusterMetrics) {
         super("CACHE_" + (clusterMetrics ? "CLUSTER" : "NODE") + "_METRICS",
-            "Ignite cache " + (clusterMetrics ? "cluster" : "node") + " metrics", ctx, "CACHE_NAME",
+            "Ignite cache " + (clusterMetrics ? "cluster" : "node") + " metrics", ctx, "NODE_ID,CACHE_NAME",
             newColumn("CACHE_NAME"),
             newColumn("NODE_ID", Value.UUID),
             newColumn("CACHE_GETS", Value.LONG),
@@ -111,11 +118,84 @@ public class GridH2SysViewImplCacheMetrics extends GridH2SysView {
         this.clusterMetrics = clusterMetrics;
     }
 
+    /**
+     * @param metrics Metrics.
+     * @param node Node.
+     */
+    private Object[] createRowData(CacheMetrics metrics, ClusterNode node) {
+        return new Object[] {
+            metrics.name(),
+            node == null ? null : node.id(),
+            metrics.getCacheGets(),
+            metrics.getCachePuts(),
+            metrics.getCacheRemovals(),
+            metrics.getCacheEvictions(),
+            metrics.getCacheHits(),
+            metrics.getCacheHitPercentage(),
+            metrics.getCacheMisses(),
+            metrics.getCacheMissPercentage(),
+            metrics.getCacheTxCommits(),
+            metrics.getCacheTxRollbacks(),
+            metrics.getAverageGetTime(),
+            metrics.getAveragePutTime(),
+            metrics.getAverageRemoveTime(),
+            metrics.getAverageTxCommitTime(),
+            metrics.getAverageTxRollbackTime(),
+            metrics.getOffHeapGets(),
+            metrics.getOffHeapPuts(),
+            metrics.getOffHeapRemovals(),
+            metrics.getOffHeapEvictions(),
+            metrics.getOffHeapHits(),
+            metrics.getOffHeapHitPercentage(),
+            metrics.getOffHeapMisses(),
+            metrics.getOffHeapMissPercentage(),
+            metrics.getHeapEntriesCount(),
+            metrics.getOffHeapEntriesCount(),
+            metrics.getOffHeapPrimaryEntriesCount(),
+            metrics.getOffHeapBackupEntriesCount(),
+            metrics.getOffHeapAllocatedSize(),
+            metrics.getSize(),
+            metrics.isEmpty(),
+            metrics.getDhtEvictQueueCurrentSize(),
+            metrics.getTxThreadMapSize(),
+            metrics.getTxXidMapSize(),
+            metrics.getTxDhtCommitQueueSize(),
+            metrics.getTxDhtPrepareQueueSize(),
+            metrics.getTxStartVersionCountsSize(),
+            metrics.getTxCommittedVersionsSize(),
+            metrics.getTxRolledbackVersionsSize(),
+            metrics.isWriteBehindEnabled(),
+            metrics.getWriteBehindFlushSize(),
+            metrics.getWriteBehindFlushThreadCount(),
+            metrics.getWriteBehindFlushFrequency(),
+            metrics.getWriteBehindStoreBatchSize(),
+            metrics.getWriteBehindTotalCriticalOverflowCount(),
+            metrics.getWriteBehindCriticalOverflowCount(),
+            metrics.getWriteBehindBufferSize(),
+            metrics.getKeyType(),
+            metrics.getValueType(),
+            metrics.isStoreByValue(),
+            metrics.getTotalPartitionsCount(),
+            metrics.getRebalancingPartitionsCount(),
+            metrics.getKeysToRebalanceLeft(),
+            metrics.getRebalancingKeysRate(),
+            metrics.getRebalancingBytesRate(),
+            valueTimestampFromMillis(metrics.getRebalancingStartTime()),
+            valueTimestampFromMillis(metrics.getEstimatedRebalancingFinishTime()),
+            metrics.isStatisticsEnabled(),
+            metrics.isManagementEnabled(),
+            metrics.isReadThrough(),
+            metrics.isWriteThrough(),
+            metrics.isValidForReading(),
+            metrics.isValidForWriting()
+        };
+    }
+
     /** {@inheritDoc} */
     @Override public Iterable<Row> getRows(Session ses, SearchRow first, SearchRow last) {
-        List<Row> rows = new ArrayList<>();
-
         ColumnCondition nameCond = conditionForColumn("CACHE_NAME", first, last);
+
+        final Integer cacheIdFilter;
 
         Collection<IgniteInternalCache<?, ?>> caches;
 
@@ -124,90 +204,61 @@ public class GridH2SysViewImplCacheMetrics extends GridH2SysView {
 
             IgniteInternalCache<?, ?> cache = ctx.cache().cache(nameCond.getValue().getString());
 
-            caches = Collections.<IgniteInternalCache<?, ?>>singleton(cache);
+            if (cache != null) {
+                cacheIdFilter = cache.context().cacheId();
+
+                caches = Collections.<IgniteInternalCache<?, ?>>singleton(cache);
+            }
+            else {
+                cacheIdFilter = null;
+
+                caches = Collections.emptySet();
+            }
         }
         else {
             log.debug("Get cache metrics: full scan");
 
+            cacheIdFilter = null;
+
             caches = ctx.cache().caches();
         }
 
-        for (IgniteInternalCache<?, ?> cache : caches) {
-            if (cache != null) {
+        if (clusterMetrics) {
+            List<Row> rows = new ArrayList<>();
+
+            for (IgniteInternalCache<?, ?> cache : caches) {
                 CacheMetrics metrics = cache.clusterMetrics();
 
-                rows.add(
-                    createRow(ses, rows.size(),
-                        cache.name(),
-                        null,
-                        metrics.getCacheGets(),
-                        metrics.getCachePuts(),
-                        metrics.getCacheRemovals(),
-                        metrics.getCacheEvictions(),
-                        metrics.getCacheHits(),
-                        metrics.getCacheHitPercentage(),
-                        metrics.getCacheMisses(),
-                        metrics.getCacheMissPercentage(),
-                        metrics.getCacheTxCommits(),
-                        metrics.getCacheTxRollbacks(),
-                        metrics.getAverageGetTime(),
-                        metrics.getAveragePutTime(),
-                        metrics.getAverageRemoveTime(),
-                        metrics.getAverageTxCommitTime(),
-                        metrics.getAverageTxRollbackTime(),
-                        metrics.getOffHeapGets(),
-                        metrics.getOffHeapPuts(),
-                        metrics.getOffHeapRemovals(),
-                        metrics.getOffHeapEvictions(),
-                        metrics.getOffHeapHits(),
-                        metrics.getOffHeapHitPercentage(),
-                        metrics.getOffHeapMisses(),
-                        metrics.getOffHeapMissPercentage(),
-                        metrics.getHeapEntriesCount(),
-                        metrics.getOffHeapEntriesCount(),
-                        metrics.getOffHeapPrimaryEntriesCount(),
-                        metrics.getOffHeapBackupEntriesCount(),
-                        metrics.getOffHeapAllocatedSize(),
-                        metrics.getSize(),
-                        metrics.isEmpty(),
-                        metrics.getDhtEvictQueueCurrentSize(),
-                        metrics.getTxThreadMapSize(),
-                        metrics.getTxXidMapSize(),
-                        metrics.getTxDhtCommitQueueSize(),
-                        metrics.getTxDhtPrepareQueueSize(),
-                        metrics.getTxStartVersionCountsSize(),
-                        metrics.getTxCommittedVersionsSize(),
-                        metrics.getTxRolledbackVersionsSize(),
-                        metrics.isWriteBehindEnabled(),
-                        metrics.getWriteBehindFlushSize(),
-                        metrics.getWriteBehindFlushThreadCount(),
-                        metrics.getWriteBehindFlushFrequency(),
-                        metrics.getWriteBehindStoreBatchSize(),
-                        metrics.getWriteBehindTotalCriticalOverflowCount(),
-                        metrics.getWriteBehindCriticalOverflowCount(),
-                        metrics.getWriteBehindBufferSize(),
-                        metrics.getKeyType(),
-                        metrics.getValueType(),
-                        metrics.isStoreByValue(),
-                        metrics.getTotalPartitionsCount(),
-                        metrics.getRebalancingPartitionsCount(),
-                        metrics.getKeysToRebalanceLeft(),
-                        metrics.getRebalancingKeysRate(),
-                        metrics.getRebalancingBytesRate(),
-                        valueTimestampFromMillis(metrics.getRebalancingStartTime()),
-                        valueTimestampFromMillis(metrics.getEstimatedRebalancingFinishTime()),
-                        metrics.isStatisticsEnabled(),
-                        metrics.isManagementEnabled(),
-                        metrics.isReadThrough(),
-                        metrics.isWriteThrough(),
-                        metrics.isValidForReading(),
-                        metrics.isValidForWriting()
-                    )
-                );
+                rows.add(createRow(ses, rows.size(), createRowData(metrics, null)));
             }
-        }
 
-        return rows;
+            return rows;
+        }
+        else {
+            return new ParentChildRowIterable<ClusterNode, Map.Entry<Integer, CacheMetrics>>(ses,
+                ctx.grid().cluster().nodes(),
+                new IgniteClosure<ClusterNode, Iterator<Map.Entry<Integer, CacheMetrics>>>() {
+                    @Override public Iterator<Map.Entry<Integer, CacheMetrics>> apply(ClusterNode node) {
+                        if (!(node instanceof TcpDiscoveryNode))
+                            return Collections.emptyIterator();
+
+                        Map<Integer, CacheMetrics> metricsMap = ((TcpDiscoveryNode)node).cacheMetrics();
+
+                        if (cacheIdFilter != null)
+                            return !metricsMap.containsKey(cacheIdFilter) ? Collections.emptyIterator() :
+                                new IgniteBiTuple<Integer, CacheMetrics>(cacheIdFilter, metricsMap.get(cacheIdFilter))
+                                    .entrySet().iterator();
+                        else
+                            return metricsMap.entrySet().iterator();
+                    }
+                },
+                new IgniteBiClosure<ClusterNode, Map.Entry<Integer, CacheMetrics>, Object[]>() {
+                    @Override public Object[] apply(ClusterNode node, Map.Entry<Integer, CacheMetrics> entry) {
+                        return createRowData(entry.getValue(), node);
+                    }
+                }
+            );
+        }
     }
 
     /** {@inheritDoc} */
