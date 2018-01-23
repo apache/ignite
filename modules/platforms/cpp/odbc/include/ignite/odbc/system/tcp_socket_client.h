@@ -89,7 +89,7 @@ namespace ignite
                  * @param buffer Pointer to data buffer.
                  * @param size Size of the buffer in bytes.
                  * @param timeout Timeout.
-                 * @return Number of bytes that have been sent on success,
+                 * @return Number of bytes that have been received on success,
                  *     WaitResult::TIMEOUT on timeout and -errno on failure.
                  */
                 virtual int Receive(int8_t* buffer, size_t size, int32_t timeout);
