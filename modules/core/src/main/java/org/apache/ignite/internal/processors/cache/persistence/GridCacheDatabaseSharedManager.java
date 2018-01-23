@@ -1916,26 +1916,24 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         break;
 
                     case PARTITION_DESTROY:
-                        if (apply) {
-                            PartitionDestroyRecord destroyRec = (PartitionDestroyRecord)rec;
+                        PartitionDestroyRecord destroyRec = (PartitionDestroyRecord)rec;
 
-                            final int gId = destroyRec.groupId();
+                        final int gId = destroyRec.groupId();
 
-                            if (storeOnly && gId != METASTORAGE_CACHE_ID)
-                                continue;
+                        if (storeOnly && gId != METASTORAGE_CACHE_ID)
+                            continue;
 
-                            if (!ignoreGrps.contains(gId)) {
-                                final int pId = destroyRec.partitionId();
+                        if (!ignoreGrps.contains(gId)) {
+                            final int pId = destroyRec.partitionId();
 
-                                PageMemoryEx pageMem = gId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(gId);
+                            PageMemoryEx pageMem = gId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(gId);
 
-                                pageMem.clearAsync(new P3<Integer, Long, Integer>() {
-                                    @Override public boolean apply(Integer cacheId, Long pageId, Integer tag) {
-                                        return cacheId == gId && PageIdUtils.partId(pageId) == pId;
-                                    }
-                                }, true).get();
+                            pageMem.clearAsync(new P3<Integer, Long, Integer>() {
+                                @Override public boolean apply(Integer cacheId, Long pageId, Integer tag) {
+                                    return cacheId == gId && PageIdUtils.partId(pageId) == pId;
+                                }
+                            }, true).get();
 
-                            }
                         }
 
                         break;
