@@ -95,10 +95,10 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     private String cacheName;
 
     /** */
-    private int walSegmentSize = 48 * 1024 * 1024;
+    private int walSegmentSize = 64 * 1024 * 1024;
     /** Custom wal mode. */
     protected WALMode customWalMode;
-    private int checkpointFrequency = 5 * 1000;
+    private int checkpointFrequency = 15 * 1000;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -123,7 +123,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             .setName("dfltMemPlc")
             .setMetricsEnabled(true);
 
-        regCfg.setMaxSize(10 * 1024L * 1024 * 1024);
+        regCfg.setMaxSize(2 * 1024L * 1024 * 1024);
         regCfg.setPersistenceEnabled(true);
 
         dsCfg.setDefaultDataRegionConfiguration(regCfg);
@@ -209,7 +209,8 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
     private static String generateThreadDump() {
         final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
-        final ThreadInfo[] threadInfos = threadMXBean.getThreadInfo(threadMXBean.getAllThreadIds(), 100);
+        int depth = 100;
+        final ThreadInfo[] threadInfos = threadMXBean.getThreadInfo(threadMXBean.getAllThreadIds(), depth);
         final StringBuilder dump = new StringBuilder();
         for (ThreadInfo threadInfo : threadInfos) {
             String name = threadInfo.getThreadName();
@@ -217,8 +218,28 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                 || name.contains("db-checkpoint-thread")
                 || name.contains("wal-file-archiver")
                 || name.contains(GET_THREAD)
-                || name.contains(PUT_THREAD))
-                dump.append(threadInfo.toString());
+                || name.contains(PUT_THREAD)) {
+                String str = threadInfo.toString();
+
+                if (name.contains("db-checkpoint-thread")) {
+                    dump.append(str);
+                    dump.append("(Full stacktrace)");
+                    StackTraceElement[] stackTrace = threadInfo.getStackTrace();
+                    int i = 0;
+                    for (; i < stackTrace.length && i < depth; i++) {
+                        StackTraceElement ste = stackTrace[i];
+                        dump.append("\tat ").append(ste.toString());
+                        dump.append('\n');
+                    }
+                    if (i < stackTrace.length) {
+                        dump.append("\t...");
+                        dump.append('\n');
+                    }
+                    dump.append('\n');
+                } else {
+                    dump.append(str);
+                }
+            }
             else {
                 String s = threadInfo.toString();
 
@@ -260,12 +281,12 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                 "cp. speed, MB/sec",
                 "cp. sync., MB/sec",
                 "WAL work seg.",
-                "pageMemThrRatio",
+                "targetDirtyRatio",
+                "closeToThrottle",
                 "throttleLevel",
                 "avg." + operation + "/sec",
                 "dirtyPages",
                 "cpWrittenPages",
-                "threshold",
                 "WAL idx",
                 "Arch. idx",
                 "WAL Archive seg.");
@@ -342,9 +363,9 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             long currBytesSynced = detectDelta(elapsedMsFromPrevTick, cpSyncedPages, prevCpSyncedPages) * pageSize;
 
             String walSpeed = "";
-            double threshold = 0;
+            double targetDirtyRatio = 0;
             int throttleLevel = 0;
-            double pageMemThrottleRatio = 0.0;
+            double closeToThrottle = 0.0;
             long idx = -1;
             long lastArchIdx = -1;
             int walArchiveSegments = 0;
@@ -356,9 +377,9 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
                     PagesWriteThrottle throttle = U.field(pageMemory, "writeThrottle");
 
-                    threshold = U.field(throttle, "lastDirtyRatioThreshold");
+                    targetDirtyRatio = throttle.getPageMemTargetDirtyRatio();
+                    closeToThrottle = throttle.getThrottleCloseMeasurement() ;
                     throttleLevel = throttle.throttleLevel();
-                    pageMemThrottleRatio = throttle.getPageMemThrottleRatio() ;
                 }
 
                 FileWriteAheadLogManager wal = (FileWriteAheadLogManager)cacheSctx.wal();
@@ -393,7 +414,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
 
 
-            String thresholdStr = formatDbl(threshold);
+            String targetDirtyRatioStr = formatDbl(targetDirtyRatio);
             String cpWriteSpeed = getMBytesPrintable(currBytesWritten);
             String cpSyncSpeed = getMBytesPrintable(currBytesSynced);
             long elapsedSecs = elapsedMs / 1000;
@@ -409,7 +430,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                 "dirtyP=" + dirtyPages + ", " +
                 "cpWrittenP.=" + cpWrittenPages + ", " +
                 "cpBufP.=" + cpBufPages + " " +
-                "threshold=" + thresholdStr + " " +
+                "threshold=" + targetDirtyRatioStr + " " +
                 "walIdx=" + idx + " " +
                 "archWalIdx=" + lastArchIdx + " " +
                 "walArchiveSegments=" + walArchiveSegments + " " +
@@ -421,12 +442,12 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                 cpWriteSpeed,
                 cpSyncSpeed,
                 walWorkSegments,
-                formatDbl(pageMemThrottleRatio),
+                targetDirtyRatioStr,
+                formatDbl(closeToThrottle),
                 throttleLevel,
                 averagePutPerSec,
                 dirtyPages,
                 cpWrittenPages,
-                thresholdStr,
                 idx,
                 lastArchIdx,
                 walArchiveSegments
@@ -513,14 +534,14 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
             setWalArchAndWorkToSameValue = false;
 
-            customWalMode = WALMode.LOG_ONLY;
+            customWalMode = WALMode.BACKGROUND;
             final IgniteEx ignite = startGrid(1);
 
             ignite.active(true);
 
             final IgniteCache<Object, IndexedObject> cache = ignite.cache(CACHE_NAME);
             int totalRecs = CONTINUOUS_PUT_RECS_CNT;
-            final int threads = 32;
+            final int threads = Runtime.getRuntime().availableProcessors();
 
             final int recsPerThread = totalRecs / threads;
             final Collection<Callable<?>> tasks = new ArrayList<>();

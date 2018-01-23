@@ -16,13 +16,9 @@
 */
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 
 /**
  * Throttles threads that generate dirty pages during ongoing checkpoint.
@@ -34,8 +30,6 @@ public class PagesWriteThrottle {
 
     /** Database manager. */
     private final GridCacheDatabaseSharedManager dbSharedMgr;
-    private FileWriteAheadLogManager wal;
-    private DataStorageConfiguration dsCfg;
 
     /** Starting throttle time. Limits write speed to 1000 MB/s. */
     private static final long STARTING_THROTTLE_NANOS = 4000;
@@ -59,25 +53,23 @@ public class PagesWriteThrottle {
     private volatile double initDirtyRatioAtCpBegin = MIN_RATIO_NO_THROTTLE;
 
     /**
-     * Debug only field, used for tests by reflection.
+     * Target (maximum) dirty pages ratio, after which throttling will start.
      */
-    private volatile double lastDirtyRatioThreshold;
+    private volatile double targetDirtyRatio;
 
-    private volatile double pageMemThrottleRatio;
+    /**
+     * Shows how close current dirty ratio is to target dirty ratio.
+     */
+    private volatile double throttleCloseMeasurement;
 
     /**
      * @param pageMemory Page memory.
      * @param dbSharedMgr Database manager.
-     * @param wal
-     * @param dsCfg
      */
     public PagesWriteThrottle(PageMemoryImpl pageMemory,
-        GridCacheDatabaseSharedManager dbSharedMgr,
-        FileWriteAheadLogManager wal, DataStorageConfiguration dsCfg) {
+        GridCacheDatabaseSharedManager dbSharedMgr) {
         this.pageMemory = pageMemory;
         this.dbSharedMgr = dbSharedMgr;
-        this.wal = wal;
-        this.dsCfg = dsCfg;
     }
 
     /**
@@ -86,9 +78,6 @@ public class PagesWriteThrottle {
      */
     public void onMarkDirty(boolean isInCheckpoint) {
         assert dbSharedMgr.checkpointLockIsHeldByThread();
-
-        //if(throttleWal())
-        //    return;
 
         AtomicInteger writtenPagesCntr = dbSharedMgr.writtenPagesCounter();
 
@@ -113,16 +102,7 @@ public class PagesWriteThrottle {
                 initDirtyRatioAtCpBegin = MIN_RATIO_NO_THROTTLE;
                 lastObservedWritten.set(cpWrittenPages);
             }
-            else if (cpWrittenPages == cpTotalPages) {
-                // Checkpoint is already in fsync stage, increasing maximum ratio of dirty pages to 3/4
-                double threshold = 3.0 / 4;
-
-                lastDirtyRatioThreshold = threshold;
-
-                shouldThrottle = pageMemory.shouldThrottle(threshold);
-            }
             else {
-                double dirtyRatioThreshold = ((double)cpWrittenPages) / cpTotalPages;
 
                 boolean cpStartedToWrite = lastObservedWritten.compareAndSet(0, cpWrittenPages);
 
@@ -139,15 +119,21 @@ public class PagesWriteThrottle {
                     initDirtyRatioAtCpBegin = newMinRatio;
                 }
 
-                double throttleWeight = 1.0 - initDirtyRatioAtCpBegin;
+                AtomicInteger syncedPagesCounter = dbSharedMgr.syncedPagesCounter();
+
+                int syncedPages = syncedPagesCounter == null ? 0 : syncedPagesCounter.get();
+
+                double throttleTotalWeight = 1.0 - initDirtyRatioAtCpBegin;
+
+                double dirtyRatioThreshold = ((double)(cpWrittenPages + syncedPages)) / (2*cpTotalPages);
 
                 // Starting with initialDirtyRatioAtCpBegin to avoid throttle right after checkpoint start
-                // 7/12 is maximum ratio of dirty pages
-                dirtyRatioThreshold = (dirtyRatioThreshold * throttleWeight + initDirtyRatioAtCpBegin) * 7 / 12;
+                // .75 is maximum ratio of dirty pages
+                dirtyRatioThreshold = (dirtyRatioThreshold * throttleTotalWeight + initDirtyRatioAtCpBegin) * 0.75;
 
-                lastDirtyRatioThreshold = dirtyRatioThreshold;
+                targetDirtyRatio = dirtyRatioThreshold;
 
-                pageMemThrottleRatio = dirtyPagesRatio / dirtyRatioThreshold;
+                throttleCloseMeasurement = dirtyPagesRatio / dirtyRatioThreshold;
 
                 shouldThrottle = dirtyPagesRatio > dirtyRatioThreshold;
             }
@@ -160,57 +146,6 @@ public class PagesWriteThrottle {
         }
         else
             exponentialBackoffCntr.set(0);
-    }
-
-    private boolean throttleWal() {
-        long throttleNanos = STARTING_THROTTLE_NANOS;
-        boolean shouldThrottle = false;
-        FileWALPointer pointer = wal.currentWritePointer();
-
-        long lastArchIdx = wal.lastAbsArchivedIdx();
-
-        int maxSegments = dsCfg.getWalSegments();
-        if (lastArchIdx >= 0 && maxSegments > 1) {
-            long segSize = wal.maxWalSegmentSize();
-            long curWorkIdx = pointer.index();
-
-            long seqInWork = curWorkIdx - lastArchIdx;
-            long segRemained = maxSegments - seqInWork;
-            long bytesInCurSeq = segSize - pointer.fileOffset();
-
-            long maxBytesInWorkDir = maxSegments * segSize;
-            long bytesRemained = segRemained * segSize + bytesInCurSeq;
-
-            //todo test throttle
-            shouldThrottle = 1.0 * bytesRemained < maxBytesInWorkDir / 2;
-
-            throttleNanos = (long)(1.0 * STARTING_THROTTLE_NANOS * (maxBytesInWorkDir / 2) / bytesRemained);
-            long maxThrottle = TimeUnit.MILLISECONDS.toNanos(100);
-            if (throttleNanos > maxThrottle) {
-                throttleNanos = maxThrottle;
-            }
-        }
-
-        if(shouldThrottle) {
-            int throttleLevel = exponentialBackoffCntr.getAndIncrement();
-
-            long nanos = (long)(throttleNanos * Math.pow(BACKOFF_RATIO, throttleLevel));
-
-            long l = TimeUnit.NANOSECONDS.toMillis(nanos);
-
-            LockSupport.parkNanos(nanos);
-        } else
-            exponentialBackoffCntr.set(0);
-
-        return shouldThrottle;
-    }
-
-    private int decreaseLevel() {
-        return exponentialBackoffCntr.accumulateAndGet(-1, (left, right) -> {
-                    int sum = left + right;
-
-                    return sum > 0 ? sum : 0;
-                });
     }
 
     /**
@@ -227,7 +162,11 @@ public class PagesWriteThrottle {
         return exponentialBackoffCntr.get();
     }
 
-    public double getPageMemThrottleRatio() {
-        return pageMemThrottleRatio;
+    public double getPageMemTargetDirtyRatio() {
+        return targetDirtyRatio;
+    }
+
+    public double getThrottleCloseMeasurement() {
+        return throttleCloseMeasurement;
     }
 }

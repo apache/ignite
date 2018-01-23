@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
+import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -26,7 +27,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiFunction;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.CheckpointWriteOrder;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -189,5 +193,38 @@ public class AsyncCheckpointer {
         cntDownDynamicFut.incrementTasksCount(); // for created task about to be forked
 
         execute(task, cntDownDynamicFut);
+    }
+
+    /**
+     * @param wrCpPagesFactory factory for one chunk writting tasks.
+     * @param cpScope scope of pages to be written.
+     * @param persistenceCfg config.
+     * @return fsync scope, probably striped
+     */
+    public CheckpointFsyncScope submitWriteCheckpointPages(
+        BiFunction<FullPageIdsBuffer, ConcurrentHashMap<PageStore, LongAdder>, Callable<Void>> wrCpPagesFactory,
+        CheckpointScope cpScope, DataStorageConfiguration persistenceCfg) {
+        CheckpointFsyncScope fsyncScope;
+        if (persistenceCfg.getCheckpointWriteOrder() == CheckpointWriteOrder.SEQUENTIAL
+            && PageMemoryImpl.isParallelDirtyPages()) {
+            if (log.isInfoEnabled())
+                log.info(String.format("Activated parallel dirty page processing. [pages=%d]", cpScope.totalCpPages()));
+
+            fsyncScope = quickSortAndWritePages(
+                cpScope,
+                wrCpPagesFactory);
+        }
+        else {
+            Collection<FullPageIdsBuffer> cpPages
+                = cpScope.splitAndSortCpPagesIfNeeded( persistenceCfg);
+
+            fsyncScope = new CheckpointFsyncScope();
+            CheckpointFsyncScope.Stripe stripe = fsyncScope.newStripe();
+
+            for (FullPageIdsBuffer next : cpPages) {
+                fork(wrCpPagesFactory.apply(next, stripe.fsyncScope), stripe.future);
+            }
+        }
+        return fsyncScope;
     }
 }
