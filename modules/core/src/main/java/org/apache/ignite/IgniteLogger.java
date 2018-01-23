@@ -87,8 +87,6 @@ public interface IgniteLogger {
 
     /**
      * Logs out trace message.
-     *
-     * @implSpec
      * The default implementation calls {@code this.trace(msg)}.
      *
      * @param marker Name of the marker to be associated with the message.
@@ -107,8 +105,6 @@ public interface IgniteLogger {
 
     /**
      * Logs out debug message.
-     *
-     * @implSpec
      * The default implementation calls {@code this.debug(msg)}.
      *
      * @param marker Name of the marker to be associated with the message.
@@ -127,8 +123,6 @@ public interface IgniteLogger {
 
     /**
      * Logs out information message.
-     *
-     * @implSpec
      * The default implementation calls {@code this.info(msg)}.
      *
      * @param marker Name of the marker to be associated with the message.
@@ -157,8 +151,6 @@ public interface IgniteLogger {
 
     /**
      * Logs out warning message with optional exception.
-     *
-     * @implSpec
      * The default implementation calls {@code this.warning(msg)}.
      *
      * @param marker Name of the marker to be associated with the message.
@@ -188,8 +180,6 @@ public interface IgniteLogger {
 
     /**
      * Logs error message with optional exception.
-     *
-     * @implSpec
      * The default implementation calls {@code this.error(msg)}.
      *
      * @param marker Name of the marker to be associated with the message.

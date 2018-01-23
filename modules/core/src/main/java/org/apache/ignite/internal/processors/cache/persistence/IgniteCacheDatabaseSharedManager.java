@@ -740,6 +740,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * Allows to wait checkpoint finished.
+     *
+     * @param reason Reason.
+     */
+    @Nullable public CheckpointFuture forceCheckpoint(String reason) {
+        return null;
+    }
+
+    /**
      * Waits until current state is checkpointed.
      *
      * @throws IgniteCheckedException If failed.
@@ -939,7 +948,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     ) {
         memMetrics.persistenceEnabled(false);
 
-        return new PageMemoryNoStoreImpl(
+        PageMemory pageMem = new PageMemoryNoStoreImpl(
             log,
             memProvider,
             cctx,
@@ -948,6 +957,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             memMetrics,
             false
         );
+
+        memMetrics.pageMemory(pageMem);
+
+        return pageMem;
     }
 
     /**
@@ -1009,5 +1022,23 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public MetaStorage metaStorage() {
         return null;
+    }
+
+    /**
+     * @param grpId Group ID.
+     * @return WAL enabled flag.
+     */
+    public boolean walEnabled(int grpId) {
+        return false;
+    }
+
+    /**
+     * Marks cache group as with disabled WAL.
+     *
+     * @param grpId Group id.
+     * @param enabled flag.
+     */
+    public void walEnabled(int grpId, boolean enabled) {
+        // No-op.
     }
 }

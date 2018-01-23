@@ -19,6 +19,7 @@ package org.apache.ignite.ml.trainers.group;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -102,7 +103,7 @@ public abstract class BaseLocalProcessorJob<K, V, T, R extends Serializable> imp
             map(worker).
             collect(Collectors.toList());
 
-        ResultAndUpdates<R> totalRes = ResultAndUpdates.sum(reducer, resultsAndUpdates);
+        ResultAndUpdates<R> totalRes = ResultAndUpdates.sum(reducer, resultsAndUpdates.stream().filter(Objects::nonNull).collect(Collectors.toList()));
 
         totalRes.applyUpdates(ignite());
 
