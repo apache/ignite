@@ -21,11 +21,10 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ThreadLocalRandom8;
 
 /**
- * Tests for {@link org.jsr166.ConcurrentHashMap8}.
+ * Tests for {@link ConcurrentHashMap}.
  */
 public class GridConcurrentHashMapSelfTest extends GridCommonAbstractTest {
     /** */
@@ -35,7 +34,7 @@ public class GridConcurrentHashMapSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPut() throws Exception {
-        map = new ConcurrentHashMap8<>();
+        map = new ConcurrentHashMap<>();
 
         map.put(0, 0);
         map.put(0, 0);
@@ -46,7 +45,7 @@ public class GridConcurrentHashMapSelfTest extends GridCommonAbstractTest {
      */
     public void testOpsSpeed() throws Exception {
         for (int i = 0; i < 4; i++) {
-            map = new ConcurrentHashMap8<>();
+            map = new ConcurrentHashMap<>();
 
             info("New map ops time: " + runOps(1000000, 100));
 
@@ -95,7 +94,7 @@ public class GridConcurrentHashMapSelfTest extends GridCommonAbstractTest {
             long now = System.currentTimeMillis();
 
             for (int j = 0; j < 1000000; j++)
-                new ConcurrentHashMap8<Integer, Integer>();
+                new ConcurrentHashMap<Integer, Integer>();
 
             info("New map creation time: " + (System.currentTimeMillis() - now));
 

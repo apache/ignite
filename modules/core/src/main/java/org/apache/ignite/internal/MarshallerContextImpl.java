@@ -33,6 +33,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.ignite.IgniteCheckedException;
@@ -54,7 +55,6 @@ import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 
@@ -149,7 +149,7 @@ public class MarshallerContextImpl implements MarshallerContext {
 
     /** */
     private void initializeCaches() {
-        allCaches.add(new CombinedMap(new ConcurrentHashMap8<Integer, MappedName>(), sysTypesMap));
+        allCaches.add(new CombinedMap(new ConcurrentHashMap<Integer, MappedName>(), sysTypesMap));
     }
 
     /** */
@@ -452,12 +452,12 @@ public class MarshallerContextImpl implements MarshallerContext {
                 map = allCaches.get(platformId);
 
                 if (map == null) {
-                    map = new ConcurrentHashMap8<>();
+                    map = new ConcurrentHashMap<>();
                     allCaches.set(platformId, map);
                 }
             }
             else {
-                map = new ConcurrentHashMap8<>();
+                map = new ConcurrentHashMap<>();
 
                 putAtIndex(map, allCaches, platformId, size);
             }

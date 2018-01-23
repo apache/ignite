@@ -30,7 +30,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ThreadLocalRandom8;
 
 /**
@@ -63,7 +62,7 @@ public class ConcurrentMapTest {
 
             int cap = 256 / lvl < 16 ? 16 * lvl : 256;
 
-            int writes = testMap(100000, new ConcurrentHashMap8<String, Integer>(cap, 0.75f, lvl));
+            int writes = testMap(100000, new ConcurrentHashMap<String, Integer>(cap, 0.75f, lvl));
 
             ress.add(new IgnitePair<>(lvl, writes));
         }
@@ -128,7 +127,7 @@ public class ConcurrentMapTest {
      * @throws Exception If failed.
      */
     public static void testPut() throws Exception {
-        Map<Integer, Integer> map = new ConcurrentHashMap8<>();
+        Map<Integer, Integer> map = new ConcurrentHashMap<>();
 
         map.put(0, 0);
         map.put(0, 0);
@@ -139,7 +138,7 @@ public class ConcurrentMapTest {
      */
     public static void testOpsSpeed() throws Exception {
         for (int i = 0; i < 4; i++) {
-            X.println("New map ops time: " + runOps(new ConcurrentHashMap8<Integer, Integer>(), 1000000, 100));
+            X.println("New map ops time: " + runOps(new ConcurrentHashMap<Integer, Integer>(), 1000000, 100));
 
             X.println("Jdk6 map ops time: " + runOps(new ConcurrentHashMap<Integer, Integer>(), 1000000, 100));
         }
@@ -184,7 +183,7 @@ public class ConcurrentMapTest {
             long now = System.currentTimeMillis();
 
             for (int j = 0; j < 1000000; j++)
-                new ConcurrentHashMap8<Integer, Integer>();
+                new ConcurrentHashMap<Integer, Integer>();
 
             X.println("New map creation time: " + (System.currentTimeMillis() - now));
 

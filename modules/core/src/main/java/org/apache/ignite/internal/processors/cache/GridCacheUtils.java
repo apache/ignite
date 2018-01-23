@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.Cache;
@@ -103,7 +104,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -595,7 +595,7 @@ public class GridCacheUtils {
      */
     public static <K, V> IgniteReducer<Map<K, V>, Map<K, V>> mapsReducer(final int size) {
         return new IgniteReducer<Map<K, V>, Map<K, V>>() {
-            private final Map<K, V> ret = new ConcurrentHashMap8<>(size);
+            private final Map<K, V> ret = new ConcurrentHashMap<>(size);
 
             @Override public boolean collect(Map<K, V> map) {
                 if (map != null)

@@ -44,6 +44,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -110,7 +111,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
@@ -3163,7 +3163,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         //TODO: replace with GC free data structure.
         /** Parked threads. */
-        final Map<Thread, Long> waiters = new ConcurrentHashMap8<>();
+        final Map<Thread, Long> waiters = new ConcurrentHashMap<>();
 
         /**
          * Default constructor.
