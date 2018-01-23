@@ -54,9 +54,6 @@ public class User implements Serializable {
     @GridToStringExclude
     private byte[] salt;
 
-    /** Accepted on cluster. */
-    private boolean accepted;
-
     /**
      * @param name User name.
      * @param encPasswd Encoded password.
@@ -116,20 +113,6 @@ public class User implements Serializable {
      */
     public boolean authorize(String passwd) {
         return encPasswd.equals(password(passwd, salt));
-    }
-
-    /**
-     * @return Accepted on cluster flag.
-     */
-    public boolean accepted() {
-        return accepted;
-    }
-
-    /**
-     * @param accepted Accepted flag.
-     */
-    public void accepted(boolean accepted) {
-        this.accepted = accepted;
     }
 
     /** {@inheritDoc} */

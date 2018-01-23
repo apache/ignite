@@ -35,6 +35,8 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.authentication.UserManagementOperation;
+import org.apache.ignite.internal.processors.authentication.UserManagementOperationFinishedMessage;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateContainsValue;
 import org.apache.ignite.internal.processors.cache.CacheEntrySerializablePredicate;
@@ -879,6 +881,15 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
+            case 2100:
+                msg = new UserManagementOperationFinishedMessage();
+
+                break;
+
+            case 2101:
+                msg = new UserManagementOperation();
+
+                break;
 
             // [-3..119] [124..128] [-23..-27] [-36..-55]- this
             // [120..123] - DR

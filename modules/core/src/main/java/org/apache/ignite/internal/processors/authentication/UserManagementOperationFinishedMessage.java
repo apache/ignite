@@ -84,21 +84,83 @@ public class UserManagementOperationFinishedMessage implements Message {
     }
 
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        return false;
+        writer.setBuffer(buf);
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeBoolean("ackPhase", ackPhase))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeString("errorMsg", errorMsg))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
+                if (!writer.writeIgniteUuid("opId", opId))
+                    return false;
+
+                writer.incrementState();
+
+        }
+
+        return true;
     }
 
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        return false;
+        reader.setBuffer(buf);
+
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
+            case 0:
+                ackPhase = reader.readBoolean("ackPhase");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                errorMsg = reader.readString("errorMsg");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
+                opId = reader.readIgniteUuid("opId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
+        return reader.afterMessageRead(UserManagementOperationFinishedMessage.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 2048;
+        return 2100;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 3;
     }
 
     /** {@inheritDoc} */

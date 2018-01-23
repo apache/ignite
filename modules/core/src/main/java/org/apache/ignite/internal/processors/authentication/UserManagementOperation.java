@@ -18,22 +18,31 @@
 package org.apache.ignite.internal.processors.authentication;
 
 import java.io.Serializable;
-import java.util.UUID;
+import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
-class UserManagementOperation implements Serializable {
+public class UserManagementOperation implements Serializable {
     /** User. */
-    private final User usr;
+    private User usr;
 
     /** Operation type. */
-    private final OperationType type;
+    private OperationType type;
 
     /** Operation Id. */
-    private final UUID id = UUID.randomUUID();
+    private final IgniteUuid id = IgniteUuid.randomUuid();
+
+    /**
+     * Constructor.
+     */
+    public UserManagementOperation() {
+    }
 
     /**
      * @param usr User.
@@ -58,6 +67,18 @@ class UserManagementOperation implements Serializable {
         return type;
     }
 
+    /**
+     * @return Operation ID.
+     */
+    public IgniteUuid id() {
+        return id;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(UserManagementOperation.class, this);
+    }
+
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -74,12 +95,6 @@ class UserManagementOperation implements Serializable {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return id.hashCode();
-    }
-
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(UserManagementOperation.class, this);
     }
 
     /**
