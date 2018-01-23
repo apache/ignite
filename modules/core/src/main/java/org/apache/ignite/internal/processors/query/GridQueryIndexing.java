@@ -31,6 +31,7 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
@@ -86,11 +87,12 @@ public interface GridQueryIndexing {
      * @param qry Query.
      * @param keepBinary Keep binary flag.
      * @param failOnMultipleStmts Whether an exception should be thrown for multiple statements query.
+     * @param tracker Query tracker.
      * @param cancel Query cancel state handler.
      * @return Cursor.
      */
     public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry, boolean keepBinary,
-        boolean failOnMultipleStmts, GridQueryCancel cancel);
+        boolean failOnMultipleStmts, MvccQueryTracker tracker, GridQueryCancel cancel);
 
     /**
      * Perform a MERGE statement using data streamer as receiver.

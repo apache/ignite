@@ -482,11 +482,9 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
-    private UpdateResult executeUpdateStatement(String schemaName, final UppdatePLan plan, Connection c,
-        Prepared prepared, SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters,
+    private UpdateResult executeUpdateStatement(String schemaName, final UpdatePlan plan,
+        SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters,
         GridQueryCancel cancel) throws IgniteCheckedException {
-        Integer errKeysPos = null;
-
         GridCacheContext cctx = plan.cacheContext();
 
         if (cctx != null && cctx.mvccEnabled()) {
@@ -495,8 +493,6 @@ public class DmlStatementsProcessor {
             if(cctx.isReplicated())
                 throw new IgniteSQLException("Only partitioned caches are supported at the moment",
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-            int mainCacheId = cctx.cacheId();
 
             DmlDistributedPlanInfo distributedPlan = plan.distributedPlan();
 
@@ -512,7 +508,8 @@ public class DmlStatementsProcessor {
 
             boolean implicit = (tx == null);
 
-            boolean commit = implicit && (!(fieldsQry instanceof SqlFieldsQueryEx) || ((SqlFieldsQueryEx)fieldsQry).isAutoCommit());
+            boolean commit = implicit && (!(fieldsQry instanceof SqlFieldsQueryEx) ||
+                ((SqlFieldsQueryEx)fieldsQry).isAutoCommit());
 
             if (implicit)
                 tx = idx.txStart(cctx, fieldsQry.getTimeout());
@@ -602,13 +599,14 @@ public class DmlStatementsProcessor {
                 .setTimeout(fieldsQry.getTimeout(), TimeUnit.MILLISECONDS);
 
             cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(schemaName, newFieldsQry, true, true,
-                cancel).get(0);
+                null, cancel).get(0);
         }
         else if (plan.hasRows())
             cur = plan.createRows(fieldsQry.getArgs());
         else {
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(schemaName, plan.selectQuery(),
-                F.asList(fieldsQry.getArgs()), filters, fieldsQry.isEnforceJoinOrder(), false, fieldsQry.getTimeout(), cancel);
+                F.asList(fieldsQry.getArgs()), filters, fieldsQry.isEnforceJoinOrder(), false, fieldsQry.getTimeout(),
+                cancel);
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
@@ -1121,9 +1119,8 @@ public class DmlStatementsProcessor {
                 .setPageSize(qry.getPageSize())
                 .setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
 
-            cur = (QueryCursorImpl<List<?>>)idx.queryDistributedSqlFields(schema, newFieldsQry, true,
-                cancel, cctx.cacheId(), true, new MvccQueryTracker(cctx,
-                    cctx.shared().coordinators().currentCoordinator(), mvccVer)).get(0);
+            cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(schema, newFieldsQry, true, true,
+                new MvccQueryTracker(cctx, cctx.shared().coordinators().currentCoordinator(), mvccVer), cancel).get(0);
         }
         else {
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(schema, plan.selectQuery(),

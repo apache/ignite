@@ -420,7 +420,7 @@ public abstract class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @param sql Statement.
      */
     protected List<List<?>> execute(Ignite node, String sql) {
-        return queryProcessor(node).querySqlFieldsNoCache(new SqlFieldsQuery(sql).setSchema("PUBLIC"), true).getAll();
+        return queryProcessor(node).querySqlFields(new SqlFieldsQuery(sql).setSchema("PUBLIC"), true).getAll();
     }
 
     /**
