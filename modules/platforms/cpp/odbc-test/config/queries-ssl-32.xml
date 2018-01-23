@@ -25,6 +25,14 @@
         http://www.springframework.org/schema/beans/spring-beans.xsd">
 
     <import resource="queries-default.xml"/>
+
+    <!--
+        Initialize property configurer so we can reference environment variables.
+    -->
+    <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="systemPropertiesModeName" value="SYSTEM_PROPERTIES_MODE_FALLBACK"/>
+        <property name="searchSystemEnvironment" value="true"/>
+    </bean>
   
     <bean parent="queries.cfg">
         <property name="clientConnectorConfiguration">
