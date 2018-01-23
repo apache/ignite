@@ -65,7 +65,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.CheckpointWriteOrder;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -2745,27 +2744,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         CheckpointFsyncScope fsyncScope;
                         if (asyncCheckpointer != null) {
-
-                            if (persistenceCfg.getCheckpointWriteOrder() == CheckpointWriteOrder.SEQUENTIAL
-                                && PageMemoryImpl.isParallelDirtyPages()) {
-                                if (log.isInfoEnabled())
-                                    log.info(String.format("Activated parallel dirty page processing. [pages=%d]", chp.pagesSize()));
-
-                                fsyncScope = asyncCheckpointer.quickSortAndWritePages(
-                                    chp.cpScope,
-                                    wrCpPagesFactory);
-                            }
-                            else {
-                                Collection<FullPageIdsBuffer> cpPages
-                                    = chp.cpScope.splitAndSortCpPagesIfNeeded(persistenceCfg);
-
-                                fsyncScope = new CheckpointFsyncScope();
-                                CheckpointFsyncScope.Stripe stripe = fsyncScope.newStripe();
-
-                                for (FullPageIdsBuffer next : cpPages) {
-                                    asyncCheckpointer.fork(wrCpPagesFactory.apply(next, stripe.fsyncScope), stripe.future);
-                                }
-                            }
+                            fsyncScope = asyncCheckpointer.submitWriteCheckpointPages(wrCpPagesFactory,
+                                chp.cpScope, persistenceCfg);
                         }
                         else {
                             fsyncScope = new CheckpointFsyncScope();
@@ -2798,8 +2778,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 syncedPagesCntr.addAndGet(entry.getValue().intValue());
                             }*/
 
-
-                            fsyncScope.stripes().stream()
+                            //todo
+                           /* fsyncScope.stripes().stream()
                                 .parallel()
                                 .map(stripe -> {
                                     try {
@@ -2829,15 +2809,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                             throw new RuntimeException(e);
                                         }
                                     }
-                                );
+                                );*/
 
-                            /* //todo
+                            ///*
                             List<CheckpointFsyncScope.Stripe> stripes = fsyncScope.stripes();
                             while (!stripes.isEmpty()) {
                                 for (Iterator<CheckpointFsyncScope.Stripe> iterator = stripes.iterator(); iterator.hasNext(); ) {
                                     CheckpointFsyncScope.Stripe stripe = iterator.next();
 
-                                    Set<Map.Entry<PageStore, LongAdder>> entries = stripe.tryWaitAndCheckForErrors(500/16);
+                                    Set<Map.Entry<PageStore, LongAdder>> entries = stripe.tryWaitAndCheckForErrors(10);
 
                                     if (entries != null) {
                                         if (log.isInfoEnabled()) {
@@ -2845,9 +2825,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                                 "for one from [" + fsyncScope.stripesCount() + "] remaining stripes");
                                         }
                                         for (Map.Entry<PageStore, LongAdder> updStoreEntry : entries) {
-                                            updStoreEntry.getKey().sync();
+                                            PageStore pageStore = updStoreEntry.getKey();
+                                            LongAdder value = updStoreEntry.getValue();
 
-                                            syncedPagesCntr.addAndGet(updStoreEntry.getValue().intValue());
+                                            int pagesUpdated = value.intValue();
+                                            if (pagesUpdated > 0)
+                                                pageStore.sync();
+
+                                            syncedPagesCntr.addAndGet(pagesUpdated);
                                         }
 
                                         iterator.remove();
@@ -2859,8 +2844,27 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                         return;
                                     }
                                 }
+
+                                //todo bad code, just for test
+                                if(false && !stripes.isEmpty()) {
+                                    Iterator<CheckpointFsyncScope.Stripe> stripeIterator = stripes.iterator();
+                                    if(stripeIterator.hasNext()) {
+                                        CheckpointFsyncScope.Stripe next = stripeIterator.next();
+                                        Iterator<PageStore> iterator = next.fsyncScope.keySet().iterator();
+                                        if (iterator.hasNext()) {
+                                            PageStore somePageStore = iterator.next();
+                                            LongAdder adder = next.fsyncScope.get(somePageStore);
+                                            LongAdder replace = next.fsyncScope.replace(somePageStore, new LongAdder());
+                                            if(replace.intValue()>0) {
+                                                somePageStore.sync();
+
+                                                syncedPagesCntr.addAndGet(replace.intValue());
+                                            }
+                                        }
+                                    }
+                                }
                             }
-                            */
+                            //*/
 
                         } else {
                             fsyncScope.get();
