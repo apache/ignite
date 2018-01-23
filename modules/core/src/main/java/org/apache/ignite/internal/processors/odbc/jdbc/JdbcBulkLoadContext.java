@@ -26,9 +26,12 @@ public class JdbcBulkLoadContext {
 
     private final BulkLoadContext loadContext;
 
+    private int updateCnt;
+
     public JdbcBulkLoadContext(JdbcFilesToSendResult cmdParsingResult, BulkLoadContext context) {
         this.cmdParsingResult = cmdParsingResult;
         loadContext = context;
+        updateCnt = 0;
     }
 
     /**
@@ -45,8 +48,21 @@ public class JdbcBulkLoadContext {
      *
      * @return cmdParsingResult.
      */
-    public JdbcFilesToSendResult initialResultToSend() {
+    public JdbcFilesToSendResult cmdParsingResult() {
         return cmdParsingResult;
+    }
+
+    public void incrementUpdateCountBy(int incr) {
+        updateCnt += incr;
+    }
+
+    /**
+     * Returns the updateCnt.
+     *
+     * @return updateCnt.
+     */
+    public int updateCnt() {
+        return updateCnt;
     }
 
     /**
@@ -56,5 +72,9 @@ public class JdbcBulkLoadContext {
      */
     public BulkLoadContext loadContext() {
         return loadContext;
+    }
+
+    public void close() {
+        loadContext.close();
     }
 }

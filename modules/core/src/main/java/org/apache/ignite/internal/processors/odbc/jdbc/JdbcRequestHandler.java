@@ -33,6 +33,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -208,7 +210,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     return getSchemas((JdbcMetaSchemasRequest)req);
 
                 case BULK_LOAD_BATCH:
-                    return processFileBatch((JdbcBulkLoadFileBatchRequest)req);
+                    return processBulkLoadFileBatch((JdbcBulkLoadFileBatchRequest)req);
             }
 
             return new JdbcResponse(IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
@@ -219,8 +221,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         }
     }
 
-    private ClientListenerResponse processFileBatch(JdbcBulkLoadFileBatchRequest req) {
-
+    private ClientListenerResponse processBulkLoadFileBatch(JdbcBulkLoadFileBatchRequest req) {
         JdbcBulkLoadContext ctx = bulkLoadRequests.get(req.queryId());
 
         if (ctx == null)
@@ -230,23 +231,35 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         try {
             Iterable<List<Object>> inputRecords = ctx.loadContext().inputParser().processBatch(ctx, req);
             BulkLoadEntryConverter converter = ctx.loadContext().dataConverter();
+            IgniteDataStreamer<Object, Object> streamer = ctx.loadContext().outputStreamer();
 
-            int updateCnt = 0;
+            int thisBatchUpdateCnt = 0;
             for (List<Object> record : inputRecords) {
                 IgniteBiTuple<?, ?> kv = converter.convertRecord(record);
 
-                ctx.loadContext().outputStreamer().addData(kv.getKey(), kv.getValue());
+                streamer.addData(kv.getKey(), kv.getValue());
 
-                updateCnt++;
+                thisBatchUpdateCnt++;
+
             }
 
             switch (req.cmd()) {
                 case FINISHED_ERROR:
                 case FINISHED_EOF:
-                    bulkLoadRequests.remove(req.queryId());
-            }
+                    ctx.close();
 
-            return new JdbcResponse(new JdbcQueryExecuteResult(req.queryId(), updateCnt));
+                    bulkLoadRequests.remove(req.queryId());
+
+                    return new JdbcResponse(new JdbcQueryExecuteResult(req.queryId(), ctx.updateCnt()));
+
+                case CONTINUE:
+                    ctx.incrementUpdateCountBy(thisBatchUpdateCnt);
+
+                    return new JdbcResponse(new JdbcQueryExecuteResult(req.queryId(), thisBatchUpdateCnt));
+
+                default:
+                    throw new IllegalArgumentException();
+            }
         }
         catch (RuntimeException | IgniteCheckedException e) {
             return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Server error: " + e.getMessage());

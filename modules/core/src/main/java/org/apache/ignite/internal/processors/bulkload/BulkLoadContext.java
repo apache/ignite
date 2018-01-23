@@ -75,4 +75,11 @@ public class BulkLoadContext {
     public IgniteDataStreamer<Object, Object> outputStreamer() {
         return outputStreamer;
     }
+
+    /**
+     * Closes the underlyinng objects ({@link IgniteDataStreamer}).
+     * */
+    public void close() {
+        outputStreamer.close();
+    }
 }

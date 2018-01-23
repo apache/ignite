@@ -31,24 +31,24 @@ import java.util.List;
 public class BulkLoadCsvParser extends BulkLoadParser {
 
     private final LinkedList<byte []> inputBatches;
-    private long lastBatchNum;
+    private long nextBatchNum;
 
     public BulkLoadCsvParser(BulkLoadFormat format) {
         super(format);
         inputBatches = new LinkedList<>();
-        lastBatchNum = 0;
+        nextBatchNum = 0;
     }
 
     @Override public Iterable<List<Object>> processBatch(JdbcBulkLoadContext ctx, JdbcBulkLoadFileBatchRequest req) {
 
         switch (req.cmd()) {
             case CONTINUE:
-                if (lastBatchNum + 1 != req.batchNum())
-                    throw new IgniteSQLException("Batch #" + (lastBatchNum + 1) + " is missing");
+                if (nextBatchNum != req.batchNum())
+                    throw new IgniteSQLException("Batch #" + (nextBatchNum + 1) + " is missing");
 
                 addBatch(req);
 
-                lastBatchNum = req.batchNum();
+                nextBatchNum++;
 
                 return Collections.emptyList();
 

@@ -75,6 +75,13 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
 
     /**
      * @throws SQLException If failed.
+     *
+     * FIXME SHQ: Tests to add
+     * Missing table
+     * Inserting _key, _value of a wrong type
+     * Missing file
+     * Read error in the middle of reading a file
+     *
      */
     public void testBatch() throws SQLException {
         final int BATCH_SIZE = 10;
@@ -82,9 +89,9 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
         String csvFileName = System.getProperty("IGNITE_HOME") + "/modules/clients/src/test/resources/bulkload0.csv";
 
         int updatesCnt = stmt.executeUpdate(
-            "copy from \"" + csvFileName + "\" into Person (_key, _val) format csv");
+            "copy from \"" + csvFileName + "\" into Person (_key, firstName, lastName) format csv");
 
-        assertEquals(1, updatesCnt);
+        assertEquals(2, updatesCnt);
     }
 
     /**

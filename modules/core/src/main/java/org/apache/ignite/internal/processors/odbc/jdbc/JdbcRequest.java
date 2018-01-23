@@ -159,6 +159,8 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
             case BULK_LOAD_BATCH:
                 req = new JdbcBulkLoadFileBatchRequest();
 
+                break;
+
             default:
                 throw new IgniteException("Unknown SQL listener request ID: [request ID=" + reqType + ']');
         }
