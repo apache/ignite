@@ -429,9 +429,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         IgnitePageStoreManager storeMgr = ctx.pageStore();
 
         return
-            discoCache.baselineNode(ctx.localNodeId()) &&
-            storeMgr instanceof FilePageStoreManager &&
             grp.persistenceEnabled() &&
+            storeMgr instanceof FilePageStoreManager &&
+            discoCache.baselineNode(ctx.localNodeId()) &&
             Files.exists(((FilePageStoreManager)storeMgr).getPath(grp.sharedGroup(), grp.cacheOrGroupName(), p));
     }
 

@@ -1111,7 +1111,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         // Before local node join event.
         if (clusterInTransitionStateToActive || (joinEvt && locNode && isSrvNode))
             restoreState();
+    }
 
+    /** {@inheritDoc} */
+    @Override public void rebuildIndexesIfNeeded(GridDhtPartitionsExchangeFuture fut) {
         if (cctx.kernalContext().query().moduleEnabled()) {
             for (final GridCacheContext cacheCtx : (Collection<GridCacheContext>)cctx.cacheContexts()) {
                 if (cacheCtx.startTopologyVersion().equals(fut.initialVersion()) &&
@@ -1130,8 +1133,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             CacheConfiguration ccfg = cacheCtx.config();
 
                             if (ccfg != null) {
-                                log().info("Finished indexes rebuilding for cache: [name=" + ccfg.getName()
-                                    + ", grpName=" + ccfg.getGroupName());
+                                log().info("Finished indexes rebuilding for cache [name=" + ccfg.getName()
+                                    + ", grpName=" + ccfg.getGroupName() + ']');
                             }
                         }
                     });
