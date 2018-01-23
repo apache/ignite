@@ -42,6 +42,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -196,7 +197,9 @@ public class GridAffinityAssignmentCache {
 
         DiscoCache discoCache = ctx.discovery().discoCache(topVer);
 
-        if (ctx.cache().cacheGroup(grpId).persistenceEnabled()) {
+        CacheGroupContext grpCtx = ctx.cache().cacheGroup(grpId);
+
+        if (grpCtx.persistenceEnabled() && !grpCtx.isLocal()) {
             for (List<ClusterNode> pNodes : affAssignment) {
                 for (ClusterNode pNode : pNodes)
                     assert discoCache.baselineNode(pNode.id());
