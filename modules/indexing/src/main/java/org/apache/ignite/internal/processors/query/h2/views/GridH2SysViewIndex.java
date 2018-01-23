@@ -37,9 +37,6 @@ import org.h2.table.TableFilter;
  * System view H2 index.
  */
 public class GridH2SysViewIndex extends BaseIndex {
-    /** Indexed column. */
-    private final Column indexedCol;
-
     /**
      * @param tbl Table.
      * @param col Column.
@@ -47,15 +44,10 @@ public class GridH2SysViewIndex extends BaseIndex {
     GridH2SysViewIndex(GridH2SysViewTable tbl, Column... col) {
         IndexColumn[] idxCols;
 
-        if (col != null && col.length > 0) {
-            indexedCol = col[0];
-
+        if (col != null && col.length > 0)
             idxCols = IndexColumn.wrap(col);
-        } else {
-            indexedCol = null;
-
+        else
             idxCols = new IndexColumn[0];
-        }
 
         initBaseIndex(tbl, 0, null, idxCols, IndexType.createNonUnique(false));
     }
@@ -162,8 +154,7 @@ public class GridH2SysViewIndex extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public String getPlanSQL() {
-        return getTable().getName() + ((indexedCol == null) ? " full scan"
+        return getTable().getName() + ((columns == null || columns.length == 0) ? " full scan"
             : " using index " + Arrays.toString(columns));
     }
 }
-
