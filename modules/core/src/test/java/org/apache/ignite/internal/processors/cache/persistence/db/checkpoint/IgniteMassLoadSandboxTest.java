@@ -209,7 +209,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
     private static String generateThreadDump() {
         final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
-        final ThreadInfo[] threadInfos = threadMXBean.getThreadInfo(threadMXBean.getAllThreadIds(), 100);
+        final ThreadInfo[] threadInfos = threadMXBean.getThreadInfo(threadMXBean.getAllThreadIds(), 250);
         final StringBuilder dump = new StringBuilder();
         for (ThreadInfo threadInfo : threadInfos) {
             String name = threadInfo.getThreadName();
@@ -260,12 +260,12 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                 "cp. speed, MB/sec",
                 "cp. sync., MB/sec",
                 "WAL work seg.",
-                "pageMemThrRatio",
+                "targetDirtyRatio",
+                "closeToThrottle",
                 "throttleLevel",
                 "avg." + operation + "/sec",
                 "dirtyPages",
                 "cpWrittenPages",
-                "threshold",
                 "WAL idx",
                 "Arch. idx",
                 "WAL Archive seg.");
@@ -342,9 +342,9 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             long currBytesSynced = detectDelta(elapsedMsFromPrevTick, cpSyncedPages, prevCpSyncedPages) * pageSize;
 
             String walSpeed = "";
-            double threshold = 0;
+            double targetDirtyRatio = 0;
             int throttleLevel = 0;
-            double pageMemThrottleRatio = 0.0;
+            double closeToThrottle = 0.0;
             long idx = -1;
             long lastArchIdx = -1;
             int walArchiveSegments = 0;
@@ -356,9 +356,9 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
                     PagesWriteThrottle throttle = U.field(pageMemory, "writeThrottle");
 
-                    threshold = U.field(throttle, "lastDirtyRatioThreshold");
+                    targetDirtyRatio = throttle.getPageMemTargetDirtyRatio();
+                    closeToThrottle = throttle.getThrottleCloseMeasurement() ;
                     throttleLevel = throttle.throttleLevel();
-                    pageMemThrottleRatio = throttle.getPageMemThrottleRatio() ;
                 }
 
                 FileWriteAheadLogManager wal = (FileWriteAheadLogManager)cacheSctx.wal();
@@ -393,7 +393,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
 
 
-            String thresholdStr = formatDbl(threshold);
+            String targetDirtyRatioStr = formatDbl(targetDirtyRatio);
             String cpWriteSpeed = getMBytesPrintable(currBytesWritten);
             String cpSyncSpeed = getMBytesPrintable(currBytesSynced);
             long elapsedSecs = elapsedMs / 1000;
@@ -409,7 +409,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                 "dirtyP=" + dirtyPages + ", " +
                 "cpWrittenP.=" + cpWrittenPages + ", " +
                 "cpBufP.=" + cpBufPages + " " +
-                "threshold=" + thresholdStr + " " +
+                "threshold=" + targetDirtyRatioStr + " " +
                 "walIdx=" + idx + " " +
                 "archWalIdx=" + lastArchIdx + " " +
                 "walArchiveSegments=" + walArchiveSegments + " " +
@@ -421,12 +421,12 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                 cpWriteSpeed,
                 cpSyncSpeed,
                 walWorkSegments,
-                formatDbl(pageMemThrottleRatio),
+                targetDirtyRatioStr,
+                formatDbl(closeToThrottle),
                 throttleLevel,
                 averagePutPerSec,
                 dirtyPages,
                 cpWrittenPages,
-                thresholdStr,
                 idx,
                 lastArchIdx,
                 walArchiveSegments

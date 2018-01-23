@@ -343,18 +343,9 @@ public class PageMemoryImpl implements PageMemoryEx {
             throttleEnabled = false;
         }
 
-        if(!(ctx.wal() instanceof FileWriteAheadLogManager)) {
-            log.error("Write throttle can't start. Unexpected class of WAL manager: " +
-                ctx.wal().getClass());
-
-            throttleEnabled = false;
-        }
-
         if (throttleEnabled)
             writeThrottle = new PagesWriteThrottle(this,
-                (GridCacheDatabaseSharedManager)ctx.database(),
-                (FileWriteAheadLogManager)ctx.wal(),
-                ctx.gridConfig().getDataStorageConfiguration());
+                (GridCacheDatabaseSharedManager)ctx.database());
     }
 
     /** {@inheritDoc} */
@@ -873,13 +864,6 @@ public class PageMemoryImpl implements PageMemoryEx {
         }
 
         return true;
-    }
-
-    /**
-     * @param dirtyRatioThreshold Throttle threshold.
-     */
-    boolean shouldThrottle(double dirtyRatioThreshold) {
-        return getDirtyPagesRatio() > dirtyRatioThreshold;
     }
 
     /**

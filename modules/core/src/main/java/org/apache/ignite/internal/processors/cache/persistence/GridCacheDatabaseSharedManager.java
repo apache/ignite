@@ -2524,7 +2524,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
 
     /**
-     * Counter for written checkpoint pages. Not null only if checkpoint is running.
+     * Counter for fsynced checkpoint pages. Not null only if checkpoint is running.
      */
     public AtomicInteger syncedPagesCounter() {
         return syncedPagesCntr;
