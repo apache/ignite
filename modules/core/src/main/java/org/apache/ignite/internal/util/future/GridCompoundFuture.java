@@ -285,12 +285,12 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
                 onDone(rdc != null ? rdc.reduce() : null);
             }
             catch (RuntimeException e) {
-                logError(null, "Failed to execute compound future reducer: " + this, e);
+                logError(logger(), "Failed to execute compound future reducer: " + this, e);
 
                 onDone(e);
             }
             catch (AssertionError e) {
-                logError(null, "Failed to execute compound future reducer: " + this, e);
+                logError(logger(), "Failed to execute compound future reducer: " + this, e);
 
                 onDone(e);
 

@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -54,8 +55,12 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistFuture;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxRemote;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
@@ -82,6 +87,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 
 /**
@@ -159,6 +165,18 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         ctx.io().addCacheHandler(ctx.cacheId(), GridDhtUnlockRequest.class, new CI2<UUID, GridDhtUnlockRequest>() {
             @Override public void apply(UUID nodeId, GridDhtUnlockRequest req) {
                 processDhtUnlockRequest(nodeId, req);
+            }
+        });
+
+        ctx.io().addCacheHandler(ctx.cacheId(), GridNearTxQueryEnlistRequest.class, new CI2<UUID, GridNearTxQueryEnlistRequest>() {
+            @Override public void apply(UUID nodeId, GridNearTxQueryEnlistRequest req) {
+                processNearEnlistRequest(nodeId, req);
+            }
+        });
+
+        ctx.io().addCacheHandler(ctx.cacheId(), GridNearTxQueryEnlistResponse.class, new CI2<UUID, GridNearTxQueryEnlistResponse>() {
+            @Override public void apply(UUID nodeId, GridNearTxQueryEnlistResponse req) {
+                processNearEnlistResponse(nodeId, req);
             }
         });
 
@@ -619,6 +637,220 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         if (isNearEnabled(cacheCfg))
             near().clearLocks(nodeId, req);
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param req Request.
+     */
+    private void processNearEnlistRequest(UUID nodeId, final GridNearTxQueryEnlistRequest req) {
+        assert ctx.affinityNode();
+        assert nodeId != null;
+        assert req != null;
+
+        if (txLockMsgLog.isDebugEnabled()) {
+            txLockMsgLog.debug("Received near enlist request [txId=" + req.version() +
+                ", node=" + nodeId + ']');
+        }
+
+        final ClusterNode nearNode = ctx.discovery().node(nodeId);
+
+        if (nearNode == null) {
+            U.warn(txLockMsgLog, "Received near enlist request from unknown node (will ignore) [txId=" + req.version() +
+                ", node=" + nodeId + ']');
+
+            return;
+        }
+
+        GridDhtTxLocal tx = null;
+
+        GridCacheVersion dhtVer = ctx.tm().mappedVersion(req.version());
+
+        if (dhtVer != null)
+            tx = ctx.tm().tx(dhtVer);
+
+        GridDhtPartitionTopology top = null;
+
+        if (req.firstClientRequest()) {
+            assert CU.clientNode(nearNode);
+
+            top = topology();
+
+            top.readLock();
+
+            GridDhtTopologyFuture topFut = top.topologyVersionFuture();
+
+            if (!topFut.isDone() || !topFut.topologyVersion().equals(req.topologyVersion())) {
+                // TODO IGNITE-7164 Wait for topology change, remap client TX in case affinity was changed.
+                top.readUnlock();
+
+                GridNearTxQueryEnlistResponse res = new GridNearTxQueryEnlistResponse(
+                    req.cacheId(),
+                    req.futureId(),
+                    req.miniId(),
+                    req.version(),
+                    0,
+                    new ClusterTopologyException("Topology was changed. Please retry on stable topology."));
+
+                try {
+                    ctx.io().send(nearNode, res, ctx.ioPolicy());
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to send near enlist response [" +
+                        "txId=" + req.version() +
+                        ", node=" + nearNode.id() +
+                        ", res=" + res + ']', e);
+                }
+
+                return;
+            }
+        }
+
+        if (tx == null) {
+            try {
+                tx = new GridDhtTxLocal(
+                    ctx.shared(),
+                    req.topologyVersion(),
+                    nearNode.id(),
+                    req.version(),
+                    req.futureId(),
+                    req.miniId(),
+                    req.threadId(),
+                    false,
+                    false,
+                    ctx.systemTx(),
+                    false,
+                    ctx.ioPolicy(),
+                    PESSIMISTIC,
+                    REPEATABLE_READ,
+                    req.timeout(),
+                    false,
+                    false,
+                    false,
+                    -1,
+                    null,
+                    req.subjectId(),
+                    req.taskNameHash());
+
+                // if (req.syncCommit())
+                tx.syncMode(FULL_SYNC);
+
+                tx = ctx.tm().onCreated(null, tx);
+
+                if (tx == null || !tx.init()) {
+                    String msg = "Failed to acquire lock (transaction has been completed): " +
+                        req.version();
+
+                    U.warn(log, msg);
+
+                    try {
+                        tx.rollbackDhtLocal();
+                    }
+                    catch (IgniteCheckedException ex) {
+                        U.error(log, "Failed to rollback the transaction: " + tx, ex);
+                    }
+
+                    return;
+                }
+
+                tx.topologyVersion(req.topologyVersion());
+            }
+            finally {
+                if (top != null)
+                    top.readUnlock();
+            }
+        }
+
+        ctx.tm().txContext(tx);
+
+        final GridDhtTxLocal tx0 = tx;
+
+        GridDhtTxQueryEnlistFuture fut = new GridDhtTxQueryEnlistFuture(
+            nearNode.id(),
+            req.version(),
+            req.topologyVersion(),
+            req.mvccVersion(),
+            req.threadId(),
+            req.futureId(),
+            req.miniId(),
+            tx,
+            req.cacheIds(),
+            req.partitions(),
+            req.schemaName(),
+            req.query(),
+            req.parameters(),
+            req.flags(),
+            req.pageSize(),
+            req.timeout(),
+            ctx);
+
+        fut.listen(new CI1<IgniteInternalFuture<GridNearTxQueryEnlistResponse>>() {
+            @Override public void apply(IgniteInternalFuture<GridNearTxQueryEnlistResponse> future) {
+                GridNearTxQueryEnlistResponse res = future.result();
+
+                if (res == null) {
+                    assert future.error() != null : future;
+
+                    res = new GridNearTxQueryEnlistResponse(req.cacheId(), req.futureId(), req.miniId(), req.version(), 0, future.error());
+                }
+
+                if (res.error() == null && tx0.empty()) {
+                    final GridNearTxQueryEnlistResponse res0 = res;
+
+                    tx0.rollbackDhtLocalAsync().listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
+                        @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut0) {
+                            try {
+                                ctx.io().send(nearNode, res0, ctx.ioPolicy());
+                            }
+                            catch (IgniteCheckedException e) {
+                                U.error(log, "Failed to send near enlist response [" +
+                                    "txId=" + req.version() +
+                                    ", node=" + nearNode.id() +
+                                    ", res=" + res0 + ']', e);
+
+                                throw new GridClosureException(e);
+                            }
+                        }
+                    });
+
+                    return;
+                }
+
+                try {
+                    ctx.io().send(nearNode, res, ctx.ioPolicy());
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to send near enlist response (will rollback transaction) [" +
+                        "txId=" + req.version() +
+                        ", node=" + nearNode.id() +
+                        ", res=" + res + ']', e);
+
+                    try {
+                        if (tx0 != null)
+                            tx0.rollbackDhtLocalAsync();
+                    }
+                    catch (Throwable e1) {
+                        e.addSuppressed(e1);
+                    }
+
+                    throw new GridClosureException(e);
+                }
+            }
+        });
+
+        fut.init();
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param res Response.
+     */
+    private void processNearEnlistResponse(UUID nodeId, final GridNearTxQueryEnlistResponse res) {
+        GridNearTxQueryEnlistFuture fut = (GridNearTxQueryEnlistFuture)ctx.mvcc().versionedFuture(res.version(), res.futureId());
+
+        if (fut != null) {
+            fut.onResult(nodeId, res);
+        }
     }
 
     /**
@@ -1283,7 +1515,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                                 CacheObject val = null;
 
-                                if (ret)
+                                if (ret) {
                                     val = e.innerGet(
                                         null,
                                         tx,
@@ -1294,7 +1526,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                         null,
                                         tx != null ? tx.resolveTaskName() : null,
                                         null,
-                                        req.keepBinary());
+                                        req.keepBinary(),
+                                        null); // TODO IGNITE-7371
+                                }
 
                                 assert e.lockedBy(mappedVer) ||
                                     (ctx.mvcc().isRemoved(e.context(), mappedVer) && req.timeout() > 0) :

@@ -145,4 +145,14 @@ public interface ConnectionProperties {
      * @param skipReducerOnUpdate Skip reducer on update flag.
      */
     public void setSkipReducerOnUpdate(boolean skipReducerOnUpdate);
+
+    /**
+     * @return Nested transactions handling strategy.
+     */
+    public String nestedTxMode();
+
+    /**
+     * @param nestedTxMode Nested transactions handling strategy.
+     */
+    public void nestedTxMode(String nestedTxMode);
 }

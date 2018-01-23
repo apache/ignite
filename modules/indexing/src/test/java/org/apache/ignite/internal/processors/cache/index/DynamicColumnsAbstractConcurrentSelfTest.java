@@ -377,9 +377,9 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
                     IgniteCache<Object, BinaryObject> cache = node.cache(CACHE_NAME);
 
                     if (ThreadLocalRandom.current().nextBoolean())
-                        cache.put(key(node, key), val(node, val));
+                        cache.put(key(key), val(node, val));
                     else
-                        cache.remove(key(node, key));
+                        cache.remove(key(key));
                 }
 
                 return null;
@@ -413,7 +413,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         IgniteCache<Object, BinaryObject> cache = srv1.cache(CACHE_NAME).withKeepBinary();
 
         for (int i = 0; i < LARGE_CACHE_SIZE; i++) {
-            Object key = key(srv1, i);
+            Object key = key(i);
 
             BinaryObject val = cache.get(key);
 
@@ -427,7 +427,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
             }
         }
 
-        String valTypeName = ((IgniteEx)srv1).context().query().types(CACHE_NAME).iterator().next().valueTypeName();
+        String valTypeName = (srv1).context().query().types(CACHE_NAME).iterator().next().valueTypeName();
 
         // Validate query result.
         for (Ignite node : Ignition.allGrids()) {
@@ -466,11 +466,10 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
     }
 
     /**
-     * @param node Node.
      * @param id Key.
      * @return PERSON cache key (int or {@link BinaryObject}).
      */
-    private Object key(Ignite node, int id) {
+    private Object key(int id) {
         return id;
     }
 
@@ -547,7 +546,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      */
     private void put(Ignite node, int startIdx, int endIdx) {
         for (int i = startIdx; i < endIdx; i++)
-            node.cache(CACHE_NAME).put(key(node, i), val(node, i));
+            node.cache(CACHE_NAME).put(key(i), val(node, i));
     }
 
     /**

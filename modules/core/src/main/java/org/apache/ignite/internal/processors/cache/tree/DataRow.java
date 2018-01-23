@@ -50,15 +50,13 @@ public class DataRow extends CacheDataRowAdapter {
         this.part = part;
 
         try {
-            // We can not init data row lazily because underlying buffer can be concurrently cleared.
-            initFromLink(grp, rowData);
+            // We can not init data row lazily outside of entry lock because underlying buffer can be concurrently cleared.
+            if (rowData != RowData.LINK_ONLY)
+                initFromLink(grp, rowData);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
-
-        if (key != null)
-            key.partition(part);
     }
 
     /**
@@ -79,6 +77,20 @@ public class DataRow extends CacheDataRowAdapter {
         this.part = part;
         this.expireTime = expireTime;
         this.cacheId = cacheId;
+    }
+
+    /**
+     *
+     */
+    DataRow() {
+        super(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void key(KeyCacheObject key) {
+        super.key(key);
+
+        hash = key.hashCode();
     }
 
     /** {@inheritDoc} */

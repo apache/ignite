@@ -98,12 +98,12 @@ public class RowStore {
         else {
             ctx.database().checkpointReadLock();
 
-            try {
-                freeList.insertDataRow(row);
-            }
-            finally {
-                ctx.database().checkpointReadUnlock();
-            }
+        try {
+            freeList.insertDataRow(row);
+
+        assert row.link() != 0L;
+        }finally {
+            ctx.database().checkpointReadUnlock();}
         }
     }
 

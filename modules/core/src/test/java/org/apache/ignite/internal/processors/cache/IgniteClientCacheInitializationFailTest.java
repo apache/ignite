@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import javax.cache.Cache;
 import javax.cache.CacheException;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -43,6 +44,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
@@ -55,6 +57,7 @@ import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.typedef.T4;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -227,6 +230,11 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
      */
     private static class FailedIndexing implements GridQueryIndexing {
         /** {@inheritDoc} */
+        @Override public void onClientDisconnect() throws IgniteCheckedException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
         @Override public void start(GridKernalContext ctx, GridSpinBusyLock busyLock) throws IgniteCheckedException {
             // No-op
         }
@@ -310,6 +318,15 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
+        @Override public GridCloseableIterator<T4<Object, Object, EntryProcessor, Object[]>> prepareDistributedUpdate(GridCacheContext<?, ?> cctx, int[] ids,
+            int[] parts,
+            String schema, String qry, Object[] params, int flags, int pageSize, int timeout,
+            AffinityTopologyVersion topVer,
+            MvccVersion mvccVer, GridQueryCancel cancel) throws IgniteCheckedException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean registerType(GridCacheContext cctx,
             GridQueryTypeDescriptor desc) throws IgniteCheckedException {
             return false;
@@ -317,7 +334,8 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public void store(GridCacheContext cctx, GridQueryTypeDescriptor type, CacheDataRow row,
-            CacheDataRow prevRow, boolean prevRowAvailable) {
+            CacheDataRow prevRow, @Nullable MvccVersion newVer, boolean prevRowAvailable,
+            boolean idxRebuild) throws IgniteCheckedException {
             // No-op.
         }
 

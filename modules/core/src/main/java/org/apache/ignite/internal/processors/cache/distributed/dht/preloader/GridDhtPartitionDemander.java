@@ -798,6 +798,7 @@ public class GridDhtPartitionDemander {
                         if (cached.initialValue(
                             entry.value(),
                             entry.version(),
+                            entry,
                             entry.ttl(),
                             entry.expireTime(),
                             true,

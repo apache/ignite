@@ -43,6 +43,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
@@ -129,6 +130,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
     /** */
     private int taskHash;
+
+    /** */
+    private MvccVersion mvccVer;
 
     /**
      * @param cctx Context.
@@ -234,7 +238,8 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         boolean incMeta,
         boolean keepBinary,
         UUID subjId,
-        int taskHash) {
+        int taskHash,
+        MvccVersion mvccVer) {
         this.cctx = cctx;
         this.type = type;
         this.log = log;
@@ -252,6 +257,22 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.keepBinary = keepBinary;
         this.subjId = subjId;
         this.taskHash = taskHash;
+        this.mvccVer = mvccVer;
+    }
+
+    /**
+     * @param mvccVer Mvcc version.
+     */
+    void mvccVersion(MvccVersion mvccVer) {
+        this.mvccVer = mvccVer;
+    }
+
+    /**
+     * @return Mvcc version.
+     */
+    @Nullable
+    MvccVersion mvccVersion() {
+        return mvccVer;
     }
 
     /**

@@ -611,7 +611,7 @@ public class GridSqlQueryParser {
             // We can't cache simple tables because otherwise it will be the same instance for all
             // table filters. Thus we will not be able to distinguish one table filter from another.
             // Table here is semantically equivalent to a table filter.
-            if (tbl instanceof TableBase)
+            if (tbl instanceof TableBase || tbl instanceof MetaTable)
                 return new GridSqlTable(tbl);
 
             // Other stuff can be cached because we will have separate instances in
@@ -1653,6 +1653,13 @@ public class GridSqlQueryParser {
             return parseAlterColumn((AlterTableAlterColumn)stmt);
 
         throw new CacheException("Unsupported SQL statement: " + stmt);
+    }
+
+    /**
+     * @return H2 to Grid objects map.
+     */
+    public Map objectsMap() {
+        return h2ObjToGridObj;
     }
 
     /**

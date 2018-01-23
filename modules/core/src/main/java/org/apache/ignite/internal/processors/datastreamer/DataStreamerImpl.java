@@ -86,6 +86,9 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvali
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionWithoutTxs;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.dr.GridDrType;
@@ -128,6 +131,14 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /** Amount of permissions should be available to continue new data processing. */
     private static final int REMAP_SEMAPHORE_PERMISSIONS_COUNT = Integer.MAX_VALUE;
+
+    /** Version which is less then any version generated on coordinator. */
+    private static final MvccVersion ISOLATED_STREAMER_MVCC_VER =
+        new MvccVersionWithoutTxs(1L, MvccProcessor.MVCC_START_CNTR, 0L);
+
+    /** Version which is less then any version generated on coordinator (for remove). */
+    private static final MvccVersion ISOLATED_STREAMER_MVCC_VER_RMV =
+        new MvccVersionWithoutTxs(MvccProcessor.createVersionForRemovedValue(1L), MvccProcessor.MVCC_START_CNTR, 0L);
 
     /** Cache receiver. */
     private StreamReceiver<K, V> rcvr = ISOLATED_UPDATER;
@@ -2095,8 +2106,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                     boolean primary = cctx.affinity().primaryByKey(cctx.localNode(), entry.key(), topVer);
 
+                    MvccVersion mvccVer = e.getValue() == null ?
+                        ISOLATED_STREAMER_MVCC_VER_RMV : ISOLATED_STREAMER_MVCC_VER;
+
                     entry.initialValue(e.getValue(),
                         ver,
+                        mvccVer,
                         ttl,
                         expiryTime,
                         false,

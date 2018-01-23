@@ -425,6 +425,26 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
         @Override public int cacheId() {
             return 0;
         }
+
+        /** {@inheritDoc} */
+        @Override public long mvccCoordinatorVersion() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long mvccCounter() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void mvccVersion(long crdVer, long mvccCntr) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean removed() {
+            return false;
+        }
     }
 
     /**

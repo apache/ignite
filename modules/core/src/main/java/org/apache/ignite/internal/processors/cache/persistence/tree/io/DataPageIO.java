@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -51,13 +50,19 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
         final int payloadSize
     ) throws IgniteCheckedException {
         final int keySize = row.key().valueBytesLength(null);
-        final int valSize = row.value().valueBytesLength(null);
+
+        boolean rmvd = row.removed();
+
+        final int valSize = rmvd ? 0 : row.value().valueBytesLength(null);
 
         int written = writeFragment(row, buf, rowOff, payloadSize, EntryPart.CACHE_ID, keySize, valSize);
         written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.KEY, keySize, valSize);
-        written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.EXPIRE_TIME, keySize, valSize);
-        written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.VALUE, keySize, valSize);
-        written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.VERSION, keySize, valSize);
+
+        if (!rmvd) {
+            written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.EXPIRE_TIME, keySize, valSize);
+            written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.VALUE, keySize, valSize);
+            written += writeFragment(row, buf, rowOff + written, payloadSize - written, EntryPart.VERSION, keySize, valSize);
+        }
 
         assert written == payloadSize;
     }
@@ -265,9 +270,15 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
             }
 
             addr += row.key().putValue(addr);
+
+            if (row.removed())
+                return;
         }
-        else
+        else {
+            assert !row.removed() : row;
+
             addr += (2 + cacheIdSize + row.key().valueBytesLength(null));
+        }
 
         addr += row.value().putValue(addr);
 
@@ -309,12 +320,11 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
      * @throws IgniteCheckedException If failed.
      */
     public static int getRowSize(CacheDataRow row, boolean withCacheId) throws IgniteCheckedException {
-        KeyCacheObject key = row.key();
-        CacheObject val = row.value();
+        int len = row.key().valueBytesLength(null);
 
-        int keyLen = key.valueBytesLength(null);
-        int valLen = val.valueBytesLength(null);
+        if (!row.removed())
+            len += row.value().valueBytesLength(null) + CacheVersionIO.size(row.version(), false) + 8;
 
-        return keyLen + valLen + CacheVersionIO.size(row.version(), false) + 8 + (withCacheId ? 4 : 0);
+        return len + (withCacheId ? 4 : 0);
     }
 }

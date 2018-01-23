@@ -36,6 +36,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -202,12 +203,7 @@ public class DdlStatementsProcessor {
             if (fut != null)
                 fut.get();
 
-            QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
-                (Collections.singletonList(0L)), null, false);
-
-            resCur.fieldsMeta(UPDATE_RESULT_META);
-
-            return resCur;
+            return IgniteH2Indexing.dummyCursor();
         }
         catch (SchemaOperationException e) {
             throw convert(e);
@@ -234,6 +230,8 @@ public class DdlStatementsProcessor {
         IgniteInternalFuture fut = null;
 
         try {
+            finishActiveTxIfNecessary();
+
             GridSqlStatement stmt0 = new GridSqlQueryParser(false).parse(prepared);
 
             if (stmt0 instanceof GridSqlCreateIndex) {
@@ -425,6 +423,10 @@ public class DdlStatementsProcessor {
                 else {
                     assert tbl.rowDescriptor() != null;
 
+                    if (tbl.cache().mvccEnabled())
+                        throw new IgniteSQLException("Cannot drop column(s) with enabled MVCC. " +
+                            "Operation is unsupported at the moment.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
                     if (QueryUtils.isSqlType(tbl.rowDescriptor().type().valueClass()))
                         throw new SchemaOperationException("Cannot drop column(s) because table was created " +
                             "with " + PARAM_WRAP_VALUE + "=false option.");
@@ -498,6 +500,23 @@ public class DdlStatementsProcessor {
         if (cctx.isLocal())
             throw new IgniteSQLException("DDL statements are not supported on LOCAL caches",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+    }
+
+    /**
+     * Commits active transaction if exists.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    private void finishActiveTxIfNecessary() throws IgniteCheckedException {
+        try (GridNearTxLocal tx = idx.tx()) {
+            if (tx == null)
+                return;
+
+            if (!tx.isRollbackOnly())
+                tx.commit();
+            else
+                tx.rollback();
+        }
     }
 
     /**

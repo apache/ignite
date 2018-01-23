@@ -26,6 +26,7 @@ import java.util.UUID;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -105,10 +106,14 @@ public class DiscoCache {
     /** */
     private final P1<ClusterNode> aliveNodePred;
 
+    /** */
+    private final MvccCoordinator mvccCrd;
+
     /**
      * @param topVer Topology version.
      * @param state Current cluster state.
      * @param loc Local node.
+     * @param mvccCrd MVCC coordinator node.
      * @param rmtNodes Remote nodes.
      * @param allNodes All nodes.
      * @param srvNodes Server nodes.
@@ -127,6 +132,7 @@ public class DiscoCache {
         AffinityTopologyVersion topVer,
         DiscoveryDataClusterState state,
         ClusterNode loc,
+        MvccCoordinator mvccCrd,
         List<ClusterNode> rmtNodes,
         List<ClusterNode> allNodes,
         List<ClusterNode> srvNodes,
@@ -136,7 +142,7 @@ public class DiscoCache {
         Map<Integer, List<ClusterNode>> allCacheNodes,
         Map<Integer, List<ClusterNode>> cacheGrpAffNodes,
         Map<UUID, ClusterNode> nodeMap,
-        Set<UUID> alives0,
+        Set<UUID> alives,
         @Nullable Map<UUID, Short> nodeIdToConsIdx,
         @Nullable  Map<Short, UUID> consIdxToNodeId,
         IgniteProductVersion minNodeVer
@@ -144,6 +150,7 @@ public class DiscoCache {
         this.topVer = topVer;
         this.state = state;
         this.loc = loc;
+        this.mvccCrd = mvccCrd;
         this.rmtNodes = rmtNodes;
         this.allNodes = allNodes;
         this.srvNodes = srvNodes;
@@ -153,7 +160,7 @@ public class DiscoCache {
         this.allCacheNodes = allCacheNodes;
         this.cacheGrpAffNodes = cacheGrpAffNodes;
         this.nodeMap = nodeMap;
-        alives.addAll(alives0);
+        this.alives.addAll(alives);
         this.minNodeVer = minNodeVer;
         this.nodeIdToConsIdx = nodeIdToConsIdx;
         this.consIdxToNodeId = consIdxToNodeId;
@@ -171,6 +178,13 @@ public class DiscoCache {
                 return alives.contains(node.id());
             }
         };
+    }
+
+    /**
+     * @return Mvcc coordinator node.
+     */
+    @Nullable public MvccCoordinator mvccCoordinator() {
+        return mvccCrd;
     }
 
     /**
@@ -397,6 +411,7 @@ public class DiscoCache {
             ver,
             state == null ? this.state : state,
             loc,
+            mvccCrd,
             rmtNodes,
             allNodes,
             srvNodes,

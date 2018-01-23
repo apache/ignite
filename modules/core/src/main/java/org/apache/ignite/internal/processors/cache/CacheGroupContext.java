@@ -30,6 +30,7 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -59,6 +60,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
@@ -144,6 +146,9 @@ public class CacheGroupContext {
     /** */
     private boolean qryEnabled;
 
+    /** */
+    private boolean mvccEnabled;
+
     /** MXBean. */
     private CacheGroupMetricsMXBean mxBean;
 
@@ -207,6 +212,28 @@ public class CacheGroupContext {
         caches = new ArrayList<>();
 
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
+
+        mvccEnabled = mvccEnabled(ctx.gridConfig(), ccfg, cacheType);
+    }
+
+    /**
+     * @param cfg Ignite configuration.
+     * @param ccfg Cache configuration.
+     * @param cacheType Cache typr.
+     * @return {@code True} if mvcc is enabled for given cache.
+     */
+    public static boolean mvccEnabled(IgniteConfiguration cfg, CacheConfiguration ccfg, CacheType cacheType) {
+        return cfg.isMvccEnabled() &&
+            cacheType == CacheType.USER &&
+            ccfg.getCacheMode() != LOCAL &&
+            ccfg.getAtomicityMode() == TRANSACTIONAL;
+    }
+
+    /**
+     * @return Mvcc flag.
+     */
+    public boolean mvccEnabled() {
+        return mvccEnabled;
     }
 
     /**

@@ -31,9 +31,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -49,8 +49,10 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -87,6 +89,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Busy lock. */
     private final GridSpinBusyLock busyLock;
 
+    /** Worker. */
+    private final JdbcRequestHandlerWorker worker;
+
     /** Maximum allowed cursors. */
     private final int maxCursors;
 
@@ -114,12 +119,14 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Automatic close of cursors. */
     private final boolean autoCloseCursors;
 
+    /** Nested transactions handling mode. */
+    private final NestedTxMode nestedTxMode;
+
     /** Protocol version. */
     private ClientListenerProtocolVersion protocolVer;
 
     /**
      * Constructor.
-     *
      * @param ctx Context.
      * @param busyLock Shutdown latch.
      * @param maxCursors Maximum allowed cursors.
@@ -134,7 +141,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     public JdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
         boolean distributedJoins, boolean enforceJoinOrder, boolean collocated, boolean replicatedOnly,
-        boolean autoCloseCursors, boolean lazy, boolean skipReducerOnUpdate,
+        boolean autoCloseCursors, boolean lazy, boolean skipReducerOnUpdate, NestedTxMode nestedTxMode,
         ClientListenerProtocolVersion protocolVer) {
         this.ctx = ctx;
         this.busyLock = busyLock;
@@ -146,9 +153,15 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         this.autoCloseCursors = autoCloseCursors;
         this.lazy = lazy;
         this.skipReducerOnUpdate = skipReducerOnUpdate;
+        this.nestedTxMode = nestedTxMode;
         this.protocolVer = protocolVer;
 
         log = ctx.log(getClass());
+
+        if (ctx.grid().configuration().isMvccEnabled())
+            worker = new JdbcRequestHandlerWorker(ctx.igniteInstanceName(), log, this, ctx);
+        else
+            worker = null;
     }
 
     /** {@inheritDoc} */
@@ -159,6 +172,34 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
         JdbcRequest req = (JdbcRequest)req0;
 
+        if (worker == null)
+            return doHandle(req);
+        else {
+            GridFutureAdapter<ClientListenerResponse> fut = worker.process(req);
+
+            try {
+                return fut.get();
+            }
+            catch (IgniteCheckedException e) {
+                return exceptionToResult(e);
+            }
+        }
+    }
+
+    /**
+     * Start worker, if it's present.
+     */
+    void start() {
+        if (worker != null)
+            worker.start();
+    }
+
+    /**
+     * Actually handle the request.
+     * @param req Request.
+     * @return Request handling result.
+     */
+    ClientListenerResponse doHandle(JdbcRequest req) {
         if (!busyLock.enterBusy())
             return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
                 "Failed to handle JDBC request because node is stopping.");
@@ -233,6 +274,17 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     public void onDisconnect() {
         if (busyLock.enterBusy())
         {
+            if (worker != null) {
+                worker.cancel();
+
+                try {
+                    worker.join();
+                }
+                catch (InterruptedException e) {
+                    // No-op.
+                }
+            }
+
             try
             {
                 for (JdbcQueryCursor cursor : qryCursors.values())
@@ -265,11 +317,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         try {
             String sql = req.sqlQuery();
 
-            SqlFieldsQuery qry;
+            SqlFieldsQueryEx qry;
 
             switch(req.expectedStatementType()) {
                 case ANY_STATEMENT_TYPE:
-                    qry = new SqlFieldsQuery(sql);
+                    qry = new SqlFieldsQueryEx(sql, null);
 
                     break;
 
@@ -284,7 +336,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     qry = new SqlFieldsQueryEx(sql, false);
 
                     if (skipReducerOnUpdate)
-                        ((SqlFieldsQueryEx)qry).setSkipReducerOnUpdate(true);
+                        qry.setSkipReducerOnUpdate(true);
             }
 
             qry.setArgs(req.arguments());
@@ -294,6 +346,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             qry.setCollocated(collocated);
             qry.setReplicatedOnly(replicatedOnly);
             qry.setLazy(lazy);
+            qry.setNestedTxMode(nestedTxMode);
+            qry.setAutoCommit(req.autoCommit());
 
             if (req.pageSize() <= 0)
                 return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Invalid fetch size: " + req.pageSize());
@@ -313,7 +367,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             if (results.size() == 1) {
                 FieldsQueryCursor<List<?>> qryCur = results.get(0);
 
-                JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(), (QueryCursorImpl)qryCur);
+                JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(),
+                    (QueryCursorImpl)qryCur);
 
                 JdbcQueryExecuteResult res;
 
@@ -350,8 +405,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     if (qryCur.isQuery()) {
                         jdbcRes = new JdbcResultInfo(true, -1, qryId);
 
-                        JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(),
-                            (QueryCursorImpl)qryCur);
+                        JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(), qryCur);
 
                         qryCursors.put(qryId, cur);
 
@@ -501,6 +555,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 qry.setCollocated(collocated);
                 qry.setReplicatedOnly(replicatedOnly);
                 qry.setLazy(lazy);
+                qry.setNestedTxMode(nestedTxMode);
+                qry.setAutoCommit(req.autoCommit());
 
                 qry.setSchema(schemaName);
             }

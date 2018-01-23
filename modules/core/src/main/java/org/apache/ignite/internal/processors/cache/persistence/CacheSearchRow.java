@@ -42,4 +42,14 @@ public interface CacheSearchRow {
      * @return Cache ID or {@code 0} if cache ID is not defined.
      */
     public int cacheId();
+
+    /**
+     * @return Mvcc coordinator version.
+     */
+    public long mvccCoordinatorVersion();
+
+    /**
+     * @return Mvcc counter.
+     */
+    public long mvccCounter();
 }

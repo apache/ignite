@@ -201,7 +201,7 @@ public class WalStateAckMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 129;
+        return 148;
     }
 
     /** {@inheritDoc} */

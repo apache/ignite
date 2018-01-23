@@ -486,6 +486,9 @@ public class IgniteConfiguration {
     /** Client connector configuration. */
     private ClientConnectorConfiguration cliConnCfg = ClientListenerProcessor.DFLT_CLI_CFG;
 
+    /** */
+    private boolean mvccEnabled;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -562,6 +565,7 @@ public class IgniteConfiguration {
         metricsLogFreq = cfg.getMetricsLogFrequency();
         metricsUpdateFreq = cfg.getMetricsUpdateFrequency();
         mgmtPoolSize = cfg.getManagementThreadPoolSize();
+        mvccEnabled = cfg.isMvccEnabled();
         netTimeout = cfg.getNetworkTimeout();
         nodeId = cfg.getNodeId();
         odbcCfg = cfg.getOdbcConfiguration();
@@ -2925,6 +2929,27 @@ public class IgniteConfiguration {
      */
     @Nullable public ClientConnectorConfiguration getClientConnectorConfiguration() {
         return cliConnCfg;
+    }
+
+    /**
+     * Whether or not MVCC is enabled.
+     *
+     * @return {@code True} if MVCC is enabled.
+     */
+    public boolean isMvccEnabled() {
+        return mvccEnabled;
+    }
+
+    /**
+     * Sets MVCC enabled flag.
+     *
+     * @param mvccEnabled MVCC enabled flag.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setMvccEnabled(boolean mvccEnabled) {
+        this.mvccEnabled = mvccEnabled;
+
+        return this;
     }
 
     /** {@inheritDoc} */
