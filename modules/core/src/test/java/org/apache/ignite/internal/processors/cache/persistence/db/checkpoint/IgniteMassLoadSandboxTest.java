@@ -532,7 +532,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             System.setProperty(IgniteSystemProperties.IGNITE_DIRTY_PAGES_SORTED_STORAGE, "true");
             System.setProperty(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY, "true");
 
-            setWalArchAndWorkToSameValue = false;
+            setWalArchAndWorkToSameValue = true;
 
             customWalMode = WALMode.BACKGROUND;
             final IgniteEx ignite = startGrid(1);
