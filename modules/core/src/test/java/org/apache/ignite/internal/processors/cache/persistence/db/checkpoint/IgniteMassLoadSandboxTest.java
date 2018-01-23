@@ -123,7 +123,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             .setName("dfltMemPlc")
             .setMetricsEnabled(true);
 
-        regCfg.setMaxSize(4 * 1024L * 1024 * 1024);
+        regCfg.setMaxSize(2 * 1024L * 1024 * 1024);
         regCfg.setPersistenceEnabled(true);
 
         dsCfg.setDefaultDataRegionConfiguration(regCfg);
@@ -209,7 +209,8 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
     private static String generateThreadDump() {
         final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
-        final ThreadInfo[] threadInfos = threadMXBean.getThreadInfo(threadMXBean.getAllThreadIds(), 250);
+        int depth = 100;
+        final ThreadInfo[] threadInfos = threadMXBean.getThreadInfo(threadMXBean.getAllThreadIds(), depth);
         final StringBuilder dump = new StringBuilder();
         for (ThreadInfo threadInfo : threadInfos) {
             String name = threadInfo.getThreadName();
@@ -217,8 +218,28 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                 || name.contains("db-checkpoint-thread")
                 || name.contains("wal-file-archiver")
                 || name.contains(GET_THREAD)
-                || name.contains(PUT_THREAD))
-                dump.append(threadInfo.toString());
+                || name.contains(PUT_THREAD)) {
+                String str = threadInfo.toString();
+
+                if (name.contains("db-checkpoint-thread")) {
+                    dump.append(str);
+                    dump.append("(Full stacktrace)");
+                    StackTraceElement[] stackTrace = threadInfo.getStackTrace();
+                    int i = 0;
+                    for (; i < stackTrace.length && i < depth; i++) {
+                        StackTraceElement ste = stackTrace[i];
+                        dump.append("\tat ").append(ste.toString());
+                        dump.append('\n');
+                    }
+                    if (i < stackTrace.length) {
+                        dump.append("\t...");
+                        dump.append('\n');
+                    }
+                    dump.append('\n');
+                } else {
+                    dump.append(str);
+                }
+            }
             else {
                 String s = threadInfo.toString();
 

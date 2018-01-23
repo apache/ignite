@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.db.checkpoint;
 
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
@@ -23,15 +24,19 @@ import org.apache.ignite.configuration.IgniteConfiguration;
  */
 public class IgniteDirectIoMassLoadSandboxTest extends IgniteMassLoadSandboxTest {
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.getDataStorageConfiguration().setCheckpointThreads(8);
+        cfg.getDataStorageConfiguration().setCheckpointThreads(4);
 
         return cfg;
     }
 
+    /** {@inheritDoc} */
     @Override public void testContinuousPutMultithreaded() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_DIRECT_IO_ENABLED, "true");
+
         super.testContinuousPutMultithreaded();
     }
 }
