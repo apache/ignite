@@ -98,7 +98,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     private int walSegmentSize = 48 * 1024 * 1024;
     /** Custom wal mode. */
     protected WALMode customWalMode;
-    private int checkpointFrequency = 5 * 1000;
+    private int checkpointFrequency = 15 * 1000;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -518,7 +518,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
             final IgniteCache<Object, IndexedObject> cache = ignite.cache(CACHE_NAME);
             int totalRecs = CONTINUOUS_PUT_RECS_CNT;
-            final int threads = 32;
+            final int threads = Runtime.getRuntime().availableProcessors();
 
             final int recsPerThread = totalRecs / threads;
             final Collection<Callable<?>> tasks = new ArrayList<>();
