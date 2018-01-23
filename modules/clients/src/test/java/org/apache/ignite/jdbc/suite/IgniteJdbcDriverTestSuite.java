@@ -67,6 +67,7 @@ import org.apache.ignite.jdbc.thin.JdbcThinTransactionsServerAutoCommitComplexSe
 import org.apache.ignite.jdbc.thin.JdbcThinTransactionsServerNoAutoCommitComplexSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinUpdateStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinUpdateStatementSkipReducerOnUpdateSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinWalModeChangeSelfTest;
 
 /**
  * JDBC driver test suite.
@@ -175,6 +176,8 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
         suite.addTest(new TestSuite(JdbcThinTransactionsClientNoAutoCommitComplexSelfTest.class));
         suite.addTest(new TestSuite(JdbcThinTransactionsServerNoAutoCommitComplexSelfTest.class));
 
+        // Various commands.
+        suite.addTest(new TestSuite(JdbcThinWalModeChangeSelfTest.class));
 
         return suite;
     }

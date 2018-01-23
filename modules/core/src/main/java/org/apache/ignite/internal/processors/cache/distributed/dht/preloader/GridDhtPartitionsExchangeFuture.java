@@ -73,6 +73,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.LocalJoinCachesContext;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
+import org.apache.ignite.internal.processors.cache.WalStateAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
@@ -617,6 +618,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 else if (msg instanceof SnapshotDiscoveryMessage) {
                     exchange = onCustomMessageNoAffinityChange(crdNode);
                 }
+                else if (msg instanceof WalStateAbstractMessage)
+                    exchange = onCustomMessageNoAffinityChange(crdNode);
                 else {
                     assert affChangeMsg != null : this;
 
@@ -1138,6 +1141,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
+        changeWalModeIfNeeded();
+
         if (crd.isLocal()) {
             if (remaining.isEmpty())
                 onAllReceived(null);
@@ -1170,6 +1175,37 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         catch (IgniteCheckedException e) {
             U.error(log, "Error while starting snapshot operation", e);
         }
+    }
+
+    /**
+     * Change WAL mode if needed.
+     */
+    private void changeWalModeIfNeeded() {
+        WalStateAbstractMessage msg = firstWalMessage();
+
+        if (msg != null)
+            cctx.walState().onProposeExchange(msg.exchangeMessage());
+    }
+
+    /**
+     * Get first message if and only if this is WAL message.
+     *
+     * @return WAL message or {@code null}.
+     */
+    @Nullable private WalStateAbstractMessage firstWalMessage() {
+        if (firstDiscoEvt != null && firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
+            DiscoveryCustomMessage customMsg = ((DiscoveryCustomEvent)firstDiscoEvt).customMessage();
+
+            if (customMsg instanceof WalStateAbstractMessage) {
+                WalStateAbstractMessage msg0 = (WalStateAbstractMessage)customMsg;
+
+                assert msg0.needExchange();
+
+                return msg0;
+            }
+        }
+
+        return null;
     }
 
     /**

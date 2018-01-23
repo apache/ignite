@@ -137,6 +137,7 @@ import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.internal.sql.SqlParser;
 import org.apache.ignite.internal.sql.command.SqlBeginTransactionCommand;
+import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCommitTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
@@ -1595,9 +1596,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (parser.nextCommand() != null)
                 return null;
 
-            if (!(cmd instanceof SqlCreateIndexCommand || cmd instanceof SqlDropIndexCommand ||
-                cmd instanceof SqlBeginTransactionCommand || cmd instanceof SqlCommitTransactionCommand ||
-                cmd instanceof SqlRollbackTransactionCommand))
+            if (!(cmd instanceof SqlCreateIndexCommand
+                || cmd instanceof SqlDropIndexCommand
+                || cmd instanceof SqlBeginTransactionCommand
+                || cmd instanceof SqlCommitTransactionCommand
+                || cmd instanceof SqlRollbackTransactionCommand
+                || cmd instanceof SqlAlterTableCommand))
                 return null;
         }
         catch (Exception e) {

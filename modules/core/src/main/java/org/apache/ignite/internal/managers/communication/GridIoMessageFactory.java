@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.WalStateAckMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRequestMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessage;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdateRequest;
@@ -924,64 +925,69 @@ public class GridIoMessageFactory implements MessageFactory {
             case 136:
                 msg = new MvccVersionResponse();
 
-                return msg;
+                break;
 
             case 137:
                 msg = new MvccWaitTxsRequest();
 
-                return msg;
+                break;
 
             case 138:
                 msg = new GridCacheMvccEntryInfo();
 
-                return msg;
+                break;
 
             case 139:
                 msg = new MvccTxInfo();
 
-                return msg;
+                break;
 
             case 140:
                 msg = new MvccNewQueryAckRequest();
 
-                return msg;
+                break;
 
             case 141:
                 msg = new MvccAckRequestTxAndQuery();
 
-                return msg;
+                break;
 
             case 142:
                 msg = new MvccAckRequestTxAndQueryEx();
 
-                return msg;
+                break;
 
             case 143:
                 msg = new MvccCounter();
 
-                return msg;
+                break;
 
             case 144:
                 msg = new MvccActiveQueriesMessage();
 
-                return msg;
+                break;
 
             case 145:
                 msg = new MvccVersionWithoutTxs();
 
-                return msg;
+                break;
 
             case 146:
                 msg = new GridNearTxQueryEnlistRequest();
 
-                return msg;
+                break;
 
             case 147:
                 msg = new GridNearTxQueryEnlistResponse();
 
-                return msg;
+                break;
 
-            // [-3..119] [124..128] [-23..-27] [-36..-55]- this
+            case 148:
+                msg = new WalStateAckMessage();
+
+                break;
+
+            // [-3..119] [124..129] [-23..-27] [-36..-55]- this
             // [120..123] - DR
             // [-4..-22, -30..-35] - SQL
             // [2048..2053] - Snapshots
