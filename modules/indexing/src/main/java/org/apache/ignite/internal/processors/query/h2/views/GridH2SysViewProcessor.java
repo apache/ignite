@@ -68,6 +68,7 @@ public class GridH2SysViewProcessor {
             viewsToRegister.add(new GridH2SysViewImplJvmRuntime(ctx));
             viewsToRegister.add(new GridH2SysViewImplJvmOS(ctx));
             viewsToRegister.add(new GridH2SysViewImplCaches(ctx));
+            viewsToRegister.add(new GridH2SysViewImplCacheMetrics(ctx, true));
             viewsToRegister.add(new GridH2SysViewImplCacheGroups(ctx));
             viewsToRegister.add(new GridH2SysViewImplNodes(ctx));
             viewsToRegister.add(new GridH2SysViewImplNodeHosts(ctx));

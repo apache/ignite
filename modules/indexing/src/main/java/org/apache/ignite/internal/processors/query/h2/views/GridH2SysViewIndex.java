@@ -89,14 +89,25 @@ public class GridH2SysViewIndex extends BaseIndex {
     /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder,
         HashSet<Column> allColsSet) {
-        if (indexedCol != null) {
-            if ((masks[indexedCol.getColumnId()] & IndexCondition.EQUALITY) != 0)
-                return 1d;
-            else if ((masks[indexedCol.getColumnId()] & IndexCondition.RANGE) != 0)
-                return 10d;
+        double colsCost = 2d;
+        boolean isIdxUsed = false;
+
+        if (masks != null) {
+            double colWeight = 2d;
+
+            for (Column col : columns) {
+                colWeight /= 2d;
+
+                if ((masks[col.getColumnId()] & IndexCondition.EQUALITY) != 0) {
+                    isIdxUsed = true;
+
+                    colsCost -= colWeight;
+                } else
+                    colsCost += colWeight;
+            }
         }
 
-        return 100d + getRowCountApproximation();
+        return isIdxUsed ? colsCost : 100d + getRowCountApproximation();
     }
 
     /** {@inheritDoc} */

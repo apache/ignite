@@ -65,18 +65,11 @@ public class GridH2SysViewImplNodes extends GridH2SysView {
             nodes = Collections.singleton(ctx.grid().localNode());
         }
         else if (idCond.isEquality()) {
-            try {
-                log.debug("Get nodes: node id");
+            log.debug("Get nodes: node id");
 
-                UUID nodeId = UUID.fromString(idCond.getValue().getString());
+            UUID nodeId = uuidFromString(idCond.getValue().getString());
 
-                nodes = Collections.singleton(ctx.grid().cluster().node(nodeId));
-            }
-            catch (Exception e) {
-                log.warning("Failed to get node by nodeId: " + idCond.getValue().getString(), e);
-
-                nodes = Collections.emptySet();
-            }
+            nodes = nodeId == null ? Collections.emptySet() : Collections.singleton(ctx.grid().cluster().node(nodeId));
         }
         else {
             log.debug("Get nodes: full scan");

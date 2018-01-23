@@ -41,7 +41,7 @@ public class GridH2SysViewImplPartAssignment extends GridH2SysView {
      * @param ctx Grid context.
      */
     public GridH2SysViewImplPartAssignment(GridKernalContext ctx) {
-        super("PART_ASSIGNMENT", "Partition assignment map", ctx, "CACHE_GROUP_ID",
+        super("PART_ASSIGNMENT", "Partition assignment map", ctx, "CACHE_GROUP_ID,PARTITION",
             newColumn("CACHE_GROUP_ID"),
             newColumn("TOPOLOGY_VERSION", Value.LONG),
             newColumn("PARTITION"),
@@ -72,14 +72,31 @@ public class GridH2SysViewImplPartAssignment extends GridH2SysView {
             cacheGroups = ctx.cache().cacheGroups();
         }
 
+        ColumnCondition partCond = conditionForColumn("PARTITION", first, last);
+
+        final int partFilter = partCond.isEquality() ? partCond.getValue().getInt() : -1;
+
         return new ParentChildRowIterable<CacheGroupContext, PartitionAssignment>(
             ses, cacheGroups,
             new IgniteClosure<CacheGroupContext, Iterator<PartitionAssignment>>() {
                 @Override public Iterator<PartitionAssignment> apply(CacheGroupContext grp) {
-                    AffinityAssignment assignment = grp.affinity().cachedAffinity(AffinityTopologyVersion.NONE);
+                    AffinityAssignment affAssignment = grp.affinity().cachedAffinity(AffinityTopologyVersion.NONE);
 
-                    return new PartitionAssignmentIterator(assignment.assignment().iterator(),
-                        assignment.topologyVersion());
+                    List<List<ClusterNode>> partAssignment = affAssignment.assignment();
+
+                    Iterator<List<ClusterNode>> partAssignmentIter;
+
+                    // Filter by partition number.
+                    if (partFilter >= 0) {
+                        if (partFilter < partAssignment.size())
+                            partAssignmentIter = Collections.singleton(partAssignment.get(partFilter)).iterator();
+                        else
+                            partAssignmentIter = Collections.emptyIterator();
+                    }
+                    else
+                        partAssignmentIter = partAssignment.iterator();
+
+                    return new PartitionAssignmentIterator(partAssignmentIter, affAssignment.topologyVersion());
                 }
             },
             new IgniteBiClosure<CacheGroupContext, PartitionAssignment, Object[]>() {

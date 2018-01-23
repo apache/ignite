@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.views;
 
 import java.util.Iterator;
+import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.lang.IgniteBiClosure;
@@ -133,7 +134,7 @@ public abstract class GridH2SysView {
     }
 
     /**
-     * Convert millis to ValueTime
+     * Converts millis to ValueTime
      *
      * @param millis Millis.
      */
@@ -146,15 +147,29 @@ public abstract class GridH2SysView {
     }
 
     /**
-     * Convert millis to ValueTimestamp
+     * Converts millis to ValueTimestamp
      *
      * @param millis Millis.
      */
     protected static Value valueTimestampFromMillis(long millis) {
-        if (millis == -1L || millis == Long.MAX_VALUE)
+        if (millis <= 0L || millis == Long.MAX_VALUE)
             return ValueNull.INSTANCE;
         else
             return ValueTimestamp.fromMillis(millis);
+    }
+
+    /**
+     * Converts string to UUID safe (suppressing exceptions).
+     *
+     * @param val UUID in string format.
+     */
+    protected static UUID uuidFromString(String val) {
+        try {
+            return UUID.fromString(val);
+        }
+        catch (RuntimeException e) {
+            return null;
+        }
     }
 
     /**

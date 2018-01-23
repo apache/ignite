@@ -20,17 +20,15 @@ package org.apache.ignite.internal.processors.query.h2.views;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.lang.IgniteBiClosure;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.h2.engine.Session;
 import org.h2.result.Row;
@@ -45,7 +43,7 @@ public class GridH2SysViewImplPartAllocation extends GridH2SysView {
      * @param ctx Grid context.
      */
     public GridH2SysViewImplPartAllocation(GridKernalContext ctx) {
-        super("PART_ALLOCATION", "Partition allocation map", ctx, "CACHE_GROUP_ID",
+        super("PART_ALLOCATION", "Partition allocation map", ctx, "CACHE_GROUP_ID,NODE_ID,PARTITION",
             newColumn("CACHE_GROUP_ID"),
             newColumn("NODE_ID", Value.UUID),
             newColumn("PARTITION"),
@@ -62,12 +60,9 @@ public class GridH2SysViewImplPartAllocation extends GridH2SysView {
         if (idCond.isEquality()) {
             log.debug("Get part allocation map: filter by group id");
 
-            CacheGroupContext cacheGrp = ctx.cache().cacheGroup(idCond.getValue().getInt());
+            CacheGroupContext grp = ctx.cache().cacheGroup(idCond.getValue().getInt());
 
-            if (cacheGrp != null)
-                cacheGroups = Collections.<CacheGroupContext>singleton(cacheGrp);
-            else
-                cacheGroups = Collections.emptySet();
+            cacheGroups = grp == null ? Collections.emptySet() : Collections.<CacheGroupContext>singleton(grp);
         }
         else {
             log.debug("Get part allocation map: full group scan");
@@ -75,13 +70,31 @@ public class GridH2SysViewImplPartAllocation extends GridH2SysView {
             cacheGroups = ctx.cache().cacheGroups();
         }
 
+        ColumnCondition partCond = conditionForColumn("PARTITION", first, last);
+        ColumnCondition nodeCond = conditionForColumn("NODE_ID", first, last);
+
+        final int partFilter = partCond.isEquality() ? partCond.getValue().getInt() : -1;
+        final UUID nodeFilter = nodeCond.isEquality() ? uuidFromString(nodeCond.getValue().getString()) : null;
+
         return new ParentChildRowIterable<CacheGroupContext, PartitionAllocation>(
             ses, cacheGroups,
             new IgniteClosure<CacheGroupContext, Iterator<PartitionAllocation>>() {
                 @Override public Iterator<PartitionAllocation> apply(CacheGroupContext grp) {
                     GridDhtPartitionFullMap partFullMap = grp.topology().partitionMap(false);
 
-                    return new PartitionAllocationIterator(partFullMap.entrySet().iterator());
+                    Iterator<Map.Entry<UUID, GridDhtPartitionMap>> partMapIter;
+
+                    if (nodeFilter == null)
+                        partMapIter = partFullMap.entrySet().iterator();
+                    else {
+                        if (partFullMap.containsKey(nodeFilter))
+                            partMapIter = new IgniteBiTuple<UUID, GridDhtPartitionMap>(nodeFilter,
+                                partFullMap.get(nodeFilter)).entrySet().iterator();
+                        else
+                            partMapIter = Collections.emptyIterator();
+                    }
+
+                    return new PartitionAllocationIterator(partMapIter, partFilter);
                 }
             },
             new IgniteBiClosure<CacheGroupContext, PartitionAllocation, Object[]>() {
@@ -105,12 +118,22 @@ public class GridH2SysViewImplPartAllocation extends GridH2SysView {
         Map.Entry<Integer, GridDhtPartitionState>, PartitionAllocation> {
         /**
          * @param nodeIter Node iterator.
+         * @param partFilter
          */
-        public PartitionAllocationIterator(final Iterator<Map.Entry<UUID, GridDhtPartitionMap>> nodeIter) {
+        public PartitionAllocationIterator(final Iterator<Map.Entry<UUID, GridDhtPartitionMap>> nodeIter,
+            final int partFilter) {
             super(nodeIter,
                 new IgniteClosure<Map.Entry<UUID, GridDhtPartitionMap>,
                     Iterator<Map.Entry<Integer, GridDhtPartitionState>>>() {
                     @Override public Iterator<Map.Entry<Integer, GridDhtPartitionState>> apply(Map.Entry<UUID, GridDhtPartitionMap> nodeParts) {
+                        if (partFilter > 0) {
+                            if (nodeParts.getValue().containsKey(partFilter))
+                                return new IgniteBiTuple<Integer, GridDhtPartitionState>(partFilter,
+                                    nodeParts.getValue().get(partFilter)).entrySet().iterator();
+                            else
+                                return Collections.emptyIterator();
+                        }
+
                         return nodeParts.getValue().entrySet().iterator();
                     }
                 },

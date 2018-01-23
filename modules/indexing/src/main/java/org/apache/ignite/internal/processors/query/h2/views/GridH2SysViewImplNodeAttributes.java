@@ -41,7 +41,7 @@ public class GridH2SysViewImplNodeAttributes extends GridH2SysView {
      * @param ctx Grid context.
      */
     public GridH2SysViewImplNodeAttributes(GridKernalContext ctx) {
-        super("NODE_ATTRIBUTES", "Node attributes", ctx, new String[] {"NODE_ID,NAME", "NAME"},
+        super("NODE_ATTRIBUTES", "Node attributes", ctx, "NODE_ID,NAME",
             newColumn("NODE_ID", Value.UUID),
             newColumn("NAME"),
             newColumn("VALUE")
