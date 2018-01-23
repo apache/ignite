@@ -199,7 +199,7 @@ public class GridAffinityAssignmentCache {
 
         CacheGroupContext grpCtx = ctx.cache().cacheGroup(grpId);
 
-        if (grpCtx.persistenceEnabled() && !grpCtx.isLocal()) {
+        if (grpCtx != null && grpCtx.persistenceEnabled() && !grpCtx.isLocal()) {
             for (List<ClusterNode> pNodes : affAssignment) {
                 for (ClusterNode pNode : pNodes)
                     assert discoCache.baselineNode(pNode.id());
