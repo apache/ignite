@@ -359,12 +359,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     assert exchId.isJoined() || added;
 
                     for (int p = 0; p < num; p++) {
-                        IgnitePageStoreManager storeMgr = ctx.pageStore();
-
-                        if (localNode(p, aff)
-                            || (storeMgr instanceof FilePageStoreManager
-                            && grp.persistenceEnabled()
-                            && Files.exists(((FilePageStoreManager)storeMgr).getPath(grp.sharedGroup(), grp.cacheOrGroupName(), p)))) {
+                        if (localNode(p, aff) || initLocalPartition(p, discoCache)) {
                             GridDhtLocalPartition locPart = createPartition(p);
 
                             if (grp.persistenceEnabled()) {
@@ -428,6 +423,16 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
 
         updateRebalanceVersion(aff);
+    }
+
+    private boolean initLocalPartition(int p, DiscoCache discoCache) {
+        IgnitePageStoreManager storeMgr = ctx.pageStore();
+
+        return
+            discoCache.baselineNode(ctx.localNodeId()) &&
+            storeMgr instanceof FilePageStoreManager &&
+            grp.persistenceEnabled() &&
+            Files.exists(((FilePageStoreManager)storeMgr).getPath(grp.sharedGroup(), grp.cacheOrGroupName(), p));
     }
 
     /**
