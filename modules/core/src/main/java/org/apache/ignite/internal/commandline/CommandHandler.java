@@ -46,6 +46,7 @@ import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskArg;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
@@ -60,10 +61,10 @@ import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.V
  */
 public class CommandHandler {
     /** */
-    private static final String DFLT_HOST = "127.0.0.1";
+    static final String DFLT_HOST = "127.0.0.1";
 
     /** */
-    private static final String DFLT_PORT = "11211";
+    static final String DFLT_PORT = "11211";
 
     /** */
     private static final String CMD_HELP = "--help";
@@ -73,24 +74,19 @@ public class CommandHandler {
 
     /** */
     private static final String CMD_PORT = "--port";
-
     /** */
-    private static final String CMD_LOGIN = "--login";
+    static final String CMD_ACTIVATE = "--activate";
 
     /** */
     private static final String CMD_PASSWORD = "--password";
-
     /** */
-    private static final String CMD_ACTIVATE = "--activate";
-
+    static final String CMD_DEACTIVATE = "--deactivate";
     /** */
-    private static final String CMD_DEACTIVATE = "--deactivate";
-
+    static final String CMD_STATE = "--state";
     /** */
-    private static final String CMD_STATE = "--state";
-
+    static final String CMD_BASE_LINE = "--baseline";
     /** */
-    private static final String CMD_BASE_LINE = "--baseline";
+    private static final String CMD_USER = "--user";
 
     /** */
     private static final String BASELINE_ADD = "add";
@@ -166,25 +162,13 @@ public class CommandHandler {
     }
 
     /**
-     * Print command usage.
-     *
-     * @param desc Command description.
-     * @param cmd Command.
-     */
-    private void usage(String desc, String cmd) {
-        log(desc);
-        log("    control.sh [--host HOST_OR_IP] [--port PORT] [--login LOGIN] [--password PASSWORD] " + cmd);
-        nl();
-    }
-
-    /**
      * Extract next argument.
      *
      * @param it Arguments iterator.
      * @param err Error message.
      * @return Next argument value.
      */
-    private String nextArg(Iterator<String> it, String err) {
+    private static String nextArg(Iterator<String> it, String err) {
         if (it.hasNext()) {
             String arg = it.next();
 
@@ -195,6 +179,103 @@ public class CommandHandler {
         }
 
         throw new IllegalArgumentException(err);
+    }
+
+    /**
+     * Parses and validates arguments
+     *
+     * @param rawArgs array of arguments
+     * @return Arguments bean
+     * @throws IllegalArgumentException in case arguments aren't valid
+     */
+    @NotNull static Arguments parseAndValidate(String... rawArgs) {
+
+        String host = DFLT_HOST;
+
+        String port = DFLT_PORT;
+
+        String user = null;
+
+        String pwd = null;
+
+        String baselineAct = "";
+
+        String baselineArgs = "";
+
+        List<String> commands = new ArrayList<>();
+
+        Iterator<String> it = Arrays.asList(rawArgs).iterator();
+
+        while (it.hasNext()) {
+            String str = it.next().toLowerCase();
+
+            switch (str) {
+                case CMD_HOST:
+                    host = nextArg(it, "Expected host name");
+                    break;
+
+                case CMD_PORT:
+                    port = nextArg(it, "Expected port number");
+
+                    try {
+                        int p = Integer.parseInt(port);
+
+                        if (p <= 0 || p > 65535)
+                            throw new IllegalArgumentException("Invalid value for port: " + port);
+                    }
+                    catch (NumberFormatException ignored) {
+                        throw new IllegalArgumentException("Invalid value for port: " + port);
+                    }
+                    break;
+
+                case CMD_USER:
+                    user = nextArg(it, "Expected user name");
+                    break;
+
+                case CMD_PASSWORD:
+                    pwd = nextArg(it, "Expected password");
+                    break;
+
+                case CMD_ACTIVATE:
+                case CMD_DEACTIVATE:
+                case CMD_STATE:
+                    commands.add(str);
+                    break;
+
+                case CMD_BASE_LINE:
+                    commands.add(CMD_BASE_LINE);
+
+                    if (it.hasNext()) {
+                        baselineAct = it.next().toLowerCase();
+
+                        if (BASELINE_ADD.equals(baselineAct) || BASELINE_REMOVE.equals(baselineAct) ||
+                            BASELINE_SET.equals(baselineAct) || BASELINE_SET_VERSION.equals(baselineAct))
+                            baselineArgs = nextArg(it, "Expected baseline arguments");
+                        else
+                            throw new IllegalArgumentException("Unexpected argument for " + CMD_BASE_LINE + ": "
+                                + baselineAct);
+                    }
+
+            }
+        }
+
+        int sz = commands.size();
+
+        if (sz < 1)
+            throw new IllegalArgumentException("No action was specified");
+
+        if (sz > 1)
+            throw new IllegalArgumentException("Only one action can be specified, but found: " + sz);
+
+        String cmd = commands.get(0);
+
+        boolean hasUsr = F.isEmpty(user);
+        boolean hasPwd = F.isEmpty(pwd);
+
+        if (hasUsr != hasPwd)
+            throw new IllegalArgumentException("Both user and password should be specified");
+
+        return new Arguments(cmd, host, port, user, pwd, baselineAct, baselineArgs);
     }
 
     /**
@@ -509,19 +590,31 @@ public class CommandHandler {
     }
 
     /**
+     * Print command usage.
+     *
+     * @param desc Command description.
+     * @param cmd Command.
+     */
+    private void usage(String desc, String cmd) {
+        log(desc);
+        log("    control.sh [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] " + cmd);
+        nl();
+    }
+
+    /**
      * Parse and execute command.
      *
-     * @param args Arguments to parse and execute.
+     * @param rawArgs Arguments to parse and execute.
      * @return Exit code.
      */
-    public int execute(String... args) {
+    public int execute(String... rawArgs) {
         log("Control utility [ver. " + ACK_VER_STR + "]");
         log(COPYRIGHT);
         log("User: " + System.getProperty("user.name"));
         log(DELIM);
 
         try {
-            if (F.isEmpty(args) || (args.length == 1 && CMD_HELP.equalsIgnoreCase(args[0]))){
+            if (F.isEmpty(rawArgs) || (rawArgs.length == 1 && CMD_HELP.equalsIgnoreCase(rawArgs[0]))) {
                 log("This utility can do the following commands:");
 
                 usage("  Activate cluster:", CMD_ACTIVATE);
@@ -548,92 +641,19 @@ public class CommandHandler {
                 return EXIT_CODE_OK;
             }
 
-            String host = DFLT_HOST;
-
-            String port = DFLT_PORT;
-
-            String login = null;
-
-            String pwd = null;
-
-            String baselineAct = "";
-
-            String baselineArgs = "";
-
-            List<String> commands = new ArrayList<>();
-
-            Iterator<String> it = Arrays.asList(args).iterator();
-
-            while (it.hasNext()) {
-                String str = it.next().toLowerCase();
-
-                switch (str) {
-                    case CMD_HOST:
-                        host = nextArg(it, "Expected host name");
-                        break;
-
-                    case CMD_PORT:
-                        port = nextArg(it, "Expected port number");
-
-                        try {
-                            int p = Integer.parseInt(port);
-
-                            if (p <= 0 || p > 65535)
-                                throw new IllegalArgumentException("Invalid value for port: " + port);
-                        }
-                        catch (NumberFormatException ignored) {
-                            throw new IllegalArgumentException("Invalid value for port: " + port);
-                        }
-                        break;
-                    case CMD_LOGIN:
-                        login = nextArg(it, "Expected login name");
-                        break;
-                    case CMD_PASSWORD:
-                        pwd = nextArg(it, "Expected password");
-                        break;
-                    case CMD_ACTIVATE:
-                    case CMD_DEACTIVATE:
-                    case CMD_STATE:
-                        commands.add(str);
-                        break;
-
-                    case CMD_BASE_LINE:
-                        commands.add(CMD_BASE_LINE);
-
-                        if (it.hasNext()) {
-                            baselineAct = it.next().toLowerCase();
-
-                            if (BASELINE_ADD.equals(baselineAct) || BASELINE_REMOVE.equals(baselineAct) ||
-                                BASELINE_SET.equals(baselineAct) || BASELINE_SET_VERSION.equals(baselineAct))
-                                baselineArgs = nextArg(it, "Expected baseline arguments");
-                            else
-                                throw new IllegalArgumentException("Unexpected argument for " + CMD_BASE_LINE + ": "
-                                        + baselineAct);
-                        }
-
-                }
-            }
-
-            int sz = commands.size();
-
-            if (sz < 1)
-                throw new IllegalArgumentException("No action was specified");
-
-            if (sz > 1)
-                throw new IllegalArgumentException("Only one action can be specified, but found: " + sz);
+            Arguments args = parseAndValidate(rawArgs);
 
             GridClientConfiguration cfg = new GridClientConfiguration();
 
-            cfg.setServers(Collections.singletonList(host + ":" + port));
+            cfg.setServers(Collections.singletonList(args.host() + ":" + args.port()));
 
-            if (login != null)
+            if (!F.isEmpty(args.user()))
                 cfg.setSecurityCredentialsProvider(
-                    new SecurityCredentialsBasicProvider(new SecurityCredentials(login, pwd)));
+                    new SecurityCredentialsBasicProvider(new SecurityCredentials(args.user(), args.password())));
 
             try (GridClient client = GridClientFactory.start(cfg)) {
-                String cmd = commands.get(0);
 
-                switch (cmd) {
+                switch (args.command()) {
                     case CMD_ACTIVATE:
                         activate(client);
                         break;
@@ -647,7 +667,7 @@ public class CommandHandler {
                         break;
 
                     case CMD_BASE_LINE:
-                        baseline(client, baselineAct, baselineArgs);
+                        baseline(client, args.baselineAct(), args.baselineArgs());
                         break;
                 }
             }
@@ -664,7 +684,6 @@ public class CommandHandler {
             if (isConnectionError(e))
                 return error(EXIT_CODE_CONNECTION_FAILED, "Connection to cluster failed.", e);
 
-
             return error(EXIT_CODE_UNEXPECTED_ERROR, "", e);
         }
     }
@@ -676,5 +695,106 @@ public class CommandHandler {
         CommandHandler hnd = new CommandHandler();
 
         System.exit(hnd.execute(args));
+    }
+
+}
+
+/**
+ * Bean with all parsed and validated arguments
+ */
+class Arguments {
+
+    /** Command. */
+    private String cmd;
+
+    /** Host. */
+    private String host;
+
+    /** Port. */
+    private String port;
+
+    /** User. */
+    private String user;
+
+    /** Password. */
+    private String pwd;
+
+    /**
+     * Action for baseline command
+     */
+    private String baselineAct;
+
+    /**
+     * Arguments for baseline command
+     */
+    private String baselineArgs;
+
+    /**
+     * @param cmd Command.
+     * @param host Host.
+     * @param port Port.
+     * @param user User.
+     * @param pwd Password.
+     * @param baselineAct Baseline action.
+     * @param baselineArgs Baseline args.
+     */
+    public Arguments(String cmd, String host, String port, String user, String pwd, String baselineAct,
+        String baselineArgs) {
+        this.cmd = cmd;
+        this.host = host;
+        this.port = port;
+        this.user = user;
+        this.pwd = pwd;
+        this.baselineAct = baselineAct;
+        this.baselineArgs = baselineArgs;
+    }
+
+    /**
+     * @return command
+     */
+    public String command() {
+        return cmd;
+    }
+
+    /**
+     * @return host name
+     */
+    public String host() {
+        return host;
+    }
+
+    /**
+     * @return port number
+     */
+    public String port() {
+        return port;
+    }
+
+    /**
+     * @return user name
+     */
+    public String user() {
+        return user;
+    }
+
+    /**
+     * @return password
+     */
+    public String password() {
+        return pwd;
+    }
+
+    /**
+     * @return baseline action
+     */
+    public String baselineAct() {
+        return baselineAct;
+    }
+
+    /**
+     * @return baseline arguments
+     */
+    public String baselineArgs() {
+        return baselineArgs;
     }
 }
