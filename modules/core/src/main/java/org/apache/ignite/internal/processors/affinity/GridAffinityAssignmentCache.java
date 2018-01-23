@@ -194,6 +194,15 @@ public class GridAffinityAssignmentCache {
         assert topVer.compareTo(lastVersion()) >= 0 : "[topVer = " + topVer + ", last=" + lastVersion() + ']';
         assert idealAssignment != null;
 
+        DiscoCache discoCache = ctx.discovery().discoCache(topVer);
+
+        if (ctx.cache().cacheGroup(grpId).persistenceEnabled()) {
+            for (List<ClusterNode> pNodes : affAssignment) {
+                for (ClusterNode pNode : pNodes)
+                    assert discoCache.baselineNode(pNode.id());
+            }
+        }
+
         GridAffinityAssignment assignment = new GridAffinityAssignment(topVer, affAssignment, idealAssignment);
 
         affCache.put(topVer, new HistoryAffinityAssignment(assignment));
