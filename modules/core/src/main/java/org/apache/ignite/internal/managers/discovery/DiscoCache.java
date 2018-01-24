@@ -276,6 +276,14 @@ public class DiscoCache {
     }
 
     /**
+     * @param node Node to check.
+     * @return {@code True} if the node is in baseline or if baseline is not set.
+     */
+    public boolean baselineNode(ClusterNode node) {
+        return nodeIdToConsIdx == null || nodeIdToConsIdx.get(node.id()) != null;
+    }
+
+    /**
      * @return Oldest alive server node.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
