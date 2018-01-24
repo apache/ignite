@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.jetbrains.annotations.NotNull;
 import org.jsr166.ConcurrentHashMap8;
 import org.springframework.core.task.TaskRejectedException;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -83,6 +84,16 @@ public class SpringScheduler {
     }
 
     /**
+     * Appends day of week default placeholder if not specified and creates Cron Trigger
+     *
+     * @param cron pattern
+     * @return Cron trigger
+     */
+    @NotNull private static CronTrigger newCronTrigger(String cron) {
+        return new CronTrigger(appendDayOfWeekIfNeeded(cron));
+    }
+
+    /**
      * @param cron expression
      * @param run scheduling code
      * @return task id
@@ -91,7 +102,7 @@ public class SpringScheduler {
      */
     public String schedule(String cron, Runnable run) throws IgniteException {
         try {
-            CronTrigger trigger = new CronTrigger(appendDayOfWeekIfNeeded(cron));
+            CronTrigger trigger = newCronTrigger(cron);
 
             ScheduledFuture<?> fut = taskScheduler.schedule(run, trigger);
 
@@ -124,7 +135,7 @@ public class SpringScheduler {
         if (cron == null || cron.isEmpty())
             throw new IgniteCheckedException("Invalid cron expression in schedule pattern: " + cron);
         try {
-            new CronSequenceGenerator(appendDayOfWeekIfNeeded(cron));
+            newCronTrigger(cron);
         }
         catch (IllegalArgumentException e) {
             throw new IgniteCheckedException("Invalid cron expression in schedule pattern: " + cron, e);
