@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Impl.Client
     internal class IgniteClient : IIgniteInternal, IIgniteClient
     {
         /** Socket. */
-        private readonly ClientSocket _socket;
+        private readonly IClientSocket _socket;
 
         /** Marshaller. */
         private readonly Marshaller _marsh;
@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Gets the socket.
         /// </summary>
-        public ClientSocket Socket
+        public IClientSocket Socket
         {
             get { return _socket; }
         }

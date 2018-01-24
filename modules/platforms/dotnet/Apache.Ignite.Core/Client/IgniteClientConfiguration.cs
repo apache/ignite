@@ -138,6 +138,13 @@ namespace Apache.Ignite.Core.Client
         public BinaryConfiguration BinaryConfiguration { get; set; }
 
         /// <summary>
+        /// Gets or sets the SSL stream factory.
+        /// <para />
+        /// When not null, secure socket connection will be established.
+        /// </summary>
+        public ISslStreamFactory SslStreamFactory { get; set; }
+
+        /// <summary>
         /// Gets or sets custom binary processor. Internal property for tests.
         /// </summary>
         internal IBinaryProcessor BinaryProcessor { get; set; }
