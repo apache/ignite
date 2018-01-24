@@ -33,6 +33,8 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -90,6 +92,7 @@ import org.h2.schema.Schema;
 import org.h2.table.Column;
 import org.h2.table.FunctionTable;
 import org.h2.table.IndexColumn;
+import org.h2.table.MetaTable;
 import org.h2.table.RangeTable;
 import org.h2.table.Table;
 import org.h2.table.TableBase;
@@ -626,6 +629,8 @@ public class GridSqlQueryParser {
                 res.addChild(parseExpression(RANGE_MIN.get((RangeTable)tbl), false));
                 res.addChild(parseExpression(RANGE_MAX.get((RangeTable)tbl), false));
             }
+            else if (tbl instanceof MetaTable)
+                res = new GridSqlTable(tbl);
             else
                 assert0(false, "Unexpected Table implementation [cls=" + tbl.getClass().getSimpleName() + ']');
 
@@ -1548,6 +1553,61 @@ public class GridSqlQueryParser {
             return query(EXPLAIN_COMMAND.get((Explain)qry));
 
         throw new CacheException("Unsupported query: " + qry);
+    }
+
+    /**
+     * Check if query may be run locally on all caches mentioned in the query.
+     * @param replicatedOnlyQry replicated-only query flag from original {@link SqlFieldsQuery}.
+     * @return {@code true} if query may be run locally on all caches mentioned in the query, i.e. there's no need
+     *     to run distributed query.
+     * @see SqlFieldsQuery#isReplicatedOnly()
+     */
+    public boolean isLocalQuery(boolean replicatedOnlyQry) {
+        boolean hasCaches = false;
+
+        for (Object o : h2ObjToGridObj.values()) {
+            if (o instanceof GridSqlAlias)
+                o = GridSqlAlias.unwrap((GridSqlAst)o);
+
+            if (o instanceof GridSqlTable) {
+                GridH2Table tbl = ((GridSqlTable)o).dataTable();
+
+                if (tbl != null) {
+                    hasCaches = true;
+
+                    GridCacheContext cctx = tbl.cache();
+
+                    if (!cctx.isLocal() && !(replicatedOnlyQry && cctx.isReplicatedAffinityNode()))
+                        return false;
+                }
+            }
+        }
+
+        // For consistency with old logic, let's not force locality in absence of caches -
+        // if there are no caches, original SqlFieldsQuery's isLocal flag will be used.
+        return hasCaches;
+    }
+
+    /**
+     * Get first (i.e. random, as we need any one) partitioned cache from parsed query
+     *     to determine expected query parallelism.
+     * @return Context for the first of partitioned caches mentioned in the query,
+     *     or {@code null} if it does not involve partitioned caches.
+     */
+    public GridCacheContext getFirstPartitionedCache() {
+        for (Object o : h2ObjToGridObj.values()) {
+            if (o instanceof GridSqlAlias)
+                o = GridSqlAlias.unwrap((GridSqlAst)o);
+
+            if (o instanceof GridSqlTable) {
+                GridH2Table tbl = ((GridSqlTable)o).dataTable();
+
+                if (tbl != null && tbl.cache().isPartitioned())
+                    return tbl.cache();
+            }
+        }
+
+        return null;
     }
 
     /**

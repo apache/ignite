@@ -124,7 +124,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                         GridNioServer<byte[]> srv0 = GridNioServer.<byte[]>builder()
                             .address(hostAddr)
                             .port(port)
-                            .listener(new ClientListenerNioListener(ctx, busyLock, maxOpenCursors))
+                            .listener(new ClientListenerNioListener(ctx, busyLock, cliConnCfg))
                             .logger(log)
                             .selectorCount(DFLT_SELECTOR_CNT)
                             .igniteInstanceName(ctx.igniteInstanceName())
@@ -236,6 +236,13 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             if (log.isDebugEnabled())
                 log.debug("Client connector processor stopped.");
         }
+    }
+
+    /**
+     * @return Server port.
+     */
+    public int port() {
+        return srv.port();
     }
 
     /**
