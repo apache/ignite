@@ -2211,3 +2211,36 @@ html,body,.splash-screen {
         margin-left: 5px;
     }
 }
+
+header.header-with-selector {
+    margin: 40px 0 30px;
+
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+
+
+    h1 {
+        height: 36px;
+        margin: 0;
+        margin-right: 8px;
+
+        font-family: Roboto, sans-serif;
+        font-size: 24px;
+        line-height: 36px;
+    }
+
+    div {
+        display: flex;
+    }
+
+    .btn-ignite + .btn-ignite-group {
+        position: relative;
+        margin-left: 20px;
+
+        ul.dropdown-menu {
+            min-width: 100%;
+            font-family: Roboto;
+        }
+    }
+}

@@ -198,4 +198,17 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @return {@code True} if index store for given cache group existed before node started.
      */
     public boolean hasIndexStore(int grpId);
+
+    /**
+     * @param grpDesc Cache group descriptor.
+     */
+    public void beforeCacheGroupStart(CacheGroupDescriptor grpDesc);
+
+    /**
+     * Calculates number of pages currently allocated for given cache group.
+     *
+     * @param grpId cache group id.
+     * @return number of pages.
+     */
+    public long pagesAllocated(int grpId);
 }
