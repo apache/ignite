@@ -19,10 +19,15 @@ namespace Apache.Ignite.Core.Tests.Client
 {
     using System;
     using System.Collections;
+    using System.IO;
     using System.Net.Security;
     using System.Net.Sockets;
+    using System.Security;
+    using System.Security.AccessControl;
     using System.Security.Authentication;
+    using System.Security.Cryptography;
     using System.Security.Cryptography.X509Certificates;
+    using System.Security.Principal;
     using System.Text;
     using Apache.Ignite.Core.Client;
     using NUnit.Framework;
@@ -89,8 +94,7 @@ namespace Apache.Ignite.Core.Tests.Client
             var sslStream = new SslStream(client.GetStream(), false, ValidateServerCertificate, null);
 
             // The server name must match the name on the server certificate.
-            var certificate = LoadCertificateFile(
-                @"S:\W\incubator-ignite\modules\platforms\cpp\odbc-test\config\ssl\client_full.pem");
+            var certificate = LoadCertificateFile();
             var certsCollection = new X509CertificateCollection(new X509Certificate[] { certificate });
 
             try
@@ -116,31 +120,9 @@ namespace Apache.Ignite.Core.Tests.Client
             Console.WriteLine("Client closed.");
         }
 
-        static byte[] GetPem(string type, byte[] data)
+        static X509Certificate2 LoadCertificateFile()
         {
-            string pem = Encoding.UTF8.GetString(data);
-            string header = String.Format("-----BEGIN {0}-----", type);
-            string footer = String.Format("-----END {0}-----", type);
-            int start = pem.IndexOf(header) + header.Length;
-            int end = pem.IndexOf(footer, start);
-            string base64 = pem.Substring(start, (end - start)).Trim();
-            return Convert.FromBase64String(base64);
-        }
-
-        static X509Certificate2 LoadCertificateFile(string filename)
-        {
-            using (System.IO.FileStream fs = System.IO.File.OpenRead(filename))
-            {
-                byte[] data = new byte[fs.Length];
-                byte[] res = null;
-                fs.Read(data, 0, data.Length);
-                if (data[0] != 0x30)
-                {
-                    res = GetPem("RSA PRIVATE KEY", data);
-                }
-                X509Certificate2 x509 = new X509Certificate2(res); //Exception hit here
-                return x509;
-            }
+            return new X509Certificate2(@"s:\W\incubator-ignite\modules\platforms\cpp\odbc-test\config\ssl\cert.pfx", "123456");
         }
     }
 }
