@@ -268,6 +268,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     private static final String MBEAN_GROUP = "Persistent Store";
 
+    /** WAL marker prefix for meta store. */
+    private static final String WAL_KEY_PREFIX = "grp-wal-disabled-";
+
+    /** WAL marker predicate for meta store. */
+    private static final IgnitePredicate<String> WAL_KEY_PREFIX_PRED = new IgnitePredicate<String>() {
+        @Override public boolean apply(String key) {
+            return key.startsWith(WAL_KEY_PREFIX);
+        }
+    };
+
     /** Checkpoint thread. Needs to be volatile because it is created in exchange worker. */
     private volatile Checkpointer checkpointer;
 
@@ -351,6 +361,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** */
     private List<MetastorageLifecycleListener> metastorageLifecycleLsnrs;
+
+    /** Initially disabled cache groups. */
+    public Collection<Integer> initiallyWalDisabledGrps;
 
     /**
      * @param ctx Kernal context.
@@ -533,6 +546,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 metaStorage.init(this);
 
                 applyLastUpdates(status, true);
+
+                initiallyWalDisabledGrps = walDisabledGroups();
 
                 notifyMetastorageReadyForRead();
             }
@@ -1112,7 +1127,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         // Before local node join event.
         if (clusterInTransitionStateToActive || (joinEvt && locNode && isSrvNode))
             restoreState();
+    }
 
+    /** {@inheritDoc} */
+    @Override public void rebuildIndexesIfNeeded(GridDhtPartitionsExchangeFuture fut) {
         if (cctx.kernalContext().query().moduleEnabled()) {
             for (final GridCacheContext cacheCtx : (Collection<GridCacheContext>)cctx.cacheContexts()) {
                 if (cacheCtx.startTopologyVersion().equals(fut.initialVersion()) &&
@@ -1131,8 +1149,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             CacheConfiguration ccfg = cacheCtx.config();
 
                             if (ccfg != null) {
-                                log().info("Finished indexes rebuilding for cache: [name=" + ccfg.getName()
-                                    + ", grpName=" + ccfg.getGroupName());
+                                log().info("Finished indexes rebuilding for cache [name=" + ccfg.getName()
+                                    + ", grpName=" + ccfg.getGroupName() + ']');
                             }
                         }
                     });
@@ -1528,6 +1546,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         fut2.get();
     }
 
+    /** {@inheritDoc} */
+    @Override public CheckpointFuture forceCheckpoint(String reason) {
+        Checkpointer cp = checkpointer;
+
+        if (cp == null)
+            return null;
+
+        return cp.wakeupForCheckpoint(0, reason);
+    }
+
     /**
      * Tries to search for a WAL pointer for the given partition counter start.
      *
@@ -1826,6 +1854,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         int applied = 0;
         WALPointer lastRead = null;
 
+        Collection<Integer> ignoreGrps = storeOnly ? Collections.emptySet() : initiallyWalDisabledGrps;
+
         try (WALIterator it = cctx.wal().replay(status.endPtr)) {
             while (it.hasNextX()) {
                 IgniteBiTuple<WALPointer, WALRecord> tup = it.nextX();
@@ -1862,40 +1892,42 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             if (storeOnly && grpId != METASTORAGE_CACHE_ID)
                                 continue;
 
-                            long pageId = pageRec.fullPageId().pageId();
+                            if (!ignoreGrps.contains(grpId)) {
+                                long pageId = pageRec.fullPageId().pageId();
 
-                            PageMemoryEx pageMem = grpId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(grpId);
+                                PageMemoryEx pageMem = grpId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(grpId);
 
-                            long page = pageMem.acquirePage(grpId, pageId, true);
-
-                            try {
-                                long pageAddr = pageMem.writeLock(grpId, pageId, page);
+                                long page = pageMem.acquirePage(grpId, pageId, true);
 
                                 try {
-                                    PageUtils.putBytes(pageAddr, 0, pageRec.pageData());
+                                    long pageAddr = pageMem.writeLock(grpId, pageId, page);
+
+                                    try {
+                                        PageUtils.putBytes(pageAddr, 0, pageRec.pageData());
+                                    }
+                                    finally {
+                                        pageMem.writeUnlock(grpId, pageId, page, null, true, true);
+                                    }
                                 }
                                 finally {
-                                    pageMem.writeUnlock(grpId, pageId, page, null, true, true);
+                                    pageMem.releasePage(grpId, pageId, page);
                                 }
-                            }
-                            finally {
-                                pageMem.releasePage(grpId, pageId, page);
-                            }
 
-                            applied++;
+                                applied++;
+                            }
                         }
 
                         break;
 
                     case PARTITION_DESTROY:
-                        if (apply) {
-                            PartitionDestroyRecord destroyRec = (PartitionDestroyRecord)rec;
+                        PartitionDestroyRecord destroyRec = (PartitionDestroyRecord)rec;
 
-                            final int gId = destroyRec.groupId();
+                        final int gId = destroyRec.groupId();
 
-                            if (storeOnly && gId != METASTORAGE_CACHE_ID)
-                                continue;
+                        if (storeOnly && gId != METASTORAGE_CACHE_ID)
+                            continue;
 
+                        if (!ignoreGrps.contains(gId)) {
                             final int pId = destroyRec.partitionId();
 
                             PageMemoryEx pageMem = gId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(gId);
@@ -1905,6 +1937,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     return cacheId == gId && PageIdUtils.partId(pageId) == pId;
                                 }
                             }, true).get();
+
                         }
 
                         break;
@@ -1918,29 +1951,31 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             if (storeOnly && grpId != METASTORAGE_CACHE_ID)
                                 continue;
 
-                            long pageId = r.pageId();
+                            if (!ignoreGrps.contains(grpId)) {
+                                long pageId = r.pageId();
 
-                            PageMemoryEx pageMem = grpId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(grpId);
+                                PageMemoryEx pageMem = grpId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(grpId);
 
-                            // Here we do not require tag check because we may be applying memory changes after
-                            // several repetitive restarts and the same pages may have changed several times.
-                            long page = pageMem.acquirePage(grpId, pageId, true);
-
-                            try {
-                                long pageAddr = pageMem.writeLock(grpId, pageId, page);
+                                // Here we do not require tag check because we may be applying memory changes after
+                                // several repetitive restarts and the same pages may have changed several times.
+                                long page = pageMem.acquirePage(grpId, pageId, true);
 
                                 try {
-                                    r.applyDelta(pageMem, pageAddr);
+                                    long pageAddr = pageMem.writeLock(grpId, pageId, page);
+
+                                    try {
+                                        r.applyDelta(pageMem, pageAddr);
+                                    }
+                                    finally {
+                                        pageMem.writeUnlock(grpId, pageId, page, null, true, true);
+                                    }
                                 }
                                 finally {
-                                    pageMem.writeUnlock(grpId, pageId, page, null, true, true);
+                                    pageMem.releasePage(grpId, pageId, page);
                                 }
-                            }
-                            finally {
-                                pageMem.releasePage(grpId, pageId, page);
-                            }
 
-                            applied++;
+                                applied++;
+                            }
                         }
                 }
             }
@@ -2051,7 +2086,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointReadLock();
 
         try {
-            restorePartitionState(partStates);
+            restorePartitionState(partStates, Collections.emptySet());
         }
         finally {
             checkpointReadUnlock();
@@ -2074,6 +2109,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         long start = U.currentTimeMillis();
         int applied = 0;
 
+        Collection<Integer> ignoreGrps = metastoreOnly ? Collections.emptySet() : initiallyWalDisabledGrps;
+
         try (WALIterator it = cctx.wal().replay(status.startPtr)) {
             Map<T2<Integer, Integer>, T2<Integer, Long>> partStates = new HashMap<>();
 
@@ -2092,11 +2129,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         for (DataEntry dataEntry : dataRec.writeEntries()) {
                             int cacheId = dataEntry.cacheId();
 
-                            GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+                            int grpId = cctx.cache().cacheDescriptor(cacheId).groupId();
 
-                            applyUpdate(cacheCtx, dataEntry);
+                            if (!ignoreGrps.contains(grpId)) {
+                                GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
-                            applied++;
+                                applyUpdate(cacheCtx, dataEntry);
+
+                                applied++;
+                            }
                         }
 
                         break;
@@ -2107,8 +2148,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         PartitionMetaStateRecord metaStateRecord = (PartitionMetaStateRecord)rec;
 
-                        partStates.put(new T2<>(metaStateRecord.groupId(), metaStateRecord.partitionId()),
-                            new T2<>((int)metaStateRecord.state(), metaStateRecord.updateCounter()));
+                        if (!ignoreGrps.contains(metaStateRecord.groupId())) {
+                            partStates.put(new T2<>(metaStateRecord.groupId(), metaStateRecord.partitionId()),
+                                new T2<>((int)metaStateRecord.state(), metaStateRecord.updateCounter()));
+                        }
 
                         break;
 
@@ -2153,7 +2196,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             if (!metastoreOnly)
-                restorePartitionState(partStates);
+                restorePartitionState(partStates, ignoreGrps);
         }
         finally {
             if (!metastoreOnly)
@@ -2170,10 +2213,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @throws IgniteCheckedException If failed to restore.
      */
     private void restorePartitionState(
-        Map<T2<Integer, Integer>, T2<Integer, Long>> partStates
+        Map<T2<Integer, Integer>, T2<Integer, Long>> partStates,
+        Collection<Integer> ignoreGrps
     ) throws IgniteCheckedException {
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-            if (grp.isLocal() || !grp.affinityNode()) {
+            if (grp.isLocal() || !grp.affinityNode() || ignoreGrps.contains(grp.groupId())) {
                 // Local cache has no partitions and its states.
                 continue;
             }
@@ -2945,7 +2989,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     snapFut = snapshotMgr.onMarkCheckPointBegin(curr.snapshotOperation, map);
 
                 for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                    if (grp.isLocal())
+                    if (grp.isLocal() || !grp.walEnabled())
                         continue;
 
                     List<GridDhtLocalPartition> locParts = new ArrayList<>();
@@ -3468,7 +3512,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      *
      */
-    private static class CheckpointProgressSnapshot {
+    private static class CheckpointProgressSnapshot implements CheckpointFuture {
         /** */
         private final boolean started;
 
@@ -3483,6 +3527,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             started = cpProgress.started;
             cpBeginFut = cpProgress.cpBeginFut;
             cpFinishFut = cpProgress.cpFinishFut;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFutureAdapter beginFuture() {
+            return cpBeginFut;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridFutureAdapter finishFuture() {
+            return cpFinishFut;
         }
     }
 
@@ -4190,5 +4244,79 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** {@inheritDoc} */
     @Override public MetaStorage metaStorage() {
         return metaStorage;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean walEnabled(int grpId) {
+        return !initiallyWalDisabledGrps.contains(grpId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void walEnabled(int grpId, boolean enabled) {
+        String key = walGroupIdToKey(grpId);
+
+        checkpointReadLock();
+
+        try {
+            if (enabled)
+                metaStorage.remove(key);
+            else
+                metaStorage.write(key, true);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to write cache group WAL state [grpId=" + grpId +
+                ", enabled=" + enabled + ']', e);
+        }
+        finally {
+            checkpointReadUnlock();
+        }
+    }
+
+    /**
+     * @return List of initially WAL-disabled groups.
+     */
+    private Collection<Integer> walDisabledGroups() {
+        MetaStorage meta = cctx.database().metaStorage();
+
+        try {
+            Set<String> keys = meta.readForPredicate(WAL_KEY_PREFIX_PRED).keySet();
+
+            if (keys.isEmpty())
+                return Collections.emptySet();
+
+            HashSet<Integer> res = new HashSet<>(keys.size());
+
+            for (String key : keys) {
+                int grpId = walKeyToGroupId(key);
+
+                res.add(grpId);
+            }
+
+            return res;
+
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to read cache groups WAL state.", e);
+        }
+    }
+
+    /**
+     * Convert cache group ID to WAL state key.
+     *
+     * @param grpId Group ID.
+     * @return Key.
+     */
+    private static String walGroupIdToKey(int grpId) {
+        return WAL_KEY_PREFIX + grpId;
+    }
+
+    /**
+     * Convert WAL state key to cache group ID.
+     *
+     * @param key Key.
+     * @return Group ID.
+     */
+    private static int walKeyToGroupId(String key) {
+        return Integer.parseInt(key.substring(WAL_KEY_PREFIX.length()));
     }
 }
