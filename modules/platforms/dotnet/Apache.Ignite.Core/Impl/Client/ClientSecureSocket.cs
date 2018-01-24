@@ -43,6 +43,8 @@ namespace Apache.Ignite.Core.Impl.Client
             Debug.Assert(clientConfiguration.SslStreamFactory != null);
 
             _stream = Connect(clientConfiguration);
+
+            // TODO: Refactor ClientSocket to use NetworkStream? Need to check performance.
         }
 
         /// <summary>
