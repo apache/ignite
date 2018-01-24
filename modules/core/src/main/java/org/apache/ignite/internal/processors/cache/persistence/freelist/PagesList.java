@@ -405,11 +405,12 @@ public abstract class PagesList extends DataStructure {
      *
      * @param bucket Bucket.
      * @param reuse {@code True} if possible to use reuse list.
+     * @param bag Reuse bag.
      * @throws IgniteCheckedException If failed.
      * @return Tail page ID.
      */
-    private Stripe addStripe(int bucket, boolean reuse) throws IgniteCheckedException {
-        long pageId = reuse ? allocatePage(null) : allocatePageNoReuse();
+    private Stripe addStripe(int bucket, boolean reuse, ReuseBag bag) throws IgniteCheckedException {
+        long pageId = reuse ? allocatePage(bag) : allocatePageNoReuse();
 
         init(pageId, PagesListNodeIO.VERSIONS.latest());
 
@@ -500,10 +501,11 @@ public abstract class PagesList extends DataStructure {
 
     /**
      * @param bucket Bucket.
+     * @param bag Reuse bag.
      * @return Page ID where the given page
      * @throws IgniteCheckedException If failed.
      */
-    private Stripe getPageForPut(int bucket) throws IgniteCheckedException {
+    private Stripe getPageForPut(int bucket, ReuseBag bag) throws IgniteCheckedException {
         // Striped pool optimization.
         IgniteThread igniteThread = IgniteThread.current();
 
@@ -515,7 +517,7 @@ public abstract class PagesList extends DataStructure {
             assert stripeIdx != -1 : igniteThread;
 
             while (tails == null || stripeIdx >= tails.length) {
-                addStripe(bucket, true);
+                addStripe(bucket, true, bag);
 
                 tails = getBucket(bucket);
             }
@@ -524,7 +526,7 @@ public abstract class PagesList extends DataStructure {
         }
 
         if (tails == null)
-            return addStripe(bucket, true);
+            return addStripe(bucket, true, bag);
 
         return randomTail(tails);
     }
@@ -613,7 +615,7 @@ public abstract class PagesList extends DataStructure {
         assert bag == null ^ dataAddr == 0L;
 
         for (int lockAttempt = 0; ;) {
-            Stripe stripe = getPageForPut(bucket);
+            Stripe stripe = getPageForPut(bucket, bag);
 
             final long tailId = stripe.tailId;
             final long tailPage = acquirePage(tailId);
@@ -986,7 +988,7 @@ public abstract class PagesList extends DataStructure {
             Stripe[] stripes = getBucket(bucket);
 
             if (stripes == null || stripes.length < MAX_STRIPES_PER_BUCKET) {
-                addStripe(bucket, !isReuseBucket(bucket));
+                addStripe(bucket, !isReuseBucket(bucket), null);
 
                 return 0L;
             }
