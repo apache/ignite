@@ -16,6 +16,6 @@
  */
 
 /**
- * Contains Cassandra serializer.
+ * Contains Cassandra serializers.
  */
 package org.apache.ignite.cache.store.cassandra.serializer;

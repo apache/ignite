@@ -65,7 +65,7 @@ public class Gene {
     /**
      * Set the Gene value
      *
-     * @param object
+     * @param object Value for Gene
      */
     public void setValue(Object object) {
         this.value = object;

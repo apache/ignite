@@ -48,13 +48,13 @@ import org.apache.ignite.ml.genetic.IFitnessFunction;
 
 public class MovieFitnessFunction implements IFitnessFunction {
 
-    private List<String> generes = null;
+    private List<String> genres = null;
 
     /**
      * @param genres List of genres
      */
-    public MovieFitnessFunction(List<String> generes) {
-        this.generes = generes;
+    public MovieFitnessFunction(List<String> genres) {
+        this.genres = genres;
     }
 
     /**

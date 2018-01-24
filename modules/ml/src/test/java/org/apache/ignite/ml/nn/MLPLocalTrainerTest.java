@@ -43,7 +43,7 @@ public class MLPLocalTrainerTest {
      */
     @Test
     public void testXORSimpleGD() {
-        xorTest(() -> new SimpleGDUpdateCalculator<>(0.3));
+        xorTest(() -> new SimpleGDUpdateCalculator(0.3));
     }
 
     /**
@@ -51,7 +51,7 @@ public class MLPLocalTrainerTest {
      */
     @Test
     public void testXORRProp() {
-        xorTest(() -> new RPropUpdateCalculator<>());
+        xorTest(RPropUpdateCalculator::new);
     }
 
     /**
@@ -67,7 +67,7 @@ public class MLPLocalTrainerTest {
      * @param updaterSupplier Updater supplier.
      * @param <P> Updater parameters type.
      */
-    private <P> void xorTest(IgniteSupplier<ParameterUpdateCalculator<MultilayerPerceptron, P>> updaterSupplier) {
+    private <P> void xorTest(IgniteSupplier<ParameterUpdateCalculator<? super MultilayerPerceptron, P>> updaterSupplier) {
         Matrix xorInputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}},
             StorageConstants.ROW_STORAGE_MODE).transpose();
 
@@ -79,7 +79,7 @@ public class MLPLocalTrainerTest {
             withAddedLayer(1, false, Activators.SIGMOID);
 
         SimpleMLPLocalBatchTrainerInput trainerInput = new SimpleMLPLocalBatchTrainerInput(conf,
-            new Random(1234L), xorInputs, xorOutputs, 4);
+            new Random(123L), xorInputs, xorOutputs, 4);
 
         MultilayerPerceptron mlp = new MLPLocalBatchTrainer<>(LossFunctions.MSE,
             updaterSupplier,

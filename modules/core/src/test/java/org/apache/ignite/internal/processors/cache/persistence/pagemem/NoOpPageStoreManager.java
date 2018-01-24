@@ -167,6 +167,11 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     }
 
     /** {@inheritDoc} */
+    @Override public void onReconnected(boolean active) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         // No-op.
     }
@@ -187,6 +192,11 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     }
 
     /** {@inheritDoc} */
+    @Override public void beforeCacheGroupStart(CacheGroupDescriptor grpDesc) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) {
         // No-op.
     }
@@ -194,5 +204,10 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public long pagesAllocated(int grpId) {
+        return 0;
     }
 }

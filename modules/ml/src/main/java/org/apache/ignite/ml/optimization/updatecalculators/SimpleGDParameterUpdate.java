@@ -18,43 +18,35 @@
 package org.apache.ignite.ml.optimization.updatecalculators;
 
 import java.io.Serializable;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
 /**
  * Parameters for {@link SimpleGDUpdateCalculator}.
  */
-public class SimpleGDParameter implements Serializable {
-    /**
-     * Gradient.
-     */
+public class SimpleGDParameterUpdate implements Serializable {
+    /** Gradient. */
     private Vector gradient;
-
-    /**
-     * Learning rate.
-     */
-    private double learningRate;
 
     /**
      * Construct instance of this class.
      *
      * @param paramsCnt Count of parameters.
-     * @param learningRate Learning rate.
      */
-    public SimpleGDParameter(int paramsCnt, double learningRate) {
+    public SimpleGDParameterUpdate(int paramsCnt) {
         gradient = new DenseLocalOnHeapVector(paramsCnt);
-        this.learningRate = learningRate;
     }
 
     /**
      * Construct instance of this class.
      *
      * @param gradient Gradient.
-     * @param learningRate Learning rate.
      */
-    public SimpleGDParameter(Vector gradient, double learningRate) {
+    public SimpleGDParameterUpdate(Vector gradient) {
         this.gradient = gradient;
-        this.learningRate = learningRate;
     }
 
     /**
@@ -67,11 +59,31 @@ public class SimpleGDParameter implements Serializable {
     }
 
     /**
-     * Get learning rate.
+     * Method used to sum updates inside of one of parallel trainings.
      *
-     * @return learning rate.
+     * @param updates Updates.
+     * @return Sum of SimpleGDParameterUpdate.
      */
-    public double learningRate() {
-        return learningRate;
+    public static SimpleGDParameterUpdate sumLocal(List<SimpleGDParameterUpdate> updates) {
+        Vector accumulatedGrad = updates.
+            stream().
+            filter(Objects::nonNull).
+            map(SimpleGDParameterUpdate::gradient).
+            reduce(Vector::plus).
+            orElse(null);
+
+        return accumulatedGrad != null ? new SimpleGDParameterUpdate(accumulatedGrad) : null;
+    }
+
+    /**
+     * Method used to get total update of all parallel trainings.
+     *
+     * @param updates Updates.
+     * @return Avg of SimpleGDParameterUpdate.
+     */
+    public static SimpleGDParameterUpdate avg(List<SimpleGDParameterUpdate> updates) {
+        SimpleGDParameterUpdate sum = sumLocal(updates);
+        return sum != null ? new SimpleGDParameterUpdate(sum.gradient().
+            divide(updates.stream().filter(Objects::nonNull).collect(Collectors.toList()).size())) : null;
     }
 }

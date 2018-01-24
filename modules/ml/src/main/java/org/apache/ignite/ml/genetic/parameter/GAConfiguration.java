@@ -131,9 +131,9 @@ public class GAConfiguration {
     }
 
     /**
-     * set Boolean value for FitnessValueFitter
+     * set Boolean value indicating how fitness values should be evaluated
      *
-     * @param isHigherFitnessValueFitter
+     * @param isHigherFitnessValueFitter Boolean value indicating how fitness values should be evaluated
      */
     public void setIsHigherFitnessValueFitter(boolean isHigherFitnessValueFitter) {
         this.isHigherFitnessValueFitter = isHigherFitnessValueFitter;
@@ -288,7 +288,7 @@ public class GAConfiguration {
     /**
      * Set the selection method
      *
-     * @param seletionMethod Selection method
+     * @param selectionMethod Selection method
      */
     public void setSelectionMethod(GAGridConstants.SELECTION_METHOD selectionMethod) {
         this.selectionMethod = selectionMethod;
@@ -297,7 +297,7 @@ public class GAConfiguration {
     /**
      * Retreive the termination criteria
      *
-     * @return ITerminateCriteria
+     * @return  Termination Criteria
      */
     public ITerminateCriteria getTerminateCriteria() {
         return terminateCriteria;
@@ -306,7 +306,7 @@ public class GAConfiguration {
     /**
      * Set the termination criteria.
      *
-     * @param terminateCriteria ITerminateCriteria.
+     * @param terminateCriteria Termination Criteria
      */
     public void setTerminateCriteria(ITerminateCriteria terminateCriteria) {
         this.terminateCriteria = terminateCriteria;

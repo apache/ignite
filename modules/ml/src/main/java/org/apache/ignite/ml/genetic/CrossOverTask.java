@@ -54,7 +54,7 @@ public class CrossOverTask extends ComputeTaskAdapter<List<Long>, Boolean> {
     private GAConfiguration config = null;
 
     /**
-     * @param GAConfiguration
+     * @param config GAConfiguration
      */
     public CrossOverTask(GAConfiguration config) {
         this.config = config;
