@@ -1673,7 +1673,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         // Execute.
         try {
-            if (cmd instanceof SqlCreateIndexCommand || cmd instanceof SqlDropIndexCommand) {
+            if (cmd instanceof SqlCreateIndexCommand
+                || cmd instanceof SqlDropIndexCommand
+                || cmd instanceof SqlAlterTableCommand) {
                 FieldsQueryCursor<List<?>> res = ddlProc.runDdlStatement(qry.getSql(), cmd);
 
                 return Collections.singletonList(res);
@@ -2354,7 +2356,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(
             runQueryTwoStep(schemaName, twoStepQry, keepBinary, qry.isEnforceJoinOrder(), startTx, qry.getTimeout(),
-                cancel, qry.getArgs(), partitions, qry.isLazy(), mvccTracker));
+                cancel, qry.getArgs(), partitions, qry.isLazy(), mvccTracker), cancel);
 
         cursor.fieldsMeta(meta);
 

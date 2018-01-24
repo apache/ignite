@@ -221,7 +221,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
 
             connCtx.handler().writeHandshake(writer);
         }
-        catch (IgniteCheckedException e) {
+        catch (Exception e) {
             log.error("Error on handshake. " + e.getMessage(), e);
 
             ClientListenerProtocolVersion currVer;

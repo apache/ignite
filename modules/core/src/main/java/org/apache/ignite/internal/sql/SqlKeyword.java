@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.sql;
 
 import java.lang.reflect.Field;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -255,11 +254,7 @@ public class SqlKeyword {
             throw new IgniteException("Failed to initialize keywords collection.", e);
         }
 
-        Set<String> nativeKeywords = new HashSet<>();
-
-        nativeKeywords.addAll(Arrays.asList(INDEX, BEGIN, COMMIT, ROLLBACK));
-
-        NATIVE_KEYWORDS = Collections.unmodifiableSet(nativeKeywords);
+        NATIVE_KEYWORDS = Collections.unmodifiableSet(new HashSet<>(F.asList(ALTER, INDEX, BEGIN, COMMIT, ROLLBACK)));
     }
 
     /**
