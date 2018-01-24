@@ -53,4 +53,58 @@ object IgniteDataFrameSettings {
       * @see [[org.apache.ignite.cache.QueryEntity#tableName]]
       */
     val OPTION_TABLE = "table"
+
+    /**
+      * Config option to specify newly created Ignite SQL table parameters.
+      * Value of these option will be used in `CREATE TABLE ...  WITH "option value goes here"`
+      *
+      * @example {{{
+      * val igniteDF = spark.write.format(IGNITE)
+      *     // other options ...
+      *     .option(OPTION_CREATE_TABLE_OPTIONS, "backups=1, template=replicated")
+      *     .save()
+      * }}}
+      *
+      * @see [[https://apacheignite-sql.readme.io/docs/create-table]]
+      */
+    val OPTION_CREATE_TABLE_OPTIONS = "createTableOptions"
+
+    /**
+      * Config option to specify comma separated list of primary key fields for a newly created Ignite SQL table.
+      *
+      * @example {{{
+      * val igniteDF = spark.write.format(IGNITE)
+      *     // other options ...
+      *     .option(OPTION_PRIMARY_KEY_FIELDS, "id")
+      *     .save()
+      * }}}
+      */
+    val OPTION_PRIMARY_KEY_FIELDS = "primaryKeyFields"
+
+    /**
+      *
+      * Config option to specify partition number for a RDD when writing data frame to Ignite.
+      * Each partition will be saved into Ignite as a separate Spark task.
+      *
+      * @example {{{
+      * val igniteDF = spark.write.format(IGNITE)
+      *     // other options ...
+      *     .option(OPTION_WRITE_PARTITIONS_NUM, 42)
+      *     .save()
+      * }}}
+      */
+    val OPTION_WRITE_PARTITIONS_NUM = "writePartitionsNum"
+
+    /**
+      * Config option to specify existing cache name for executing DDL statement when saving DataFrame to Iginte.
+      * Note, that SQL table cache can't be used for a DDL statement for this table.
+      *
+      * @example {{{
+      * val igniteDF = spark.write.format(IGNITE)
+      *     // other options ...
+      *     .option(OPTION_CACHE_FOR_DDL, "cache1")
+      *     .save()
+      * }}}
+      */
+    val OPTION_CACHE_FOR_DDL = "cacheForDDL"
 }
