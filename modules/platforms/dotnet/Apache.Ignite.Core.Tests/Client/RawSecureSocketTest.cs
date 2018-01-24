@@ -82,16 +82,19 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             // Create a TCP/IP client socket.
             // machineName is the host running the server application.
-            var client = new TcpClient(machineName, 443);
+            var client = new TcpClient(machineName, port);
             Console.WriteLine("Client connected.");
             
             // Create an SSL stream that will close the client's stream.
             var sslStream = new SslStream(client.GetStream(), false, ValidateServerCertificate, null);
 
             // The server name must match the name on the server certificate.
+            var certificate = new X509Certificate2(@"d:\mySrvKeystore.p12", "123456");
+            var certsCollection = new X509CertificateCollection(new X509Certificate[] { certificate });
+
             try
             {
-                sslStream.AuthenticateAsClient(serverName);
+                sslStream.AuthenticateAsClient(serverName, certsCollection, SslProtocols.Default, false);
             }
             catch (AuthenticationException e)
             {
