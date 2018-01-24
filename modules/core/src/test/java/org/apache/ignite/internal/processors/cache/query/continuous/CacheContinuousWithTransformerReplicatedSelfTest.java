@@ -251,6 +251,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
      */
     public void testTransformerReturnNull() throws Exception {
         Ignite ignite = gridToRunQuery();
+
         IgniteCache<Integer, Employee> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         ContinuousQueryWithTransformer<Integer, Employee, String> qry = new ContinuousQueryWithTransformer<>();
