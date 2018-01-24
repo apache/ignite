@@ -18,10 +18,13 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -44,5 +47,17 @@ public class MetaStorageOnheap implements ReadWriteMetastorage {
     /** {@inheritDoc} */
     @Override public Serializable read(String key) throws IgniteCheckedException {
         return map.get(key);
+    }
+
+    @Override public Map<String, ? extends Serializable> readForPredicate(
+        IgnitePredicate<String> keyPred) throws IgniteCheckedException {
+        Map<String, Serializable> ret = new HashMap<>();
+
+        for (ConcurrentHashMap.Entry<String, Serializable> e : map.entrySet()) {
+            if (keyPred.apply(e.getKey()))
+                ret.put(e.getKey(), e.getValue());
+        }
+
+        return ret;
     }
 }

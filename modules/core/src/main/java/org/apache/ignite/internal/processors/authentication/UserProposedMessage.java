@@ -87,10 +87,7 @@ public class UserProposedMessage implements DiscoveryCustomMessage {
      * {@inheritDoc}
      */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        if (status == ProposalStatus.SUCCESSFUL)
-            return new UserAcceptedMessage(op);
-        else
-            return null;
+        return null;
     }
 
     /** {@inheritDoc} */

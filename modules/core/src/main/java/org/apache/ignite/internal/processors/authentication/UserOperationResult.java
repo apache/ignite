@@ -21,7 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 /**
  *
  */
-public class UserExchangeResult {
+public class UserOperationResult {
     /**  */
     private final UserManagementOperation op;
 
@@ -48,7 +48,7 @@ public class UserExchangeResult {
      * @param op User management operation.
      * @param error Error.
      */
-    private UserExchangeResult(ResultType resType, UserManagementOperation op, IgniteCheckedException error) {
+    private UserOperationResult(ResultType resType, UserManagementOperation op, IgniteCheckedException error) {
         this.resType = resType;
         this.op = op;
         this.error = error;
@@ -86,26 +86,26 @@ public class UserExchangeResult {
      * @param op User management operation.
      * @return Exchange result.
      */
-    static UserExchangeResult createSuccessfulResult(UserManagementOperation op) {
+    static UserOperationResult createSuccessfulResult(UserManagementOperation op) {
         assert op != null;
 
-        return new UserExchangeResult(ResultType.SUCCESS, op, null);
+        return new UserOperationResult(ResultType.SUCCESS, op, null);
     }
 
     /**
      * @param error Error.
      * @return Exchange result.
      */
-    static UserExchangeResult createFailureResult(IgniteCheckedException error) {
+    static UserOperationResult createFailureResult(IgniteCheckedException error) {
         assert error != null;
 
-        return new UserExchangeResult(ResultType.FAILURE, null, error);
+        return new UserOperationResult(ResultType.FAILURE, null, error);
     }
 
     /**
      * @return Exchange result.
      */
-    static UserExchangeResult createExchangeDisabledResult() {
-        return new UserExchangeResult(ResultType.EXCHANGE_DISABLED, null, null);
+    static UserOperationResult createExchangeDisabledResult() {
+        return new UserOperationResult(ResultType.EXCHANGE_DISABLED, null, null);
     }
 }

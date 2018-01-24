@@ -19,31 +19,42 @@ package org.apache.ignite.internal.processors.authentication;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.ignite.IgniteAuthenticationException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
+import org.apache.ignite.internal.processors.marshaller.MappingExchangeResult;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 
 /**
  */
@@ -53,28 +64,27 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
     /** Default user. */
     private static final String STORE_USER_PREFIX = "user.";
-
-    /** User map. */
-    private final Map<String, User> users = new HashMap<>();
-
     /** User operation history. */
     private final List<Long> history = new ArrayList<>();
-
     /** Map monitor. */
     private final Object mux = new Object();
-
     /** User exchange map. */
-    private final ConcurrentMap<UserManagementOperation, UserExchangeResultFuture> userExchMap
+    private final ConcurrentMap<IgniteUuid, UserOperationFinishFuture> userOpFinishMap
         = new ConcurrentHashMap<>();
-
     /** User prepared map. */
     private final ConcurrentMap<String, UserPreparedFuture> usersPreparedMap = new ConcurrentHashMap<>();
-
-//    /** Futures prepared user map. */
-//    private final ConcurrentMap<IgniteUuid, UserPreparedFuture> futPreparedMap = new ConcurrentHashMap<>();
-
+    /** Futures prepared user map. */
+    private final ConcurrentMap<IgniteUuid, UserPreparedFuture> futPreparedMap = new ConcurrentHashMap<>();
+    /** User map. */
+    private Map<String, User> users;
     /** Meta storage. */
     private ReadWriteMetastorage metastorage;
+
+    /** Executor. */
+    private IgniteThreadPoolExecutor exec;
+
+    /** Coordinator node. */
+    private ClusterNode crdNode;
 
     /**
      * @param ctx Kernal context.
@@ -89,12 +99,87 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
-        GridDiscoveryManager discoMgr = ctx.discovery();
-        GridIoManager ioMgr = ctx.io();
+        synchronized (mux) {
+            GridDiscoveryManager discoMgr = ctx.discovery();
+            GridIoManager ioMgr = ctx.io();
 
-        discoMgr.setCustomEventListener(UserProposedMessage.class, new UserProposedListener());
+            discoMgr.setCustomEventListener(UserProposedMessage.class, new UserProposedListener());
 
-        discoMgr.setCustomEventListener(UserAcceptedMessage.class, new UserAcceptedListener());
+            discoMgr.setCustomEventListener(UserAcceptedMessage.class, new UserAcceptedListener());
+
+            exec = new IgniteThreadPoolExecutor(
+                "auth",
+                ctx.config().getIgniteInstanceName(),
+                1,
+                1,
+                0,
+                new LinkedBlockingQueue<>());
+
+            ctx.event().addLocalEventListener(new GridLocalEventListener() {
+                @Override public void onEvent(Event evt) {
+                    DiscoveryEvent evt0 = (DiscoveryEvent)evt;
+
+                    if (!ctx.isStopping()) {
+                        synchronized (mux) {
+                            crdNode = null;
+
+                            if (isOnCoordinator()) {
+                                for (UserOperationFinishFuture f : userOpFinishMap.values())
+                                    f.onNodeLeft(evt0.eventNode().id());
+                            }
+                        }
+                    }
+                }
+            }, EVT_NODE_LEFT, EVT_NODE_FAILED);
+
+            ioMgr.addMessageListener(GridTopic.TOPIC_AUTH, new GridMessageListener() {
+                @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
+                    if (msg instanceof UserManagementOperationFinishedMessage)
+                        onFinishMessage(nodeId, (UserManagementOperationFinishedMessage)msg);
+                }
+            });
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
+        if (!cancel)
+            exec.shutdown();
+        else
+            exec.shutdownNow();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStop(boolean cancel) {
+        cancelFutures();
+    }
+
+    /**
+     */
+    private void cancelFutures() {
+        for (UserOperationFinishFuture fut : userOpFinishMap.values())
+            fut.onDone(UserOperationResult.createExchangeDisabledResult());
+
+        for (UserPreparedFuture fut : usersPreparedMap.values())
+            fut.onDone(null, new IgniteCheckedException("Node stopped."));
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param msg Message.
+     */
+    private void onFinishMessage(UUID nodeId, UserManagementOperationFinishedMessage msg) {
+        UserOperationFinishFuture fut = userOpFinishMap.get(msg.operationId());
+
+        if (fut == null)
+            log.warning("Not found appropriate user operation. [msg=" + msg + ']');
+        else {
+            if (msg.success())
+                fut.onSuccess(nodeId);
+            else
+                fut.onFail(nodeId, msg.errorMessage());
+        }
+
     }
 
     /**
@@ -103,13 +188,34 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * @param op User operation.
      * @throws IgniteAuthenticationException On error.
      */
-    private void addUserLocal(UserManagementOperation op) throws IgniteAuthenticationException {
-        synchronized (mux) {
-            if (users.containsKey(op.user().name()))
-                throw new IgniteAuthenticationException("User already exists. [login=" + op.user().name() + ']');
+    private void addUserLocal(final UserManagementOperation op) throws IgniteAuthenticationException {
+        String userName = op.user().name();
 
-            if (usersPreparedMap.putIfAbsent(op.user().name(), new UserPreparedFuture(op)) != null)
-                throw new IgniteAuthenticationException("Concurrent user modification. [login=" + op.user().name() + ']');
+        boolean futAlreadyCreate = false;
+
+        synchronized (mux) {
+            if (users.containsKey(userName)) {
+                UserPreparedFuture prevFut = usersPreparedMap.get(userName);
+
+                futAlreadyCreate = F.eq(prevFut.op, op);
+
+                if (prevFut == null || prevFut.op.type() != UserManagementOperation.OperationType.REMOVE || !futAlreadyCreate)
+                    throw new IgniteAuthenticationException("User already exists. [login=" + op.user().name() + ']');
+            }
+
+            if (!futAlreadyCreate) {
+                UserPreparedFuture newFut = new UserPreparedFuture(op);
+
+                futPreparedMap.put(op.id(), newFut);
+
+                usersPreparedMap.put(op.user().name(), newFut);
+            }
+
+            exec.execute(new Runnable() {
+                @Override public void run() {
+                    storeUserLocal(op);
+                }
+            });
         }
     }
 
@@ -117,22 +223,47 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * Store user to MetaStorage.
      *
      * @param op Operation.
-     * @param node Cluster node to send acknowledgement.
      */
-    private void storeUserLocal(UserManagementOperation op, ClusterNode node) {
+    private void storeUserLocal(UserManagementOperation op) {
         synchronized (mux) {
             try {
                 User usr = op.user();
 
                 metastorage.write(STORE_USER_PREFIX + usr.name(), usr);
 
-                sendAck(node, op.id(), false, null);
+                sendFinish(coordinator(), op.id(), null);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to store user. [op=" + op + ']', e);
 
-                sendAck(node, op.id(), false, e.toString());
+                sendFinish(coordinator(), op.id(), e.toString());
             }
+        }
+    }
+
+    /**
+     * Get current coordinator node.
+     *
+     * @return Coordinator node.
+     */
+    private ClusterNode coordinator() {
+        assert Thread.holdsLock(mux);
+
+        if (crdNode != null)
+            return crdNode;
+        else {
+            ClusterNode res = null;
+
+            for (ClusterNode node : ctx.discovery().aliveServerNodes()) {
+                if (res == null || res.order() > node.order())
+                    res = node;
+            }
+
+            assert res != null;
+
+            crdNode = res;
+
+            return res;
         }
     }
 
@@ -140,21 +271,20 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * Remove user from MetaStorage.
      *
      * @param op Operation.
-     * @param node Cluster node to send acknowledgement.
      */
-    private void removeUserLocal(UserManagementOperation op, ClusterNode node) {
+    private void removeUserLocal(UserManagementOperation op) {
         synchronized (mux) {
             try {
                 User usr = op.user();
 
                 metastorage.remove(STORE_USER_PREFIX + usr.name());
 
-                sendAck(node, op.id(), false, null);
+                sendFinish(coordinator(), op.id(), null);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to store user. [op=" + op + ']', e);
 
-                sendAck(node, op.id(), false, e.toString());
+                sendFinish(coordinator(), op.id(), e.toString());
             }
         }
     }
@@ -229,25 +359,31 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * @throws IgniteAuthenticationException On error.
      */
     public User addUser(String login, String passwd) throws IgniteCheckedException {
-        log.info("+++ addUser" );
+        log.info("+++ addUser");
+
         UserManagementOperation op = new UserManagementOperation(User.create(login, passwd),
             UserManagementOperation.OperationType.ADD);
 
-        UserExchangeResultFuture fut = new UserExchangeResultFuture();
+        UserPreparedFuture fut = new UserPreparedFuture(op);
 
-        userExchMap.putIfAbsent(op, fut);
+        usersPreparedMap.putIfAbsent(login, fut);
 
         UserProposedMessage msg = new UserProposedMessage(
             new UserManagementOperation(User.create(login, passwd), UserManagementOperation.OperationType.ADD), ctx.localNodeId());
 
         ctx.discovery().sendCustomEvent(msg);
 
-        return fut.get().operation().user();
+        return fut.get();
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
-        // TODO: init local storage
+        users = (Map<String, User>)metastorage.readForPredicate(new IgnitePredicate<String>() {
+            @Override public boolean apply(String key) {
+                return key != null && key.startsWith(STORE_USER_PREFIX);
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -256,67 +392,10 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     }
 
     /**
-     * Future to wait for mapping exchange result to arrive. Removes itself from map when completed.
+     * @return Runs on coordinator flag.
      */
-    private class UserExchangeResultFuture extends GridFutureAdapter<UserExchangeResult> {
-        /** */
-        private Collection<UUID> requiredAcks;
-
-        /** */
-        private Collection<UUID> receivedAcks;
-
-        /**
-         *
-         */
-        UserExchangeResultFuture() {
-            requiredAcks = new HashSet<>();
-
-            for (ClusterNode node : ctx.discovery().nodes(ctx.discovery().topologyVersionEx())) {
-                if (!node.isClient() && !node.isDaemon())
-                    requiredAcks.add(node.id());
-            }
-
-            receivedAcks = new HashSet<>();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable UserExchangeResult res, @Nullable Throwable err) {
-            assert res != null;
-
-            boolean done = super.onDone(res, null);
-
-            if (done)
-                userExchMap.remove(res.operation(), this);
-
-            return done;
-        }
-    }
-
-    /**
-     * Future to wait for end of user operation.
-     */
-    private class UserPreparedFuture extends GridFutureAdapter<User> {
-        /** User operation. */
-        private UserManagementOperation op;
-
-        /**
-         * @param op User operation.
-         */
-        UserPreparedFuture(UserManagementOperation op) {
-            this.op = op;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable User res, @Nullable Throwable err) {
-            assert res != null;
-
-            boolean done = super.onDone(res, err);
-
-            if (done)
-                usersPreparedMap.remove(op.user().name(), this);
-
-            return done;
-        }
+    private boolean isOnCoordinator() {
+        return F.eq(ctx.localNodeId(), coordinator().id());
     }
 
     /**
@@ -347,27 +426,134 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     /**
      * @param node Node to sent acknowledgement.
      * @param opId Operation ID.
-     * @param ack Ack flag.
      * @param err Error message.
      */
-    private void sendAck(ClusterNode node, IgniteUuid opId, boolean ack, String err) {
+    private void sendFinish(ClusterNode node, IgniteUuid opId, String err) {
         try {
-            ctx.io().sendToGridTopic(node, GridTopic.TOPIC_USER,
-                new UserManagementOperationFinishedMessage(opId, ack, err), GridIoPolicy.SYSTEM_POOL);
+            ctx.io().sendToGridTopic(node, GridTopic.TOPIC_AUTH,
+                new UserManagementOperationFinishedMessage(opId, err), GridIoPolicy.SYSTEM_POOL);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send UserManagementOperationFinishedMessage. [op=" + opId +
-                ", node=" + node + ", ack=" + ack + ", err=" + err + ']', e);
+                ", node=" + node + ", err=" + err + ']', e);
         }
     }
 
-    void q () {
-//        ctx.pools().poolForPolicy(GridIoPolicy.SYSTEM_POOL).execute(new Runnable() {
-//            @Override public void run() {
-//                storeUserLocal(op, node);
-//            }
-//        });
+    /**
+     * @param result User operation result.
+     */
+    private void sendOperationAcknowledgement(UserOperationResult result) {
+    }
 
+    /**
+     * Future to wait for mapping exchange result to arrive. Removes itself from map when completed.
+     */
+    private class UserOperationFinishFuture extends GridFutureAdapter<UserOperationResult> {
+        /** */
+        private final Collection<UUID> requiredAcks;
+
+        /** */
+        private final Collection<UUID> receivedAcks;
+
+        /** User management operation. */
+        private final UserManagementOperation op;
+
+        /**
+         * @param op User management operation.
+         */
+        UserOperationFinishFuture(UserManagementOperation op) {
+            this.op = op;
+
+            requiredAcks = new HashSet<>();
+
+            for (ClusterNode node : ctx.discovery().nodes(ctx.discovery().topologyVersionEx())) {
+                if (!node.isClient() && !node.isDaemon())
+                    requiredAcks.add(node.id());
+            }
+
+            receivedAcks = new HashSet<>();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onDone(@Nullable UserOperationResult res, @Nullable Throwable err) {
+            assert res != null;
+
+            boolean done = super.onDone(res, err);
+
+            if (done)
+                userOpFinishMap.remove(op.id(), this);
+
+            return done;
+        }
+
+        /**
+         * @param nodeId ID of left or failed node.
+         */
+        synchronized void onNodeLeft(UUID nodeId) {
+            requiredAcks.remove(nodeId);
+
+            checkOnDone();
+        }
+
+        /**
+         * @param nodeId Node ID.
+         */
+        synchronized void onSuccess(UUID nodeId) {
+            receivedAcks.add(nodeId);
+
+            checkOnDone();
+        }
+
+        /**
+         * @param id Node ID.
+         * @param errMsg Error message.
+         */
+        synchronized void onFail(UUID id, String errMsg) {
+            receivedAcks.add(id);
+
+            onDone(UserOperationResult.createFailureResult(
+                new UserAuthenticationException("Operation failed. [nodeId=" + id + ", err=" + errMsg + ']', op)));
+        }
+
+        /**
+         *
+         */
+        private void checkOnDone() {
+            if (requiredAcks.equals(receivedAcks))
+                onDone(UserOperationResult.createSuccessfulResult(op));
+        }
+    }
+
+    /**
+     * Future to wait for end of user operation.
+     */
+    private class UserPreparedFuture extends GridFutureAdapter<User> {
+        /** User operation. */
+        private UserManagementOperation op;
+
+        /**
+         * @param op User operation.
+         */
+        UserPreparedFuture(UserManagementOperation op) {
+            this.op = op;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onDone(@Nullable User res, @Nullable Throwable err) {
+            assert res != null;
+
+            boolean done = super.onDone(res, err);
+
+            if (done) {
+                // Remove from user map if need
+                usersPreparedMap.remove(op.user().name(), this);
+
+                // Remove from all user futures map
+                futPreparedMap.remove(op.id());
+            }
+
+            return done;
+        }
     }
 
     /**
@@ -382,23 +568,31 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
             log.info("+++ UserProposedMessage " + msg);
 
-            if (!msg.isError()) {
-                try {
-                    prepareOperationLocal(msg.operation());
+            synchronized (mux) {
+                if (!msg.isError()) {
+                    try {
+                        if (isOnCoordinator()) {
+                            UserOperationFinishFuture opFinishFut = new UserOperationFinishFuture(msg.operation());
+
+                            userOpFinishMap.putIfAbsent(msg.operation().id(), opFinishFut);
+                        }
+
+                        prepareOperationLocal(msg.operation());
+                    }
+                    catch (IgniteCheckedException e) {
+                        msg.error(e);
+                    }
                 }
-                catch (IgniteCheckedException e) {
-                    msg.error(e);
-                }
-            }
-            else {
-                UUID origNodeId = msg.origNodeId();
+                else {
+                    UUID origNodeId = msg.origNodeId();
 
-                if (origNodeId.equals(ctx.localNodeId())) {
-                    GridFutureAdapter<UserExchangeResult> fut = userExchMap.get(msg.operation());
+                    if (origNodeId.equals(ctx.localNodeId())) {
+                        UserPreparedFuture fut = futPreparedMap.get(msg.operation().id());
 
-                    assert fut != null: msg;
+                        assert fut != null : msg;
 
-                    fut.onDone(UserExchangeResult.createFailureResult(msg.error()));
+                        fut.onDone(null, msg.error());
+                    }
                 }
             }
         }

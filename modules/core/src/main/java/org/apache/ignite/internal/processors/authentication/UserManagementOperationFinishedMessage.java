@@ -34,9 +34,6 @@ public class UserManagementOperationFinishedMessage implements Message {
     /** Id. */
     private IgniteUuid opId;
 
-    /** ACK phase flag. */
-    private boolean ackPhase;
-
     /** Error message. */
     private String errorMsg;
 
@@ -46,12 +43,10 @@ public class UserManagementOperationFinishedMessage implements Message {
 
     /**
      * @param opId operation id
-     * @param ackPhase Ack phase flag.
      * @param errorMsg error message
      */
-    public UserManagementOperationFinishedMessage(IgniteUuid opId, boolean ackPhase, String errorMsg) {
+    public UserManagementOperationFinishedMessage(IgniteUuid opId, String errorMsg) {
         this.opId = opId;
-        this.ackPhase = ackPhase;
         this.errorMsg = errorMsg;
     }
 
@@ -60,13 +55,6 @@ public class UserManagementOperationFinishedMessage implements Message {
      */
     public IgniteUuid operationId() {
         return opId;
-    }
-
-    /**
-     * @return ACK phase flag.
-     */
-    public boolean ackPhase() {
-        return ackPhase;
     }
 
     /**
@@ -83,6 +71,7 @@ public class UserManagementOperationFinishedMessage implements Message {
         return errorMsg;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -95,18 +84,12 @@ public class UserManagementOperationFinishedMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeBoolean("ackPhase", ackPhase))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
                 if (!writer.writeString("errorMsg", errorMsg))
                     return false;
 
                 writer.incrementState();
 
-            case 2:
+            case 1:
                 if (!writer.writeIgniteUuid("opId", opId))
                     return false;
 
@@ -117,6 +100,7 @@ public class UserManagementOperationFinishedMessage implements Message {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
@@ -125,14 +109,6 @@ public class UserManagementOperationFinishedMessage implements Message {
 
         switch (reader.state()) {
             case 0:
-                ackPhase = reader.readBoolean("ackPhase");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
                 errorMsg = reader.readString("errorMsg");
 
                 if (!reader.isLastRead())
@@ -140,7 +116,7 @@ public class UserManagementOperationFinishedMessage implements Message {
 
                 reader.incrementState();
 
-            case 2:
+            case 1:
                 opId = reader.readIgniteUuid("opId");
 
                 if (!reader.isLastRead())
@@ -155,12 +131,12 @@ public class UserManagementOperationFinishedMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 2100;
+        return 130;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 3;
+        return 2;
     }
 
     /** {@inheritDoc} */
