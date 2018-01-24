@@ -52,7 +52,6 @@ public class SVMLinearBinaryClassificationTrainer implements Trainer<SVMLinearCl
      * @return model
      */
     @Override public SVMLinearClassificationModel train(LabeledDataset data) {
-
         isDistributed = data.isDistributed();
 
         final int weightVectorSizeWithIntercept = data.colSize() + 1;
@@ -76,7 +75,6 @@ public class SVMLinearBinaryClassificationTrainer implements Trainer<SVMLinearCl
 
     /** */
     private Vector calculateUpdates(LabeledDataset data, Vector weights) {
-
         Vector copiedWeights = weights.copy();
         Vector deltaWeights = initializeWeightsWithZeros(weights.size());
 
@@ -102,7 +100,6 @@ public class SVMLinearBinaryClassificationTrainer implements Trainer<SVMLinearCl
     /** */
     private Deltas getDeltas(LabeledDataset data, Vector copiedWeights, int amountOfObservation, Vector tmpAlphas,
         int randomIdx) {
-
         LabeledVector row = (LabeledVector)data.getRow(randomIdx);
         Double lb = (Double)row.label();
         Vector v = makeVectorWithInterceptElement(row);
@@ -126,7 +123,6 @@ public class SVMLinearBinaryClassificationTrainer implements Trainer<SVMLinearCl
 
     /** */
     private Deltas maximize(double lb, Vector v, double alpha, Vector weights, int amountOfObservation) {
-
         double gradient = calcGradient(lb, v, weights, amountOfObservation);
         double prjGrad = calculateProjectionGradient(alpha, gradient);
 
@@ -136,7 +132,6 @@ public class SVMLinearBinaryClassificationTrainer implements Trainer<SVMLinearCl
     /** */
     private Deltas calcDeltas(double lb, Vector v, double alpha, double gradient, int vectorSize,
         int amountOfObservation) {
-
         if (gradient != 0.0) {
 
             double qii = v.dot(v);
