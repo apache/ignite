@@ -821,4 +821,9 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             return PageIdUtils.pageIndex(fromSegmentIndex(idx, seqNo - pagesInPrevSegments));
         }
     }
+
+    /** {@inheritDoc} */
+    public int checkpointBufferPagesCount() {
+        return 0;
+    }
 }

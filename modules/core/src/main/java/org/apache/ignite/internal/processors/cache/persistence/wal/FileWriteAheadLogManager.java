@@ -79,6 +79,7 @@ import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
@@ -907,6 +908,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         FileArchiver archiver0 = archiver;
 
         return archiver0 != null && archiver0.reserved(fPtr.index());
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean disabled(int grpId) {
+        CacheGroupContext ctx = cctx.cache().cacheGroup(grpId);
+
+        return ctx != null && !ctx.walEnabled();
     }
 
     /**

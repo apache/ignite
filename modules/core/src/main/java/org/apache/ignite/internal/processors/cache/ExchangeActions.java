@@ -149,7 +149,7 @@ public class ExchangeActions {
      */
     public Set<String> cachesToResetLostPartitions() {
         Set<String> caches = null;
-        
+
         if (cachesToResetLostParts != null)
             caches = new HashSet<>(cachesToResetLostParts.keySet());
 

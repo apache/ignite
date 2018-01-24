@@ -38,7 +38,7 @@ public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P>
     /**
      * Supplier for updater function.
      */
-    private final IgniteSupplier<ParameterUpdateCalculator<M, P>> updaterSupplier;
+    private final IgniteSupplier<ParameterUpdateCalculator<? super M, P>> updaterSupplier;
 
     /**
      * Error threshold.
@@ -69,7 +69,7 @@ public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P>
      * @param maxIterations Maximal iterations count.
      */
     public LocalBatchTrainer(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
-        IgniteSupplier<ParameterUpdateCalculator<M, P>> updaterSupplier, double errorThreshold, int maxIterations) {
+        IgniteSupplier<ParameterUpdateCalculator<? super M, P>> updaterSupplier, double errorThreshold, int maxIterations) {
         this.loss = loss;
         this.updaterSupplier = updaterSupplier;
         this.errorThreshold = errorThreshold;
@@ -82,7 +82,7 @@ public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P>
         M mdl = data.mdl();
         double err;
 
-        ParameterUpdateCalculator<M, P> updater = updaterSupplier.get();
+        ParameterUpdateCalculator<? super M, P> updater = updaterSupplier.get();
 
         P updaterParams = updater.init(mdl, loss);
 
@@ -130,7 +130,7 @@ public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P>
      * @param updaterSupplier New updater supplier.
      * @return new trainer with the same parameters as this trainer, but with new updater supplier.
      */
-    public LocalBatchTrainer withUpdater(IgniteSupplier<ParameterUpdateCalculator<M, P>> updaterSupplier) {
+    public LocalBatchTrainer withUpdater(IgniteSupplier<ParameterUpdateCalculator<? super M, P>> updaterSupplier) {
         return new LocalBatchTrainer<>(loss, updaterSupplier, errorThreshold, maxIterations);
     }
 

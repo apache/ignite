@@ -87,7 +87,10 @@ namespace Apache.Ignite.Core.Impl
             AddCacheConfiguration = 23,
             SetBaselineTopologyVersion = 24,
             SetBaselineTopologyNodes = 25,
-            GetBaselineTopology = 26
+            GetBaselineTopology = 26,
+            DisableWal = 27,
+            EnableWal = 28,
+            IsWalEnabled = 29
         }
 
         /** */
@@ -815,6 +818,30 @@ namespace Apache.Ignite.Core.Impl
         {
             return DoInOp((int) Op.GetBaselineTopology,
                 s => Marshaller.StartUnmarshal(s).ReadCollectionRaw(r => (IBaselineNode) new BaselineNode(r)));
+        }
+
+        /** <inheritdoc /> */
+        public void DisableWal(string cacheName)
+        {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
+
+            DoOutOp((int) Op.DisableWal, w => w.WriteString(cacheName));
+        }
+
+        /** <inheritdoc /> */
+        public void EnableWal(string cacheName)
+        {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
+            
+            DoOutOp((int) Op.EnableWal, w => w.WriteString(cacheName));
+        }
+
+        /** <inheritdoc /> */
+        public bool IsWalEnabled(string cacheName)
+        {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
+
+            return DoOutOp((int) Op.IsWalEnabled, w => w.WriteString(cacheName)) == True;
         }
 
         /** <inheritdoc /> */
