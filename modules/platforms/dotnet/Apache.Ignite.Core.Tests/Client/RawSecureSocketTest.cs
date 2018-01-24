@@ -125,6 +125,9 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             // File has been created with the command:
             // openssl pkcs12 -export -out cert.pfx -in client_full.pem -certfile ca.pem
+
+            // Instead we can convert from JKS directly with 
+            // keytool -importkeystore -srckeystore thekeystore.jks -srcstoretype JKS -destkeystore thekeystore.pfx -deststoretype PKCS12
             return new X509Certificate2(@"s:\W\incubator-ignite\modules\platforms\cpp\odbc-test\config\ssl\cert.pfx", "123456");
         }
 
