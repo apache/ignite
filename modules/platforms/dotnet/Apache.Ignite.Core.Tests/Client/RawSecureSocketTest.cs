@@ -128,6 +128,12 @@ namespace Apache.Ignite.Core.Tests.Client
 
             // Instead we can convert from JKS directly with 
             // keytool -importkeystore -srckeystore thekeystore.jks -srcstoretype JKS -destkeystore thekeystore.pfx -deststoretype PKCS12
+
+            // TODO: What is the use case? Ask Igor.
+            // 1) User generates some certificates for server and client ?
+            // 2) Certificates are applied in Java style on server, pfx on .NET client?
+            // What do we add to IgniteClientConfiguration? 
+
             return new X509Certificate2(@"s:\W\incubator-ignite\modules\platforms\cpp\odbc-test\config\ssl\cert.pfx", "123456");
         }
 
