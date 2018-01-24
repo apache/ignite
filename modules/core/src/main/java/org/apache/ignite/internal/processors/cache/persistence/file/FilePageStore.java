@@ -126,7 +126,7 @@ public class FilePageStore implements PageStore {
     /**
      * Page store version.
      */
-    public int version() {
+    @Override public int version() {
         return VERSION;
     }
 
