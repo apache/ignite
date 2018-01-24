@@ -71,8 +71,6 @@ public class ConcurrentMapTest {
         for (IgnitePair<Integer> p : ress)
             X.println("Performance [lvl=" + p.get1() + ", writes=" + p.get2() + ']');
 
-        testPut();
-
         testOpsSpeed();
 
         testCreationTime();
@@ -90,15 +88,13 @@ public class ConcurrentMapTest {
         final AtomicInteger writes = new AtomicInteger();
 
         IgniteInternalFuture fut1 = GridTestUtils.runMultiThreadedAsync(
-                new Runnable() {
-                    @Override public void run() {
-                        while (!done.get()) {
-                            map.put(rnd.nextInt(keyRange) + "very.long.string.for.key", 1);
+            () -> {
+                while (!done.get()) {
+                    map.put(rnd.nextInt(keyRange) + "very.long.string.for.key", 1);
 
-                            writes.incrementAndGet();
-                        }
-                    }
-                },
+                    writes.incrementAndGet();
+                }
+            },
                 40,
                 "thread"
         );
@@ -125,17 +121,7 @@ public class ConcurrentMapTest {
     /**
      * @throws Exception If failed.
      */
-    public static void testPut() throws Exception {
-        Map<Integer, Integer> map = new ConcurrentHashMap<>();
-
-        map.put(0, 0);
-        map.put(0, 0);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public static void testOpsSpeed() throws Exception {
+    private static void testOpsSpeed() throws Exception {
         for (int i = 0; i < 4; i++)
             X.println("Map ops time: " + runOps(new ConcurrentHashMap<>(), 1000000, 100));
     }
@@ -145,6 +131,7 @@ public class ConcurrentMapTest {
      * @param threadCnt Threads count.
      * @return Time taken.
      */
+    @SuppressWarnings("SameParameterValue")
     private static long runOps(final Map<Integer,Integer> map, final int iterCnt, int threadCnt) throws Exception {
         long start = System.currentTimeMillis();
 
@@ -168,11 +155,9 @@ public class ConcurrentMapTest {
         return System.currentTimeMillis() - start;
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @SuppressWarnings("ResultOfObjectAllocationIgnored")
-    public static void testCreationTime() throws Exception {
+    private static void testCreationTime() {
         for (int i = 0; i < 5; i++) {
             long now = System.currentTimeMillis();
 

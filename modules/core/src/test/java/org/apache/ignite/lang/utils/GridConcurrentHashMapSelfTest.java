@@ -27,17 +27,8 @@ import org.jsr166.ThreadLocalRandom8;
  */
 public class GridConcurrentHashMapSelfTest extends GridCommonAbstractTest {
     /** */
+    @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
     private Map<Integer,Integer> map;
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPut() throws Exception {
-        map = new ConcurrentHashMap<>();
-
-        map.put(0, 0);
-        map.put(0, 0);
-    }
 
     /**
      * @throws Exception If failed.
@@ -55,6 +46,7 @@ public class GridConcurrentHashMapSelfTest extends GridCommonAbstractTest {
      * @param threadCnt Threads count.
      * @return Time taken.
      */
+    @SuppressWarnings("SameParameterValue")
     private long runOps(final int iterCnt, int threadCnt) throws Exception {
         long start = System.currentTimeMillis();
 
@@ -78,11 +70,8 @@ public class GridConcurrentHashMapSelfTest extends GridCommonAbstractTest {
         return System.currentTimeMillis() - start;
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("ResultOfObjectAllocationIgnored")
-    public void testCreationTime() throws Exception {
+    /** */
+    public void testCreationTime() {
         for (int i = 0; i < 5; i++) {
             long now = System.currentTimeMillis();
 
