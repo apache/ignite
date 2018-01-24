@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client
 {
+    using Apache.Ignite.Core.Client;
     using NUnit.Framework;
 
     /// <summary>
@@ -28,9 +29,21 @@ namespace Apache.Ignite.Core.Tests.Client
         
         
         [Test]
-        public void Test()
+        public void TestSslOnServer()
         {
-
+            using (var ignite = Ignition.Start(
+                @"S:\W\incubator-ignite\modules\platforms\cpp\odbc-test\config\queries-ssl.xml"))
+            {
+                var cfg = new IgniteClientConfiguration
+                {
+                    Host = "127.0.0.1",
+                    Port = 11110
+                };
+                using (var client = Ignition.StartClient(cfg))
+                {
+                    client.GetCacheNames();
+                }
+            }
         }
     }
 }
