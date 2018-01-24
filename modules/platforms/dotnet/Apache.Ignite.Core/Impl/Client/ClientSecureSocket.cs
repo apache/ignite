@@ -18,6 +18,9 @@
 namespace Apache.Ignite.Core.Impl.Client
 {
     using System;
+    using System.Diagnostics;
+    using System.Net.Security;
+    using System.Net.Sockets;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Impl.Binary.IO;
@@ -27,14 +30,41 @@ namespace Apache.Ignite.Core.Impl.Client
     /// </summary>
     internal class ClientSecureSocket : IClientSocket
     {
+        /** Stream. */
+        private readonly SslStream _stream;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ClientSecureSocket"/> class.
+        /// </summary>
+        /// <param name="clientConfiguration">The client configuration.</param>
+        public ClientSecureSocket(IgniteClientConfiguration clientConfiguration)
+        {
+            Debug.Assert(clientConfiguration != null);
+            Debug.Assert(clientConfiguration.SslStreamFactory != null);
+
+            _stream = Connect(clientConfiguration);
+        }
+
+        /// <summary>
+        /// Connects the SSL stream.
+        /// </summary>
+        private static SslStream Connect(IgniteClientConfiguration cfg)
+        {
+            var sock = ClientSocket.Connect(cfg);
+
+            return cfg.SslStreamFactory.Create(new NetworkStream(sock));
+        }
+
         /** <inheritDoc /> */
-        public T DoOutInOp<T>(ClientOp opId, Action<IBinaryStream> writeAction, Func<IBinaryStream, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null)
+        public T DoOutInOp<T>(ClientOp opId, Action<IBinaryStream> writeAction, Func<IBinaryStream, T> readFunc,
+            Func<ClientStatusCode, string, T> errorFunc = null)
         {
             throw new NotImplementedException();
         }
 
         /** <inheritDoc /> */
-        public Task<T> DoOutInOpAsync<T>(ClientOp opId, Action<IBinaryStream> writeAction, Func<IBinaryStream, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null)
+        public Task<T> DoOutInOpAsync<T>(ClientOp opId, Action<IBinaryStream> writeAction,
+            Func<IBinaryStream, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null)
         {
             throw new NotImplementedException();
         }
