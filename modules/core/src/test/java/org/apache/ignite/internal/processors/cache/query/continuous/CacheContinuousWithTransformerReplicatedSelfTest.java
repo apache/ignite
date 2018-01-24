@@ -486,9 +486,9 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
         @Override public void onUpdated(Iterable<? extends String> events) throws CacheEntryListenerException {
             for (String evt : events) {
                 if (evt.startsWith(SARAH_CONNOR))
-                    cnt.incrementAndGet();
+                    cntLatch.countDown();
 
-                cntLatch.countDown();
+                cnt.incrementAndGet();
             }
         }
     }
