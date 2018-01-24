@@ -22,6 +22,7 @@ package org.apache.ignite.internal.processors.schedule;
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -43,26 +44,28 @@ public class SpringScheduler {
 
     /** Spring Task scheduler implementation. */
     @GridToStringExclude
-    private ThreadPoolTaskScheduler taskScheduler;
+    private ThreadPoolTaskScheduler taskScheduler = new ThreadPoolTaskScheduler();
 
     /** Schedule futures. */
     private Map<Integer, ScheduledFuture<?>> schedFuts = new ConcurrentHashMap8<>();
 
     /** Scheduler state */
-    private volatile boolean started;
+    private AtomicBoolean started = new AtomicBoolean(true);
 
     /**
      * Default constructor.
      */
     public SpringScheduler() {
-        taskScheduler = new ThreadPoolTaskScheduler();
+        taskScheduler.setThreadNamePrefix("task-scheduler-#");
+
+        taskScheduler.initialize();
     }
 
     /**
      * @param cron pattern
      * @return if day of week is omitted in the pattern adds "?" to satisfy {@link CronSequenceGenerator} requirements
      */
-    private static String addDoW(String cron) {
+    private static String appendDayOfWeekIfNeeded(String cron) {
         String[] fields = StringUtils.tokenizeToStringArray(cron, " ");
 
         if (fields != null && fields.length == 5)
@@ -72,29 +75,11 @@ public class SpringScheduler {
     }
 
     /**
-     * Start scheduler
-     */
-    public void start() {
-        taskScheduler.setThreadNamePrefix("task-scheduler-#");
-        taskScheduler.initialize();
-
-        started = true;
-    }
-
-    /**
-     * @return state of scheduler
-     */
-    public boolean isStarted() {
-        return started;
-    }
-
-    /**
      * Stop scheduler
      */
     public void stop() {
-        started = false;
-
-        taskScheduler.shutdown();
+        if (started.compareAndSet(true, false))
+            taskScheduler.shutdown();
     }
 
     /**
@@ -106,7 +91,7 @@ public class SpringScheduler {
      */
     public String schedule(String cron, Runnable run) throws IgniteException {
         try {
-            CronTrigger trigger = new CronTrigger(addDoW(cron));
+            CronTrigger trigger = new CronTrigger(appendDayOfWeekIfNeeded(cron));
 
             ScheduledFuture<?> fut = taskScheduler.schedule(run, trigger);
 
@@ -139,7 +124,7 @@ public class SpringScheduler {
         if (cron == null || cron.isEmpty())
             throw new IgniteCheckedException("Invalid cron expression in schedule pattern: " + cron);
         try {
-            new CronSequenceGenerator(addDoW(cron));
+            new CronSequenceGenerator(appendDayOfWeekIfNeeded(cron));
         }
         catch (IllegalArgumentException e) {
             throw new IgniteCheckedException("Invalid cron expression in schedule pattern: " + cron, e);
@@ -157,7 +142,7 @@ public class SpringScheduler {
         long[] times = new long[cnt];
 
         try {
-            CronSequenceGenerator cronExpr = new CronSequenceGenerator(addDoW(cron));
+            CronSequenceGenerator cronExpr = new CronSequenceGenerator(appendDayOfWeekIfNeeded(cron));
 
             Date date = new Date(start);
 

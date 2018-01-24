@@ -109,14 +109,11 @@ public class IgniteScheduleProcessor extends IgniteScheduleProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void start() {
         sched = new SpringScheduler();
-
-        sched.start();
     }
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) {
-        if (sched.isStarted())
-            sched.stop();
+        sched.stop();
 
         sched = null;
     }

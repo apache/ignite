@@ -44,7 +44,7 @@ import org.jetbrains.annotations.Nullable;
  *         &#64;Override public Object call() throws IgniteCheckedException {
  *             g.broadcast(new GridCallable() {...}).get();
  *         }
- *     }, "{2, 5} * * * * *" // 2 seconds delay with 5 executions only.
+ *     }, "{2, 5} * * * * * ?" // 2 seconds delay with 5 executions only.
  * );
  * </pre>
  */
