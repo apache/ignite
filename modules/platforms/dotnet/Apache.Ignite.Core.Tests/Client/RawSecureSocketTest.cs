@@ -120,8 +120,10 @@ namespace Apache.Ignite.Core.Tests.Client
             Console.WriteLine("Client closed.");
         }
 
-        static X509Certificate2 LoadCertificateFile()
+        public static X509Certificate2 LoadCertificateFile()
         {
+            // File has been created with the command:
+            // openssl pkcs12 -export -out cert.pfx -in client_full.pem -certfile ca.pem
             return new X509Certificate2(@"s:\W\incubator-ignite\modules\platforms\cpp\odbc-test\config\ssl\cert.pfx", "123456");
         }
     }
