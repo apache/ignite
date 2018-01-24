@@ -89,6 +89,7 @@ namespace Apache.Ignite.Core.Client
             }
 
             BinaryProcessor = cfg.BinaryProcessor;
+            SslStreamFactory = cfg.SslStreamFactory;
         }
 
         /// <summary>

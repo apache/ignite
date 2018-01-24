@@ -63,7 +63,9 @@ namespace Apache.Ignite.Core.Impl.Client
 
             _configuration = new IgniteClientConfiguration(clientConfiguration);
 
-            _socket = new ClientSocket(_configuration);
+            _socket = _configuration.SslStreamFactory != null
+                ? (IClientSocket) new ClientSecureSocket(_configuration)
+                : new ClientSocket(_configuration);
 
             _marsh = new Marshaller(_configuration.BinaryConfiguration)
             {
