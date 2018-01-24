@@ -123,12 +123,47 @@ struct SslQueriesTestSuiteFixture : odbc::OdbcTestSuite
 
 BOOST_FIXTURE_TEST_SUITE(SslQueriesTestSuite, SslQueriesTestSuiteFixture)
 
-BOOST_AUTO_TEST_CASE(TestConnectionSsl)
+BOOST_AUTO_TEST_CASE(TestConnectionSslSuccess)
 {
     Connect(MakeDefaultConnectionString());
 
     InsertTestStrings(10, false);
     InsertTestBatch(11, 2000, 1989);
+}
+
+BOOST_AUTO_TEST_CASE(TestConnectionSslReject)
+{
+    std::string cfgDirPath = GetTestConfigDir();
+
+    std::stringstream connectString;
+
+    connectString <<
+        "DRIVER={Apache Ignite};"
+        "ADDRESS=127.0.0.1:11110;"
+        "SCHEMA=cache;"
+        "SSL_MODE=require;"
+        "SSL_KEY_FILE=" << cfgDirPath << Fs << "ssl" << Fs << "client_unknown.pem;"
+        "SSL_CERT_FILE=" << cfgDirPath << Fs << "ssl" << Fs << "client_unknown.pem;"
+        "SSL_CA_FILE=" << cfgDirPath << Fs << "ssl" << Fs << "ca.pem;";
+
+    Prepare();
+
+    // Connect string
+    std::string str = connectString.str();
+    std::vector<SQLCHAR> connectStr0(str.begin(), str.end());
+
+    SQLCHAR outstr[ODBC_BUFFER_SIZE];
+    SQLSMALLINT outstrlen;
+
+    // Connecting to ODBC server.
+    SQLRETURN ret = SQLDriverConnect(dbc, NULL, &connectStr0[0], static_cast<SQLSMALLINT>(connectStr0.size()),
+        outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
+
+    // Checking that there is an error.
+    BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
+
+    // Checking that error is the connection error.
+    BOOST_CHECK_EQUAL(std::string("08001"), GetOdbcErrorState(SQL_HANDLE_DBC, dbc));
 }
 
 BOOST_AUTO_TEST_CASE(TestConnectionTimeoutQuery)
