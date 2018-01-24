@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -62,7 +61,7 @@ public class ConcurrentMapTest {
 
             int cap = 256 / lvl < 16 ? 16 * lvl : 256;
 
-            int writes = testMap(100000, new ConcurrentHashMap<String, Integer>(cap, 0.75f, lvl));
+            int writes = testMap(100000, new ConcurrentHashMap<>(cap, 0.75f, lvl));
 
             ress.add(new IgnitePair<>(lvl, writes));
         }
@@ -137,11 +136,8 @@ public class ConcurrentMapTest {
      * @throws Exception If failed.
      */
     public static void testOpsSpeed() throws Exception {
-        for (int i = 0; i < 4; i++) {
-            X.println("New map ops time: " + runOps(new ConcurrentHashMap<Integer, Integer>(), 1000000, 100));
-
-            X.println("Jdk6 map ops time: " + runOps(new ConcurrentHashMap<Integer, Integer>(), 1000000, 100));
-        }
+        for (int i = 0; i < 4; i++)
+            X.println("Map ops time: " + runOps(new ConcurrentHashMap<>(), 1000000, 100));
     }
 
     /**
@@ -152,23 +148,21 @@ public class ConcurrentMapTest {
     private static long runOps(final Map<Integer,Integer> map, final int iterCnt, int threadCnt) throws Exception {
         long start = System.currentTimeMillis();
 
-        GridTestUtils.runMultiThreaded(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();
+        GridTestUtils.runMultiThreaded(() -> {
+            ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();
 
-                for (int i = 0; i < iterCnt; i++) {
-                    // Put random.
-                    map.put(rnd.nextInt(0, 10000), 0);
+            for (int i = 0; i < iterCnt; i++) {
+                // Put random.
+                map.put(rnd.nextInt(0, 10000), 0);
 
-                    // Read random.
-                    map.get(rnd.nextInt(0, 10000));
+                // Read random.
+                map.get(rnd.nextInt(0, 10000));
 
-                    // Remove random.
-                    map.remove(rnd.nextInt(0, 10000));
-                }
-
-                return null;
+                // Remove random.
+                map.remove(rnd.nextInt(0, 10000));
             }
+
+            return null;
         }, threadCnt, "thread");
 
         return System.currentTimeMillis() - start;
@@ -185,14 +179,7 @@ public class ConcurrentMapTest {
             for (int j = 0; j < 1000000; j++)
                 new ConcurrentHashMap<Integer, Integer>();
 
-            X.println("New map creation time: " + (System.currentTimeMillis() - now));
-
-            now = System.currentTimeMillis();
-
-            for (int j = 0; j < 1000000; j++)
-                new ConcurrentHashMap<Integer, Integer>();
-
-            X.println("Jdk6 map creation time: " + (System.currentTimeMillis() - now));
+            X.println("Map creation time: " + (System.currentTimeMillis() - now));
         }
     }
 

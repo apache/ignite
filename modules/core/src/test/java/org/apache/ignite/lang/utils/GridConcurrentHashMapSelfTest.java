@@ -18,7 +18,6 @@
 package org.apache.ignite.lang.utils;
 
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ThreadLocalRandom8;
@@ -47,11 +46,7 @@ public class GridConcurrentHashMapSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 4; i++) {
             map = new ConcurrentHashMap<>();
 
-            info("New map ops time: " + runOps(1000000, 100));
-
-            map = new ConcurrentHashMap<>();
-
-            info("Jdk6 map ops time: " + runOps(1000000, 100));
+            info("Map ops time: " + runOps(1000000, 100));
         }
     }
 
@@ -63,23 +58,21 @@ public class GridConcurrentHashMapSelfTest extends GridCommonAbstractTest {
     private long runOps(final int iterCnt, int threadCnt) throws Exception {
         long start = System.currentTimeMillis();
 
-        multithreaded(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();
+        multithreaded(() -> {
+            ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();
 
-                for (int i = 0; i < iterCnt; i++) {
-                    // Put random.
-                    map.put(rnd.nextInt(0, 10000), 0);
+            for (int i = 0; i < iterCnt; i++) {
+                // Put random.
+                map.put(rnd.nextInt(0, 10000), 0);
 
-                    // Read random.
-                    map.get(rnd.nextInt(0, 10000));
+                // Read random.
+                map.get(rnd.nextInt(0, 10000));
 
-                    // Remove random.
-                    map.remove(rnd.nextInt(0, 10000));
-                }
-
-                return null;
+                // Remove random.
+                map.remove(rnd.nextInt(0, 10000));
             }
+
+            return null;
         }, threadCnt);
 
         return System.currentTimeMillis() - start;
@@ -96,14 +89,7 @@ public class GridConcurrentHashMapSelfTest extends GridCommonAbstractTest {
             for (int j = 0; j < 1000000; j++)
                 new ConcurrentHashMap<Integer, Integer>();
 
-            info("New map creation time: " + (System.currentTimeMillis() - now));
-
-            now = System.currentTimeMillis();
-
-            for (int j = 0; j < 1000000; j++)
-                new ConcurrentHashMap<Integer, Integer>();
-
-            info("Jdk6 map creation time: " + (System.currentTimeMillis() - now));
+            info("Map creation time: " + (System.currentTimeMillis() - now));
         }
     }
 }
