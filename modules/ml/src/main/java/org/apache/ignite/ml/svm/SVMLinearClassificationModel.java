@@ -147,7 +147,6 @@ public class SVMLinearClassificationModel implements Model<Vector, Double>, Expo
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-
         return Objects.hash(weights, intercept, isKeepingRawLabels, threshold);
     }
 

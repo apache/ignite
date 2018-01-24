@@ -54,7 +54,6 @@ public class SVMModelTest {
         TestUtils.assertEquals(1.0 + 2.0 * 1.0 - 3.0 * 2.0, mdl.apply(observation), PRECISION);
 
         Assert.assertEquals(true, mdl.isKeepingRawLabels());
-
     }
 
     /** */
@@ -82,7 +81,6 @@ public class SVMModelTest {
         observation = new DenseLocalOnHeapVector(new double[]{-1.0, -2.0});
         TestUtils.assertEquals(1.0, mdl.apply(observation), PRECISION);
         TestUtils.assertEquals(-2.0, mdl.intercept(), PRECISION);
-
     }
 
     /** */

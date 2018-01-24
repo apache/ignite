@@ -131,7 +131,6 @@ public class SVMLinearBinaryClassificationTrainer implements Trainer<SVMLinearCl
         double prjGrad = calculateProjectionGradient(alpha, gradient);
 
         return calcDeltas(lb, v, alpha, prjGrad, weights.size(), amountOfObservation);
-
     }
 
     /** */

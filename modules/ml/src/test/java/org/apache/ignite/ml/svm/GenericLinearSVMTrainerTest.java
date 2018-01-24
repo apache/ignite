@@ -61,7 +61,6 @@ public class GenericLinearSVMTrainerTest extends BaseSVMTest {
      */
     @Test
     public void testTrainWithTheLinearlySeparableCase() {
-
         if (isDistributed)
             IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
@@ -89,7 +88,6 @@ public class GenericLinearSVMTrainerTest extends BaseSVMTest {
      */
     @Test
     public void testTrainWithTheLinearlySeparableCase10() {
-
         if (isDistributed)
             IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
@@ -117,7 +115,6 @@ public class GenericLinearSVMTrainerTest extends BaseSVMTest {
      */
     @Test
     public void testTrainWithTheLinearlySeparableCase100() {
-
         if (isDistributed)
             IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
