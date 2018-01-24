@@ -90,6 +90,9 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     /** Client reconnect future. */
     private IgniteFuture<?> reconnecFut;
 
+    /** Minimal IgniteProductVersion supporting BaselineTopology */
+    private static final IgniteProductVersion MIN_BLT_SUPPORTING_VER = IgniteProductVersion.fromString("2.4.0");
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -368,18 +371,17 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /**
-     * Executes validation checks of cluster state and BaselineTopology before changing BaselineTopology to new one.
+     * Verifies all nodes in current cluster topology support BaselineTopology feature
+     * so compatibilityMode flag is enabled to reset.
+     *
+     * @param discoCache
      */
-    private void validateBeforeBaselineChange(Collection<? extends BaselineNode> baselineTop) {
-        DiscoCache discoCache = ctx.discovery().discoCache();
-
-        IgniteProductVersion minBltSupportingVer = IgniteProductVersion.fromString("2.4.0");
-
-        if (discoCache.minimumServerNodeVersion().compareTo(minBltSupportingVer) < 0) {
+    private void verifyBaselineTopologySupport(DiscoCache discoCache) {
+        if (discoCache.minimumServerNodeVersion().compareTo(MIN_BLT_SUPPORTING_VER) < 0) {
             SB sb = new SB("Cluster contains nodes that don't support BaselineTopology: [");
 
             for (ClusterNode cn : discoCache.serverNodes()) {
-                if (cn.version().compareTo(minBltSupportingVer) < 0)
+                if (cn.version().compareTo(MIN_BLT_SUPPORTING_VER) < 0)
                     sb
                         .a("[")
                         .a(cn.consistentId())
@@ -392,6 +394,13 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
             throw new IgniteException(sb.a("]").toString());
         }
+    }
+
+    /**
+     * Executes validation checks of cluster state and BaselineTopology before changing BaselineTopology to new one.
+     */
+    private void validateBeforeBaselineChange(Collection<? extends BaselineNode> baselineTop) {
+        verifyBaselineTopologySupport(ctx.discovery().discoCache());
 
         if (!ctx.state().clusterState().active())
             throw new IgniteException("Changing BaselineTopology on inactive cluster is not allowed.");
