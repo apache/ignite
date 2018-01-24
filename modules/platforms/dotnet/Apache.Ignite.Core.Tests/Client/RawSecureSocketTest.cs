@@ -18,6 +18,12 @@
 namespace Apache.Ignite.Core.Tests.Client
 {
     using System;
+    using System.Collections;
+    using System.Net.Security;
+    using System.Net.Sockets;
+    using System.Security.Authentication;
+    using System.Security.Cryptography.X509Certificates;
+    using System.Text;
     using Apache.Ignite.Core.Client;
     using NUnit.Framework;
 
@@ -46,11 +52,64 @@ namespace Apache.Ignite.Core.Tests.Client
                     Host = "127.0.0.1",
                     Port = 11110
                 };
-                using (var client = Ignition.StartClient(cfg))
-                {
-                    client.GetCacheNames();
-                }
+                //using (var client = Ignition.StartClient(cfg))
+                //{
+                //    client.GetCacheNames();
+                //}
+
+                RunClient(cfg.Host, cfg.Host, cfg.Port);
             }
+        }
+
+
+        // The following method is invoked by the RemoteCertificateValidationDelegate.
+        public static bool ValidateServerCertificate(
+              object sender,
+              X509Certificate certificate,
+              X509Chain chain,
+              SslPolicyErrors sslPolicyErrors)
+        {
+            if (sslPolicyErrors == SslPolicyErrors.None)
+                return true;
+
+            Console.WriteLine("Certificate error: {0}", sslPolicyErrors);
+
+            // Do not allow this client to communicate with unauthenticated servers.
+            return false;
+        }
+
+        public static void RunClient(string machineName, string serverName, int port)
+        {
+            // Create a TCP/IP client socket.
+            // machineName is the host running the server application.
+            var client = new TcpClient(machineName, 443);
+            Console.WriteLine("Client connected.");
+            
+            // Create an SSL stream that will close the client's stream.
+            var sslStream = new SslStream(client.GetStream(), false, ValidateServerCertificate, null);
+
+            // The server name must match the name on the server certificate.
+            try
+            {
+                sslStream.AuthenticateAsClient(serverName);
+            }
+            catch (AuthenticationException e)
+            {
+                Console.WriteLine("Exception: {0}", e.Message);
+                if (e.InnerException != null)
+                {
+                    Console.WriteLine("Inner exception: {0}", e.InnerException.Message);
+                }
+                Console.WriteLine("Authentication failed - closing the connection.");
+                client.Close();
+                return;
+            }
+
+            // TODO: Handhsake.
+            sslStream.WriteByte(1);
+
+            client.Close();
+            Console.WriteLine("Client closed.");
         }
     }
 }
