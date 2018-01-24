@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using System.Security.Principal;
     using System.Text;
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using NUnit.Framework;
 
     /// <summary>
@@ -101,17 +102,16 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 sslStream.AuthenticateAsClient(serverName, certsCollection, SslProtocols.Default, false);
             }
-            catch (AuthenticationException e)
+            catch (AuthenticationException)
             {
-                Console.WriteLine("Exception: {0}", e.Message);
-                if (e.InnerException != null)
-                {
-                    Console.WriteLine("Inner exception: {0}", e.InnerException.Message);
-                }
                 Console.WriteLine("Authentication failed - closing the connection.");
                 client.Close();
-                return;
+                throw;
             }
+
+            Assert.IsTrue(sslStream.IsAuthenticated);
+            Assert.IsTrue(sslStream.IsMutuallyAuthenticated);
+            Assert.IsTrue(sslStream.IsEncrypted);
 
             // TODO: Handhsake.
             sslStream.WriteByte(1);
@@ -120,11 +120,46 @@ namespace Apache.Ignite.Core.Tests.Client
             Console.WriteLine("Client closed.");
         }
 
-        public static X509Certificate2 LoadCertificateFile()
+        private static X509Certificate2 LoadCertificateFile()
         {
             // File has been created with the command:
             // openssl pkcs12 -export -out cert.pfx -in client_full.pem -certfile ca.pem
             return new X509Certificate2(@"s:\W\incubator-ignite\modules\platforms\cpp\odbc-test\config\ssl\cert.pfx", "123456");
         }
+
+        /// <summary>
+        /// Receives the message.
+        /// </summary>
+        private static byte[] ReceiveMessage(Socket sock)
+        {
+            var buf = new byte[4];
+            sock.Receive(buf);
+
+            using (var stream = new BinaryHeapStream(buf))
+            {
+                var size = stream.ReadInt();
+                buf = new byte[size];
+                sock.Receive(buf);
+                return buf;
+            }
+        }
+
+        /// <summary>
+        /// Sends the request.
+        /// </summary>
+        private static int SendRequest(Socket sock, Action<BinaryHeapStream> writeAction)
+        {
+            using (var stream = new BinaryHeapStream(128))
+            {
+                stream.WriteInt(0);  // Reserve message size.
+
+                writeAction(stream);
+
+                stream.WriteInt(0, stream.Position - 4);  // Write message size.
+
+                return sock.Send(stream.GetArray(), stream.Position, SocketFlags.None);
+            }
+        }
+
     }
 }
