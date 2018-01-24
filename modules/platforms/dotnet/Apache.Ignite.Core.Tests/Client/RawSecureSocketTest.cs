@@ -75,13 +75,15 @@ namespace Apache.Ignite.Core.Tests.Client
               X509Chain chain,
               SslPolicyErrors sslPolicyErrors)
         {
+            return true;
+            /**
             if (sslPolicyErrors == SslPolicyErrors.None)
                 return true;
 
             Console.WriteLine("Certificate error: {0}", sslPolicyErrors);
 
             // Do not allow this client to communicate with unauthenticated servers.
-            return false;
+            return false;*/
         }
 
         private static void RunClient(string machineName, string serverName, int port)
@@ -113,8 +115,7 @@ namespace Apache.Ignite.Core.Tests.Client
             Assert.IsTrue(sslStream.IsMutuallyAuthenticated);
             Assert.IsTrue(sslStream.IsEncrypted);
 
-            // TODO: Handhsake.
-            sslStream.WriteByte(1);
+            DoHandshake(sslStream);
 
             client.Close();
             Console.WriteLine("Client closed.");
@@ -128,18 +129,46 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
+        /// Does the handshake.
+        /// </summary>
+        /// <param name="sock">The sock.</param>
+        private static void DoHandshake(Stream sock)
+        {
+            SendRequest(sock, stream =>
+            {
+                // Handshake.
+                stream.WriteByte(1);
+
+                // Protocol version.
+                stream.WriteShort(1);
+                stream.WriteShort(0);
+                stream.WriteShort(0);
+
+                // Client type: platform.
+                stream.WriteByte(2);
+            });
+
+            // ACK.
+            var ack = ReceiveMessage(sock);
+
+            Assert.AreEqual(1, ack.Length);
+            Assert.AreEqual(1, ack[0]);
+        }
+
+
+        /// <summary>
         /// Receives the message.
         /// </summary>
-        private static byte[] ReceiveMessage(Socket sock)
+        private static byte[] ReceiveMessage(Stream sock)
         {
             var buf = new byte[4];
-            sock.Receive(buf);
+            sock.Read(buf, 0, 4);
 
             using (var stream = new BinaryHeapStream(buf))
             {
                 var size = stream.ReadInt();
                 buf = new byte[size];
-                sock.Receive(buf);
+                sock.Read(buf, 0, size);
                 return buf;
             }
         }
@@ -147,7 +176,7 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <summary>
         /// Sends the request.
         /// </summary>
-        private static int SendRequest(Socket sock, Action<BinaryHeapStream> writeAction)
+        private static void SendRequest(Stream sock, Action<BinaryHeapStream> writeAction)
         {
             using (var stream = new BinaryHeapStream(128))
             {
@@ -157,7 +186,7 @@ namespace Apache.Ignite.Core.Tests.Client
 
                 stream.WriteInt(0, stream.Position - 4);  // Write message size.
 
-                return sock.Send(stream.GetArray(), stream.Position, SocketFlags.None);
+                sock.Write(stream.GetArray(), 0, stream.Position);
             }
         }
 
