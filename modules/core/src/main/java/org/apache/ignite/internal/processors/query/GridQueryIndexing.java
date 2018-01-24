@@ -67,28 +67,22 @@ public interface GridQueryIndexing {
      * @param cacheName Cache name.
      * @param qry Query.
      * @param keepBinary Keep binary flag.
-     * @param mainCacheId Main cache ID.    @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(String schemaName, String cacheName, SqlQuery qry,
-        boolean keepBinary, int mainCacheId) throws IgniteCheckedException;
+        boolean keepBinary) throws IgniteCheckedException;
 
     /**
-     * Parses SQL query into two step query and executes it.
-     *
+     * Detect whether SQL query should be executed in distributed or local manner and execute it.
      * @param schemaName Schema name.
      * @param qry Query.
      * @param keepBinary Keep binary flag.
-     * @param cancel Query cancel.
-     * @param mainCacheId Main cache ID.
-     * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
-     *      more then one SQL statement.
+     * @param failOnMultipleStmts Whether an exception should be thrown for multiple statements query.
+     * @param cancel Query cancel state handler.
      * @return Cursor.
-     * @throws IgniteCheckedException If failed.
      */
-    public List<FieldsQueryCursor<List<?>>> queryDistributedSqlFields(String schemaName, SqlFieldsQuery qry,
-        boolean keepBinary, GridQueryCancel cancel, @Nullable Integer mainCacheId, boolean failOnMultipleStmts)
-        throws IgniteCheckedException;
+    public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry, boolean keepBinary,
+        boolean failOnMultipleStmts, GridQueryCancel cancel);
 
     /**
      * Perform a MERGE statement using data streamer as receiver.

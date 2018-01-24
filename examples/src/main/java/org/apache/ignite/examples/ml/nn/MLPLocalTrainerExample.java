@@ -67,7 +67,7 @@ public class MLPLocalTrainerExample {
         System.out.println("\n>>> Perform training.");
 
         MultilayerPerceptron mlp = new MLPLocalBatchTrainer<>(LossFunctions.MSE,
-            () -> new RPropUpdateCalculator<>(),
+            RPropUpdateCalculator::new,
             0.0001,
             16000).train(trainerInput);
 
