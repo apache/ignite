@@ -486,27 +486,9 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                     }
                 });
             }
-            else if (qry instanceof ContinuousQueryWithTransformer) {
-                IgniteClosure<CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>, CacheEntryEvent> transformer =
-                    new IgniteClosure<CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>, CacheEntryEvent>() {
-                        @Override public CacheEntryEvent apply(
-                            CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue> event) {
-                            return event;
-                        }
-                    };
-
-                ContinuousQueryWithTransformer<QueryTestKey, QueryTestValue, CacheEntryEvent> qry0 =
-                    (ContinuousQueryWithTransformer<QueryTestKey, QueryTestValue, CacheEntryEvent>)qry;
-
-                qry0.setRemoteTransformerFactory(FactoryBuilder.factoryOf(transformer));
-
-                qry0.setLocalListener(new TransformedEventListener<CacheEntryEvent>() {
-                    @Override public void onUpdated(Iterable<? extends CacheEntryEvent> events) {
-                        for (CacheEntryEvent e : events)
-                            evts.add(e);
-                    }
-                });
-            }
+            else if (qry instanceof ContinuousQueryWithTransformer)
+                initQueryWithTransformer(
+                    (ContinuousQueryWithTransformer<QueryTestKey, QueryTestValue, CacheEntryEvent>)qry, evts);
             else
                 fail("Unknown query type");
 
@@ -642,26 +624,9 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                     }
                 });
             }
-            else if (qry instanceof ContinuousQueryWithTransformer) {
-                IgniteClosure<CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>, CacheEntryEvent> transformer =
-                    new IgniteClosure<CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>, CacheEntryEvent>() {
-                        @Override public CacheEntryEvent apply(CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue> event) {
-                            return event;
-                        }
-                    };
-
-                ContinuousQueryWithTransformer<QueryTestKey, QueryTestValue, CacheEntryEvent> qry0 =
-                    (ContinuousQueryWithTransformer<QueryTestKey, QueryTestValue, CacheEntryEvent>)qry;
-
-                qry0.setRemoteTransformerFactory(FactoryBuilder.factoryOf(transformer));
-
-                qry0.setLocalListener(new TransformedEventListener<CacheEntryEvent>() {
-                    @Override public void onUpdated(Iterable<? extends CacheEntryEvent> events) {
-                        for (CacheEntryEvent e : events)
-                            evts.add(e);
-                    }
-                });
-            }
+            else if (qry instanceof ContinuousQueryWithTransformer)
+                initQueryWithTransformer(
+                    (ContinuousQueryWithTransformer<QueryTestKey, QueryTestValue, CacheEntryEvent>)qry, evts);
             else
                 fail("Unknown query type");
 
@@ -900,26 +865,9 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                         }
                     });
                 }
-                else if (qry instanceof ContinuousQueryWithTransformer) {
-                    IgniteClosure<CacheEntryEvent<?, ?>, CacheEntryEvent> transformer =
-                        new IgniteClosure<CacheEntryEvent<?, ?>, CacheEntryEvent>() {
-                            @Override public CacheEntryEvent apply(CacheEntryEvent<?, ?> event) {
-                                return event;
-                            }
-                        };
-
-                    ContinuousQueryWithTransformer<Object, Object, CacheEntryEvent> qry0 =
-                        (ContinuousQueryWithTransformer<Object, Object, CacheEntryEvent>)qry;
-
-                    qry0.setRemoteTransformerFactory(FactoryBuilder.factoryOf(transformer));
-
-                    qry0.setLocalListener(new TransformedEventListener<CacheEntryEvent>() {
-                        @Override public void onUpdated(Iterable<? extends CacheEntryEvent> events) {
-                            for (CacheEntryEvent e : events)
-                                evtsQueue.add(e);
-                        }
-                    });
-                }
+                else if (qry instanceof ContinuousQueryWithTransformer)
+                    initQueryWithTransformer(
+                        (ContinuousQueryWithTransformer<Object, Object, CacheEntryEvent>)qry, evtsQueue);
                 else
                     fail("Unknown query type");
 
@@ -942,26 +890,9 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                         }
                     });
                 }
-                else if (qry instanceof ContinuousQueryWithTransformer) {
-                    IgniteClosure<CacheEntryEvent<?, ?>, CacheEntryEvent> transformer =
-                        new IgniteClosure<CacheEntryEvent<?, ?>, CacheEntryEvent>() {
-                            @Override public CacheEntryEvent apply(CacheEntryEvent<?, ?> event) {
-                                return event;
-                            }
-                        };
-
-                    ContinuousQueryWithTransformer<Object, Object, CacheEntryEvent> qry0 =
-                        (ContinuousQueryWithTransformer<Object, Object, CacheEntryEvent>)qry;
-
-                    qry0.setRemoteTransformerFactory(FactoryBuilder.factoryOf(transformer));
-
-                    qry0.setLocalListener(new TransformedEventListener<CacheEntryEvent>() {
-                        @Override public void onUpdated(Iterable<? extends CacheEntryEvent> events) {
-                            for (CacheEntryEvent e : events)
-                                evtsQueue.add(e);
-                        }
-                    });
-                }
+                else if (qry instanceof ContinuousQueryWithTransformer)
+                    initQueryWithTransformer(
+                        (ContinuousQueryWithTransformer<Object, Object, CacheEntryEvent>)qry, evtsQueue);
                 else
                     fail("Unknown query type");
 
@@ -985,26 +916,9 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                             }
                         });
                     }
-                    else if (qry instanceof ContinuousQueryWithTransformer) {
-                        IgniteClosure<CacheEntryEvent<?, ?>, CacheEntryEvent> transformer =
-                            new IgniteClosure<CacheEntryEvent<?, ?>, CacheEntryEvent>() {
-                                @Override public CacheEntryEvent apply(CacheEntryEvent<?, ?> event) {
-                                    return event;
-                                }
-                            };
-
-                        ContinuousQueryWithTransformer<Object, Object, CacheEntryEvent> qry0 =
-                            (ContinuousQueryWithTransformer<Object, Object, CacheEntryEvent>)qry;
-
-                        qry0.setRemoteTransformerFactory(FactoryBuilder.factoryOf(transformer));
-
-                        qry0.setLocalListener(new TransformedEventListener<CacheEntryEvent>() {
-                            @Override public void onUpdated(Iterable<? extends CacheEntryEvent> events) {
-                                for (CacheEntryEvent e : events)
-                                    evtsQueue.add(e);
-                            }
-                        });
-                    }
+                    else if (qry instanceof ContinuousQueryWithTransformer)
+                        initQueryWithTransformer(
+                            (ContinuousQueryWithTransformer<Object, Object, CacheEntryEvent>)qry, evtsQueue);
                     else
                         fail("Unknown query type");
 
@@ -1720,5 +1634,38 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
      */
     protected enum ContinuousDeploy {
         CLIENT, SERVER, ALL
+    }
+
+    /**
+     * Initialize continuous query with transformer.
+     * Query will accumulate all events in accumulator.
+     *
+     * @param qry Continuous query.
+     * @param acc Accumulator for events.
+     * @param <K> Key type.
+     * @param <V> Value type.
+     */
+    private <K, V> void initQueryWithTransformer(
+        ContinuousQueryWithTransformer<K, V, CacheEntryEvent> qry,
+        Collection<CacheEntryEvent<? extends K, ? extends V>> acc) {
+
+        IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, CacheEntryEvent> transformer =
+            new IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, CacheEntryEvent>() {
+                @Override public CacheEntryEvent apply(CacheEntryEvent<? extends K, ? extends V> event) {
+                    return event;
+                }
+            };
+
+        ContinuousQueryWithTransformer<K, V, CacheEntryEvent> qry0 =
+            (ContinuousQueryWithTransformer<K, V, CacheEntryEvent>)qry;
+
+        qry0.setRemoteTransformerFactory(FactoryBuilder.factoryOf(transformer));
+
+        qry0.setLocalListener(new TransformedEventListener<CacheEntryEvent>() {
+            @Override public void onUpdated(Iterable<? extends CacheEntryEvent> events) {
+                for (CacheEntryEvent e : events)
+                    acc.add(e);
+            }
+        });
     }
 }
