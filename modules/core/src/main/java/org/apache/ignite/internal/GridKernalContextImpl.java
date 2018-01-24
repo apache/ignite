@@ -385,6 +385,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     private GridInternalSubscriptionProcessor internalSubscriptionProc;
 
+    /** Node invalidation flag. */
+    private volatile boolean invalidated;
+
     /**
      * No-arg constructor is required by externalization.
      */
@@ -1089,6 +1092,16 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /**{@inheritDoc}*/
     @Override public PdsFoldersResolver pdsFolderResolver() {
         return pdsFolderRslvr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean invalidated() {
+        return invalidated;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void invalidate() {
+        invalidated = true;
     }
 
     /** {@inheritDoc} */
