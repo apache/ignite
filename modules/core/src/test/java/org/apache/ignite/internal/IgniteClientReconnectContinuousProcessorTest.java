@@ -23,7 +23,6 @@ import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -199,6 +198,8 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
      * @throws Exception If failed.
      */
     public void testCacheContinuousQueryReconnect() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-12703");
+
         Ignite client = grid(serverCount());
 
         assertTrue(client.cluster().localNode().isClient());

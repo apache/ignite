@@ -97,6 +97,11 @@ public class IgniteCacheFailedUpdateResponseTest extends GridCommonAbstractTest 
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         atomicCache = grid("client").cache(ATOMIC_CACHE);
         txCache = grid("client").cache(TX_CACHE);

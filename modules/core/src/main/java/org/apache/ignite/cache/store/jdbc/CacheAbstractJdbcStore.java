@@ -48,7 +48,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheTypeFieldMetadata;
 import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.store.CacheStore;
@@ -166,7 +165,7 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
     private final Lock cacheMappingsLock = new ReentrantLock();
 
     /** Data source. */
-    protected DataSource dataSrc;
+    protected volatile DataSource dataSrc;
 
     /** Cache with entry mapping description. (cache name, (key id, mapping description)). */
     protected volatile Map<String, Map<Object, EntryMapping>> cacheMappings = Collections.emptyMap();
@@ -467,6 +466,12 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
 
                         clo.apply(key, val);
                     }
+                }
+                catch (NullPointerException e){
+                    //todo only for investigation
+                    System.out.println("Got NPE");
+
+                    e.printStackTrace();
                 }
                 catch (SQLException e) {
                     throw new IgniteCheckedException("Failed to load cache", e);
