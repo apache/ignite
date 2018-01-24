@@ -268,10 +268,11 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
             }
         });
 
-        qry.setRemoteTransformerFactory(FactoryBuilder.factoryOf(new IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Employee>, String>() {
-            @Override public String apply(CacheEntryEvent<? extends Integer, ? extends Employee> evt) {
-                return null;
-            }
+        qry.setRemoteTransformerFactory(FactoryBuilder.factoryOf(
+            new IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Employee>, String>() {
+                @Override public String apply(CacheEntryEvent<? extends Integer, ? extends Employee> evt) {
+                    return null;
+                }
         }));
 
         qry.setRemoteFilterFactory(FactoryBuilder.factoryOf(new CacheEntryEventSerializableFilter<Integer, Employee>() {
@@ -301,6 +302,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
         Ignite ignite = gridToRunQuery();
 
         IgniteCache<Integer, Employee> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
         cache = cache.withExpiryPolicy(new CreatedExpiryPolicy(new Duration(MILLISECONDS, 100)));
 
         final Set<Integer> keys = new GridConcurrentHashSet<>();
@@ -386,7 +388,8 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
 
         qry.setInitialQuery(new ScanQuery<Integer, Employee>());
         qry.setRemoteFilterFactory((Factory<? extends CacheEntryEventFilter<Integer, Employee>>)rmtFilterFactory);
-        qry.setRemoteTransformerFactory((Factory<? extends IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Employee>, String>>)factory);
+        qry.setRemoteTransformerFactory(
+            (Factory<? extends IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Employee>, String>>)factory);
         qry.setLocalListener(transLsnr);
 
         try (QueryCursor<Cache.Entry<Integer, Employee>> cur = cache.query(qry)) {
