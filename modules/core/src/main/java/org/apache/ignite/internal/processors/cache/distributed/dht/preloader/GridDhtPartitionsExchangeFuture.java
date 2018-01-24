@@ -1577,6 +1577,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         cctx.database().releaseHistoryForExchange();
+        cctx.database().rebuildIndexesIfNeeded(this);
 
         if (err == null) {
             for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
