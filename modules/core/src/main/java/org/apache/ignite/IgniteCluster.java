@@ -469,4 +469,51 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     /** {@inheritDoc} */
     @Deprecated
     @Override public IgniteCluster withAsync();
+
+    /**
+     * Disables write-ahead logging for specified cache. When WAL is disabled, changes are not logged to disk.
+     * This significantly improves cache update speed. The drawback is absence of local crash-recovery guarantees.
+     * If node is crashed, local content of WAL-disabled cache will be cleared on restart to avoid data corruption.
+     * <p>
+     * Internally this method will wait for all current cache operations to finish and prevent new cache operations
+     * from being executed. Then checkpoint is initiated to flush all data to disk. Control is returned to the callee
+     * when all dirty pages are prepared for checkpoint, but not necessarily flushed to disk.
+     * <p>
+     * WAL state can be changed only for persistent caches.
+     *
+     * @param cacheName Cache name.
+     * @return Whether WAL disabled by this call.
+     * @throws IgniteException If error occurs.
+     * @see #enableWal(String)
+     * @see #isWalEnabled(String)
+     */
+    public boolean disableWal(String cacheName) throws IgniteException;
+
+    /**
+     * Enables write-ahead logging for specified cache. Restoring crash-recovery guarantees of a previous call to
+     * {@link #disableWal(String)}.
+     * <p>
+     * Internally this method will wait for all current cache operations to finish and prevent new cache operations
+     * from being executed. Then checkpoint is initiated to flush all data to disk. Control is returned to the callee
+     * when all data is persisted to disk.
+     * <p>
+     * WAL state can be changed only for persistent caches.
+     *
+     * @param cacheName Cache name.
+     * @return Whether WAL enabled by this call.
+     * @throws IgniteException If error occurs.
+     * @see #disableWal(String)
+     * @see #isWalEnabled(String)
+     */
+    public boolean enableWal(String cacheName) throws IgniteException;
+
+    /**
+     * Checks if write-ahead logging is enabled for specified cache.
+     *
+     * @param cacheName Cache name.
+     * @return {@code True} if WAL is enabled for cache.
+     * @see #disableWal(String)
+     * @see #enableWal(String)
+     */
+    public boolean isWalEnabled(String cacheName);
 }
