@@ -108,7 +108,7 @@ import org.apache.ignite.lang.IgniteAsyncCallback;
  */
 public final class ContinuousQuery<K, V> extends AbstractContinuousQuery<K, V> {
     /** */
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 0L;
 
     /** Local listener. */
     private CacheEntryUpdatedListener<K, V> locLsnr;

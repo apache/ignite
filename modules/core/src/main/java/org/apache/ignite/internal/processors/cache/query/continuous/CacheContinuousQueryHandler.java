@@ -1323,11 +1323,19 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         Collection<CacheEntryEvent<? extends K, ? extends V>> evts) {
         final Iterator<CacheEntryEvent<? extends K, ? extends V>> iter = evts.iterator();
 
-        return F.iterator(evts, new IgniteClosure() {
-            @Override public Object apply(Object o) {
-                return transform(trans, iter.next());
+        return new Iterable() {
+            @NotNull @Override public Iterator iterator() {
+                return new Iterator() {
+                    @Override public boolean hasNext() {
+                        return iter.hasNext();
+                    }
+
+                    @Override public Object next() {
+                        return transform(trans, iter.next());
+                    }
+                };
             }
-        }, true);
+        };
     }
 
     /**
@@ -1345,7 +1353,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         return new CacheContinuousQueryEntry(evt.entry().cacheId(),
             evt.entry().eventType(),
             null,
-            transVal == null ? null : evt.context().toCacheObject(transVal),
+            transVal == null ? null : evt.toCacheObject(transVal),
             null,
             evt.entry().isKeepBinary(),
             evt.entry().partition(),
@@ -1361,6 +1369,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      */
     private Object transform(IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> trans,
         CacheEntryEvent<? extends K, ? extends V> evt) {
+        assert trans != null;
+
         Object transVal = null;
 
         try {

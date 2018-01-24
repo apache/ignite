@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import javax.cache.Cache;
 import org.apache.ignite.cache.query.CacheQueryEntryEvent;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -57,10 +58,11 @@ class CacheContinuousQueryEvent<K, V> extends CacheQueryEntryEvent<K, V> {
     }
 
     /**
-     * @return Grid cache context.
+     * @param obj Object to convert.
+     * @return Cache object.
      */
-    public GridCacheContext context() {
-        return cctx;
+    public CacheObject toCacheObject(Object obj) {
+        return cctx.toCacheObject(obj);
     }
 
     /**

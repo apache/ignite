@@ -366,19 +366,22 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
         Ignite ignite = gridToRunQuery();
 
         IgniteCache<Integer, Employee> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
         if (keepBinary)
             cache = cache.withKeepBinary();
 
         populateData(cache, JOHN_CONNOR);
 
-        CountDownLatch transUpdCnt = new CountDownLatch(expTransCnt);
+        CountDownLatch transUpdCntLatch = new CountDownLatch(expTransCnt);
+
         AtomicInteger transCnt = new AtomicInteger(0);
 
         TransformedEventListener<String> transLsnr = async ?
-            new LocalEventListenerAsync(transCnt, transUpdCnt) :
-            new LocalEventListener(transCnt, transUpdCnt);
+            new LocalEventListenerAsync(transCnt, transUpdCntLatch) :
+            new LocalEventListener(transCnt, transUpdCntLatch);
 
         Factory<? extends CacheEntryEventFilter> rmtFilterFactory = null;
+
         if (addEvtFilter)
             rmtFilterFactory = FactoryBuilder.factoryOf(new RemoteCacheEntryEventFilter());
 
@@ -395,6 +398,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
         try (QueryCursor<Cache.Entry<Integer, Employee>> cur = cache.query(qry)) {
             for (Cache.Entry<Integer, Employee> e : cur) {
                 assertNotNull(e);
+
                 if (keepBinary) {
                     assertTrue(((BinaryObject)e.getValue())
                         .field("name").toString().startsWith(JOHN_CONNOR));
@@ -407,7 +411,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
             populateData(cache, SARAH_CONNOR);
 
             assertTrue("Receive all expected events",
-                transUpdCnt.await(DFLT_LATCH_TIMEOUT, MILLISECONDS));
+                transUpdCntLatch.await(DFLT_LATCH_TIMEOUT, MILLISECONDS));
             assertEquals("Count of updated records equal to expected", expTransCnt, transCnt.get());
 
         }
