@@ -209,6 +209,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
      *
      */
     public void testRecoveringOnWALErrorWithMmap() throws Exception {
+        diskSpaceBytes = WAL_SEGMENT_SIZE;
         System.setProperty(IGNITE_WAL_MMAP, "true");
         emulateRecoveringOnWALWritingError();
     }
@@ -217,6 +218,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
      *
      */
     public void testRecoveringOnWALErrorWithoutMmap() throws Exception {
+        diskSpaceBytes = 2 * WAL_SEGMENT_SIZE;
         System.setProperty(IGNITE_WAL_MMAP, "false");
         emulateRecoveringOnWALWritingError();
     }
@@ -225,8 +227,6 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
      *
      */
     private void emulateRecoveringOnWALWritingError() throws Exception {
-        diskSpaceBytes = WAL_SEGMENT_SIZE;
-
         final IgniteEx grid = startGrid(0);
 
         FileWriteAheadLogManager wal = (FileWriteAheadLogManager)grid.context().cache().context().wal();
