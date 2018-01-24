@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Collections;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -186,6 +187,17 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
      */
     CacheConfiguration cacheConfig() {
         return nonBinCacheConfig();
+    }
+
+    /**
+     * Execute given SQL statement.
+     * @param sql Statement.
+     * @throws SQLException if failed.
+     */
+    protected void jdbcRun(String sql) throws SQLException {
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql);
+        }
     }
 
     /**

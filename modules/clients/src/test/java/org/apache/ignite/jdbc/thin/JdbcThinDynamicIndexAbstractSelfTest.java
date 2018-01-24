@@ -113,17 +113,6 @@ public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstr
     protected abstract boolean nearCache();
 
     /**
-     * Execute given SQL statement.
-     * @param sql Statement.
-     * @throws SQLException if failed.
-     */
-    private void jdbcRun(String sql) throws SQLException {
-        try (Statement stmt = conn.createStatement()) {
-            stmt.execute(sql);
-        }
-    }
-
-    /**
      * @param rs Result set.
      * @return The value of the first column at the first row from result set.
      * @throws SQLException If failed.

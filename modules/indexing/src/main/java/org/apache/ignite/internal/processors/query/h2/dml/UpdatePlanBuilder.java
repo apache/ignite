@@ -65,6 +65,7 @@ import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 
 /**
  * Logic for building update plans performed by {@link DmlStatementsProcessor}.
@@ -411,25 +412,17 @@ public final class UpdatePlanBuilder {
      * Prepare update plan for COPY command (AKA bulk load).
      *
      * @param cmd Bulk load command
-     * @param idx Ignite indexing meta-object.
-     * @return The update plan for this
+     * @return The update plan for this command.
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings("ConstantConditions")
-    public static UpdatePlan planForBulkLoad(SqlBulkLoadCommand cmd, GridH2Table tbl, IgniteH2Indexing idx) throws IgniteCheckedException {
-        GridSqlQuery sel;
+    public static UpdatePlan planForBulkLoad(SqlBulkLoadCommand cmd, GridH2Table tbl) throws IgniteCheckedException {
 
-        List<String> cols;
-
-        GridH2RowDescriptor desc;
-
-        desc = tbl.rowDescriptor();
+        GridH2RowDescriptor desc = tbl.rowDescriptor();
 
         if (desc == null)
             throw new IgniteSQLException("Row descriptor undefined for table '" + tbl.getName() + "'",
                 IgniteQueryErrorCode.NULL_TABLE_DESCRIPTOR);
-
-        cols = cmd.columns();
 
         int keyColIdx = -1;
         int valColIdx = -1;
@@ -438,6 +431,18 @@ public final class UpdatePlanBuilder {
         boolean hasValProps = false;
 
         GridCacheContext<?, ?> cctx = desc.context();
+
+        List<String> cols = cmd.columns();
+
+        if (cols == null) {
+            Column[] tableCols = tbl.getColumns();
+            cols = new ArrayList<>(tableCols.length - DEFAULT_COLUMNS_COUNT + 1);
+
+            cols.add(tableCols[KEY_COL].getName());
+
+            for (int i = DEFAULT_COLUMNS_COUNT; i < tableCols.length; i++)
+                cols.add(tableCols[i].getName());
+        }
 
         String[] colNames = new String[cols.size()];
 

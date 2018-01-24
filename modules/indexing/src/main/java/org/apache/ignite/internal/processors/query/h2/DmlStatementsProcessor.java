@@ -443,7 +443,7 @@ public class DmlStatementsProcessor {
             }, null);
 
             if (plan.rowCount() == 1) {
-                IgniteBiTuple t = plan.processRow(cur.iterator().next());
+                IgniteBiTuple t = plan.processRow(cur.iterator().next(), false);
 
                 streamer.addData(t.getKey(), t.getValue());
 
@@ -453,7 +453,7 @@ public class DmlStatementsProcessor {
             Map<Object, Object> rows = new LinkedHashMap<>(plan.rowCount());
 
             for (List<?> row : cur) {
-                final IgniteBiTuple t = plan.processRow(row);
+                final IgniteBiTuple t = plan.processRow(row, false);
 
                 rows.put(t.getKey(), t.getValue());
             }
@@ -755,7 +755,7 @@ public class DmlStatementsProcessor {
 
         // If we have just one item to put, just do so
         if (plan.rowCount() == 1) {
-            IgniteBiTuple t = plan.processRow(cursor.iterator().next());
+            IgniteBiTuple t = plan.processRow(cursor.iterator().next(), false);
 
             cctx.cache().put(t.getKey(), t.getValue());
 
@@ -769,7 +769,7 @@ public class DmlStatementsProcessor {
             for (Iterator<List<?>> it = cursor.iterator(); it.hasNext();) {
                 List<?> row = it.next();
 
-                IgniteBiTuple t = plan.processRow(row);
+                IgniteBiTuple t = plan.processRow(row, false);
 
                 rows.put(t.getKey(), t.getValue());
 
@@ -800,7 +800,7 @@ public class DmlStatementsProcessor {
 
         // If we have just one item to put, just do so
         if (plan.rowCount() == 1) {
-            IgniteBiTuple t = plan.processRow(cursor.iterator().next());
+            IgniteBiTuple t = plan.processRow(cursor.iterator().next(), false);
 
             if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
                 return 1;
@@ -813,7 +813,7 @@ public class DmlStatementsProcessor {
             DmlBatchSender sender = new DmlBatchSender(cctx, pageSize, 1);
 
             for (List<?> row : cursor) {
-                final IgniteBiTuple keyValPair = plan.processRow(row);
+                final IgniteBiTuple keyValPair = plan.processRow(row, false);
 
                 sender.add(keyValPair.getKey(), new InsertEntryProcessor(keyValPair.getValue()),  0);
             }
@@ -863,7 +863,7 @@ public class DmlStatementsProcessor {
         for (List<List<?>> qryRow : cursor) {
             for (List<?> row : qryRow) {
                 try {
-                    final IgniteBiTuple keyValPair = plan.processRow(row);
+                    final IgniteBiTuple keyValPair = plan.processRow(row, false);
 
                     snd.add(keyValPair.getKey(), new InsertEntryProcessor(keyValPair.getValue()), rowNum);
                 }
@@ -1012,11 +1012,11 @@ public class DmlStatementsProcessor {
             throw new IgniteSQLException("Table does not exist: " + cmd.tableName(),
                 IgniteQueryErrorCode.TABLE_NOT_FOUND);
 
-        final UpdatePlan plan = UpdatePlanBuilder.planForBulkLoad(cmd, tbl, idx);
+        final UpdatePlan plan = UpdatePlanBuilder.planForBulkLoad(cmd, tbl);
 
         BulkLoadEntryConverter dataConverter = new BulkLoadEntryConverter() {
             @Override public IgniteBiTuple<?, ?> convertRecord(List<?> record) throws IgniteCheckedException {
-                return plan.processRow(record);
+                return plan.processRow(record, true);
             }
         };
 

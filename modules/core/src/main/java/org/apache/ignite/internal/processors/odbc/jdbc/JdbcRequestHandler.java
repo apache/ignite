@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -264,7 +265,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             }
         }
         catch (RuntimeException | IgniteCheckedException e) {
-            return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Server error: " + e.getMessage());
+            LT.error(null, e, "Error processing file batch");
+            return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Server error: " + e);
         }
     }
 

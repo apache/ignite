@@ -179,9 +179,16 @@ public final class UpdatePlan {
      * Convert a row into key-value pair.
      *
      * @param row Row to process.
+     * @param allowMissingTailVals Allow row to have less values than specified in {@link #colNames}
+     *        (default values are substituted).
      * @throws IgniteCheckedException if failed.
      */
-    public IgniteBiTuple<?, ?> processRow(List<?> row) throws IgniteCheckedException {
+    public IgniteBiTuple<?, ?> processRow(List<?> row, boolean allowMissingTailVals) throws IgniteCheckedException {
+
+        if (!allowMissingTailVals && row.size() < colNames.length)
+            throw new IgniteSQLException("Not enough values in a row: " + row.size() + " instead of " + colNames.length,
+                IgniteQueryErrorCode.ENTRY_PROCESSING);
+
         GridH2RowDescriptor rowDesc = tbl.rowDescriptor();
         GridQueryTypeDescriptor desc = rowDesc.type();
 
@@ -222,7 +229,9 @@ public final class UpdatePlan {
 
         Map<String, Object> newColVals = new HashMap<>();
 
-        for (int i = 0; i < colNames.length; i++) {
+        int colCnt = Math.min(colNames.length, row.size());
+
+        for (int i = 0; i < colCnt; i++) {
             if (i == keyColIdx || i == valColIdx)
                 continue;
 
@@ -241,14 +250,14 @@ public final class UpdatePlan {
 
         // We update columns in the order specified by the table for a reason - table's
         // column order preserves their precedence for correct update of nested properties.
-        Column[] cols = tbl.getColumns();
+        Column[] tableCols = tbl.getColumns();
 
         // First 3 columns are _key, _val and _ver. Skip 'em.
-        for (int i = DEFAULT_COLUMNS_COUNT; i < cols.length; i++) {
+        for (int i = DEFAULT_COLUMNS_COUNT; i < tableCols.length; i++) {
             if (tbl.rowDescriptor().isKeyValueOrVersionColumn(i))
                 continue;
 
-            String colName = cols[i].getName();
+            String colName = tableCols[i].getName();
 
             if (!newColVals.containsKey(colName))
                 continue;
