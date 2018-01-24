@@ -3165,6 +3165,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         private void markCheckpointEnd(Checkpoint chp) throws IgniteCheckedException {
             synchronized (this) {
+                writtenPagesCntr = null;
+                syncedPagesCntr = null;
+
                 for (DataRegion memPlc : dataRegions()) {
                     if (!memPlc.config().isPersistenceEnabled())
                         continue;
@@ -3181,7 +3184,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         null,
                         CheckpointEntryType.END);
 
-                writtenPagesCntr = null;
 
                 currCheckpointPagesCnt = 0;
             }

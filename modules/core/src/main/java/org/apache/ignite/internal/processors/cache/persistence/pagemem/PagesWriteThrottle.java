@@ -16,6 +16,7 @@
 */
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -38,7 +39,7 @@ public class PagesWriteThrottle {
     private static final double BACKOFF_RATIO = 1.05;
 
     /** Percent of dirty pages which will not cause throttling. */
-    private static final double MIN_RATIO_NO_THROTTLE = 0.1;
+    private static final double MIN_RATIO_NO_THROTTLE = 0.03;
 
     /** Exponential backoff counter. */
     private final AtomicInteger exponentialBackoffCntr = new AtomicInteger(0);
@@ -58,9 +59,18 @@ public class PagesWriteThrottle {
     private volatile double targetDirtyRatio;
 
     /**
-     * Shows how close current dirty ratio is to target dirty ratio.
+     * Characteristic function: how close to throttle by size.
+     * Shows how close current dirty ratio is to target (max) dirty ratio.
      */
     private volatile double throttleCloseMeasurement;
+
+    //todo remove
+    private volatile long lastDumpTime;
+
+    private PagesWriteSpeedTracker speedMarkDirty = new PagesWriteSpeedTracker(10000);
+    private PagesWriteSpeedTracker speedCpWrite = new PagesWriteSpeedTracker();
+    private volatile long lastEstimatedSpeedForMarkAll;
+
 
     /**
      * @param pageMemory Page memory.
@@ -72,9 +82,13 @@ public class PagesWriteThrottle {
         this.dbSharedMgr = dbSharedMgr;
     }
 
+    enum ThrottleLevel {
+        NO, LIMITED, UNLIMITED
+    }
+
     /**
      * Callback to apply throttling delay.
-     * @param isInCheckpoint flag indicating if checkpoint is running.
+     * @param isInCheckpoint flag indicating if current page is in scope of current checkpoint.
      */
     public void onMarkDirty(boolean isInCheckpoint) {
         assert dbSharedMgr.checkpointLockIsHeldByThread();
@@ -84,16 +98,35 @@ public class PagesWriteThrottle {
         if (writtenPagesCntr == null)
             return; // Don't throttle if checkpoint is not running.
 
-        boolean shouldThrottle = false; //should apply delay (throttling) for current page modification
 
+        AtomicInteger syncedPagesCounter = dbSharedMgr.syncedPagesCounter();
+
+        int syncedPages = syncedPagesCounter == null ? 0 : syncedPagesCounter.get();
+        int cpWrittenPages = writtenPagesCntr.get();
+
+        int completedPages = cpWrittenPages + syncedPages;
+
+        speedCpWrite.setCounter(completedPages/2);
+
+        long currentTimeMillis = System.currentTimeMillis();
+
+        long markDirtySpeed = speedMarkDirty.getSpeedPagesPerSec(currentTimeMillis);
+        long curCpWriteSpeed = speedCpWrite.getSpeedPagesPerSec(currentTimeMillis);
+
+        int nThreads = Runtime.getRuntime().availableProcessors(); //todo
+
+        double slowdownMultiplier = 1.0;
+        ThrottleLevel level = ThrottleLevel.NO; //should apply delay (throttling) for current page modification
         if (isInCheckpoint) {
             int checkpointBufLimit = pageMemory.checkpointBufferPagesSize() * 2 / 3;
 
-            shouldThrottle = pageMemory.checkpointBufferPagesCount() > checkpointBufLimit;
+            if(pageMemory.checkpointBufferPagesCount() > checkpointBufLimit)
+                level = ThrottleLevel.UNLIMITED;
         }
 
-        if (!shouldThrottle) {
-            int cpWrittenPages = writtenPagesCntr.get();
+        double timeRemainedSeconds = 0;
+        long speedForMarkAll  = 0;
+        if (level == ThrottleLevel.NO) {
 
             int cpTotalPages = dbSharedMgr.currentCheckpointPagesCount();
 
@@ -103,49 +136,132 @@ public class PagesWriteThrottle {
                 lastObservedWritten.set(cpWrittenPages);
             }
             else {
-
-                boolean cpStartedToWrite = lastObservedWritten.compareAndSet(0, cpWrittenPages);
-
                 double dirtyPagesRatio = pageMemory.getDirtyPagesRatio();
-                if (cpStartedToWrite) {
-                    double newMinRatio = dirtyPagesRatio;
 
-                    if (newMinRatio < MIN_RATIO_NO_THROTTLE)
-                        newMinRatio = MIN_RATIO_NO_THROTTLE;
+                detectCpPagesWriteStart(cpWrittenPages, dirtyPagesRatio);
 
-                    if (newMinRatio > 1)
-                        newMinRatio = 1;
-
-                    initDirtyRatioAtCpBegin = newMinRatio;
-                }
-
-                AtomicInteger syncedPagesCounter = dbSharedMgr.syncedPagesCounter();
-
-                int syncedPages = syncedPagesCounter == null ? 0 : syncedPagesCounter.get();
-
-                double throttleTotalWeight = 1.0 - initDirtyRatioAtCpBegin;
-
-                double dirtyRatioThreshold = ((double)(cpWrittenPages + syncedPages)) / (2*cpTotalPages);
-
+                double cpProgress = ((double)completedPages) / (2 * cpTotalPages);
                 // Starting with initialDirtyRatioAtCpBegin to avoid throttle right after checkpoint start
                 // .75 is maximum ratio of dirty pages
-                dirtyRatioThreshold = (dirtyRatioThreshold * throttleTotalWeight + initDirtyRatioAtCpBegin) * 0.75;
+                double throttleTotalWeight = 1.0 - initDirtyRatioAtCpBegin;
+                double dirtyRatioThreshold = (cpProgress * throttleTotalWeight + initDirtyRatioAtCpBegin) * 0.75;
+
+                double clearPagesThreshold = 0.75 - dirtyPagesRatio;
+
+                double remainedClear = clearPagesThreshold * pageMemory.totalPages();
+                if (curCpWriteSpeed == 0) {
+                    speedForMarkAll = 0;
+                }
+                else {
+                    timeRemainedSeconds = (2.0 * cpTotalPages - completedPages) / curCpWriteSpeed;
+
+                    speedForMarkAll = (long)(remainedClear / timeRemainedSeconds);
+
+                    if(speedForMarkAll>5000000)
+                        System.err.println(speedForMarkAll); //todo remove
+                }
+                lastEstimatedSpeedForMarkAll = speedForMarkAll;
 
                 targetDirtyRatio = dirtyRatioThreshold;
 
                 throttleCloseMeasurement = dirtyPagesRatio / dirtyRatioThreshold;
 
-                shouldThrottle = dirtyPagesRatio > dirtyRatioThreshold;
+                boolean throttleBySize = dirtyPagesRatio > dirtyRatioThreshold;
+                boolean throttleBySpeed = markDirtySpeed > curCpWriteSpeed;
+                if ((throttleBySize || dirtyPagesRatio > 0.74) && throttleBySpeed)
+                    level = ThrottleLevel.UNLIMITED;
+                else if (throttleBySize || throttleBySpeed) {
+                    level = ThrottleLevel.LIMITED;
+                    if (throttleBySpeed) {
+                        slowdownMultiplier = curCpWriteSpeed == 0 ? 1.1 : 1.0 * markDirtySpeed / curCpWriteSpeed;
+                    }
+                    else
+                        slowdownMultiplier = speedForMarkAll == 0 ? 1.1 : 1.0 * markDirtySpeed / speedForMarkAll;
+                }
             }
         }
 
-        if (shouldThrottle) {
-            int throttleLevel = exponentialBackoffCntr.getAndIncrement();
+            //todo remove debug
+        if(currentTimeMillis > lastDumpTime + 1000) {
+            lastDumpTime = currentTimeMillis;
 
-            LockSupport.parkNanos((long)(STARTING_THROTTLE_NANOS * Math.pow(BACKOFF_RATIO, throttleLevel)));
+            long maxThrottleTimeNs = calcDelayTime(markDirtySpeed, nThreads, slowdownMultiplier);
+            System.err.println("CP write speed " + curCpWriteSpeed
+                + " mark dirty speed " + markDirtySpeed
+                + " exponent " + exponentialBackoffCntr.get()
+                + " slowdownMultiplier " + slowdownMultiplier
+                + " max sleep time, ns " + maxThrottleTimeNs
+                + " timeRemainedSeconds=" + String.format("%.2f", timeRemainedSeconds)
+                + " speedForMarkAll= " + speedForMarkAll);
+        }
+
+        if (level != ThrottleLevel.NO) {
+            int exponent;
+            if (level == ThrottleLevel.LIMITED) {
+                long maxThrottleTimeNs = calcDelayTime(markDirtySpeed, nThreads, slowdownMultiplier);
+
+                int prev, next;
+                do {
+                    prev = exponentialBackoffCntr.get();
+                    double curThrottleTime = STARTING_THROTTLE_NANOS * Math.pow(BACKOFF_RATIO, prev);
+                    if (curThrottleTime < maxThrottleTimeNs) {
+                        next = prev + 1;
+                    }
+                    else {
+                        next = prev - 1;
+                        if (next < 0)
+                            next = 0;
+                    }
+                }
+                while (!exponentialBackoffCntr.compareAndSet(prev, next));
+
+                exponent = next;
+
+            }
+            else {
+                exponent = exponentialBackoffCntr.getAndIncrement();
+            }
+
+            if (exponent != 0)
+                LockSupport.parkNanos((long)(STARTING_THROTTLE_NANOS * Math.pow(BACKOFF_RATIO, exponent)));
         }
         else
             exponentialBackoffCntr.set(0);
+
+        speedMarkDirty.incrementCounter();
+    }
+
+    private long calcDelayTime(long baseSpeed, int nThreads, double slowdownMultiplier) {
+        if (slowdownMultiplier < 1.0)
+            return 0;
+        long maxThrottleTimeNs;
+        if (baseSpeed == 0)
+            maxThrottleTimeNs = TimeUnit.SECONDS.toNanos(1) * nThreads;
+        else {
+            long updTimeNsForOnePage = TimeUnit.SECONDS.toNanos(1) * nThreads / (baseSpeed);
+            maxThrottleTimeNs = (long)((slowdownMultiplier - 1.0) * updTimeNsForOnePage);
+        }
+        return maxThrottleTimeNs;
+    }
+
+    private void detectCpPagesWriteStart(int cpWrittenPages, double dirtyPagesRatio) {
+        boolean cpStartedToWrite = lastObservedWritten.compareAndSet(0, cpWrittenPages);
+        if (cpStartedToWrite) {
+            double newMinRatio = dirtyPagesRatio;
+
+            if (newMinRatio < MIN_RATIO_NO_THROTTLE)
+                newMinRatio = MIN_RATIO_NO_THROTTLE;
+
+            if (newMinRatio > 1)
+                newMinRatio = 1;
+
+            initDirtyRatioAtCpBegin = newMinRatio;
+        }
+    }
+
+
+    public void onBeginCheckpoint() {
+        speedCpWrite.setCounter(0); //will create new measurement interval
     }
 
     /**
@@ -153,6 +269,9 @@ public class PagesWriteThrottle {
      */
     public void onFinishCheckpoint() {
         exponentialBackoffCntr.set(0);
+
+        speedCpWrite.finishInterval();
+        speedMarkDirty.finishInterval();
     }
 
     /**
@@ -168,5 +287,18 @@ public class PagesWriteThrottle {
 
     public double getThrottleCloseMeasurement() {
         return throttleCloseMeasurement;
+    }
+
+
+    public long getMarkDirtySpeed() {
+        return speedMarkDirty.getSpeedPagesPerSecOptional();
+    }
+
+    public long getCpWriteSpeed() {
+        return speedCpWrite.getSpeedPagesPerSecOptional();
+    }
+
+    public long getLastEstimatedSpeedForMarkAll() {
+        return lastEstimatedSpeedForMarkAll;
     }
 }

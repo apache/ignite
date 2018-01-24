@@ -879,6 +879,19 @@ public class PageMemoryImpl implements PageMemoryEx {
         return res;
     }
 
+    /**
+     * @return total pages can be placed in all segments
+     */
+    public long totalPages() {
+        long res = 0;
+
+        for (Segment segment : segments) {
+            res += segment.pages();
+        }
+
+        return res;
+    }
+
     /** {@inheritDoc} */
     @Override public  PageIdCollection[] beginCheckpoint() throws IgniteException {
         if (segments == null)
@@ -898,6 +911,9 @@ public class PageMemoryImpl implements PageMemoryEx {
         }
 
         memMetrics.resetDirtyPages();
+
+        if (throttleEnabled)
+            writeThrottle.onBeginCheckpoint();
 
         return sets;
     }

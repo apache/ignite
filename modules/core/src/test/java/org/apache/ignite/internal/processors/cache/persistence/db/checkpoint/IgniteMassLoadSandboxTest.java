@@ -84,7 +84,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     /** Cache name. */
     public static final String CACHE_NAME = "partitioned" + new Random().nextInt(10000000);
     public static final int OBJECT_SIZE = 40000;
-    public static final int CONTINUOUS_PUT_RECS_CNT = 400_000;
+    public static final int CONTINUOUS_PUT_RECS_CNT = 300_000;
     public static final String PUT_THREAD = "put-thread";
     public static final String GET_THREAD = "get-thread";
 
@@ -98,7 +98,8 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     private int walSegmentSize = 64 * 1024 * 1024;
     /** Custom wal mode. */
     protected WALMode customWalMode;
-    private int checkpointFrequency = 15 * 1000;
+
+    private int checkpointFrequency = 30 * 1000;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -284,6 +285,9 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                 "targetDirtyRatio",
                 "closeToThrottle",
                 "throttleLevel",
+                "markDirtySpeed",
+                "cpWriteSpeed",
+                "estMarkAllSpeed",
                 "avg." + operation + "/sec",
                 "dirtyPages",
                 "cpWrittenPages",
@@ -370,6 +374,9 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             long lastArchIdx = -1;
             int walArchiveSegments = 0;
             long walWorkSegments = 0;
+            long markDirtySpeed = 0;
+            long cpWriteSpeedInPages = 0;
+            long estWrAllSpeed = 0;
             try {
 
                 if (pageMemory != null) {
@@ -377,16 +384,21 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
                     PagesWriteThrottle throttle = U.field(pageMemory, "writeThrottle");
 
-                    targetDirtyRatio = throttle.getPageMemTargetDirtyRatio();
-                    closeToThrottle = throttle.getThrottleCloseMeasurement() ;
-                    throttleLevel = throttle.throttleLevel();
+                    if (throttle != null) {
+                        targetDirtyRatio = throttle.getPageMemTargetDirtyRatio();
+                        closeToThrottle = throttle.getThrottleCloseMeasurement();
+                        throttleLevel = throttle.throttleLevel();
+                        markDirtySpeed = throttle.getMarkDirtySpeed();
+                        cpWriteSpeedInPages = throttle.getCpWriteSpeed();
+                        estWrAllSpeed = throttle.getLastEstimatedSpeedForMarkAll();
+                    }
                 }
 
                 FileWriteAheadLogManager wal = (FileWriteAheadLogManager)cacheSctx.wal();
                 FileWALPointer ptr = wal.currentWritePointer();
                 idx = ptr.index();
 
-                lastArchIdx =wal.lastAbsArchivedIdx();
+                lastArchIdx = wal.lastAbsArchivedIdx();
 
                 walArchiveSegments = wal.walArchiveSegments();
                 int maxWorkSegments = dsCfg.getWalSegments();
@@ -426,6 +438,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                 "cpSyncSpeed=" + cpSyncSpeed + " " +
                 "walSpeed= " + walSpeed + " " +
                 "walWorkSeg.="+walWorkSegments + " " +
+                "markDirtySpeed=" + markDirtySpeed +" " +
                 "Avg. " + operation + " " + averagePutPerSec + " recs/sec, " +
                 "dirtyP=" + dirtyPages + ", " +
                 "cpWrittenP.=" + cpWrittenPages + ", " +
@@ -445,6 +458,9 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                 targetDirtyRatioStr,
                 formatDbl(closeToThrottle),
                 throttleLevel,
+                markDirtySpeed,
+                cpWriteSpeedInPages,
+                estWrAllSpeed,
                 averagePutPerSec,
                 dirtyPages,
                 cpWrittenPages,
