@@ -18,14 +18,22 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ *
+ */
 public class MetastoreDataRecord extends WALRecord {
 
     private final String key;
 
     @Nullable private final byte[] value;
 
+    /**
+     * @param key Key.
+     * @param value Value.
+     */
     public MetastoreDataRecord(String key, @Nullable byte[] value) {
         this.key = key;
         this.value = value;
@@ -39,7 +47,13 @@ public class MetastoreDataRecord extends WALRecord {
         return value;
     }
 
+    /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.METASTORE_DATA_RECORD;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MetastoreDataRecord.class, this, "super", super.toString());
     }
 }

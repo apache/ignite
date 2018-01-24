@@ -71,6 +71,6 @@ public class BaselineTopologyRecord extends WALRecord {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(BaselineTopologyRecord.class, this);
+        return S.toString(BaselineTopologyRecord.class, this, "super", super.toString());
     }
 }

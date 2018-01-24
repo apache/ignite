@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  * Partition map exchange WAL record.
  */
@@ -79,10 +81,6 @@ public class ExchangeRecord extends TimeStampRecord {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "ExchangeRecord[" +
-            "constId='" + constId + '\'' +
-            ", type=" + type +
-            ", timestamp=" + timestamp +
-            ']';
+        return S.toString(ExchangeRecord.class, this, "super", super.toString());
     }
 }

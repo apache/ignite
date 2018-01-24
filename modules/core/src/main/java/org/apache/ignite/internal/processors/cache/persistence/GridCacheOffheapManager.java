@@ -319,47 +319,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             io.setCandidatePageCount(partMetaPageAddr, pageCnt);
 
                             if (saveMeta) {
-                                long metaPageId = pageMem.metaPageId(grpId);
-                                long metaPage = pageMem.acquirePage(grpId, metaPageId);
-
-                                try {
-                                    long metaPageAddr = pageMem.writeLock(grpId, metaPageId, metaPage);
-
-                                    try {
-                                        PageMetaIO metaIo = PageMetaIO.getPageIO(metaPageAddr);
-
-                                        long nextSnapshotTag = metaIo.getNextSnapshotTag(metaPageAddr);
-
-                                        metaIo.setNextSnapshotTag(metaPageAddr, nextSnapshotTag + 1);
-
-                                        if (log != null && log.isDebugEnabled())
-                                            log.debug("Save next snapshot before checkpoint start for grId = " + grpId
-                                                + ", nextSnapshotTag = " + nextSnapshotTag);
-
-                                        if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, metaPageId,
-                                            metaPage, wal, null))
-                                            wal.log(new MetaPageUpdateNextSnapshotId(grpId, metaPageId,
-                                                nextSnapshotTag + 1));
-
-                                        if (state == OWNING) {
-                                            addPartition(
-                                                null,
-                                                ctx.partitionStatMap(),
-                                                metaPageAddr,
-                                                metaIo,
-                                                grpId,
-                                                PageIdAllocator.INDEX_PARTITION,
-                                                this.ctx.pageStore().pages(grpId, PageIdAllocator.INDEX_PARTITION),
-                                                -1);
-                                        }
-                                    }
-                                    finally {
-                                        pageMem.writeUnlock(grpId, metaPageId, metaPage, null, true);
-                                    }
-                                }
-                                finally {
-                                    pageMem.releasePage(grpId, metaPageId, metaPage);
-                                }
+                                saveMeta(ctx);
 
                                 wasSaveToMeta = true;
                             }
@@ -417,6 +377,55 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         return wasSaveToMeta;
+    }
+
+    /**
+     * @param ctx Context.
+     */
+    private void saveMeta(Context ctx) throws IgniteCheckedException {
+        int grpId = grp.groupId();
+        PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
+        IgniteWriteAheadLogManager wal = this.ctx.wal();
+
+        long metaPageId = pageMem.metaPageId(grpId);
+        long metaPage = pageMem.acquirePage(grpId, metaPageId);
+
+        try {
+            long metaPageAddr = pageMem.writeLock(grpId, metaPageId, metaPage);
+
+            try {
+                PageMetaIO metaIo = PageMetaIO.getPageIO(metaPageAddr);
+
+                long nextSnapshotTag = metaIo.getNextSnapshotTag(metaPageAddr);
+
+                metaIo.setNextSnapshotTag(metaPageAddr, nextSnapshotTag + 1);
+
+                if (log != null && log.isDebugEnabled())
+                    log.debug("Save next snapshot before checkpoint start for grId = " + grpId
+                        + ", nextSnapshotTag = " + nextSnapshotTag);
+
+                if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, metaPageId,
+                    metaPage, wal, null))
+                    wal.log(new MetaPageUpdateNextSnapshotId(grpId, metaPageId,
+                        nextSnapshotTag + 1));
+
+                addPartition(
+                    null,
+                    ctx.partitionStatMap(),
+                    metaPageAddr,
+                    metaIo,
+                    grpId,
+                    PageIdAllocator.INDEX_PARTITION,
+                    this.ctx.pageStore().pages(grpId, PageIdAllocator.INDEX_PARTITION),
+                    -1);
+            }
+            finally {
+                pageMem.writeUnlock(grpId, metaPageId, metaPage, null, true);
+            }
+        }
+        finally {
+            pageMem.releasePage(grpId, metaPageId, metaPage);
+        }
     }
 
     /**
