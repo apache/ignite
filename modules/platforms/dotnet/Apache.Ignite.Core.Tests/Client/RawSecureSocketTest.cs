@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Tests.Client
 
 
         // The following method is invoked by the RemoteCertificateValidationDelegate.
-        public static bool ValidateServerCertificate(
+        private static bool ValidateServerCertificate(
               object sender,
               X509Certificate certificate,
               X509Chain chain,
@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Tests.Client
             return false;
         }
 
-        public static void RunClient(string machineName, string serverName, int port)
+        private static void RunClient(string machineName, string serverName, int port)
         {
             // Create a TCP/IP client socket.
             // machineName is the host running the server application.
@@ -89,7 +89,8 @@ namespace Apache.Ignite.Core.Tests.Client
             var sslStream = new SslStream(client.GetStream(), false, ValidateServerCertificate, null);
 
             // The server name must match the name on the server certificate.
-            var certificate = new X509Certificate2(@"S:\W\incubator-ignite\modules\platforms\cpp\odbc-test\config\ssl\client_full.pem");
+            var certificate = LoadCertificateFile(
+                @"S:\W\incubator-ignite\modules\platforms\cpp\odbc-test\config\ssl\client_full.pem");
             var certsCollection = new X509CertificateCollection(new X509Certificate[] { certificate });
 
             try
@@ -113,6 +114,33 @@ namespace Apache.Ignite.Core.Tests.Client
 
             client.Close();
             Console.WriteLine("Client closed.");
+        }
+
+        static byte[] GetPem(string type, byte[] data)
+        {
+            string pem = Encoding.UTF8.GetString(data);
+            string header = String.Format("-----BEGIN {0}-----", type);
+            string footer = String.Format("-----END {0}-----", type);
+            int start = pem.IndexOf(header) + header.Length;
+            int end = pem.IndexOf(footer, start);
+            string base64 = pem.Substring(start, (end - start)).Trim();
+            return Convert.FromBase64String(base64);
+        }
+
+        static X509Certificate2 LoadCertificateFile(string filename)
+        {
+            using (System.IO.FileStream fs = System.IO.File.OpenRead(filename))
+            {
+                byte[] data = new byte[fs.Length];
+                byte[] res = null;
+                fs.Read(data, 0, data.Length);
+                if (data[0] != 0x30)
+                {
+                    res = GetPem("RSA PRIVATE KEY", data);
+                }
+                X509Certificate2 x509 = new X509Certificate2(res); //Exception hit here
+                return x509;
+            }
         }
     }
 }
