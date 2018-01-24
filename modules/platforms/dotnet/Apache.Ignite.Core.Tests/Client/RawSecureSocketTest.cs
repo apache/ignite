@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client
 {
+    using System;
     using Apache.Ignite.Core.Client;
     using NUnit.Framework;
 
@@ -31,6 +32,12 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestSslOnServer()
         {
+            // S:\W\incubator-ignite\modules\platforms\cpp\odbc-test\config\ssl\server.jks
+            // IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH
+
+            Environment.SetEnvironmentVariable("IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH", 
+                @"S:\W\incubator-ignite\modules\platforms\cpp\odbc-test\config");
+
             using (var ignite = Ignition.Start(
                 @"S:\W\incubator-ignite\modules\platforms\cpp\odbc-test\config\queries-ssl.xml"))
             {
