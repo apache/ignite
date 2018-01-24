@@ -20,43 +20,70 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
-/** FIXME SHQ */
-public class JdbcBulkLoadFileBatchRequest extends JdbcRequest {
+/** A JDBC request that sends a batch of a file to the server. Used when handling
+ * {@link SqlBulkLoadCommand} command. */
+public class JdbcBulkLoadBatchRequest extends JdbcRequest {
 
-    public static final int CMD_MIN = 0;
+    /** A sentinel to indicate that {@link #cmd} field was not initialized. */
+    public static final int CMD_UNKNOWN = -1;
+
+    /** Next batch comes in this request and there are more batches. */
     public static final int CMD_CONTINUE = 0;
-    public static final int CMD_FINISHED_ERROR = 1;
-    public static final int CMD_FINISHED_EOF = 2;
-    public static final int CMD_MAX = 2;
 
+    /**
+     * This is the final batch from the client and there was an error on the client side,
+     * so terminate with error on the server side as well.
+     */
+    public static final int CMD_FINISHED_ERROR = 1;
+
+    /**
+     * This is the final batch of the file and everything went well on the client side.
+     * Server may complete the request.
+     */
+    public static final int CMD_FINISHED_EOF = 2;
+
+    /** QueryID of the original COPY command request. */
     @NotNull private long queryId;
-    @NotNull private int batchNum = 0;
+
+    /** Batch index starting from 0. */
+    @NotNull private int batchIdx;
+
+    /** Command (see CMD_xxx constants above). */
     @NotNull private int cmd;
+
+    /** Data in this batch. */
     @NotNull private byte[] data;
 
-    public JdbcBulkLoadFileBatchRequest() {
+    public JdbcBulkLoadBatchRequest() {
         super(BULK_LOAD_BATCH);
+
+        batchIdx = -1;
+        cmd = CMD_UNKNOWN;
     }
 
-    public JdbcBulkLoadFileBatchRequest(long queryId, int num, int error) {
+    public JdbcBulkLoadBatchRequest(long queryId, int num, int error) {
         this(queryId, num, error, new byte[0]);
     }
 
     /**
      * @param queryId
-     * @param batchNum
+     * @param batchIdx
      * @param cmd
      * @param data
      */
-    public JdbcBulkLoadFileBatchRequest(long queryId, int batchNum, int cmd, byte[] data) {
+    public JdbcBulkLoadBatchRequest(long queryId, int batchIdx, int cmd, byte[] data) {
         super(BULK_LOAD_BATCH);
+
         this.queryId = queryId;
-        this.batchNum = batchNum;
-        assert cmd >= CMD_MIN && cmd <= CMD_MAX;
+        this.batchIdx = batchIdx;
+
+        assert isCmdValid(cmd) : "Invalid command value: " + cmd;
         this.cmd = cmd;
+
         this.data = data;
     }
 
@@ -70,18 +97,18 @@ public class JdbcBulkLoadFileBatchRequest extends JdbcRequest {
     }
 
     /**
-     * Returns the batchNum.
+     * Returns the batch index.
      *
-     * @return batchNum.
+     * @return The batch index.
      */
-    public long batchNum() {
-        return batchNum;
+    public long batchIdx() {
+        return batchIdx;
     }
 
     /**
-     * Returns the cmd.
+     * Returns the command (see CMD_xxx constants for details).
      *
-     * @return cmd.
+     * @return The command.
      */
     public int cmd() {
         return cmd;
@@ -90,9 +117,9 @@ public class JdbcBulkLoadFileBatchRequest extends JdbcRequest {
     /**
      * Returns the data.
      *
-     * @return data or null if data was not supplied
+     * @return data if data was not supplied
      */
-    public byte[] data() {
+    public @NotNull byte[] data() {
         return data;
     }
 
@@ -101,7 +128,7 @@ public class JdbcBulkLoadFileBatchRequest extends JdbcRequest {
         super.writeBinary(writer);
 
         writer.writeLong(queryId);
-        writer.writeInt(batchNum);
+        writer.writeInt(batchIdx);
         writer.writeInt(cmd);
         writer.writeByteArray(data);
     }
@@ -111,20 +138,30 @@ public class JdbcBulkLoadFileBatchRequest extends JdbcRequest {
         super.readBinary(reader);
 
         queryId = reader.readLong();
-        batchNum = reader.readInt();
+        batchIdx = reader.readInt();
 
         int c = reader.readInt();
-
-        if (c < CMD_MIN || c > CMD_MAX)
+        if (!isCmdValid(c))
             throw new BinaryObjectException("Invalid command: " + cmd);
 
         cmd = c;
 
         data = reader.readByteArray();
+        assert data != null;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcBulkLoadFileBatchRequest.class, this);
+        return S.toString(JdbcBulkLoadBatchRequest.class, this);
+    }
+
+    /**
+     * Checks if the command value is valid.
+     *
+     * @param c The command value to check.
+     * @return True if valid, false otherwise.
+     */
+    private static boolean isCmdValid(int c) {
+        return c >= CMD_CONTINUE && c <= CMD_FINISHED_EOF;
     }
 }

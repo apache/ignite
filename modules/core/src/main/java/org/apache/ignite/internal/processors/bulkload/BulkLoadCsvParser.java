@@ -17,8 +17,14 @@
 
 package org.apache.ignite.internal.processors.bulkload;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.bulkload.pipeline.CharsetDecoderBlock;
+import org.apache.ignite.internal.processors.bulkload.pipeline.CsvLineProcessorBlock;
+import org.apache.ignite.internal.processors.bulkload.pipeline.PipelineBlock;
+import org.apache.ignite.internal.processors.bulkload.pipeline.StrListAppenderBlock;
+import org.apache.ignite.internal.processors.bulkload.pipeline.LineSplitterBlock;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadContext;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadFileBatchRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 
 import java.util.ArrayList;
@@ -26,96 +32,72 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadFileBatchRequest.CMD_CONTINUE;
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadFileBatchRequest.CMD_FINISHED_EOF;
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadFileBatchRequest.CMD_FINISHED_ERROR;
+import static org.apache.ignite.internal.processors.bulkload.BulkLoadFormat.DEFAULT_INPUT_CHARSET;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_CONTINUE;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_ERROR;
 
-/** FIXME SHQ */
+/** CSV parser for COPY command. */
 public class BulkLoadCsvParser extends BulkLoadParser {
 
-    private final LinkedList<byte []> inputBatches;
-    private long nextBatchNum;
+    /** Next batch index (for a very simple check that all batches were delivered to us). */
+    private long nextBatchIdx;
 
+    /** Decoder for the input stream of bytes */
+    private final PipelineBlock<byte[], char[]> decoder;
+
+    private final StrListAppenderBlock strListAppenderBlock;
+
+    /** Creates bulk load CSV parser.
+     *
+     * @param format Format options (parsed from COPY command on the server side).
+     */
     public BulkLoadCsvParser(BulkLoadFormat format) {
         super(format);
-        inputBatches = new LinkedList<>();
-        nextBatchNum = 0;
+
+        nextBatchIdx = 0;
+
+        decoder = new CharsetDecoderBlock(DEFAULT_INPUT_CHARSET);
+
+        strListAppenderBlock = new StrListAppenderBlock();
+
+        decoder.append(new LineSplitterBlock(BulkLoadCsvFormat.LINE_SEP_RE))
+               .append(new CsvLineProcessorBlock(BulkLoadCsvFormat.FIELD_SEP_RE, BulkLoadCsvFormat.QUOTE_CHAR))
+               .append(strListAppenderBlock);
     }
 
-    @Override public Iterable<List<Object>> processBatch(JdbcBulkLoadContext ctx, JdbcBulkLoadFileBatchRequest req) {
+    /** {@inheritDoc} */
+    @Override public Iterable<List<Object>> processBatch(JdbcBulkLoadContext ctx, JdbcBulkLoadBatchRequest req)
+        throws IgniteCheckedException {
+
+        if (nextBatchIdx != req.batchIdx())
+            throw new IgniteSQLException("Batch #" + (nextBatchIdx + 1) +
+                " is missing. Received #" + req.batchIdx() + " instead.");
+
+        nextBatchIdx++;
+
         switch (req.cmd()) {
+            case CMD_FINISHED_EOF:
+                return parseBatch(req, true);
+
             case CMD_CONTINUE:
-                if (nextBatchNum != req.batchNum())
-                    throw new IgniteSQLException("Batch #" + (nextBatchNum + 1) + " is missing");
-
-                addBatch(req);
-
-                nextBatchNum++;
-
-                return Collections.emptyList();
+                return parseBatch(req, false);
 
             case CMD_FINISHED_ERROR:
-                clearBatches();
-
                 return Collections.emptyList();
-
-            case CMD_FINISHED_EOF:
-                return processFile(joinBatches());
 
             default:
                 throw new IllegalArgumentException();
         }
     }
 
-    private void addBatch(JdbcBulkLoadFileBatchRequest req) {
-        inputBatches.addLast(req.data());
-    }
+    private Iterable<List<Object>> parseBatch(JdbcBulkLoadBatchRequest req, boolean isLastBatch)
+        throws IgniteCheckedException {
 
-    private void clearBatches() {
-        inputBatches.clear();
-    }
+        List<List<Object>> result = new LinkedList<>();
+        strListAppenderBlock.output(result);
 
-    private byte[] joinBatches() {
-        int size = 0;
-
-        for (byte[] batch : inputBatches)
-            size += batch.length;
-
-        byte[] fileBytes = new byte[size];
-
-        int pos = 0;
-        for (byte[] batch : inputBatches) {
-            System.arraycopy(batch, 0, fileBytes, pos, batch.length);
-            pos += batch.length;
-        }
-
-        return fileBytes;
-    }
-
-    // A dumb stub for now for CSV parsing with hardcoded parameters and inefficient processing
-
-    private Iterable<List<Object>> processFile(byte[] input) {
-
-        String inputStr = new String(input, BulkLoadFormat.DEFAULT_INPUT_CHARSET);
-
-        String[] lines = inputStr.split(BulkLoadCsvFormat.LINE_SEP_RE);
-
-        List<List<Object>> result = new ArrayList<>(lines.length);
-
-        for (String line : lines) {
-            String[] fields = line.split(BulkLoadCsvFormat.FIELD_SEP_RE);
-
-            List<Object> convertedFields = new ArrayList<>(fields.length);
-
-            for (String field : fields) {
-                if (field.startsWith(BulkLoadCsvFormat.QUOTE_CHAR) && field.endsWith(BulkLoadCsvFormat.QUOTE_CHAR))
-                    field = field.substring(1, field.length() - 1);
-
-                convertedFields.add(field);
-            }
-
-            result.add(convertedFields);
-        }
+        decoder.accept(req.data(), isLastBatch);
 
         return result;
     }

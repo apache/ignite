@@ -26,15 +26,20 @@ import java.util.List;
 /** FIXME SHQ */
 public abstract class BulkLoadFormat {
 
-    static final Charset DEFAULT_INPUT_CHARSET = Charset.forName("UTF-8");
+    public static final Charset DEFAULT_INPUT_CHARSET = Charset.forName("UTF-8");
 
     public abstract String name();
 
     public static BulkLoadFormat createFormatFor(String name) throws IgniteCheckedException {
-        if (name.equalsIgnoreCase(BulkLoadCsvFormat.NAME))
-            return new BulkLoadCsvFormat();
 
-        throw new IgniteCheckedException("Unknown format name: " + name);
+        switch (name.trim().toUpperCase()) {
+
+            case BulkLoadCsvFormat.NAME:
+                return new BulkLoadCsvFormat();
+
+            default:
+                throw new IgniteCheckedException("Unknown format name: " + name);
+        }
     }
 
     public static List<String> formatNames() {

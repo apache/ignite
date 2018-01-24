@@ -21,22 +21,30 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadParameters;
+import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * A request from server (in form of reply) to send files from client to server,
  * which is sent as a response to SQL COPY command (see IGNITE-6917 for details).
  *
+ * @see SqlBulkLoadCommand
  */
-public class JdbcFilesToSendResult extends JdbcResult {
+public class JdbcBulkLoadBatchRequestResult extends JdbcResult {
 
-    /** Query ID for matching this command on server in further {@link JdbcBulkLoadFileBatchRequest} commands. */
+    /** Query ID for matching this command on server in further {@link JdbcBulkLoadBatchRequest} commands. */
     private long queryId;
 
+    /**
+     * Bulk load parameters, which are parsed on the server side and sent to client to specify
+     * what files to send, batch size, etc. */
     private BulkLoadParameters params;
 
-    public JdbcFilesToSendResult() {
-        super(BULK_LOAD_BATCH);
+    /**
+     * Creates uninitialized bulk load batch request result.
+     */
+    public JdbcBulkLoadBatchRequestResult() {
+        super(BULK_LOAD_BATCH_REQUEST);
 
         queryId = 0;
         params = null;
@@ -44,9 +52,12 @@ public class JdbcFilesToSendResult extends JdbcResult {
 
     /**
      * Constructs a request from server (in form of reply) to send files from client to server.
+     *
+     * @param queryId Query ID to send in further {@link JdbcBulkLoadBatchRequest}-s.
+     * @param params Various parameters for sending batches from client side.
      */
-    public JdbcFilesToSendResult(long queryId, BulkLoadParameters params) {
-        super(BULK_LOAD_BATCH);
+    public JdbcBulkLoadBatchRequestResult(long queryId, BulkLoadParameters params) {
+        super(BULK_LOAD_BATCH_REQUEST);
 
         this.queryId = queryId;
         this.params = params;
@@ -62,9 +73,9 @@ public class JdbcFilesToSendResult extends JdbcResult {
     }
 
     /**
-     * Returns the params.
+     * Returns the parameters for the client.
      *
-     * @return params.
+     * @return The parameters for the client.
      */
     public BulkLoadParameters params() {
         return params;
@@ -96,6 +107,6 @@ public class JdbcFilesToSendResult extends JdbcResult {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcFilesToSendResult.class, this);
+        return S.toString(JdbcBulkLoadBatchRequestResult.class, this);
     }
 }

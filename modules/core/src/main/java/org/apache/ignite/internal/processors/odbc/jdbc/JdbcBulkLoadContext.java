@@ -22,13 +22,13 @@ import org.apache.ignite.internal.processors.bulkload.BulkLoadContext;
 /** FIXME SHQ */
 public class JdbcBulkLoadContext {
 
-    private final JdbcFilesToSendResult cmdParsingResult;
+    private final JdbcBulkLoadBatchRequestResult cmdParsingResult;
 
     private final BulkLoadContext loadContext;
 
     private int updateCnt;
 
-    public JdbcBulkLoadContext(JdbcFilesToSendResult cmdParsingResult, BulkLoadContext context) {
+    public JdbcBulkLoadContext(JdbcBulkLoadBatchRequestResult cmdParsingResult, BulkLoadContext context) {
         this.cmdParsingResult = cmdParsingResult;
         loadContext = context;
         updateCnt = 0;
@@ -48,7 +48,7 @@ public class JdbcBulkLoadContext {
      *
      * @return cmdParsingResult.
      */
-    public JdbcFilesToSendResult cmdParsingResult() {
+    public JdbcBulkLoadBatchRequestResult cmdParsingResult() {
         return cmdParsingResult;
     }
 

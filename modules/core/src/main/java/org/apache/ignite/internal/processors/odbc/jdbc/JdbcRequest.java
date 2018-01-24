@@ -60,7 +60,7 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     /** Get schemas metadata request. */
     static final byte META_SCHEMAS = 12;
 
-    /** Send file from client to server */
+    /** Send a batch of a data from client to server */
     static final byte BULK_LOAD_BATCH = 13;
 
     /** Request type. */
@@ -157,7 +157,7 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
                 break;
 
             case BULK_LOAD_BATCH:
-                req = new JdbcBulkLoadFileBatchRequest();
+                req = new JdbcBulkLoadBatchRequest();
 
                 break;
 

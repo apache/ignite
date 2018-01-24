@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.processors.bulkload;
 
+import java.util.regex.Pattern;
+
 /** FIXME SHQ */
 public class BulkLoadCsvFormat extends BulkLoadFormat {
 
-    public static final String LINE_SEP_RE = "[\r\n]+";
+    public static final Pattern LINE_SEP_RE = Pattern.compile("[\r\n]+");
 
-    public static final String FIELD_SEP_RE = ",";
+    public static final Pattern FIELD_SEP_RE = Pattern.compile(",");
 
-    public static final String QUOTE_CHAR = "\"";
+    public static final char QUOTE_CHAR = '"';
 
     public static final String NAME = "CSV";
 

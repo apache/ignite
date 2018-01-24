@@ -15,29 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.bulkload;
+package org.apache.ignite.internal.processors.bulkload.pipeline;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadContext;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest;
-
+import java.util.Arrays;
 import java.util.List;
 
 /** FIXME SHQ */
-public abstract class BulkLoadParser {
+public class StrListAppenderBlock extends PipelineBlock<String[], Object> {
 
-    private final BulkLoadFormat format;
+    private List<List<Object>> output;
 
-    protected BulkLoadParser(BulkLoadFormat format) {
-        this.format = format;
+    public StrListAppenderBlock() {
+        super();
+
+        this.output = null;
     }
 
-    public abstract Iterable<List<Object>> processBatch(JdbcBulkLoadContext ctx, JdbcBulkLoadBatchRequest req) throws IgniteCheckedException;
+    /**
+     * Sets the output.
+     *
+     * @param output The output.
+     */
+    public void output(List<List<Object>> output) {
+        this.output = output;
+    }
 
-    public static BulkLoadParser createParser(BulkLoadFormat format) {
-        if (format instanceof BulkLoadCsvFormat)
-            return new BulkLoadCsvParser(format);
-
-        throw new IllegalArgumentException("Internal error: format is not defined");
+    @Override public void accept(String[] elements, boolean isEof) {
+        output.add(Arrays.asList(elements));
     }
 }

@@ -32,6 +32,7 @@ import static org.apache.ignite.internal.sql.SqlParserUtils.parseIdentifier;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseInt;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdentifier;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipCommaOrRightParenthesis;
+import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatches;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword;
 
 /** FIXME SHQ */
@@ -39,9 +40,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
 
     private String localFileName;
 
-    private String schemaName;
-
-    private String tblName;
+    private SqlQualifiedName tblQName;
 
     private List<String> columns;
 
@@ -50,19 +49,17 @@ public class SqlBulkLoadCommand implements SqlCommand {
     private Integer batchSize;
 
     @Override public SqlCommand parse(SqlLexer lex) {
-        // COPY is already parsed
-
-        skipIfMatchesKeyword(lex, SqlKeyword.FROM);
+        skipIfMatchesKeyword(lex, SqlKeyword.FROM); // COPY keyword is already parsed
 
         parseFileName(lex);
 
         parseTableName(lex);
 
-        parseOptionalColumns(lex);
+        parseColumns(lex);
 
         parseFormat(lex);
 
-        parseOptionalParameters(lex);
+        parseParameters(lex);
 
         return this;
     }
@@ -74,21 +71,13 @@ public class SqlBulkLoadCommand implements SqlCommand {
     private void parseTableName(SqlLexer lex) {
         skipIfMatchesKeyword(lex, SqlKeyword.INTO);
 
-        SqlQualifiedName qname = parseQualifiedIdentifier(lex);
-
-        schemaName = qname.schemaName();
-        tblName = qname.name();
+        tblQName = parseQualifiedIdentifier(lex);
     }
 
-    private void parseOptionalColumns(SqlLexer lex) {
-        if (lex.lookAhead().tokenType() != SqlLexerTokenType.PARENTHESIS_LEFT) {
-            columns = null;
-            return;
-        }
+    private void parseColumns(SqlLexer lex) {
+        skipIfMatches(lex, SqlLexerTokenType.PARENTHESIS_LEFT);
 
         columns = new ArrayList<>();
-
-        lex.shift();
 
         do {
             columns.add(parseColumn(lex));
@@ -97,8 +86,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
     }
 
     private String parseColumn(SqlLexer lex) {
-        String name = parseIdentifier(lex, SqlLexerTokenType.COMMA.asString(),
-            SqlLexerTokenType.PARENTHESIS_RIGHT.asString());
+        String name = parseIdentifier(lex);
 
         return name;
     }
@@ -116,7 +104,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
         }
     }
 
-    private void parseOptionalParameters(SqlLexer lex) {
+    private void parseParameters(SqlLexer lex) {
         while (lex.lookAhead().tokenType() == SqlLexerTokenType.DEFAULT) {
             switch (lex.lookAhead().token()) {
                 case SqlKeyword.BATCH_SIZE:
@@ -144,29 +132,29 @@ public class SqlBulkLoadCommand implements SqlCommand {
      * @return schemaName.
      */
     public String schemaName() {
-        return schemaName;
+        return tblQName.schemaName();
     }
 
     @Override public void schemaName(String schemaName) {
-        this.schemaName = schemaName;
+        this.tblQName.schemaName(schemaName);
     }
 
     /**
-     * Returns the tblName.
+     * Returns the tblQName.
      *
-     * @return tblName.
+     * @return tblQName.
      */
     public String tableName() {
-        return tblName;
+        return tblQName.name();
     }
 
     /**
-     * Sets the tblName.
+     * Sets the tblQName.
      *
-     * @param tblName The tblName.
+     * @param tblName The tblQName.
      */
-    public void tblName(String tblName) {
-        this.tblName = tblName;
+    public void tableName(String tblName) {
+        this.tblQName.name(tblName);
     }
 
     public String localFileName() {

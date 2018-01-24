@@ -43,7 +43,6 @@ import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadContext;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadEntryConverter;
-import org.apache.ignite.internal.processors.bulkload.BulkLoadParameters;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
@@ -65,9 +64,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadFileBatchRequest.CMD_CONTINUE;
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadFileBatchRequest.CMD_FINISHED_EOF;
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadFileBatchRequest.CMD_FINISHED_ERROR;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_CONTINUE;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_ERROR;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_3_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_4_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC;
@@ -214,7 +213,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     return getSchemas((JdbcMetaSchemasRequest)req);
 
                 case BULK_LOAD_BATCH:
-                    return processBulkLoadFileBatch((JdbcBulkLoadFileBatchRequest)req);
+                    return processBulkLoadFileBatch((JdbcBulkLoadBatchRequest)req);
             }
 
             return new JdbcResponse(IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
@@ -225,7 +224,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         }
     }
 
-    private ClientListenerResponse processBulkLoadFileBatch(JdbcBulkLoadFileBatchRequest req) {
+    private ClientListenerResponse processBulkLoadFileBatch(JdbcBulkLoadBatchRequest req) {
         JdbcBulkLoadContext ctx = bulkLoadRequests.get(req.queryId());
 
         if (ctx == null)
@@ -384,7 +383,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                     BulkLoadContext bctx = ((BulkLoadContextCursor)fieldsCur).bulkLoadContext();
 
-                    JdbcFilesToSendResult filesToSendResult = new JdbcFilesToSendResult(qryId, bctx.params());
+                    JdbcBulkLoadBatchRequestResult filesToSendResult = new JdbcBulkLoadBatchRequestResult(qryId, bctx.params());
 
                     JdbcBulkLoadContext jdbcBulkCtx = new JdbcBulkLoadContext(filesToSendResult, bctx);
 
