@@ -50,6 +50,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPC;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -200,6 +201,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
+        CachePartitionFullCountersMap cntrMap = top.fullUpdateCounters();
+
         for (int p = 0; p < partCnt; p++) {
             if (ctx.exchange().hasPendingExchange()) {
                 if (log.isDebugEnabled())
@@ -247,7 +250,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                             grp.groupId()));
                     }
 
-                    msg.addPartition(p, true);
+                    msg.partitions().addHistorical(p, cntrMap.initialUpdateCounter(p), cntrMap.updateCounter(p), partCnt);
                 }
                 else {
                     if (grp.persistenceEnabled()) {
@@ -314,7 +317,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                             grp.groupId()));
                     }
 
-                        msg.addPartition(p, false);
+                        msg.partitions().addFull(p);
                     }
                 }
             }
@@ -640,6 +643,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** {@inheritDoc} */
     @Override public void dumpDebugInfo() {
-        supplier.dumpDebugInfo();
+        // No-op
     }
 }

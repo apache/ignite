@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -30,6 +32,8 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -40,6 +44,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 
@@ -107,23 +112,15 @@ class GridDhtPartitionSupplier {
         final SupplyContext sc,
         final IgniteLogger log) {
         if (sc != null) {
-            final Iterator it = sc.entryIt;
+            final IgniteRebalanceIterator it = sc.entryIt;
 
-            if (it != null && it instanceof GridCloseableIterator && !((GridCloseableIterator)it).isClosed()) {
+            if (it != null && !it.isClosed()) {
                 try {
-                    ((GridCloseableIterator)it).close();
+                    it.close();
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Iterator close failed.", e);
                 }
-            }
-
-            final GridDhtLocalPartition loc = sc.loc;
-
-            if (loc != null) {
-                assert loc.reservations() > 0;
-
-                loc.release();
             }
         }
     }
@@ -214,26 +211,21 @@ class GridDhtPartitionSupplier {
             synchronized (scMap) {
                 sctx = scMap.remove(scId);
 
-                assert sctx == null || d.updateSequence() == sctx.updateSeq;
+                assert sctx == null || d.updateSequence() == sctx.updateSeq :
+                    "d.updateSequence() == " + d.updateSequence() + ", sctx.updateSeq == " + sctx.updateSeq;
             }
 
             // Initial demand request should contain partitions list.
             if (sctx == null && d.partitions() == null)
                 return;
 
-            assert !(sctx != null && d.partitions() != null);
+            assert !(sctx != null && !d.partitions().isEmpty());
 
             long bCnt = 0;
-
-            SupplyContextPhase phase = SupplyContextPhase.NEW;
-
-            boolean newReq = true;
 
             long maxBatchesCnt = grp.config().getRebalanceBatchesPrefetchCount();
 
             if (sctx != null) {
-                phase = sctx.phase;
-
                 maxBatchesCnt = 1;
             }
             else {
@@ -244,187 +236,157 @@ class GridDhtPartitionSupplier {
                         ", idx=" + idx + "]");
             }
 
-            Iterator<Integer> partIt = sctx != null ? sctx.partIt : d.partitions().iterator();
+            IgniteRebalanceIterator iter;
 
-            if (sctx == null) {
-                for (Integer part : d.partitions()) {
+            Set<Integer> remainingParts;
+
+            if (sctx == null || sctx.entryIt == null) {
+                iter = grp.offheap().rebalanceIterator(d.partitions(), d.topologyVersion());
+
+                remainingParts = new HashSet<>(d.partitions().fullSet());
+
+                CachePartitionPartialCountersMap histMap = d.partitions().historicalMap();
+
+                for (int i = 0; i < histMap.size(); i++) {
+                    int p = histMap.partitionAt(i);
+
+                    remainingParts.add(p);
+                }
+
+                for (Integer part : d.partitions().fullSet()) {
+                    if (iter.isPartitionMissing(part))
+                        continue;
+
                     GridDhtLocalPartition loc = top.localPartition(part, d.topologyVersion(), false);
 
-                    if (loc == null || loc.state() != OWNING)
+                    assert loc != null && loc.state() == GridDhtPartitionState.OWNING;
+
+                    s.addEstimatedKeysCount(grp.offheap().totalPartitionEntriesCount(part));
+                }
+
+                for (int i = 0; i < histMap.size(); i++) {
+                    int p = histMap.partitionAt(i);
+
+                    if (iter.isPartitionMissing(p))
                         continue;
 
-                    if (grp.sharedGroup()) {
-                        for (int cacheId : grp.cacheIds())
-                            s.addKeysForCache(cacheId, grp.offheap().cacheEntriesCount(cacheId, part));
-                    }
-                    else
-                        s.addEstimatedKeysCount(grp.offheap().totalPartitionEntriesCount(part));
+                    s.addEstimatedKeysCount(histMap.updateCounterAt(i) - histMap.initialUpdateCounterAt(i));
                 }
             }
+            else {
+                iter = sctx.entryIt;
 
-            while ((sctx != null && newReq) || partIt.hasNext()) {
-                int part = sctx != null && newReq ? sctx.part : partIt.next();
+                remainingParts = sctx.remainingParts;
+            }
 
-                newReq = false;
+            while (iter.hasNext()) {
+                if (s.messageSize() >= grp.config().getRebalanceBatchSize()) {
+                    if (++bCnt >= maxBatchesCnt) {
+                        sctx = saveSupplyContext(scId,
+                            iter,
+                            remainingParts,
+                            d.topologyVersion(),
+                            d.updateSequence());
 
-                GridDhtLocalPartition loc;
+                        reply(node, d, s, scId);
 
-                if (sctx != null && sctx.loc != null) {
-                    loc = sctx.loc;
+                        return;
+                    }
+                    else {
+                        if (!reply(node, d, s, scId))
+                            return;
 
-                    assert loc.reservations() > 0;
+                        s = new GridDhtPartitionSupplyMessage(d.updateSequence(),
+                            grp.groupId(),
+                            d.topologyVersion(),
+                            grp.deploymentEnabled());
+                    }
                 }
+
+                CacheDataRow row = iter.next();
+
+                int part = row.partition();
+
+                GridDhtLocalPartition loc = top.localPartition(part, d.topologyVersion(), false);
+
+                if (!iter.isPartitionMissing(part) && (loc == null || loc.state() != OWNING)) {
+                    // Demander no longer needs this partition,
+                    // so we send '-1' partition and move on.
+                    iter.setPartitionMissing(part);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Demanding node does not need requested partition " +
+                            "[part=" + part + ", nodeId=" + id + ']');
+                }
+
+                if (iter.isPartitionMissing(part) && remainingParts.contains(part)) {
+                    s.missed(part);
+
+                    remainingParts.remove(part);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Requested partition is marked as missing on local node [part=" + part +
+                            ", demander=" + id + ']');
+
+                    continue;
+                }
+
+                if (!remainingParts.contains(part))
+                    continue;
+
+                GridCacheEntryInfo info = new GridCacheEntryInfo();
+
+                info.key(row.key());
+                info.expireTime(row.expireTime());
+                info.version(row.version());
+                info.value(row.value());
+                info.cacheId(row.cacheId());
+
+                if (preloadPred == null || preloadPred.apply(info))
+                    s.addEntry0(part, info, grp.shared(), grp.cacheObjectContext());
                 else {
-                    loc = top.localPartition(part, d.topologyVersion(), false);
-
-                    if (loc == null || loc.state() != OWNING || !loc.reserve()) {
-                        // Reply with partition of "-1" to let sender know that
-                        // this node is no longer an owner.
-                        s.missed(part);
-
-                        if (log.isDebugEnabled())
-                            log.debug("Requested partition is not owned by local node [part=" + part +
-                                ", demander=" + id + ']');
-
-                        continue;
-                    }
+                    if (log.isDebugEnabled())
+                        log.debug("Rebalance predicate evaluated to false (will not send " +
+                            "cache entry): " + info);
                 }
 
-                try {
-                    boolean partMissing = false;
-
-                    if (phase == SupplyContextPhase.NEW)
-                        phase = SupplyContextPhase.OFFHEAP;
-
-                    if (phase == SupplyContextPhase.OFFHEAP) {
-                        IgniteRebalanceIterator iter;
-
-                        if (sctx == null || sctx.entryIt == null) {
-                            iter = grp.offheap().rebalanceIterator(part, d.topologyVersion(),
-                                d.isHistorical(part) ? d.partitionCounter(part) : null);
-
-                            if (!iter.historical())
-                                assert !grp.persistenceEnabled() || !d.isHistorical(part);
-                            else
-                                assert grp.persistenceEnabled() && d.isHistorical(part);
-                        }
-                        else
-                            iter = (IgniteRebalanceIterator)sctx.entryIt;
-
-                        while (iter.hasNext()) {
-                            List<ClusterNode> nodes = grp.affinity().cachedAffinity(d.topologyVersion()).get(part);
-
-                            if (!nodes.contains(node)) {
-                                // Demander no longer needs this partition,
-                                // so we send '-1' partition and move on.
-                                s.missed(part);
-
-                                if (log.isDebugEnabled())
-                                    log.debug("Demanding node does not need requested partition " +
-                                        "[part=" + part + ", nodeId=" + id + ']');
-
-                                partMissing = true;
-
-                                if (sctx != null) {
-                                    sctx = new SupplyContext(
-                                        phase,
-                                        partIt,
-                                        null,
-                                        part,
-                                        loc,
-                                        d.updateSequence());
-                                }
-
-                                break;
-                            }
-
-                            if (s.messageSize() >= grp.config().getRebalanceBatchSize()) {
-                                if (++bCnt >= maxBatchesCnt) {
-                                    saveSupplyContext(scId,
-                                        phase,
-                                        partIt,
-                                        part,
-                                        iter,
-                                        loc,
-                                        d.topologyVersion(),
-                                        d.updateSequence());
-
-                                    loc = null;
-
-                                    reply(node, d, s, scId);
-
-                                    return;
-                                }
-                                else {
-                                    if (!reply(node, d, s, scId))
-                                        return;
-
-                                    s = new GridDhtPartitionSupplyMessage(d.updateSequence(),
-                                        grp.groupId(),
-                                        d.topologyVersion(),
-                                        grp.deploymentEnabled());
-                                }
-                            }
-
-                            CacheDataRow row = iter.next();
-
-                            GridCacheEntryInfo info = new GridCacheEntryInfo();
-
-                            info.key(row.key());
-                            info.expireTime(row.expireTime());
-                            info.version(row.version());
-                            info.value(row.value());
-                            info.cacheId(row.cacheId());
-
-                            if (preloadPred == null || preloadPred.apply(info))
-                                s.addEntry0(part, info, grp.shared(), grp.cacheObjectContext());
-                            else {
-                                if (log.isDebugEnabled())
-                                    log.debug("Rebalance predicate evaluated to false (will not send " +
-                                        "cache entry): " + info);
-
-                                continue;
-                            }
-
-                            // Need to manually prepare cache message.
-// TODO GG-11141.
-//                                if (depEnabled && !prepared) {
-//                                    ClassLoader ldr = swapEntry.keyClassLoaderId() != null ?
-//                                        cctx.deploy().getClassLoader(swapEntry.keyClassLoaderId()) :
-//                                        swapEntry.valueClassLoaderId() != null ?
-//                                            cctx.deploy().getClassLoader(swapEntry.valueClassLoaderId()) :
-//                                            null;
-//
-//                                    if (ldr == null)
-//                                        continue;
-//
-//                                    if (ldr instanceof GridDeploymentInfo) {
-//                                        s.prepare((GridDeploymentInfo)ldr);
-//
-//                                        prepared = true;
-//                                    }
-//                                }
-                        }
-
-                        if (partMissing)
-                            continue;
-                    }
-
-                    // Mark as last supply message.
+                if (iter.isPartitionDone(part)) {
                     s.last(part, loc.updateCounter());
 
-                    if (!d.isHistorical(part))
-                        s.clean(part);
-
-                    phase = SupplyContextPhase.NEW;
-
-                    sctx = null;
+                    remainingParts.remove(part);
                 }
-                finally {
-                    if (loc != null)
-                        loc.release();
+
+                // Need to manually prepare cache message.
+                // TODO GG-11141.
+            }
+
+            Iterator<Integer> remainingIter = remainingParts.iterator();
+
+            while (remainingIter.hasNext()) {
+                int p = remainingIter.next();
+
+                if (iter.isPartitionDone(p)) {
+                    GridDhtLocalPartition loc = top.localPartition(p, d.topologyVersion(), false);
+
+                    assert loc != null;
+
+                    s.last(p, loc.updateCounter());
+
+                    remainingIter.remove();
+                }
+                else if (iter.isPartitionMissing(p)) {
+                    s.missed(p);
+
+                    remainingIter.remove();
                 }
             }
+
+            assert remainingParts.isEmpty();
+
+            if (sctx != null)
+                clearContext(sctx, log);
+            else
+                iter.close();
 
             reply(node, d, s, scId);
 
@@ -482,115 +444,55 @@ class GridDhtPartitionSupplier {
 
     /**
      * @param t Tuple.
-     * @param phase Phase.
-     * @param partIt Partition it.
-     * @param part Partition.
      * @param entryIt Entry it.
      */
-    private void saveSupplyContext(
+    @Nullable private SupplyContext saveSupplyContext(
         T3<UUID, Integer, AffinityTopologyVersion> t,
-        SupplyContextPhase phase,
-        Iterator<Integer> partIt,
-        int part,
-        Iterator<?> entryIt,
-        GridDhtLocalPartition loc,
+        IgniteRebalanceIterator entryIt,
+        Set<Integer> sentLast,
         AffinityTopologyVersion topVer,
         long updateSeq) {
         synchronized (scMap) {
             if (grp.affinity().lastVersion().equals(topVer)) {
                 assert scMap.get(t) == null;
 
-                scMap.put(t,
-                    new SupplyContext(phase,
-                        partIt,
-                        entryIt,
-                        part,
-                        loc,
-                        updateSeq));
-            }
-            else if (loc != null) {
-                assert loc.reservations() > 0;
+                SupplyContext sctx = new SupplyContext(entryIt, sentLast, updateSeq);
 
-                loc.release();
+                scMap.put(t, sctx);
+
+                return sctx;
             }
         }
-    }
 
-    /**
-     * Supply context phase.
-     */
-    private enum SupplyContextPhase {
-        /** */
-        NEW,
-        /** */
-        OFFHEAP
+        return null;
     }
 
     /**
      * Supply context.
      */
     private static class SupplyContext {
-        /** Phase. */
-        private final SupplyContextPhase phase;
-
-        /** Partition iterator. */
-        @GridToStringExclude
-        private final Iterator<Integer> partIt;
-
         /** Entry iterator. */
         @GridToStringExclude
-        private final Iterator<?> entryIt;
+        private final IgniteRebalanceIterator entryIt;
 
-        /** Partition. */
-        private final int part;
-
-        /** Local partition. */
-        private final GridDhtLocalPartition loc;
+        private final Set<Integer> remainingParts;
 
         /** Update seq. */
         private final long updateSeq;
 
         /**
-         * @param phase Phase.
-         * @param partIt Partition iterator.
-         * @param loc Partition.
          * @param updateSeq Update sequence.
          * @param entryIt Entry iterator.
-         * @param part Partition.
          */
-        public SupplyContext(SupplyContextPhase phase,
-            Iterator<Integer> partIt,
-            Iterator<?> entryIt,
-            int part,
-            GridDhtLocalPartition loc,
-            long updateSeq) {
-            this.phase = phase;
-            this.partIt = partIt;
+        public SupplyContext(IgniteRebalanceIterator entryIt, Set<Integer> remainingParts, long updateSeq) {
             this.entryIt = entryIt;
-            this.part = part;
-            this.loc = loc;
+            this.remainingParts = remainingParts;
             this.updateSeq = updateSeq;
         }
 
         /** {@inheritDoc} */
         public String toString() {
             return S.toString(SupplyContext.class, this);
-        }
-    }
-
-    /**
-     * Dumps debug information.
-     */
-    public void dumpDebugInfo() {
-        synchronized (scMap) {
-            if (!scMap.isEmpty()) {
-                U.warn(log, "Rebalancing supplier reserved following partitions:");
-
-                for (SupplyContext sc : scMap.values()) {
-                    if (sc.loc != null)
-                        U.warn(log, ">>> " + sc.loc);
-                }
-            }
         }
     }
 }

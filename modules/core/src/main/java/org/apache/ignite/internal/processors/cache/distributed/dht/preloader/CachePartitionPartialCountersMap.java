@@ -73,6 +73,13 @@ public class CachePartitionPartialCountersMap implements Serializable {
     }
 
     /**
+     * @return {@code True} if map is empty.
+     */
+    public boolean isEmpty() {
+        return curIdx == 0;
+    }
+
+    /**
      * Adds partition counters for a partition with the given ID.
      *
      * @param partId Partition ID to add.
@@ -97,11 +104,38 @@ public class CachePartitionPartialCountersMap implements Serializable {
     }
 
     /**
+     * Removes element.
+     *
+     * @param partId Partition ID.
+     * @return {@code True} if element was actually removed.
+     */
+    public boolean remove(int partId) {
+        int idx = partitionIndex(partId);
+
+        if (idx < 0)
+            return false;
+
+        for (int i = curIdx - 1; i >= idx; i--) {
+            partIds[i] = partIds[i + 1];
+            initialUpdCntrs[i] = initialUpdCntrs[i + 1];
+            updCntrs[i] = updCntrs[i + 1];
+        }
+
+        partIds[curIdx] = 0;
+        initialUpdCntrs[curIdx] = 0;
+        updCntrs[curIdx] = 0;
+
+        curIdx--;
+
+        return true;
+    }
+
+    /**
      * Cuts the array sizes according to curIdx. No more entries can be added to this map
      * after this method is called.
      */
     public void trim() {
-        if (curIdx < partIds.length) {
+        if (partIds != null && curIdx < partIds.length) {
             partIds = Arrays.copyOf(partIds, curIdx);
             initialUpdCntrs = Arrays.copyOf(initialUpdCntrs, curIdx);
             updCntrs = Arrays.copyOf(updCntrs, curIdx);
@@ -114,6 +148,14 @@ public class CachePartitionPartialCountersMap implements Serializable {
      */
     public int partitionIndex(int partId) {
         return Arrays.binarySearch(partIds, 0, curIdx, partId);
+    }
+
+    /**
+     * @param partId Partition ID.
+     * @return {@code True} if partition is present in map.
+     */
+    public boolean contains(int partId) {
+        return partitionIndex(partId) >= 0;
     }
 
     /**

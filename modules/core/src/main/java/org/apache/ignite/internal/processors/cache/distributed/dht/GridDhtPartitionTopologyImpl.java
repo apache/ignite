@@ -753,7 +753,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 changed = true;
 
                                 if (log.isDebugEnabled()) {
-                                    log.debug("Evicting moving partition (it does not belong to affinity) [" +
+                                    log.debug("Evicting " + state + " partition (it does not belong to affinity) [" +
                                         "grp=" + grp.cacheOrGroupName() + ", part=" + locPart + ']');
                                 }
                             }

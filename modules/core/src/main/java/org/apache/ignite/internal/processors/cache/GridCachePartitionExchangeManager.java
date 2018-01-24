@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionFullCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.ForceRebalanceExchangeTask;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandLegacyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
@@ -376,6 +377,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     grp.preloader().handleDemandMessage(idx, id, (GridDhtPartitionDemandMessage) m);
 
                                     return;
+                                }
+                                else if (m instanceof GridDhtPartitionDemandLegacyMessage) {
+                                    grp.preloader().handleDemandMessage(idx, id,
+                                        new GridDhtPartitionDemandMessage((GridDhtPartitionDemandLegacyMessage) m));
                                 }
                             }
 
