@@ -24,6 +24,7 @@ import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.initializers.RandomInitializer;
+import org.apache.ignite.ml.trainers.local.LocalBatchTrainerInput;
 import org.apache.ignite.ml.util.Utils;
 
 /**

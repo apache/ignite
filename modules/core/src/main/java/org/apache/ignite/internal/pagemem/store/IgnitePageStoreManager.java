@@ -52,6 +52,11 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
         throws IgniteCheckedException;
 
     /**
+     * Initializes disk cache store structures.
+     */
+    public void initializeForMetastorage() throws IgniteCheckedException;
+
+    /**
      * Callback called when a cache is stopping. After this callback is invoked, no data associated with
      * the given cache will be stored on disk.
      *
@@ -193,4 +198,17 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @return {@code True} if index store for given cache group existed before node started.
      */
     public boolean hasIndexStore(int grpId);
+
+    /**
+     * @param grpDesc Cache group descriptor.
+     */
+    public void beforeCacheGroupStart(CacheGroupDescriptor grpDesc);
+
+    /**
+     * Calculates number of pages currently allocated for given cache group.
+     *
+     * @param grpId cache group id.
+     * @return number of pages.
+     */
+    public long pagesAllocated(int grpId);
 }
