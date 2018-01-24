@@ -39,7 +39,7 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
     /**
      * Invoked after checkpoint recover is finished.
      */
-    public void finishRecover();
+    public void finishRecover() throws IgniteCheckedException;
 
     /**
      * Callback called when a cache is starting.
