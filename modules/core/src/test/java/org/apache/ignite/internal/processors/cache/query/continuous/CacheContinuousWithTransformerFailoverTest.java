@@ -94,7 +94,7 @@ public class CacheContinuousWithTransformerFailoverTest extends GridCommonAbstra
 
         client = false;
 
-        IgniteOutClosure<IgniteCache<Integer, Integer>> rndCache =
+        IgniteOutClosure<IgniteCache<Integer, Integer>> cache =
             new IgniteOutClosure<IgniteCache<Integer, Integer>>() {
                 int cnt = 0;
 
@@ -135,7 +135,7 @@ public class CacheContinuousWithTransformerFailoverTest extends GridCommonAbstra
             lsnr.latch = new CountDownLatch(keyCnt);
 
             for (int key = 0; key < keyCnt; key++)
-                rndCache.apply().put(key, key);
+                cache.apply().put(key, key);
 
             assertTrue("Failed to wait for event. Left events: " + lsnr.latch.getCount(),
                 lsnr.latch.await(10, SECONDS));
@@ -177,6 +177,7 @@ public class CacheContinuousWithTransformerFailoverTest extends GridCommonAbstra
             qry.setRemoteTransformerFactory(FactoryBuilder.factoryOf(new IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Integer>, Integer>() {
                 @Override public Integer apply(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
                     latch.countDown();
+
                     throw new RuntimeException("Test error.");
                 }
             }));
@@ -253,7 +254,7 @@ public class CacheContinuousWithTransformerFailoverTest extends GridCommonAbstra
                 }
             });
 
-            try (QueryCursor<Cache.Entry<Integer, Integer>> ignored = cache2.query(qry1);
+            try (QueryCursor<Cache.Entry<Integer, Integer>> ignored1 = cache2.query(qry1);
                  QueryCursor<Cache.Entry<Integer, Integer>> ignored2 = cache2.query(qry2)) {
                 cache1.put(key1, key1);
                 cache1.put(key2, key2);
