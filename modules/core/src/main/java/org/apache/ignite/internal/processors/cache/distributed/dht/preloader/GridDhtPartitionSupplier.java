@@ -305,11 +305,8 @@ class GridDhtPartitionSupplier {
                             iter = grp.offheap().rebalanceIterator(part, d.topologyVersion(),
                                 d.isHistorical(part) ? d.partitionCounter(part) : null);
 
-                            if (!iter.historical()) {
+                            if (!iter.historical())
                                 assert !grp.persistenceEnabled() || !d.isHistorical(part);
-
-                                s.clean(part);
-                            }
                             else
                                 assert grp.persistenceEnabled() && d.isHistorical(part);
                         }
@@ -431,6 +428,9 @@ class GridDhtPartitionSupplier {
 
                     // Mark as last supply message.
                     s.last(part, loc.updateCounter());
+
+                    if (!d.isHistorical(part))
+                        s.clean(part);
 
                     phase = SupplyContextPhase.NEW;
 

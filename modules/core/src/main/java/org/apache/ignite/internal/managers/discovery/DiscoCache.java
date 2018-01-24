@@ -227,6 +227,14 @@ public class DiscoCache {
         return baselineNodes;
     }
 
+    /**
+     * @param nodeId Node ID to check.
+     * @return {@code True} if baseline is not set or the node is in the baseline topology.
+     */
+    public boolean baselineNode(UUID nodeId) {
+        return nodeIdToConsIdx == null || nodeIdToConsIdx.containsKey(nodeId);
+    }
+
     /** @return All nodes. */
     public List<ClusterNode> allNodes() {
         return allNodes;
@@ -279,6 +287,14 @@ public class DiscoCache {
     @Nullable public Collection<ClusterNode> aliveBaselineNodes() {
         return baselineNodes == null ? null : F.viewReadOnly(baselineNodes, BASELINE_TO_CLUSTER, aliveBaselineNodePred);
 
+    }
+
+    /**
+     * @param node Node to check.
+     * @return {@code True} if the node is in baseline or if baseline is not set.
+     */
+    public boolean baselineNode(ClusterNode node) {
+        return nodeIdToConsIdx == null || nodeIdToConsIdx.get(node.id()) != null;
     }
 
     /**

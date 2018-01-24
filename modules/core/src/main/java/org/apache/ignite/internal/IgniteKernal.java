@@ -2465,9 +2465,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         // Ack all class paths.
         if (log.isDebugEnabled()) {
-            log.debug("Boot class path: " + rtBean.getBootClassPath());
-            log.debug("Class path: " + rtBean.getClassPath());
-            log.debug("Library path: " + rtBean.getLibraryPath());
+            try {
+                log.debug("Boot class path: " + rtBean.getBootClassPath());
+                log.debug("Class path: " + rtBean.getClassPath());
+                log.debug("Library path: " + rtBean.getLibraryPath());
+            }
+            catch (Exception ignore) {
+                // No-op: ignore for Java 9+ and non-standard JVMs.
+            }
         }
     }
 
