@@ -25,7 +25,6 @@ import java.util.Enumeration;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -80,8 +79,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  */
 public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAware {
     /** Delay to be passed to {@link DOMConfigurator#configureAndWatch(String, long)}. */
-    private static final int WATCH_DELAY =
-        IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_LOG4J_CONFIG_UPDATE_DELAY, 5000);
+    private static final int DFLT_WATCH_DELAY = 5000;
 
     /** Appenders. */
     private static Collection<FileAppender> fileAppenders = new GridConcurrentHashSet<>();
@@ -189,11 +187,27 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
 
     /**
      * Creates new logger with given configuration {@code path}.
+     * Calling this constructor is equivalent to calling {@code Log4JLogger(path, DFLT_WATCH_DELAY}.
      *
      * @param path Path to log4j configuration XML file.
      * @throws IgniteCheckedException Thrown in case logger can't be created.
      */
     public Log4JLogger(final String path) throws IgniteCheckedException {
+        this(path, DFLT_WATCH_DELAY);
+    }
+
+    /**
+     * Creates new logger with given configuration {@code path}.
+     * <p>
+     * Created logger will check the configuration file for changes once every {@code watchDelay} milliseconds,
+     * and update its configuration if the file was changed.
+     * See {@link DOMConfigurator#configureAndWatch(String, long)} for details.
+     *
+     * @param path Path to log4j configuration XML file.
+     * @param watchDelay delay in milliseconds used to check configuration file for changes.
+     * @throws IgniteCheckedException Thrown in case logger can't be created.
+     */
+    public Log4JLogger(final String path, int watchDelay) throws IgniteCheckedException {
         if (path == null)
             throw new IgniteCheckedException("Configuration XML file for Log4j must be specified.");
 
@@ -207,7 +221,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
                 if (init)
-                    DOMConfigurator.configureAndWatch(cfgFile.getPath(), WATCH_DELAY);
+                    DOMConfigurator.configureAndWatch(cfgFile.getPath(), watchDelay);
 
                 return Logger.getRootLogger();
             }
@@ -218,11 +232,27 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
 
     /**
      * Creates new logger with given configuration {@code cfgFile}.
+     * Calling this constructor is equivalent to calling {@code Log4JLogger(cfgFile, DFLT_WATCH_DELAY}.
      *
      * @param cfgFile Log4j configuration XML file.
      * @throws IgniteCheckedException Thrown in case logger can't be created.
      */
     public Log4JLogger(File cfgFile) throws IgniteCheckedException {
+        this(cfgFile, DFLT_WATCH_DELAY);
+    }
+
+    /**
+     * Creates new logger with given configuration {@code cfgFile}.
+     * <p>
+     * Created logger will check the configuration file for changes once every {@code watchDelay} milliseconds,
+     * and update its configuration if the file was changed.
+     * See {@link DOMConfigurator#configureAndWatch(String, long)} for details.
+     *
+     * @param cfgFile Log4j configuration XML file.
+     * @param watchDelay delay in milliseconds used to check configuration file for changes.
+     * @throws IgniteCheckedException Thrown in case logger can't be created.
+     */
+    public Log4JLogger(final File cfgFile, final int watchDelay) throws IgniteCheckedException {
         if (cfgFile == null)
             throw new IgniteCheckedException("Configuration XML file for Log4j must be specified.");
 
@@ -234,7 +264,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
                 if (init)
-                    DOMConfigurator.configureAndWatch(cfg, WATCH_DELAY);
+                    DOMConfigurator.configureAndWatch(cfgFile.getPath(), watchDelay);
 
                 return Logger.getRootLogger();
             }
@@ -245,11 +275,27 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
 
     /**
      * Creates new logger with given configuration {@code cfgUrl}.
+     * Calling this constructor is equivalent to calling {@code Log4JLogger(cfgUrl, DFLT_WATCH_DELAY}.
      *
      * @param cfgUrl URL for Log4j configuration XML file.
      * @throws IgniteCheckedException Thrown in case logger can't be created.
      */
     public Log4JLogger(final URL cfgUrl) throws IgniteCheckedException {
+        this(cfgUrl, DFLT_WATCH_DELAY);
+    }
+
+    /**
+     * Creates new logger with given configuration {@code cfgUrl}.
+     * <p>
+     * Created logger will check the configuration file for changes once every {@code watchDelay} milliseconds,
+     * and update its configuration if the file was changed.
+     * See {@link DOMConfigurator#configureAndWatch(String, long)} for details.
+     *
+     * @param cfgUrl URL for Log4j configuration XML file.
+     * @param watchDelay delay in milliseconds used to check configuration file for changes.
+     * @throws IgniteCheckedException Thrown in case logger can't be created.
+     */
+    public Log4JLogger(final URL cfgUrl, int watchDelay) throws IgniteCheckedException {
         if (cfgUrl == null)
             throw new IgniteCheckedException("Configuration XML file for Log4j must be specified.");
 
@@ -258,7 +304,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
                 if (init)
-                    DOMConfigurator.configureAndWatch(cfg, WATCH_DELAY);
+                    DOMConfigurator.configureAndWatch(cfg, watchDelay);
 
                 return Logger.getRootLogger();
             }

@@ -816,15 +816,6 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_DIRECT_IO_ENABLED = "IGNITE_DIRECT_IO_ENABLED";
 
-
-    /**
-     * Delay to be used by Log4j to check if the xml configuration has changed, and update logger configuration
-     * if needed. The value is a number of milliseconds.<br>
-     * Note that it only affects legacy Log4j logger implementation. If Log4j2 is used, {@code monitorInterval}
-     * attribute needs to be used to set configuration update frequency.
-     */
-    public static final String IGNITE_LOG4J_CONFIG_UPDATE_DELAY = "IGNITE_LOG4J_CONFIG_UPDATE_DELAY";
-
     /**
      * Enforces singleton.
      */
