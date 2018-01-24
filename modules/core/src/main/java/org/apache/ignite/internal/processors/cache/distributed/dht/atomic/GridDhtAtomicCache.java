@@ -2071,7 +2071,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                             validation = true;
 
-                            ctx.validateKeyAndValue(entry.key(), updated);
+                            if (updated != null)
+                                ctx.validateKeyAndValue(entry.key(), updated);
                         }
                     }
                     catch (Exception e) {
