@@ -89,7 +89,7 @@ namespace Apache.Ignite.Core.Tests.Client
             var sslStream = new SslStream(client.GetStream(), false, ValidateServerCertificate, null);
 
             // The server name must match the name on the server certificate.
-            var certificate = new X509Certificate2(@"d:\mySrvKeystore.p12", "123456");
+            var certificate = new X509Certificate2(@"S:\W\incubator-ignite\modules\platforms\cpp\odbc-test\config\ssl\client_full.pem");
             var certsCollection = new X509CertificateCollection(new X509Certificate[] { certificate });
 
             try
