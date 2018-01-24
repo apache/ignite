@@ -66,13 +66,18 @@ namespace Apache.Ignite.Core.Impl.Client
         public Task<T> DoOutInOpAsync<T>(ClientOp opId, Action<IBinaryStream> writeAction,
             Func<IBinaryStream, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null)
         {
-            throw new NotImplementedException();
+            // TODO: Proper async.
+            var tcs = new TaskCompletionSource<T>();
+
+            tcs.SetResult(DoOutInOp(opId, writeAction, readFunc, errorFunc));
+
+            return tcs.Task;
         }
 
         /** <inheritDoc /> */
         public void Dispose()
         {
-            throw new NotImplementedException();
+            _stream.Dispose();
         }
     }
 }
