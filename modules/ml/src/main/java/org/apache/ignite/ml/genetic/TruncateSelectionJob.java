@@ -48,7 +48,6 @@ public class TruncateSelectionJob extends ComputeJobAdapter {
     /**
      * @param key Primary key of Chromosome to mutate
      * @param mutatedGeneKeys Primary keys of genes to be used in mutation
-     * @param mutationRate Mutation rate
      */
     public TruncateSelectionJob(Long key, List<Long> mutatedGeneKeys) {
         this.key = key;

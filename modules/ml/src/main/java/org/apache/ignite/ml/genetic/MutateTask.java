@@ -55,7 +55,7 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
     private GAConfiguration config = null;
 
     /**
-     * @param GAConfiguration
+     * @param config GAConfiguration
      */
     public MutateTask(GAConfiguration config) {
         this.config = config;

@@ -92,7 +92,7 @@ public class Movie {
     }
 
     /**
-     * @return
+     * @return List of genres
      */
     public List getGenre() {
         return genre;

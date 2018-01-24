@@ -41,7 +41,7 @@ public class ChromosomeCriteria {
     /**
      * Set criteria
      *
-     * @param List of criteria to be applied for a Chromosome ;Use format "name=value", ie: "coinType=QUARTER"
+     * @param criteria List of criteria to be applied for a Chromosome ;Use format "name=value", ie: "coinType=QUARTER"
      */
     public void setCriteria(List criteria) {
         this.criteria = criteria;
