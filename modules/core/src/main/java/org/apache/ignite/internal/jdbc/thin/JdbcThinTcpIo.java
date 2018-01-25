@@ -20,27 +20,14 @@ package org.apache.ignite.internal.jdbc.thin;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
 import java.net.Socket;
-import java.net.URL;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
+import java.net.UnknownHostException;
 import java.sql.SQLException;
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509TrustManager;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -57,7 +44,6 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 
@@ -130,6 +116,49 @@ public class JdbcThinTcpIo {
      * @throws IOException On IO error in handshake.
      */
     public void start() throws SQLException, IOException {
+        start(0);
+    }
+
+    /**
+     * @param timeout socket connection timeout in ms.
+     * @throws SQLException On connection error or reject.
+     * @throws IOException On IO error in handshake.
+     */
+    public void start(int timeout) throws SQLException, IOException {
+        InetAddress[] addrs;
+        try {
+            addrs = getAllAddressesByHost(connProps.getHost());
+        } catch(UnknownHostException exception) {
+            throw new SQLException("Failed to connect to server [host=" + connProps.getHost() +
+                    ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, exception);
+        }
+
+        List<String> inaccessibleAddrs = new LinkedList<>();
+        for (InetAddress addr : addrs) {
+            try {
+                connect(addr, timeout);
+                break;
+            } catch(IOException | IgniteCheckedException exception) {
+                inaccessibleAddrs.add(addr.getHostAddress());
+            }
+        }
+
+        if (inaccessibleAddrs.size() == addrs.length) {
+            throw new SQLException("Failed to connect to server [host=" + connProps.getHost() + ", addresses=" +
+                    inaccessibleAddrs + ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED);
+        }
+
+        handshake(CURRENT_VER);
+    }
+
+    /**
+     * Connect to host.
+     * @param addr address.
+     * @param timeout socket connection timeout in ms.
+     * @throws IOException On IO error.
+     * @throws IgniteCheckedException On connection reject.
+     */
+    private void connect(InetAddress addr, int timeout) throws IOException, IgniteCheckedException {
         Socket sock = new Socket();
 
         if (connProps.getSocketSendBuffer() != 0)
@@ -140,20 +169,21 @@ public class JdbcThinTcpIo {
 
         sock.setTcpNoDelay(connProps.isTcpNoDelay());
 
-        try {
-            sock.connect(new InetSocketAddress(connProps.getHost(), connProps.getPort()));
+        sock.connect(new InetSocketAddress(addr, connProps.getPort()),timeout);
 
-            endpoint = new IpcClientTcpEndpoint(sock);
+        endpoint = new IpcClientTcpEndpoint(sock);
 
-            out = new BufferedOutputStream(endpoint.outputStream());
-            in = new BufferedInputStream(endpoint.inputStream());
-        }
-        catch (IOException | IgniteCheckedException e) {
-            throw new SQLException("Failed to connect to server [host=" + connProps.getHost() +
-                ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
-        }
+        out = new BufferedOutputStream(endpoint.outputStream());
+        in = new BufferedInputStream(endpoint.inputStream());
+    }
 
-        handshake(CURRENT_VER);
+    /**
+     * Get all addresses by host name.
+     * @param host Host name.
+     * @return addresses.
+     */
+    protected InetAddress[] getAllAddressesByHost(String host) throws UnknownHostException {
+        return InetAddress.getAllByName(host);
     }
 
     /**
