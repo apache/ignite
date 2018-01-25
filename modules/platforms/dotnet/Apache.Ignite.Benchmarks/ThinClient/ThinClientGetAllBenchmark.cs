@@ -29,10 +29,10 @@ namespace Apache.Ignite.Benchmarks.ThinClient
     internal class ThinClientGetAllBenchmark : PlatformBenchmarkBase
     {
         /** Cache name. */
-        private const string CacheName = "cache";
+        private const string CacheName = "doubles";
 
         /** Native cache wrapper. */
-        protected ICacheClient<int, Employee> Cache;
+        protected ICacheClient<int, Doubles> Cache;
 
         /** GetAll batch size */
         protected const int DatasetBatchSize = 100;
@@ -40,12 +40,16 @@ namespace Apache.Ignite.Benchmarks.ThinClient
         /** <inheritDoc /> */
         protected override void OnStarted()
         {
+            Dataset = 1000;
+
             base.OnStarted();
 
-            Cache = GetClient().GetCache<int, Employee>(CacheName);
+            Cache = GetClient().GetOrCreateCache<int, Doubles>(CacheName);
 
-            for (var i = 0; i < Emps.Length; i++)
-                Cache.Put(i, Emps[i]);
+            var array = Doubles.GetInstances(Dataset);
+
+            for (int i = 0; i < array.Length; i++)
+                Cache.Put(i, array[i]);
         }
 
         /** <inheritDoc /> */
