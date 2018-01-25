@@ -39,6 +39,7 @@ import org.apache.log4j.Category;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.helpers.FileWatchdog;
@@ -620,6 +621,19 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
 
                 a.activateOptions();
             }
+        }
+    }
+
+    /**
+     * Cleans up the logger configuration. Should be used in unit tests only for sequential tests run with
+     * different configurations
+     */
+    static void cleanup() {
+        synchronized (mux) {
+            if (inited)
+                LogManager.shutdown();
+
+            inited = false;
         }
     }
 }
