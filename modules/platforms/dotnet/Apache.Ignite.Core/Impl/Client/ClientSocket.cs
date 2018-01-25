@@ -48,7 +48,10 @@ namespace Apache.Ignite.Core.Impl.Client
         private const byte ClientType = 2;
 
         /** Underlying socket. */
-        private readonly Stream _socket;
+        private readonly Socket _socket;
+
+        /** Underlying socket stream. */
+        private readonly Stream _stream;
 
         /** Operation timeout. */
         private readonly TimeSpan _timeout;
@@ -94,6 +97,7 @@ namespace Apache.Ignite.Core.Impl.Client
             _timeout = clientConfiguration.SocketTimeout;
 
             _socket = Connect(clientConfiguration);
+            _stream = GetSocketStream(_socket, clientConfiguration);
 
             Handshake(version ?? CurrentProtocolVersion);
 
@@ -243,7 +247,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             Debug.Assert(messageLen == 12);
 
-            _socket.Write(buf, 0, messageLen);
+            _stream.Write(buf, 0, messageLen);
 
             // Decode response.
             var res = ReceiveMessage();
@@ -288,11 +292,11 @@ namespace Apache.Ignite.Core.Impl.Client
             // Socket.Receive can return any number of bytes, even 1.
             // We should repeat Receive calls until required amount of data has been received.
             var buf = new byte[size];
-            var received = _socket.Read(buf,0, size);
+            var received = _stream.Read(buf,0, size);
 
             while (received < size)
             {
-                var res = _socket.Read(buf, received, size - received);
+                var res = _stream.Read(buf, received, size - received);
 
                 if (res == 0)
                 {
@@ -326,7 +330,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
                     if (_requests.IsEmpty)
                     {
-                        _socket.Write(reqMsg.Buffer, 0, reqMsg.Length);
+                        _stream.Write(reqMsg.Buffer, 0, reqMsg.Length);
 
                         var respMsg = ReceiveMessage();
                         var response = new BinaryHeapStream(respMsg);
@@ -368,7 +372,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 Debug.Assert(added);
 
                 // Send.
-                _socket.Write(reqMsg.Buffer, 0, reqMsg.Length);
+                _stream.Write(reqMsg.Buffer, 0, reqMsg.Length);
                 _listenerEvent.Set();
                 return req.CompletionSource.Task;
             }
@@ -415,7 +419,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", 
             Justification = "Socket is returned from this method.")]
-        public static Stream Connect(IgniteClientConfiguration cfg)
+        private static Socket Connect(IgniteClientConfiguration cfg)
         {
             List<Exception> errors = null;
 
@@ -443,18 +447,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
                     socket.Connect(ipEndPoint);
 
-                    var stream = new NetworkStream(socket)
-                    {
-                        ReadTimeout = (int) cfg.SocketTimeout.TotalMilliseconds,
-                        WriteTimeout = (int) cfg.SocketTimeout.TotalMilliseconds
-                    };
-
-                    if (cfg.SslStreamFactory == null)
-                    {
-                        return stream;
-                    }
-
-                    return cfg.SslStreamFactory.Create(stream);
+                    return socket;
                 }
                 catch (SocketException e)
                 {
@@ -474,6 +467,25 @@ namespace Apache.Ignite.Core.Impl.Client
 
             throw new AggregateException("Failed to establish Ignite thin client connection, " +
                                          "examine inner exceptions for details.", errors);
+        }
+
+        /// <summary>
+        /// Gets the socket stream.
+        /// </summary>
+        private static Stream GetSocketStream(Socket socket, IgniteClientConfiguration cfg)
+        {
+            var stream = new NetworkStream(socket)
+            {
+                ReadTimeout = (int) cfg.SocketTimeout.TotalMilliseconds,
+                WriteTimeout = (int) cfg.SocketTimeout.TotalMilliseconds
+            };
+
+            if (cfg.SslStreamFactory == null)
+            {
+                return stream;
+            }
+
+            return cfg.SslStreamFactory.Create(stream);
         }
 
         /// <summary>
@@ -598,6 +610,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 _exception = _exception ?? new ObjectDisposedException(typeof(ClientSocket).FullName);
                 EndRequestsWithError();
+                _stream.Dispose();
                 _socket.Dispose();
                 _listenerEvent.Set();
                 _listenerEvent.Dispose();
