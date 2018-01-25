@@ -39,8 +39,9 @@ namespace Apache.Ignite.Core.Tests.Client
     public class RawSecureSocketTest
     {
         // TODO: See queries_ssl_test.cpp, queries-ssl.xml
-        
-        
+        // https://ggsystems.atlassian.net/wiki/spaces/GG/pages/4219735/Set+up+SSL+connection+between+nodes
+
+
         [Test]
         public void TestSslOnServer()
         {
