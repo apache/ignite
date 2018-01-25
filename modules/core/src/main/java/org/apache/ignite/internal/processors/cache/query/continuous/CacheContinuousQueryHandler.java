@@ -1353,7 +1353,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         return new CacheContinuousQueryEntry(evt.entry().cacheId(),
             evt.entry().eventType(),
             null,
-            transVal == null ? null : evt.toCacheObject(transVal),
+            transVal == null ? null : cacheContext(ctx).toCacheObject(transVal),
             null,
             evt.entry().isKeepBinary(),
             evt.entry().partition(),
