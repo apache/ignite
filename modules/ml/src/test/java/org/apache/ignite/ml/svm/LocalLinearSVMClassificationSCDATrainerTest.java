@@ -15,27 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.structures.preprocessing;
+package org.apache.ignite.ml.svm;
 
-import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.structures.LabeledDataset;
+import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
 
-/** Data pre-processing step which assigns labels to all observations according model. */
-public class LabellingMachine {
-    /**
-     * Set labels to each observation according passed model.
-     * <p>
-     * NOTE: In-place operation.
-     * </p>
-     * @param ds The given labeled dataset.
-     * @param mdl The given model.
-     * @return Dataset with predicted labels.
-     */
-    public static LabeledDataset assignLabels(LabeledDataset ds, Model mdl) {
-        for (int i = 0; i < ds.rowSize(); i++) {
-            double predictedCls = (double) mdl.apply(ds.getRow(i).features());
-            ds.setLabel(i, predictedCls);
-        }
-        return ds;
+/**
+ * Tests for {@link LinearRegressionSGDTrainer} on {@link DenseLocalOnHeapMatrix}.
+ */
+public class LocalLinearSVMClassificationSCDATrainerTest extends GenericLinearSVMTrainerTest {
+    /** */
+    public LocalLinearSVMClassificationSCDATrainerTest() {
+        super(
+            new SVMLinearBinaryClassificationTrainer()
+                .withLambda(0.2)
+                .withAmountOfIterations(10)
+                .withAmountOfLocIterations(20),
+            false,
+            1e-2);
     }
 }
