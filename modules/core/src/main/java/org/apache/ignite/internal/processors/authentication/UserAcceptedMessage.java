@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.authentication;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.marshaller.MappingProposedMessage;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -38,14 +40,22 @@ public class UserAcceptedMessage implements DiscoveryCustomMessage {
     /** */
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
-    /** */
+    /** Operation. */
+    @GridToStringInclude
     private final UserManagementOperation op;
+
+    /** Error. */
+    private final IgniteCheckedException error;
 
     /**
      * @param op User Action
+     * @param error Error.
      */
-    UserAcceptedMessage(UserManagementOperation op) {
+    UserAcceptedMessage(UserManagementOperation op, IgniteCheckedException error) {
+        assert op != null || error != null;
+
         this.op = op;
+        this.error = error;
     }
 
     /** {@inheritDoc} */
@@ -74,6 +84,13 @@ public class UserAcceptedMessage implements DiscoveryCustomMessage {
      */
     UserManagementOperation operation() {
         return op;
+    }
+
+    /**
+     * @return Error.
+     */
+    IgniteCheckedException error() {
+        return error;
     }
 
     /** {@inheritDoc} */

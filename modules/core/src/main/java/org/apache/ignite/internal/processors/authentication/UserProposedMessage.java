@@ -40,15 +40,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class UserProposedMessage implements DiscoveryCustomMessage {
     /** */
-    private enum ProposalStatus {
-        /** */
-        SUCCESSFUL,
-
-        /** */
-        ERROR,
-    }
-
-    /** */
     private static final long serialVersionUID = 0L;
 
     /** */
@@ -60,12 +51,6 @@ public class UserProposedMessage implements DiscoveryCustomMessage {
     /** */
     @GridToStringInclude
     private final UserManagementOperation op;
-
-    /** Error info. */
-    private IgniteCheckedException err;
-
-    /** */
-    private ProposalStatus status = ProposalStatus.SUCCESSFUL;
 
     /**
      * @param op User action.
@@ -113,29 +98,6 @@ public class UserProposedMessage implements DiscoveryCustomMessage {
      */
     UUID origNodeId() {
         return origNodeId;
-    }
-
-    /**
-     * @return {@code true} on error.
-     */
-    public boolean isError() {
-        return status == ProposalStatus.ERROR;
-    }
-
-    /**
-     * @param err Error info.
-     */
-    public void error(IgniteCheckedException err) {
-        status = ProposalStatus.ERROR;
-
-        this.err = err;
-    }
-
-    /**
-     * @return Error info.
-     */
-    public IgniteCheckedException error() {
-        return err;
     }
 
     /** {@inheritDoc} */

@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.processors.authentication;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.configuration.AuthenticationConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -36,9 +39,15 @@ public class AuthenticationSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
+    /** Client node. */
+    private static final int CLI_NODE = 2;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (getTestIgniteInstanceIndex(igniteInstanceName) == CLI_NODE)
+            cfg.setClientMode(true);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -61,10 +70,61 @@ public class AuthenticationSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void test() throws Exception {
-        startGrids(2);
+    public void testAddUserOnServer() throws Exception {
+        startGrids(3);
 
         grid(0).context().authentication().addUser("test", "test");
 
+        User u = grid(0).context().authentication().authenticate("test", "test");
+
+        assertNotNull(u);
+        assertEquals("test", u.name());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAddUserOnClient() throws Exception {
+        startGrids(3);
+
+        checkAddRemoveUser(grid(0), grid(0));
+        checkAddRemoveUser(grid(0), grid(1));
+        checkAddRemoveUser(grid(1), grid(0));
+        checkAddRemoveUser(grid(1), grid(1));
+        checkAddRemoveUser(grid(0), grid(CLI_NODE));
+        checkAddRemoveUser(grid(CLI_NODE), grid(0));
+        checkAddRemoveUser(grid(1), grid(CLI_NODE));
+        checkAddRemoveUser(grid(CLI_NODE), grid(1));
+        checkAddRemoveUser(grid(CLI_NODE), grid(CLI_NODE));
+    }
+
+    /**
+     * @param createNode Node to execute create operation.
+     * @param authNode Node to execute authentication.
+     * @throws Exception On error.
+     */
+    private void checkAddRemoveUser(IgniteEx createNode, IgniteEx authNode) throws Exception {
+        createNode.context().authentication().addUser("test", "test");
+
+        User u = authNode.context().authentication().authenticate("test", "test");
+
+        assertNotNull(u);
+        assertEquals("test", u.name());
+
+        createNode.context().authentication().removeUser("test");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvalidUserOnClient() throws Exception {
+        startGrids(3);
+
+        grid(CLI_NODE).context().authentication().addUser("test", "test");
+
+        User u = grid(CLI_NODE).context().authentication().authenticate("test", "test");
+
+        assertNotNull(u);
+        assertEquals("test", u.name());
     }
 }

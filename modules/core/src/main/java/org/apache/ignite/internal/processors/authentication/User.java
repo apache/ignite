@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.authentication;
 
 import com.sun.org.apache.xml.internal.security.utils.Base64;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -29,11 +30,24 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
  */
-public class User implements Serializable {
+public class User implements Serializable, Message {
+    /** Default user name. */
+    public static final String DFLT_USER_NAME = "ignite";
+
+    /** Default user password. */
+    private static final String DFLT_USER_PASSWORD = "ignite";
+
+    /** Default user salt. */
+    private static final byte[] DFLT_USER_SALT =
+        {18, 105, 67, 38, 1, -2, -19, 62, -7, 126,  13,  66, -90, -84, -35, -43};
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -44,7 +58,7 @@ public class User implements Serializable {
     private static final SecureRandom random = new SecureRandom();
 
     /** User name. */
-    private final String name;
+    private String name;
 
     /** Encrypted password. */
     @GridToStringExclude
@@ -53,6 +67,12 @@ public class User implements Serializable {
     /** Salt. */
     @GridToStringExclude
     private byte[] salt;
+
+    /**
+     * Constructor.
+     */
+    public User() {
+    }
 
     /**
      * @param name User name.
@@ -84,6 +104,24 @@ public class User implements Serializable {
         random.nextBytes(salt);
 
         return new User(name, password(passwd, salt), salt);
+    }
+
+    /**
+     * Create empty user by login name.
+     * @param name User name.
+     * @return User.
+     */
+    public static User create(String name) {
+        return new User(name, null, null);
+    }
+
+    /**
+     * Create new user.
+     *
+     * @return Created user.
+     */
+    public static User defaultUser() {
+        return new User(DFLT_USER_NAME, password(DFLT_USER_PASSWORD, DFLT_USER_SALT), DFLT_USER_SALT);
     }
 
     /**
@@ -139,5 +177,92 @@ public class User implements Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(User.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeString("encPasswd", encPasswd))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeString("name", name))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
+                if (!writer.writeByteArray("salt", salt))
+                    return false;
+
+                writer.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        reader.setBuffer(buf);
+
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
+            case 0:
+                encPasswd = reader.readString("encPasswd");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                name = reader.readString("name");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
+                salt = reader.readByteArray("salt");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
+        return reader.afterMessageRead(User.class);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 133;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 3;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
     }
 }

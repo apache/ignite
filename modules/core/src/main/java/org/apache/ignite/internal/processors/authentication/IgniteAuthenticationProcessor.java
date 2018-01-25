@@ -33,6 +33,8 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -44,10 +46,11 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
-import org.apache.ignite.internal.processors.marshaller.MappingExchangeResult;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -59,24 +62,28 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 /**
  */
 public class IgniteAuthenticationProcessor extends GridProcessorAdapter implements MetastorageLifecycleListener {
-    /** Default user. */
-    private static final User DFLT_USER = User.create("ignite", "ignite");
-
-    /** Default user. */
+    /** Store user prefix. */
     private static final String STORE_USER_PREFIX = "user.";
+
     /** User operation history. */
     private final List<Long> history = new ArrayList<>();
+
     /** Map monitor. */
     private final Object mux = new Object();
+
     /** User exchange map. */
     private final ConcurrentMap<IgniteUuid, UserOperationFinishFuture> userOpFinishMap
         = new ConcurrentHashMap<>();
-    /** User prepared map. */
-    private final ConcurrentMap<String, UserPreparedFuture> usersPreparedMap = new ConcurrentHashMap<>();
+
     /** Futures prepared user map. */
-    private final ConcurrentMap<IgniteUuid, UserPreparedFuture> futPreparedMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<IgniteUuid, UserOperationFuture> opFuts = new ConcurrentHashMap<>();
+
+    /** Futures prepared user map. */
+    private final ConcurrentMap<IgniteUuid, GridFutureAdapter<User>> authFuts = new ConcurrentHashMap<>();
+
     /** User map. */
     private Map<String, User> users;
+
     /** Meta storage. */
     private ReadWriteMetastorage metastorage;
 
@@ -136,6 +143,10 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                     if (msg instanceof UserManagementOperationFinishedMessage)
                         onFinishMessage(nodeId, (UserManagementOperationFinishedMessage)msg);
+                    else if (msg instanceof UserAuthenticateRequestMessage)
+                        onAuthenticateRequestMessage(nodeId, (UserAuthenticateRequestMessage)msg);
+                    else if (msg instanceof UserAuthenticateResponseMessage)
+                        onAuthenticateResponseMessage((UserAuthenticateResponseMessage)msg);
                 }
             });
         }
@@ -152,93 +163,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
         cancelFutures();
-    }
-
-    /**
-     */
-    private void cancelFutures() {
-        for (UserOperationFinishFuture fut : userOpFinishMap.values())
-            fut.onDone(UserOperationResult.createExchangeDisabledResult());
-
-        for (UserPreparedFuture fut : usersPreparedMap.values())
-            fut.onDone(null, new IgniteCheckedException("Node stopped."));
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @param msg Message.
-     */
-    private void onFinishMessage(UUID nodeId, UserManagementOperationFinishedMessage msg) {
-        UserOperationFinishFuture fut = userOpFinishMap.get(msg.operationId());
-
-        if (fut == null)
-            log.warning("Not found appropriate user operation. [msg=" + msg + ']');
-        else {
-            if (msg.success())
-                fut.onSuccess(nodeId);
-            else
-                fut.onFail(nodeId, msg.errorMessage());
-        }
-
-    }
-
-    /**
-     * Adds new user locally.
-     *
-     * @param op User operation.
-     * @throws IgniteAuthenticationException On error.
-     */
-    private void addUserLocal(final UserManagementOperation op) throws IgniteAuthenticationException {
-        String userName = op.user().name();
-
-        boolean futAlreadyCreate = false;
-
-        synchronized (mux) {
-            if (users.containsKey(userName)) {
-                UserPreparedFuture prevFut = usersPreparedMap.get(userName);
-
-                futAlreadyCreate = F.eq(prevFut.op, op);
-
-                if (prevFut == null || prevFut.op.type() != UserManagementOperation.OperationType.REMOVE || !futAlreadyCreate)
-                    throw new IgniteAuthenticationException("User already exists. [login=" + op.user().name() + ']');
-            }
-
-            if (!futAlreadyCreate) {
-                UserPreparedFuture newFut = new UserPreparedFuture(op);
-
-                futPreparedMap.put(op.id(), newFut);
-
-                usersPreparedMap.put(op.user().name(), newFut);
-            }
-
-            exec.execute(new Runnable() {
-                @Override public void run() {
-                    storeUserLocal(op);
-                }
-            });
-        }
-    }
-
-    /**
-     * Store user to MetaStorage.
-     *
-     * @param op Operation.
-     */
-    private void storeUserLocal(UserManagementOperation op) {
-        synchronized (mux) {
-            try {
-                User usr = op.user();
-
-                metastorage.write(STORE_USER_PREFIX + usr.name(), usr);
-
-                sendFinish(coordinator(), op.id(), null);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to store user. [op=" + op + ']', e);
-
-                sendFinish(coordinator(), op.id(), e.toString());
-            }
-        }
     }
 
     /**
@@ -268,55 +192,71 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     }
 
     /**
+     */
+    private void cancelFutures() {
+        for (UserOperationFinishFuture fut : userOpFinishMap.values())
+            fut.onDone(UserOperationResult.createExchangeDisabledResult());
+    }
+
+    /**
+     * Adds new user locally.
+     *
+     * @param op User operation.
+     * @throws IgniteAuthenticationException On error.
+     */
+    private void addUserLocal(final UserManagementOperation op) throws IgniteCheckedException {
+        assert Thread.holdsLock(mux);
+
+        User usr = op.user();
+
+        String userName = usr.name();
+
+        if (users.containsKey(userName))
+            throw new IgniteAuthenticationException("User already exists. [login=" + userName + ']');
+
+        metastorage.write(STORE_USER_PREFIX + userName, usr);
+
+        users.put(userName, usr);
+    }
+
+    /**
      * Remove user from MetaStorage.
      *
      * @param op Operation.
+     * @throws IgniteCheckedException On error.
      */
-    private void removeUserLocal(UserManagementOperation op) {
-        synchronized (mux) {
-            try {
-                User usr = op.user();
+    private void removeUserLocal(UserManagementOperation op) throws IgniteCheckedException {
+        assert Thread.holdsLock(mux);
 
-                metastorage.remove(STORE_USER_PREFIX + usr.name());
+        User usr = op.user();
 
-                sendFinish(coordinator(), op.id(), null);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to store user. [op=" + op + ']', e);
+        if (!users.containsKey(usr.name()))
+            throw new IgniteAuthenticationException("User not exists. [login=" + usr.name() + ']');
 
-                sendFinish(coordinator(), op.id(), e.toString());
-            }
-        }
+        metastorage.remove(STORE_USER_PREFIX + usr.name());
+
+        users.remove(usr.name());
     }
 
     /**
-     * Removes user.
+     * Remove user from MetaStorage.
      *
-     * @param usr User to remove.
-     * @throws IgniteAuthenticationException On error.
+     * @param op Operation.
+     * @throws IgniteCheckedException On error.
      */
-    private void removeUserLocal(User usr) throws IgniteAuthenticationException {
-        synchronized (mux) {
-            if (!users.containsKey(usr.name()))
-                throw new IgniteAuthenticationException("User not exists. [login=" + usr.name() + ']');
+    private void updateUserLocal(UserManagementOperation op) throws IgniteCheckedException {
+        assert Thread.holdsLock(mux);
 
-            users.remove(usr.name());
-        }
-    }
+        User usr = op.user();
 
-    /**
-     * Change user password.
-     *
-     * @param usr User to update.
-     * @throws IgniteAuthenticationException On error.
-     */
-    private void updateUserLocal(User usr) throws IgniteAuthenticationException {
-        synchronized (mux) {
-            if (!users.containsKey(usr.name()))
-                throw new IgniteAuthenticationException("User not exists. [login=" + usr.name() + ']');
+        if (!users.containsKey(usr.name()))
+            throw new IgniteAuthenticationException("User not exists. [login=" + usr.name() + ']');
 
-            users.put(usr.name(), usr);
-        }
+        metastorage.write(STORE_USER_PREFIX + usr.name(), usr);
+
+        users.put(usr.name(), usr);
+
+        sendFinish(coordinator(), op.id(), null);
     }
 
     /**
@@ -328,26 +268,34 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * @throws IgniteCheckedException On authentication error.
      */
     public User authenticate(String login, String passwd) throws IgniteCheckedException {
-        User usr = null;
+        if (ctx.clientNode()) {
+            GridFutureAdapter<User> fut = new GridFutureAdapter<>();
 
-        UserPreparedFuture fut = usersPreparedMap.get(login);
+            UserAuthenticateRequestMessage msg = new UserAuthenticateRequestMessage(login, passwd);
 
-        if (fut != null)
-            usr = fut.get();
+            authFuts.put(msg.id(), fut);
 
-        if (usr == null) {
+            synchronized (mux) {
+                ctx.io().sendToGridTopic(coordinator(), GridTopic.TOPIC_AUTH, msg, GridIoPolicy.SYSTEM_POOL);
+            }
+
+            return fut.get();
+        }
+        else {
+            User usr;
+
             synchronized (mux) {
                 usr = users.get(login);
             }
+
+            if (usr == null)
+                throw new UserAuthenticationException("The user name or password is incorrect. [userName=" + login + ']');
+
+            if (usr.authorize(passwd))
+                return usr;
+            else
+                throw new UserAuthenticationException("The user name or password is incorrect. [userName=" + login + ']');
         }
-
-        if (usr == null)
-            throw new IgniteAuthenticationException("The username or password is incorrect. [userName=" + login + ']');
-
-        if (usr.authorize(passwd))
-            return usr;
-        else
-            throw new IgniteAuthenticationException("The username or password is incorrect. [userName=" + login + ']');
     }
 
     /**
@@ -359,19 +307,51 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * @throws IgniteAuthenticationException On error.
      */
     public User addUser(String login, String passwd) throws IgniteCheckedException {
-        log.info("+++ addUser");
-
         UserManagementOperation op = new UserManagementOperation(User.create(login, passwd),
             UserManagementOperation.OperationType.ADD);
 
-        UserPreparedFuture fut = new UserPreparedFuture(op);
+        return execUserOperation(op);
+    }
 
-        usersPreparedMap.putIfAbsent(login, fut);
+    /**
+     * @param login User name.
+     * @throws IgniteCheckedException On error.
+     */
+    public void removeUser(String login) throws IgniteCheckedException {
+        UserManagementOperation op = new UserManagementOperation(User.create(login),
+            UserManagementOperation.OperationType.REMOVE);
 
-        UserProposedMessage msg = new UserProposedMessage(
-            new UserManagementOperation(User.create(login, passwd), UserManagementOperation.OperationType.ADD), ctx.localNodeId());
+        execUserOperation(op);
+    }
+
+    /**
+     * @param login User name.
+     * @param passwd User password.
+     * @return Updated user object.
+     * @throws IgniteCheckedException On error.
+     */
+    public User updateUser(String login, String passwd) throws IgniteCheckedException {
+        UserManagementOperation op = new UserManagementOperation(User.create(login, passwd),
+            UserManagementOperation.OperationType.UPDATE);
+
+        return execUserOperation(op);
+    }
+
+    /**
+     * @param op User operation.
+     * @return User.
+     * @throws IgniteCheckedException On error.
+     */
+    private User execUserOperation(UserManagementOperation op) throws IgniteCheckedException {
+        UserOperationFuture fut = new UserOperationFuture(op);
+
+        opFuts.putIfAbsent(op.id(), fut);
+
+        UserProposedMessage msg = new UserProposedMessage(op, ctx.localNodeId());
 
         ctx.discovery().sendCustomEvent(msg);
+
+        log.info("+++ WAIT " + op);
 
         return fut.get();
     }
@@ -379,16 +359,23 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
-        users = (Map<String, User>)metastorage.readForPredicate(new IgnitePredicate<String>() {
-            @Override public boolean apply(String key) {
-                return key != null && key.startsWith(STORE_USER_PREFIX);
-            }
-        });
+        if (!ctx.clientNode()) {
+            users = (Map<String, User>)metastorage.readForPredicate(new IgnitePredicate<String>() {
+                @Override public boolean apply(String key) {
+                    return key != null && key.startsWith(STORE_USER_PREFIX);
+                }
+            });
+        }
+        else
+            users = null;
     }
 
     /** {@inheritDoc} */
     @Override public void onReadyForReadWrite(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
-        this.metastorage = metastorage;
+        if (!ctx.clientNode())
+            this.metastorage = metastorage;
+        else
+            this.metastorage = null;
     }
 
     /**
@@ -402,7 +389,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * @param op The operation with users.
      * @throws IgniteAuthenticationException On authentication error.
      */
-    private void prepareOperationLocal(UserManagementOperation op) throws IgniteAuthenticationException {
+    private void processOperationLocal(UserManagementOperation op) throws IgniteCheckedException {
         assert op != null && op.user() != null : "Invalid operation: " + op;
 
         switch (op.type()) {
@@ -412,12 +399,12 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 break;
 
             case REMOVE:
-                removeUserLocal(op.user());
+                removeUserLocal(op);
 
                 break;
 
             case UPDATE:
-                updateUserLocal(op.user());
+                updateUserLocal(op);
 
                 break;
         }
@@ -440,9 +427,70 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     }
 
     /**
-     * @param result User operation result.
+     * @param nodeId Node ID.
+     * @param msg Message.
      */
-    private void sendOperationAcknowledgement(UserOperationResult result) {
+    private void onFinishMessage(UUID nodeId, UserManagementOperationFinishedMessage msg) {
+        UserOperationFinishFuture fut = userOpFinishMap.get(msg.operationId());
+
+        if (fut == null)
+            log.warning("Not found appropriate user operation. [msg=" + msg + ']');
+        else {
+            if (msg.success())
+                fut.onSuccess(nodeId);
+            else
+                fut.onFail(nodeId, msg.errorMessage());
+        }
+    }
+
+    /**
+     * @param res Finish operation result.
+     */
+    private void onFinishOperation(UserOperationResult res) {
+        assert res != null;
+
+        try {
+            UserAcceptedMessage msg = new UserAcceptedMessage(res.operation(), res.error());
+
+            ctx.discovery().sendCustomEvent(msg);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Unexpected exception.", e);
+        }
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param msg Message.
+     */
+    private void onAuthenticateRequestMessage(UUID nodeId, UserAuthenticateRequestMessage msg) {
+        UserAuthenticateResponseMessage respMsg;
+        try {
+            User u = authenticate(msg.name(), msg.password());
+
+            respMsg = new UserAuthenticateResponseMessage(msg.id(), u, null);
+        }
+        catch (IgniteCheckedException e) {
+            respMsg = new UserAuthenticateResponseMessage(msg.id(), null, e.toString());
+
+            e.printStackTrace();
+        }
+
+        try {
+            ctx.io().sendToGridTopic(nodeId, GridTopic.TOPIC_AUTH, respMsg, GridIoPolicy.SYSTEM_POOL);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Unexpected exception.", e);
+        }
+    }
+
+    /**
+     * @param msg Message.
+     */
+    private void onAuthenticateResponseMessage(UserAuthenticateResponseMessage msg) {
+        GridFutureAdapter<User> fut = authFuts.get(msg.id());
+
+        fut.onDone(msg.user(), !msg.success() ? new UserAuthenticationException(msg.errorMessage()) : null);
     }
 
     /**
@@ -525,32 +573,78 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     }
 
     /**
+     * WAL state change worker.
+     */
+    private class UserOperationWorker extends GridWorker {
+        /** Message. */
+        private final UserManagementOperation op;
+
+        /**
+         * Constructor.
+         *
+         * @param op Operation.
+         */
+        private UserOperationWorker(UserManagementOperation op) {
+            super(ctx.igniteInstanceName(), "auth-op-" + op.type(), IgniteAuthenticationProcessor.this.log);
+
+            this.op = op;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+            UserOperationFuture fut = new UserOperationFuture(op);
+
+            synchronized (mux) {
+                UserOperationFuture futPrev = opFuts.putIfAbsent(op.id(), fut);
+
+                if (futPrev != null)
+                    fut = futPrev;
+
+                try {
+                    processOperationLocal(op);
+
+                    log.info("+++ Finish " + op);
+
+                    sendFinish(coordinator(), op.id(), null);
+                }
+                catch (IgniteCheckedException e) {
+                    log.info("+++ Finish " + op);
+
+                    sendFinish(coordinator(), op.id(), e.toString());
+                }
+            }
+
+            try {
+                log.info("+++ Worker wait " + op.id());
+                fut.get();
+                log.info("+++ Worker end " + op.id());
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Unexpected exception.", e);
+            }
+        }
+    }
+
+    /**
      * Future to wait for end of user operation.
      */
-    private class UserPreparedFuture extends GridFutureAdapter<User> {
+    private class UserOperationFuture extends GridFutureAdapter<User> {
         /** User operation. */
         private UserManagementOperation op;
 
         /**
          * @param op User operation.
          */
-        UserPreparedFuture(UserManagementOperation op) {
+        UserOperationFuture(UserManagementOperation op) {
             this.op = op;
         }
 
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable User res, @Nullable Throwable err) {
-            assert res != null;
-
             boolean done = super.onDone(res, err);
 
-            if (done) {
-                // Remove from user map if need
-                usersPreparedMap.remove(op.user().name(), this);
-
-                // Remove from all user futures map
-                futPreparedMap.remove(op.id());
-            }
+            if (done)
+                opFuts.remove(op.id());
 
             return done;
         }
@@ -563,37 +657,25 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         /** {@inheritDoc} */
         @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
             final UserProposedMessage msg) {
-            if (ctx.isStopping())
+            if (ctx.isStopping() || ctx.clientNode())
                 return;
 
             log.info("+++ UserProposedMessage " + msg);
 
             synchronized (mux) {
-                if (!msg.isError()) {
-                    try {
-                        if (isOnCoordinator()) {
-                            UserOperationFinishFuture opFinishFut = new UserOperationFinishFuture(msg.operation());
+                if (isOnCoordinator()) {
+                    UserOperationFinishFuture opFinishFut = new UserOperationFinishFuture(msg.operation());
 
-                            userOpFinishMap.putIfAbsent(msg.operation().id(), opFinishFut);
+                    opFinishFut.listen(new IgniteInClosure<IgniteInternalFuture<UserOperationResult>>() {
+                        @Override public void apply(IgniteInternalFuture<UserOperationResult> f) {
+                            onFinishOperation(f.result());
                         }
+                    });
 
-                        prepareOperationLocal(msg.operation());
-                    }
-                    catch (IgniteCheckedException e) {
-                        msg.error(e);
-                    }
+                    userOpFinishMap.putIfAbsent(msg.operation().id(), opFinishFut);
                 }
-                else {
-                    UUID origNodeId = msg.origNodeId();
 
-                    if (origNodeId.equals(ctx.localNodeId())) {
-                        UserPreparedFuture fut = futPreparedMap.get(msg.operation().id());
-
-                        assert fut != null : msg;
-
-                        fut.onDone(null, msg.error());
-                    }
-                }
+                exec.execute(new UserOperationWorker(msg.operation()));
             }
         }
     }
@@ -606,6 +688,22 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, UserAcceptedMessage msg) {
             log.info("+++ UserAcceptedMessage " + msg);
 
+            UserOperationFuture f = opFuts.get(msg.operation().id());
+
+            if (f != null) {
+                log.info("+++ DONE " + f.op.id());
+
+                if (msg.operation() != null) {
+                    f.onDone(msg.operation().type() != UserManagementOperation.OperationType.REMOVE ?
+                        msg.operation().user() : null, null);
+                }
+                else
+                    f.onDone(null, msg.error());
+            }
+            else {
+                log.info("+++ Not found operation: " + msg.operation().id());
+
+            }
         }
     }
 }
