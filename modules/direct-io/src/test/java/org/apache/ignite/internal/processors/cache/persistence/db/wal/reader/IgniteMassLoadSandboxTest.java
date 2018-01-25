@@ -264,7 +264,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                         pageMemory = (PageMemoryImpl)cacheSctx.database()
                             .dataRegion(defRegName).pageMemory();
 
-                        dirtyPages = pageMemory.getDirtyPagesCount();
+                        dirtyPages = 0;
                     }
                     catch (IgniteCheckedException e) {
                         e.printStackTrace();
@@ -290,7 +290,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                         }
 
                         FileWriteAheadLogManager wal = (FileWriteAheadLogManager)cacheSctx.wal();
-                        idx = wal.currentIndex();
+                        idx = (int)wal.currentWritePointer().index();
                     }
                     catch (Exception e) {
                         e.printStackTrace();

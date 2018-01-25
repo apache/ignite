@@ -84,7 +84,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     /** Cache name. */
     public static final String CACHE_NAME = "partitioned" + new Random().nextInt(10000000);
     public static final int OBJECT_SIZE = 40000;
-    public static final int CONTINUOUS_PUT_RECS_CNT = 300_000;
+    public static final int CONTINUOUS_PUT_RECS_CNT = 500_000;
     public static final String PUT_THREAD = "put-thread";
     public static final String GET_THREAD = "get-thread";
 
@@ -99,7 +99,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     /** Custom wal mode. */
     protected WALMode customWalMode;
 
-    private int checkpointFrequency = 30 * 1000;
+    private int checkpointFrequency = 40 * 1000;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -124,7 +124,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             .setName("dfltMemPlc")
             .setMetricsEnabled(true);
 
-        regCfg.setMaxSize(2 * 1024L * 1024 * 1024);
+        regCfg.setMaxSize(6 * 1024L * 1024 * 1024);
         regCfg.setPersistenceEnabled(true);
 
         dsCfg.setDefaultDataRegionConfiguration(regCfg);
@@ -282,15 +282,17 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                 "cp. speed, MB/sec",
                 "cp. sync., MB/sec",
                 "WAL work seg.",
+                "throttleLevel",
+                "curDirtyRatio",
                 "targetDirtyRatio",
                 "closeToThrottle",
-                "throttleLevel",
                 "markDirtySpeed",
                 "cpWriteSpeed",
                 "estMarkAllSpeed",
                 "avg." + operation + "/sec",
                 "dirtyPages",
                 "cpWrittenPages",
+                "cpSyncedPages",
                 "WAL idx",
                 "Arch. idx",
                 "WAL Archive seg.");
@@ -313,7 +315,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             final long msStart = U.currentTimeMillis();
             prevMsElapsed.set(0);
             prevCnt.set(0);
-            int checkPeriodMsec = 500;
+            int checkPeriodMsec = 1000;
             svc.scheduleAtFixedRate(
                 () -> tick(msStart),
                 checkPeriodMsec, checkPeriodMsec, TimeUnit.MILLISECONDS);
@@ -369,6 +371,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             String walSpeed = "";
             double targetDirtyRatio = 0;
             int throttleLevel = 0;
+            double curDirtyRatio = 0.0;
             double closeToThrottle = 0.0;
             long idx = -1;
             long lastArchIdx = -1;
@@ -385,6 +388,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                     PagesWriteThrottle throttle = U.field(pageMemory, "writeThrottle");
 
                     if (throttle != null) {
+                        curDirtyRatio = throttle.getCurrDirtyRatio();
                         targetDirtyRatio = throttle.getPageMemTargetDirtyRatio();
                         closeToThrottle = throttle.getThrottleCloseMeasurement();
                         throttleLevel = throttle.throttleLevel();
@@ -455,15 +459,17 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                 cpWriteSpeed,
                 cpSyncSpeed,
                 walWorkSegments,
+                throttleLevel,
+                formatDbl(curDirtyRatio),
                 targetDirtyRatioStr,
                 formatDbl(closeToThrottle),
-                throttleLevel,
                 markDirtySpeed,
                 cpWriteSpeedInPages,
                 estWrAllSpeed,
                 averagePutPerSec,
                 dirtyPages,
                 cpWrittenPages,
+                cpSyncedPages,
                 idx,
                 lastArchIdx,
                 walArchiveSegments
@@ -546,7 +552,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
         try {
             System.setProperty(IgniteSystemProperties.IGNITE_DIRTY_PAGES_PARALLEL, "true");
             System.setProperty(IgniteSystemProperties.IGNITE_DIRTY_PAGES_SORTED_STORAGE, "true");
-            System.setProperty(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY, "true");
+            System.setProperty(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY, "false");
 
             setWalArchAndWorkToSameValue = true;
 

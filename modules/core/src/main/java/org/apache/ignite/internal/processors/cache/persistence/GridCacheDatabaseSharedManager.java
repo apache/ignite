@@ -3419,7 +3419,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     updStores
                         .computeIfAbsent(store, k -> new LongAdder())
                         .increment();
-                }
+                } else
+                    syncedPagesCntr.incrementAndGet(); //already written, count it as already synced
             }
 
             if (log.isDebugEnabled())

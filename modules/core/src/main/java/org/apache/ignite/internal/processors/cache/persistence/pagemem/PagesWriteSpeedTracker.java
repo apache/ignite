@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.jetbrains.annotations.NotNull;
@@ -26,7 +27,9 @@ public class PagesWriteSpeedTracker {
     private static final int MILLIS_IN_SECOND = 1000;
     private AtomicReference<MeasurementInterval> measurementIntervalAtomicReference = new AtomicReference<>();
     private final int intervalSwitchMs;
-    private volatile MeasurementInterval prevMeasurement;
+    private final int maxMeasurements = 5;
+
+    private final ConcurrentLinkedQueue<MeasurementInterval> prevMeasurements = new ConcurrentLinkedQueue<>();
 
     public PagesWriteSpeedTracker() {
         this(-1);
@@ -51,33 +54,41 @@ public class PagesWriteSpeedTracker {
         return combinePrevAndCurrent(System.currentTimeMillis(), interval);
     }
 
-    private long combinePrevAndCurrent(long curMs, MeasurementInterval interval) {
-        if (prevMeasurement == null)
+    private long combinePrevAndCurrent(long curMs, @NotNull MeasurementInterval interval) {
+        if (prevMeasurements.isEmpty())
             return interval.getSpeedPagesPerSec(curMs);
 
         if (curMs <= interval.tsStart) { //measurement is created only now
             return getHistoricalSpeed();
         }
 
-        long msPassed = (curMs - interval.tsStart) + (prevMeasurement.tsEnd - prevMeasurement.tsStart);
-        long pagesMarked = interval.counter.get() + prevMeasurement.counter.get();
+        long msPassed = (curMs - interval.tsStart);
+        long pagesMarked = interval.counter.get();
+
+        return sumMeasurements(msPassed, pagesMarked);
+    }
+
+    private long sumMeasurements(long msPassed, long pagesMarked) {
+        for (MeasurementInterval prevMeasurement : prevMeasurements) {
+            msPassed += (prevMeasurement.tsEnd - prevMeasurement.tsStart);
+            pagesMarked += prevMeasurement.counter.get();
+        }
 
         return msPassed == 0 ? 0 : pagesMarked * MILLIS_IN_SECOND / msPassed;
     }
 
     private long getHistoricalSpeed() {
-        if (prevMeasurement == null)
-            return 0;
-        else
-            return prevMeasurement.getHistSpeedPagesPerSec();
+        return sumMeasurements(0, 0);
     }
 
     @NotNull private MeasurementInterval interval(long curMs) {
         MeasurementInterval interval;
+
         do {
             interval = measurementIntervalAtomicReference.get();
             if (interval == null) {
                 MeasurementInterval newInterval = new MeasurementInterval(curMs);
+
                 if (measurementIntervalAtomicReference.compareAndSet(null, newInterval)) {
                     interval = newInterval;
                 }
@@ -90,12 +101,22 @@ public class PagesWriteSpeedTracker {
 
                 if (measurementIntervalAtomicReference.compareAndSet(interval, newInterval)) {
                     interval.tsEnd = curMs;
-                    prevMeasurement = interval;
+
+                    pushToHistory(interval);
                 }
             }
         }
         while (interval == null);
+
         return interval;
+    }
+
+    private void pushToHistory(MeasurementInterval interval) {
+        prevMeasurements.offer(interval);
+
+        if (prevMeasurements.size() > maxMeasurements) {
+            prevMeasurements.remove();
+        }
     }
 
     public void incrementCounter() {
@@ -115,7 +136,10 @@ public class PagesWriteSpeedTracker {
 
             if (measurementIntervalAtomicReference.compareAndSet(interval, null)) {
                 interval.tsEnd = System.currentTimeMillis();
-                prevMeasurement = interval;
+
+                pushToHistory(interval);
+
+                return;
             }
         }
     }
@@ -135,8 +159,5 @@ public class PagesWriteSpeedTracker {
             return msPassed == 0 ? 0 : pagesMarked * MILLIS_IN_SECOND / msPassed;
         }
 
-        private long getHistSpeedPagesPerSec() {
-            return getSpeedPagesPerSec(tsEnd);
-        }
     }
 }
