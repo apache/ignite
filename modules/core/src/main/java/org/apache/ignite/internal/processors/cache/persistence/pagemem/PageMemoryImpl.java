@@ -61,8 +61,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionCountersIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
@@ -1972,8 +1975,10 @@ public class PageMemoryImpl implements PageMemoryEx {
             while (true) {
                 long cleanAddr = INVALID_REL_PTR;
                 long cleanTs = Long.MAX_VALUE;
-                long dirtyTs = Long.MAX_VALUE;
                 long dirtyAddr = INVALID_REL_PTR;
+                long dirtyTs = Long.MAX_VALUE;
+                long metaAddr = INVALID_REL_PTR;
+                long metaTs = Long.MAX_VALUE;
 
                 for (int i = 0; i < RANDOM_PAGES_EVICT_NUM; i++) {
                     ++iterations;
@@ -2018,19 +2023,33 @@ public class PageMemoryImpl implements PageMemoryEx {
                     final long pageTs = PageHeader.readTimestamp(absPageAddr);
 
                     final boolean dirty = isDirty(absPageAddr);
+                    final boolean storMeta = isStoreMetadataPage(absPageAddr);
 
-                    if (pageTs < cleanTs && !dirty) {
+                    if (pageTs < cleanTs && !dirty && !storMeta) {
                         cleanAddr = rndAddr;
 
                         cleanTs = pageTs;
                     }
-                    else if (pageTs < dirtyTs && dirty) {
+                    else if (pageTs < dirtyTs && dirty && !storMeta) {
                         dirtyAddr = rndAddr;
 
                         dirtyTs = pageTs;
                     }
+                    else if (pageTs < metaTs && storMeta) {
+                        metaAddr = rndAddr;
 
-                    relEvictAddr = cleanAddr == INVALID_REL_PTR ? dirtyAddr : cleanAddr;
+                        metaTs = pageTs;
+                    }
+
+                    if (cleanAddr != INVALID_REL_PTR) {
+                        relEvictAddr = cleanAddr;
+                    }
+                    else if (dirtyAddr != INVALID_REL_PTR) {
+                        relEvictAddr = dirtyAddr;
+                    }
+                    else {
+                        relEvictAddr = metaAddr;
+                    }
                 }
 
                 assert relEvictAddr != INVALID_REL_PTR;
@@ -2063,6 +2082,28 @@ public class PageMemoryImpl implements PageMemoryEx {
                 );
 
                 return relEvictAddr;
+            }
+        }
+
+        /**
+         * @param absPageAddr Absolute page address
+         * @return {@code True} if page is related to partition metadata, which is loaded in saveStoreMetadata().
+         */
+        private boolean isStoreMetadataPage(long absPageAddr) {
+            try {
+                long dataAddr = absPageAddr + PAGE_OVERHEAD;
+
+                int type = PageIO.getType(dataAddr);
+                int ver = PageIO.getVersion(dataAddr);
+
+                PageIO io = PageIO.getPageIO(type, ver);
+
+                return io instanceof PagePartitionMetaIO
+                    || io instanceof PagesListMetaIO
+                    || io instanceof PagePartitionCountersIO;
+            }
+            catch (IgniteCheckedException ignored) {
+                return false;
             }
         }
 

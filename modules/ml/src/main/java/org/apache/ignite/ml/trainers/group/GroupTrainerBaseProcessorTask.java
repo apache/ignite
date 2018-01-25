@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -122,7 +123,7 @@ public abstract class GroupTrainerBaseProcessorTask<K, V, C, T, R extends Serial
 
     /** {@inheritDoc} */
     @Nullable @Override public R reduce(List<ComputeJobResult> results) throws IgniteException {
-        return reducer.apply(results.stream().map(res -> (R)res.getData()).collect(Collectors.toList()));
+        return reducer.apply(results.stream().map(res -> (R)res.getData()).filter(Objects::nonNull).collect(Collectors.toList()));
     }
 
     /**

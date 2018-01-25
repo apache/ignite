@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -126,7 +125,7 @@ public class FilePageStore implements PageStore {
     /**
      * Page store version.
      */
-    public int version() {
+    @Override public int version() {
         return VERSION;
     }
 
@@ -154,27 +153,28 @@ public class FilePageStore implements PageStore {
     }
 
     /**
+     * Initializes header and writes it into the file store.
      *
+     * @return Next available position in the file to store a data.
+     * @throws IOException If initialization is failed.
      */
-    private long initFile() {
-        try {
-            ByteBuffer hdr = header(type, dbCfg.getPageSize());
+    private long initFile() throws IOException {
+        ByteBuffer hdr = header(type, dbCfg.getPageSize());
 
-            while (hdr.remaining() > 0)
-                fileIO.write(hdr);
-        }
-        catch (IOException e) {
-            throw new IgniteException("Check file failed.", e);
-        }
+        while (hdr.remaining() > 0)
+            fileIO.write(hdr);
 
         //there is 'super' page in every file
         return headerSize() + dbCfg.getPageSize();
     }
 
     /**
+     * Checks that file store has correct header and size.
      *
+     * @return Next available position in the file to store a data.
+     * @throws PersistentStorageIOException If check is failed.
      */
-    private long checkFile() throws IgniteCheckedException {
+    private long checkFile() throws PersistentStorageIOException {
         try {
             ByteBuffer hdr = ByteBuffer.allocate(headerSize()).order(ByteOrder.LITTLE_ENDIAN);
 
@@ -186,28 +186,28 @@ public class FilePageStore implements PageStore {
             long signature = hdr.getLong();
 
             if (SIGNATURE != signature)
-                throw new IgniteCheckedException("Failed to verify store file (invalid file signature)" +
+                throw new IOException("Failed to verify store file (invalid file signature)" +
                     " [expectedSignature=" + U.hexLong(SIGNATURE) +
                     ", actualSignature=" + U.hexLong(signature) + ']');
 
             int ver = hdr.getInt();
 
             if (version() != ver)
-                throw new IgniteCheckedException("Failed to verify store file (invalid file version)" +
+                throw new IOException("Failed to verify store file (invalid file version)" +
                     " [expectedVersion=" + version() +
                     ", fileVersion=" + ver + "]");
 
             byte type = hdr.get();
 
             if (this.type != type)
-                throw new IgniteCheckedException("Failed to verify store file (invalid file type)" +
+                throw new IOException("Failed to verify store file (invalid file type)" +
                     " [expectedFileType=" + this.type +
                     ", actualFileType=" + type + "]");
 
             int pageSize = hdr.getInt();
 
             if (dbCfg.getPageSize() != pageSize)
-                throw new IgniteCheckedException("Failed to verify store file (invalid page size)" +
+                throw new IOException("Failed to verify store file (invalid page size)" +
                     " [expectedPageSize=" + dbCfg.getPageSize() +
                     ", filePageSize=" + pageSize + "]");
 
@@ -217,22 +217,22 @@ public class FilePageStore implements PageStore {
                 fileSize = pageSize + headerSize();
 
             if ((fileSize - headerSize()) % pageSize != 0)
-                throw new IgniteCheckedException("Failed to verify store file (invalid file size)" +
+                throw new IOException("Failed to verify store file (invalid file size)" +
                     " [fileSize=" + U.hexLong(fileSize) +
                     ", pageSize=" + U.hexLong(pageSize) + ']');
 
             return fileSize;
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("File check failed", e);
+            throw new PersistentStorageIOException("File check failed", e);
         }
     }
 
     /**
      * @param cleanFile {@code True} to delete file.
-     * @throws IgniteCheckedException If failed.
+     * @throws PersistentStorageIOException If failed.
      */
-    public void stop(boolean cleanFile) throws IgniteCheckedException {
+    public void stop(boolean cleanFile) throws PersistentStorageIOException {
         lock.writeLock().lock();
 
         try {
@@ -247,7 +247,7 @@ public class FilePageStore implements PageStore {
                 cfgFile.delete();
         }
         catch (IOException e) {
-            throw new IgniteCheckedException(e);
+            throw new PersistentStorageIOException(e);
         }
         finally {
             lock.writeLock().unlock();
@@ -257,7 +257,7 @@ public class FilePageStore implements PageStore {
     /**
      *
      */
-    public void truncate(int tag) throws IgniteCheckedException {
+    public void truncate(int tag) throws PersistentStorageIOException {
         lock.writeLock().lock();
 
         try {
@@ -277,7 +277,7 @@ public class FilePageStore implements PageStore {
             allocatedTracker.updateTotalAllocatedPages(delta / pageSize);
         }
         catch (IOException e) {
-            throw new IgniteCheckedException(e);
+            throw new PersistentStorageIOException(e);
         }
         finally {
             lock.writeLock().unlock();
@@ -301,7 +301,7 @@ public class FilePageStore implements PageStore {
     /**
      *
      */
-    public void finishRecover() {
+    public void finishRecover() throws PersistentStorageIOException {
         lock.writeLock().lock();
 
         try {
@@ -320,7 +320,7 @@ public class FilePageStore implements PageStore {
             recover = false;
         }
         catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new PersistentStorageIOException("Unable to finish recover", e);
         }
         finally {
             lock.writeLock().unlock();
@@ -378,7 +378,7 @@ public class FilePageStore implements PageStore {
                 PageIO.setCrc(pageBuf, savedCrc32);
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Read error", e);
+            throw new PersistentStorageIOException("Read error", e);
         }
     }
 
@@ -407,7 +407,7 @@ public class FilePageStore implements PageStore {
             while (len > 0);
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Read error", e);
+            throw new PersistentStorageIOException("Read error", e);
         }
     }
 
@@ -442,7 +442,9 @@ public class FilePageStore implements PageStore {
                         inited = true;
                     }
                     catch (IOException e) {
-                        throw err = new IgniteCheckedException("Can't open file: " + cfgFile.getName(), e);
+                        err = new PersistentStorageIOException("Could not initialize file: " + cfgFile.getName(), e);
+
+                        throw err;
                     }
                     finally {
                         if (err != null && fileIO != null)
@@ -509,7 +511,7 @@ public class FilePageStore implements PageStore {
             PageIO.setCrc(pageBuf, 0);
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Failed to write the page to the file store [pageId=" + pageId +
+            throw new PersistentStorageIOException("Failed to write the page to the file store [pageId=" + pageId +
                 ", file=" + cfgFile.getAbsolutePath() + ']', e);
         }
         finally {
@@ -547,7 +549,7 @@ public class FilePageStore implements PageStore {
             fileIO.force();
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Sync error", e);
+            throw new PersistentStorageIOException("Sync error", e);
         }
         finally {
             lock.writeLock().unlock();

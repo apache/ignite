@@ -753,6 +753,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @param fut Partition exchange future.
+     */
+    public void rebuildIndexesIfNeeded(GridDhtPartitionsExchangeFuture fut) {
+        // No-op.
+    }
+
+    /**
      * Needed action before any cache will stop
      */
     public void prepareCachesStop() {
