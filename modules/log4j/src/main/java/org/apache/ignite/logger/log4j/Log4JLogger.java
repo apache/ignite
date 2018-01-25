@@ -41,6 +41,7 @@ import org.apache.log4j.FileAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
+import org.apache.log4j.helpers.FileWatchdog;
 import org.apache.log4j.varia.LevelRangeFilter;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.jetbrains.annotations.Nullable;
@@ -79,7 +80,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  */
 public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAware {
     /** Delay to be passed to {@link DOMConfigurator#configureAndWatch(String, long)}. */
-    private static final int DFLT_WATCH_DELAY = 5000;
+    public static final long DFLT_WATCH_DELAY = FileWatchdog.DEFAULT_DELAY;
 
     /** Appenders. */
     private static Collection<FileAppender> fileAppenders = new GridConcurrentHashSet<>();
@@ -207,9 +208,12 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
      * @param watchDelay delay in milliseconds used to check configuration file for changes.
      * @throws IgniteCheckedException Thrown in case logger can't be created.
      */
-    public Log4JLogger(final String path, int watchDelay) throws IgniteCheckedException {
+    public Log4JLogger(final String path, long watchDelay) throws IgniteCheckedException {
         if (path == null)
             throw new IgniteCheckedException("Configuration XML file for Log4j must be specified.");
+
+        if (watchDelay < 0)
+            throw new IgniteCheckedException("watchDelay can't be negative (got " + watchDelay + ").");
 
         this.cfg = path;
 
@@ -220,8 +224,12 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
 
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
-                if (init)
-                    DOMConfigurator.configureAndWatch(cfgFile.getPath(), watchDelay);
+                if (init) {
+                    if (watchDelay > 0)
+                        DOMConfigurator.configureAndWatch(cfgFile.getPath(), watchDelay);
+                    else
+                        DOMConfigurator.configure(cfgFile.getPath());
+                }
 
                 return Logger.getRootLogger();
             }
@@ -252,19 +260,26 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
      * @param watchDelay delay in milliseconds used to check configuration file for changes.
      * @throws IgniteCheckedException Thrown in case logger can't be created.
      */
-    public Log4JLogger(final File cfgFile, final int watchDelay) throws IgniteCheckedException {
+    public Log4JLogger(final File cfgFile, final long watchDelay) throws IgniteCheckedException {
         if (cfgFile == null)
             throw new IgniteCheckedException("Configuration XML file for Log4j must be specified.");
 
         if (!cfgFile.exists() || cfgFile.isDirectory())
             throw new IgniteCheckedException("Log4j configuration path was not found or is a directory: " + cfgFile);
 
+        if (watchDelay < 0)
+            throw new IgniteCheckedException("watchDelay can't be negative (got " + watchDelay + ").");
+
         cfg = cfgFile.getAbsolutePath();
 
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
-                if (init)
-                    DOMConfigurator.configureAndWatch(cfgFile.getPath(), watchDelay);
+                if (init) {
+                    if (watchDelay > 0)
+                        DOMConfigurator.configureAndWatch(cfgFile.getPath(), watchDelay);
+                    else
+                        DOMConfigurator.configure(cfgFile.getPath());
+                }
 
                 return Logger.getRootLogger();
             }
@@ -295,16 +310,23 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
      * @param watchDelay delay in milliseconds used to check configuration file for changes.
      * @throws IgniteCheckedException Thrown in case logger can't be created.
      */
-    public Log4JLogger(final URL cfgUrl, int watchDelay) throws IgniteCheckedException {
+    public Log4JLogger(final URL cfgUrl, final long watchDelay) throws IgniteCheckedException {
         if (cfgUrl == null)
             throw new IgniteCheckedException("Configuration XML file for Log4j must be specified.");
+
+        if (watchDelay < 0)
+            throw new IgniteCheckedException("watchDelay can't be negative (got " + watchDelay + ").");
 
         cfg = cfgUrl.getPath();
 
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
-                if (init)
-                    DOMConfigurator.configureAndWatch(cfg, watchDelay);
+                if (init) {
+                    if (watchDelay > 0)
+                        DOMConfigurator.configureAndWatch(cfg, watchDelay);
+                    else
+                        DOMConfigurator.configure(cfg);
+                }
 
                 return Logger.getRootLogger();
             }
