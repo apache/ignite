@@ -226,7 +226,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     @Nullable private final GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker;
 
     /** Pages write throttle. */
-    private PagesWriteThrottle writeThrottle;
+    private PagesWriteThrottlePolicy writeThrottle;
 
     /** Write throttle enabled flag. */
     private boolean throttleEnabled;
@@ -348,7 +348,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         }
 
         if (throttleEnabled)
-            writeThrottle = new PagesWriteThrottle(this, (GridCacheDatabaseSharedManager)ctx.database());
+            writeThrottle = new PagesWriteSpeedBasedThrottle(this, (GridCacheDatabaseSharedManager)ctx.database());
     }
 
     /** {@inheritDoc} */
@@ -876,6 +876,32 @@ public class PageMemoryImpl implements PageMemoryEx {
         return false;
     }
 
+    /**
+     * @return Max dirty ratio from the segments.
+     */
+    double getDirtyPagesRatio() {
+        double res = 0;
+
+        for (Segment segment : segments) {
+            res = Math.max(res, segment.getDirtyPagesRatio());
+        }
+
+        return res;
+    }
+
+    /**
+     * @return Total pages can be placed in all segments.
+     */
+    public long totalPages() {
+        long res = 0;
+
+        for (Segment segment : segments) {
+            res += segment.pages();
+        }
+
+        return res;
+    }
+
     /** {@inheritDoc} */
     @Override public GridMultiCollectionWrapper<FullPageId> beginCheckpoint() throws IgniteException {
         if (segments == null)
@@ -895,6 +921,9 @@ public class PageMemoryImpl implements PageMemoryEx {
         }
 
         memMetrics.resetDirtyPages();
+
+        if (throttleEnabled)
+            writeThrottle.onBeginCheckpoint();
 
         return new GridMultiCollectionWrapper<>(collections);
     }
@@ -1785,7 +1814,14 @@ public class PageMemoryImpl implements PageMemoryEx {
          * @param dirtyRatioThreshold Throttle threshold.
          */
         private boolean shouldThrottle(double dirtyRatioThreshold) {
-            return ((double)dirtyPages.size()) / pages() > dirtyRatioThreshold;
+            return getDirtyPagesRatio() > dirtyRatioThreshold;
+        }
+
+        /**
+         * @return dirtyRatio to be compared with Throttle threshold.
+         */
+        private double getDirtyPagesRatio() {
+            return ((double)dirtyPages.size()) / pages();
         }
 
         /**
