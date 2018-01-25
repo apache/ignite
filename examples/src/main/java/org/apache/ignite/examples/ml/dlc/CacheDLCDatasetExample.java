@@ -21,9 +21,11 @@ import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.dlc.DLCFactory;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.dlc.dataset.DLCDataset;
 import org.apache.ignite.ml.dlc.dataset.transformer.DLCTransformers;
+import org.apache.ignite.ml.dlc.impl.cache.CacheBasedDLCFactory;
 
 /**
  * How to create a DLC dataset from an existing Ignite Cache?
@@ -43,18 +45,12 @@ public class CacheDLCDatasetExample {
             // context cache with specified transformation (it will be performed locally because partitions are on the
             // same nodes). In this case for every partition in upstream cache will be created labeled dataset partition
             // and this new partition will be filled with help of specified feature and label extractors.
-            DLCDataset<Integer, Person> dataset = DLCFactory.createDLC(
-                ignite,
-                persons,
-                (data, size) -> null,
-                DLCTransformers.upstreamToDataset((k, v) -> {
-                    double[] row = new double[2];
-                    row[0] = v.age;
-                    row[1] = v.salary;
-                    return row;
-                }, 2),
-                DLCDataset::new
-            );
+            DLCDataset<Integer, Person, ?> dataset = new CacheBasedDLCFactory<>(ignite, persons)
+                .createDLC(
+                    (data, size) -> null,
+                    DLCTransformers.upstreamToDataset((k, v) -> new double[]{ v.age, v.salary }, 2),
+                    DLCDataset::new
+                );
 
             // Calculation of the mean value. This calculation will be performed in map-reduce manner.
             double[] mean = dataset.mean();
@@ -82,7 +78,10 @@ public class CacheDLCDatasetExample {
 
     /** */
     private static IgniteCache<Integer, Person> createCache(Ignite ignite) {
-        IgniteCache<Integer, Person> persons = ignite.createCache("PERSONS");
+        CacheConfiguration<Integer, Person> cacheConfiguration = new CacheConfiguration<>();
+        cacheConfiguration.setName("PERSONS");
+        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 2));
+        IgniteCache<Integer, Person> persons = ignite.createCache(cacheConfiguration);
         persons.put(1, new Person("Mike", 42, 10000));
         persons.put(2, new Person("John", 32, 64000));
         persons.put(3, new Person("George", 53, 120000));

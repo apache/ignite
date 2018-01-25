@@ -15,27 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.dlc;
+package org.apache.ignite.examples.ml.dlc.transformer;
 
+import com.github.fommil.netlib.BLAS;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.dlc.dataset.DLCDataset;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.dlc.dataset.transformer.DLCTransformers;
-import org.apache.ignite.ml.dlc.impl.local.MapBasedDLCFactory;
+import org.apache.ignite.ml.dlc.impl.cache.CacheBasedDLCFactory;
 
-/**
- * How to create a DLC dataset from an existing local data?
- */
-public class LocalDLCDatasetExample {
+/** How to transform DLC into algorithm-specific view? */
+public class DLCTransformerExample {
     /** Run example. */
     public static void main(String[] args) {
+        BLAS bas = BLAS.getInstance();
+
+
+
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> D-Learn Cache Dataset example started.");
 
-            Map<Integer, Person> persons = createCache(ignite);
+            IgniteCache<Integer, Person> persons = createCache(ignite);
 
             // Initialization of the d-learn context. After this step context cache will be created with partitions
             // placed on the same nodes as the upstream Ignite Cache.
@@ -44,44 +47,43 @@ public class LocalDLCDatasetExample {
             // context cache with specified transformation (it will be performed locally because partitions are on the
             // same nodes). In this case for every partition in upstream cache will be created labeled dataset partition
             // and this new partition will be filled with help of specified feature and label extractors.
-            DLCDataset<Integer, Person, ?> dataset = new MapBasedDLCFactory<>(persons, 2)
+
+            AlgorithmSpecificDataset<Integer, Person> dataset = new CacheBasedDLCFactory<>(ignite, persons)
                 .createDLC(
-                    (data, size) -> null,
-                    DLCTransformers.upstreamToDataset((k, v) -> new double[]{ v.age, v.salary }, 2),
-                    DLCDataset::new
+                    new AlgorithmSpecificReplicatedDataTransformer<>(),
+                    DLCTransformers.<Integer, Person, AlgorithmSpecificReplicatedData>upstreamToLabeledDataset(
+                        (k, v) -> new double[]{ v.age },
+                        (k, v) -> v.salary,
+                        1
+                    ).andThen(new AlgorithmSpecificRecoverableDataTransformer()),
+                    AlgorithmSpecificDataset::new
                 );
 
-            // Calculation of the mean value. This calculation will be performed in map-reduce manner.
-            double[] mean = dataset.mean();
-            System.out.println("Mean \n\t" + Arrays.toString(mean));
+            double[] x = new double[2];
 
-            // Calculation of the standard deviation. This calculation will be performed in map-reduce manner.
-            double[] std = dataset.std();
-            System.out.println("Standard deviation \n\t" + Arrays.toString(std));
+            for (int iter = 0; iter < 100; iter++) {
+                double[] gradient = dataset.makeGradientStep(x);
+                System.out.println("Point : " + Arrays.toString(x) + ", gradient : " + Arrays.toString(gradient));
+                for (int i = 0; i < x.length; i++)
+                    x[i] -= 0.01 * gradient[i];
+            }
 
-            // Calculation of the covariance matrix.  This calculation will be performed in map-reduce manner.
-            double[][] cov = dataset.cov();
-            System.out.println("Covariance matrix ");
-            for (double[] row : cov)
-                System.out.println("\t" + Arrays.toString(row));
-
-            // Calculation of the correlation matrix.  This calculation will be performed in map-reduce manner.
-            double[][] corr = dataset.corr();
-            System.out.println("Correlation matrix ");
-            for (double[] row : corr)
-                System.out.println("\t" + Arrays.toString(row));
+            System.out.println("New point : " + Arrays.toString(x));
 
             System.out.println(">>> D-Learn Cache Dataset example completed.");
         }
     }
 
     /** */
-    private static Map<Integer, Person> createCache(Ignite ignite) {
-        Map<Integer, Person> persons = new HashMap<>();
-        persons.put(1, new Person("Mike", 42, 10000));
-        persons.put(2, new Person("John", 32, 64000));
-        persons.put(3, new Person("George", 53, 120000));
-        persons.put(4, new Person("Karl", 24, 70000));
+    private static IgniteCache<Integer, Person> createCache(Ignite ignite) {
+        CacheConfiguration<Integer, Person> cacheConfiguration = new CacheConfiguration<>();
+        cacheConfiguration.setName("PERSONS");
+        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 1));
+        IgniteCache<Integer, Person> persons = ignite.createCache(cacheConfiguration);
+        persons.put(1, new Person("Mike", 10, 100));
+        persons.put(2, new Person("John", 20, 200));
+        persons.put(3, new Person("George", 30, 300));
+        persons.put(4, new Person("Karl", 40, 400));
         return persons;
     }
 

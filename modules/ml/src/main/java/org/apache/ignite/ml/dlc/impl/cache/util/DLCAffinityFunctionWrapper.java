@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.dlc.impl.cache;
+package org.apache.ignite.ml.dlc.impl.cache.util;
 
 import java.util.List;
 import java.util.UUID;

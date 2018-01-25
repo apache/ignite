@@ -18,9 +18,9 @@
 package org.apache.ignite.ml.dlc.dataset;
 
 import com.github.fommil.netlib.BLAS;
+import java.io.Serializable;
 import org.apache.ignite.ml.dlc.DLC;
-import org.apache.ignite.ml.dlc.dataset.part.recoverable.DLCDatasetPartitionRecoverable;
-import org.apache.ignite.ml.dlc.dataset.part.replicated.DLCDatasetPartitionReplicated;
+import org.apache.ignite.ml.dlc.dataset.part.DLCDatasetPartitionRecoverable;
 
 /**
  * Dataset provides API to work with dataset.
@@ -28,7 +28,7 @@ import org.apache.ignite.ml.dlc.dataset.part.replicated.DLCDatasetPartitionRepli
  * @param <K> type of an upstream value key
  * @param <V> type of an upstream value
  */
-public class DLCDataset<K, V> extends DLCWrapper<K, V, DLCDatasetPartitionReplicated, DLCDatasetPartitionRecoverable> {
+public class DLCDataset<K, V, Q extends Serializable> extends DLCWrapper<K, V, Q, DLCDatasetPartitionRecoverable> {
     /** BLAS (Basic Linear Algebra Subprograms) instance. */
     private static final BLAS blas = BLAS.getInstance();
     /**
@@ -36,8 +36,7 @@ public class DLCDataset<K, V> extends DLCWrapper<K, V, DLCDatasetPartitionReplic
      *
      * @param delegate delegate which actually performs base functions
      */
-    public DLCDataset(
-        DLC<K, V, DLCDatasetPartitionReplicated, DLCDatasetPartitionRecoverable> delegate) {
+    public DLCDataset(DLC<K, V, Q, DLCDatasetPartitionRecoverable> delegate) {
         super(delegate);
     }
 

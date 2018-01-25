@@ -17,10 +17,9 @@
 
 package org.apache.ignite.ml.dlc.dataset.transformer;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.dlc.dataset.DLCDataset;
 import org.apache.ignite.ml.dlc.dataset.DLCLabeledDataset;
-import org.apache.ignite.ml.dlc.dataset.transformer.recoverable.UpstreamToDatasetTransformer;
-import org.apache.ignite.ml.dlc.dataset.transformer.recoverable.UpstreamToLabeledDatasetTransformer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
@@ -36,9 +35,10 @@ public class DLCTransformers {
      * @param features number of features
      * @param <K> type of an upstream value key
      * @param <V> type of an upstream value
+     * @param <Q> type of replicated data of a partition
      * @return transformer
      */
-    public static <K, V> UpstreamToDatasetTransformer<K, V> upstreamToDataset(
+    public static <K, V, Q extends Serializable> UpstreamToDatasetTransformer<K, V, Q> upstreamToDataset(
         IgniteBiFunction<K, V, double[]> featureExtractor, int features) {
         return new UpstreamToDatasetTransformer<>(featureExtractor, features);
     }
@@ -54,7 +54,7 @@ public class DLCTransformers {
      * @param <V> type of an upstream value
      * @return transformer
      */
-    public static <K, V> UpstreamToLabeledDatasetTransformer<K, V> upstreamToLabeledDataset(
+    public static <K, V, Q extends Serializable> UpstreamToLabeledDatasetTransformer<K, V, Q> upstreamToLabeledDataset(
         IgniteBiFunction<K, V, double[]> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor, int features) {
         return new UpstreamToLabeledDatasetTransformer<>(featureExtractor, lbExtractor, features);

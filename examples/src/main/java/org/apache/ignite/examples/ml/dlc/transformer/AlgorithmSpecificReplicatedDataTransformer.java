@@ -15,14 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.dlc.dataset.part.replicated;
+package org.apache.ignite.examples.ml.dlc.transformer;
 
-import java.io.Serializable;
+import org.apache.ignite.ml.dlc.DLCPartitionReplicatedTransformer;
+import org.apache.ignite.ml.dlc.DLCUpstreamEntry;
 
 /**
- * Replicated part of DLC dataset partition.
+ * Transformer which transforms upstream data into algorithm-specific replicated data.
+ *
+ * @param <K> type of an upstream value key
+ * @param <V> type of an upstream value
  */
-public class DLCDatasetPartitionReplicated implements Serializable {
+public class AlgorithmSpecificReplicatedDataTransformer<K, V> implements DLCPartitionReplicatedTransformer<K, V, AlgorithmSpecificReplicatedData> {
     /** */
-    private static final long serialVersionUID = 3579701425183018483L;
+    private static final long serialVersionUID = -3720585607267757357L;
+
+    /** {@inheritDoc} */
+    @Override public AlgorithmSpecificReplicatedData transform(Iterable<DLCUpstreamEntry<K, V>> upstreamData,
+        Long upstreamDataSize) {
+        return new AlgorithmSpecificReplicatedData();
+    }
 }

@@ -17,24 +17,35 @@
 
 package org.apache.ignite.ml.dlc;
 
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import java.io.Serializable;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
+ * Transformer of the partition replicated data.
  *
- *
- * @param <K>
- * @param <V>
- * @param <Q>
+ * @param <K> type of an upstream value key
+ * @param <V> type of an upstream value
+ * @param <Q> type of replicated data of a partition
  */
 @FunctionalInterface
-public interface DLCPartitionReplicatedTransformer<K, V, Q>
-    extends IgniteBiFunction<Iterable<DLCUpstreamEntry<K, V>>, Long, Q> {
+public interface DLCPartitionReplicatedTransformer<K, V, Q extends Serializable> extends Serializable {
     /**
+     * Transforms upstream data to the partition replicated data.
      *
-     *
-     * @param upstreamData
-     * @param upstreamDataSize
-     * @return
+     * @param upstreamData upstream data
+     * @param upstreamDataSize upstream data size
+     * @return replicated data
      */
-    Q apply(Iterable<DLCUpstreamEntry<K, V>> upstreamData, Long upstreamDataSize);
+    public Q transform(Iterable<DLCUpstreamEntry<K, V>> upstreamData, Long upstreamDataSize);
+
+    /**
+     * Makes a composition of functions.
+     *
+     * @param after function will be called after this one
+     * @param <T> type of replicated data of a partition
+     * @return new transformer
+     */
+    default <T extends Serializable> DLCPartitionReplicatedTransformer<K, V, T> andThen(IgniteFunction<Q, T> after) {
+        return (upData, upDataSize) -> after.apply(transform(upData, upDataSize));
+    }
 }

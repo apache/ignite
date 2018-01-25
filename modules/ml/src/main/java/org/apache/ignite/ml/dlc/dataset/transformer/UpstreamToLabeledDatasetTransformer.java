@@ -15,28 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.dlc.dataset.transformer.recoverable;
+package org.apache.ignite.ml.dlc.dataset.transformer;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.dlc.DLCPartitionRecoverableTransformer;
 import org.apache.ignite.ml.dlc.DLCUpstreamEntry;
-import org.apache.ignite.ml.dlc.dataset.DLCDataset;
-import org.apache.ignite.ml.dlc.dataset.part.recoverable.DLCDatasetPartitionRecoverable;
-import org.apache.ignite.ml.dlc.dataset.part.replicated.DLCDatasetPartitionReplicated;
+import org.apache.ignite.ml.dlc.dataset.DLCLabeledDataset;
+import org.apache.ignite.ml.dlc.dataset.part.DLCLabeledDatasetPartitionRecoverable;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
- * Transforms upstream data into the {@link DLCDataset} using the specified feature extractor.
+ * Transforms upstream data into the {@link DLCLabeledDataset} using the specified feature and label extractors.
  *
  * @param <K> type of an upstream value key
  * @param <V> type of an upstream value
  */
-public class UpstreamToDatasetTransformer<K, V>
-    implements DLCPartitionRecoverableTransformer<K, V, DLCDatasetPartitionReplicated, DLCDatasetPartitionRecoverable> {
+public class UpstreamToLabeledDatasetTransformer<K, V, Q extends Serializable>
+    implements DLCPartitionRecoverableTransformer<K, V, Q, DLCLabeledDatasetPartitionRecoverable> {
     /** */
-    private static final long serialVersionUID = -3713681392540367983L;
+    private static final long serialVersionUID = -1224768715207401297L;
 
     /** Feature extractor. */
     private final IgniteBiFunction<K, V, double[]> featureExtractor;
+
+    /** Label extractor. */
+    private final IgniteBiFunction<K, V, Double> lbExtractor;
 
     /** Number of features. */
     private final int features;
@@ -45,27 +48,31 @@ public class UpstreamToDatasetTransformer<K, V>
      * Constructs a new instance of transformer.
      *
      * @param featureExtractor feature extractor
+     * @param lbExtractor label extractor
      * @param features number of features
      */
-    public UpstreamToDatasetTransformer(
-        IgniteBiFunction<K, V, double[]> featureExtractor, int features) {
+    public UpstreamToLabeledDatasetTransformer(
+        IgniteBiFunction<K, V, double[]> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor, int features) {
         this.featureExtractor = featureExtractor;
+        this.lbExtractor = lbExtractor;
         this.features = features;
     }
 
     /**
-     * Transforms upstream data to {@link DLCDatasetPartitionRecoverable}.
+     * Transforms upstream data to {@link DLCLabeledDatasetPartitionRecoverable}.
      *
      * @param upstreamData upstream data
      * @param upstreamDataSize upstream data size
      * @param replicatedData replicated data
-     * @return dataset partition recoverable data
+     * @return labeled dataset recoverable data
      */
-    @Override public DLCDatasetPartitionRecoverable apply(Iterable<DLCUpstreamEntry<K, V>> upstreamData, Long upstreamDataSize,
-        DLCDatasetPartitionReplicated replicatedData) {
+    @Override public DLCLabeledDatasetPartitionRecoverable transform(Iterable<DLCUpstreamEntry<K, V>> upstreamData,
+        Long upstreamDataSize, Q replicatedData) {
         int rows = Math.toIntExact(upstreamDataSize), cols = features;
 
         double[] features = new double[rows * cols];
+        double[] labels = new double[rows];
 
         int ptr = 0;
         for (DLCUpstreamEntry<K, V> e : upstreamData) {
@@ -76,9 +83,11 @@ public class UpstreamToDatasetTransformer<K, V>
             for (int i = 0; i < cols; i++)
                 features[i * rows + ptr] = row[i];
 
+            labels[ptr] = lbExtractor.apply(e.getKey(), e.getValue());
+
             ptr++;
         }
 
-        return new DLCDatasetPartitionRecoverable(features, rows, cols);
+        return new DLCLabeledDatasetPartitionRecoverable(features, rows, cols, labels);
     }
 }

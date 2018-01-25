@@ -49,7 +49,8 @@ public class DLCPartition<K, V, Q extends Serializable, W extends AutoCloseable>
      * @param replicatedData replicated data
      * @param recoverableDataTransformer transformer of the recoverable part of this partition
      */
-    public DLCPartition(Q replicatedData, DLCPartitionRecoverableTransformer<K, V, Q, W> recoverableDataTransformer) {
+    public DLCPartition(Q replicatedData,
+        DLCPartitionRecoverableTransformer<K, V, Q, W> recoverableDataTransformer) {
         this.replicatedData = replicatedData;
         this.recoverableDataTransformer = recoverableDataTransformer;
     }

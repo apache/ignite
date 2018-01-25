@@ -15,14 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.dlc.dataset.part.replicated;
+package org.apache.ignite.examples.ml.dlc.transformer;
 
 import java.io.Serializable;
 
 /**
- * Replicated part of DLC labeled dataset partition.
+ * Algorithm-specific replicated data maintaining number of iteration.
  */
-public class DLCLabeledDatasetPartitionReplicated implements Serializable {
+public class AlgorithmSpecificReplicatedData implements Serializable {
     /** */
-    private static final long serialVersionUID = 132087952507878026L;
+    private static final long serialVersionUID = 7593887973722933436L;
+
+    /** Number of iteration. */
+    private int iteration;
+
+    /** */
+    public int getIteration() {
+        return iteration;
+    }
+
+    /** */
+    public void setIteration(int iteration) {
+        this.iteration = iteration;
+    }
 }

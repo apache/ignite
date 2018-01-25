@@ -35,8 +35,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.ml.dlc.DLCPartition;
-import org.apache.ignite.ml.dlc.DLCUpstreamEntry;
-import org.apache.ignite.ml.math.functions.IgniteTriFunction;
+import org.apache.ignite.ml.dlc.DLCPartitionRecoverableTransformer;
 
 /**
  * Distributed Learning Context partition builder which constructs a partition from two parts: replicated data which is
@@ -142,7 +141,7 @@ public class CacheBasedDLCPartitionBuilder<K, V, Q extends Serializable, W exten
      * @return recoverable data
      */
     private W loadRecoverableData(
-        IgniteTriFunction<Iterable<DLCUpstreamEntry<K, V>>, Long, Q, W> recoverableDataTransformer,
+        DLCPartitionRecoverableTransformer<K, V, Q, W> recoverableDataTransformer,
         Q replicatedData) {
         Affinity<K> upstreamCacheAffinity = ignite.affinity(upstreamCacheName);
         ClusterNode partNode = upstreamCacheAffinity.mapPartitionToNode(partIdx);
@@ -162,7 +161,7 @@ public class CacheBasedDLCPartitionBuilder<K, V, Q extends Serializable, W exten
         // TODO: how to guarantee that cache size will not be changed between these calls?
         long cnt = locUpstreamCache.localSizeLong(partIdx);
         try (QueryCursor<Cache.Entry<K, V>> cursor = locUpstreamCache.query(qry)) {
-            return recoverableDataTransformer.apply(new DLCUpstreamCursorAdapter<>(cursor), cnt, replicatedData);
+            return recoverableDataTransformer.transform(new DLCUpstreamCursorAdapter<>(cursor), cnt, replicatedData);
         }
     }
 

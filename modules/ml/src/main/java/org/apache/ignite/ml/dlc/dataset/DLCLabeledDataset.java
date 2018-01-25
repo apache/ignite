@@ -17,9 +17,9 @@
 
 package org.apache.ignite.ml.dlc.dataset;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.dlc.DLC;
-import org.apache.ignite.ml.dlc.dataset.part.recoverable.DLCLabeledDatasetPartitionRecoverable;
-import org.apache.ignite.ml.dlc.dataset.part.replicated.DLCLabeledDatasetPartitionReplicated;
+import org.apache.ignite.ml.dlc.dataset.part.DLCLabeledDatasetPartitionRecoverable;
 
 /**
  * Dataset provides API to work with labeled dataset.
@@ -27,15 +27,15 @@ import org.apache.ignite.ml.dlc.dataset.part.replicated.DLCLabeledDatasetPartiti
  * @param <K> type of an upstream value key
  * @param <V> type of an upstream value
  */
-public class DLCLabeledDataset<K, V>
-    extends DLCWrapper<K, V, DLCLabeledDatasetPartitionReplicated, DLCLabeledDatasetPartitionRecoverable> {
+public class DLCLabeledDataset<K, V, Q extends Serializable>
+    extends DLCWrapper<K, V, Q, DLCLabeledDatasetPartitionRecoverable> {
     /**
      * Constructs a new instance of Distributed Learning Context wrapper
      *
      * @param delegate delegate which actually performs base functions
      */
     public DLCLabeledDataset(
-        DLC<K, V, DLCLabeledDatasetPartitionReplicated, DLCLabeledDatasetPartitionRecoverable> delegate) {
+        DLC<K, V, Q, DLCLabeledDatasetPartitionRecoverable> delegate) {
         super(delegate);
     }
 }

@@ -17,25 +17,39 @@
 
 package org.apache.ignite.ml.dlc;
 
-import org.apache.ignite.ml.math.functions.IgniteTriFunction;
+import java.io.Serializable;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
+ * Transformer of the partition recoverable data.
  *
- *
- * @param <K>
- * @param <V>
- * @param <Q>
- * @param <W>
+ * @param <K> type of an upstream value key
+ * @param <V> type of an upstream value
+ * @param <Q> type of replicated data of a partition
+ * @param <W> type of recoverable data of a partition
  */
 @FunctionalInterface
-public interface DLCPartitionRecoverableTransformer<K, V, Q, W>
-    extends IgniteTriFunction<Iterable<DLCUpstreamEntry<K, V>>, Long, Q, W> {
+public interface DLCPartitionRecoverableTransformer<K, V, Q extends Serializable, W extends AutoCloseable>
+    extends Serializable {
     /**
+     * Transforms upstream data to the partition recoverable data.
      *
-     * @param upstreamData
-     * @param upstreamDataSize
-     * @param replicatedData
-     * @return
+     * @param upstreamData upstream data
+     * @param upstreamDataSize upstream data size
+     * @param replicatedData replicated data
+     * @return recoverable data
      */
-    W apply(Iterable<DLCUpstreamEntry<K, V>> upstreamData, Long upstreamDataSize, Q replicatedData);
+    public W transform(Iterable<DLCUpstreamEntry<K, V>> upstreamData, Long upstreamDataSize, Q replicatedData);
+
+    /**
+     * Makes a composition of functions.
+     *
+     * @param after function will be called after this one
+     * @param <T> type of recoverable data of a partition
+     * @return new transformer
+     */
+    default <T extends AutoCloseable> DLCPartitionRecoverableTransformer<K, V, Q, T> andThen(
+        IgniteFunction<W, T> after) {
+        return (upData, upDataSize, replicatedData) -> after.apply(transform(upData, upDataSize, replicatedData));
+    }
 }
