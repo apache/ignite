@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Impl.Client
     internal class IgniteClient : IIgniteInternal, IIgniteClient
     {
         /** Socket. */
-        private readonly IClientSocket _socket;
+        private readonly ClientSocket _socket;
 
         /** Marshaller. */
         private readonly Marshaller _marsh;
@@ -63,9 +63,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             _configuration = new IgniteClientConfiguration(clientConfiguration);
 
-            _socket = _configuration.SslStreamFactory != null
-                ? (IClientSocket) new ClientSecureSocket(_configuration)
-                : new ClientSocket(_configuration);
+            _socket = new ClientSocket(_configuration);
 
             _marsh = new Marshaller(_configuration.BinaryConfiguration)
             {
@@ -80,7 +78,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Gets the socket.
         /// </summary>
-        public IClientSocket Socket
+        public ClientSocket Socket
         {
             get { return _socket; }
         }
