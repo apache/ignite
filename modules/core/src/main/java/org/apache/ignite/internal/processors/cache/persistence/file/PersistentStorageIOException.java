@@ -14,29 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache.persistence.file;
 
-import { suite, test, setup } from 'mocha';
+import java.io.IOException;
+import org.apache.ignite.IgniteCheckedException;
 
-suite('ExampleTestSuite', () => {
-    setup(() => {
-        // browser.get('http://localhost:9000/');
-    });
+/**
+ * Exception is needed to distinguish persistent storage I/O errors.
+ */
+public class PersistentStorageIOException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-    test('initially has a greeting', (done) => {
-        done();
+    /**
+     * Create an instance of exception.
+     *
+     * @param cause Error cause.
+     */
+    public PersistentStorageIOException(IOException cause) {
+        super(cause);
+    }
 
-        // element(by.model('ui.email')).sendKeys('jhon@doe.com');
-    });
-
-    test('initially has a greeting', (done) => {
-        done();
-
-        // element(by.model('ui.email')).sendKeys('jhon@doe.com');
-    });
-
-    test('initially has a greeting', (done) => {
-        done();
-
-        // element(by.model('ui.email')).sendKeys('jhon@doe.com');
-    });
-});
+    /**
+     * Create an instance of exception.
+     *
+     * @param msg Error message.
+     * @param cause Error cause.
+     */
+    public PersistentStorageIOException(String msg, IOException cause) {
+        super(msg, cause);
+    }
+}

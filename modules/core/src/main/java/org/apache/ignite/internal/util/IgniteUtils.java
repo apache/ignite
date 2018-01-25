@@ -8532,6 +8532,18 @@ public abstract class IgniteUtils {
      * @throws ClassNotFoundException If class not found.
      */
     public static Class<?> forName(String clsName, @Nullable ClassLoader ldr) throws ClassNotFoundException {
+        return U.forName(clsName, ldr, null);
+    }
+
+    /**
+     * Gets class for provided name. Accepts primitive types names.
+     *
+     * @param clsName Class name.
+     * @param ldr Class loader.
+     * @return Class.
+     * @throws ClassNotFoundException If class not found.
+     */
+    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr, IgnitePredicate<String> clsFilter) throws ClassNotFoundException {
         assert clsName != null;
 
         Class<?> cls = primitiveMap.get(clsName);
@@ -8558,6 +8570,9 @@ public abstract class IgniteUtils {
         cls = ldrMap.get(clsName);
 
         if (cls == null) {
+            if (clsFilter != null && !clsFilter.apply(clsName))
+                throw new RuntimeException("Deserialization of class " + clsName + " is disallowed.");
+
             Class old = ldrMap.putIfAbsent(clsName, cls = Class.forName(clsName, true, ldr));
 
             if (old != null)
