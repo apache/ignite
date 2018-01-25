@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             var sock = ClientSocket.Connect(cfg);
 
-            return cfg.SslStreamFactory.Create(new NetworkStream(sock));
+            return cfg.SslStreamFactory.Create(sock);
         }
 
         /** <inheritDoc /> */

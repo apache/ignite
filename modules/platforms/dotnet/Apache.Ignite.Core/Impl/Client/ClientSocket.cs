@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private const byte ClientType = 2;
 
         /** Underlying socket. */
-        private readonly Socket _socket;
+        private readonly NetworkStream _socket;
 
         /** Operation timeout. */
         private readonly TimeSpan _timeout;
@@ -242,8 +242,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             Debug.Assert(messageLen == 12);
 
-            var sent = _socket.Send(buf, messageLen, SocketFlags.None);
-            Debug.Assert(sent == messageLen);
+            _socket.Write(buf, 0, messageLen);
 
             // Decode response.
             var res = ReceiveMessage();
@@ -288,11 +287,11 @@ namespace Apache.Ignite.Core.Impl.Client
             // Socket.Receive can return any number of bytes, even 1.
             // We should repeat Receive calls until required amount of data has been received.
             var buf = new byte[size];
-            var received = _socket.Receive(buf);
+            var received = _socket.Read(buf,0, size);
 
-            while (received < size)
+            while (received < size)  // TODO: ??
             {
-                var res = _socket.Receive(buf, received, size - received, SocketFlags.None);
+                var res = _socket.Read(buf, received, size - received);
 
                 if (res == 0)
                 {
@@ -326,7 +325,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
                     if (_requests.IsEmpty)
                     {
-                        _socket.Send(reqMsg.Buffer, 0, reqMsg.Length, SocketFlags.None);
+                        _socket.Write(reqMsg.Buffer, 0, reqMsg.Length);
 
                         var respMsg = ReceiveMessage();
                         var response = new BinaryHeapStream(respMsg);
@@ -368,7 +367,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 Debug.Assert(added);
 
                 // Send.
-                _socket.Send(reqMsg.Buffer, 0, reqMsg.Length, SocketFlags.None);
+                _socket.Write(reqMsg.Buffer, 0, reqMsg.Length);
                 _listenerEvent.Set();
                 return req.CompletionSource.Task;
             }
@@ -415,7 +414,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", 
             Justification = "Socket is returned from this method.")]
-        public static Socket Connect(IgniteClientConfiguration cfg)
+        public static NetworkStream Connect(IgniteClientConfiguration cfg)
         {
             List<Exception> errors = null;
 
@@ -443,7 +442,11 @@ namespace Apache.Ignite.Core.Impl.Client
 
                     socket.Connect(ipEndPoint);
 
-                    return socket;
+                    return new NetworkStream(socket)
+                    {
+                        ReadTimeout = (int) cfg.SocketTimeout.TotalMilliseconds,
+                        WriteTimeout = (int) cfg.SocketTimeout.TotalMilliseconds
+                    };
                 }
                 catch (SocketException e)
                 {
