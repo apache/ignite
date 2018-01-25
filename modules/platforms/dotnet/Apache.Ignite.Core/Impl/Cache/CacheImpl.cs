@@ -1271,8 +1271,8 @@ namespace Apache.Ignite.Core.Impl.Cache
 
                 for (int i = 0; i < size; i++)
                 {
-                    TK key = reader.DetachNext().ReadObject<TK>();
-                    TV val = reader.DetachNext().ReadObject<TV>();
+                    TK key = reader.ReadObject<TK>();
+                    TV val = reader.ReadObject<TV>();
 
                     res.Add(new CacheEntry<TK, TV>(key, val));
                 }
