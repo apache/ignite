@@ -45,7 +45,7 @@ namespace Apache.Ignite.Benchmarks.Interop
 
             Cache = Node.GetOrCreateCache<int, Doubles>(CacheName);
 
-            var array = Doubles.GetDoubles(Dataset);
+            var array = Doubles.GetInstances(Dataset);
 
             for (int i = 0; i < array.Length; i++)
                 Cache.Put(i, array[i]);

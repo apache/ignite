@@ -15,31 +15,35 @@
  * limitations under the License.
  */
  
- using System;
-
 namespace Apache.Ignite.Benchmarks.Model
 {
+    using System;
     using Apache.Ignite.Core.Binary;
 
+    /// <summary>
+    /// Model with a single double[] field.
+    /// </summary>
     public class Doubles : IBinarizable
     {
-        public double[] Data = new double[1000 * 32];
+        /** */
+        private double[] _data = new double[1000 * 32];
 
-        public Doubles()
+        /// <summary>
+        /// Initializes the instance.
+        /// </summary>
+        private Doubles Init(Random random)
         {
-            // No-op
-        }
-
-        public Doubles Init(Random random)
-        {
-            for (var i = 0; i < Data.Length; i++)
+            for (var i = 0; i < _data.Length; i++)
             {
-                Data[i] = random.NextDouble();
+                _data[i] = random.NextDouble();
             }
             return this;
         }
 
-        public static Doubles[] GetDoubles(int size)
+        /// <summary>
+        /// Gets the instances.
+        /// </summary>
+        public static Doubles[] GetInstances(int size)
         {
             var data = new Doubles[size];
             var random = new Random();
@@ -50,14 +54,16 @@ namespace Apache.Ignite.Benchmarks.Model
             return data;
         }
 
+        /** <inheritdoc /> */
         public void WriteBinary(IBinaryWriter writer)
         {
-            writer.WriteDoubleArray("data", Data);
+            writer.WriteDoubleArray("data", _data);
         }
 
+        /** <inheritdoc /> */
         public void ReadBinary(IBinaryReader reader)
         {
-            Data = reader.ReadDoubleArray("data");
+            _data = reader.ReadDoubleArray("data");
         }
     }
 }
