@@ -17,17 +17,26 @@
 
 namespace Apache.Ignite.Core.Client
 {
+    using System;
     using System.IO;
     using System.Net.Security;
 
     /// <summary>
-    /// SSL Stream Factory defines how SSL connection is established.
+    /// Predefined SSL stream factory, loads certificate from specified file.
     /// </summary>
-    public interface ISslStreamFactory
+    public class SslStreamFactory : ISslStreamFactory
     {
+        /** <inehritdoc /> */
+        public SslStream Create(Stream innerStream)
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
-        /// Creates the SSL stream.
+        /// Gets or sets a value indicating whether to ignore invalid certificates.
+        /// This undermines security (because anyone can join the cluster),
+        /// but may be useful for testing with self-signed certificates.
         /// </summary>
-        SslStream Create(Stream innerStream);
+        public bool IgnoreInvalidCertificates { get; set; }
     }
 }
