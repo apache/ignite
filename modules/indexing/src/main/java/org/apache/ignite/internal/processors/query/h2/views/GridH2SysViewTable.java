@@ -41,7 +41,7 @@ public class GridH2SysViewTable extends TableBase {
     protected final GridH2SysView sysView;
 
     /**
-     *  Indexes.
+     * Indexes.
      *
      * Note: We need ArrayList here by H2 {@link #getIndexes()} method contract.
      */

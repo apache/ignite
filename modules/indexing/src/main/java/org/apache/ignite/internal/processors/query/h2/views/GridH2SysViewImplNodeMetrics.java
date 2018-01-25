@@ -38,7 +38,7 @@ public class GridH2SysViewImplNodeMetrics extends GridH2SysView {
      * @param ctx Grid context.
      */
     public GridH2SysViewImplNodeMetrics(GridKernalContext ctx) {
-        super("NODE_METRICS", "Nodes metrics", ctx, "NODE_ID",
+        super("NODE_METRICS", "Node metrics", ctx, "NODE_ID",
             newColumn("NODE_ID", Value.UUID),
             newColumn("LAST_UPDATE_TIME", Value.TIMESTAMP),
             newColumn("MAX_ACTIVE_JOBS", Value.INT),
