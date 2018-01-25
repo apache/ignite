@@ -485,7 +485,8 @@ namespace Apache.Ignite.Core.Impl.Client
                 return stream;
             }
 
-            return cfg.SslStreamFactory.Create(stream);
+            // TODO: Host name.
+            return cfg.SslStreamFactory.Create(stream, null);
         }
 
         /// <summary>
