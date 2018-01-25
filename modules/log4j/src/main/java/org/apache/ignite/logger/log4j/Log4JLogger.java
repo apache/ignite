@@ -79,9 +79,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  * injection.
  */
 public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAware {
-    /** Delay to be passed to {@link DOMConfigurator#configureAndWatch(String, long)}. */
-    public static final long DFLT_WATCH_DELAY = FileWatchdog.DEFAULT_DELAY;
-
     /** Appenders. */
     private static Collection<FileAppender> fileAppenders = new GridConcurrentHashSet<>();
 
@@ -188,13 +185,13 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
 
     /**
      * Creates new logger with given configuration {@code path}.
-     * Calling this constructor is equivalent to calling {@code Log4JLogger(path, DFLT_WATCH_DELAY}.
+     * Calling this constructor is equivalent to calling {@code Log4JLogger(path, FileWatchdog.DEFAULT_DELAY}.
      *
      * @param path Path to log4j configuration XML file.
      * @throws IgniteCheckedException Thrown in case logger can't be created.
      */
     public Log4JLogger(final String path) throws IgniteCheckedException {
-        this(path, DFLT_WATCH_DELAY);
+        this(path, FileWatchdog.DEFAULT_DELAY);
     }
 
     /**
@@ -240,13 +237,13 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
 
     /**
      * Creates new logger with given configuration {@code cfgFile}.
-     * Calling this constructor is equivalent to calling {@code Log4JLogger(cfgFile, DFLT_WATCH_DELAY}.
+     * Calling this constructor is equivalent to calling {@code Log4JLogger(cfgFile, FileWatchdog.DEFAULT_DELAY}.
      *
      * @param cfgFile Log4j configuration XML file.
      * @throws IgniteCheckedException Thrown in case logger can't be created.
      */
     public Log4JLogger(File cfgFile) throws IgniteCheckedException {
-        this(cfgFile, DFLT_WATCH_DELAY);
+        this(cfgFile, FileWatchdog.DEFAULT_DELAY);
     }
 
     /**
@@ -290,13 +287,13 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
 
     /**
      * Creates new logger with given configuration {@code cfgUrl}.
-     * Calling this constructor is equivalent to calling {@code Log4JLogger(cfgUrl, DFLT_WATCH_DELAY}.
+     * Calling this constructor is equivalent to calling {@code Log4JLogger(cfgUrl, FileWatchdog.DEFAULT_DELAY}.
      *
      * @param cfgUrl URL for Log4j configuration XML file.
      * @throws IgniteCheckedException Thrown in case logger can't be created.
      */
     public Log4JLogger(final URL cfgUrl) throws IgniteCheckedException {
-        this(cfgUrl, DFLT_WATCH_DELAY);
+        this(cfgUrl, FileWatchdog.DEFAULT_DELAY);
     }
 
     /**
