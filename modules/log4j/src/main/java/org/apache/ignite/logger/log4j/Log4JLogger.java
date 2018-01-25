@@ -197,8 +197,8 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
     /**
      * Creates new logger with given configuration {@code path}.
      * <p>
-     * Created logger will check the configuration file for changes once every {@code watchDelay} milliseconds,
-     * and update its configuration if the file was changed.
+     * If {@code watchDelay} is not zero, created logger will check the configuration file for changes once every
+     * {@code watchDelay} milliseconds, and update its configuration if the file was changed.
      * See {@link DOMConfigurator#configureAndWatch(String, long)} for details.
      *
      * @param path Path to log4j configuration XML file.
@@ -249,8 +249,8 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
     /**
      * Creates new logger with given configuration {@code cfgFile}.
      * <p>
-     * Created logger will check the configuration file for changes once every {@code watchDelay} milliseconds,
-     * and update its configuration if the file was changed.
+     * If {@code watchDelay} is not zero, created logger will check the configuration file for changes once every
+     * {@code watchDelay} milliseconds, and update its configuration if the file was changed.
      * See {@link DOMConfigurator#configureAndWatch(String, long)} for details.
      *
      * @param cfgFile Log4j configuration XML file.
@@ -299,8 +299,8 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
     /**
      * Creates new logger with given configuration {@code cfgUrl}.
      * <p>
-     * Created logger will check the configuration file for changes once every {@code watchDelay} milliseconds,
-     * and update its configuration if the file was changed.
+     * If {@code watchDelay} is not zero, created logger will check the configuration file for changes once every
+     * {@code watchDelay} milliseconds, and update its configuration if the file was changed.
      * See {@link DOMConfigurator#configureAndWatch(String, long)} for details.
      *
      * @param cfgUrl URL for Log4j configuration XML file.
