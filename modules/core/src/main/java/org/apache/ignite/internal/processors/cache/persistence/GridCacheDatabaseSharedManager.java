@@ -76,6 +76,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.NodeInvalidator;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
@@ -109,6 +110,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -1126,7 +1129,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         // Before local node join event.
         if (clusterInTransitionStateToActive || (joinEvt && locNode && isSrvNode))
             restoreState();
+    }
 
+    /** {@inheritDoc} */
+    @Override public void rebuildIndexesIfNeeded(GridDhtPartitionsExchangeFuture fut) {
         if (cctx.kernalContext().query().moduleEnabled()) {
             for (final GridCacheContext cacheCtx : (Collection<GridCacheContext>)cctx.cacheContexts()) {
                 if (cacheCtx.startTopologyVersion().equals(fut.initialVersion()) &&
@@ -1145,8 +1151,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             CacheConfiguration ccfg = cacheCtx.config();
 
                             if (ccfg != null) {
-                                log().info("Finished indexes rebuilding for cache: [name=" + ccfg.getName()
-                                    + ", grpName=" + ccfg.getGroupName());
+                                log().info("Finished indexes rebuilding for cache [name=" + ccfg.getName()
+                                    + ", grpName=" + ccfg.getGroupName() + ']');
                             }
                         }
                     });
@@ -2297,6 +2303,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     updateState(part, restore.get1());
                 }
             }
+
+            grp.topology().afterStateRestored(grp.topology().lastTopologyChangeVersion());
         }
     }
 
@@ -2798,7 +2806,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         }
 
                         // Wait and check for errors.
-                        doneWriteFut.get();
+                        try {
+                            doneWriteFut.get();
+                        } catch (IgniteCheckedException e) {
+                            chp.progress.cpFinishFut.onDone(e);
+
+                            // In case of writing error node should be invalidated and stopped.
+                            NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
+
+                            return;
+                        }
 
                         // Must re-check shutdown flag here because threads may have skipped some pages.
                         // If so, we should not put finish checkpoint mark.

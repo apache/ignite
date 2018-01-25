@@ -299,10 +299,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void initPartitionsWhenAffinityReady(AffinityTopologyVersion affVer,
+    @Override public boolean initPartitionsWhenAffinityReady(AffinityTopologyVersion affVer,
         GridDhtPartitionsExchangeFuture exchFut)
         throws IgniteInterruptedCheckedException
     {
+        boolean needRefresh;
+
         ctx.database().checkpointReadLock();
 
         try {
@@ -310,11 +312,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             try {
                 if (stopping)
-                    return;
+                    return false;
 
                 long updateSeq = this.updateSeq.incrementAndGet();
 
-                initPartitions0(affVer, exchFut, updateSeq);
+                needRefresh = initPartitions0(affVer, exchFut, updateSeq);
 
                 consistencyCheck();
             }
@@ -325,15 +327,20 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         finally {
             ctx.database().checkpointReadUnlock();
         }
+
+        return needRefresh;
     }
 
     /**
      * @param affVer Affinity version to use.
      * @param exchFut Exchange future.
      * @param updateSeq Update sequence.
+     * @return {@code True} if partitions must be refreshed.
      */
-    private void initPartitions0(AffinityTopologyVersion affVer, GridDhtPartitionsExchangeFuture exchFut, long updateSeq) {
+    private boolean initPartitions0(AffinityTopologyVersion affVer, GridDhtPartitionsExchangeFuture exchFut, long updateSeq) {
         List<List<ClusterNode>> aff = grp.affinity().readyAssignments(affVer);
+
+        boolean needRefresh = false;
 
         if (grp.affinityNode()) {
             ClusterNode loc = ctx.localNode();
@@ -359,18 +366,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     assert exchId.isJoined() || added;
 
                     for (int p = 0; p < num; p++) {
-                        IgnitePageStoreManager storeMgr = ctx.pageStore();
-
-                        if (localNode(p, aff)
-                            || (storeMgr instanceof FilePageStoreManager
-                            && grp.persistenceEnabled()
-                            && Files.exists(((FilePageStoreManager)storeMgr).getPath(grp.sharedGroup(), grp.cacheOrGroupName(), p)))) {
+                        if (localNode(p, aff) || initLocalPartition(p, discoCache)) {
                             GridDhtLocalPartition locPart = createPartition(p);
 
                             if (grp.persistenceEnabled()) {
                                 GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)grp.shared().database();
 
                                 locPart.restoreState(db.readPartitionState(grp, locPart.id()));
+
+                                needRefresh = true;
                             }
                             else {
                                 boolean owned = locPart.own();
@@ -428,6 +432,23 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
 
         updateRebalanceVersion(aff);
+
+        return needRefresh;
+    }
+
+    /**
+     * @param p Partition ID to restore.
+     * @param discoCache Disco cache to use.
+     * @return {@code True} if should restore local partition.
+     */
+    private boolean initLocalPartition(int p, DiscoCache discoCache) {
+        IgnitePageStoreManager storeMgr = ctx.pageStore();
+
+        return
+            grp.persistenceEnabled() &&
+            storeMgr instanceof FilePageStoreManager &&
+            discoCache.baselineNode(ctx.localNodeId()) &&
+            Files.exists(((FilePageStoreManager)storeMgr).getPath(grp.sharedGroup(), grp.cacheOrGroupName(), p));
     }
 
     /**
@@ -604,6 +625,30 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      */
     private boolean partitionLocalNode(int p, AffinityTopologyVersion topVer) {
         return grp.affinity().nodes(p, topVer).contains(ctx.localNode());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void afterStateRestored(AffinityTopologyVersion topVer) {
+        lock.writeLock().lock();
+
+        try {
+            if (node2part == null)
+                return;
+
+            long updateSeq = this.updateSeq.incrementAndGet();
+
+            for (int p = 0; p < grp.affinity().partitions(); p++) {
+                GridDhtLocalPartition locPart = locParts.get(p);
+
+                if (locPart == null)
+                    updateLocal(p, EVICTED, updateSeq, topVer);
+                else
+                    updateLocal(p, locPart.state(), updateSeq, topVer);
+            }
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -986,9 +1031,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 map.put(i, part.state());
             }
 
+            GridDhtPartitionMap locPartMap = node2part != null ? node2part.get(ctx.localNodeId()) : null;
+
             return new GridDhtPartitionMap(ctx.localNodeId(),
                 updateSeq.get(),
-                readyTopVer,
+                locPartMap != null ? locPartMap.topologyVersion() : readyTopVer,
                 map,
                 true);
         }

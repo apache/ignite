@@ -33,6 +33,9 @@
 #include "ignite/odbc/ssl/secure_socket_client.h"
 #include "ignite/odbc/system/tcp_socket_client.h"
 
+// Uncomment for per-byte debug.
+//#define PER_BYTE_DEBUG
+
 namespace
 {
 #pragma pack(push, 1)
@@ -42,6 +45,7 @@ namespace
     };
 #pragma pack(pop)
 }
+
 
 namespace ignite
 {
@@ -247,7 +251,9 @@ namespace ignite
             if (res == OperationResult::FAIL)
                 throw OdbcError(SqlState::S08S01_LINK_FAILURE, "Can not send message due to connection failure");
 
+#ifdef PER_BYTE_DEBUG
             LOG_MSG("message sent: (" <<  msg.GetSize() << " bytes)" << utility::HexDump(msg.GetData(), msg.GetSize()));
+#endif //PER_BYTE_DEBUG
 
             return true;
         }
@@ -314,7 +320,9 @@ namespace ignite
             if (res == OperationResult::FAIL)
                 throw OdbcError(SqlState::S08S01_LINK_FAILURE, "Can not receive message body");
 
+#ifdef PER_BYTE_DEBUG
             LOG_MSG("Message received: " << utility::HexDump(&msg[0], msg.size()));
+#endif //PER_BYTE_DEBUG
 
             return true;
         }
