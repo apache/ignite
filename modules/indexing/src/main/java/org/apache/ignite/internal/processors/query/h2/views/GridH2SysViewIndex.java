@@ -23,7 +23,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
 import org.h2.index.Cursor;
-import org.h2.index.IndexCondition;
 import org.h2.index.IndexType;
 import org.h2.message.DbException;
 import org.h2.result.Row;
@@ -37,6 +36,9 @@ import org.h2.table.TableFilter;
  * System view H2 index.
  */
 public class GridH2SysViewIndex extends BaseIndex {
+    /** Default full scan cost. */
+    private static final double DEFAULT_FULL_SCAN_COST = 100d;
+
     /**
      * @param tbl Table.
      * @param col Column.
@@ -81,25 +83,7 @@ public class GridH2SysViewIndex extends BaseIndex {
     /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder,
         HashSet<Column> allColsSet) {
-        double colsCost = 2d;
-        boolean isIdxUsed = false;
-
-        if (masks != null) {
-            double colWeight = 2d;
-
-            for (Column col : columns) {
-                colWeight /= 2d;
-
-                if ((masks[col.getColumnId()] & IndexCondition.EQUALITY) != 0) {
-                    isIdxUsed = true;
-
-                    colsCost -= colWeight;
-                } else
-                    colsCost += colWeight;
-            }
-        }
-
-        return isIdxUsed ? colsCost : 100d + getRowCountApproximation();
+        return DEFAULT_FULL_SCAN_COST + getRowCountApproximation();
     }
 
     /** {@inheritDoc} */
