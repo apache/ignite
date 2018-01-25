@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Sockets;
@@ -47,7 +48,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private const byte ClientType = 2;
 
         /** Underlying socket. */
-        private readonly NetworkStream _socket;
+        private readonly Stream _socket;
 
         /** Operation timeout. */
         private readonly TimeSpan _timeout;
@@ -289,7 +290,7 @@ namespace Apache.Ignite.Core.Impl.Client
             var buf = new byte[size];
             var received = _socket.Read(buf,0, size);
 
-            while (received < size)  // TODO: ??
+            while (received < size)
             {
                 var res = _socket.Read(buf, received, size - received);
 
@@ -414,7 +415,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", 
             Justification = "Socket is returned from this method.")]
-        public static NetworkStream Connect(IgniteClientConfiguration cfg)
+        public static Stream Connect(IgniteClientConfiguration cfg)
         {
             List<Exception> errors = null;
 
@@ -442,11 +443,18 @@ namespace Apache.Ignite.Core.Impl.Client
 
                     socket.Connect(ipEndPoint);
 
-                    return new NetworkStream(socket)
+                    var stream = new NetworkStream(socket)
                     {
                         ReadTimeout = (int) cfg.SocketTimeout.TotalMilliseconds,
                         WriteTimeout = (int) cfg.SocketTimeout.TotalMilliseconds
                     };
+
+                    if (cfg.SslStreamFactory == null)
+                    {
+                        return stream;
+                    }
+
+                    return cfg.SslStreamFactory.Create(stream);
                 }
                 catch (SocketException e)
                 {
