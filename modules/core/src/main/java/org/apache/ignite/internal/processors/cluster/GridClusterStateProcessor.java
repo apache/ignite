@@ -243,12 +243,14 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
      * @throws IgniteCheckedException If write to metastore has failed.
      */
     public void resetBranchingHistory(long newBranchingHash) throws IgniteCheckedException {
-        globalState.baselineTopology().resetBranchingHistory(newBranchingHash);
+        if (!compatibilityMode()) {
+            globalState.baselineTopology().resetBranchingHistory(newBranchingHash);
 
-        writeBaselineTopology(globalState.baselineTopology(), null);
+            writeBaselineTopology(globalState.baselineTopology(), null);
 
-        U.log(log,
-            String.format("Branching history of current BaselineTopology is reset to the value %d", newBranchingHash));
+            U.log(log,
+                String.format("Branching history of current BaselineTopology is reset to the value %d", newBranchingHash));
+        }
     }
 
     /**
