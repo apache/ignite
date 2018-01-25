@@ -53,7 +53,7 @@ public class KNNClassificationExample {
     private static final String SEPARATOR = "\t";
 
     /** Path to the Iris dataset. */
-    private static final String KNN_IRIS_TXT = "../datasets/iris.txt";
+    private static final String KNN_IRIS_TXT = "../../datasets/iris.txt";
 
     /**
      * Executes example.

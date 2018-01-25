@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.knn.regression;
+package org.apache.ignite.examples.ml.svm;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -25,20 +25,19 @@ import java.nio.file.Paths;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.ExampleNodeStartup;
-import org.apache.ignite.examples.ml.knn.classification.KNNClassificationExample;
-import org.apache.ignite.ml.knn.models.KNNStrategy;
-import org.apache.ignite.ml.knn.regression.KNNMultipleLinearRegression;
-import org.apache.ignite.ml.math.distances.ManhattanDistance;
+import org.apache.ignite.ml.Trainer;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledDatasetTestTrainPair;
 import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
 import org.apache.ignite.ml.structures.preprocessing.LabellingMachine;
 import org.apache.ignite.ml.structures.preprocessing.Normalizer;
+import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationTrainer;
+import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
  * <p>
- * Example of using {@link KNNMultipleLinearRegression} with iris dataset.</p>
+ * Example of using {@link org.apache.ignite.ml.svm.SVMLinearClassificationModel} with Titanic dataset.</p>
  * <p>
  * Note that in this example we cannot guarantee order in which nodes return results of intermediate
  * computations and therefore algorithm can return different results.</p>
@@ -49,12 +48,12 @@ import org.apache.ignite.thread.IgniteThread;
  * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will start node
  * with {@code examples/config/example-ignite.xml} configuration.</p>
  */
-public class KNNRegressionExample {
+public class SVMBinaryClassificationExample {
     /** Separator. */
     private static final String SEPARATOR = ",";
 
-    /** */
-    private static final String KNN_CLEARED_MACHINES_TXT = "../../datasets/cleared_machines.txt";
+    /** Path to the Iris dataset. */
+    private static final String TITANIC_DATASET = "../datasets/titanic.txt";
 
     /**
      * Executes example.
@@ -62,92 +61,68 @@ public class KNNRegressionExample {
      * @param args Command line arguments, none required.
      */
     public static void main(String[] args) throws InterruptedException {
-        System.out.println(">>> kNN regression example started.");
+        System.out.println(">>> SVM Binary classification example started.");
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                KNNRegressionExample.class.getSimpleName(), () -> {
+                SVMBinaryClassificationExample.class.getSimpleName(), () -> {
 
                 try {
                     // Prepare path to read
-                    URL url = KNNClassificationExample.class.getResource(KNN_CLEARED_MACHINES_TXT);
+                    URL url = SVMBinaryClassificationExample.class.getResource(TITANIC_DATASET);
                     if (url == null)
-                        throw new RuntimeException("Can't get URL for: " + KNN_CLEARED_MACHINES_TXT);
+                        throw new RuntimeException("Can't get URL for: " + TITANIC_DATASET);
 
                     Path path = Paths.get(url.toURI());
 
                     // Read dataset from file
-                    LabeledDataset dataset = LabeledDatasetLoader.loadFromTxtFile(path, SEPARATOR, false, false);
+                    LabeledDataset dataset = LabeledDatasetLoader.loadFromTxtFile(path, SEPARATOR, true, false);
 
                     // Normalize dataset
                     Normalizer.normalizeWithMiniMax(dataset);
 
-                    // Random splitting of iris data as 80% train and 20% test datasets
-                    LabeledDatasetTestTrainPair split = new LabeledDatasetTestTrainPair(dataset, 0.2);
+                    // Random splitting of the given data as 70% train and 30% test datasets
+                    LabeledDatasetTestTrainPair split = new LabeledDatasetTestTrainPair(dataset, 0.3);
 
-                    System.out.println("\n>>> Amount of observations in train dataset: " + split.train().rowSize());
-                    System.out.println("\n>>> Amount of observations in test dataset: " + split.test().rowSize());
+                    System.out.println("\n>>> Amount of observations in train dataset " + split.train().rowSize());
+                    System.out.println("\n>>> Amount of observations in test dataset " + split.test().rowSize());
 
                     LabeledDataset test = split.test();
                     LabeledDataset train = split.train();
 
-                    // Builds weighted kNN-regression with Manhattan Distance
-                    KNNMultipleLinearRegression knnMdl = new KNNMultipleLinearRegression(7, new ManhattanDistance(),
-                        KNNStrategy.WEIGHTED, train);
+                    System.out.println("\n>>> Create new linear binary SVM trainer object.");
+                    Trainer<SVMLinearClassificationModel, LabeledDataset> trainer = new SVMLinearBinaryClassificationTrainer();
+
+                    System.out.println("\n>>> Perform the training to get the model.");
+                    SVMLinearClassificationModel mdl = trainer.train(train);
+
+                    System.out.println("\n>>> SVM classification model: " + mdl);
 
                     // Clone labels
                     final double[] labels = test.labels();
 
                     // Save predicted classes to test dataset
-                    LabellingMachine.assignLabels(test, knnMdl);
+                    LabellingMachine.assignLabels(test, mdl);
 
-                    // Calculate mean squared error (MSE)
-                    double mse = 0.0;
-
-                    for (int i = 0; i < test.rowSize(); i++)
-                        mse += Math.pow(test.label(i) - labels[i], 2.0);
-                    mse = mse / test.rowSize();
-
-                    System.out.println("\n>>> Mean squared error (MSE) " + mse);
-
-                    // Calculate mean absolute error (MAE)
-                    double mae = 0.0;
-
-                    for (int i = 0; i < test.rowSize(); i++)
-                        mae += Math.abs(test.label(i) - labels[i]);
-                    mae = mae / test.rowSize();
-
-                    System.out.println("\n>>> Mean absolute error (MAE) " + mae);
-
-                    // Calculate R^2 as 1 - RSS/TSS
-                    double avg = 0.0;
-
-                    for (int i = 0; i < test.rowSize(); i++)
-                        avg += test.label(i);
-
-                    avg = avg / test.rowSize();
-
-                    double detCf = 0.0;
-                    double tss = 0.0;
-
+                    // Calculate amount of errors on test dataset
+                    int amountOfErrors = 0;
                     for (int i = 0; i < test.rowSize(); i++) {
-                        detCf += Math.pow(test.label(i) - labels[i], 2.0);
-                        tss += Math.pow(test.label(i) - avg, 2.0);
+                        if (test.label(i) != labels[i])
+                            amountOfErrors++;
                     }
 
-                    detCf = 1 - detCf / tss;
+                    System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
+                    System.out.println("\n>>> Prediction percentage " + (1 - amountOfErrors / (double) test.rowSize()));
 
-                    System.out.println("\n>>> R^2 " + detCf);
-                }
-                catch (URISyntaxException | IOException e) {
+                } catch (URISyntaxException | IOException e) {
                     e.printStackTrace();
                     System.out.println("\n>>> Unexpected exception, check resources: " + e);
+                } finally {
+                    System.out.println("\n>>> SVM binary classification example completed.");
                 }
-                finally {
-                    System.out.println("\n>>> kNN regression example completed.");
-                }
+
             });
 
             igniteThread.start();
