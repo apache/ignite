@@ -17,21 +17,24 @@
 
 package org.apache.ignite.ml.dlc;
 
-import java.io.Serializable;
-import javax.cache.Cache;
-import org.apache.ignite.ml.math.functions.IgniteTriFunction;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
- * Transformer which transforms upstream data to any desired type of recoverable data.
  *
- * @param <K> type of an upstream value key
- * @param <V> type of an upstream value
- * @param <Q> type of replicated data of a partition
- * @param <W> type of recoverable data of a partition
+ *
+ * @param <K>
+ * @param <V>
+ * @param <Q>
  */
 @FunctionalInterface
-public interface DLCPartitionRecoverableDataTransformer<K, V, Q extends Serializable, W extends AutoCloseable>
-    extends IgniteTriFunction<Iterable<Cache.Entry<K, V>>, Long, Q, W> {
-    /** {@inheritDoc} */
-    @Override public W apply(Iterable<Cache.Entry<K, V>> upstreamData, Long upstreamDataSize, Q replicatedData);
+public interface DLCPartitionReplicatedTransformer<K, V, Q>
+    extends IgniteBiFunction<Iterable<DLCUpstreamEntry<K, V>>, Long, Q> {
+    /**
+     *
+     *
+     * @param upstreamData
+     * @param upstreamDataSize
+     * @return
+     */
+    Q apply(Iterable<DLCUpstreamEntry<K, V>> upstreamData, Long upstreamDataSize);
 }

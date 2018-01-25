@@ -38,7 +38,7 @@ public class DLCPartition<K, V, Q extends Serializable, W extends AutoCloseable>
     private final Q replicatedData;
 
     /** Loader of the recoverable part of this partition. */
-    private final DLCPartitionRecoverableDataTransformer<K, V, Q, W> recoverableDataTransformer;
+    private final DLCPartitionRecoverableTransformer<K, V, Q, W> recoverableDataTransformer;
 
     /** Recoverable data. */
     private transient W recoverableData;
@@ -49,8 +49,7 @@ public class DLCPartition<K, V, Q extends Serializable, W extends AutoCloseable>
      * @param replicatedData replicated data
      * @param recoverableDataTransformer transformer of the recoverable part of this partition
      */
-    public DLCPartition(Q replicatedData,
-        DLCPartitionRecoverableDataTransformer<K, V, Q, W> recoverableDataTransformer) {
+    public DLCPartition(Q replicatedData, DLCPartitionRecoverableTransformer<K, V, Q, W> recoverableDataTransformer) {
         this.replicatedData = replicatedData;
         this.recoverableDataTransformer = recoverableDataTransformer;
     }
@@ -61,7 +60,7 @@ public class DLCPartition<K, V, Q extends Serializable, W extends AutoCloseable>
     }
 
     /** */
-    public DLCPartitionRecoverableDataTransformer<K, V, Q, W> getRecoverableDataTransformer() {
+    public DLCPartitionRecoverableTransformer<K, V, Q, W> getRecoverableDataTransformer() {
         return recoverableDataTransformer;
     }
 

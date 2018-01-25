@@ -17,26 +17,25 @@
 
 package org.apache.ignite.ml.dlc.dataset;
 
-import java.io.Serializable;
 import org.apache.ignite.ml.dlc.DLC;
 import org.apache.ignite.ml.dlc.dataset.part.recoverable.DLCLabeledDatasetPartitionRecoverable;
+import org.apache.ignite.ml.dlc.dataset.part.replicated.DLCLabeledDatasetPartitionReplicated;
 
 /**
  * Dataset provides API to work with labeled dataset.
  *
  * @param <K> type of an upstream value key
  * @param <V> type of an upstream value
- * @param <Q> type of replicated data of a partition
  */
-public class DLCLabeledDataset<K, V, Q extends Serializable>
-    extends DLCWrapper<K, V, Q, DLCLabeledDatasetPartitionRecoverable> {
+public class DLCLabeledDataset<K, V>
+    extends DLCWrapper<K, V, DLCLabeledDatasetPartitionReplicated, DLCLabeledDatasetPartitionRecoverable> {
     /**
      * Constructs a new instance of Distributed Learning Context wrapper
      *
      * @param delegate delegate which actually performs base functions
      */
     public DLCLabeledDataset(
-        DLC<K, V, Q, DLCLabeledDatasetPartitionRecoverable> delegate) {
+        DLC<K, V, DLCLabeledDatasetPartitionReplicated, DLCLabeledDatasetPartitionRecoverable> delegate) {
         super(delegate);
     }
 }

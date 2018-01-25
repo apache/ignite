@@ -17,23 +17,46 @@
 
 package org.apache.ignite.ml.dlc.dataset.transformer;
 
-import javax.cache.Cache;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.dlc.dataset.DLCDataset;
+import org.apache.ignite.ml.dlc.dataset.DLCLabeledDataset;
+import org.apache.ignite.ml.dlc.dataset.transformer.recoverable.UpstreamToDatasetTransformer;
+import org.apache.ignite.ml.dlc.dataset.transformer.recoverable.UpstreamToLabeledDatasetTransformer;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
  * Aggregator which allows to find desired transformer from one partition data type to another. This class doesn't
  * introduce a new functionality, but helps to work efficiently with existing transformers.
  */
 public class DLCTransformers {
-
+    /**
+     * Creates a new instance of transformer which transforms upstream data into the {@link DLCDataset} using the
+     * specified feature extractor.
+     *
+     * @param featureExtractor feature extractor
+     * @param features number of features
+     * @param <K> type of an upstream value key
+     * @param <V> type of an upstream value
+     * @return transformer
+     */
     public static <K, V> UpstreamToDatasetTransformer<K, V> upstreamToDataset(
-        IgniteFunction<Cache.Entry<K, V>, double[]> featureExtractor, int features) {
+        IgniteBiFunction<K, V, double[]> featureExtractor, int features) {
         return new UpstreamToDatasetTransformer<>(featureExtractor, features);
     }
 
+    /**
+     * Creates a new instance of transformer which transforms upstream data into the {@link DLCLabeledDataset} using the
+     * specified feature and label extractors.
+     *
+     * @param featureExtractor feature extractor
+     * @param lbExtractor label extractor
+     * @param features number of features
+     * @param <K> type of an upstream value key
+     * @param <V> type of an upstream value
+     * @return transformer
+     */
     public static <K, V> UpstreamToLabeledDatasetTransformer<K, V> upstreamToLabeledDataset(
-        IgniteFunction<Cache.Entry<K, V>, double[]> featureExtractor,
-        IgniteFunction<Cache.Entry<K, V>, Double> lbExtractor, int features) {
+        IgniteBiFunction<K, V, double[]> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor, int features) {
         return new UpstreamToLabeledDatasetTransformer<>(featureExtractor, lbExtractor, features);
     }
 }

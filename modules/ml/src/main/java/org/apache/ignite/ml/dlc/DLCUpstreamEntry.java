@@ -17,20 +17,37 @@
 
 package org.apache.ignite.ml.dlc;
 
-import java.io.Serializable;
-import javax.cache.Cache;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-
 /**
- * Transformer which transforms upstream data to any desired type of replicated data.
+ * Distributed Learning Context upstream entry.
  *
  * @param <K> type of an upstream value key
  * @param <V> type of an upstream value
- * @param <Q> type of replicated data
  */
-@FunctionalInterface
-public interface DLCPartitionReplicatedDataTransformer<K, V, Q extends Serializable>
-    extends IgniteBiFunction<Iterable<Cache.Entry<K, V>>, Long, Q> {
-    /** {@inheritDoc} */
-    @Override public Q apply(Iterable<Cache.Entry<K, V>> upstreamData, Long upstreamDataSize);
+public class DLCUpstreamEntry<K, V> {
+    /** Key. */
+    private final K key;
+
+    /** Value. */
+    private final V val;
+
+    /**
+     * Constructs a new instance of upstream entry.
+     *
+     * @param key key
+     * @param val value
+     */
+    public DLCUpstreamEntry(K key, V val) {
+        this.key = key;
+        this.val = val;
+    }
+
+    /** */
+    public K getKey() {
+        return key;
+    }
+
+    /** */
+    public V getValue() {
+        return val;
+    }
 }

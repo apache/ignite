@@ -17,19 +17,49 @@
 
 package org.apache.ignite.ml.dlc.dataset.part.recoverable;
 
+/**
+ * Recoverable part of a DLC dataset partition contains matrix with features in a dense flat column-major format.
+ */
 public class DLCDatasetPartitionRecoverable implements AutoCloseable {
+    /** Matrix with features in a dense flat column-major format. */
+    private final double[] features;
 
-    private final double[][] data;
+    /** Number of rows. */
+    private final int rows;
 
-    public DLCDatasetPartitionRecoverable(double[][] data) {
-        this.data = data;
+    /** Number of columns. */
+    private final int cols;
+
+    /**
+     * Constructs a new instance of recoverable data of DLC dataset partition.
+     *
+     * @param features matrix with features in a dense flat column-major format
+     * @param rows number of rows
+     * @param cols number of columns
+     */
+    public DLCDatasetPartitionRecoverable(double[] features, int rows, int cols) {
+        this.features = features;
+        this.rows = rows;
+        this.cols = cols;
     }
 
-    public double[][] getData() {
-        return data;
+    /** */
+    public double[] getFeatures() {
+        return features;
     }
 
+    /** */
+    public int getRows() {
+        return rows;
+    }
+
+    /** */
+    public int getCols() {
+        return cols;
+    }
+
+    /** {@inheritDoc} */
     @Override public void close() {
-
+        // do nothing
     }
 }

@@ -35,7 +35,7 @@ import org.jetbrains.annotations.NotNull;
  * @param <Q> type of replicated data of a partition
  * @param <W> type of recoverable data of a partition
  */
-public class MapBasedDLCImpl<K extends Comparable<K>, V, Q extends Serializable, W extends AutoCloseable>
+public class MapBasedDLCImpl<K, V, Q extends Serializable, W extends AutoCloseable>
     implements DLC<K, V, Q, W> {
     /** Map containing pairs of partition index and partitions. */
     private final Map<Integer, DLCPartition<K, V, Q, W>> dlcMap;

@@ -1,15 +1,13 @@
 package org.apache.ignite.ml;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.dlc.DLC;
 import org.apache.ignite.ml.dlc.DLCFactory;
-import org.apache.ignite.ml.dlc.dataset.part.recoverable.DLCDatasetPartitionRecoverable;
+import org.apache.ignite.ml.dlc.dataset.DLCDataset;
 import org.apache.ignite.ml.dlc.dataset.transformer.DLCTransformers;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -51,21 +49,32 @@ public class DLCPlayground extends GridCommonAbstractTest {
         for (int i = 0; i < 40; i++)
             cache.put(i, i);
 
-        DLC<Integer, Integer, Serializable, DLCDatasetPartitionRecoverable> idd = DLCFactory.createIDD(
+        DLCDataset<Integer, Integer> dataset = DLCFactory.createDLC(
             ignite,
             cache,
-            (iter, cnt) -> null,
-            DLCTransformers.upstreamToDataset(e -> new double[]{1, 2, 3}, 3)
+            (data, size) -> null,
+            DLCTransformers.upstreamToDataset((k, v) -> new double[]{1, 2, 3}, 3),
+            DLCDataset::new
         );
 
-        for (int i = 0; i < 3; i++) {
-            idd.compute(part -> {
-                StringBuilder builder = new StringBuilder();
-                builder.append("PART \n");
-                for (double[] row : part.getRecoverableData().getData())
-                    builder.append(Arrays.toString(row)).append("\n");
-                System.err.println(builder.toString());
-            });
-        }
+        // Calculation of the mean value. This calculation will be performed in map-reduce manner.
+        double[] mean = dataset.mean();
+        System.out.println("Mean \n\t" + Arrays.toString(mean));
+
+        // Calculation of the standard deviation. This calculation will be performed in map-reduce manner.
+        double[] std = dataset.std();
+        System.out.println("Standard deviation \n\t" + Arrays.toString(std));
+
+        // Calculation of the covariance matrix.  This calculation will be performed in map-reduce manner.
+        double[][] cov = dataset.cov();
+        System.out.println("Covariance matrix ");
+        for (double[] row : cov)
+            System.out.println("\t" + Arrays.toString(row));
+
+        // Calculation of the correlation matrix.  This calculation will be performed in map-reduce manner.
+        double[][] corr = dataset.corr();
+        System.out.println("Correlation matrix ");
+        for (double[] row : corr)
+            System.out.println("\t" + Arrays.toString(row));
     }
 }

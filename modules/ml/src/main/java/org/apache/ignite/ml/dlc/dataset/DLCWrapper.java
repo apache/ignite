@@ -34,7 +34,7 @@ import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
  */
 public class DLCWrapper<K, V, Q extends Serializable, W extends AutoCloseable> implements DLC<K, V, Q, W> {
     /** Delegate which actually performs base functions like {@code compute()}  and {@code close()}. */
-    private final DLC<K, V, Q, W> delegate;
+    protected final DLC<K, V, Q, W> delegate;
 
     /**
      * Constructs a new instance of Distributed Learning Context wrapper

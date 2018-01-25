@@ -17,16 +17,65 @@
 
 package org.apache.ignite.ml.dlc.dataset.part.recoverable;
 
-public class DLCLabeledDatasetPartitionRecoverable extends DLCDatasetPartitionRecoverable {
+/**
+ * Recoverable part of a DLC labeled dataset partition contains matrix of features in a dense flat column-major format
+ * and vector of values.
+ */
+public class DLCLabeledDatasetPartitionRecoverable implements AutoCloseable {
+    /** Matrix of features in a dense flat column-major format. */
+    private final double[] features;
 
+    /** Number of rows. */
+    private final int rows;
+
+    /** Number of columns. */
+    private final int cols;
+
+    /** Vector with labels. */
     private double[] labels;
 
-    public DLCLabeledDatasetPartitionRecoverable(double[][] data, double[] labels) {
-        super(data);
+    /**
+     * Constructs a new instance of recoverable data of DLC labeled dataset partition.
+     *
+     * @param features matrix of features in a dense flat column-major format
+     * @param rows number of rows
+     * @param cols number of columns
+     * @param labels vector with labels
+     */
+    public DLCLabeledDatasetPartitionRecoverable(double[] features, int rows, int cols, double[] labels) {
+        this.features = features;
+        this.rows = rows;
+        this.cols = cols;
         this.labels = labels;
     }
 
+    /** */
+    public double[] getFeatures() {
+        return features;
+    }
+
+    /** */
+    public int getRows() {
+        return rows;
+    }
+
+    /** */
+    public int getCols() {
+        return cols;
+    }
+
+    /** */
     public double[] getLabels() {
         return labels;
+    }
+
+    /** */
+    public void setLabels(double[] labels) {
+        this.labels = labels;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        // do nothing
     }
 }
