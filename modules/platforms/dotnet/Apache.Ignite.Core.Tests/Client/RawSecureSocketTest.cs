@@ -49,10 +49,14 @@ namespace Apache.Ignite.Core.Tests.Client
             // IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH
 
             Environment.SetEnvironmentVariable("IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH", 
-                @"S:\W\incubator-ignite\modules\platforms\cpp\odbc-test\config");
+                @"c:\w\incubator-ignite\modules\platforms\cpp\odbc-test\config");
 
-            using (var ignite = Ignition.Start(
-                @"S:\W\incubator-ignite\modules\platforms\cpp\odbc-test\config\queries-ssl.xml"))
+            var icfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                SpringConfigUrl = @"c:\w\incubator-ignite\modules\platforms\cpp\odbc-test\config\queries-ssl.xml"
+            };
+
+            using (var ignite = Ignition.Start(icfg))
             {
                 var cfg = new IgniteClientConfiguration
                 {
