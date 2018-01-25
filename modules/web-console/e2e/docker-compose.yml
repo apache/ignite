@@ -15,22 +15,27 @@
 # limitations under the License.
 #
 
-webconsole:
-  image: apacheignite/web-console-standalone
-  ports:
-    - 80:80
-  restart: always
-  environment:
-    # Port for serving frontend API
-    - server_port=3000
-    # Cookie session secret
-    - server_sessionSecret="CHANGE ME"
-    # URL for mongodb connection
-    - mongodb_url=mongodb://127.0.0.1/console
-    # Mail connection settings. Leave empty if no needed. See also settings, https://github.com/nodemailer/nodemailer
-    - mail_service=""
-    - mail_sign=""
-    - mail_greeting=""
-    - mail_from=""
-    - mail_auth_user=""
-    - mail_auth_pass=""
+version: '2'
+services:
+  mongodb:
+    image: 'mongo:latest'
+    container_name: 'mongodb'
+
+  testenv:
+    build:
+      context: '../'
+      dockerfile: './e2e/testenv/Dockerfile'
+    environment:
+      - mongodb_url=mongodb://mongodb:27017/console-e2e
+    depends_on:
+      - mongodb
+
+  e2e:
+    build: './testcafe'
+    environment:
+      - DB_URL=mongodb://mongodb:27017/console-e2e
+      - APP_URL=http://testenv:9001/
+      - TEAMCITY=true
+    depends_on:
+      - mongodb
+      - testenv

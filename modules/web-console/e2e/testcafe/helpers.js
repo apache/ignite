@@ -15,28 +15,14 @@
  * limitations under the License.
  */
 
-import { suite, test, setup } from 'mocha';
+const { ClientFunction } = require('testcafe');
 
-suite('ExampleTestSuite', () => {
-    setup(() => {
-        // browser.get('http://localhost:9000/');
-    });
+const mouseenterTrigger = ClientFunction((selector = '') => {
+    return new Promise((resolve) => {
+        window.jQuery(selector).mouseenter();
 
-    test('initially has a greeting', (done) => {
-        done();
-
-        // element(by.model('ui.email')).sendKeys('jhon@doe.com');
-    });
-
-    test('initially has a greeting', (done) => {
-        done();
-
-        // element(by.model('ui.email')).sendKeys('jhon@doe.com');
-    });
-
-    test('initially has a greeting', (done) => {
-        done();
-
-        // element(by.model('ui.email')).sendKeys('jhon@doe.com');
+        resolve();
     });
 });
+
+module.exports = { mouseenterTrigger };
