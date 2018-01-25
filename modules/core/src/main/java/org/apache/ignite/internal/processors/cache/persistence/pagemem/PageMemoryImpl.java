@@ -61,8 +61,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionCountersIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
@@ -430,8 +433,6 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         long pageId = storeMgr.allocatePage(cacheId, partId, flags);
 
-        memMetrics.incrementTotalAllocatedPages();
-
         assert PageIdUtils.pageIndex(pageId) > 0; //it's crucial for tracking pages (zero page is super one)
 
         // We need to allocate page in memory for marking it dirty to save it in the next checkpoint.
@@ -487,17 +488,18 @@ public class PageMemoryImpl implements PageMemoryEx {
                 if (PageIO.getType(pageAddr) == 0) {
                     trackingIO.initNewPage(pageAddr, pageId, pageSize());
 
-                    if (!ctx.wal().isAlwaysWriteFullPages())
-                        ctx.wal().log(
-                            new InitNewPageRecord(
-                                cacheId,
-                                pageId,
-                                trackingIO.getType(),
-                                trackingIO.getVersion(), pageId
-                            )
-                        );
-                    else
-                        ctx.wal().log(new PageSnapshot(fullId, absPtr + PAGE_OVERHEAD, pageSize()));
+                    if (!ctx.wal().disabled(fullId.groupId()))
+                        if (!ctx.wal().isAlwaysWriteFullPages())
+                            ctx.wal().log(
+                                new InitNewPageRecord(
+                                    cacheId,
+                                    pageId,
+                                    trackingIO.getType(),
+                                    trackingIO.getVersion(), pageId
+                                )
+                            );
+                        else
+                            ctx.wal().log(new PageSnapshot(fullId, absPtr + PAGE_OVERHEAD, pageSize()));
                 }
             }
 
@@ -1437,10 +1439,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         return total;
     }
 
-    /**
-     * Number of used pages in checkpoint buffer.
-     */
-    public int checkpointBufferPagesCount() {
+    /** {@inheritDoc} */
+    @Override public int checkpointBufferPagesCount() {
         return cpBufPagesCntr.get();
     }
 
@@ -1484,7 +1484,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      *
      */
     void beforeReleaseWrite(FullPageId pageId, long ptr, boolean pageWalRec) {
-        if (walMgr != null && (pageWalRec || walMgr.isAlwaysWriteFullPages())) {
+        if (walMgr != null && (pageWalRec || walMgr.isAlwaysWriteFullPages()) && !walMgr.disabled(pageId.groupId())) {
             try {
                 walMgr.log(new PageSnapshot(pageId, ptr, pageSize()));
             }
@@ -1975,8 +1975,10 @@ public class PageMemoryImpl implements PageMemoryEx {
             while (true) {
                 long cleanAddr = INVALID_REL_PTR;
                 long cleanTs = Long.MAX_VALUE;
-                long dirtyTs = Long.MAX_VALUE;
                 long dirtyAddr = INVALID_REL_PTR;
+                long dirtyTs = Long.MAX_VALUE;
+                long metaAddr = INVALID_REL_PTR;
+                long metaTs = Long.MAX_VALUE;
 
                 for (int i = 0; i < RANDOM_PAGES_EVICT_NUM; i++) {
                     ++iterations;
@@ -2021,19 +2023,33 @@ public class PageMemoryImpl implements PageMemoryEx {
                     final long pageTs = PageHeader.readTimestamp(absPageAddr);
 
                     final boolean dirty = isDirty(absPageAddr);
+                    final boolean storMeta = isStoreMetadataPage(absPageAddr);
 
-                    if (pageTs < cleanTs && !dirty) {
+                    if (pageTs < cleanTs && !dirty && !storMeta) {
                         cleanAddr = rndAddr;
 
                         cleanTs = pageTs;
                     }
-                    else if (pageTs < dirtyTs && dirty) {
+                    else if (pageTs < dirtyTs && dirty && !storMeta) {
                         dirtyAddr = rndAddr;
 
                         dirtyTs = pageTs;
                     }
+                    else if (pageTs < metaTs && storMeta) {
+                        metaAddr = rndAddr;
 
-                    relEvictAddr = cleanAddr == INVALID_REL_PTR ? dirtyAddr : cleanAddr;
+                        metaTs = pageTs;
+                    }
+
+                    if (cleanAddr != INVALID_REL_PTR) {
+                        relEvictAddr = cleanAddr;
+                    }
+                    else if (dirtyAddr != INVALID_REL_PTR) {
+                        relEvictAddr = dirtyAddr;
+                    }
+                    else {
+                        relEvictAddr = metaAddr;
+                    }
                 }
 
                 assert relEvictAddr != INVALID_REL_PTR;
@@ -2066,6 +2082,28 @@ public class PageMemoryImpl implements PageMemoryEx {
                 );
 
                 return relEvictAddr;
+            }
+        }
+
+        /**
+         * @param absPageAddr Absolute page address
+         * @return {@code True} if page is related to partition metadata, which is loaded in saveStoreMetadata().
+         */
+        private boolean isStoreMetadataPage(long absPageAddr) {
+            try {
+                long dataAddr = absPageAddr + PAGE_OVERHEAD;
+
+                int type = PageIO.getType(dataAddr);
+                int ver = PageIO.getVersion(dataAddr);
+
+                PageIO io = PageIO.getPageIO(type, ver);
+
+                return io instanceof PagePartitionMetaIO
+                    || io instanceof PagesListMetaIO
+                    || io instanceof PagePartitionCountersIO;
+            }
+            catch (IgniteCheckedException ignored) {
+                return false;
             }
         }
 

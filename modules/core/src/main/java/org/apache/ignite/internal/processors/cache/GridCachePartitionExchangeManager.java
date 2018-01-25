@@ -253,6 +253,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     return;
                 }
+                if (evt.type() == EVT_DISCOVERY_CUSTOM_EVT &&
+                    (((DiscoveryCustomEvent)evt).customMessage() instanceof CacheAffinityChangeMessage) &&
+                    ((CacheAffinityChangeMessage)((DiscoveryCustomEvent)evt).customMessage()).exchangeId() != null) {
+                    onDiscoveryEvent(evt, cache);
+
+                    return;
+                }
 
                 if (cache.state().transition()) {
                     if (log.isDebugEnabled())
@@ -481,6 +488,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 exchFut = exchangeFuture(exchId, evt, null, null, null);
             }
+            else if (customMsg instanceof WalStateAbstractMessage
+                && ((WalStateAbstractMessage)customMsg).needExchange()) {
+                exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt);
+
+                exchFut = exchangeFuture(exchId, evt, null, null, null);
+            }
             else {
                 // Process event as custom discovery task if needed.
                 CachePartitionExchangeWorkerTask task =
@@ -509,8 +522,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         notifyNodeFail(evt);
 
         // Notify indexing engine about node leave so that we can re-map coordinator accordingly.
-        if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED)
+        if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {
             exchWorker.addCustomTask(new SchemaNodeLeaveExchangeWorkerTask(evt.eventNode()));
+            exchWorker.addCustomTask(new WalStateNodeLeaveExchangeTask(evt.eventNode()));
+        }
     }
 
     /**
@@ -957,10 +972,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * For coordinator causes {@link GridDhtPartitionsFullMessage FullMessages} send,
      * for non coordinator -  {@link GridDhtPartitionsSingleMessage SingleMessages} send
      */
-    private void refreshPartitions() {
+    public void refreshPartitions() {
         // TODO https://issues.apache.org/jira/browse/IGNITE-6857
-        if (cctx.snapshot().snapshotOperationInProgress())
+        if (cctx.snapshot().snapshotOperationInProgress()) {
+            scheduleResendPartitions();
+
             return;
+        }
 
         ClusterNode oldest = cctx.discovery().oldestAliveServerNode(AffinityTopologyVersion.NONE);
 
