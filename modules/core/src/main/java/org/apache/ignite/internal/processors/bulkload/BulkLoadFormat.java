@@ -23,13 +23,25 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
 
-/** FIXME SHQ */
+/** A superclass and a factory for bulk load format options. */
 public abstract class BulkLoadFormat {
 
+    /** The default input charset. */
     public static final Charset DEFAULT_INPUT_CHARSET = Charset.forName("UTF-8");
 
+    /**
+     * Returns the format name.
+     * @return The format name.
+     */
     public abstract String name();
 
+    /**
+     * Creates a format options object for a given format name.
+     *
+     * @param name The name of the format
+     * @return The format options object.
+     * @throws IgniteCheckedException if the name is not recognized.
+     */
     public static BulkLoadFormat createFormatFor(String name) throws IgniteCheckedException {
 
         switch (name.trim().toUpperCase()) {
@@ -42,6 +54,11 @@ public abstract class BulkLoadFormat {
         }
     }
 
+    /**
+     * Returns a list of all supported format names.
+     *
+     * @return The list of all supported format names.
+     */
     public static List<String> formatNames() {
         return Arrays.asList(
             BulkLoadCsvFormat.NAME

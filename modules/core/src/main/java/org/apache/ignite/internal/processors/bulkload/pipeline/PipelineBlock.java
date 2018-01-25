@@ -18,20 +18,44 @@
 package org.apache.ignite.internal.processors.bulkload.pipeline;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.Nullable;
 
-/** FIXME SHQ */
+/**
+ * A file parsing pipeline block. Accepts an portion of an input and (EOF flag is provided to signify the last block to
+ * process) and optionally calls the next block with transformed input (or performs any other handling, such as writing
+ * input to internal structures).
+ */
 public abstract class PipelineBlock<I, O> {
 
-    protected PipelineBlock<O, ?> nextBlock;
+    /** The next block in pipeline or null if this block is a terminator. */
+    @Nullable protected PipelineBlock<O, ?> nextBlock;
 
+    /**
+     * Creates a pipeline block. The next block is to set using {@link #append(PipelineBlock)} method.
+     */
     public PipelineBlock() {
         this.nextBlock = null;
     }
 
-    public <NO> PipelineBlock<O, NO> append(PipelineBlock<O, NO> next) {
+    /**
+     * Sets the next block in this block and returns the next block, so the following usage pattern is possible
+     * (an example) {@code block1.append(block2).append(block3); }. Block2 here becomes the next for block1,
+     * and block3 is the next one for the block2.
+     *
+     * @param next The next block for the current block.
+     * @return The next block.
+     */
+    public <N> PipelineBlock<O, N> append(PipelineBlock<O, N> next) {
         nextBlock = next;
         return next;
     }
 
-    public abstract void accept(I elements, boolean isEof) throws IgniteCheckedException;
+    /**
+     * Accepts a portion of input. {@code isEof} parameter should be set if this is a last portion of the input.
+     * The method must not be called after the eof (so the call with {@code isEof == true} should be the last one.
+     *
+     * @param inputPortion Portion of input.
+     * @param isEof Is this the last portion.
+     */
+    public abstract void accept(I inputPortion, boolean isEof) throws IgniteCheckedException;
 }

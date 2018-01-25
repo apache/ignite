@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadContext;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -62,7 +61,7 @@ public class BulkLoadCsvParser extends BulkLoadParser {
         strListAppenderBlock = new StrListAppenderBlock();
 
         decoder.append(new LineSplitterBlock(BulkLoadCsvFormat.LINE_SEP_RE))
-               .append(new CsvLineProcessorBlock(BulkLoadCsvFormat.FIELD_SEP_RE, BulkLoadCsvFormat.QUOTE_CHAR))
+               .append(new CsvLineProcessorBlock(BulkLoadCsvFormat.FIELD_SEP_RE, BulkLoadCsvFormat.QUOTE_CHARS))
                .append(strListAppenderBlock);
     }
 

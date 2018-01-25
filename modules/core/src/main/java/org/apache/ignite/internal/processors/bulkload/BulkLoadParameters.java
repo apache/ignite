@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.processors.bulkload;
 
-/** FIXME SHQ */
+/** Bulk load parameters -- which was specified by the user or their default values. */
 public class BulkLoadParameters {
 
+    /** Minimal batch size. */
     public static final int MIN_BATCH_SIZE = 1;
 
+    /** Maximal batch size. Note that the batch is wrapped to transport objects and the overall packet should fit
+     * into a Java array.
+     */
     public static final int MAX_BATCH_SIZE = Integer.MAX_VALUE - 512;
 
     /** Size of a file batch for COPY command. */
@@ -33,6 +37,11 @@ public class BulkLoadParameters {
     /** File batch size in bytes. */
     private int batchSize;
 
+    /**
+     * Creates a bulk load parameters.
+     * @param locFileName File name to send from client to server.
+     * @param batchSize Batch size (Number of bytes in a portion of a file to send in one Jdbc request/response).
+     */
     public BulkLoadParameters(String locFileName, int batchSize) {
         this.locFileName = locFileName;
         this.batchSize = batchSize;

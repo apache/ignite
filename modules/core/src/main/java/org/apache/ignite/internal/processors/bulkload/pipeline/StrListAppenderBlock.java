@@ -20,11 +20,15 @@ package org.apache.ignite.internal.processors.bulkload.pipeline;
 import java.util.Arrays;
 import java.util.List;
 
-/** FIXME SHQ */
+/** The PipelineBlock which appends its input to a list set using {@link #output(List)} method. */
 public class StrListAppenderBlock extends PipelineBlock<String[], Object> {
 
+    /** The output list */
     private List<List<Object>> output;
 
+    /**
+     * Creates the block. List can be configured using {@link #output(List)} method.
+     */
     public StrListAppenderBlock() {
         super();
 
@@ -32,14 +36,15 @@ public class StrListAppenderBlock extends PipelineBlock<String[], Object> {
     }
 
     /**
-     * Sets the output.
+     * Sets the output list.
      *
-     * @param output The output.
+     * @param output The output list.
      */
     public void output(List<List<Object>> output) {
         this.output = output;
     }
 
+    /** {@inheritDoc} */
     @Override public void accept(String[] elements, boolean isEof) {
         output.add(Arrays.asList(elements));
     }

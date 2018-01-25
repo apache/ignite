@@ -19,19 +19,36 @@ package org.apache.ignite.internal.processors.bulkload;
 
 import org.apache.ignite.IgniteDataStreamer;
 
-/** FIXME SHQ */
+/**
+ * Bulk load (COPY) command context used on server to store information before receiving portions of input from
+ * the client side.
+ */
 public class BulkLoadContext {
 
+    /** Parameters extracted from the SQL COPY command. */
     private final BulkLoadParameters params;
 
+    /** Parser of the input bytes. */
     private final BulkLoadParser inputParser;
 
+    /** Converter, which transforms the list of strings parsed from the input stream to the key+value entry to add to
+     * the cache. */
     private final BulkLoadEntryConverter dataConverter;
 
-    private final IgniteDataStreamer<Object, Object> outputStreamer;
+    /** Streamer that puts actual key/value into the cache. */
+    private final BulkLoadCacheWriter outputStreamer;
 
+    /**
+     * Creates bulk load context.
+     *
+     * @param params Parameters extracted from the SQL COPY command.
+     * @param inputParser Parser of the input bytes.
+     * @param dataConverter Converter, which transforms the list of strings parsed from the input stream to the key+value entry to add to
+     * the cache.
+     * @param outputStreamer Streamer that puts actual key/value into the cache.
+     */
     public BulkLoadContext(BulkLoadParameters params, BulkLoadParser inputParser, BulkLoadEntryConverter dataConverter,
-        IgniteDataStreamer<Object, Object> outputStreamer) {
+        BulkLoadCacheWriter outputStreamer) {
 
         this.params = params;
         this.inputParser = inputParser;
@@ -40,38 +57,40 @@ public class BulkLoadContext {
     }
 
     /**
-     * Returns the params.
+     * Returns the parameters extracted from the SQL COPY command.
      *
-     * @return params.
+     * @return The parameters extracted from the SQL COPY command.
      */
     public BulkLoadParameters params() {
         return params;
     }
 
     /**
-     * Returns the inputParser.
+     * Returns the parser of the input bytes.
      *
-     * @return inputParser.
+     * @return Parser of the input bytes.
      */
     public BulkLoadParser inputParser() {
         return inputParser;
     }
 
     /**
-     * Returns the dataConverter.
+     * Returns the converter, which transforms the list of strings parsed from the input stream to the key+value
+     * entry to add to the cache.
      *
-     * @return dataConverter.
+     * @return Converter, which transforms the list of strings parsed from the input stream to the key+value entry
+     * to add to the cache.
      */
     public BulkLoadEntryConverter dataConverter() {
         return dataConverter;
     }
 
     /**
-     * Returns the outputStreamer.
+     * Returns the streamer that puts actual key/value into the cache.
      *
-     * @return outputStreamer.
+     * @return Streamer that puts actual key/value into the cache.
      */
-    public IgniteDataStreamer<Object, Object> outputStreamer() {
+    public BulkLoadCacheWriter outputStreamer() {
         return outputStreamer;
     }
 

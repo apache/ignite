@@ -19,24 +19,34 @@ package org.apache.ignite.internal.processors.bulkload.pipeline;
 
 import org.apache.ignite.IgniteCheckedException;
 
-import java.util.LinkedList;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** FIXME SHQ */
+/**
+ * A {@link PipelineBlock}, which splits input stream of char[] into lines using the specified {@link Pattern}
+ * as line separator. Next block {@link PipelineBlock#accept(Object, boolean)} is invoked for each line.
+ * Leftover characters are remembered and used during processing the next input batch, unless EOF flag is specified.
+ */
 public class LineSplitterBlock extends PipelineBlock<char[], String> {
 
+    /** Line separator pattern */
     private final Pattern delimiter;
 
+    /** Leftover characters from the previous. */
     private StringBuilder leftover = new StringBuilder();
 
+    /**
+     * Creates line splitter block.
+     *
+     * @param delimiter The line separator pattern.
+     */
     public LineSplitterBlock(Pattern delimiter) {
         super();
 
         this.delimiter = delimiter;
     }
 
+    /** {@inheritDoc} */
     @Override public void accept(char[] chars, boolean isEof) throws IgniteCheckedException {
         leftover.append(chars);
 

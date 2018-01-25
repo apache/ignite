@@ -41,6 +41,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadCacheWriter;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadContext;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadEntryConverter;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
@@ -234,18 +235,19 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         try {
             Iterable<List<Object>> inputRecords = ctx.loadContext().inputParser().processBatch(ctx, req);
             BulkLoadEntryConverter converter = ctx.loadContext().dataConverter();
-            IgniteDataStreamer<Object, Object> streamer = ctx.loadContext().outputStreamer();
 
-            int thisBatchUpdateCnt = 0;
+            BulkLoadCacheWriter streamer = ctx.loadContext().outputStreamer();
+
+            int recCnt = 0;
             for (List<Object> record : inputRecords) {
                 IgniteBiTuple<?, ?> kv = converter.convertRecord(record);
 
-                streamer.addData(kv.getKey(), kv.getValue());
+                streamer.accept(kv);
 
-                thisBatchUpdateCnt++;
+                recCnt++;
             }
 
-            ctx.incrementUpdateCountBy(thisBatchUpdateCnt);
+            ctx.incrementUpdateCountBy(recCnt);
 
             switch (req.cmd()) {
                 case CMD_FINISHED_ERROR:
@@ -257,7 +259,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     return new JdbcResponse(new JdbcQueryExecuteResult(req.queryId(), ctx.updateCnt()));
 
                 case CMD_CONTINUE:
-                    return new JdbcResponse(new JdbcQueryExecuteResult(req.queryId(), thisBatchUpdateCnt));
+                    return new JdbcResponse(new JdbcQueryExecuteResult(req.queryId(), recCnt));
 
                 default:
                     throw new IllegalArgumentException();

@@ -43,6 +43,7 @@ import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadCacheWriter;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadContext;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadEntryConverter;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadParameters;
@@ -1022,11 +1023,20 @@ public class DmlStatementsProcessor {
 
         GridCacheContext cache = tbl.cache();
 
-        IgniteDataStreamer<Object, Object> outputStreamer = cache.grid().dataStreamer(cache.name());
+        final IgniteDataStreamer<Object, Object> streamer = cache.grid().dataStreamer(cache.name());
 
-        return new BulkLoadContext(
-            new BulkLoadParameters(cmd.localFileName(), cmd.batchSize()),
-            inputParser, dataConverter, outputStreamer);
+        BulkLoadCacheWriter outputWriter = new BulkLoadCacheWriter() {
+            @Override public void accept(IgniteBiTuple<?, ?> entry) {
+                streamer.addData(entry.getKey(), entry.getValue());
+            }
+
+            @Override public void close() {
+                streamer.close();
+            }
+        };
+
+        return new BulkLoadContext(new BulkLoadParameters(cmd.localFileName(), cmd.batchSize()),
+            inputParser, dataConverter, outputWriter);
     }
 
     /** */

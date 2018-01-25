@@ -23,17 +23,48 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest;
 
 import java.util.List;
 
-/** FIXME SHQ */
+/**
+ * Bulk load file format parser superclass + factory.
+ *
+ * <p>The parser uses corresponding options (see {@link BulkLoadFormat} class).
+ *
+ * Parser processes a batch of input data and return a list of records.
+ */
 public abstract class BulkLoadParser {
 
-    private final BulkLoadFormat format;
+    /** Format options. */
+    private final BulkLoadFormat formatOpts;
 
-    protected BulkLoadParser(BulkLoadFormat format) {
-        this.format = format;
+    /** Creates a parser with given options.
+     *
+     * @param formatOpts The format options.
+     */
+    protected BulkLoadParser(BulkLoadFormat formatOpts) {
+        this.formatOpts = formatOpts;
     }
 
+    /**
+     * Processes a batch of input data. Context and request are supplied as parameters.
+     * Returns a list of records parsed (in most cases this is a list of strings).
+     *
+     * <p>Note that conversion between parsed and database table type is done by the other
+     * object (a subclass of {@link BulkLoadEntryConverter)) by the request processing code.
+     * This method is not obliged to do this conversion.
+     *
+     * @param ctx Context of the bulk load operation.
+     * @param req The current request.
+     * @return The list of records.
+     * @throws IgniteCheckedException If any processing error occurs.
+     */
     public abstract Iterable<List<Object>> processBatch(JdbcBulkLoadContext ctx, JdbcBulkLoadBatchRequest req) throws IgniteCheckedException;
 
+    /**
+     * Creates a parser for a given format options.
+     *
+     * @param format The input format object.
+     * @return The parser.
+     * @throws IllegalArgumentException if the format is not known to the factory.
+     */
     public static BulkLoadParser createParser(BulkLoadFormat format) {
         if (format instanceof BulkLoadCsvFormat)
             return new BulkLoadCsvParser(format);

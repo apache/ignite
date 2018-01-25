@@ -22,7 +22,18 @@ import org.apache.ignite.lang.IgniteBiTuple;
 
 import java.util.List;
 
+/**
+ * Converter, which transforms the list of strings parsed from the input stream to the key+value entry to add to
+ * the cache.
+ */
 public interface BulkLoadEntryConverter {
 
+    /**
+     * Transforms the list of strings parsed from the input stream to the key+value entry to add to
+     * the cache.
+     *
+     * @param record The input record as a list of field values.
+     * @return key+value pair to add to the cache.
+     */
     IgniteBiTuple<?, ?> convertRecord(List<?> record) throws IgniteCheckedException;
 }

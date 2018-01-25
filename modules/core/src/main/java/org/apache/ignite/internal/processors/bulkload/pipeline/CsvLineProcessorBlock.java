@@ -20,24 +20,30 @@ package org.apache.ignite.internal.processors.bulkload.pipeline;
 import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** FIXME SHQ */
+/** A {@link PipelineBlock}, which splits line according to CSV format rules and unquotes fields.
+ * The next block {@link PipelineBlock#accept(Object, boolean)} is called per-line. */
 public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
 
+    /** Field delimiter pattern. */
     private final Pattern fieldDelimiter;
-    private final char trimChar;
 
-    public CsvLineProcessorBlock(Pattern fieldDelimiter, char trimChar) {
+    /* Quote character. */
+    private final String quoteChars;
+
+    /**
+     * Creates a CSV line parser.
+     * @param fieldDelimiter The pattern for the field delimiter.
+     * @param quoteChars Quoting character. */
+    public CsvLineProcessorBlock(Pattern fieldDelimiter, String quoteChars) {
         super();
 
         this.fieldDelimiter = fieldDelimiter;
-        this.trimChar = trimChar;
+        this.quoteChars = quoteChars;
     }
 
+    /** {@inheritDoc} */
     @Override public void accept(String input, boolean isEof) throws IgniteCheckedException {
         String[] output = fieldDelimiter.split(input);
 
@@ -47,10 +53,16 @@ public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
         nextBlock.accept(output, isEof);
     }
 
-    @NotNull private String trim(String fld) {
-        int startPos = fld.charAt(0) == trimChar ? 1 : 0;
-        int endPos = fld.charAt(fld.length() - 1) == trimChar ? fld.length() - 1 : fld.length();
+    /**
+     * Trims quote characters from beginning and end of the line.
+     *
+     * @param str String to trim.
+     * @return The trimmed string.
+     */
+    @NotNull private String trim(String str) {
+        int startPos = quoteChars.indexOf(str.charAt(0)) != -1 ? 1 : 0;
+        int endPos = quoteChars.indexOf(str.charAt(str.length() - 1)) != -1 ? str.length() - 1 : str.length();
 
-        return fld.substring(startPos, endPos);
+        return str.substring(startPos, endPos);
     }
 }

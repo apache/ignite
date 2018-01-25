@@ -17,29 +17,21 @@
 
 package org.apache.ignite.internal.processors.bulkload;
 
-import java.util.regex.Pattern;
+import org.apache.ignite.lang.IgniteBiTuple;
 
-/** A placeholder for bulk load CSV format parser options. */
-public class BulkLoadCsvFormat extends BulkLoadFormat {
-
-    /** Line separator pattern. */
-    public static final Pattern LINE_SEP_RE = Pattern.compile("[\r\n]+");
-
-    /** Field separator pattern. */
-    public static final Pattern FIELD_SEP_RE = Pattern.compile(",");
-
-    /** Quote characters */
-    public static final String QUOTE_CHARS = "\"";
-
-    /** Format name. */
-    public static final String NAME = "CSV";
+/**
+ * A proxy, which stores given key+value pair to a cache.
+ */
+public interface BulkLoadCacheWriter extends AutoCloseable {
 
     /**
-     * Returns the name of the format.
-     *
-     * @return The name of the format.
+     * Writes given entry to the cache.
+     * @param entry Entry to store to the cache.
      */
-    @Override public String name() {
-        return NAME;
-    }
+    void accept(IgniteBiTuple<?, ?> entry);
+
+    /**
+     * Closes the cache writer.
+     */
+    void close();
 }

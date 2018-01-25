@@ -28,13 +28,24 @@ import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.util.Arrays;
 
-/** FIXME SHQ */
+/**
+ * A {@link PipelineBlock}, which converts stream of bytes supplied as byte[] arrays to an array of char[] using
+ * the specified encoding. Decoding errors (malformed input and unmappable characters) are to handled by dropping
+ * the erroneous input, appending the coder's replacement value to the output buffer, and resuming the coding operation.
+ */
 public class CharsetDecoderBlock extends PipelineBlock<byte[], char[]> {
 
+    /** Charset decoder */
     private final CharsetDecoder charsetDecoder;
 
+    /** True if we've met the end of input. */
     private boolean isEof;
 
+    /**
+     * Creates charset decoder block.
+     *
+     * @param charset The charset encoding to decode bytes from.
+     */
     public CharsetDecoderBlock(Charset charset) {
         super();
 
@@ -54,6 +65,7 @@ public class CharsetDecoderBlock extends PipelineBlock<byte[], char[]> {
         return isEof;
     }
 
+    /** {@inheritDoc} */
     public void accept(byte[] data, boolean isLastAppend) throws IgniteCheckedException {
 
         assert !isEof : "convertBytes() called after EOF";
