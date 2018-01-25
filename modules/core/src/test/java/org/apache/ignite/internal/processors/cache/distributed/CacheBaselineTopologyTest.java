@@ -105,6 +105,13 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
                     .setMaxSize(100 * 1024 * 1024)
                     .setInitialSize(100 * 1024 * 1024)
             )
+            .setDataRegionConfigurations(
+                new DataRegionConfiguration()
+                .setName("memory")
+                .setPersistenceEnabled(false)
+                .setMaxSize(100 * 1024 * 1024)
+                .setInitialSize(100 * 1024 * 1024)
+            )
             .setWalMode(WALMode.LOG_ONLY)
         );
 
@@ -737,6 +744,27 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         for (int k = 0; k < 1000; k++)
             assertEquals("k=" + k, Integer.valueOf(k), cache.get(k));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNonPersistentCachesIgnoreBaselineTopology() throws Exception {
+        Ignite ig = startGrids(4);
+
+        ig.cluster().active(true);
+
+        IgniteCache persistentCache = ig.createCache(CACHE_NAME);
+
+        IgniteCache inMemoryCache = ig.createCache(
+            new CacheConfiguration<>().setName(CACHE_NAME + 2).setDataRegionName("memory"));
+
+        Ignite newNode = startGrid(4);
+
+        awaitPartitionMapExchange();
+
+        assertEquals(0, ig.affinity(persistentCache.getName()).allPartitions(newNode.cluster().localNode()).length);
+        assertTrue(ig.affinity(inMemoryCache.getName()).allPartitions(newNode.cluster().localNode()).length > 0);
     }
 
     /** */
