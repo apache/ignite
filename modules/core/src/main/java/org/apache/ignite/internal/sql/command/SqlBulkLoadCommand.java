@@ -35,19 +35,32 @@ import static org.apache.ignite.internal.sql.SqlParserUtils.skipCommaOrRightPare
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatches;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword;
 
-/** FIXME SHQ */
+/**
+ * A parser for a COPY command (called 'bulk load' in the code, since word 'copy' is too generic).
+ */
 public class SqlBulkLoadCommand implements SqlCommand {
 
+    /** Local file name to send from client to server. */
     private String localFileName;
 
+    /** Schema name + table name. */
     private SqlQualifiedName tblQName;
 
+    /** User-specified list of columns. */
     private List<String> columns;
 
+    /** File format. */
     private BulkLoadFormat inputFormat;
 
+    /** Batch size (size of portion of a file sent in each sub-request). */
     private Integer batchSize;
 
+    /**
+     * Parses the command.
+     *
+     * @param lex The lexer.
+     * @return The parsed command object.
+     */
     @Override public SqlCommand parse(SqlLexer lex) {
         skipIfMatchesKeyword(lex, SqlKeyword.FROM); // COPY keyword is already parsed
 
@@ -64,16 +77,31 @@ public class SqlBulkLoadCommand implements SqlCommand {
         return this;
     }
 
+    /**
+     * Parses the file name.
+     *
+     * @param lex The lexer.
+     */
     private void parseFileName(SqlLexer lex) {
         localFileName = parseIdentifier(lex);
     }
 
+    /**
+     * Parses the schema and table names.
+     *
+     * @param lex The lexer.
+     */
     private void parseTableName(SqlLexer lex) {
         skipIfMatchesKeyword(lex, SqlKeyword.INTO);
 
         tblQName = parseQualifiedIdentifier(lex);
     }
 
+    /**
+     * Parses the list of columns.
+     *
+     * @param lex The lexer.
+     */
     private void parseColumns(SqlLexer lex) {
         skipIfMatches(lex, SqlLexerTokenType.PARENTHESIS_LEFT);
 
@@ -85,12 +113,23 @@ public class SqlBulkLoadCommand implements SqlCommand {
         while (!skipCommaOrRightParenthesis(lex));
     }
 
+    /**
+     * Parses column clause.
+     *
+     * @param lex The lexer.
+     * @return The column name.
+     */
     private String parseColumn(SqlLexer lex) {
         String name = parseIdentifier(lex);
 
         return name;
     }
 
+    /**
+     * Parses the format clause.
+     *
+     * @param lex The lexer.
+     */
     private void parseFormat(SqlLexer lex) {
         skipIfMatchesKeyword(lex, SqlKeyword.FORMAT);
 
@@ -104,6 +143,11 @@ public class SqlBulkLoadCommand implements SqlCommand {
         }
     }
 
+    /**
+     * Parses the optional parameters.
+     *
+     * @param lex The lexer.
+     */
     private void parseParameters(SqlLexer lex) {
         while (lex.lookAhead().tokenType() == SqlLexerTokenType.DEFAULT) {
             switch (lex.lookAhead().token()) {
@@ -140,63 +184,73 @@ public class SqlBulkLoadCommand implements SqlCommand {
     }
 
     /**
-     * Returns the tblQName.
+     * Returns the table name.
      *
-     * @return tblQName.
+     * @return The table name
      */
     public String tableName() {
         return tblQName.name();
     }
 
     /**
-     * Sets the tblQName.
+     * Sets the table name
      *
-     * @param tblName The tblQName.
+     * @param tblName The table name.
      */
     public void tableName(String tblName) {
         this.tblQName.name(tblName);
     }
 
+    /**
+     * Returns the local file name.
+     *
+     * @return The local file name.
+     */
     public String localFileName() {
         return localFileName;
 
     }
 
     /**
-     * Sets the localFileName.
+     * Sets the local file name.
      *
-     * @param localFileName The localFileName.
+     * @param localFileName The local file name.
      */
     public void localFileName(String localFileName) {
         this.localFileName = localFileName;
     }
 
     /**
-     * Returns the columns.
+     * Returns the list of columns.
      *
-     * @return columns.
+     * @return The list of columns.
      */
     public List<String> columns() {
         return columns;
     }
 
+    /**
+     * Returns the input file format.
+     *
+     * @return The input file format.
+     */
     public BulkLoadFormat inputFormat() {
         return inputFormat;
     }
 
     /**
-     * Returns the batchSize.
+     * Returns the batch size.
      *
-     * @return batchSize.
+     * @return The batch size.
      */
     public Integer batchSize() {
         return batchSize;
     }
 
     /**
-     * Sets the batchSize.
+     * Sets the batch size.
      *
-     * @param batchSize The batchSize.
+     * @param batchSize The batch size.
      */
     public void batchSize(int batchSize) {
         this.batchSize = batchSize;

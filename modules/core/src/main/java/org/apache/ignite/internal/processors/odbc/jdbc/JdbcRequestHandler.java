@@ -33,7 +33,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -225,6 +224,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         }
     }
 
+    /**
+     * Processes a file batch sent from client as part of bulk load COPY command.
+     * @param req Request object with a batch of a file received from client.
+     * @return Response to the client.
+     */
     private ClientListenerResponse processBulkLoadFileBatch(JdbcBulkLoadBatchRequest req) {
         JdbcBulkLoadContext ctx = bulkLoadRequests.get(req.queryId());
 

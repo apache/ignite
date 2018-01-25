@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.query;
 
 import org.apache.ignite.internal.processors.bulkload.BulkLoadContext;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadContext;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -26,19 +25,34 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-/** FIXME SHQ */
+/**
+ * A special FieldsQueryCursor subclass that is used as a sentinel to
+ * hold result (a context) from bulk load (COPY) command.
+ * */
 public class BulkLoadContextCursor implements FieldsQueryCursor<List<?>> {
 
+    /** Bulk load context from SQL command. */
     private BulkLoadContext bulkLoadContext;
 
+    /**
+     * Creates a cursor.
+     *
+     * @param bulkLoadContext Bulk load context object to store.
+     */
     public BulkLoadContextCursor(BulkLoadContext bulkLoadContext) {
         this.bulkLoadContext = bulkLoadContext;
     }
 
+    /**
+     * Returns a bulk load context.
+     *
+     * @return a bulk load context.
+     */
     public BulkLoadContext bulkLoadContext() {
         return bulkLoadContext;
     }
 
+    /** {@inheritDoc} */
     @Override public List<List<?>> getAll() {
         // With Java generics it's not possible to convert this using two singletonList() calls
         List<List<?>> result = new ArrayList<>();
@@ -46,18 +60,22 @@ public class BulkLoadContextCursor implements FieldsQueryCursor<List<?>> {
         return result;
     }
 
+    /** {@inheritDoc} */
     @NotNull @Override public Iterator<List<?>> iterator() {
         return getAll().iterator();
     }
 
+    /** {@inheritDoc} */
     @Override public void close() {
         // no-op
     }
 
+    /** {@inheritDoc} */
     @Override public String getFieldName(int idx) {
         return "bulkLoadContext"; // dummy stub
     }
 
+    /** {@inheritDoc} */
     @Override public int getColumnsCount() {
         return 1; // dummy stub
     }

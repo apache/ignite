@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.jdbc2;
 
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteJdbcDriver;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -31,7 +30,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.Collections;
 import java.util.Properties;

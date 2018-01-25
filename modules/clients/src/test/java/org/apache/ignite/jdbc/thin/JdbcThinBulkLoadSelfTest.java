@@ -25,6 +25,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.Callable;
 
@@ -33,29 +34,41 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
- * Statement test.
+ * COPY statement tests.
  */
 public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTest {
     public static final String TBL_NAME = "Person";
-    /** Statement. */
+
+    /** JDBC statement. */
     private Statement stmt;
 
-    private String BULKLOAD0_CSV_FILE = System.getProperty("IGNITE_HOME") +
-        "/modules/clients/src/test/resources/bulkload2.csv";
-
-    private String BULKLOAD_UTF_CSV_FILE = System.getProperty("IGNITE_HOME") +
-        "/modules/clients/src/test/resources/bulkload2_utf.csv";
-
-    private String BULKLOAD_ONE_LINE_CSV_FILE = System.getProperty("IGNITE_HOME") +
-        "/modules/clients/src/test/resources/bulkload1.csv";
-
+    /** A CSV file with zero records */
     private String BULKLOAD_EMPTY_CSV_FILE = System.getProperty("IGNITE_HOME") +
         "/modules/clients/src/test/resources/bulkload0.csv";
 
+    /** A CSV file with one record. */
+    private String BULKLOAD_ONE_LINE_CSV_FILE = System.getProperty("IGNITE_HOME") +
+        "/modules/clients/src/test/resources/bulkload1.csv";
+
+    /** A CSV file with two records. */
+    private String BULKLOAD0_CSV_FILE = System.getProperty("IGNITE_HOME") +
+        "/modules/clients/src/test/resources/bulkload2.csv";
+
+    /** A file with UTF records. */
+    private String BULKLOAD_UTF_CSV_FILE = System.getProperty("IGNITE_HOME") +
+        "/modules/clients/src/test/resources/bulkload2_utf.csv";
+
+    /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfig() {
         return cacheConfigWithIndexedTypes();
     }
 
+    /**
+     * Creates cache configuration with {@link QueryEntity} created
+     * using {@link CacheConfiguration#setIndexedTypes(Class[])} call.
+     *
+     * @return The cache configuration.
+     */
     private CacheConfiguration cacheConfigWithIndexedTypes() {
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
 
@@ -70,7 +83,10 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
     }
 
     /**
-     * @return Cache configuration for binary marshaller tests.
+     * Creates cache configuration with {@link QueryEntity} created
+     * using {@link CacheConfiguration#setQueryEntities(Collection)} call.
+     *
+     * @return The cache configuration.
      */
     private CacheConfiguration cacheConfigWithQueryEntity() {
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
@@ -119,6 +135,9 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
     }
 
     /**
+     * Dead-on-arrival test. Imports two-entry CSV file into a table and checks
+     * the created entries using SELECT statement.
+     *
      * @throws SQLException If failed.
      */
     public void testDOA() throws SQLException {
@@ -133,6 +152,9 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
     }
 
     /**
+     * Imports two-entry CSV file with UTF-8 characters into a table and checks
+     * the created entries using SELECT statement.
+     *
      * @throws SQLException If failed.
      */
     public void testUtf() throws SQLException {
@@ -147,6 +169,10 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
     }
 
     /**
+     * Imports two-entry CSV file with UTF-8 characters into a table using batch size of one byte
+     * (thus splitting each two-byte UTF-8 character into two batches)
+     * and checks the created entries using SELECT statement.
+     *
      * @throws SQLException If failed.
      */
     public void testUtfBatchSize_1() throws SQLException {
@@ -161,6 +187,8 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
     }
 
     /**
+     * Imports one-entry CSV file into a table and checks the entry created using SELECT statement.
+     *
      * @throws SQLException If failed.
      */
     public void testOneLineFile() throws SQLException {
@@ -175,6 +203,9 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
     }
 
     /**
+     * Imports zero-entry CSV file into a table and checks that no entries are created
+     * using SELECT statement.
+     *
      * @throws SQLException If failed.
      */
     public void testEmptyFile() throws SQLException {
@@ -189,8 +220,9 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
     }
 
     /**
-     * @throws SQLException If failed.
+     * Checks invalid 'FROM' keyword in the SQL command.
      *
+     * @throws SQLException If failed.
      */
     public void testWrongFromSyntax() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -206,11 +238,9 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
     }
 
     /**
-     * @throws SQLException If failed.
+     * Checks that error is reported for a non-existent file.
      *
-     * FIXME SHQ: Tests to add
-     * Inserting _key, _value of a wrong type
-     * Read error in the middle of reading a file
+     * @throws SQLException If failed.
      */
     public void testWrongFileName() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -226,8 +256,9 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
     }
 
     /**
-     * @throws SQLException If failed.
+     * Checks that error is reported for wrong INTO keyword.
      *
+     * @throws SQLException If failed.
      */
     public void testWrongIntoSyntax() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -242,6 +273,11 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
         }, SQLException.class, "Unexpected token: \"TO\" (expected: \"INTO\")");
     }
 
+    /**
+     * Checks that error is reported if the destination table is missing.
+     *
+     * @throws SQLException If failed.
+     */
     public void testMissingTable() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -255,6 +291,11 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
         }, SQLException.class, "Table does not exist: PETERSON");
     }
 
+    /**
+     * Checks that error is reported if empty list of columns is specified in the SQL command.
+     *
+     * @throws SQLException If failed.
+     */
     public void testEmptyColumnList() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -268,6 +309,11 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
         }, SQLException.class, "Unexpected token: \")\" (expected: \"[identifier]\")");
     }
 
+    /**
+     * Checks that error is reported when a non-existing column is specified in the SQL command.
+     *
+     * @throws SQLException If failed.
+     */
     public void testWrongColumnName() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -281,6 +327,11 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
         }, SQLException.class, "Column \"LOSTNAME\" not found");
     }
 
+    /**
+     * Checks that error is reported when list of columns is not specified in the SQL command.
+     *
+     * @throws SQLException If failed.
+     */
     public void testSkippedColumns() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -293,6 +344,11 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
         }, SQLException.class, "Unexpected token: \"FORMAT\" (expected: \"(\")");
     }
 
+    /**
+     * Checks that error is reported if field read from CSV file cannot be converted to the type of the column.
+     *
+     * @throws SQLException If failed.
+     */
     public void testWrongColumnType() throws SQLException {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -307,6 +363,8 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
     }
 
     /**
+     * Checks that if even a subset of fields is imported, the imported fields are set correctly.
+     *
      * @throws SQLException If failed.
      */
     public void testFieldsSubset() throws SQLException {
@@ -320,6 +378,11 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
         checkCacheContents(TBL_NAME, false, 2);
     }
 
+    /**
+     * Checks that error is reported if the format clause is missing in the SQL command.
+     *
+     * @throws SQLException If failed.
+     */
     public void testMissingFormat() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -332,6 +395,11 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
         }, SQLException.class, "Unexpected end of command (expected: \"FORMAT\")");
     }
 
+    /**
+     * Checks that error is reported if a not supported format name is specified in the SQL command.
+     *
+     * @throws SQLException If failed.
+     */
     public void testWrongFormat() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -346,6 +414,10 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
     }
 
     /**
+     * Checks that bulk load works when we create table using 'CREATE TABLE' command
+     * (the other tests use {@link CacheConfiguration#setIndexedTypes(Class[])} to create a
+     * table).
+     *
      * @throws SQLException If failed.
      */
     public void testCreateAndBulkLoadTable() throws SQLException {
@@ -364,6 +436,13 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
         checkCacheContents(tblName, true, 2);
     }
 
+    /**
+     * Checks that bulk load works when we create table with {@link CacheConfiguration#setQueryEntities(Collection)}
+     * (the other tests use {@link CacheConfiguration#setIndexedTypes(Class[])} to create a
+     * table).
+     *
+     * @throws SQLException If failed.
+     */
     public void testConfigureQueryEntityAndBulkLoad() throws SQLException {
         ignite(0).getOrCreateCache(cacheConfigWithQueryEntity());
 
@@ -378,8 +457,10 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
     }
 
     /**
-     * @throws SQLException If failed.
+     * Checks that bulk load works when we use batch size of 1 byte and thus
+     * create multiple batches per COPY.
      *
+     * @throws SQLException If failed.
      */
     public void testBatchSize_1() throws SQLException {
         int updatesCnt = stmt.executeUpdate(
@@ -391,6 +472,14 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
         checkCacheContents(TBL_NAME, true, 2);
     }
 
+    /**
+     * Checks cache contents for a typical test using SQL SELECT command.
+     *
+     * @param tblName Table name to query.
+     * @param checkLastName Check 'lastName' column (not imported in some tests).
+     * @param recCnt Number of records to expect.
+     * @throws SQLException When one of checks has failed.
+     */
     private void checkCacheContents(String tblName, boolean checkLastName, int recCnt) throws SQLException {
         ResultSet rs = stmt.executeQuery("select _key, age, firstName, lastName from " + tblName);
 
@@ -422,6 +511,14 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
         assertEquals(recCnt, cnt);
     }
 
+    /**
+     * Checks cache contents for a UTF-8 bulk load tests using SQL SELECT command.
+     *
+     * @param tblName Table name to query.
+     * @param checkLastName Check 'lastName' column (not imported in some tests).
+     * @param recCnt Number of records to expect.
+     * @throws SQLException When one of checks has failed.
+     */
     private void checkUtfCacheContents(String tblName, boolean checkLastName, int recCnt) throws SQLException {
         ResultSet rs = stmt.executeQuery("select _key, age, firstName, lastName from " + tblName);
 

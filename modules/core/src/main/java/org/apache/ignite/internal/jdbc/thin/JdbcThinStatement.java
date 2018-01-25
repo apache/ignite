@@ -189,9 +189,10 @@ public class JdbcThinStatement implements Statement {
     }
 
     /**
-     * Sends a file to server via JdbcSendFileRequest
+     * Sends a file to server in batches via multiple {@link JdbcBulkLoadBatchRequest}-s.
      *
-     * @param cmdResult
+     * @param cmdResult Result of invoking COPY command: contains server-parsed
+     *    bulk load parameters, such as file name and batch size.
      */
     private JdbcResult sendFile(JdbcBulkLoadBatchRequestResult cmdResult) throws SQLException {
 

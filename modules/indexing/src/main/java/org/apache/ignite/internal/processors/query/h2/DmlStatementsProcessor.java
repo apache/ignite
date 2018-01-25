@@ -978,6 +978,14 @@ public class DmlStatementsProcessor {
         return updateSqlFields(schemaName, c, GridSqlQueryParser.prepared(stmt), fldsQry, local, filter, cancel);
     }
 
+    /**
+     * Runs a DML statement for which we have internal command executor.
+     *
+     * @param sql The SQL command text to execute.
+     * @param cmd The command to execute.
+     * @return The cursor returned by the statement.
+     * @throws IgniteCheckedException If failed.
+     */
     public FieldsQueryCursor<List<?>> runDmlStatement(String sql, SqlCommand cmd) throws IgniteCheckedException {
         try {
             if (cmd instanceof SqlBulkLoadCommand) {
@@ -1000,6 +1008,13 @@ public class DmlStatementsProcessor {
         }
     }
 
+    /**
+     * Process bulk load COPY command.
+     *
+     * @param cmd The command.
+     * @return The context (which is the result of the first request/response).
+     * @throws IgniteCheckedException If something failed.
+     */
     public BulkLoadContext bulkLoad(SqlBulkLoadCommand cmd) throws IgniteCheckedException {
 
         if (cmd.batchSize() == null)
@@ -1036,6 +1051,7 @@ public class DmlStatementsProcessor {
         };
 
         return new BulkLoadContext(new BulkLoadParameters(cmd.localFileName(), cmd.batchSize()),
+            inputParser, dataConverter, outputWriter);
             inputParser, dataConverter, outputWriter);
     }
 
