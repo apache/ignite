@@ -32,6 +32,7 @@
     "win32"
   ],
   "dependencies": {
+    "@types/ui-grid": "0.0.38",
     "@uirouter/angularjs": "1.0.10",
     "angular": "1.6.6",
     "angular-acl": "0.1.10",
