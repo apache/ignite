@@ -78,8 +78,8 @@ public class LabeledDatasetTestTrainPair implements Serializable {
             }
         }
 
-        test = new LabeledDataset(testVectors, testSize);
-        train = new LabeledDataset(trainVectors, trainSize);
+        test = new LabeledDataset(testVectors, dataset.colSize());
+        train = new LabeledDataset(trainVectors, dataset.colSize());
     }
 
     /** This method generates "random double, integer" pairs, sort them, gets first "testSize" elements and returns appropriate indices */

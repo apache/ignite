@@ -22,8 +22,7 @@ import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.NoDataException;
 import org.apache.ignite.ml.math.exceptions.knn.NoLabelVectorException;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
-import org.jetbrains.annotations.NotNull;
+import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 
 /**
  * Class for set of labeled vectors.
@@ -66,13 +65,13 @@ public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> {
      * @param isDistributed Use distributed data structures to keep data.
      */
     public LabeledDataset(int rowSize, int colSize, String[] featureNames, boolean isDistributed){
-        super(rowSize, colSize, featureNames);
+        super(rowSize, colSize, featureNames, isDistributed);
 
-        initializeDataWithLabeledVectors(rowSize, colSize, isDistributed);
+        initializeDataWithLabeledVectors();
     }
 
     /** */
-    private void initializeDataWithLabeledVectors(int rowSize, int colSize, boolean isDistributed) {
+    private void initializeDataWithLabeledVectors() {
         data = (Row[])new LabeledVector[rowSize];
         for (int i = 0; i < rowSize; i++)
             data[i] = (Row)new LabeledVector(emptyVector(colSize, isDistributed), null);
@@ -191,9 +190,11 @@ public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> {
     }
 
     /** */
-    @NotNull public static Vector emptyVector(int size, boolean isDistributed) {
+    public static Vector emptyVector(int size, boolean isDistributed) {
 
-        if(isDistributed) return new SparseBlockDistributedVector(size);
-        else return new DenseLocalOnHeapVector(size);
+        if(isDistributed)
+            return new SparseDistributedVector(size);
+        else
+            return new DenseLocalOnHeapVector(size);
     }
 }
