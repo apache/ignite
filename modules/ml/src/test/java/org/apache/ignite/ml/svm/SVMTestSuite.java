@@ -15,34 +15,20 @@
  * limitations under the License.
  */
 
-.ui-grid-filters[role="columnheader"] {
-	display: flex;
-    flex-wrap: nowrap !important;
+package org.apache.ignite.ml.svm;
 
-    // Decrease horizontal padding because multiselect button already has it
-    padding-left: 8px !important;
-    padding-right: 8px !important;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
-    & > div:first-child {
-    	flex: auto !important;
-    }
-
-    .uigf-btn {
-        font-weight: normal;
-
-        &--active {
-            font-weight: bold;
-        }
-    }
-
-    .ui-grid-cell-contents[role="button"] {
-        flex: auto !important;
-        flex-basis: 100% !important;
-
-        padding: 0 !important;
-        margin-left: -10px;
-        overflow: visible !important;
-
-        font-weight: normal;
-    }
+/**
+ * Test suite for all tests located in org.apache.ignite.ml.regressions.* package.
+ */
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    LocalLinearSVMClassificationSCDATrainerTest.class,
+    DistributedLinearSVMClassificationSCDATrainerTest.class,
+    SVMModelTest.class
+})
+public class SVMTestSuite {
+    // No-op.
 }

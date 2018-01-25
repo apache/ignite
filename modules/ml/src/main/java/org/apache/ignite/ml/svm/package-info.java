@@ -15,34 +15,8 @@
  * limitations under the License.
  */
 
-.ui-grid-filters[role="columnheader"] {
-	display: flex;
-    flex-wrap: nowrap !important;
-
-    // Decrease horizontal padding because multiselect button already has it
-    padding-left: 8px !important;
-    padding-right: 8px !important;
-
-    & > div:first-child {
-    	flex: auto !important;
-    }
-
-    .uigf-btn {
-        font-weight: normal;
-
-        &--active {
-            font-weight: bold;
-        }
-    }
-
-    .ui-grid-cell-contents[role="button"] {
-        flex: auto !important;
-        flex-basis: 100% !important;
-
-        padding: 0 !important;
-        margin-left: -10px;
-        overflow: visible !important;
-
-        font-weight: normal;
-    }
-}
+/**
+ * <!-- Package description. -->
+ * Contains main APIs for SVM(support vector machines) algorithms.
+ */
+package org.apache.ignite.ml.svm;
