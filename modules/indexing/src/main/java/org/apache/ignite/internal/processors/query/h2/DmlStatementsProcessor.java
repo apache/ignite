@@ -1052,7 +1052,6 @@ public class DmlStatementsProcessor {
 
         return new BulkLoadContext(new BulkLoadParameters(cmd.localFileName(), cmd.batchSize()),
             inputParser, dataConverter, outputWriter);
-            inputParser, dataConverter, outputWriter);
     }
 
     /** */
