@@ -102,6 +102,8 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
 
+        cfg.setAutoActivationEnabled(false);
+
         if (!nodeClient.equals(name))
             cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(vmIpFinder));
         else {

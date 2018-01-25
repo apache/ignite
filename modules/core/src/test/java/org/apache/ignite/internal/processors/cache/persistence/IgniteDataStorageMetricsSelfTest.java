@@ -85,7 +85,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
                 .setMetricsEnabled(true)
                 .setName("no-persistence"))
             .setWalMode(WALMode.LOG_ONLY)
-            .setPageSize(1024)
+            .setPageSize(4 * 1024)
             .setMetricsEnabled(true);
 
         cfg.setDataStorageConfiguration(memCfg);

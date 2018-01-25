@@ -75,7 +75,7 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
     }
 
     /** {@inheritDoc} */
-    @Override public Double predict(Vector v) {
+    @Override public Double apply(Vector v) {
         LabeledVector[] neighbors = findKNearestNeighbors(v, true);
 
         return classify(neighbors, v, stgy);
@@ -96,7 +96,7 @@ public class KNNModel implements Model<Vector, Double>, Exportable<KNNModelForma
      * @return K-nearest neighbors.
      */
     protected LabeledVector[] findKNearestNeighbors(Vector v, boolean isCashedDistance) {
-        LabeledVector[] trainingData = training.data();
+        LabeledVector[] trainingData = (LabeledVector[])training.data();
 
         TreeMap<Double, Set<Integer>> distanceIdxPairs = getDistances(v, trainingData);
 

@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import java.nio.MappedByteBuffer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -30,10 +31,13 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -84,7 +88,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 30_000;
+        return 60_000;
     }
 
     /** {@inheritDoc} */
@@ -104,10 +108,8 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
                 .setDefaultDataRegionConfiguration(
                         new DataRegionConfiguration().setMaxSize(2048L * 1024 * 1024).setPersistenceEnabled(true))
                 .setWalMode(this.walMode())
-                .setWalSegmentSize(50_000);
-
-        if (gridName.endsWith(String.valueOf(gridCount())))
-            memCfg.setFileIOFactory(new FailingFileIOFactory(canFail));
+                .setWalSegmentSize(50_000)
+                .setWalBufferSize(50_000);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -139,6 +141,13 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
         final Ignite grid = startGridsMultiThreaded(gridCount());
 
+        IgniteWriteAheadLogManager wal = ((IgniteKernal)grid).context().cache().context().wal();
+
+        boolean mmap = GridTestUtils.getFieldValue(wal, "mmap");
+
+        if (mmap)
+            return;
+
         grid.active(true);
 
         IgniteCache<Object, Object> cache = grid.cache(TEST_CACHE);
@@ -164,6 +173,12 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
                     startGrid(gridCount());
 
+                    FileWriteAheadLogManager wal0 = (FileWriteAheadLogManager)grid(gridCount()).context().cache().context().wal();
+
+                    wal0.setFileIOFactory(new FailingFileIOFactory(canFail));
+
+                    grid.cluster().setBaselineTopology(grid.cluster().topologyVersion());
+
                     waitForRebalancing();
                 } catch (Exception expected) {
                     // There can be any exception. Do nothing.
@@ -177,15 +192,20 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
         // We should await successful stop of node.
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override
-            public boolean apply() {
+            @Override public boolean apply() {
                 return grid.cluster().nodes().size() == gridCount();
             }
         }, getTestTimeout());
 
         stopAllGrids();
 
+        canFail.set(false);
+
         Ignite grid0 = startGrids(gridCount() + 1);
+
+        FileWriteAheadLogManager wal0 = (FileWriteAheadLogManager)grid(gridCount()).context().cache().context().wal();
+
+        wal0.setFileIOFactory(new FailingFileIOFactory(canFail));
 
         grid0.active(true);
 
@@ -228,17 +248,21 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-            FileIO delegate = delegateFactory.create(file, modes);
+            final FileIO delegate = delegateFactory.create(file, modes);
 
             return new FileIODecorator(delegate) {
                 int writeAttempts = 2;
 
-                @Override public int write(ByteBuffer sourceBuffer) throws IOException {
-
-                    if (--writeAttempts == 0 && fail!= null && fail.get())
+                @Override public int write(ByteBuffer srcBuf) throws IOException {
+                    if (--writeAttempts <= 0 && fail != null && fail.get())
                         throw new IOException("No space left on device");
 
-                    return super.write(sourceBuffer);
+                    return super.write(srcBuf);
+                }
+
+                /** {@inheritDoc} */
+                @Override public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
+                    return delegate.map(maxWalSegmentSize);
                 }
             };
         }

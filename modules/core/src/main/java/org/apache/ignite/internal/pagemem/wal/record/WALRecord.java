@@ -43,7 +43,7 @@ public abstract class WALRecord {
         /** Checkpoint (begin) record */
         CHECKPOINT_RECORD,
 
-        /** */
+        /** WAL segment header record. */
         HEADER_RECORD,
 
         // Delta records.
@@ -166,7 +166,16 @@ public abstract class WALRecord {
         PARTITION_DESTROY,
 
         /** Snapshot record. */
-        SNAPSHOT;
+        SNAPSHOT,
+
+        /** Metastore data record. */
+        METASTORE_DATA_RECORD,
+
+        /** Exchange record. */
+        EXCHANGE,
+
+        /** Baseline topology record. */
+        BASELINE_TOP_RECORD;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();
@@ -188,28 +197,11 @@ public abstract class WALRecord {
     private int size;
 
     /** */
-    private int chainSize;
-
-    /** */
     @GridToStringExclude
     private WALRecord prev;
 
     /** */
     private WALPointer pos;
-
-    /**
-     * @param chainSize Chain size in bytes.
-     */
-    public void chainSize(int chainSize) {
-        this.chainSize = chainSize;
-    }
-
-    /**
-     * @return Get chain size in bytes.
-     */
-    public int chainSize() {
-        return chainSize;
-    }
 
     /**
      * @return Previous record in chain.
@@ -255,6 +247,13 @@ public abstract class WALRecord {
         assert size >= 0: size;
 
         this.size = size;
+    }
+
+    /**
+     * @return Need wal rollOver.
+     */
+    public boolean rollOver(){
+        return false;
     }
 
     /**

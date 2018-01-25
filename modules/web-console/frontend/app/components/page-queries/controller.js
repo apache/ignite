@@ -25,6 +25,8 @@ import { fromPromise } from 'rxjs/observable/fromPromise';
 import { timer } from 'rxjs/observable/timer';
 import { defer } from 'rxjs/observable/defer';
 
+import {CSV} from 'app/services/CSV';
+
 import paragraphRateTemplateUrl from 'views/sql/paragraph-rate.tpl.pug';
 import cacheMetadataTemplateUrl from 'views/sql/cache-metadata.tpl.pug';
 import chartSettingsTemplateUrl from 'views/sql/chart-settings.tpl.pug';
@@ -246,11 +248,15 @@ class Paragraph {
 
 // Controller for SQL notebook screen.
 export default class {
-    static $inject = ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard'];
+    static $inject = ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard', CSV.name];
 
-    constructor($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard) {
+    /**
+     * @param {CSV} CSV
+     */
+    constructor($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard, CSV) {
         const $ctrl = this;
 
+        this.CSV = CSV;
         Object.assign(this, { $root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes });
 
         // Define template urls.
@@ -1654,6 +1660,7 @@ export default class {
         };
 
         const _export = (fileName, columnDefs, meta, rows, toClipBoard = false) => {
+            const csvSeparator = this.CSV.getSeparator();
             let csvContent = '';
 
             const cols = [];
@@ -1666,7 +1673,7 @@ export default class {
                     excludedCols.push(idx);
             });
 
-            csvContent += cols.join(';') + '\n';
+            csvContent += cols.join(csvSeparator) + '\n';
 
             _.forEach(rows, (row) => {
                 cols.length = 0;
@@ -1689,7 +1696,7 @@ export default class {
                     });
                 }
 
-                csvContent += cols.join(';') + '\n';
+                csvContent += cols.join(csvSeparator) + '\n';
             });
 
             if (toClipBoard)

@@ -19,12 +19,14 @@ package org.apache.ignite.internal.processors.query.h2.ddl;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -32,6 +34,7 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
@@ -43,6 +46,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlterTableAddColumn;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlterTableDropColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlCreateIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlCreateTable;
@@ -51,6 +55,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
@@ -114,6 +119,8 @@ public class DdlStatementsProcessor {
 
                 assert tbl.rowDescriptor() != null;
 
+                isDdlSupported(tbl);
+
                 QueryIndex newIdx = new QueryIndex();
 
                 newIdx.setName(cmd0.indexName());
@@ -146,6 +153,8 @@ public class DdlStatementsProcessor {
                 GridH2Table tbl = idx.dataTableForIndex(cmd0.schemaName(), cmd0.indexName());
 
                 if (tbl != null) {
+                    isDdlSupported(tbl);
+
                     fut = ctx.query().dynamicIndexDrop(tbl.cacheName(), cmd0.schemaName(), cmd0.indexName(),
                         cmd0.ifExists());
                 }
@@ -156,6 +165,35 @@ public class DdlStatementsProcessor {
                         throw new SchemaOperationException(SchemaOperationException.CODE_INDEX_NOT_FOUND,
                             cmd0.indexName());
                 }
+            }
+            else if (cmd instanceof SqlAlterTableCommand) {
+                SqlAlterTableCommand cmd0 = (SqlAlterTableCommand)cmd;
+
+                GridH2Table tbl = idx.dataTable(cmd0.schemaName(), cmd0.tableName());
+
+                if (tbl == null) {
+                    ctx.cache().createMissingQueryCaches();
+
+                    tbl = idx.dataTable(cmd0.schemaName(), cmd0.tableName());
+                }
+
+                if (tbl == null) {
+                    throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
+                        cmd0.tableName());
+                }
+
+                Boolean logging = cmd0.logging();
+
+                assert logging != null : "Only LOGGING/NOLOGGING are supported at the moment.";
+
+                IgniteCluster cluster = ctx.grid().cluster();
+
+                if (logging)
+                    cluster.enableWal(tbl.cacheName());
+                else
+                    cluster.disableWal(tbl.cacheName());
+
+                fut = new GridFinishedFuture();
             }
             else
                 throw new IgniteSQLException("Unsupported DDL operation: " + sql,
@@ -178,7 +216,7 @@ public class DdlStatementsProcessor {
             throw e;
         }
         catch (Exception e) {
-            throw new IgniteSQLException("Unexpected DDL operation failure: " + e.getMessage(), e);
+            throw new IgniteSQLException(e.getMessage(), e);
         }
     }
 
@@ -207,6 +245,8 @@ public class DdlStatementsProcessor {
                     throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd.tableName());
 
                 assert tbl.rowDescriptor() != null;
+
+                isDdlSupported(tbl);
 
                 QueryIndex newIdx = new QueryIndex();
 
@@ -239,6 +279,8 @@ public class DdlStatementsProcessor {
                 GridH2Table tbl = idx.dataTableForIndex(cmd.schemaName(), cmd.indexName());
 
                 if (tbl != null) {
+                    isDdlSupported(tbl);
+
                     fut = ctx.query().dynamicIndexDrop(tbl.cacheName(), cmd.schemaName(), cmd.indexName(),
                         cmd.ifExists());
                 }
@@ -346,7 +388,7 @@ public class DdlStatementsProcessor {
 
                         QueryField field = new QueryField(col.columnName(),
                             DataType.getTypeClassName(col.column().getType()),
-                            col.column().isNullable());
+                            col.column().isNullable(), col.defaultValue());
 
                         cols.add(field);
 
@@ -361,6 +403,60 @@ public class DdlStatementsProcessor {
 
                         fut = ctx.query().dynamicColumnAdd(tbl.cacheName(), cmd.schemaName(),
                             tbl.rowDescriptor().type().tableName(), cols, cmd.ifTableExists(), cmd.ifNotExists());
+                    }
+                }
+            }
+            else if (stmt0 instanceof GridSqlAlterTableDropColumn) {
+                GridSqlAlterTableDropColumn cmd = (GridSqlAlterTableDropColumn)stmt0;
+
+                GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+
+                if (tbl == null && cmd.ifTableExists()) {
+                    ctx.cache().createMissingQueryCaches();
+
+                    tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+                }
+
+                if (tbl == null) {
+                    if (!cmd.ifTableExists())
+                        throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
+                            cmd.tableName());
+                }
+                else {
+                    assert tbl.rowDescriptor() != null;
+
+                    if (QueryUtils.isSqlType(tbl.rowDescriptor().type().valueClass()))
+                        throw new SchemaOperationException("Cannot drop column(s) because table was created " +
+                            "with " + PARAM_WRAP_VALUE + "=false option.");
+
+                    List<String> cols = new ArrayList<>(cmd.columns().length);
+
+                    GridQueryTypeDescriptor type = tbl.rowDescriptor().type();
+
+                    for (String colName : cmd.columns()) {
+                        if (!tbl.doesColumnExist(colName)) {
+                            if ((!cmd.ifExists() || cmd.columns().length != 1)) {
+                                throw new SchemaOperationException(SchemaOperationException.CODE_COLUMN_NOT_FOUND,
+                                    colName);
+                            }
+                            else {
+                                cols = null;
+
+                                break;
+                            }
+                        }
+
+                        SchemaOperationException err = QueryUtils.validateDropColumn(type, colName);
+
+                        if (err != null)
+                            throw err;
+
+                        cols.add(colName);
+                    }
+
+                    if (cols != null) {
+                        fut = ctx.query().dynamicColumnRemove(tbl.cacheName(), cmd.schemaName(),
+                            type.tableName(), cols, cmd.ifTableExists(), cmd.ifExists());
                     }
                 }
             }
@@ -385,8 +481,23 @@ public class DdlStatementsProcessor {
             throw e;
         }
         catch (Exception e) {
-            throw new IgniteSQLException("Unexpected DDL operation failure: " + e.getMessage(), e);
+            throw new IgniteSQLException(e.getMessage(), e);
         }
+    }
+
+    /**
+     * Check if table supports DDL statement.
+     *
+     * @param tbl Table.
+     */
+    private static void isDdlSupported(GridH2Table tbl) {
+        GridCacheContext cctx = tbl.cache();
+
+        assert cctx != null;
+
+        if (cctx.isLocal())
+            throw new IgniteSQLException("DDL statements are not supported on LOCAL caches",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**
@@ -449,6 +560,8 @@ public class DdlStatementsProcessor {
 
         Set<String> notNullFields = null;
 
+        HashMap<String, Object> dfltValues = new HashMap<>();
+
         for (Map.Entry<String, GridSqlColumn> e : createTbl.columns().entrySet()) {
             GridSqlColumn gridCol = e.getValue();
 
@@ -462,7 +575,15 @@ public class DdlStatementsProcessor {
 
                 notNullFields.add(e.getKey());
             }
+
+            Object dfltVal = gridCol.defaultValue();
+
+            if (dfltVal != null)
+                dfltValues.put(e.getKey(), dfltVal);
         }
+
+        if (!F.isEmpty(dfltValues))
+            res.setDefaultFieldValues(dfltValues);
 
         String valTypeName = QueryUtils.createTableValueTypeName(createTbl.schemaName(), createTbl.tableName());
         String keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
