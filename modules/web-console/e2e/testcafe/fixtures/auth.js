@@ -142,7 +142,7 @@ test('Forbid Ignite signing up of already existing user', async(t) => {
         .click(Selector('span').withText('Brazil'))
         .click('#signup');
 
-    await t.expect(Selector('#popover-validation-message').withText('A user with the given username is already registered.').exists).ok();
+    await t.expect(Selector('#popover-validation-message').withText('A user with the given username is already registered').exists).ok();
 
 });
 
