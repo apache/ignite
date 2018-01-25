@@ -57,7 +57,8 @@ public class LineSplitterBlock extends PipelineBlock<char[], String> {
         while (matcher.find()) {
             String outStr = input.substring(lastPos, matcher.start());
 
-            nextBlock.accept(outStr, false);
+            if (outStr.length() > 0)
+                nextBlock.accept(outStr, false);
 
             lastPos = matcher.end();
         }

@@ -210,7 +210,7 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
      */
     public void testEmptyFile() throws SQLException {
         int updatesCnt = stmt.executeUpdate(
-            "copy from \"" + BULKLOAD_ONE_LINE_CSV_FILE + "\" into " + TBL_NAME +
+            "copy from \"" + BULKLOAD_EMPTY_CSV_FILE + "\" into " + TBL_NAME +
                 " (_key, age, firstName, lastName)" +
                 " format csv");
 

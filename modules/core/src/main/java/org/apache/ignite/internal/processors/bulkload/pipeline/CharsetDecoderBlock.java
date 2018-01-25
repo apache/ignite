@@ -38,6 +38,10 @@ public class CharsetDecoderBlock extends PipelineBlock<byte[], char[]> {
     /** Charset decoder */
     private final CharsetDecoder charsetDecoder;
 
+    /** Leftover bytes (partial characters) from the last batch,
+     * or null if everything was processed. */
+    private byte[] leftover;
+
     /** True if we've met the end of input. */
     private boolean isEof;
 
@@ -54,6 +58,8 @@ public class CharsetDecoderBlock extends PipelineBlock<byte[], char[]> {
             .onUnmappableCharacter(CodingErrorAction.REPLACE);
 
         isEof = false;
+
+        leftover = null;
     }
 
     /**
@@ -72,46 +78,59 @@ public class CharsetDecoderBlock extends PipelineBlock<byte[], char[]> {
 
         isEof = isLastAppend;
 
-        if (data.length == 0) {
+        if (leftover == null && data.length == 0) {
             nextBlock.accept(new char[0], isLastAppend);
             return;
         }
 
-        ByteBuffer dataBuf = ByteBuffer.wrap(data);
+        ByteBuffer dataBuf;
 
-        CharBuffer outBuf = CharBuffer.allocate(data.length + 2);
+        if (leftover == null)
+            dataBuf = ByteBuffer.wrap(data);
+        else {
+            dataBuf = ByteBuffer.allocate(leftover.length + data.length);
 
-        for (; ; ) {
+            dataBuf.put(leftover)
+                   .put(data);
+
+            dataBuf.flip();
+
+            leftover = null;
+        }
+
+        CharBuffer outBuf = CharBuffer.allocate((int) Math.ceil(charsetDecoder.maxCharsPerByte() * (data.length + 1)));
+
+        for (;;) {
             CoderResult res = charsetDecoder.decode(dataBuf, outBuf, isEof);
 
-            if (res.isUnderflow()) {
-                if (isEof)
-                    break;
-
-                if (!dataBuf.hasRemaining())
-                    break;
-
-                if (dataBuf.position() > 0 && !isEof)
-                    break;
+            if (!isEof && outBuf.position() > 0) {
+                nextBlock.accept(Arrays.copyOfRange(outBuf.array(), outBuf.arrayOffset(), outBuf.position()), isEof);
+                outBuf.flip();
             }
-            else if (res.isOverflow()) {
-                assert outBuf.position() > 0;
+
+            if (res.isUnderflow()) { // Skip the partial character at the end or wait for the next batch
+                if (!isEof && dataBuf.remaining() > 0)
+                    leftover = Arrays.copyOfRange(dataBuf.array(),
+                        dataBuf.arrayOffset() + dataBuf.position(), dataBuf.limit());
 
                 break;
             }
 
-            try {
-                res.throwException();
-            } catch (CharacterCodingException e) {
-                throw new IgniteCheckedException(e);
+            if (res.isOverflow())
+                continue;
+
+            assert ! res.isMalformed() && ! res.isUnmappable();
+
+            if (res.isError()) {
+                try {
+                    res.throwException();
+                }
+                catch (CharacterCodingException e) {
+                    throw new IgniteCheckedException(e);
+                }
             }
-        }
 
-        if (outBuf.position() == 0) {
-            assert isEof;
-            return;
+            assert false : "Unknown CharsetDecoder state";
         }
-
-        nextBlock.accept(Arrays.copyOfRange(outBuf.array(), outBuf.arrayOffset(), outBuf.position()), isEof);
     }
 }
