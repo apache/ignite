@@ -28,6 +28,11 @@ namespace Apache.Ignite.Core.Client
         /// <summary>
         /// Creates the SSL stream.
         /// </summary>
-        SslStream Create(Stream innerStream);
+        /// <param name="stream">The underlying raw stream.</param>
+        /// <param name="targetHost">Target host.</param>
+        /// <returns>
+        /// SSL stream.
+        /// </returns>
+        SslStream Create(Stream stream, string targetHost);
     }
 }

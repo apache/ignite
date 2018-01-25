@@ -17,9 +17,11 @@
 
 namespace Apache.Ignite.Core.Client
 {
-    using System;
     using System.IO;
     using System.Net.Security;
+    using System.Security.Authentication;
+    using System.Security.Cryptography.X509Certificates;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Predefined SSL stream factory, loads certificate from specified file.
@@ -27,10 +29,48 @@ namespace Apache.Ignite.Core.Client
     public class SslStreamFactory : ISslStreamFactory
     {
         /** <inehritdoc /> */
-        public SslStream Create(Stream innerStream)
+        public SslStream Create(Stream stream, string targetHost)
         {
-            throw new NotImplementedException();
+            IgniteArgumentCheck.NotNull(stream, "stream");
+
+            var sslStream = new SslStream(stream, false, ValidateServerCertificate, null);
+
+            var cert = new X509Certificate2(CertificatePath, CertificatePassword);
+            var certs = new X509CertificateCollection(new X509Certificate[] { cert });
+
+            sslStream.AuthenticateAsClient(targetHost, certs, SslProtocols.Default, CheckCertificateRevocation);
+
+            return sslStream;
         }
+
+        /// <summary>
+        /// Validates the server certificate.
+        /// </summary>
+        private bool ValidateServerCertificate(object sender, X509Certificate certificate, X509Chain chain, 
+            SslPolicyErrors sslPolicyErrors)
+        {
+            if (IgnoreInvalidCertificates)
+            {
+                return true;
+            }
+
+            if (sslPolicyErrors == SslPolicyErrors.None)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Gets or sets the certificate file (pfx) path.
+        /// </summary>
+        public string CertificatePath { get; set; }
+
+        /// <summary>
+        /// Gets or sets the certificate file password.
+        /// </summary>
+        public string CertificatePassword { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether to ignore invalid certificates.
@@ -38,5 +78,10 @@ namespace Apache.Ignite.Core.Client
         /// but may be useful for testing with self-signed certificates.
         /// </summary>
         public bool IgnoreInvalidCertificates { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the certificate revocation list is checked during authentication.
+        /// </summary>
+        public bool CheckCertificateRevocation { get; set; }
     }
 }
