@@ -59,7 +59,7 @@ public class NativeSqlQueryRangeBenchmark extends AbstractNativeBenchmark {
         long rsSize = 0;
 
         try (FieldsQueryCursor<List<?>> cursor = ((IgniteEx)ignite()).context().query()
-                .querySqlFieldsNoCache(qry, false)) {
+                .querySqlFields(qry, false)) {
 
             for (List<?> row : cursor) {
                 if ((Long)row.get(0) + 1 != (Long)row.get(1))

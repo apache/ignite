@@ -35,7 +35,7 @@ import static org.apache.ignite.yardstick.jdbc.JdbcUtils.fillData;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * JDBC benchmark that performs query operations
+ * JDBC benchmark that performs query operations.
  */
 abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
     /** All {@link Connection}s associated with threads. */

@@ -26,10 +26,12 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public class JdbcSqlInsertDeleteBenchmark extends AbstractJdbcBenchmark {
     /** Statement that inserts one row. */
-    private final ThreadLocal<PreparedStatement> singleInsert = newStatement("INSERT INTO test_long (id, val) VALUES (?, ?)");
+    private final ThreadLocal<PreparedStatement> singleInsert = newStatement(
+        "INSERT INTO test_long (id, val) VALUES (?, ?)");
 
     /** Statement that deletes one row. */
-    private final ThreadLocal<PreparedStatement> singleDelete = newStatement("DELETE FROM test_long WHERE id = ?");
+    private final ThreadLocal<PreparedStatement> singleDelete = newStatement(
+        "DELETE FROM test_long WHERE id = ?");
 
     /**
      * Benchmarked action that inserts and immediately deletes single row.

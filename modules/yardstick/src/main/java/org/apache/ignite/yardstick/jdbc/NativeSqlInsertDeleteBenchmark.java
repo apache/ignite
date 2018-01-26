@@ -48,8 +48,8 @@ public class NativeSqlInsertDeleteBenchmark extends AbstractNativeBenchmark {
 
         GridQueryProcessor qryProc = ((IgniteEx)ignite()).context().query();
 
-        try (FieldsQueryCursor<List<?>> insCur = qryProc.querySqlFieldsNoCache(insert, false);
-             FieldsQueryCursor<List<?>> delCur = qryProc.querySqlFieldsNoCache(delete, false)) {
+        try (FieldsQueryCursor<List<?>> insCur = qryProc.querySqlFields(insert, false);
+             FieldsQueryCursor<List<?>> delCur = qryProc.querySqlFields(delete, false)) {
             // No-op, there is no result
         }
         catch (Exception ign) {

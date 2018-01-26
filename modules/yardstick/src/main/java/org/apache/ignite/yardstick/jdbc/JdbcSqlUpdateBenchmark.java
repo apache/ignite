@@ -26,10 +26,12 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public class JdbcSqlUpdateBenchmark extends AbstractJdbcBenchmark {
     /** Statement that updates one row. */
-    private final ThreadLocal<PreparedStatement> singleUpdate = newStatement("UPDATE test_long SET val = (val + 1) WHERE id = ?");
+    private final ThreadLocal<PreparedStatement> singleUpdate = newStatement(
+        "UPDATE test_long SET val = (val + 1) WHERE id = ?");
 
     /** Statement that updates range of rows. */
-    private final ThreadLocal<PreparedStatement> rangeUpdate = newStatement("UPDATE test_long SET val = (val + 1) WHERE id BETWEEN ? AND ?");
+    private final ThreadLocal<PreparedStatement> rangeUpdate = newStatement(
+        "UPDATE test_long SET val = (val + 1) WHERE id BETWEEN ? AND ?");
 
     /**
      * Benchmarked action that performs updates.
@@ -62,8 +64,10 @@ public class JdbcSqlUpdateBenchmark extends AbstractJdbcBenchmark {
 
         int actualResSize = update.executeUpdate();
 
-        if (actualResSize != expectedResSize)
-            throw new Exception("Invalid result set size [actual=" + actualResSize + ", expected=" + expectedResSize + ']');
+        if (actualResSize != expectedResSize) {
+            throw new Exception("Invalid result set size [actual=" + actualResSize
+                + ", expected=" + expectedResSize + ']');
+        }
 
         return true;
     }

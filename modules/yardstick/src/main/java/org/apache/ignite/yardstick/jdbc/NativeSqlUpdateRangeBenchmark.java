@@ -58,7 +58,7 @@ public class NativeSqlUpdateRangeBenchmark extends AbstractNativeBenchmark {
         }
 
         try (FieldsQueryCursor<List<?>> cursor = ((IgniteEx)ignite()).context().query()
-                .querySqlFieldsNoCache(qry, false)) {
+                .querySqlFields(qry, false)) {
             Iterator<List<?>> it = cursor.iterator();
 
             List<?> cntRow = it.next();

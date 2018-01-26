@@ -27,10 +27,12 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public class JdbcSqlQueryRangeBenchmark extends AbstractJdbcBenchmark {
     /** Statement with range. */
-    private ThreadLocal<PreparedStatement> stmtRange = newStatement("SELECT id, val FROM test_long WHERE id BETWEEN ? AND ?");
+    private ThreadLocal<PreparedStatement> stmtRange = newStatement(
+        "SELECT id, val FROM test_long WHERE id BETWEEN ? AND ?");
 
     /** Statement full scan. */
-    private ThreadLocal<PreparedStatement> stmtSingle = newStatement("SELECT id, val FROM test_long WHERE id = ?");
+    private ThreadLocal<PreparedStatement> stmtSingle = newStatement(
+        "SELECT id, val FROM test_long WHERE id = ?");
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {

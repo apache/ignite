@@ -36,13 +36,13 @@ public class JdbcUtils {
     static void fillData(BenchmarkConfiguration cfg,  IgniteEx ignite, long range) {
         println(cfg, "Create table...");
 
-        ignite.context().query().querySqlFieldsNoCache(
+        ignite.context().query().querySqlFields(
             new SqlFieldsQuery("CREATE TABLE test_long (id long primary key, val long)"), true);
 
         println(cfg, "Populate data...");
 
         for (long l = 1; l <= range; ++l) {
-            ignite.context().query().querySqlFieldsNoCache(
+            ignite.context().query().querySqlFields(
                 new SqlFieldsQuery("insert into test_long (id, val) values (?, ?)")
                     .setArgs(l, l + 1), true);
 
