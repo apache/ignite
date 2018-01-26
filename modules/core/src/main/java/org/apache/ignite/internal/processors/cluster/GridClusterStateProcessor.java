@@ -789,39 +789,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         return bltNodes;
     }
 
-    /**
-     * Verifies all nodes in current cluster topology support BaselineTopology feature
-     * so compatibilityMode flag is enabled to reset.
-     *
-     * @param discoCache
-     */
-    private void verifyBaselineTopologySupport(DiscoCache discoCache) {
-        if (discoCache.minimumServerNodeVersion().compareTo(MIN_BLT_SUPPORTING_VER) < 0) {
-            SB sb = new SB("Cluster contains nodes that don't support BaselineTopology: [");
-
-            for (ClusterNode cn : discoCache.serverNodes()) {
-                if (cn.version().compareTo(MIN_BLT_SUPPORTING_VER) < 0)
-                    sb
-                        .a("[")
-                        .a(cn.consistentId())
-                        .a(":")
-                        .a(cn.version())
-                        .a("], ");
-            }
-
-            sb.d(sb.length() - 2, sb.length());
-
-            throw new IgniteException(sb.a("]").toString());
-        }
-    }
-
     /** */
     private IgniteInternalFuture<?> changeGlobalState0(final boolean activate,
         BaselineTopology blt, boolean forceChangeBaselineTopology) {
         if (ctx.isDaemon() || ctx.clientNode()) {
             GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
-
-            verifyBaselineTopologySupport(ctx.discovery().discoCache());
 
             sendComputeChangeGlobalState(activate, blt, forceChangeBaselineTopology, fut);
 
