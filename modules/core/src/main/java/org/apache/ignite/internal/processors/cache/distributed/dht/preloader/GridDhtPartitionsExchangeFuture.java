@@ -131,6 +131,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         IgniteSystemProperties.getInteger(IGNITE_PARTITION_RELEASE_FUTURE_DUMP_THRESHOLD, 0);
 
     /** */
+    private static final IgniteProductVersion FORCE_AFF_REASSIGNMENT_SINCE = IgniteProductVersion.fromString("2.4.3");
+
+    /** */
     @GridToStringExclude
     private final Object mux = new Object();
 
@@ -596,7 +599,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 DiscoveryCustomMessage msg = ((DiscoveryCustomEvent)firstDiscoEvt).customMessage();
 
-                forceAffReassignment = DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(msg);
+                forceAffReassignment = DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(msg)
+                    && firstEventCache().minimumNodeVersion().compareToIgnoreTimestamp(FORCE_AFF_REASSIGNMENT_SINCE) >= 0;
 
                 if (msg instanceof ChangeGlobalStateMessage) {
                     assert exchActions != null && !exchActions.empty();
@@ -1073,8 +1077,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
-        cctx.database().beforeExchange(this);
-
         if (!exchCtx.mergeExchanges()) {
             for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                 if (grp.isLocal() || cacheGroupStopping(grp.groupId()))
@@ -1085,6 +1087,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     grp.topology().beforeExchange(this, !centralizedAff && !forceAffReassignment, false);
             }
         }
+
+        cctx.database().beforeExchange(this);
 
         changeWalModeIfNeeded();
 
