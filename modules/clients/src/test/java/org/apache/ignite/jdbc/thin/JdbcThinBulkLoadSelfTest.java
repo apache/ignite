@@ -32,6 +32,7 @@ import java.util.concurrent.Callable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
 
 /**
  * COPY statement tests.
@@ -43,20 +44,20 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
     private Statement stmt;
 
     /** A CSV file with zero records */
-    private String BULKLOAD_EMPTY_CSV_FILE = System.getProperty("IGNITE_HOME") +
-        "/modules/clients/src/test/resources/bulkload0.csv";
+    private String BULKLOAD_EMPTY_CSV_FILE =
+        resolveIgnitePath("/modules/clients/src/test/resources/bulkload0.csv").getAbsolutePath();
 
     /** A CSV file with one record. */
-    private String BULKLOAD_ONE_LINE_CSV_FILE = System.getProperty("IGNITE_HOME") +
-        "/modules/clients/src/test/resources/bulkload1.csv";
+    private String BULKLOAD_ONE_LINE_CSV_FILE =
+        resolveIgnitePath("/modules/clients/src/test/resources/bulkload1.csv").getAbsolutePath();
 
     /** A CSV file with two records. */
-    private String BULKLOAD0_CSV_FILE = System.getProperty("IGNITE_HOME") +
-        "/modules/clients/src/test/resources/bulkload2.csv";
+    private String BULKLOAD0_CSV_FILE =
+        resolveIgnitePath("/modules/clients/src/test/resources/bulkload2.csv").getAbsolutePath();
 
     /** A file with UTF records. */
-    private String BULKLOAD_UTF_CSV_FILE = System.getProperty("IGNITE_HOME") +
-        "/modules/clients/src/test/resources/bulkload2_utf.csv";
+    private String BULKLOAD_UTF_CSV_FILE =
+        resolveIgnitePath("/modules/clients/src/test/resources/bulkload2_utf.csv").getAbsolutePath();
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfig() {
@@ -179,7 +180,7 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
         int updatesCnt = stmt.executeUpdate(
             "copy from \"" + BULKLOAD_UTF_CSV_FILE + "\" into " + TBL_NAME +
                 " (_key, age, firstName, lastName)" +
-                " format csv batch size 1");
+                " format csv batch_size 1");
 
         assertEquals(2, updatesCnt);
 
@@ -221,8 +222,6 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
 
     /**
      * Checks that error is reported for a non-existent file.
-     *
-     * @throws SQLException If failed.
      */
     public void testWrongFileName() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -239,8 +238,6 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
 
     /**
      * Checks that error is reported if the destination table is missing.
-     *
-     * @throws SQLException If failed.
      */
     public void testMissingTable() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -257,8 +254,6 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
 
     /**
      * Checks that error is reported when a non-existing column is specified in the SQL command.
-     *
-     * @throws SQLException If failed.
      */
     public void testWrongColumnName() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -275,10 +270,8 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
 
     /**
      * Checks that error is reported if field read from CSV file cannot be converted to the type of the column.
-     *
-     * @throws SQLException If failed.
      */
-    public void testWrongColumnType() throws SQLException {
+    public void testWrongColumnType() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 stmt.executeUpdate(
@@ -359,7 +352,7 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
     public void testBatchSize_1() throws SQLException {
         int updatesCnt = stmt.executeUpdate(
             "copy from \"" + BULKLOAD0_CSV_FILE + "\"" +
-            " into " + TBL_NAME + " (_key, age, firstName, lastName) format csv batch size 1");
+            " into " + TBL_NAME + " (_key, age, firstName, lastName) format csv batch_size 1");
 
         assertEquals(2, updatesCnt);
 
