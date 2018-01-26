@@ -15,55 +15,47 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.logger.log4j;
+package org.apache.ignite.logger.log4j2;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import junit.framework.TestCase;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.log4j.helpers.FileWatchdog;
 
 /**
- * Checking that Log4j configuration is updated when its source file is changed.
+ * Checking that Log4j2 configuration is updated when its source file is changed.
  */
-public class GridLog4jConfigUpdateTest extends TestCase {
-    /** Path to log4j configuration with INFO enabled. */
-    private static final String LOG_CONFIG_INFO = "modules/log4j/src/test/config/log4j-info.xml";
+public class Log4j2ConfigUpdateTest extends TestCase {
+    /** Path to log4j2 configuration with INFO enabled. */
+    private static final String LOG_CONFIG_INFO = "modules/log4j2/src/test/config/log4j2-info.xml";
 
-    /** Path to log4j configuration with DEBUG enabled. */
-    private static final String LOG_CONFIG_DEBUG = "modules/log4j/src/test/config/log4j-debug.xml";
+    /** Path to log4j2 configuration with DEBUG enabled. */
+    private static final String LOG_CONFIG_DEBUG = "modules/log4j2/src/test/config/log4j2-debug.xml";
 
-    /** Path to log4j configuration with DEBUG enabled. */
-    private static final String LOG_CONFIG_MAIN = "work/log/log4j-GridLog4jConfigUpdateTest.xml";
+    /** Path to log4j2 configuration with DEBUG enabled. */
+    private static final String LOG_CONFIG_MAIN = "work/log/log4j2-Log4j2ConfigUpdateTest.xml";
 
     /** Path to log file. */
-    private static final String LOG_DEST = "work/log/GridLog4jConfigUpdateTest.log";
+    private static final String LOG_DEST = "work/log/Log4j2ConfigUpdateTest.log";
 
     /**
-     * Check that changing log4j config file causes the logger configuration to be updated.
+     * Time to wait before logger configuration changes.
+     * This value is made greater than the `monitorInterval` in the config files to avoid relying on exact timing.
+     */
+    private static final long UPDATE_DELAY = 6000;
+
+    /**
+     * Check that changing log4j2 config file causes the logger configuration to be updated.
      * String-accepting constructor is used.
      */
     @SuppressWarnings("ResultOfMethodCallIgnored")
     public void testConfigChangeStringConstructor() throws Exception {
-        checkConfigUpdate(new Log4JLoggerSupplier() {
-            @Override public Log4JLogger get(File cfgFile) throws Exception {
-                return new Log4JLogger(cfgFile.getPath(), 10);
+        checkConfigUpdate(new Log4J2LoggerSupplier() {
+            @Override public Log4J2Logger get(File cfgFile) throws Exception {
+                return new Log4J2Logger(cfgFile.getPath());
             }
-        }, 20); // use larger delay to avoid relying on exact timing
-    }
-
-    /**
-     * Check that changing log4j config file causes the logger configuration to be updated.
-     * String-accepting constructor is used.
-     */
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    public void testConfigChangeStringConstructorDefaultDelay() throws Exception {
-        checkConfigUpdate(new Log4JLoggerSupplier() {
-            @Override public Log4JLogger get(File cfgFile) throws Exception {
-                return new Log4JLogger(cfgFile.getPath());
-            }
-        }, FileWatchdog.DEFAULT_DELAY + 10000); // use larger delay to avoid relying on exact timing
+        }); // use larger delay to avoid relying on exact timing
     }
 
     /**
@@ -72,11 +64,11 @@ public class GridLog4jConfigUpdateTest extends TestCase {
      */
     @SuppressWarnings("ResultOfMethodCallIgnored")
     public void testConfigChangeFileConstructor() throws Exception {
-        checkConfigUpdate(new Log4JLoggerSupplier() {
-            @Override public Log4JLogger get(File cfgFile) throws Exception {
-                return new Log4JLogger(cfgFile, 10);
+        checkConfigUpdate(new Log4J2LoggerSupplier() {
+            @Override public Log4J2Logger get(File cfgFile) throws Exception {
+                return new Log4J2Logger(cfgFile);
             }
-        }, 20); // use larger delay to avoid relying on exact timing
+        }); // use larger delay to avoid relying on exact timing
     }
 
     /**
@@ -85,22 +77,20 @@ public class GridLog4jConfigUpdateTest extends TestCase {
      */
     @SuppressWarnings("ResultOfMethodCallIgnored")
     public void testConfigChangeUrlConstructor() throws Exception {
-        checkConfigUpdate(new Log4JLoggerSupplier() {
-            @Override public Log4JLogger get(File cfgFile) throws Exception {
-                return new Log4JLogger(cfgFile.toURI().toURL(), 10);
+        checkConfigUpdate(new Log4J2LoggerSupplier() {
+            @Override public Log4J2Logger get(File cfgFile) throws Exception {
+                return new Log4J2Logger(cfgFile.toURI().toURL());
             }
-        }, 20); // use larger delay to avoid relying on exact timing
+        }); // use larger delay to avoid relying on exact timing
     }
 
     /**
      * Checks that Log4JLogger is updated after configuration file is changed.
-     *
-     * @param logSupplier Function returning a logger instance to be tested.
-     * @param delay time to wait after configuration file has been changed.
+     *  @param logSupplier Function returning a logger instance to be tested.
      */
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    private void checkConfigUpdate(Log4JLoggerSupplier logSupplier, long delay) throws Exception {
-        Log4JLogger.cleanup();
+    private void checkConfigUpdate(Log4J2LoggerSupplier logSupplier) throws Exception {
+        Log4J2Logger.cleanup();
 
         File infoCfgFile = new File(U.getIgniteHome(), LOG_CONFIG_INFO);
         File debugCfgFile = new File(U.getIgniteHome(), LOG_CONFIG_DEBUG);
@@ -112,7 +102,7 @@ public class GridLog4jConfigUpdateTest extends TestCase {
         mainCfgFile.getParentFile().mkdirs();
         Files.copy(infoCfgFile.toPath(), mainCfgFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
-        Log4JLogger log = logSupplier.get(mainCfgFile);
+        Log4J2Logger log = logSupplier.get(mainCfgFile);
 
         log.info("Accepted info");
         log.debug("Ignored debug");
@@ -121,7 +111,7 @@ public class GridLog4jConfigUpdateTest extends TestCase {
         Files.copy(debugCfgFile.toPath(), mainCfgFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
         // Wait for the update to happen, use default delay.
-        Thread.sleep(delay);
+        Thread.sleep(UPDATE_DELAY);
 
         log.debug("Accepted debug");
 
@@ -132,13 +122,12 @@ public class GridLog4jConfigUpdateTest extends TestCase {
         assertTrue(logContent.contains("[DEBUG] Accepted debug"));
 
         mainCfgFile.delete();
-        Log4JLogger.cleanup();
+        Log4J2Logger.cleanup();
     }
 
-    /** Creates Log4JLogger instance for testing. */
-    private interface Log4JLoggerSupplier {
-        /** Creates Log4JLogger instance for testing. */
-        Log4JLogger get(File cfgFile) throws Exception;
+    /** Creates Log4J2Logger instance for testing. */
+    private interface Log4J2LoggerSupplier {
+        /** Creates Log4J2Logger instance for testing. */
+        Log4J2Logger get(File cfgFile) throws Exception;
     }
-
 }
