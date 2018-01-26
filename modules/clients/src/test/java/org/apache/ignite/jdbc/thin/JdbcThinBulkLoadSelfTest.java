@@ -179,7 +179,7 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
         int updatesCnt = stmt.executeUpdate(
             "copy from \"" + BULKLOAD_UTF_CSV_FILE + "\" into " + TBL_NAME +
                 " (_key, age, firstName, lastName)" +
-                " format csv batch_size 1");
+                " format csv batch size 1");
 
         assertEquals(2, updatesCnt);
 
@@ -220,24 +220,6 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
     }
 
     /**
-     * Checks invalid 'FROM' keyword in the SQL command.
-     *
-     * @throws SQLException If failed.
-     */
-    public void testWrongFromSyntax() {
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                stmt.executeUpdate(
-                    "copy grom \"nonexistent\" into Person" +
-                        " (_key, age, firstName, lastName)" +
-                        " format csv");
-
-                return null;
-            }
-        }, SQLException.class, "Unexpected token: \"GROM\" (expected: \"FROM\")");
-    }
-
-    /**
      * Checks that error is reported for a non-existent file.
      *
      * @throws SQLException If failed.
@@ -253,24 +235,6 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
                 return null;
             }
         }, SQLException.class, "Failed to read file: 'nonexistent'");
-    }
-
-    /**
-     * Checks that error is reported for wrong INTO keyword.
-     *
-     * @throws SQLException If failed.
-     */
-    public void testWrongIntoSyntax() {
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                stmt.executeUpdate(
-                    "copy from \"nonexistent\" to Person" +
-                        " (_key, age, firstName, lastName)" +
-                        " format csv");
-
-                return null;
-            }
-        }, SQLException.class, "Unexpected token: \"TO\" (expected: \"INTO\")");
     }
 
     /**
@@ -292,24 +256,6 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
     }
 
     /**
-     * Checks that error is reported if empty list of columns is specified in the SQL command.
-     *
-     * @throws SQLException If failed.
-     */
-    public void testEmptyColumnList() {
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                stmt.executeUpdate(
-                    "copy from \"" + BULKLOAD0_CSV_FILE + "\" into Person" +
-                        " ()" +
-                        " format csv");
-
-                return null;
-            }
-        }, SQLException.class, "Unexpected token: \")\" (expected: \"[identifier]\")");
-    }
-
-    /**
      * Checks that error is reported when a non-existing column is specified in the SQL command.
      *
      * @throws SQLException If failed.
@@ -325,23 +271,6 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
                 return null;
             }
         }, SQLException.class, "Column \"LOSTNAME\" not found");
-    }
-
-    /**
-     * Checks that error is reported when list of columns is not specified in the SQL command.
-     *
-     * @throws SQLException If failed.
-     */
-    public void testSkippedColumns() {
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                stmt.executeUpdate(
-                    "copy from \"" + BULKLOAD0_CSV_FILE + "\" into Person" +
-                        " format csv");
-
-                return null;
-            }
-        }, SQLException.class, "Unexpected token: \"FORMAT\" (expected: \"(\")");
     }
 
     /**
@@ -376,41 +305,6 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
         assertEquals(2, updatesCnt);
 
         checkCacheContents(TBL_NAME, false, 2);
-    }
-
-    /**
-     * Checks that error is reported if the format clause is missing in the SQL command.
-     *
-     * @throws SQLException If failed.
-     */
-    public void testMissingFormat() {
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                stmt.executeUpdate(
-                    "copy from \"" + BULKLOAD0_CSV_FILE + "\" into Person" +
-                        " (_key, age, firstName, lastName)");
-
-                return null;
-            }
-        }, SQLException.class, "Unexpected end of command (expected: \"FORMAT\")");
-    }
-
-    /**
-     * Checks that error is reported if a not supported format name is specified in the SQL command.
-     *
-     * @throws SQLException If failed.
-     */
-    public void testWrongFormat() {
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                stmt.executeUpdate(
-                    "copy from \"" + BULKLOAD0_CSV_FILE + "\" into Person" +
-                        " (_key, age, firstName, lastName)" +
-                        " format lsd");
-
-                return null;
-            }
-        }, SQLException.class, "Unknown format name: LSD");
     }
 
     /**
@@ -465,7 +359,7 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
     public void testBatchSize_1() throws SQLException {
         int updatesCnt = stmt.executeUpdate(
             "copy from \"" + BULKLOAD0_CSV_FILE + "\"" +
-            " into " + TBL_NAME + " (_key, age, firstName, lastName) format csv batch_size 1");
+            " into " + TBL_NAME + " (_key, age, firstName, lastName) format csv batch size 1");
 
         assertEquals(2, updatesCnt);
 

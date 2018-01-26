@@ -179,13 +179,11 @@ public final class UpdatePlan {
      * Convert a row into key-value pair.
      *
      * @param row Row to process.
-     * @param allowMissingTailVals Allow row to have less values than specified in {@link #colNames}
-     *        (default values are substituted).
      * @throws IgniteCheckedException if failed.
      */
-    public IgniteBiTuple<?, ?> processRow(List<?> row, boolean allowMissingTailVals) throws IgniteCheckedException {
+    public IgniteBiTuple<?, ?> processRow(List<?> row) throws IgniteCheckedException {
 
-        if (!allowMissingTailVals && row.size() < colNames.length)
+        if (row.size() < colNames.length)
             throw new IgniteSQLException("Not enough values in a row: " + row.size() + " instead of " + colNames.length,
                 IgniteQueryErrorCode.ENTRY_PROCESSING);
 
@@ -229,9 +227,7 @@ public final class UpdatePlan {
 
         Map<String, Object> newColVals = new HashMap<>();
 
-        int colCnt = Math.min(colNames.length, row.size());
-
-        for (int i = 0; i < colCnt; i++) {
+        for (int i = 0; i < colNames.length; i++) {
             if (i == keyColIdx || i == valColIdx)
                 continue;
 
@@ -508,5 +504,14 @@ public final class UpdatePlan {
      */
     @Nullable public boolean isLocalSubquery() {
         return isLocSubqry;
+    }
+
+    /**
+     * Returns the column names.
+     *
+     * @return The column names.
+     */
+    public String[] columnNames() {
+        return colNames;
     }
 }

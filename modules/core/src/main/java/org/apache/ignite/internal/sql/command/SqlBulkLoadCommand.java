@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.bulkload.BulkLoadParameters;
 import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -254,5 +255,10 @@ public class SqlBulkLoadCommand implements SqlCommand {
      */
     public void batchSize(int batchSize) {
         this.batchSize = batchSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(SqlBulkLoadCommand.class, this);
     }
 }
