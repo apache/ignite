@@ -2249,6 +2249,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         List<? extends BaselineNode> baselineNodes;
 
         IgniteProductVersion minVer = null;
+        IgniteProductVersion minSrvVer = null;
 
         for (ClusterNode node : topSnapshot) {
             if (alive(node))
@@ -2262,8 +2263,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 if (!node.isLocal())
                     rmtNodes.add(node);
 
-                if (!CU.clientNode(node))
+                if (!CU.clientNode(node)) {
                     srvNodes.add(node);
+
+                    if (minSrvVer == null)
+                        minSrvVer = node.version();
+                    else if (node.version().compareTo(minSrvVer) < 0)
+                        minSrvVer = node.version();
+                }
             }
 
             nodeMap.put(node.id(), node);
@@ -2341,7 +2348,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             alives,
             nodeIdToConsIdx == null ? null : Collections.unmodifiableMap(nodeIdToConsIdx),
             consIdxToNodeId == null ? null : Collections.unmodifiableMap(consIdxToNodeId),
-            minVer);
+            minVer,
+            minSrvVer);
     }
 
     /**
@@ -3174,6 +3182,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             discoCache.alives,
             discoCache.nodeIdToConsIdx,
             discoCache.consIdxToNodeId,
-            discoCache.minimumNodeVersion());
+            discoCache.minimumNodeVersion(),
+            discoCache.minimumServerNodeVersion());
     }
 }
