@@ -32,6 +32,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteJdbcDriver;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.query.BulkLoadContextCursor;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteKernal;
@@ -167,6 +169,11 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTaskResult> {
             qry.setEnforceJoinOrder(enforceJoinOrder());
             qry.setLazy(lazy());
             qry.setSchema(schemaName);
+
+            FieldsQueryCursor<List<?>> fieldsQueryCursor = cache.withKeepBinary().query(qry);
+
+            if (fieldsQueryCursor instanceof BulkLoadContextCursor)
+                throw new SQLException("COPY command is currently supported only in thin JDBC driver.");
 
             QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)cache.withKeepBinary().query(qry);
 

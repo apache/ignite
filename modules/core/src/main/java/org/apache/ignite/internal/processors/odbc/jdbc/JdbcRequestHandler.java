@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.sql.BatchUpdateException;
 import java.sql.ParameterMetaData;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -621,6 +622,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             List<FieldsQueryCursor<List<?>>> qryRes = ctx.query().querySqlFields(qry, true, true);
 
             for (FieldsQueryCursor<List<?>> cur : qryRes) {
+                if (cur instanceof BulkLoadContextCursor)
+                    throw new IgniteSQLException("COPY command cannot be executed in batch mode.");
+
                 assert !((QueryCursorImpl)cur).isQuery();
 
                 Iterator<List<?>> it = cur.iterator();

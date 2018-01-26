@@ -17,22 +17,26 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collections;
 import java.util.Properties;
+import java.util.concurrent.Callable;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -70,7 +74,7 @@ public class JdbcBulkLoadSelfTest extends GridCommonAbstractTest {
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);
         cache.setIndexedTypes(
-            Integer.class, Integer.class
+            Integer.class, Person.class
         );
 
         cfg.setCacheConfiguration(cache);
@@ -121,36 +125,65 @@ public class JdbcBulkLoadSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * This is more a placeholder for implementation of IGNITE-7553
+     *
      * @throws Exception if failed.
      */
-    public void testBulkLoad() throws Exception {
-        conn = createConnection(false);
+    public void testBulkLoadThrows() throws Exception {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                conn = createConnection(false);
 
-        IgniteCache<Object, Object> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
+                try {
+                    Statement stmt = conn.createStatement();
+                    stmt.executeUpdate("copy from \"dummy.csv\" into Person" +
+                        " (_key, id, firstName, lastName) format csv");
 
-        for (int i = 10; i <= 100; i += 10)
-            cache.put(i, i * 100);
+                    return null;
+                }
+                finally {
+                    conn.close();
+                }
+            }
+        }, SQLException.class, "COPY command is currently supported only in thin JDBC driver.");
+    }
 
-        int initialCacheSize = cache.size(CachePeekMode.ALL);
+    /**
+     * Person.
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    private static class Person implements Serializable {
+        /** ID. */
+        @QuerySqlField
+        private final int id;
 
-        Statement stmt = conn.createStatement();
+        /** First name. */
+        @QuerySqlField(index = false)
+        private final String firstName;
 
-        int updatesCnt = stmt.executeUpdate("copy from \"dummy.csv\" into \"INTEGER\" (_key, _val) format csv");
+        /** Last name. */
+        @QuerySqlField(index = false)
+        private final String lastName;
 
-        // Closing connection makes it wait for streamer close
-        // and thus for data load completion as well
-        conn.close();
+        /** Age. */
+        @QuerySqlField
+        private final int age;
 
-        int updatedCacheSize = cache.size(CachePeekMode.ALL);
+        /**
+         * @param id ID.
+         * @param firstName First name
+         * @param lastName Last name
+         * @param age Age.
+         */
+        private Person(int id, String firstName, String lastName, int age) {
+            assert !F.isEmpty(firstName);
+            assert !F.isEmpty(lastName);
+            assert age > 0;
 
-        assertEquals(updatedCacheSize, (initialCacheSize + updatesCnt));
-
-        // Now let's check it's all there.
-//        for (int i = 1; i <= 100; i++) {
-//            if (i % 10 != 0)
-//                assertEquals(i, cache.get(i));
-//            else // All that divides by 10 evenly should point to numbers 100 times greater - see above
-//                assertEquals(i * 100, cache.get(i));
-//        }
+            this.id = id;
+            this.firstName = firstName;
+            this.lastName = lastName;
+            this.age = age;
+        }
     }
 }
