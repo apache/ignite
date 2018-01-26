@@ -363,26 +363,19 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
     public void testMultipleStatement() throws SQLException {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                try {
-                    Statement stmt = conn.createStatement();
+                stmt.addBatch("copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into " + TBL_NAME +
+                    " (_key, age, firstName, lastName)" +
+                    " format csv");
+                stmt.addBatch("copy from \"" + BULKLOAD_ONE_LINE_CSV_FILE + "\" into " + TBL_NAME +
+                    " (_key, age, firstName, lastName)" +
+                    " format csv");
+                stmt.addBatch("copy from \"" + BULKLOAD_UTF_CSV_FILE + "\" into " + TBL_NAME +
+                    " (_key, age, firstName, lastName)" +
+                    " format csv");
 
-                    stmt.addBatch("copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into " + TBL_NAME +
-                        " (_key, age, firstName, lastName)" +
-                        " format csv");
-                    stmt.addBatch("copy from \"" + BULKLOAD_ONE_LINE_CSV_FILE + "\" into " + TBL_NAME +
-                        " (_key, age, firstName, lastName)" +
-                        " format csv");
-                    stmt.addBatch("copy from \"" + BULKLOAD_UTF_CSV_FILE + "\" into " + TBL_NAME +
-                        " (_key, age, firstName, lastName)" +
-                        " format csv");
+                stmt.executeBatch();
 
-                    stmt.executeBatch();
-
-                    return null;
-                }
-                finally {
-                    stmt.close();
-                }
+                return null;
             }
         }, BatchUpdateException.class, "COPY command cannot be executed in batch mode.");
     }
