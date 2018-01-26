@@ -6,9 +6,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.dlc.dataset.DLCDataset;
-import org.apache.ignite.ml.dlc.dataset.transformer.DLCTransformers;
-import org.apache.ignite.ml.dlc.impl.cache.CacheBasedDLCFactory;
+import org.apache.ignite.ml.dataset.DatasetFactory;
+import org.apache.ignite.ml.dataset.api.SimpleDataset;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /** */
@@ -49,12 +48,7 @@ public class DLCPlayground extends GridCommonAbstractTest {
         for (int i = 0; i < 40; i++)
             cache.put(i, i);
 
-        DLCDataset<Integer, Integer, ?> dataset = new CacheBasedDLCFactory<>(ignite, cache)
-            .createDLC(
-                (data, size) -> null,
-                DLCTransformers.upstreamToDataset((k, v) -> new double[]{1, 2, 3}, 3),
-                DLCDataset::new
-            );
+        SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, cache, (k, v) -> new double[] { 42.0 }, 1);
 
         // Calculation of the mean value. This calculation will be performed in map-reduce manner.
         double[] mean = dataset.mean();

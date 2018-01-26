@@ -172,7 +172,7 @@ public class ColumnDecisionTreeTrainer<D extends ContinuousRegionInfo> implement
     }
 
     /**
-     * Utility class used to build decision tree. Basically it is pointer to leaf node.
+     * Utility class used to withDataBuilder decision tree. Basically it is pointer to leaf node.
      */
     private static class TreeTip {
         /** */
