@@ -17,8 +17,11 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.testframework.GridTestUtils;
 
@@ -38,7 +41,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
 /**
  * COPY statement tests.
  */
-public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTest {
+public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractDmlStatementSelfTest {
     public static final String TBL_NAME = "Person";
 
     /** JDBC statement. */
@@ -74,15 +77,28 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
     private CacheConfiguration cacheConfigWithIndexedTypes() {
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
 
-        cache.setCacheMode(PARTITIONED);
-        cache.setBackups(1);
+        cache.setCacheMode(cacheMode());
+        cache.setAtomicityMode(atomicityMode());
         cache.setWriteSynchronizationMode(FULL_SYNC);
+
+        if (cacheMode() == PARTITIONED)
+            cache.setBackups(1);
+
+        if (nearCache())
+            cache.setNearConfiguration(new NearCacheConfiguration());
+
         cache.setIndexedTypes(
             String.class, Person.class
         );
 
         return cache;
     }
+
+    protected abstract boolean nearCache();
+
+    protected abstract CacheAtomicityMode atomicityMode();
+
+    protected abstract CacheMode cacheMode();
 
     /**
      * Creates cache configuration with {@link QueryEntity} created
