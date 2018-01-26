@@ -373,8 +373,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)grp.shared().database();
 
                                 locPart.restoreState(db.readPartitionState(grp, locPart.id()));
-
-                                needRefresh = true;
                             }
                             else {
                                 boolean owned = locPart.own();
@@ -386,6 +384,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                     log.debug("Owned partition for oldest node [grp=" + grp.cacheOrGroupName() +
                                     ", part=" + locPart + ']');
                             }
+
+                            needRefresh = true;
 
                             updateSeq = updateLocal(p, locPart.state(), updateSeq, affVer);
                         }
