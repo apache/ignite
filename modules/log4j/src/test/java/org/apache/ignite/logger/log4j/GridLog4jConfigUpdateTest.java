@@ -20,6 +20,7 @@ package org.apache.ignite.logger.log4j;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.Date;
 import junit.framework.TestCase;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.log4j.helpers.FileWatchdog;
@@ -118,14 +119,19 @@ public class GridLog4jConfigUpdateTest extends TestCase {
         // Install INFO config.
         mainCfgFile.getParentFile().mkdirs();
         Files.copy(infoCfgFile.toPath(), mainCfgFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        mainCfgFile.setLastModified(new Date().getTime());
 
         Log4JLogger log = logSupplier.get(mainCfgFile);
 
         log.info("Accepted info");
         log.debug("Ignored debug");
 
+        // Wait a bit before copying the file so that new modification date is guaranteed to be different.
+        Thread.sleep(100);
+
         // Replace current config with DEBUG config.
         Files.copy(debugCfgFile.toPath(), mainCfgFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        mainCfgFile.setLastModified(new Date().getTime());
 
         // Wait for the update to happen.
         Thread.sleep(delay);
