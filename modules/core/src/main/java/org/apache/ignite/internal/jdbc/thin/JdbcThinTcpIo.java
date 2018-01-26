@@ -120,7 +120,7 @@ public class JdbcThinTcpIo {
     }
 
     /**
-     * @param timeout socket connection timeout in ms.
+     * @param timeout Socket connection timeout in ms.
      * @throws SQLException On connection error or reject.
      * @throws IOException On IO error in handshake.
      */
@@ -153,8 +153,8 @@ public class JdbcThinTcpIo {
 
     /**
      * Connect to host.
-     * @param addr address.
-     * @param timeout socket connection timeout in ms.
+     * @param addr Address.
+     * @param timeout Socket connection timeout in ms.
      * @throws IOException On IO error.
      * @throws IgniteCheckedException On connection reject.
      */
@@ -169,7 +169,7 @@ public class JdbcThinTcpIo {
 
         sock.setTcpNoDelay(connProps.isTcpNoDelay());
 
-        sock.connect(new InetSocketAddress(addr, connProps.getPort()),timeout);
+        sock.connect(new InetSocketAddress(addr, connProps.getPort()), timeout);
 
         endpoint = new IpcClientTcpEndpoint(sock);
 
@@ -180,7 +180,7 @@ public class JdbcThinTcpIo {
     /**
      * Get all addresses by host name.
      * @param host Host name.
-     * @return addresses.
+     * @return Addresses.
      */
     protected InetAddress[] getAllAddressesByHost(String host) throws UnknownHostException {
         return InetAddress.getAllByName(host);

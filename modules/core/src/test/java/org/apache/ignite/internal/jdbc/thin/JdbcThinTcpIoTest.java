@@ -31,10 +31,10 @@ import java.sql.SQLException;
  */
 @SuppressWarnings("ThrowableNotThrown")
 public class JdbcThinTcpIoTest extends GridCommonAbstractTest {
-    /** Server port range */
+    /** Server port range. */
     private static final int[] SERVER_PORT_RANGE = {59000, 59020};
 
-    /** Inaccessible addresses */
+    /** Inaccessible addresses. */
     private static final String INACCESSIBLE_ADDRESSES[] = {"123.45.67.89", "123.45.67.90"};
 
     /** Create test server socket. */
@@ -49,7 +49,13 @@ public class JdbcThinTcpIoTest extends GridCommonAbstractTest {
         return null;
     }
 
-    /** Create JdbcThinTcpIo instance. */
+    /**
+     * Create JdbcThinTcpIo instance.
+     * @param addrs IP-addresses.
+     * @param port Server socket port.
+     * @return JdbcThinTcpIo instance.
+     * @throws SQLException On connection error or reject.
+     */
     private JdbcThinTcpIo createTcpIo(String[] addrs, int port) throws SQLException {
         ConnectionPropertiesImpl connProps = new ConnectionPropertiesImpl();
 
@@ -74,7 +80,11 @@ public class JdbcThinTcpIoTest extends GridCommonAbstractTest {
         };
     }
 
-    /** Test connection to host which has inaccessible A-records. */
+    /**
+     * Test connection to host which has inaccessible A-records.
+     * @throws SQLException On connection error or reject.
+     * @throws IOException On IO error in handshake.
+     */
     public void testHostWithManyAddresses() throws SQLException, IOException {
         try(ServerSocket sock = createServerSocket()) {
             String[] addrs = {INACCESSIBLE_ADDRESSES[0], "127.0.0.1", INACCESSIBLE_ADDRESSES[1]};
@@ -90,7 +100,11 @@ public class JdbcThinTcpIoTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Test exception text (should contain inaccessible ip addresses list). */
+    /**
+     * Test exception text (should contain inaccessible ip addresses list).
+     * @throws SQLException On connection error or reject.
+     * @throws IOException On IO error in handshake.
+     */
     public void testExceptionMessage() throws SQLException, IOException {
         try(ServerSocket sock = createServerSocket()) {
             String[] addrs = {INACCESSIBLE_ADDRESSES[0], INACCESSIBLE_ADDRESSES[1]};
@@ -99,7 +113,7 @@ public class JdbcThinTcpIoTest extends GridCommonAbstractTest {
 
             try {
                 jdbcThinTcpIo.start(500);
-                fail("Socket shouldn't be connected.");
+                fail("Socket shouldn't connect.");
             } catch(SQLException exception) {
                 String msg = exception.getMessage();
 
