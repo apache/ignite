@@ -79,6 +79,7 @@ import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
+import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
@@ -90,6 +91,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
@@ -381,6 +383,12 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** PDS mode folder name resolver, also generates consistent ID in case new folder naming is used */
     private PdsFoldersResolver pdsFolderRslvr;
 
+    /** */
+    private GridInternalSubscriptionProcessor internalSubscriptionProc;
+
+    /** Node invalidation flag. */
+    private volatile boolean invalidated;
+
     /**
      * No-arg constructor is required by externalization.
      */
@@ -434,7 +442,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService qryExecSvc,
         ExecutorService schemaExecSvc,
         @Nullable Map<String, ? extends ExecutorService> customExecSvcs,
-        List<PluginProvider> plugins
+        List<PluginProvider> plugins,
+        IgnitePredicate<String> clsFilter
     ) {
         assert grid != null;
         assert cfg != null;
@@ -460,7 +469,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.schemaExecSvc = schemaExecSvc;
         this.customExecSvcs = customExecSvcs;
 
-        marshCtx = new MarshallerContextImpl(plugins);
+        marshCtx = new MarshallerContextImpl(plugins, clsFilter);
 
         try {
             spring = SPRING.create(false);
@@ -585,6 +594,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             mappingProc = (GridMarshallerMappingProcessor)comp;
         else if (comp instanceof PdsFoldersResolver)
             pdsFolderRslvr = (PdsFoldersResolver)comp;
+        else if (comp instanceof GridInternalSubscriptionProcessor)
+            internalSubscriptionProc = (GridInternalSubscriptionProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
                 || comp instanceof PlatformPluginProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
@@ -1068,6 +1079,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         return platformProc;
     }
 
+    /** {@inheritDoc} */
+    @Override public GridInternalSubscriptionProcessor internalSubscriptionProcessor() {
+        return internalSubscriptionProc;
+    }
+
     /**
      * @param disconnected Disconnected flag.
      */
@@ -1078,6 +1094,16 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /**{@inheritDoc}*/
     @Override public PdsFoldersResolver pdsFolderResolver() {
         return pdsFolderRslvr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean invalidated() {
+        return invalidated;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void invalidate() {
+        invalidated = true;
     }
 
     /** {@inheritDoc} */

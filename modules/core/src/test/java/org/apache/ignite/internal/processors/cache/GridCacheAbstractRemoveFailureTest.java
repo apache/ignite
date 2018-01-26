@@ -156,7 +156,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testPutAndRemove() throws Exception {
-        putAndRemove(DUR, null, null);
+        putAndRemove(duration(), null, null);
     }
 
     /**
@@ -166,7 +166,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
         if (atomicityMode() != CacheAtomicityMode.TRANSACTIONAL)
             return;
 
-        putAndRemove(30_000, PESSIMISTIC, REPEATABLE_READ);
+        putAndRemove(duration(), PESSIMISTIC, REPEATABLE_READ);
     }
 
     /**
@@ -176,7 +176,12 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
         if (atomicityMode() != CacheAtomicityMode.TRANSACTIONAL)
             return;
 
-        putAndRemove(30_000, OPTIMISTIC, SERIALIZABLE);
+        putAndRemove(duration(), OPTIMISTIC, SERIALIZABLE);
+    }
+
+    /** */
+    protected long duration() {
+        return DUR;
     }
 
     /**
@@ -314,29 +319,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
             }
         });
 
-        IgniteInternalFuture<?> killFut = GridTestUtils.runAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                Thread.currentThread().setName("restart-thread");
-
-                while (!stop.get()) {
-                    U.sleep(random(KILL_DELAY.get1(), KILL_DELAY.get2()));
-
-                    killAndRestart(stop);
-
-                    CyclicBarrier barrier = cmp.get();
-
-                    if (barrier != null) {
-                        log.info("Wait data check.");
-
-                        barrier.await(60_000, TimeUnit.MILLISECONDS);
-
-                        log.info("Finished wait data check.");
-                    }
-                }
-
-                return null;
-            }
-        });
+        IgniteInternalFuture killFut = createAndRunConcurrentAction(stop, cmp);
 
         try {
             long stopTime = duration + U.currentTimeMillis() ;
@@ -408,25 +391,50 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
         log.info("Test finished. Update errors: " + errCntr.get());
     }
 
+    /** */
+    protected IgniteInternalFuture createAndRunConcurrentAction(final AtomicBoolean stop, final AtomicReference<CyclicBarrier> cmp) {
+        return GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                Thread.currentThread().setName("restart-thread");
+
+                while (!stop.get()) {
+                    U.sleep(random(KILL_DELAY.get1(), KILL_DELAY.get2()));
+
+                    killAndRestart(stop, random(1, GRID_CNT + 1));
+
+                    CyclicBarrier barrier = cmp.get();
+
+                    if (barrier != null) {
+                        log.info("Wait data check.");
+
+                        barrier.await(60_000, TimeUnit.MILLISECONDS);
+
+                        log.info("Finished wait data check.");
+                    }
+                }
+
+                return null;
+            }
+        });
+    }
+
     /**
      * @param stop Stop flag.
      * @throws Exception If failed.
      */
-    private void killAndRestart(AtomicBoolean stop) throws Exception {
+    protected void killAndRestart(AtomicBoolean stop, int nodeIdx) throws Exception {
         if (stop.get())
             return;
 
-        int idx = random(1, GRID_CNT + 1);
+        log.info("Killing node " + nodeIdx);
 
-        log.info("Killing node " + idx);
-
-        stopGrid(idx);
+        stopGrid(nodeIdx);
 
         U.sleep(random(START_DELAY.get1(), START_DELAY.get2()));
 
-        log.info("Restarting node " + idx);
+        log.info("Restarting node " + nodeIdx);
 
-        startGrid(idx);
+        startGrid(nodeIdx);
 
         if (stop.get())
             return;
@@ -475,7 +483,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
      * @param max Max possible value (exclusive).
      * @return Random value.
      */
-    private static int random(int min, int max) {
+    protected static int random(int min, int max) {
         if (max == min)
             return max;
 

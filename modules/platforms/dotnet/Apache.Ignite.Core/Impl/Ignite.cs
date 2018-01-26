@@ -84,7 +84,13 @@ namespace Apache.Ignite.Core.Impl
             LoggerLog = 20,
             GetBinaryProcessor = 21,
             ReleaseStart = 22,
-            AddCacheConfiguration = 23
+            AddCacheConfiguration = 23,
+            SetBaselineTopologyVersion = 24,
+            SetBaselineTopologyNodes = 25,
+            GetBaselineTopology = 26,
+            DisableWal = 27,
+            EnableWal = 28,
+            IsWalEnabled = 29
         }
 
         /** */
@@ -778,6 +784,64 @@ namespace Apache.Ignite.Core.Impl
         public bool IsActive()
         {
             return _prj.IsActive();
+        }
+
+        /** <inheritdoc /> */
+        public void SetBaselineTopology(long topologyVersion)
+        {
+            DoOutInOp((int) Op.SetBaselineTopologyVersion, topologyVersion);
+        }
+
+        /** <inheritdoc /> */
+        public void SetBaselineTopology(IEnumerable<IBaselineNode> nodes)
+        {
+            IgniteArgumentCheck.NotNull(nodes, "nodes");
+
+            DoOutOp((int) Op.SetBaselineTopologyNodes, w =>
+            {
+                var pos = w.Stream.Position;
+                w.WriteInt(0);
+                var cnt = 0;
+
+                foreach (var node in nodes)
+                {
+                    cnt++;
+                    BaselineNode.Write(w, node);
+                }
+
+                w.Stream.WriteInt(pos, cnt);
+            });
+        }
+
+        /** <inheritdoc /> */
+        public ICollection<IBaselineNode> GetBaselineTopology()
+        {
+            return DoInOp((int) Op.GetBaselineTopology,
+                s => Marshaller.StartUnmarshal(s).ReadCollectionRaw(r => (IBaselineNode) new BaselineNode(r)));
+        }
+
+        /** <inheritdoc /> */
+        public void DisableWal(string cacheName)
+        {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
+
+            DoOutOp((int) Op.DisableWal, w => w.WriteString(cacheName));
+        }
+
+        /** <inheritdoc /> */
+        public void EnableWal(string cacheName)
+        {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
+            
+            DoOutOp((int) Op.EnableWal, w => w.WriteString(cacheName));
+        }
+
+        /** <inheritdoc /> */
+        public bool IsWalEnabled(string cacheName)
+        {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
+
+            return DoOutOp((int) Op.IsWalEnabled, w => w.WriteString(cacheName)) == True;
         }
 
         /** <inheritdoc /> */

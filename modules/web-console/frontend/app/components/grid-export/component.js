@@ -33,21 +33,31 @@ export default {
 
         export() {
             const data = [];
-            const columnHeaders = this.uiGridExporterService.getColumnHeaders(this.gridApi.grid, this.uiGridExporterConstants.VISIBLE);
+            const grid = this.gridApi.grid;
+            const exportColumnHeaders = this.uiGridExporterService.getColumnHeaders(grid, this.uiGridExporterConstants.VISIBLE);
 
-            _.forEach(this.gridApi.grid.rows, (row) => {
+            grid.rows.forEach((row) => {
                 if (!row.visible)
                     return;
 
                 const values = [];
-                _.forEach(columnHeaders, ({ name }) => {
-                    values.push({ value: row.entity[name] });
+
+                exportColumnHeaders.forEach((exportCol) => {
+                    const col = grid.columns.find(({ field }) => field === exportCol.name);
+
+                    if (!col || !col.visible || col.colDef.exporterSuppressExport === true)
+                        return;
+
+                    const value = grid.getCellValue(row, col);
+
+                    values.push({ value });
                 });
 
                 data.push(values);
             });
 
-            const csvContent = this.uiGridExporterService.formatAsCsv(columnHeaders, data, this.CSV.getSeparator());
+            const csvContent = this.uiGridExporterService.formatAsCsv(exportColumnHeaders, data, this.CSV.getSeparator());
+
             this.uiGridExporterService.downloadFile(this.gridApi.grid.options.exporterCsvFilename, csvContent, this.gridApi.grid.options.exporterOlderExcelCompatibility);
         }
     },
