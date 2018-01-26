@@ -100,7 +100,7 @@ public class Log4j2ConfigUpdateTest extends TestCase {
         System.out.println("INFO config: " + infoCfgFile);
         System.out.println("DEBUG config: " + debugCfgFile);
         System.out.println("Main config: " + mainCfgFile);
-        System.out.println("Log file: " + infoCfgFile);
+        System.out.println("Log file: " + logFile);
 
         if (logFile.delete())
             System.out.println("Old log file was deleted.");
