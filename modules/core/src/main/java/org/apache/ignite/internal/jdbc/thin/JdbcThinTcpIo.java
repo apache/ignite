@@ -107,7 +107,7 @@ public class JdbcThinTcpIo {
      *
      * @param connProps Connection properties.
      */
-    JdbcThinTcpIo(ConnectionProperties connProps) {
+    public JdbcThinTcpIo(ConnectionProperties connProps) {
         this.connProps = connProps;
     }
 
