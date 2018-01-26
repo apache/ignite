@@ -96,7 +96,14 @@ public class Log4j2ConfigUpdateTest extends TestCase {
         File debugCfgFile = new File(U.getIgniteHome(), LOG_CONFIG_DEBUG);
         File mainCfgFile = new File(U.getIgniteHome(), LOG_CONFIG_MAIN);
         File logFile = new File(U.getIgniteHome(), LOG_DEST);
-        logFile.delete();
+
+        System.out.println("INFO config: " + infoCfgFile);
+        System.out.println("DEBUG config: " + debugCfgFile);
+        System.out.println("Main config: " + mainCfgFile);
+        System.out.println("Log file: " + infoCfgFile);
+
+        if (logFile.delete())
+            System.out.println("Old log file was deleted.");
 
         // Install INFO config.
         mainCfgFile.getParentFile().mkdirs();
