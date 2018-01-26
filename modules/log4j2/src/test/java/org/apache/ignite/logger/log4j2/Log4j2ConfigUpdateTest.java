@@ -47,6 +47,12 @@ public class Log4j2ConfigUpdateTest extends TestCase {
     private static final long UPDATE_DELAY = 10000;
 
     /**
+     * Time to wait before updating the configuration file.
+     * Should be large enough to be recorded on different file systems.
+     */
+    private static final int DELAY_BEFORE_MODIFICATION = 5000;
+
+    /**
      * Check that changing log4j2 config file causes the logger configuration to be updated.
      * String-accepting constructor is used.
      */
@@ -117,7 +123,7 @@ public class Log4j2ConfigUpdateTest extends TestCase {
         log.debug("Ignored debug");
 
         // Wait a bit before copying the file so that new modification date is guaranteed to be different.
-        Thread.sleep(100);
+        Thread.sleep(DELAY_BEFORE_MODIFICATION);
 
         // Replace current config with DEBUG config.
         Files.copy(debugCfgFile.toPath(), mainCfgFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
