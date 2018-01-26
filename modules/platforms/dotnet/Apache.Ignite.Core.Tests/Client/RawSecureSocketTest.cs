@@ -18,17 +18,11 @@
 namespace Apache.Ignite.Core.Tests.Client
 {
     using System;
-    using System.Collections;
     using System.IO;
     using System.Net.Security;
     using System.Net.Sockets;
-    using System.Security;
-    using System.Security.AccessControl;
     using System.Security.Authentication;
-    using System.Security.Cryptography;
     using System.Security.Cryptography.X509Certificates;
-    using System.Security.Principal;
-    using System.Text;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using NUnit.Framework;
