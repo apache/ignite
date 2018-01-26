@@ -65,10 +65,12 @@ import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -127,6 +129,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
     /** */
     private final JdkMarshaller marsh = new JdkMarshaller();
+
+    /** Minimal IgniteProductVersion supporting BaselineTopology */
+    private static final IgniteProductVersion MIN_BLT_SUPPORTING_VER = IgniteProductVersion.fromString("2.4.0");
 
     /** Listener. */
     private final GridLocalEventListener lsr = new GridLocalEventListener() {
@@ -416,6 +421,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             U.log(log, "Received " + prettyStr(msg.activate()) + " request with BaselineTopology" +
                 (msg.baselineTopology() == null ? ": null"
                     : "[id=" + msg.baselineTopology().id() + "]"));
+
+        if (msg.baselineTopology() != null)
+            compatibilityMode = false;
 
         if (state.transition()) {
             if (isApplicable(msg, state)) {
@@ -713,7 +721,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         if (inMemoryMode)
             return changeGlobalState0(activate, null, false);
 
-        BaselineTopology newBlt = compatibilityMode ? null :
+        BaselineTopology newBlt = (compatibilityMode && !forceChangeBaselineTopology) ? null :
             calculateNewBaselineTopology(activate, baselineNodes, forceChangeBaselineTopology);
 
         return changeGlobalState0(activate, newBlt, forceChangeBaselineTopology);
@@ -783,11 +791,39 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         return bltNodes;
     }
 
+    /**
+     * Verifies all nodes in current cluster topology support BaselineTopology feature
+     * so compatibilityMode flag is enabled to reset.
+     *
+     * @param discoCache
+     */
+    private void verifyBaselineTopologySupport(DiscoCache discoCache) {
+        if (discoCache.minimumServerNodeVersion().compareTo(MIN_BLT_SUPPORTING_VER) < 0) {
+            SB sb = new SB("Cluster contains nodes that don't support BaselineTopology: [");
+
+            for (ClusterNode cn : discoCache.serverNodes()) {
+                if (cn.version().compareTo(MIN_BLT_SUPPORTING_VER) < 0)
+                    sb
+                        .a("[")
+                        .a(cn.consistentId())
+                        .a(":")
+                        .a(cn.version())
+                        .a("], ");
+            }
+
+            sb.d(sb.length() - 2, sb.length());
+
+            throw new IgniteException(sb.a("]").toString());
+        }
+    }
+
     /** */
     private IgniteInternalFuture<?> changeGlobalState0(final boolean activate,
         BaselineTopology blt, boolean forceChangeBaselineTopology) {
         if (ctx.isDaemon() || ctx.clientNode()) {
             GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
+
+            verifyBaselineTopologySupport(ctx.discovery().discoCache());
 
             sendComputeChangeGlobalState(activate, blt, forceChangeBaselineTopology, fut);
 
