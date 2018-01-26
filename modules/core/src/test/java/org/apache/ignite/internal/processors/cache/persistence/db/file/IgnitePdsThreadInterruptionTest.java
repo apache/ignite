@@ -135,7 +135,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
         Runnable clo = new Runnable() {
             @Override
             public void run() {
-                cache.get(ThreadLocalRandom8.current().nextInt(maxKey / 5));
+                cache.get(ThreadLocalRandom.current().nextInt(maxKey / 5));
             }
         };
         for (int i = 0; i < workers.length; i++) {
