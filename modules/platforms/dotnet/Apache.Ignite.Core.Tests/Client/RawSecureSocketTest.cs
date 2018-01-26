@@ -133,7 +133,7 @@ namespace Apache.Ignite.Core.Tests.Client
             // 2) Certificates are applied in Java style on server, pfx on .NET client?
             // What do we add to IgniteClientConfiguration? 
 
-            return new X509Certificate2(@"s:\W\incubator-ignite\modules\platforms\cpp\odbc-test\config\ssl\cert.pfx", "123456");
+            return new X509Certificate2(@"Config\thin-client-cert.pfx", "123456");
         }
 
         /// <summary>
