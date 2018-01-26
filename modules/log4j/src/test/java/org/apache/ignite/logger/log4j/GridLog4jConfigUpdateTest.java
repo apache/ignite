@@ -50,7 +50,7 @@ public class GridLog4jConfigUpdateTest extends TestCase {
             @Override public Log4JLogger get(File cfgFile) throws Exception {
                 return new Log4JLogger(cfgFile.getPath(), 10);
             }
-        }, 20); // use larger delay to avoid relying on exact timing
+        }, 1000); // use larger delay to avoid relying on exact timing
     }
 
     /**
@@ -76,7 +76,7 @@ public class GridLog4jConfigUpdateTest extends TestCase {
             @Override public Log4JLogger get(File cfgFile) throws Exception {
                 return new Log4JLogger(cfgFile, 10);
             }
-        }, 20); // use larger delay to avoid relying on exact timing
+        }, 1000); // use larger delay to avoid relying on exact timing
     }
 
     /**
@@ -89,7 +89,7 @@ public class GridLog4jConfigUpdateTest extends TestCase {
             @Override public Log4JLogger get(File cfgFile) throws Exception {
                 return new Log4JLogger(cfgFile.toURI().toURL(), 10);
             }
-        }, 20); // use larger delay to avoid relying on exact timing
+        }, 1000); // use larger delay to avoid relying on exact timing
     }
 
     /**
