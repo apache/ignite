@@ -69,6 +69,7 @@ public class IndexStoragePageMemoryImplTest extends IndexStorageSelfTest {
             null,
             new NoOpPageStoreManager(),
             new NoOpWALManager(),
+            null,
             new IgniteCacheDatabaseSharedManager(),
             null,
             null,

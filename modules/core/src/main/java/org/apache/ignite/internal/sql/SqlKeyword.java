@@ -27,6 +27,9 @@ import java.util.HashSet;
  * SQL keyword constants.
  */
 public class SqlKeyword {
+    /** Keyword: ALTER. */
+    public static final String ALTER = "ALTER";
+
     /** Keyword: ASC. */
     public static final String ASC = "ASC";
 
@@ -135,6 +138,9 @@ public class SqlKeyword {
     /** Keyword: KEY. */
     public static final String KEY = "KEY";
 
+    /** Keyword: LOGGING. */
+    public static final String LOGGING = "LOGGING";
+
     /** Keyword: LONGVARCHAR. */
     public static final String LONGVARCHAR = "LONGVARCHAR";
 
@@ -143,6 +149,9 @@ public class SqlKeyword {
 
     /** Keyword: NCHAR. */
     public static final String NCHAR = "NCHAR";
+
+    /** Keyword: NOLOGGING. */
+    public static final String NOLOGGING = "NOLOGGING";
 
     /** Keyword: NOT. */
     public static final String NOT = "NOT";

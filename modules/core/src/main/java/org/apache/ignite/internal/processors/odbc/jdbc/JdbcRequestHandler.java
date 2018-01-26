@@ -378,7 +378,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             qry.setSchema(schemaName);
 
-            List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFieldsNoCache(qry, true,
+            List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFields(qry, true,
                 protocolVer.compareTo(VER_2_3_0) < 0);
 
             FieldsQueryCursor<List<?>> fieldsCur = (FieldsQueryCursor<List<?>>) results.get(0);
@@ -618,7 +618,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private void executeBatchedQuery(SqlFieldsQueryEx qry, List<Integer> updCntsAcc,
         IgniteBiTuple<Integer, String> firstErr) {
         try {
-            List<FieldsQueryCursor<List<?>>> qryRes = ctx.query().querySqlFieldsNoCache(qry, true, true);
+            List<FieldsQueryCursor<List<?>>> qryRes = ctx.query().querySqlFields(qry, true, true);
 
             for (FieldsQueryCursor<List<?>> cur : qryRes) {
                 assert !((QueryCursorImpl)cur).isQuery();

@@ -1273,7 +1273,7 @@ namespace ignite
                 //     resulting from the execution of the statement for the entire array of parameters. This is
                 //     conceptually equivalent to treating the statement together with the complete parameter array as
                 //     one atomic unit. Errors are handled the same as if one statement were executed.
-                intParams[SQL_PARAM_ARRAY_ROW_COUNTS] = SQL_PARC_NO_BATCH;
+                intParams[SQL_PARAM_ARRAY_ROW_COUNTS] = SQL_PARC_BATCH;
 #endif // SQL_PARAM_ARRAY_ROW_COUNTS
 
 #ifdef SQL_PARAM_ARRAY_SELECTS

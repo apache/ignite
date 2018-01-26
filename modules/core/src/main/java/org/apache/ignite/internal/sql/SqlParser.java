@@ -17,18 +17,22 @@
 
 package org.apache.ignite.internal.sql;
 
+import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.sql.SqlKeyword.ALTER;
+import static org.apache.ignite.internal.sql.SqlKeyword.COPY;
 import static org.apache.ignite.internal.sql.SqlKeyword.CREATE;
 import static org.apache.ignite.internal.sql.SqlKeyword.DROP;
 import static org.apache.ignite.internal.sql.SqlKeyword.HASH;
 import static org.apache.ignite.internal.sql.SqlKeyword.INDEX;
 import static org.apache.ignite.internal.sql.SqlKeyword.PRIMARY;
 import static org.apache.ignite.internal.sql.SqlKeyword.SPATIAL;
+import static org.apache.ignite.internal.sql.SqlKeyword.TABLE;
 import static org.apache.ignite.internal.sql.SqlKeyword.UNIQUE;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnsupportedIfMatchesKeyword;
@@ -101,10 +105,13 @@ public class SqlParser {
 
                             break;
 
-                        case SqlKeyword.COPY:
+                        case COPY:
                             cmd = processCopy();
 
                             break;
+
+                        case ALTER:
+                            cmd = processAlter();
                     }
 
                     if (cmd != null) {
@@ -115,7 +122,7 @@ public class SqlParser {
                         return cmd;
                     }
                     else
-                        throw errorUnexpectedToken(lex, CREATE, DROP);
+                        throw errorUnexpectedToken(lex, CREATE, DROP, COPY, ALTER);
 
                 case QUOTED:
                 case MINUS:
@@ -192,5 +199,28 @@ public class SqlParser {
         }
 
         throw errorUnexpectedToken(lex, INDEX);
+    }
+
+    /**
+     * Process ALTER keyword.
+     *
+     * @return Command.
+     */
+    private SqlCommand processAlter() {
+        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
+            SqlCommand cmd = null;
+
+            switch (lex.token()) {
+                case TABLE:
+                    cmd = new SqlAlterTableCommand();
+
+                    break;
+            }
+
+            if (cmd != null)
+                return cmd.parse(lex);
+        }
+
+        throw errorUnexpectedToken(lex, TABLE);
     }
 }

@@ -74,7 +74,7 @@ public class MnistLocal {
             2000);
 
         MultilayerPerceptron mdl = new MLPLocalBatchTrainer<>(LossFunctions.MSE,
-            () -> new RPropUpdateCalculator<>(0.1, 1.2, 0.5),
+            () -> new RPropUpdateCalculator(0.1, 1.2, 0.5),
             1E-7,
             200).
             train(input);
@@ -89,5 +89,7 @@ public class MnistLocal {
 
         Tracer.showAscii(truth);
         Tracer.showAscii(predicted);
+
+        X.println("Accuracy: " + VectorUtils.zipWith(predicted, truth, (x, y) -> x.equals(y) ? 1.0 : 0.0).sum() / truth.size() * 100 + "%.");
     }
 }
