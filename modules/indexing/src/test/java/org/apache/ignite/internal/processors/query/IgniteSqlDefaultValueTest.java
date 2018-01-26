@@ -228,7 +228,7 @@ public class IgniteSqlDefaultValueTest extends GridCommonAbstractTest {
      * @return Results set.
      */
     private List<List<?>> sql(String sql, Object ... args) {
-        return grid(NODE_CLIENT).context().query().querySqlFieldsNoCache(
+        return grid(NODE_CLIENT).context().query().querySqlFields(
             new SqlFieldsQuery(sql).setArgs(args), false).getAll();
     }
 }

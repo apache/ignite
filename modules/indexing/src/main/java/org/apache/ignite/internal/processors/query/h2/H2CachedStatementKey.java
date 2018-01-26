@@ -23,9 +23,9 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * H2 DML plan key.
+ * H2 cached statement key.
  */
-public class H2DmlPlanKey {
+class H2CachedStatementKey {
     /** Schema name. */
     private final String schemaName;
 
@@ -41,11 +41,38 @@ public class H2DmlPlanKey {
      * @param schemaName Schema name.
      * @param sql SQL.
      */
-    public H2DmlPlanKey(String schemaName, String sql, boolean loc, SqlFieldsQuery fieldsQry) {
+    H2CachedStatementKey(String schemaName, String sql) {
+        this(schemaName, sql, null, false);
+    }
+
+    /**
+     * Build key with details relevant to DML plans cache.
+     *
+     * @param schemaName Schema name.
+     * @param sql SQL.
+     * @param fieldsQry Query with flags.
+     * @param loc DML {@code SELECT} Locality flag.
+     * @return Statement key.
+     * @see UpdatePlanBuilder
+     * @see DmlStatementsProcessor#getPlanForStatement
+     */
+    static H2CachedStatementKey forDmlStatement(String schemaName, String sql, SqlFieldsQuery fieldsQry, boolean loc) {
+        return new H2CachedStatementKey(schemaName, sql, fieldsQry, loc);
+    }
+
+    /**
+     * Full-fledged constructor.
+     *
+     * @param schemaName Schema name.
+     * @param sql SQL.
+     * @param fieldsQry Query with flags.
+     * @param loc DML {@code SELECT} Locality flag.
+     */
+    private H2CachedStatementKey(String schemaName, String sql, SqlFieldsQuery fieldsQry, boolean loc) {
         this.schemaName = schemaName;
         this.sql = sql;
 
-        if (loc || !UpdatePlanBuilder.isSkipReducerOnUpdateQuery(fieldsQry))
+        if (fieldsQry == null || loc || !UpdatePlanBuilder.isSkipReducerOnUpdateQuery(fieldsQry))
             this.flags = 0; // flags only relevant for server side updates.
         else {
             this.flags = (byte)(1 +
@@ -69,13 +96,13 @@ public class H2DmlPlanKey {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        H2DmlPlanKey other = (H2DmlPlanKey)o;
+        H2CachedStatementKey other = (H2CachedStatementKey)o;
 
         return F.eq(sql, other.sql) && F.eq(schemaName, other.schemaName) && flags == other.flags;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(H2DmlPlanKey.class, this);
+        return S.toString(H2CachedStatementKey.class, this);
     }
 }

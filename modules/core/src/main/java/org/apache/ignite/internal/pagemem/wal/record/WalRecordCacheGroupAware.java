@@ -15,28 +15,14 @@
  * limitations under the License.
  */
 
-import { suite, test, setup } from 'mocha';
+package org.apache.ignite.internal.pagemem.wal.record;
 
-suite('ExampleTestSuite', () => {
-    setup(() => {
-        // browser.get('http://localhost:9000/');
-    });
-
-    test('initially has a greeting', (done) => {
-        done();
-
-        // element(by.model('ui.email')).sendKeys('jhon@doe.com');
-    });
-
-    test('initially has a greeting', (done) => {
-        done();
-
-        // element(by.model('ui.email')).sendKeys('jhon@doe.com');
-    });
-
-    test('initially has a greeting', (done) => {
-        done();
-
-        // element(by.model('ui.email')).sendKeys('jhon@doe.com');
-    });
-});
+/**
+ * WAL record related to specific cache group.
+ */
+public interface WalRecordCacheGroupAware {
+    /**
+     * @return Cache group ID.
+     */
+    public int groupId();
+}
