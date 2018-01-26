@@ -211,7 +211,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
             throw new IgniteCheckedException("Configuration XML file for Log4j must be specified.");
 
         if (watchDelay < 0)
-            throw new IgniteCheckedException("watchDelay can't be negative (got " + watchDelay + ").");
+            throw new IgniteCheckedException("watchDelay can't be negative: " + watchDelay);
 
         this.cfg = path;
 
@@ -266,7 +266,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
             throw new IgniteCheckedException("Log4j configuration path was not found or is a directory: " + cfgFile);
 
         if (watchDelay < 0)
-            throw new IgniteCheckedException("watchDelay can't be negative (got " + watchDelay + ").");
+            throw new IgniteCheckedException("watchDelay can't be negative: " + watchDelay);
 
         cfg = cfgFile.getAbsolutePath();
 
@@ -313,7 +313,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
             throw new IgniteCheckedException("Configuration XML file for Log4j must be specified.");
 
         if (watchDelay < 0)
-            throw new IgniteCheckedException("watchDelay can't be negative (got " + watchDelay + ").");
+            throw new IgniteCheckedException("watchDelay can't be negative: " + watchDelay);
 
         cfg = cfgUrl.getPath();
 
