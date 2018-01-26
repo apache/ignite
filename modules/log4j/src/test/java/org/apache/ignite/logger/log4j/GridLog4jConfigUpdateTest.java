@@ -50,7 +50,7 @@ public class GridLog4jConfigUpdateTest extends TestCase {
             @Override public Log4JLogger get(File cfgFile) throws Exception {
                 return new Log4JLogger(cfgFile.getPath(), 10);
             }
-        }, 1000); // use larger delay to avoid relying on exact timing
+        }, 5000); // use larger delay to avoid relying on exact timing
     }
 
     /**
@@ -63,7 +63,7 @@ public class GridLog4jConfigUpdateTest extends TestCase {
             @Override public Log4JLogger get(File cfgFile) throws Exception {
                 return new Log4JLogger(cfgFile.getPath());
             }
-        }, FileWatchdog.DEFAULT_DELAY + 10000); // use larger delay to avoid relying on exact timing
+        }, FileWatchdog.DEFAULT_DELAY + 5000); // use larger delay to avoid relying on exact timing
     }
 
     /**
@@ -76,7 +76,7 @@ public class GridLog4jConfigUpdateTest extends TestCase {
             @Override public Log4JLogger get(File cfgFile) throws Exception {
                 return new Log4JLogger(cfgFile, 10);
             }
-        }, 1000); // use larger delay to avoid relying on exact timing
+        }, 5000); // use larger delay to avoid relying on exact timing
     }
 
     /**
@@ -89,7 +89,7 @@ public class GridLog4jConfigUpdateTest extends TestCase {
             @Override public Log4JLogger get(File cfgFile) throws Exception {
                 return new Log4JLogger(cfgFile.toURI().toURL(), 10);
             }
-        }, 1000); // use larger delay to avoid relying on exact timing
+        }, 5000); // use larger delay to avoid relying on exact timing
     }
 
     /**
@@ -120,7 +120,7 @@ public class GridLog4jConfigUpdateTest extends TestCase {
         // Replace current config with DEBUG config.
         Files.copy(debugCfgFile.toPath(), mainCfgFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
-        // Wait for the update to happen, use default delay.
+        // Wait for the update to happen.
         Thread.sleep(delay);
 
         log.debug("Accepted debug");

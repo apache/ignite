@@ -43,7 +43,7 @@ public class Log4j2ConfigUpdateTest extends TestCase {
      * Time to wait before logger configuration changes.
      * This value is made greater than the `monitorInterval` in the config files to avoid relying on exact timing.
      */
-    private static final long UPDATE_DELAY = 6000;
+    private static final long UPDATE_DELAY = 10000;
 
     /**
      * Check that changing log4j2 config file causes the logger configuration to be updated.
@@ -110,7 +110,7 @@ public class Log4j2ConfigUpdateTest extends TestCase {
         // Replace current config with DEBUG config.
         Files.copy(debugCfgFile.toPath(), mainCfgFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
-        // Wait for the update to happen, use default delay.
+        // Wait for the update to happen.
         Thread.sleep(UPDATE_DELAY);
 
         log.debug("Accepted debug");
