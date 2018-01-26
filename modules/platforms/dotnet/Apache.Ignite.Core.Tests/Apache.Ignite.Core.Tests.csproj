@@ -127,6 +127,7 @@
     <Compile Include="Client\Cache\BinaryBuilderTest.cs" />
     <Compile Include="Client\Cache\CacheClientAsyncWrapper.cs" />
     <Compile Include="Client\Cache\CacheTest.cs" />
+    <Compile Include="Client\Cache\CacheTestSsl.cs" />
     <Compile Include="Client\Cache\CacheTestAsync.cs" />
     <Compile Include="Client\Cache\CacheTestKeepBinary.cs" />
     <Compile Include="Client\Cache\CacheTestNoMeta.cs" />
