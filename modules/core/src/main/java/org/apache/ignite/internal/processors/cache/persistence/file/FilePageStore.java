@@ -337,6 +337,8 @@ public class FilePageStore implements PageStore {
             assert pageBuf.capacity() == pageSize;
             assert pageBuf.position() == 0;
             assert pageBuf.order() == ByteOrder.nativeOrder();
+            assert off <= (allocated.get() - headerSize()) : "calculatedOffset=" + off +
+                ", allocated=" + allocated.get() + ", headerSize="+headerSize();
 
             int len = pageSize;
 
@@ -369,7 +371,9 @@ public class FilePageStore implements PageStore {
                     throw new IgniteDataIntegrityViolationException("Failed to read page (CRC validation failed) " +
                         "[id=" + U.hexLong(pageId) + ", off=" + (off - pageSize) +
                         ", file=" + cfgFile.getAbsolutePath() + ", fileSize=" + fileIO.size() +
-                        ", savedCrc=" + U.hexInt(savedCrc32) + ", curCrc=" + U.hexInt(curCrc32) + "]");
+                        ", savedCrc=" + U.hexInt(savedCrc32) + ", curCrc=" + U.hexInt(curCrc32) +
+                        ", page=" + U.toHexString(pageBuf) +
+                        "]");
             }
 
             assert PageIO.getCrc(pageBuf) == 0;
@@ -475,7 +479,7 @@ public class FilePageStore implements PageStore {
 
             long off = pageOffset(pageId);
 
-            assert (off >= 0 && off + pageSize <= allocated.get() + headerSize()) || recover :
+            assert (off >= 0 && off + headerSize() <= allocated.get() ) || recover :
                 "off=" + U.hexLong(off) + ", allocated=" + U.hexLong(allocated.get()) + ", pageId=" + U.hexLong(pageId);
 
             assert pageBuf.capacity() == pageSize;
