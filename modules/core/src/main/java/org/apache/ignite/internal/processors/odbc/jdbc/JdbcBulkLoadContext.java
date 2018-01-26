@@ -19,15 +19,24 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import org.apache.ignite.internal.processors.bulkload.BulkLoadContext;
 
-/** FIXME SHQ */
+/** A wrapper class for a core {@link BulkLoadContext}, which adds JDBC-specific state. */
 public class JdbcBulkLoadContext {
 
+    /** Result of a parsing the COPY command to send to the client. */
     private final JdbcBulkLoadBatchRequestResult cmdParsingResult;
 
+    /** Core bulk load context. */
     private final BulkLoadContext loadContext;
 
+    /** Updates counter. */
     private int updateCnt;
 
+    /**
+     * Creates the JDBC bulk load context.
+     *
+     * @param cmdParsingResult Result of a parsing the COPY command to send to the client.
+     * @param context Core bulk load context.
+     */
     public JdbcBulkLoadContext(JdbcBulkLoadBatchRequestResult cmdParsingResult, BulkLoadContext context) {
         this.cmdParsingResult = cmdParsingResult;
         loadContext = context;
@@ -35,45 +44,53 @@ public class JdbcBulkLoadContext {
     }
 
     /**
-     * Returns the queryId.
+     * Returns the query ID.
      *
-     * @return queryId.
+     * @return query ID.
      */
     public long queryId() {
         return cmdParsingResult.queryId();
     }
 
     /**
-     * Returns the cmdParsingResult.
+     * Returns the result of a parsing the COPY command to send to the client.
      *
-     * @return cmdParsingResult.
+     * @return esult of a parsing the COPY command to send to the client.
      */
     public JdbcBulkLoadBatchRequestResult cmdParsingResult() {
         return cmdParsingResult;
     }
 
+    /**
+     * Increments update counter by the argument.
+     *
+     * @param incr The value to increment the update counter by.
+     */
     public void incrementUpdateCountBy(int incr) {
         updateCnt += incr;
     }
 
     /**
-     * Returns the updateCnt.
+     * Returns the update counter.
      *
-     * @return updateCnt.
+     * @return The update counter.
      */
     public int updateCnt() {
         return updateCnt;
     }
 
     /**
-     * Returns the loadContext.
+     * Returns the core bulk load context.
      *
-     * @return loadContext.
+     * @return The core bulk load context.
      */
     public BulkLoadContext loadContext() {
         return loadContext;
     }
 
+    /**
+     * Closes the context and frees the resources.
+     */
     public void close() {
         loadContext.close();
     }

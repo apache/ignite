@@ -491,7 +491,7 @@ public final class UpdatePlanBuilder {
             keyColIdx,
             valColIdx,
             null,
-            true, // FIXME SHQ: false?
+            true,
             null,
             0,
             null,
