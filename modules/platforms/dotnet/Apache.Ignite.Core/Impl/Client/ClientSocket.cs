@@ -485,8 +485,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 return stream;
             }
 
-            // TODO: Host name.
-            return cfg.SslStreamFactory.Create(stream, null);
+            return cfg.SslStreamFactory.Create(stream, cfg.Host);
         }
 
         /// <summary>
@@ -692,31 +691,6 @@ namespace Apache.Ignite.Core.Impl.Client
                 Id = id;
                 Length = length;
                 Buffer = buffer;
-            }
-        }
-
-        /// <summary>
-        /// Represents a socket connection.
-        /// </summary>
-        private struct Connection
-        {
-            /** */
-            public readonly Socket Socket;
-
-            /** */
-            public readonly Stream Stream;
-
-            /** */
-            public readonly string Host;
-
-            /// <summary>
-            /// Initializes a new instance of the <see cref="Connection"/> struct.
-            /// </summary>
-            public Connection(Socket socket, Stream stream, string host)
-            {
-                Socket = socket;
-                Stream = stream;
-                Host = host;
             }
         }
     }
