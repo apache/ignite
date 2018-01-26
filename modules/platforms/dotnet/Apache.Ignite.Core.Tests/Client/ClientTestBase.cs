@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientTestBase"/> class.
         /// </summary>
-        public ClientTestBase(int gridCount, bool ssl)
+        public ClientTestBase(int gridCount, bool ssl = false)
         {
             _gridCount = gridCount;
             _ssl = ssl;
