@@ -158,9 +158,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     /** Marshaller. */
     private final GridClientMarshaller marsh;
 
-    /** */
-    private final ThreadLocal<Boolean> keepBinariesMode;
-
     /**
      * Creates a client facade, tries to connect to remote server, in case of success starts reader thread.
      *
@@ -192,8 +189,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         GridClientMarshaller marsh,
         Byte marshId,
         GridClientTopology top,
-        Object cred,
-        ThreadLocal<Boolean> keepBinariesMode
+        Object cred
     ) throws IOException, GridClientException {
         super(clientId, srvAddr, sslCtx, top, cred);
 
@@ -202,7 +198,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         this.marsh = marsh;
         this.pingInterval = pingInterval;
         this.pingTimeout = pingTimeout;
-        this.keepBinariesMode = keepBinariesMode;
 
         SocketChannel ch = null;
         Socket sock = null;

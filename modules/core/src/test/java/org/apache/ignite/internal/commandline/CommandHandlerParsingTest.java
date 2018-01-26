@@ -29,21 +29,21 @@ import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
 
 /**
- * Tests Command Handler parsing arguments
+ * Tests Command Handler parsing arguments.
  */
 public class CommandHandlerParsingTest extends TestCase {
-
-    /** Commands. */
-    private String[] Commands = new String[] {CMD_STATE, CMD_ACTIVATE, CMD_DEACTIVATE, CMD_BASE_LINE};
+    /** Commands to test. */
+    private static final String[] Commands = new String[] {CMD_STATE, CMD_ACTIVATE, CMD_DEACTIVATE, CMD_BASE_LINE};
 
     /**
-     * test parsing and validation for user and password arguments
+     * Test parsing and validation for user and password arguments
      */
     public void testParseAndValidateUserAndPassword() {
+        CommandHandler hnd = new CommandHandler();
 
         for (String cmd : Commands) {
             try {
-                CommandHandler.parseAndValidate("--user");
+                hnd.parseAndValidate("--user");
 
                 fail("expected exception: Expected user name");
             }
@@ -52,7 +52,7 @@ public class CommandHandlerParsingTest extends TestCase {
             }
 
             try {
-                CommandHandler.parseAndValidate("--password");
+                hnd.parseAndValidate("--password");
 
                 fail("expected exception: Expected password");
             }
@@ -61,7 +61,7 @@ public class CommandHandlerParsingTest extends TestCase {
             }
 
             try {
-                CommandHandler.parseAndValidate("--user", "testUser", cmd);
+                hnd.parseAndValidate("--user", "testUser", cmd);
 
                 fail("expected exception: Both user and password should be specified");
             }
@@ -70,7 +70,7 @@ public class CommandHandlerParsingTest extends TestCase {
             }
 
             try {
-                CommandHandler.parseAndValidate("--password", "testPass", cmd);
+                hnd.parseAndValidate("--password", "testPass", cmd);
 
                 fail("expected exception: Both user and password should be specified");
             }
@@ -78,7 +78,7 @@ public class CommandHandlerParsingTest extends TestCase {
                 e.printStackTrace();
             }
 
-            Arguments args = CommandHandler.parseAndValidate("--user", "testUser", "--password", "testPass", cmd);
+            Arguments args = hnd.parseAndValidate("--user", "testUser", "--password", "testPass", cmd);
 
             assertEquals("testUser", args.user());
             assertEquals("testPass", args.password());
@@ -90,22 +90,23 @@ public class CommandHandlerParsingTest extends TestCase {
      * tests host and port arguments
      */
     public void testHostAndPort() {
+        CommandHandler hnd = new CommandHandler();
 
         for (String cmd : Commands) {
-            Arguments args = CommandHandler.parseAndValidate(cmd);
+            Arguments args = hnd.parseAndValidate(cmd);
 
             assertEquals(cmd, args.command());
             assertEquals(DFLT_HOST, args.host());
             assertEquals(DFLT_PORT, args.port());
 
-            args = CommandHandler.parseAndValidate("--port", "12345", "--host", "test-host", cmd);
+            args = hnd.parseAndValidate("--port", "12345", "--host", "test-host", cmd);
 
             assertEquals(cmd, args.command());
             assertEquals("test-host", args.host());
             assertEquals("12345", args.port());
 
             try {
-                CommandHandler.parseAndValidate("--port", "wrong-port", cmd);
+                hnd.parseAndValidate("--port", "wrong-port", cmd);
 
                 fail("expected exception: Invalid value for port:");
             }
