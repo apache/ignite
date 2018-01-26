@@ -188,10 +188,18 @@ public class DdlStatementsProcessor {
 
                 IgniteCluster cluster = ctx.grid().cluster();
 
-                if (logging)
-                    cluster.enableWal(tbl.cacheName());
-                else
-                    cluster.disableWal(tbl.cacheName());
+                if (logging) {
+                    boolean res = cluster.enableWal(tbl.cacheName());
+
+                    if (!res)
+                        throw new IgniteSQLException("Logging already enabled for table: " + cmd0.tableName());
+                }
+                else {
+                    boolean res = cluster.disableWal(tbl.cacheName());
+
+                    if (!res)
+                        throw new IgniteSQLException("Logging already disabled for table: " + cmd0.tableName());
+                }
 
                 fut = new GridFinishedFuture();
             }
