@@ -128,11 +128,8 @@ namespace Apache.Ignite.Core.Tests.Client
             // Instead we can convert from JKS directly with 
             // keytool -importkeystore -srckeystore thekeystore.jks -srcstoretype JKS -destkeystore thekeystore.pfx -deststoretype PKCS12
 
-            // TODO: What is the use case? Ask Igor.
-            // 1) User generates some certificates for server and client ?
-            // 2) Certificates are applied in Java style on server, pfx on .NET client?
-            // What do we add to IgniteClientConfiguration? 
-
+            // TODO: In C++ there is some key store with root cert, server and client certs are signed with root cert.
+            // How do we check certs against some trusted store?
             return new X509Certificate2(@"Config\thin-client-cert.pfx", "123456");
         }
 
