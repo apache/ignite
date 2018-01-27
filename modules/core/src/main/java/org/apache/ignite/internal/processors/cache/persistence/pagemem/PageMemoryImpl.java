@@ -66,7 +66,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionCountersIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridLongList;
@@ -347,8 +346,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         }
 
         if (throttleEnabled) {
-            writeThrottle = new PagesWriteThrottle(this,
-                (GridCacheDatabaseSharedManager)ctx.database());
+            //writeThrottle = new PagesWriteThrottle(this,
+            //    (GridCacheDatabaseSharedManager)ctx.database());
             //todo select policy
             writeThrottle = new PagesWriteSpeedBasedThrottle(this, (GridCacheDatabaseSharedManager)ctx.database());
         }
