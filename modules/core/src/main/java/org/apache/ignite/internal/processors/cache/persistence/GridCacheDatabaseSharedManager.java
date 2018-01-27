@@ -3441,8 +3441,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                             int cnt = adder.intValue();
                             if (cnt > 0) {
-                                log.info("Found store with [" + cnt + "] pages, which were proceed isolated in current callable, fsync()");
-                                /* storeProcessedOnlyInThisCallable.sync();
+                                /* log.info("Found store with [" + cnt + "] pages, which were proceed isolated in current callable, fsync()");
+                                storeProcessedOnlyInThisCallable.sync();
 
                                 syncedPagesCntr.addAndGet(cnt);
                                 adder.reset(); */
