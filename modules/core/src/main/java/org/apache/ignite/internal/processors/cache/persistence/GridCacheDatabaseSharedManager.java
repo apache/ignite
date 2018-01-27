@@ -130,7 +130,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
-import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -3338,6 +3337,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** */
         private ConcurrentHashMap<PageStore, LongAdder> updStores;
 
+        /** Previous updated store. */
+        private PageStore prevUpdStore;
+
+        /** Previous updated store. */
+        private PageStore storeProcessedOnlyInThisCallable;
+
         /** Total pages to write, counter may be greater than {@link #writePageIds} size. */
         private final int totalPagesToWrite;
 
@@ -3428,11 +3433,32 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     PageStore store = storeMgr.writeInternal(grpId, fullId.pageId(), tmpWriteBuf, tag, false);
 
+                    if (prevUpdStore != null && prevUpdStore != store) {
+
+                        if (storeProcessedOnlyInThisCallable != null) {
+
+                            LongAdder adder = updStores.get(storeProcessedOnlyInThisCallable);
+
+                            int cnt = adder.intValue();
+                            if (cnt > 0) {
+                                log.info("Found store with [" + cnt + "] pages, which were proceed isolated in current callable, fsync()");
+                                /* storeProcessedOnlyInThisCallable.sync();
+
+                                syncedPagesCntr.addAndGet(cnt);
+                                adder.reset(); */
+                            }
+                        }
+
+                        storeProcessedOnlyInThisCallable = prevUpdStore;
+                    }
+                    prevUpdStore = store;
+
                     updStores
                         .computeIfAbsent(store, k -> new LongAdder())
                         .increment();
-                } else
-                    syncedPagesCntr.incrementAndGet(); //already written, count it as already synced
+                }
+                //else
+                //  ? syncedPagesCntr.incrementAndGet(); //already written, count it as already synced
             }
 
             if (log.isDebugEnabled())
