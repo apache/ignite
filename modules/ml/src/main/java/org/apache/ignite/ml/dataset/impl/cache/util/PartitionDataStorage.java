@@ -21,25 +21,29 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import org.apache.ignite.ml.math.functions.IgniteSupplier;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
- *
+ * Local storage used to keep partition {@code data}.
  */
-public class PartitionDataStorage {
-    /** */
+class PartitionDataStorage {
+    /** Storage of a partition {@code data}. */
     private final ConcurrentMap<Integer, Object> storage = new ConcurrentHashMap<>();
 
-    /** */
+    /** Storage of locks correspondent to partition {@code data} objects. */
     private final ConcurrentMap<Integer, Lock> locks = new ConcurrentHashMap<>();
 
     /**
+     * Retrieves partition {@code data} correspondent to specified partition index if it exists in local storage or
+     * loads it using the specified {@code supplier}. Unlike {@link ConcurrentMap#computeIfAbsent(Object, Function)},
+     * this method guarantees that function will be called only once.
      *
-     * @param part
-     * @param supplier
-     * @return
+     * @param part partition index
+     * @param supplier partition {@code data} supplier.
+     * @return partition {@code data}
      */
-    public Object computeDataIfAbsent(int part, IgniteSupplier<Object> supplier) {
+    Object computeDataIfAbsent(int part, Supplier<Object> supplier) {
         Object data = storage.get(part);
 
         if (data == null) {

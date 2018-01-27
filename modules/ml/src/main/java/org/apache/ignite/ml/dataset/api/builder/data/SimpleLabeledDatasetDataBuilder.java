@@ -20,19 +20,38 @@ package org.apache.ignite.ml.dataset.api.builder.data;
 import java.io.Serializable;
 import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
-import org.apache.ignite.ml.dataset.PartitionUpstreamEntry;
+import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.api.data.SimpleLabeledDatasetData;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
+/**
+ * A partition {@code data} builder that makes {@link SimpleLabeledDatasetData}.
+ *
+ * @param <K> type of a key in <tt>upstream</tt> data
+ * @param <V> type of a value in <tt>upstream</tt> data
+ * @param <C> type of a partition <tt>context</tt>
+ */
 public class SimpleLabeledDatasetDataBuilder<K, V, C extends Serializable>
     implements PartitionDataBuilder<K, V, C, SimpleLabeledDatasetData> {
+    /** */
+    private static final long serialVersionUID = 3678784980215216039L;
 
+    /** Function that extracts features from an {@code upstream} data. */
     private final IgniteBiFunction<K, V, double[]> featureExtractor;
 
+    /** Function that extracts labels from an {@code upstream} data. */
     private final IgniteBiFunction<K, V, Double> lbExtractor;
 
+    /** Number of columns (features). */
     private final int cols;
 
+    /**
+     * Constructs a new instance of partition {@code data} builder that makes {@link SimpleLabeledDatasetData}.
+     *
+     * @param featureExtractor function that extracts features from an {@code upstream} data
+     * @param lbExtractor function that extracts labels from an {@code upstream} data
+     * @param cols number of columns (features)
+     */
     public SimpleLabeledDatasetDataBuilder(IgniteBiFunction<K, V, double[]> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor, int cols) {
         this.featureExtractor = featureExtractor;
@@ -40,18 +59,19 @@ public class SimpleLabeledDatasetDataBuilder<K, V, C extends Serializable>
         this.cols = cols;
     }
 
-    /** */
-    @Override public SimpleLabeledDatasetData build(Iterator<PartitionUpstreamEntry<K, V>> upstreamData,
+    /** {@inheritDoc} */
+    @Override public SimpleLabeledDatasetData build(Iterator<UpstreamEntry<K, V>> upstreamData,
         long upstreamDataSize, C ctx) {
+        // Prepares the matrix of features in flat column-major format.
         double[] features = new double[Math.toIntExact(upstreamDataSize * cols)];
         double[] labels = new double[Math.toIntExact(upstreamDataSize)];
 
         int ptr = 0;
         while (upstreamData.hasNext()) {
-            PartitionUpstreamEntry<K, V> entry = upstreamData.next();
+            UpstreamEntry<K, V> entry = upstreamData.next();
             double[] row = featureExtractor.apply(entry.getKey(), entry.getValue());
 
-            assert row.length == cols;
+            assert row.length == cols : "Feature extractor must return exactly " + cols + " features";
 
             for (int i = 0; i < cols; i++)
                 features[Math.toIntExact(i * upstreamDataSize) + ptr] = row[i];

@@ -23,23 +23,40 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 
+/**
+ * A dataset wrapper that allows to introduce new functionality based on common {@code compute} methods.
+ *
+ * @param <C> type of a partition {@code context}
+ * @param <D> type of a partition {@code data}
+ *
+ * @see SimpleDataset
+ * @see SimpleLabeledDataset
+ */
 public class DatasetWrapper<C extends Serializable, D extends AutoCloseable> implements Dataset<C, D> {
-
+    /** Delegate that performs {@code compute} actions. */
     protected final Dataset<C, D> delegate;
 
+    /**
+     * Constructs a new instance of dataset wrapper that delegates {@code compute} actions to the actual delegate.
+     *
+     * @param delegate delegate that performs {@code compute} actions
+     */
     public DatasetWrapper(Dataset<C, D> delegate) {
         this.delegate = delegate;
     }
 
+    /** {@inheritDoc} */
     @Override public <R> R computeWithCtx(IgniteTriFunction<C, D, Integer, R> map, IgniteBinaryOperator<R> reduce,
         R identity) {
         return delegate.computeWithCtx(map, reduce, identity);
     }
 
+    /** {@inheritDoc} */
     @Override public <R> R compute(IgniteBiFunction<D, Integer, R> map, IgniteBinaryOperator<R> reduce, R identity) {
         return delegate.compute(map, reduce, identity);
     }
 
+    /** {@inheritDoc} */
     @Override public void close() throws Exception {
         delegate.close();
     }

@@ -24,20 +24,20 @@ import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
 
 /**
- * Affinity function wrapper which uses key as a partition index and delegates all other functions to specified
+ * Affinity function wrapper that uses key as a partition index and delegates all other functions to specified
  * delegate.
  */
 public class DatasetAffinityFunctionWrapper implements AffinityFunction {
     /** */
     private static final long serialVersionUID = -8233787063079973753L;
 
-    /** Delegate which actually performs all methods except {@link #partition(Object)}. */
+    /** Delegate that actually performs all methods except {@code partition()}. */
     private final AffinityFunction delegate;
 
     /**
-     * Constructs a new instance of a DLC affinity function wrapper.
+     * Constructs a new instance of affinity function wrapper.
      *
-     * @param delegate affinity function which actually performs all methods except {@link #partition(Object)}
+     * @param delegate affinity function which actually performs all methods except {@code partition()}
      */
     public DatasetAffinityFunctionWrapper(AffinityFunction delegate) {
         this.delegate = delegate;

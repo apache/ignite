@@ -20,36 +20,53 @@ package org.apache.ignite.ml.dataset.api.builder.data;
 import java.io.Serializable;
 import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
-import org.apache.ignite.ml.dataset.PartitionUpstreamEntry;
+import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.api.data.SimpleDatasetData;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
+/**
+ * A partition {@code data} builder that makes {@link SimpleDatasetData}.
+ *
+ * @param <K> type of a key in <tt>upstream</tt> data
+ * @param <V> type of a value in <tt>upstream</tt> data
+ * @param <C> type of a partition <tt>context</tt>
+ */
 public class SimpleDatasetDataBuilder<K, V, C extends Serializable>
     implements PartitionDataBuilder<K, V, C, SimpleDatasetData> {
+    /** */
+    private static final long serialVersionUID = 756800193212149975L;
 
+    /** Function that extracts features from an {@code upstream} data. */
     private final IgniteBiFunction<K, V, double[]> featureExtractor;
 
+    /** Number of columns (features). */
     private final int cols;
 
+    /**
+     * Construct a new instance of partition {@code data} builder that makes {@link SimpleDatasetData}.
+     *
+     * @param featureExtractor function that extracts features from an {@code upstream} data
+     * @param cols number of columns (features)
+     */
     public SimpleDatasetDataBuilder(IgniteBiFunction<K, V, double[]> featureExtractor, int cols) {
         this.featureExtractor = featureExtractor;
         this.cols = cols;
     }
 
-    /** */
-    @Override public SimpleDatasetData build(Iterator<PartitionUpstreamEntry<K, V>> upstreamData, long upstreamDataSize,
-        C ctx) {
+    /** {@inheritDoc} */
+    @Override public SimpleDatasetData build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize, C ctx) {
+        // Prepares the matrix of features in flat column-major format.
         double[] features = new double[Math.toIntExact(upstreamDataSize * cols)];
 
         int ptr = 0;
         while (upstreamData.hasNext()) {
-            PartitionUpstreamEntry<K, V> entry = upstreamData.next();
+            UpstreamEntry<K, V> entry = upstreamData.next();
             double[] row = featureExtractor.apply(entry.getKey(), entry.getValue());
 
-            assert row.length == cols;
+            assert row.length == cols : "Feature extractor must return exactly " + cols + " features";
 
             for (int i = 0; i < cols; i++)
-                features[Math.toIntExact(i * upstreamDataSize) + ptr] = row[i];
+                features[Math.toIntExact(i * upstreamDataSize + ptr)] = row[i];
 
             ptr++;
         }

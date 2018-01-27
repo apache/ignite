@@ -19,12 +19,21 @@ package org.apache.ignite.ml.dataset.api.builder.context;
 
 import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionContextBuilder;
-import org.apache.ignite.ml.dataset.PartitionUpstreamEntry;
+import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.api.context.EmptyContext;
 
+/**
+ * A partition {@code context} builder that makes {@link EmptyContext}.
+ *
+ * @param <K> type of a key in {@code upstream} data
+ * @param <V> type of a value in {@code upstream} data
+ */
 public class EmptyContextBuilder<K, V> implements PartitionContextBuilder<K, V, EmptyContext> {
+    /** */
+    private static final long serialVersionUID = 6620781747993467186L;
 
-    @Override public EmptyContext build(Iterator<PartitionUpstreamEntry<K, V>> upstreamData, long upstreamDataSize) {
+    /** {@inheritDoc} */
+    @Override public EmptyContext build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize) {
         return new EmptyContext();
     }
 }

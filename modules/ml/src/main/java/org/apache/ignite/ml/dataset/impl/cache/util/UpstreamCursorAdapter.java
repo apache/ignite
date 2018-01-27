@@ -19,16 +19,16 @@ package org.apache.ignite.ml.dataset.impl.cache.util;
 
 import java.util.Iterator;
 import javax.cache.Cache;
-import org.apache.ignite.ml.dataset.PartitionUpstreamEntry;
+import org.apache.ignite.ml.dataset.UpstreamEntry;
 
 /**
  * Cursor adapter used to transform {@link Cache.Entry} received from Ignite Cache query cursor into DLC-specific
- * {@link PartitionUpstreamEntry}.
+ * {@link UpstreamEntry}.
  *
  * @param <K> type of an upstream value key
  * @param <V> type of an upstream value
  */
-public class UpstreamCursorAdapter<K, V> implements Iterator<PartitionUpstreamEntry<K, V>> {
+public class UpstreamCursorAdapter<K, V> implements Iterator<UpstreamEntry<K, V>> {
     /** Cache entry iterator. */
     private final Iterator<Cache.Entry<K, V>> delegate;
 
@@ -47,12 +47,12 @@ public class UpstreamCursorAdapter<K, V> implements Iterator<PartitionUpstreamEn
     }
 
     /** {@inheritDoc} */
-    @Override public PartitionUpstreamEntry<K, V> next() {
+    @Override public UpstreamEntry<K, V> next() {
         Cache.Entry<K, V> next = delegate.next();
 
         if (next == null)
             return null;
 
-        return new PartitionUpstreamEntry<>(next.getKey(), next.getValue());
+        return new UpstreamEntry<>(next.getKey(), next.getValue());
     }
 }

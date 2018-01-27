@@ -19,24 +19,39 @@ package org.apache.ignite.ml.dataset;
 
 import java.io.Serializable;
 import java.util.Iterator;
+import org.apache.ignite.ml.dataset.api.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
+ * Builder that accepts a partition {@code upstream} data and makes partition {@code context}. This builder is used to
+ * build a partition {@code context} and assumed to be called only once for every partition during a dataset
+ * initialization.
  *
- * @param <K>
- * @param <V>
- * @param <C>
+ * @param <K> type of a key in {@code upstream} data
+ * @param <V> type of a value in {@code upstream} data
+ * @param <C> type of a partition {@code context}
+ *
+ * @see EmptyContextBuilder
  */
 @FunctionalInterface
-public interface PartitionContextBuilder<K, V, C extends Serializable> {
+public interface PartitionContextBuilder<K, V, C extends Serializable> extends Serializable {
     /**
+     * Builds a new partition {@code context} from an {@code upstream} data.
      *
-     * @param upstreamData
-     * @param upstreamDataSize
-     * @return
+     * @param upstreamData partition {@code upstream} data
+     * @param upstreamDataSize partition {@code upstream} data size
+     * @return partition {@code context}
      */
-    public C build(Iterator<PartitionUpstreamEntry<K, V>> upstreamData, long upstreamDataSize);
+    public C build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize);
 
+    /**
+     * Makes a composed partition {@code context} builder that first builds a {@code context} and then applies the
+     * specified function on the result.
+     *
+     * @param fun function that applied after first partition {@code context} is built
+     * @param <C2> new type of a partition {@code context}
+     * @return composed partition {@code context} builder
+     */
     default public <C2 extends Serializable> PartitionContextBuilder<K, V, C2> andThen(IgniteFunction<C, C2> fun) {
         return (upstreamData, upstreamDataSize) -> fun.apply(build(upstreamData, upstreamDataSize));
     }

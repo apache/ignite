@@ -18,6 +18,8 @@
 package org.apache.ignite.ml.dataset;
 
 import java.io.Serializable;
+import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDataset;
+import org.apache.ignite.ml.dataset.impl.local.LocalDataset;
 import org.apache.ignite.ml.math.functions.IgniteBiConsumer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
@@ -27,133 +29,138 @@ import org.apache.ignite.ml.math.functions.IgniteTriConsumer;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 
 /**
- * Distributed Learning Context provides the API which allows to perform iterative computation tasks on a distributed
- * datasets. Every computation performed via Distributed Learning Context works with {@link DLCPartition} which consists
- * of replicated data and recoverable data. Computation task can modify these segments to maintain the iterative
- * algorithm context.
+ * A dataset providing an API that allows to perform generic computations on a distributed data represented as a set of
+ * partitions distributed across a cluster or placed locally. Every partition contains a {@code context} (reliably
+ * stored segment) and {@code data} (unreliably stored segment, which can be recovered from an upstream data and a
+ * {@code context} if needed). Computations are performed in a {@code MapReduce} manner, what allows to reduce a
+ * network traffic for most of the machine learning algorithms.
  *
- * @param <C>
- * @param <D>
+ * <p>Dataset functionality allows to implement iterative machine learning algorithms via introducing computation
+ * context. In case iterative algorithm requires to maintain a state available and updatable on every iteration this
+ * state can be stored in the {@code context} of the partition and after that it will be available in further
+ * computations even if the Ignite Cache partition will be moved to another node because of node failure or rebalancing.
+ *
+ * <p>Partition {@code context} should be {@link Serializable} to be saved in Ignite Cache. Partition {@code data}
+ * should be {@link AutoCloseable} to allow system to clean up correspondent resources when partition {@code data} is
+ * not needed anymore.
+ *
+ * @param <C> type of a partition {@code context}
+ * @param <D> type of a partition {@code data}
+ *
+ * @see CacheBasedDataset
+ * @see LocalDataset
+ * @see DatasetFactory
  */
 public interface Dataset<C extends Serializable, D extends AutoCloseable> extends AutoCloseable {
     /**
-     * Computes the given function on every partition in the current learning context independently and then reduces
-     * results into one final single result. The goal of this approach is to perform {@code map} locally on the nodes
-     * where partitions are placed and do not involve network subsystem where it's possible.
+     * Applies the specified {@code map} function to every partition {@code data}, {@code context} and partition
+     * index in the dataset and then reduces {@code map} results to final result by using the {@code reduce} function.
      *
-     * @param map
-     * @param reduce
-     * @param identity
-     * @param <R>
-     * @return
+     * @param map function applied to every partition {@code data}, {@code context} and partition index
+     * @param reduce function applied to results of {@code map} to get final result
+     * @param identity identity
+     * @param <R> type of a result
+     * @return final result
      */
     public <R> R computeWithCtx(IgniteTriFunction<C, D, Integer, R> map, IgniteBinaryOperator<R> reduce, R identity);
 
     /**
-     * Computes the given function on every partition in the current learning context independently and then reduces
-     * results into one final single result. The goal of this approach is to perform {@code map} locally on the nodes
-     * where partitions are placed and do not involve network subsystem where it's possible.
+     * Applies the specified {@code map} function to every partition {@code data} and partition index in the dataset
+     * and then reduces {@code map} results to final result by using the {@code reduce} function.
      *
-     * @param map
-     * @param reduce
-     * @param identity
-     * @param <R>
-     * @return
+     * @param map function applied to every partition {@code data} and partition index
+     * @param reduce function applied to results of {@code map} to get final result
+     * @param identity identity
+     * @param <R> type of a result
+     * @return final result
      */
     public <R> R compute(IgniteBiFunction<D, Integer, R> map, IgniteBinaryOperator<R> reduce, R identity);
 
     /**
-     * Computes the given function on every partition in the current learning context independently and then reduces
-     * results into one final single result. The goal of this approach is to perform {@code map} locally on the nodes
-     * where partitions are placed and do not involve network subsystem where it's possible.
+     * Applies the specified {@code map} function to every partition {@code data}, {@code context} and partition
+     * index in the dataset and then reduces {@code map} results to final result by using the {@code reduce} function.
      *
-     * @param map
-     * @param reduce
-     * @param <R>
-     * @return
+     * @param map function applied to every partition {@code data}, {@code context} and partition index
+     * @param reduce function applied to results of {@code map} to get final result
+     * @param <R> type of a result
+     * @return final result
      */
     default public <R> R computeWithCtx(IgniteTriFunction<C, D, Integer, R> map, IgniteBinaryOperator<R> reduce) {
         return computeWithCtx(map, reduce, null);
     }
 
     /**
-     * Computes the given function on every partition in the current learning context independently and then reduces
-     * results into one final single result. The goal of this approach is to perform {@code map} locally on the nodes
-     * where partitions are placed and do not involve network subsystem where it's possible.
+     * Applies the specified {@code map} function to every partition {@code data} and partition index in the dataset
+     * and then reduces {@code map} results to final result by using the {@code reduce} function.
      *
-     * @param map
-     * @param reduce
-     * @param <R>
-     * @return
+     * @param map function applied to every partition {@code data} and partition index
+     * @param reduce function applied to results of {@code map} to get final result
+     * @param <R> type of a result
+     * @return final result
      */
     default public <R> R compute(IgniteBiFunction<D, Integer, R> map, IgniteBinaryOperator<R> reduce) {
         return compute(map, reduce, null);
     }
 
     /**
-     * Computes the given function on every partition in the current learning context independently and then reduces
-     * results into one final single result. The goal of this approach is to perform {@code map} locally on the nodes
-     * where partitions are placed and do not involve network subsystem where it's possible.
+     * Applies the specified {@code map} function to every partition {@code data} and {@code context} in the dataset
+     * and then reduces {@code map} results to final result by using the {@code reduce} function.
      *
-     * @param map
-     * @param reduce
-     * @param identity
-     * @param <R>
-     * @return
+     * @param map function applied to every partition {@code data} and {@code context}
+     * @param reduce function applied to results of {@code map} to get final result
+     * @param identity identity
+     * @param <R> type of a result
+     * @return final result
      */
     default public <R> R computeWithCtx(IgniteBiFunction<C, D, R> map, IgniteBinaryOperator<R> reduce, R identity) {
         return computeWithCtx((ctx, data, partIdx) -> map.apply(ctx, data), reduce, identity);
     }
 
     /**
-     * Computes the given function on every partition in the current learning context independently and then reduces
-     * results into one final single result. The goal of this approach is to perform {@code map} locally on the nodes
-     * where partitions are placed and do not involve network subsystem where it's possible.
+     * Applies the specified {@code map} function to every partition {@code data} in the dataset and then reduces
+     * {@code map} results to final result by using the {@code reduce} function.
      *
-     * @param map
-     * @param reduce
-     * @param identity
-     * @param <R>
-     * @return
+     * @param map function applied to every partition {@code data}
+     * @param reduce function applied to results of {@code map} to get final result
+     * @param identity identity
+     * @param <R> type of a result
+     * @return final result
      */
     default public <R> R compute(IgniteFunction<D, R> map, IgniteBinaryOperator<R> reduce, R identity) {
         return compute((data, partIdx) -> map.apply(data), reduce, identity);
     }
 
     /**
-     * Computes the given function on every partition in the current learning context independently and then reduces
-     * results into one final single result. The goal of this approach is to perform {@code map} locally on the nodes
-     * where partitions are placed and do not involve network subsystem where it's possible.
+     * Applies the specified {@code map} function to every partition {@code data} and {@code context} in the dataset
+     * and then reduces {@code map} results to final result by using the {@code reduce} function.
      *
-     * @param map
-     * @param reduce
-     * @param <R>
-     * @return
+     * @param map function applied to every partition {@code data} and {@code context}
+     * @param reduce function applied to results of {@code map} to get final result
+     * @param <R> type of a result
+     * @return final result
      */
     default public <R> R computeWithCtx(IgniteBiFunction<C, D, R> map, IgniteBinaryOperator<R> reduce) {
         return computeWithCtx((ctx, data, partIdx) -> map.apply(ctx, data), reduce);
     }
 
     /**
-     * Computes the given function on every partition in the current learning context independently and then reduces
-     * results into one final single result. The goal of this approach is to perform {@code map} locally on the nodes
-     * where partitions are placed and do not involve network subsystem where it's possible.
+     * Applies the specified {@code map} function to every partition {@code data} in the dataset and then reduces
+     * {@code map} results to final result by using the {@code reduce} function.
      *
-     * @param map
-     * @param reduce
-     * @param <R>
-     * @return
+     * @param map function applied to every partition {@code data}
+     * @param reduce function applied to results of {@code map} to get final result
+     * @param <R> type of a result
+     * @return final result
      */
     default public <R> R compute(IgniteFunction<D, R> map, IgniteBinaryOperator<R> reduce) {
         return compute((data, partIdx) -> map.apply(data), reduce);
     }
 
     /**
-     * Computes the given function on every partition in the current learning context independently and then reduces
-     * results into one final single result. The goal of this approach is to perform {@code map} locally on the nodes
-     * where partitions are placed and do not involve network subsystem where it's possible.
+     * Applies the specified {@code map} function to every partition {@code data}, {@code context} and partition
+     * index in the dataset.
      *
-     * @param map
+     * @param map function applied to every partition {@code data}, {@code context} and partition index
      */
     default public void computeWithCtx(IgniteTriConsumer<C, D, Integer> map) {
         computeWithCtx((ctx, data, partIdx) -> {
@@ -163,11 +170,9 @@ public interface Dataset<C extends Serializable, D extends AutoCloseable> extend
     }
 
     /**
-     * Computes the given function on every partition in the current learning context independently and then reduces
-     * results into one final single result. The goal of this approach is to perform {@code map} locally on the nodes
-     * where partitions are placed and do not involve network subsystem where it's possible.
+     * Applies the specified {@code map} function to every partition {@code data} in the dataset and partition index.
      *
-     * @param map
+     * @param map function applied to every partition {@code data} and partition index
      */
     default public void compute(IgniteBiConsumer<D, Integer> map) {
         compute((data, partIdx) -> {
@@ -177,32 +182,30 @@ public interface Dataset<C extends Serializable, D extends AutoCloseable> extend
     }
 
     /**
-     * Computes the given function on every partition in the current learning context independently and then reduces
-     * results into one final single result. The goal of this approach is to perform {@code map} locally on the nodes
-     * where partitions are placed and do not involve network subsystem where it's possible.
+     * Applies the specified {@code map} function to every partition {@code data} and {@code context} in the dataset.
      *
-     * @param map
+     * @param map function applied to every partition {@code data} and {@code context}
      */
     default public void computeWithCtx(IgniteBiConsumer<C, D> map) {
         computeWithCtx((ctx, data, partIdx) -> map.accept(ctx, data));
     }
 
     /**
-     * Computes the given function on every partition in the current learning context independently and then reduces
-     * results into one final single result. The goal of this approach is to perform {@code map} locally on the nodes
-     * where partitions are placed and do not involve network subsystem where it's possible.
+     * Applies the specified {@code map} function to every partition {@code data} in the dataset.
      *
-     * @param map
+     * @param map function applied to every partition {@code data}
      */
     default public void compute(IgniteConsumer<D> map) {
         compute((data, partIdx) -> map.accept(data));
     }
 
     /**
+     * Wraps this dataset into the specified wrapper to introduce new functionality based on {@code compute} and
+     * {@code computeWithCtx} methods.
      *
-     * @param wrapper
-     * @param <I>
-     * @return
+     * @param wrapper dataset wrapper
+     * @param <I> type of a new wrapped dataset
+     * @return new wrapped dataset
      */
     default public <I extends Dataset<C ,D>> I wrap(IgniteFunction<Dataset<C, D>, I> wrapper) {
         return wrapper.apply(this);

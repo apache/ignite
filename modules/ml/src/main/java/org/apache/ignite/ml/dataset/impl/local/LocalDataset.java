@@ -24,17 +24,33 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 
+/**
+ * An implementation of dataset based on local data structures such as {@code Map} and {@code List} and doesn't requires
+ * Ignite environment. Introduces for testing purposes mostly, but can be used for simple local computations as well.
+ *
+ * @param <C> type of a partition {@code context}
+ * @param <D> type of a partition {@code data}
+ */
 public class LocalDataset<C extends Serializable, D extends AutoCloseable> implements Dataset<C, D> {
-
+    /** Partition {@code context} storage. */
     private final List<C> ctx;
 
+    /** Partition {@code data} storage. */
     private final List<D> data;
 
-    public LocalDataset(List<C> ctx, List<D> data) {
+    /**
+     * Constructs a new instance of dataset based on local data structures such as {@code Map} and {@code List} and
+     * doesn't requires Ignite environment.
+     *
+     * @param ctx partition {@code context} storage
+     * @param data partition {@code data} storage
+     */
+    LocalDataset(List<C> ctx, List<D> data) {
         this.ctx = ctx;
         this.data = data;
     }
 
+    /** {@inheritDoc} */
     @Override public <R> R computeWithCtx(IgniteTriFunction<C, D, Integer, R> map, IgniteBinaryOperator<R> reduce, R identity) {
         R res = identity;
 
@@ -44,6 +60,7 @@ public class LocalDataset<C extends Serializable, D extends AutoCloseable> imple
         return res;
     }
 
+    /** {@inheritDoc} */
     @Override public <R> R compute(IgniteBiFunction<D, Integer, R> map, IgniteBinaryOperator<R> reduce, R identity) {
         R res = identity;
 
@@ -53,7 +70,18 @@ public class LocalDataset<C extends Serializable, D extends AutoCloseable> imple
         return res;
     }
 
+    /** {@inheritDoc} */
     @Override public void close() {
-        // Do nothing.
+        // Do nothing, GC will clean up.
+    }
+
+    /** */
+    public List<C> getCtx() {
+        return ctx;
+    }
+
+    /** */
+    public List<D> getData() {
+        return data;
     }
 }

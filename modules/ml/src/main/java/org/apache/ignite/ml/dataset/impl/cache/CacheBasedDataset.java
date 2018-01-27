@@ -33,42 +33,46 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 
 /**
+ * An implementation of dataset based on Ignite Cache, which is used as {@code upstream} and as reliable storage for
+ * partition {@code context} as well.
  *
- * @param <K>
- * @param <V>
- * @param <C>
- * @param <D>
+ * @param <K> type of a key in {@code upstream} data
+ * @param <V> type of a value in {@code upstream} data
+ * @param <C> type of a partition {@code context}
+ * @param <D> type of a partition {@code data}
  */
 public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoCloseable>
     implements Dataset<C, D> {
-    /** */
+    /** Number of retries for the case when one of partitions not found on the node where computation is performed. */
     private static final int RETRIES = 100;
 
-    /** */
+    /** Retry interval (ms) for the case when one of partitions not found on the node where computation is performed. */
     private static final int RETRY_INTERVAL = 500;
 
-    /** */
+    /** Ignite instance. */
     private final Ignite ignite;
 
-    /** */
+    /** Ignite Cache with {@code upstream} data. */
     private final IgniteCache<K, V> upstreamCache;
 
-    /** */
+    /** Ignite Cache with partition {@code context}. */
     private final IgniteCache<Integer, C> datasetCache;
 
-    /** */
+    /** Partition {@code data} builder. */
     private final PartitionDataBuilder<K, V, C, D> partDataBuilder;
 
-    /** */
+    /** Dataset ID that is used to identify dataset in local storage on the node where computation is performed. */
     private final UUID datasetId;
 
     /**
+     * Constructs a new instance of dataset based on Ignite Cache, which is used as {@code upstream} and as reliable storage for
+     * partition {@code context} as well.
      *
-     * @param ignite
-     * @param upstreamCache
-     * @param datasetCache
-     * @param partDataBuilder
-     * @param datasetId
+     * @param ignite Ignite instance
+     * @param upstreamCache Ignite Cache with {@code upstream} data
+     * @param datasetCache Ignite Cache with partition {@code context}
+     * @param partDataBuilder partition {@code data} builder
+     * @param datasetId dataset ID
      */
     public CacheBasedDataset(Ignite ignite, IgniteCache<K, V> upstreamCache,
         IgniteCache<Integer, C> datasetCache, PartitionDataBuilder<K, V, C, D> partDataBuilder,
@@ -126,12 +130,15 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
     }
 
     /**
+     * Calls the {@code MapReduce} job specified as the {@code fun} function and the {@code reduce} reducer on all
+     * partitions with guarantee that partitions with the same index of upstream and partition {@code context} caches
+     * will be on the same node during the computation and will not be moved before computation is finished.
      *
-     * @param fun
-     * @param reduce
-     * @param identity
-     * @param <R>
-     * @return
+     * @param fun function that applies to all partitions
+     * @param reduce function that reduces results of {@code fun}
+     * @param identity identity
+     * @param <R> type of a result
+     * @return final result
      */
     private <R> R computeForAllPartitions(IgniteFunction<Integer, R> fun, IgniteBinaryOperator<R> reduce, R identity) {
         Collection<String> cacheNames = Arrays.asList(datasetCache.getName(), upstreamCache.getName());
@@ -142,5 +149,15 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
             res = reduce.apply(res, partRes);
 
         return res;
+    }
+
+    /** */
+    public IgniteCache<K, V> getUpstreamCache() {
+        return upstreamCache;
+    }
+
+    /** */
+    public IgniteCache<Integer, C> getDatasetCache() {
+        return datasetCache;
     }
 }

@@ -19,5 +19,10 @@ package org.apache.ignite.ml.dataset.api.context;
 
 import java.io.Serializable;
 
+/**
+ * An empty partition {@code context}.
+ */
 public class EmptyContext implements Serializable {
+    /** */
+    private static final long serialVersionUID = 4108938672110578991L;
 }

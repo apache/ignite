@@ -17,6 +17,12 @@
 
 package org.apache.ignite.ml.dataset.api.data;
 
+import org.apache.ignite.ml.dataset.api.SimpleDataset;
+
+/**
+ * A partition {@code data} of the {@link SimpleDataset} containing matrix of features in flat column-major format
+ * stored in heap.
+ */
 public class SimpleDatasetData implements AutoCloseable {
     /** Matrix of features in a dense flat column-major format. */
     private final double[] features;
@@ -28,7 +34,8 @@ public class SimpleDatasetData implements AutoCloseable {
     private final int cols;
 
     /**
-     * Constructs a new instance of recoverable data of DLC labeled dataset partition.
+     * Constructs a new instance of partition {@code data} of the {@link SimpleDataset} containing matrix of features in
+     * flat column-major format stored in heap.
      *
      * @param features matrix of features in a dense flat column-major format
      * @param rows number of rows
@@ -57,6 +64,6 @@ public class SimpleDatasetData implements AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        // do nothing
+        // Do nothing, GC will clean up.
     }
 }

@@ -22,15 +22,15 @@ import java.util.UUID;
 import org.apache.ignite.IgniteException;
 
 /**
- * Exception which is thrown when partition is expected to be on the node but it isn't. Assumed reason is that two
- * caches with the same affinity function have all their partitions on the same nodes only in terms of eventual
- * consistency.
+ * Exception which is thrown when partition is expected to be on the node but it isn't. In case of rebalancing it's not
+ * guaranteed that partitions of caches even with the same affinity function will be moved synchronously. A workaround
+ * used here is based on optimistic locking with checking that partitions available on the node.
  */
-public class PartitionNotFoundException extends IgniteException implements Serializable {
+class PartitionNotFoundException extends IgniteException implements Serializable {
     /** */
     private static final long serialVersionUID = -8891869046312827676L;
 
-    /** Exception message template. */
+    /** templace of an exception message.. */
     private static final String MSG_TEMPLATE = "Partition %d of %s expected to be on node %s, but it isn't";
 
     /**
@@ -40,7 +40,7 @@ public class PartitionNotFoundException extends IgniteException implements Seria
      * @param nodeId node id
      * @param partIdx partition index
      */
-    public PartitionNotFoundException(String cacheName, UUID nodeId, int partIdx) {
+    PartitionNotFoundException(String cacheName, UUID nodeId, int partIdx) {
         super(String.format(MSG_TEMPLATE, partIdx, cacheName, nodeId.toString()));
     }
 }

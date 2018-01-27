@@ -22,13 +22,19 @@ import java.io.Serializable;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.api.data.SimpleDatasetData;
 
+/**
+ * A simple dataset introduces additional methods based on a matrix of features.
+ *
+ * @param <C> type of a partition {@code context}
+ */
 public class SimpleDataset<C extends Serializable> extends DatasetWrapper<C, SimpleDatasetData> {
     /** BLAS (Basic Linear Algebra Subprograms) instance. */
     private static final BLAS blas = BLAS.getInstance();
 
     /**
+     * Creates a new instance of simple dataset that introduces additional methods based on a matrix of features.
      *
-     * @param delegate
+     * @param delegate delegate that performs {@code compute} actions
      */
     public SimpleDataset(Dataset<C, SimpleDatasetData> delegate) {
         super(delegate);

@@ -23,7 +23,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
@@ -31,30 +30,45 @@ import org.apache.ignite.ml.dataset.impl.cache.util.ComputeUtils;
 import org.apache.ignite.ml.dataset.impl.cache.util.DatasetAffinityFunctionWrapper;
 
 /**
+ * A dataset builder that makes {@link CacheBasedDataset}. Encapsulate logic of building cache based dataset such as
+ * allocation required data structures and initialization of {@code context} part of partitions.
  *
- * @param <K>
- * @param <V>
- * @param <C>
- * @param <D>
+ * @param <K> type of a key in {@code upstream} data
+ * @param <V> type of a value in {@code upstream} data
+ * @param <C> type of a partition {@code context}
+ * @param <D> type of a partition {@code data}
  */
 public class CacheBasedDatasetBuilder<K, V, C extends Serializable, D extends AutoCloseable>
     implements DatasetBuilder<C, D> {
-
+    /** Number of retries for the case when one of partitions not found on the node where loading is performed. */
     private static final int RETRIES = 100;
 
+    /** Retry interval (ms) for the case when one of partitions not found on the node where loading is performed. */
     private static final int RETRY_INTERVAL = 500;
 
+    /** Template of the name of Ignite Cache containing partition {@code context}. */
     private static final String DATASET_CACHE_TEMPLATE = "%s_DATASET_%s";
 
     /** Ignite instance. */
     private final Ignite ignite;
 
+    /** Ignite Cache with {@code upstream} data. */
     private final IgniteCache<K, V> upstreamCache;
 
+    /** Partition {@code context} builder. */
     private final PartitionContextBuilder<K, V, C> partCtxBuilder;
 
+    /** Partition {@code data} builder. */
     private final PartitionDataBuilder<K, V, C, D> partDataBuilder;
 
+    /**
+     * Constructs a new instance of cache based dataset builder that makes {@link CacheBasedDataset}.
+     *
+     * @param ignite Ignite instance
+     * @param upstreamCache Ignite Cache with {@code upstream} data
+     * @param partCtxBuilder Ignite Cache with partition {@code context}
+     * @param partDataBuilder Partition {@code data} builder
+     */
     public CacheBasedDatasetBuilder(Ignite ignite, IgniteCache<K, V> upstreamCache,
         PartitionContextBuilder<K, V, C> partCtxBuilder, PartitionDataBuilder<K, V, C, D> partDataBuilder) {
         this.ignite = ignite;
@@ -63,13 +77,17 @@ public class CacheBasedDatasetBuilder<K, V, C extends Serializable, D extends Au
         this.partDataBuilder = partDataBuilder;
     }
 
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public Dataset<C, D> build() {
+    @Override public CacheBasedDataset<K, V, C, D> build() {
         UUID datasetId = UUID.randomUUID();
 
+        // Retrieves affinity function of the upstream Ignite Cache.
         CacheConfiguration<K, V> upstreamCacheConfiguration = upstreamCache.getConfiguration(CacheConfiguration.class);
         AffinityFunction upstreamCacheAffinity = upstreamCacheConfiguration.getAffinity();
 
+        // Creates dataset cache configuration with affinity function that mimics to affinity function of the upstream
+        // cache.
         CacheConfiguration<Integer, C> datasetCacheConfiguration = new CacheConfiguration<>();
         datasetCacheConfiguration.setName(String.format(DATASET_CACHE_TEMPLATE, upstreamCache.getName(), datasetId));
         datasetCacheConfiguration.setAffinity(new DatasetAffinityFunctionWrapper(upstreamCacheAffinity));

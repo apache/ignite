@@ -17,6 +17,12 @@
 
 package org.apache.ignite.ml.dataset.api.data;
 
+import org.apache.ignite.ml.dataset.api.SimpleLabeledDataset;
+
+/**
+ * A partition {@code data} of the {@link SimpleLabeledDataset} containing matrix of features in flat column-major
+ * format stored in heap and vector of labels stored in heap as well.
+ */
 public class SimpleLabeledDatasetData implements AutoCloseable {
     /** Matrix with features in a dense flat column-major format. */
     private final double[] features;
@@ -31,11 +37,13 @@ public class SimpleLabeledDatasetData implements AutoCloseable {
     private final double[] labels;
 
     /**
+     * Constructs a new instance of partition {@code data} of the {@link SimpleLabeledDataset} containing matrix of
+     * features in flat column-major format stored in heap and vector of labels stored in heap as well.
      *
-     * @param features
-     * @param rows
-     * @param cols
-     * @param labels
+     * @param features matrix with features in a dense flat column-major format
+     * @param rows number of rows
+     * @param cols number of columns
+     * @param labels vector with labels
      */
     public SimpleLabeledDatasetData(double[] features, int rows, int cols, double[] labels) {
         this.features = features;
@@ -59,12 +67,13 @@ public class SimpleLabeledDatasetData implements AutoCloseable {
         return cols;
     }
 
+    /** */
     public double[] getLabels() {
         return labels;
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
-        // do nothing
+        // Do nothing, GC will clean up.
     }
 }

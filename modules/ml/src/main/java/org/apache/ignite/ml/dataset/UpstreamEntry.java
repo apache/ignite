@@ -15,8 +15,39 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.ml.dataset;
+
 /**
- * <!-- Package description. -->
- * Root package for distributed learning implementations based on Ignite Cache.
+ * Entry of the {@code upstream}.
+ *
+ * @param <K> type of a key in {@code upstream} data
+ * @param <V> type of a value in {@code upstream} data
  */
-package org.apache.ignite.ml.dlearn.context.cache;
+public class UpstreamEntry<K, V> {
+    /** Key. */
+    private final K key;
+
+    /** Value. */
+    private final V val;
+
+    /**
+     * Constructs a new instance of upstream entry.
+     *
+     * @param key key
+     * @param val value
+     */
+    public UpstreamEntry(K key, V val) {
+        this.key = key;
+        this.val = val;
+    }
+
+    /** */
+    public K getKey() {
+        return key;
+    }
+
+    /** */
+    public V getValue() {
+        return val;
+    }
+}
