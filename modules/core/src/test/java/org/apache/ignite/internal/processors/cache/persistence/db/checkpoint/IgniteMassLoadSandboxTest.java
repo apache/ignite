@@ -60,7 +60,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesWriteThrottle;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesWriteSpeedBasedThrottle;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.F;
@@ -151,6 +151,8 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
             dsCfg.setWalArchivePath(new File(wal, "archive").getAbsolutePath());
         }
+        
+        // dsCfg.setStoragePath("f:\\ignite");
 
         dsCfg.setWalMode(customWalMode != null ? customWalMode : WALMode.LOG_ONLY);
         dsCfg.setWalHistorySize(1);
@@ -385,11 +387,11 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                 if (pageMemory != null) {
                     cpBufPages = pageMemory.checkpointBufferPagesCount();
 
-                    PagesWriteThrottle throttle = U.field(pageMemory, "writeThrottle");
+                    PagesWriteSpeedBasedThrottle throttle = U.field(pageMemory, "writeThrottle");
 
                     if (throttle != null) {
                         curDirtyRatio = throttle.getCurrDirtyRatio();
-                        targetDirtyRatio = throttle.getPageMemTargetDirtyRatio();
+                        targetDirtyRatio = throttle.getTargetDirtyRatio();
                         closeToThrottle = throttle.getThrottleCloseMeasurement();
                         throttleLevel = throttle.throttleLevel();
                         markDirtySpeed = throttle.getMarkDirtySpeed();
