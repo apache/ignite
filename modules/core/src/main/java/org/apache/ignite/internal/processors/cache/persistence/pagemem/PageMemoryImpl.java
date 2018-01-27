@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
+import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
@@ -581,20 +582,20 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
-    @Override public long acquirePage(int cacheId, long pageId, boolean restore) throws IgniteCheckedException {
-        FullPageId fullId = new FullPageId(pageId, cacheId);
+    @Override public long acquirePage(int grpId, long pageId, boolean restore) throws IgniteCheckedException {
+        FullPageId fullId = new FullPageId(pageId, grpId);
 
         int partId = PageIdUtils.partId(pageId);
 
-        Segment seg = segment(cacheId, pageId);
+        Segment seg = segment(grpId, pageId);
 
         seg.readLock().lock();
 
         try {
             long relPtr = seg.loadedPages.get(
-                cacheId,
+                grpId,
                 PageIdUtils.effectivePageId(pageId),
-                seg.partTag(cacheId, partId),
+                seg.partTag(grpId, partId),
                 INVALID_REL_PTR,
                 INVALID_REL_PTR
             );
@@ -617,9 +618,9 @@ public class PageMemoryImpl implements PageMemoryEx {
         try {
             // Double-check.
             long relPtr = seg.loadedPages.get(
-                cacheId,
+                grpId,
                 PageIdUtils.effectivePageId(pageId),
-                seg.partTag(cacheId, partId),
+                seg.partTag(grpId, partId),
                 INVALID_REL_PTR,
                 OUTDATED_REL_PTR
             );
@@ -645,10 +646,10 @@ public class PageMemoryImpl implements PageMemoryEx {
                 setDirty(fullId, absPtr, false, false);
 
                 seg.loadedPages.put(
-                    cacheId,
+                    grpId,
                     PageIdUtils.effectivePageId(pageId),
                     relPtr,
-                    seg.partTag(cacheId, partId)
+                    seg.partTag(grpId, partId)
                 );
 
                 long pageAddr = absPtr + PAGE_OVERHEAD;
@@ -657,7 +658,22 @@ public class PageMemoryImpl implements PageMemoryEx {
                     try {
                         ByteBuffer buf = wrapPointer(pageAddr, pageSize());
 
-                        storeMgr.read(cacheId, pageId, buf);
+                        storeMgr.read(grpId, pageId, buf);
+
+                        FullPageId remove = seg.recentlyEvicted.remove(fullId);
+                        if (remove != null) {
+                            long dataAddr = pageAddr;
+
+                            int type = PageIO.getType(dataAddr);
+                            int ver = PageIO.getVersion(dataAddr);
+
+                            PageIO io = PageIO.getPageIO(type, ver);
+
+                            System.err.println(
+                                "Page recently evicted and reloaded: idx=" +
+                                    PageIdUtils.pageIndex(pageId) + " cache=" + grpId
+                                    + ", part " + PageIdUtils.partId(pageId) + " type: " + io);
+                        }
                     }
                     catch (IgniteDataIntegrityViolationException ignore) {
                         U.warn(log, "Failed to read page (data integrity violation encountered, will try to " +
@@ -682,7 +698,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             else if (relPtr == OUTDATED_REL_PTR) {
                 assert PageIdUtils.pageIndex(pageId) == 0 : fullId;
 
-                relPtr = refreshOutdatedPage(seg, cacheId, pageId, false);
+                relPtr = refreshOutdatedPage(seg, grpId, pageId, false);
 
                 absPtr = seg.absolute(relPtr);
 
@@ -1792,6 +1808,10 @@ public class PageMemoryImpl implements PageMemoryEx {
         /** */
         private boolean closed;
 
+        //todo temporary tracker
+        GridBoundedConcurrentLinkedHashMap<FullPageId, FullPageId> recentlyEvicted
+            = new GridBoundedConcurrentLinkedHashMap<>(3000);
+
         /**
          * Creates segment.
          *
@@ -2149,6 +2169,8 @@ public class PageMemoryImpl implements PageMemoryEx {
                         PageIdUtils.partId(fullPageId.pageId())
                     )
                 );
+
+                recentlyEvicted.put(fullPageId, fullPageId);
 
                 return relEvictAddr;
             }
