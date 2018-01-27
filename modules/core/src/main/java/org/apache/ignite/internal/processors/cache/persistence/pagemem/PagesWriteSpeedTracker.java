@@ -22,31 +22,62 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Speed tracker for determine speed of processing based on increments or exact counters value. Measurement is perfromed
+ * using several intervals. Too old measurements are dropped. To determine speed current measurement is reduced with all
+ * historical.
+ */
 public class PagesWriteSpeedTracker {
-
+    /** Millis in second. */
     private static final int MILLIS_IN_SECOND = 1000;
-    private AtomicReference<MeasurementInterval> measurementIntervalAtomicReference = new AtomicReference<>();
-    private final int intervalSwitchMs;
-    private final int maxMeasurements = 5;
 
+    /** Current Measurement interval atomic reference. */
+    private AtomicReference<MeasurementInterval> measurementIntervalAtomicRef = new AtomicReference<>();
+
+    /** Interval automatic switch milliseconds. Negative value means no automatic switch. */
+    private final int intervalSwitchMs;
+
+    /** Max historical measurements to keep. */
+    private final int maxMeasurements;
+
+    /** Previous (historical) measurements. */
     private final ConcurrentLinkedQueue<MeasurementInterval> prevMeasurements = new ConcurrentLinkedQueue<>();
 
+     /**
+     * Default constructor. No automatic switch, 3 historical measurements.
+     */
     public PagesWriteSpeedTracker() {
-        this(-1);
+        this(-1, 3);
     }
 
-    public PagesWriteSpeedTracker(int intervalSwitchMs) {
+    /**
+     * @param intervalSwitchMs Interval switch milliseconds.
+     * @param maxMeasurements Max historical measurements to keep.
+     */
+    public PagesWriteSpeedTracker(int intervalSwitchMs, int maxMeasurements) {
         this.intervalSwitchMs = intervalSwitchMs;
+        this.maxMeasurements = maxMeasurements;
     }
 
+    /**
+     * Gets speed, start interval (if not started).
+     *
+     * @param curMs current time millis.
+     * @return speed in pages per second based on current data.
+     */
     public long getSpeedPagesPerSec(long curMs) {
         MeasurementInterval interval = interval(curMs);
 
         return combinePrevAndCurrent(curMs, interval);
     }
 
+    /**
+     * Gets current speed, does not start measurement.
+     *
+     * @return speed in pages per second based on current data.
+     */
     public long getSpeedPagesPerSecOptional() {
-        MeasurementInterval interval = measurementIntervalAtomicReference.get();
+        MeasurementInterval interval = measurementIntervalAtomicRef.get();
 
         if (interval == null)
             return getHistoricalSpeed();
@@ -54,44 +85,60 @@ public class PagesWriteSpeedTracker {
         return combinePrevAndCurrent(System.currentTimeMillis(), interval);
     }
 
+    /**
+     * @param curMs current time millis.
+     * @param interval current measurement.
+     * @return reduced with historical.
+     */
     private long combinePrevAndCurrent(long curMs, @NotNull MeasurementInterval interval) {
-        if (prevMeasurements.isEmpty())
-            return interval.getSpeedPagesPerSec(curMs);
-
-        if (curMs <= interval.tsStart) { //measurement is created only now
+        //measurement was created during current call, use only historical.
+        if (curMs <= interval.tsStart)
             return getHistoricalSpeed();
-        }
 
         long msPassed = (curMs - interval.tsStart);
-        long pagesMarked = interval.counter.get();
+        long pagesProcessed = interval.cntr.get();
 
-        return sumMeasurements(msPassed, pagesMarked);
+        return sumMeasurementWithHistorical(msPassed, pagesProcessed);
     }
 
-    private long sumMeasurements(long msPassed, long pagesMarked) {
+    /**
+     * Reduce measurements.
+     *
+     * @param msPassed initial milliseconds passed (probably from current measurement).
+     * @param pagesProcessed initial pages processed (probably from current measurement).
+     * @return speed in page per second.
+     */
+    private long sumMeasurementWithHistorical(long msPassed, long pagesProcessed) {
         for (MeasurementInterval prevMeasurement : prevMeasurements) {
             msPassed += (prevMeasurement.tsEnd - prevMeasurement.tsStart);
-            pagesMarked += prevMeasurement.counter.get();
+            pagesProcessed += prevMeasurement.cntr.get();
         }
 
-        return msPassed == 0 ? 0 : pagesMarked * MILLIS_IN_SECOND / msPassed;
+        return msPassed == 0 ? 0 : pagesProcessed * MILLIS_IN_SECOND / msPassed;
     }
 
+    /**
+     * @return speed in page per second from historical only measurements.
+     */
     private long getHistoricalSpeed() {
-        return sumMeasurements(0, 0);
+        return sumMeasurementWithHistorical(0, 0);
     }
 
+    /**
+     * Gets or creates measurement interval, performs switch to new measurement by timeout.
+     * @param curMs current time.
+     * @return interval to use.
+     */
     @NotNull private MeasurementInterval interval(long curMs) {
         MeasurementInterval interval;
 
         do {
-            interval = measurementIntervalAtomicReference.get();
+            interval = measurementIntervalAtomicRef.get();
             if (interval == null) {
                 MeasurementInterval newInterval = new MeasurementInterval(curMs);
 
-                if (measurementIntervalAtomicReference.compareAndSet(null, newInterval)) {
+                if (measurementIntervalAtomicRef.compareAndSet(null, newInterval))
                     interval = newInterval;
-                }
                 else
                     continue;
             }
@@ -99,7 +146,7 @@ public class PagesWriteSpeedTracker {
             if (intervalSwitchMs > 0 && (curMs - interval.tsStart) > intervalSwitchMs) {
                 MeasurementInterval newInterval = new MeasurementInterval(curMs);
 
-                if (measurementIntervalAtomicReference.compareAndSet(interval, newInterval)) {
+                if (measurementIntervalAtomicRef.compareAndSet(interval, newInterval)) {
                     interval.tsEnd = curMs;
 
                     pushToHistory(interval);
@@ -111,30 +158,42 @@ public class PagesWriteSpeedTracker {
         return interval;
     }
 
+    /**
+     * @param interval finished interval to push to history.
+     */
     private void pushToHistory(MeasurementInterval interval) {
         prevMeasurements.offer(interval);
 
-        if (prevMeasurements.size() > maxMeasurements) {
+        if (prevMeasurements.size() > maxMeasurements)
             prevMeasurements.remove();
-        }
     }
 
+    /**
+     * Increments page count in current interval, switches interval if needed.
+     */
     public void incrementCounter() {
-        interval(System.currentTimeMillis()).counter.incrementAndGet();
+        interval(System.currentTimeMillis()).cntr.incrementAndGet();
     }
 
-    public void setCounter(long value) {
-        interval(System.currentTimeMillis()).counter.set(value);
+    /**
+     * @param val new value to set.
+     * @param curMs current time.
+     */
+    public void setCounter(long val, long curMs) {
+        interval(curMs).cntr.set(val);
     }
 
+    /**
+     * Manually switch interval to empty (not started measurement).
+     */
     public void finishInterval() {
         while (true) {
-            MeasurementInterval interval = measurementIntervalAtomicReference.get();
+            MeasurementInterval interval = measurementIntervalAtomicRef.get();
 
             if (interval == null)
                 return;
 
-            if (measurementIntervalAtomicReference.compareAndSet(interval, null)) {
+            if (measurementIntervalAtomicRef.compareAndSet(interval, null)) {
                 interval.tsEnd = System.currentTimeMillis();
 
                 pushToHistory(interval);
@@ -144,20 +203,23 @@ public class PagesWriteSpeedTracker {
         }
     }
 
+    /**
+     * Measurement interval, completed or open.
+     */
     private static class MeasurementInterval {
-        private AtomicLong counter = new AtomicLong();
+        /** Counter of performed operations, pages. */
+        private AtomicLong cntr = new AtomicLong();
+        /** Timestamp of measurement start. */
         private final long tsStart;
+
+        /** Timestamp  of measurement end. 0 for open measurements */
         private volatile long tsEnd;
 
-        public MeasurementInterval(long ms) {
-            this.tsStart = ms;
+        /**
+         * @param tsStart Timestamp of measurement start.
+         */
+        public MeasurementInterval(long tsStart) {
+            this.tsStart = tsStart;
         }
-
-        private long getSpeedPagesPerSec(long curMs) {
-            long msPassed = curMs - tsStart;
-            long pagesMarked = counter.get();
-            return msPassed == 0 ? 0 : pagesMarked * MILLIS_IN_SECOND / msPassed;
-        }
-
     }
 }

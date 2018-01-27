@@ -67,7 +67,7 @@ import org.apache.ignite.events.WalSegmentArchivedEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.NodeInvalidator;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
@@ -113,8 +113,8 @@ import org.jsr166.ConcurrentHashMap8;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.SWITCH_SEGMENT_RECORD;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer.BufferMode.DIRECT;
@@ -210,7 +210,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private static final int BUF_SIZE = 1024 * 1024;
 
     /** Use mapped byte buffer. */
-    private static boolean mmap = IgniteSystemProperties.getBoolean(IGNITE_WAL_MMAP, true);
+    private final boolean mmap = IgniteSystemProperties.getBoolean(IGNITE_WAL_MMAP, true);
 
     /** {@link FileWriteHandle#written} atomic field updater. */
     private static final AtomicLongFieldUpdater<FileWriteHandle> WRITTEN_UPD =
@@ -296,9 +296,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** Current log segment handle */
     private volatile FileWriteHandle currHnd;
-
-    /** Environment failure. */
-    private volatile Throwable envFailed;
 
     /**
      * Positive (non-0) value indicates WAL can be archived even if not complete<br>
@@ -674,7 +671,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Unable to perform segment rollover: " + e.getMessage(), e);
-            handle.invalidateEnvironment(e);
+
+            NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
         }
     }
 
@@ -722,7 +720,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             else
                 currWrHandle = rollOver(currWrHandle);
 
-            checkEnvironment();
+            checkNode();
 
             if (isStopping())
                 throw new IgniteCheckedException("Stopping.");
@@ -1120,7 +1118,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 FileWriteHandle hnd = new FileWriteHandle(
                     fileIO,
                     absIdx,
-                    cctx.igniteInstanceName(),
                     off + len,
                     true,
                     ser,
@@ -1177,17 +1174,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         lsnr.apply(fileIO);
 
                     if (mmap) {
-                        try {
-                            MappedByteBuffer buf = fileIO.map((int)maxWalSegmentSize);
+                        MappedByteBuffer buf = fileIO.map((int)maxWalSegmentSize);
 
-                            rbuf = new SegmentedRingByteBuffer(buf, metrics);
-                        }
-                        catch (IOException e) {
-                            if (e instanceof ClosedByInterruptException)
-                                throw e;
-                            else
-                                throw new IgniteCheckedException(e);
-                        }
+                        rbuf = new SegmentedRingByteBuffer(buf, metrics);
                     }
                     else
                         rbuf = cur.buf.reset();
@@ -1195,7 +1184,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     hnd = new FileWriteHandle(
                         fileIO,
                         cur.idx + 1,
-                        cctx.igniteInstanceName(),
                         0,
                         false,
                         serializer,
@@ -1237,7 +1225,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             return hnd;
         }
         catch (IOException e) {
-            throw new StorageException(e);
+            StorageException se = new StorageException("Unable to initialize WAL segment", e);
+
+            NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), se);
+
+            throw se;
         }
     }
 
@@ -1381,12 +1373,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * @throws StorageException If environment is no longer valid and we missed a WAL write.
+     * @throws StorageException If node is no longer valid and we missed a WAL operation.
      */
-    private void checkEnvironment() throws StorageException {
-        if (envFailed != null)
-            throw new StorageException("Failed to flush WAL buffer (environment was invalidated by a " +
-                "previous error)", envFailed);
+    private void checkNode() throws StorageException {
+        if (cctx.kernalContext().invalidated())
+            throw new StorageException("Failed to perform WAL operation (environment was invalidated by a " +
+                    "previous error)");
     }
 
     /**
@@ -1906,10 +1898,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 catch (IgniteCheckedException | IOException e) {
                     U.error(log, "Unexpected error during WAL compression", e);
 
-                    FileWriteHandle handle = currentHandle();
-
-                    if (handle != null)
-                        handle.invalidateEnvironment(e);
+                    NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
                 }
                 catch (InterruptedException ignore) {
                     Thread.currentThread().interrupt();
@@ -2061,10 +2050,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 catch (IOException e) {
                     U.error(log, "Unexpected error during WAL decompression", e);
 
-                    FileWriteHandle handle = currentHandle();
-
-                    if (handle != null)
-                        handle.invalidateEnvironment(e);
+                    NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
                 }
             }
         }
@@ -2342,17 +2328,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** Absolute WAL segment file index (incremental counter) */
         protected final long idx;
 
-        /** */
-        protected String gridName;
-
         /**
          * @param fileIO I/O interface for read/write operations of FileHandle.
          * @param idx Absolute WAL segment file index (incremental counter).
          */
-        private FileHandle(FileIO fileIO, long idx, String gridName) {
+        private FileHandle(FileIO fileIO, long idx) {
             this.fileIO = fileIO;
             this.idx = idx;
-            this.gridName = gridName;
         }
     }
 
@@ -2381,11 +2363,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         ReadFileHandle(
             FileIO fileIO,
             long idx,
-            String gridName,
             RecordSerializer ser,
             FileInput in
         ) {
-            super(fileIO, idx, gridName);
+            super(fileIO, idx);
 
             this.ser = ser;
             this.in = in;
@@ -2430,9 +2411,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** */
         private final Lock lock = new ReentrantLock();
 
-        /** Condition activated each time writeBuffer() completes. Used to wait previously flushed write to complete */
-        private final Condition writeComplete = lock.newCondition();
-
         /** Condition for timed wait of several threads, see {@link DataStorageConfiguration#getWalFsyncDelayNanos()} */
         private final Condition fsync = lock.newCondition();
 
@@ -2457,13 +2435,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private FileWriteHandle(
             FileIO fileIO,
             long idx,
-            String gridName,
             long pos,
             boolean resume,
             RecordSerializer serializer,
             SegmentedRingByteBuffer buf
         ) throws IOException {
-            super(fileIO, idx, gridName);
+            super(fileIO, idx);
 
             assert serializer != null;
 
@@ -2502,7 +2479,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             assert rec.size() > 0 : rec;
 
             for (;;) {
-                checkEnvironment();
+                checkNode();
 
                 SegmentedRingByteBuffer.WriteSegment seg;
 
@@ -2821,7 +2798,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             lock.lock();
 
             try {
-                assert envFailed != null || written == lastFsyncPos || mode != WALMode.DEFAULT :
+                assert cctx.kernalContext().invalidated() || written == lastFsyncPos || mode != WALMode.DEFAULT :
                     "fsync [written=" + written + ", lastFsync=" + lastFsyncPos + ", idx=" + idx + ']';
 
                 fileIO = null;
@@ -2845,40 +2822,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
             finally {
                 lock.unlock();
-            }
-        }
-
-        /**
-         * @param e Exception to set as a cause for all further operations.
-         */
-        private void invalidateEnvironment(Throwable e) {
-            lock.lock();
-
-            try {
-                invalidateEnvironmentLocked(e);
-            }
-            finally {
-                writeComplete.signalAll();
-
-                lock.unlock();
-            }
-        }
-
-        /**
-         * @param e Exception to set as a cause for all further operations.
-         */
-        private void invalidateEnvironmentLocked(Throwable e) {
-            if (envFailed == null) {
-                envFailed = e;
-
-                U.error(log, "IO error encountered while running WAL flush. All further operations " +
-                    " will be failed and local node will be stopped.", e);
-
-                new Thread() {
-                    @Override public void run() {
-                        IgnitionEx.stop(gridName, true, true);
-                    }
-                }.start();
             }
         }
 
@@ -3316,7 +3259,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             Throwable err = walWriter.err;
 
             if (err != null)
-                currentHandle().invalidateEnvironment(err);
+                NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), err);
 
             if (expPos == UNCONDITIONAL_FLUSH)
                 expPos = (currentHandle().buf.tail());
@@ -3355,7 +3298,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             assert hdl.fileIO != null : "Writing to a closed segment.";
 
-            checkEnvironment();
+            checkNode();
 
             long lastLogged = U.currentTimeMillis();
 
@@ -3380,7 +3323,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     lastLogged = now;
                 }
 
-                checkEnvironment();
+                checkNode();
             }
 
             // Do the write.
@@ -3403,9 +3346,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 assert hdl.written == hdl.fileIO.position();
             }
             catch (IOException e) {
-                hdl.invalidateEnvironmentLocked(e);
+                StorageException se = new StorageException("Unable to write", e);
 
-                throw new StorageException(e);
+                NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), se);
+
+                throw se;
             }
         }
     }

@@ -15,28 +15,8 @@
  * limitations under the License.
  */
 
-import { suite, test, setup } from 'mocha';
-
-suite('ExampleTestSuite', () => {
-    setup(() => {
-        // browser.get('http://localhost:9000/');
-    });
-
-    test('initially has a greeting', (done) => {
-        done();
-
-        // element(by.model('ui.email')).sendKeys('jhon@doe.com');
-    });
-
-    test('initially has a greeting', (done) => {
-        done();
-
-        // element(by.model('ui.email')).sendKeys('jhon@doe.com');
-    });
-
-    test('initially has a greeting', (done) => {
-        done();
-
-        // element(by.model('ui.email')).sendKeys('jhon@doe.com');
-    });
-});
+/**
+ * <!-- Package description. -->
+ * Contains main APIs for SVM(support vector machines) algorithms.
+ */
+package org.apache.ignite.ml.svm;

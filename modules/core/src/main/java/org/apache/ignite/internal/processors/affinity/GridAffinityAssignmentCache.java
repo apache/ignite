@@ -107,6 +107,9 @@ public class GridAffinityAssignmentCache {
     /** */
     private final boolean locCache;
 
+    /** */
+    private final boolean persistentCache;
+
     /** Node stop flag. */
     private volatile IgniteCheckedException stopErr;
 
@@ -137,7 +140,8 @@ public class GridAffinityAssignmentCache {
         AffinityFunction aff,
         IgnitePredicate<ClusterNode> nodeFilter,
         int backups,
-        boolean locCache)
+        boolean locCache,
+        boolean persistentCache)
     {
         assert ctx != null;
         assert aff != null;
@@ -151,6 +155,7 @@ public class GridAffinityAssignmentCache {
         this.grpId = grpId;
         this.backups = backups;
         this.locCache = locCache;
+        this.persistentCache = persistentCache;
 
         log = ctx.log(GridAffinityAssignmentCache.class);
 
@@ -290,7 +295,8 @@ public class GridAffinityAssignmentCache {
         boolean changedBaseline = false;
 
         if (discoCache != null) {
-            hasBaseline = discoCache.state().baselineTopology() != null;
+            hasBaseline = discoCache.state().baselineTopology() != null && persistentCache;
+
             changedBaseline = !hasBaseline ? baselineTopology != null :
                 !discoCache.state().baselineTopology().equals(baselineTopology);
         }

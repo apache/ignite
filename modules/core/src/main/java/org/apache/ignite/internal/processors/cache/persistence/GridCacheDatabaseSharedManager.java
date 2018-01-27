@@ -74,6 +74,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.NodeInvalidator;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
@@ -129,6 +130,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
+import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -1126,7 +1128,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         // Before local node join event.
         if (clusterInTransitionStateToActive || (joinEvt && locNode && isSrvNode))
             restoreState();
+    }
 
+    /** {@inheritDoc} */
+    @Override public void rebuildIndexesIfNeeded(GridDhtPartitionsExchangeFuture fut) {
         if (cctx.kernalContext().query().moduleEnabled()) {
             for (final GridCacheContext cacheCtx : (Collection<GridCacheContext>)cctx.cacheContexts()) {
                 if (cacheCtx.startTopologyVersion().equals(fut.initialVersion()) &&
@@ -1145,8 +1150,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             CacheConfiguration ccfg = cacheCtx.config();
 
                             if (ccfg != null) {
-                                log().info("Finished indexes rebuilding for cache: [name=" + ccfg.getName()
-                                    + ", grpName=" + ccfg.getGroupName());
+                                log().info("Finished indexes rebuilding for cache [name=" + ccfg.getName()
+                                    + ", grpName=" + ccfg.getGroupName() + ']');
                             }
                         }
                     });
@@ -2563,14 +2568,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         return writtenPagesCntr;
     }
 
-
     /**
-     * Counter for fsynced checkpoint pages. Not null only if checkpoint is running.
+     * @return Counter for fsynced checkpoint pages. Not null only if checkpoint is running.
      */
     public AtomicInteger syncedPagesCounter() {
         return syncedPagesCntr;
     }
-
 
     /**
      * @return Number of pages in current checkpoint. If checkpoint is not running, returns 0.
@@ -2768,7 +2771,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 try {
                     if (chp.hasDelta()) {
-                        // Identity stores set.
 
                         final int totalPagesToWriteCnt = chp.pagesSize();
 
@@ -2858,7 +2860,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 for (Iterator<CheckpointFsyncScope.Stripe> iterator = stripes.iterator(); iterator.hasNext(); ) {
                                     CheckpointFsyncScope.Stripe stripe = iterator.next();
 
-                                    Set<Map.Entry<PageStore, LongAdder>> entries = stripe.tryWaitAndCheckForErrors(10);
+                                    Set<Map.Entry<PageStore, LongAdder>> entries;
+
+                                    try {
+                                        entries = stripe.tryWaitAndCheckForErrors(10);
+                                    } catch (IgniteCheckedException e) {
+                                        chp.progress.cpFinishFut.onDone(e);
+
+                                        // In case of writing error node should be invalidated and stopped.
+                                        NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
+
+                                        return;
+                                    }
 
                                     if (entries != null) {
                                         if (log.isInfoEnabled()) {
@@ -3224,7 +3237,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         chp.cpEntry.checkpointMark(),
                         null,
                         CheckpointEntryType.END);
-
 
                 currCheckpointPagesCnt = 0;
             }

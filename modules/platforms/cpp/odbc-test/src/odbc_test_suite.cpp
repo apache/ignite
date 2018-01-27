@@ -463,21 +463,38 @@ namespace ignite
         {
             Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
+            std::vector<SQLUSMALLINT> statuses(recordsNum, 42);
+
+            // Binding statuses array.
+            SQLRETURN ret = SQLSetStmtAttr(stmt, SQL_ATTR_PARAM_STATUS_PTR, &statuses[0], 0);
+
+            if (!SQL_SUCCEEDED(ret))
+                BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
             // Inserting values.
-            int inserted = InsertTestBatch(splitAt, recordsNum, recordsNum - splitAt);
+            int setsProcessed = InsertTestBatch(splitAt, recordsNum, recordsNum - splitAt);
 
-            BOOST_REQUIRE_EQUAL(inserted, recordsNum - splitAt);
+            BOOST_REQUIRE_EQUAL(setsProcessed, recordsNum - splitAt);
 
-            inserted = InsertTestBatch(0, recordsNum, splitAt);
+            for (int i = 0; i < recordsNum - splitAt; ++i)
+                BOOST_REQUIRE_EQUAL(statuses[i], SQL_PARAM_SUCCESS);
 
-            BOOST_REQUIRE_EQUAL(inserted, splitAt);
+            setsProcessed = InsertTestBatch(0, recordsNum, splitAt);
+
+            BOOST_REQUIRE_EQUAL(setsProcessed, recordsNum);
+
+            for (int i = 0; i < splitAt; ++i)
+                BOOST_REQUIRE_EQUAL(statuses[i], SQL_PARAM_SUCCESS);
+
+            for (int i = splitAt; i < recordsNum; ++i)
+                BOOST_REQUIRE_EQUAL(statuses[i], SQL_PARAM_ERROR);
 
             int64_t key = 0;
             char strField[1024] = {0};
             SQLLEN strFieldLen = 0;
 
             // Binding columns.
-            SQLRETURN ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &key, 0, 0);
+            ret = SQLBindCol(stmt, 1, SQL_C_SLONG, &key, 0, 0);
 
             if (!SQL_SUCCEEDED(ret))
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
