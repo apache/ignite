@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Client
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Sockets;
@@ -238,15 +239,19 @@ namespace Apache.Ignite.Core.Tests.Client
             var task = cache.PutAllAsync(data);
             Assert.IsFalse(task.IsCompleted);
             var aex = Assert.Throws<AggregateException>(() => task.Wait());
-            Assert.AreEqual(SocketError.TimedOut, ((SocketException) aex.GetBaseException()).SocketErrorCode);
+            var socketEx = (SocketException) aex.GetBaseException().InnerException;
+            Assert.IsNotNull(socketEx);
+            Assert.AreEqual(SocketError.TimedOut, socketEx.SocketErrorCode);
 
             // Sync (reconnect for clean state).
             Ignition.StopAll(true);
             Ignition.Start(TestUtils.GetTestConfiguration());
             client = Ignition.StartClient(cfg);
             cache = client.CreateCache<int, string>("s");
-            var ex = Assert.Throws<SocketException>(() => cache.PutAll(data));
-            Assert.AreEqual(SocketError.TimedOut, ex.SocketErrorCode);
+            var ex = Assert.Throws<IOException>(() => cache.PutAll(data));
+            socketEx = (SocketException)ex.InnerException;
+            Assert.IsNotNull(socketEx);
+            Assert.AreEqual(SocketError.TimedOut, socketEx.SocketErrorCode);
         }
 
         /// <summary>
@@ -315,8 +320,10 @@ namespace Apache.Ignite.Core.Tests.Client
                 
                 // Idle check frequency is 2 seconds.
                 Thread.Sleep(4000);
-                var ex = Assert.Throws<SocketException>(() => cache.Get(1));
-                Assert.AreEqual(SocketError.ConnectionAborted, ex.SocketErrorCode);
+                var ex = Assert.Throws<IOException>(() => cache.Get(1));
+                var socketEx = (SocketException) ex.InnerException;
+                Assert.IsNotNull(socketEx);
+                Assert.AreEqual(SocketError.ConnectionAborted, socketEx.SocketErrorCode);
             }
         }
 
