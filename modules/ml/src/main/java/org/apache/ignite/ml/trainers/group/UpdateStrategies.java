@@ -18,6 +18,8 @@
 package org.apache.ignite.ml.trainers.group;
 
 import org.apache.ignite.ml.optimization.SmoothParametrized;
+import org.apache.ignite.ml.optimization.updatecalculators.RMSPropParameterUpdate;
+import org.apache.ignite.ml.optimization.updatecalculators.RMSPropUpdateCalculator;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
@@ -43,5 +45,14 @@ public class UpdateStrategies {
      */
     public static UpdatesStrategy<SmoothParametrized, RPropParameterUpdate> RProp() {
         return new UpdatesStrategy<>(new RPropUpdateCalculator(), RPropParameterUpdate::sumLocal, RPropParameterUpdate::avg);
+    }
+
+    /**
+     * RMSProp update strategy.
+     *
+     * @return RMSProp update strategy.
+     */
+    public static UpdatesStrategy<SmoothParametrized, RMSPropParameterUpdate> RMSProp() {
+        return new UpdatesStrategy<>(new RMSPropUpdateCalculator(), RMSPropParameterUpdate::sumLocal, RMSPropParameterUpdate::avg);
     }
 }

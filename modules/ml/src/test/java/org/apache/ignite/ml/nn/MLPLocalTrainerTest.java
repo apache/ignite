@@ -30,6 +30,7 @@ import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainer;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.optimization.updatecalculators.NesterovUpdateCalculator;
 import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalculator;
+import org.apache.ignite.ml.optimization.updatecalculators.RMSPropUpdateCalculator;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.junit.Test;
@@ -60,6 +61,14 @@ public class MLPLocalTrainerTest {
     @Test
     public void testXORNesterov() {
         xorTest(() -> new NesterovUpdateCalculator<>(0.1, 0.7));
+    }
+
+    /**
+     * Test 'XOR' operation training with {@link RMSPropUpdateCalculator}.
+     */
+    @Test
+    public void testXORRMSProp() {
+        xorTest(RMSPropUpdateCalculator::new);
     }
 
     /**
