@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Machine learning dataset examples.
+ * Contains implementation of partition {@code data}.
  */
-package org.apache.ignite.examples.ml.dataset;
+package org.apache.ignite.ml.dataset.api.data;

@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Machine learning dataset examples.
+ * Base package for partition {@code data} and {@code context} builders.
  */
-package org.apache.ignite.examples.ml.dataset;
+package org.apache.ignite.ml.dataset.api.builder;

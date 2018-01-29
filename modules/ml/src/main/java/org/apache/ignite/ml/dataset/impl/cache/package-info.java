@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Machine learning dataset examples.
+ * Base package for cache based implementation of machine learning dataset.
  */
-package org.apache.ignite.examples.ml.dataset;
+package org.apache.ignite.ml.dataset.impl.cache;
