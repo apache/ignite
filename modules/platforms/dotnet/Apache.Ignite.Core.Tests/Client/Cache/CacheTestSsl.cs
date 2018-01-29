@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
+    using System;
     using NUnit.Framework;
 
     /// <summary>
@@ -39,7 +40,14 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         protected override IgniteConfiguration GetIgniteConfiguration()
         {
             // TODO: Enable SSL. Add our own configs (copy from CPP or whatever).
-            return base.GetIgniteConfiguration();
+            var cfg = base.GetIgniteConfiguration();
+
+            Environment.SetEnvironmentVariable("IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH",
+                @"c:\w\incubator-ignite\modules\platforms\cpp\odbc-test\config");
+
+            cfg.SpringConfigUrl = @"c:\w\incubator-ignite\modules\platforms\cpp\odbc-test\config\queries-ssl.xml";
+
+            return cfg;
         }
     }
 }
