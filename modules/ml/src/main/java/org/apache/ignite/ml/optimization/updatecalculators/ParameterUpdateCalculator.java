@@ -34,6 +34,7 @@ public interface ParameterUpdateCalculator<M, P> {
      *
      * @param mdl Model to be trained.
      * @param loss Loss function.
+     * @return Initialized parameters.
      */
     P init(M mdl, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss);
 

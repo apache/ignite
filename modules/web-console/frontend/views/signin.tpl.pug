@@ -80,7 +80,7 @@ web-console-header
                                         | I agree to the #[a(ui-sref='{{::terms.termsState}}' target='_blank') terms and conditions]
                         .col-xs-12.col-md-11
                             .login-footer(ng-show='action == "signup"')
-                                a.labelField(ng-click='action = "password/forgot"' ignite-on-click-focus='signin_email') Forgot password?
+                                a#password-forgot-signup.labelField(ng-click='action = "password/forgot"' ignite-on-click-focus='signin_email') Forgot password?
                                 a.labelLogin(ng-click='action = "signin"' ignite-on-click-focus='signin_email') Sign In
                                 button#signup.btn.btn-primary(ng-click='auth(action, ui)' ng-disabled='form.$invalid') Sign Up
                         .col-xs-12.col-md-11
@@ -89,7 +89,7 @@ web-console-header
                                 button#forgot.btn.btn-primary(ng-click='forgotPassword(ui)' ng-disabled='form.$invalid') Send it to me
                         .col-xs-12.col-md-11
                             .login-footer(ng-show='action == "signin"')
-                                a.labelField(ng-click='action = "password/forgot"' ignite-on-click-focus='signin_email') Forgot password?
+                                a#password-forgot-signin.labelField(ng-click='action = "password/forgot"' ignite-on-click-focus='signin_email') Forgot password?
                                 a.labelLogin(ng-click='action = "signup"' ignite-on-click-focus='first_name') Sign Up
                                 button#login.btn.btn-primary(ng-click='auth(action, ui)' ng-disabled='form.$invalid') Sign In
 

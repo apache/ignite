@@ -285,6 +285,12 @@ namespace ignite
                     break;
                 }
 
+                case SQL_ATTR_PARAM_STATUS_PTR:
+                {
+                    parameters.SetParamsStatusPtr(reinterpret_cast<SQLUSMALLINT*>(value));
+                    break;
+                }
+
                 case SQL_ATTR_QUERY_TIMEOUT:
                 {
                     SqlUlen uTimeout = reinterpret_cast<SqlUlen>(value);
@@ -428,6 +434,18 @@ namespace ignite
                     SqlUlen** val = reinterpret_cast<SqlUlen**>(buf);
 
                     *val = parameters.GetParamsProcessedPtr();
+
+                    if (valueLen)
+                        *valueLen = SQL_IS_POINTER;
+
+                    break;
+                }
+
+                case SQL_ATTR_PARAM_STATUS_PTR:
+                {
+                    SQLUSMALLINT** val = reinterpret_cast<SQLUSMALLINT**>(buf);
+
+                    *val = parameters.GetParamsStatusPtr();
 
                     if (valueLen)
                         *valueLen = SQL_IS_POINTER;

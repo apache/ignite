@@ -30,6 +30,8 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
+import org.apache.ignite.internal.IgniteDiagnosticAware;
+import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
@@ -45,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
@@ -71,7 +74,8 @@ import static org.apache.ignite.transactions.TransactionState.PREPARING;
 /**
  *
  */
-public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepareFutureAdapter {
+public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepareFutureAdapter implements
+    IgniteDiagnosticAware {
     /** */
     @GridToStringExclude
     private KeyLockFuture keyLockFut;
@@ -779,6 +783,61 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 "within provided timeout for transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']'));
 
             onComplete();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addDiagnosticRequest(IgniteDiagnosticPrepareContext ctx) {
+        if (!isDone()) {
+            for (IgniteInternalFuture<GridNearTxPrepareResponse> fut : futures()) {
+                if (!fut.isDone()) {
+                    if (fut instanceof MiniFuture) {
+                        MiniFuture miniFut = (MiniFuture)fut;
+
+                        UUID nodeId = miniFut.node().id();
+                        GridCacheVersion dhtVer = miniFut.m.dhtVersion();
+                        GridCacheVersion nearVer = tx.nearXidVersion();
+
+                        if (dhtVer != null) {
+                            ctx.remoteTxInfo(
+                                nodeId,
+                                dhtVer,
+                                nearVer,
+                                "GridNearOptimisticTxPrepareFuture waiting for remote node response [" +
+                                    "nodeId=" + nodeId +
+                                    ", topVer=" + tx.topologyVersion() +
+                                    ", dhtVer=" + dhtVer +
+                                    ", nearVer=" + nearVer +
+                                    ", futId=" + futId +
+                                    ", miniId=" + miniFut.futId +
+                                    ", tx=" + tx + ']');
+                        }
+                        else {
+                            ctx.basicInfo(
+                                cctx.localNodeId(),
+                                "GridNearOptimisticTxPrepareFuture waiting for remote node response [" +
+                                    "nodeId=" + nodeId +
+                                    ", topVer=" + tx.topologyVersion() +
+                                    ", dhtVer=" + dhtVer +
+                                    ", nearVer=" + nearVer +
+                                    ", futId=" + futId +
+                                    ", miniId=" + miniFut.futId +
+                                    ", tx=" + tx + ']');
+                        }
+                    }
+                    else if (fut instanceof KeyLockFuture) {
+                        KeyLockFuture keyFut = (KeyLockFuture)fut;
+
+                        ctx.basicInfo(
+                            cctx.localNodeId(),
+                            "GridNearOptimisticTxPrepareFuture waiting for local keys lock [" +
+                                "node=" + cctx.localNodeId() +
+                                ", topVer=" + tx.topologyVersion() +
+                                ", allKeysAdded=" + keyFut.allKeysAdded +
+                                ", keys=" + keyFut.lockKeys + ']');
+                    }
+                }
+            }
         }
     }
 

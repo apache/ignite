@@ -30,7 +30,6 @@ import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainer;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.optimization.updatecalculators.NesterovUpdateCalculator;
 import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalculator;
-import org.apache.ignite.ml.optimization.updatecalculators.RMSPropUpdateCalculator;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.junit.Test;
@@ -44,7 +43,7 @@ public class MLPLocalTrainerTest {
      */
     @Test
     public void testXORSimpleGD() {
-        xorTest(() -> new SimpleGDUpdateCalculator<>(0.3));
+        xorTest(() -> new SimpleGDUpdateCalculator(0.3));
     }
 
     /**
@@ -52,7 +51,7 @@ public class MLPLocalTrainerTest {
      */
     @Test
     public void testXORRProp() {
-        xorTest(() -> new RPropUpdateCalculator<>());
+        xorTest(RPropUpdateCalculator::new);
     }
 
     /**
@@ -76,7 +75,7 @@ public class MLPLocalTrainerTest {
      * @param updaterSupplier Updater supplier.
      * @param <P> Updater parameters type.
      */
-    private <P> void xorTest(IgniteSupplier<ParameterUpdateCalculator<MultilayerPerceptron, P>> updaterSupplier) {
+    private <P> void xorTest(IgniteSupplier<ParameterUpdateCalculator<? super MultilayerPerceptron, P>> updaterSupplier) {
         Matrix xorInputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}},
             StorageConstants.ROW_STORAGE_MODE).transpose();
 

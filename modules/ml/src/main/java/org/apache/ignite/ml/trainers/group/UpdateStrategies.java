@@ -18,32 +18,30 @@
 package org.apache.ignite.ml.trainers.group;
 
 import org.apache.ignite.ml.optimization.SmoothParametrized;
-import org.apache.ignite.ml.optimization.updatecalculators.RMSPropParameterUpdate;
-import org.apache.ignite.ml.optimization.updatecalculators.RMSPropUpdateCalculator;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
+import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
+import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 
 /**
  * Holder class for various update strategies.
  */
 public class UpdateStrategies {
     /**
-     * RMSProp update strategy.
+     * Simple GD update strategy.
      *
-     * @param <M> Model for optimization.
-     * @return RMSProp update strategy.
+     * @return GD update strategy.
      */
-    public static <M extends SmoothParametrized<M>> UpdatesStrategy<M, RMSPropParameterUpdate> RMSProp() {
-        return new UpdatesStrategy<M, RMSPropParameterUpdate>(new RMSPropUpdateCalculator<>(), RMSPropParameterUpdate::sumLocal, RMSPropParameterUpdate::avg);
+    public static UpdatesStrategy<SmoothParametrized, SimpleGDParameterUpdate> GD() {
+        return new UpdatesStrategy<>(new SimpleGDUpdateCalculator(), SimpleGDParameterUpdate::sumLocal, SimpleGDParameterUpdate::avg);
     }
 
     /**
      * RProp update strategy.
      *
-     * @param <M> Model for optimization.
      * @return RProp update strategy.
      */
-    public static <M extends SmoothParametrized<M>> UpdatesStrategy<M, RPropParameterUpdate> RProp() {
-        return new UpdatesStrategy<>(new RPropUpdateCalculator<>(), RPropParameterUpdate::sumLocal, RPropParameterUpdate::avg);
+    public static UpdatesStrategy<SmoothParametrized, RPropParameterUpdate> RProp() {
+        return new UpdatesStrategy<>(new RPropUpdateCalculator(), RPropParameterUpdate::sumLocal, RPropParameterUpdate::avg);
     }
 }

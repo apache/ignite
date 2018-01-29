@@ -53,14 +53,15 @@ public class Utils {
             obj = in.readObject();
         }
         catch (IOException | ClassNotFoundException e) {
-            throw new IgniteException("Couldn't copy the object.");
+            throw new IgniteException("Couldn't copy the object.", e);
         }
 
         return (T)obj;
     }
 
     /**
-     * Select k distinct integers from range [0, n) with reservoir sampling: https://en.wikipedia.org/wiki/Reservoir_sampling.
+     * Select k distinct integers from range [0, n) with reservoir sampling:
+     * https://en.wikipedia.org/wiki/Reservoir_sampling.
      *
      * @param n Number specifying left end of range of integers to pick values from.
      * @param k Count specifying how many integers should be picked.
@@ -86,7 +87,8 @@ public class Utils {
     }
 
     /**
-     * Select k distinct integers from range [0, n) with reservoir sampling: https://en.wikipedia.org/wiki/Reservoir_sampling.
+     * Select k distinct integers from range [0, n) with reservoir sampling:
+     * https://en.wikipedia.org/wiki/Reservoir_sampling.
      * Equivalent to {@code selectKDistinct(n, k, new Random())}.
      *
      * @param n Number specifying left end of range of integers to pick values from.

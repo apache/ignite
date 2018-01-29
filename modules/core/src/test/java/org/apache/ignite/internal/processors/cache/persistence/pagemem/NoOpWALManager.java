@@ -72,7 +72,7 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public int truncate(WALPointer ptr) {
+    @Override public int truncate(WALPointer low, WALPointer high) {
         return 0;
     }
 
@@ -83,6 +83,11 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
 
     /** {@inheritDoc} */
     @Override public boolean reserved(WALPointer ptr) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean disabled(int grpId) {
         return false;
     }
 
@@ -103,6 +108,11 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture reconnectFut) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onReconnected(boolean active) {
         // No-op.
     }
 

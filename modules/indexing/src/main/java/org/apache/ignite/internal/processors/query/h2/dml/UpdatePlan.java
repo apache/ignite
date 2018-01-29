@@ -372,8 +372,12 @@ public final class UpdatePlan {
 
     /**
      * Extract rows from plan without performing any query.
+     *
      * @param args Original query arguments.
-     * @return Rows from plan.
+     * @return {@link List} of rows from the plan for a single query.
+     * For example, if we have multiple args in a query: <br/>
+     * {@code INSERT INTO person VALUES (k1, v1), (k2, v2), (k3, v3);} <br/>
+     * we will get a {@link List} of {@link List} with items {@code {[k1, v1], [k2, v2], [k3, v3]}}.
      * @throws IgniteCheckedException if failed.
      */
     public List<List<?>> createRows(Object[] args) throws IgniteCheckedException {
@@ -382,6 +386,59 @@ public final class UpdatePlan {
         List<List<?>> res = new ArrayList<>(rowsNum);
 
         GridH2RowDescriptor desc = tbl.rowDescriptor();
+
+        extractArgsValues(args, res, desc);
+
+        return res;
+    }
+
+    /**
+     * Extract rows from plan without performing any query.
+     *
+     * @param argss Batch of arguments.
+     * @return {@link List} of rows from the plan for each query.
+     * For example, if we have a batch of queries with multiple args: <br/>
+     * <code>
+     * INSERT INTO person VALUES (k1, v1), (k2, v2), (k3, v3); <br/>
+     * INSERT INTO person VALUES (k4, v4), (k5, v5), (k6, v6);<br/>
+     * </code>
+     * we will get a {@link List} of {@link List} of {@link List} with items: <br/>
+     * <code>
+     * {[k1, v1], [k2, v2], [k3, v3]},<br/>
+     * {[k4, v4], [k5, v5], [k6, v6]}<br/>
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public List<List<List<?>>> createRows(List<Object[]> argss) throws IgniteCheckedException {
+        assert rowsNum > 0 && !F.isEmpty(colNames);
+        assert argss != null;
+
+        List<List<List<?>>> resPerQry = new ArrayList<>(argss.size());
+
+        GridH2RowDescriptor desc = tbl.rowDescriptor();
+
+        for (Object[] args : argss) {
+            List<List<?>> res = new ArrayList<>();
+
+            resPerQry.add(res);
+
+            extractArgsValues(args, res, desc);
+        }
+
+        return resPerQry;
+    }
+
+    /**
+     * Extracts values from arguments.
+     *
+     * @param args Arguments.
+     * @param res Result list where to put values to.
+     * @param desc Row descriptor.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void extractArgsValues(Object[] args, List<List<?>> res, GridH2RowDescriptor desc)
+        throws IgniteCheckedException {
+        assert res != null;
 
         for (List<DmlArgument> row : rows) {
             List<Object> resRow = new ArrayList<>();
@@ -400,8 +457,6 @@ public final class UpdatePlan {
 
             res.add(resRow);
         }
-
-        return res;
     }
 
     /**
