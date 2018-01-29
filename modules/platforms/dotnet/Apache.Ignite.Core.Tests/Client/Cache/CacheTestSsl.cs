@@ -53,7 +53,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 SslStreamFactory = new SslStreamFactory
                 {
                     CertificatePath = @"Config\thin-client-cert.pfx",
-                    CertificatePassword = "123456"
+                    CertificatePassword = "123456",
+                    SkipServerCertificateValidation = true
                 }
             };
         }

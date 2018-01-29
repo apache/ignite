@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Client
         private bool ValidateServerCertificate(object sender, X509Certificate certificate, X509Chain chain, 
             SslPolicyErrors sslPolicyErrors)
         {
-            if (IgnoreInvalidCertificates)
+            if (SkipServerCertificateValidation)
             {
                 return true;
             }
@@ -73,11 +73,10 @@ namespace Apache.Ignite.Core.Client
         public string CertificatePassword { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether to ignore invalid certificates.
-        /// This undermines security (because anyone can join the cluster),
-        /// but may be useful for testing with self-signed certificates.
+        /// Gets or sets a value indicating whether to ignore invalid remote (server) certificates.
+        /// This may be useful for testing with self-signed certificates.
         /// </summary>
-        public bool IgnoreInvalidCertificates { get; set; }
+        public bool SkipServerCertificateValidation { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether the certificate revocation list is checked during authentication.
