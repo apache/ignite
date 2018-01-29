@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.lang.IgniteInClosure;
 
 /**
@@ -399,5 +400,16 @@ public abstract class BPlusIO<L> extends PageIO {
      */
     public void visit(long pageAddr, IgniteInClosure<L> c) {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
+        sb.a("BPlusIO [\n\tcanGetRow=").a(canGetRow)
+            .a(",\n\tleaf=").a(leaf)
+            .a(",\n\titemSize=").a(itemSize)
+            .a(",\n\tcnt=").a(getCount(addr))
+            .a(",\n\tforward=").appendHex(getForward(addr))
+            .a(",\n\tremoveId=").appendHex(getRemoveId(addr))
+            .a("\n]");
     }
 }

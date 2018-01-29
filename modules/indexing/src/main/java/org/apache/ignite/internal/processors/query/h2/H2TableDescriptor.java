@@ -310,9 +310,8 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
             return idx.createSortedIndex(schema, idxDesc.name(), tbl, false, cols, idxDesc.inlineSize());
         }
-        else if (idxDesc.type() == QueryIndexType.GEOSPATIAL) {
+        else if (idxDesc.type() == QueryIndexType.GEOSPATIAL)
             return H2Utils.createSpatialIndex(tbl, idxDesc.name(), cols.toArray(new IndexColumn[cols.size()]));
-        }
 
         throw new IllegalStateException("Index type: " + idxDesc.type());
     }

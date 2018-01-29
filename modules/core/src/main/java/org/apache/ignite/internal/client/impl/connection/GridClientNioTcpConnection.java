@@ -575,6 +575,8 @@ public class GridClientNioTcpConnection extends GridClientConnection {
                             "(client has no credentials) [clientId=" + clientId +
                             ", srvAddr=" + serverAddress() + ", errMsg=" + resp.errorMessage() +']'));
 
+                        removePending(resp.requestId());
+
                         return;
                     }
 

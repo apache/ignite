@@ -111,6 +111,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
 
             CacheStoreSession ses = grid.HandleRegistry.Get<CacheStoreSession>(sesId, true);
 
+            // Session cache name may change in cross-cache transaction.
+            // Single session is used for all stores in cross-cache transactions.
             ses.CacheName = rawReader.ReadString();
 
             _sesProxy.SetSession(ses);
@@ -135,11 +137,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
                         {
                             lock (writer) // User-defined store can be multithreaded.
                             {
-                                writer.WithDetach(w =>
-                                {
-                                    w.WriteObject(k);
-                                    w.WriteObject(v);
-                                });
+                                writer.WriteObjectDetached(k);
+                                writer.WriteObjectDetached(v);
 
                                 cnt++;
                             }
@@ -186,11 +185,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
                         {
                             var entry0 = entry; // Copy modified closure.
 
-                            writer.WithDetach(w =>
-                            {
-                                w.WriteObject(entry0.Key);
-                                w.WriteObject(entry0.Value);
-                            });
+                            writer.WriteObjectDetached(entry0.Key);
+                            writer.WriteObjectDetached(entry0.Value);
 
                             cnt++;
                         }
@@ -223,11 +219,19 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
                         break;
 
                     case OpSesEnd:
-                        grid.HandleRegistry.Release(sesId);
+                    {
+                        var commit = rawReader.ReadBoolean();
+                        var last = rawReader.ReadBoolean();
 
-                        _store.SessionEnd(rawReader.ReadBoolean());
+                        if (last)
+                        {
+                            grid.HandleRegistry.Release(sesId);
+                        }
+
+                        _store.SessionEnd(commit);
 
                         break;
+                    }
 
                     default:
                         throw new IgniteException("Invalid operation type: " + opType);

@@ -34,6 +34,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.DummyPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -136,12 +137,16 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
 
         IgniteCacheDatabaseSharedManager db = ignite.context().cache().context().database();
 
+        PageIO pageIO = new DummyPageIO();
+
         // Allocate.
         for (int i = 0; i < size; i++) {
             db.checkpointReadLock();
             try {
                 final FullPageId fullId = new FullPageId(memory.allocatePage(cacheId, i % 256, PageMemory.FLAG_DATA),
                     cacheId);
+
+                initPage(memory, pageIO, fullId);
 
                 pageIds.add(fullId);
             }
@@ -175,6 +180,31 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
             fut.get();
 
         System.out.println("Read pages: " + pageIds.size());
+    }
+
+    /**
+     * Initializes page.
+     * @param mem page memory implementation.
+     * @param pageIO page io implementation.
+     * @param fullId full page id.
+     * @throws IgniteCheckedException if error occurs.
+     */
+    private void initPage(PageMemory mem, PageIO pageIO, FullPageId fullId) throws IgniteCheckedException {
+        long page = mem.acquirePage(fullId.groupId(), fullId.pageId());
+
+        try {
+            final long pageAddr = mem.writeLock(fullId.groupId(), fullId.pageId(), page);
+
+            try {
+                pageIO.initNewPage(pageAddr, fullId.pageId(), mem.pageSize());
+            }
+            finally {
+                mem.writeUnlock(fullId.groupId(), fullId.pageId(), page, null, true);
+            }
+        }
+        finally {
+            mem.releasePage(fullId.groupId(), fullId.pageId(), page);
+        }
     }
 
     /**

@@ -18,17 +18,21 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.lucene.store.BufferedChecksum;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 
 /**
  * A memory-resident {@link IndexOutput} implementation.
  */
-public class GridLuceneOutputStream extends IndexOutput {
+public class GridLuceneOutputStream extends IndexOutput implements Accountable {
     /** Off-heap page size. */
     static final int BUFFER_SIZE = 32 * 1024;
 
@@ -93,6 +97,8 @@ public class GridLuceneOutputStream extends IndexOutput {
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
         flush();
+
+        file.releaseRef();
     }
 
     /** {@inheritDoc} */
@@ -200,5 +206,15 @@ public class GridLuceneOutputStream extends IndexOutput {
             numBytes -= toCp;
             bufPosition += toCp;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public long ramBytesUsed() {
+        return file.getSizeInBytes();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<Accountable> getChildResources() {
+        return Collections.singleton(Accountables.namedAccountable("file", file));
     }
 }

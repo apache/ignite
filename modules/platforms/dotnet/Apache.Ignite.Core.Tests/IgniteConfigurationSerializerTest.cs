@@ -143,6 +143,7 @@ namespace Apache.Ignite.Core.Tests
                                 </memoryPolicies>
                             </memoryConfiguration>
                             <sqlConnectorConfiguration host='bar' port='10' portRange='11' socketSendBufferSize='12' socketReceiveBufferSize='13' tcpNoDelay='true' maxOpenCursorsPerConnection='14' threadPoolSize='15' />
+                            <clientConnectorConfiguration host='bar' port='10' portRange='11' socketSendBufferSize='12' socketReceiveBufferSize='13' tcpNoDelay='true' maxOpenCursorsPerConnection='14' threadPoolSize='15' />
                             <persistentStoreConfiguration alwaysWriteFullPages='true' checkpointingFrequency='00:00:1' checkpointingPageBufferSize='2' checkpointingThreads='3' lockWaitTime='00:00:04' persistentStorePath='foo' tlbSize='5' walArchivePath='bar' walFlushFrequency='00:00:06' walFsyncDelayNanos='7' walHistorySize='8' walMode='None' walRecordIteratorBufferSize='9' walSegments='10' walSegmentSize='11' walStorePath='baz' metricsEnabled='true' rateTimeInterval='0:0:6' subIntervals='3' />
                         </igniteConfig>";
 
@@ -285,6 +286,7 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.AreEqual(PeerAssemblyLoadingMode.CurrentAppDomain, cfg.PeerAssemblyLoadingMode);
 
+#pragma warning disable 618  // Obsolete
             var sql = cfg.SqlConnectorConfiguration;
             Assert.IsNotNull(sql);
             Assert.AreEqual("bar", sql.Host);
@@ -295,6 +297,18 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(sql.TcpNoDelay);
             Assert.AreEqual(14, sql.MaxOpenCursorsPerConnection);
             Assert.AreEqual(15, sql.ThreadPoolSize);
+#pragma warning restore 618
+
+            var client = cfg.ClientConnectorConfiguration;
+            Assert.IsNotNull(client);
+            Assert.AreEqual("bar", client.Host);
+            Assert.AreEqual(10, client.Port);
+            Assert.AreEqual(11, client.PortRange);
+            Assert.AreEqual(12, client.SocketSendBufferSize);
+            Assert.AreEqual(13, client.SocketReceiveBufferSize);
+            Assert.IsTrue(client.TcpNoDelay);
+            Assert.AreEqual(14, client.MaxOpenCursorsPerConnection);
+            Assert.AreEqual(15, client.ThreadPoolSize);
 
             var pers = cfg.PersistentStoreConfiguration;
 
@@ -355,6 +369,7 @@ namespace Apache.Ignite.Core.Tests
         /// Checks the property is present in schema.
         /// </summary>
         // ReSharper disable once UnusedParameter.Local
+        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
         private static void CheckPropertyIsPresentInSchema(Type type, XElement schema)
         {
             Func<string, string> toLowerCamel = x => char.ToLowerInvariant(x[0]) + x.Substring(1);
@@ -879,7 +894,7 @@ namespace Apache.Ignite.Core.Tests
                     }
                 },
                 PeerAssemblyLoadingMode = PeerAssemblyLoadingMode.CurrentAppDomain,
-                SqlConnectorConfiguration = new SqlConnectorConfiguration
+                ClientConnectorConfiguration = new ClientConnectorConfiguration
                 {
                     Host = "foo",
                     Port = 2,

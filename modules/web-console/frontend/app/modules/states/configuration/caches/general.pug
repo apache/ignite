@@ -45,25 +45,6 @@ include /app/helpers/jade/mixins
                 .settings-row
                     +cacheMode('Mode:', `${model}.cacheMode`, '"cacheMode"', 'PARTITIONED')
 
-                //- Since ignite 2.0
-                .settings-row(ng-if='$ctrl.available("2.0.0")')
-                    +dropdown('Partition loss policy:', model + '.partitionLossPolicy', '"partitionLossPolicy"', 'true', 'IGNORE',
-                        '[\
-                            {value: "READ_ONLY_SAFE", label: "READ_ONLY_SAFE"},\
-                            {value: "READ_ONLY_ALL", label: "READ_ONLY_ALL"},\
-                            {value: "READ_WRITE_SAFE", label: "READ_WRITE_SAFE"},\
-                            {value: "READ_WRITE_ALL", label: "READ_WRITE_ALL"},\
-                            {value: "IGNORE", label: "IGNORE"}\
-                        ]',
-                        'Defines how cache will behave in a case when one or more partitions are lost:\
-                        <ul>\
-                            <li>READ_ONLY_SAFE - all writes to the cache will be failed with an exception, reads will only be allowed for keys in non-lost partitions</li>\
-                            <li>READ_ONLY_ALL - all writes to the cache will be failed with an exception, all reads will proceed as if all partitions were in a consistent state</li>\
-                            <li>READ_WRITE_SAFE - all reads and writes will be allowed for keys in valid partitions</li>\
-                            <li>READ_WRITE_ALL - all reads and writes will proceed as if all partitions were in a consistent state</li>\
-                            <li>IGNORE - if partition is lost, reset its state and do not clear intermediate data</li>\
-                        </ul>')
-
                 .settings-row
                     +dropdown('Atomicity:', `${model}.atomicityMode`, '"atomicityMode"', 'true', 'ATOMIC',
                         '[\
@@ -96,10 +77,10 @@ include /app/helpers/jade/mixins
                         <li>READ_ONLY_SAFE - in this mode all writes to the cache will be failed with an exception,\
                             reads will only be allowed for keys in  non-lost partitions.\
                             Reads from lost partitions will be failed with an exception.</li>\
-                        <li>READ_ONLY_ALL - in this mode фll writes to the cache will be failed with an exception.\
+                        <li>READ_ONLY_ALL - in this mode all writes to the cache will be failed with an exception.\
                             All reads will proceed as if all partitions were in a consistent state.\
                             The result of reading from a lost partition is undefined and may be different on different nodes in the cluster.</li>\
-                        <li>READ_WRITE_SAFE - in this mode Aall reads and writes will be allowed for keys in valid partitions.\
+                        <li>READ_WRITE_SAFE - in this mode all reads and writes will be allowed for keys in valid partitions.\
                             All reads and writes for keys in lost partitions will be failed with an exception.</li>\
                         <li>READ_WRITE_ALL - in this mode all reads and writes will proceed as if all partitions were in a consistent state.\
                             The result of reading from a lost partition is undefined and may be different on different nodes in the cluster.</li>\

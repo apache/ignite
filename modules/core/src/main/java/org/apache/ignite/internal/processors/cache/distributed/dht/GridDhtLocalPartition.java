@@ -23,8 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentNavigableMap;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -47,9 +45,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridIterator;
@@ -934,12 +932,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                     try {
                         CacheDataRow row = it0.next();
 
-                        if (grp.sharedGroup() && (hld == null || hld.cctx.cacheId() != row.cacheId())) {
-                            hld = cacheMaps.get(row.cacheId());
-
-                            if (hld == null)
-                                continue;
-                        }
+                        if (grp.sharedGroup() && (hld == null || hld.cctx.cacheId() != row.cacheId()))
+                            hld = cacheMapHolder(ctx.cacheContext(row.cacheId()));
 
                         assert hld != null;
 
@@ -953,24 +947,26 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
                         ctx.database().checkpointReadLock();
 
-                        try {if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
-                            removeEntry(cached);
+                        try {
+                            if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
+                                removeEntry(cached);
 
-                            if (rec) {
-                                hld.cctx.events().addEvent(cached.partition(),
-                                    cached.key(),
-                                    ctx.localNodeId(),
-                                    (IgniteUuid)null,
-                                    null,
-                                    EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
-                                    null,
-                                    false,
-                                    cached.rawGet(),
-                                    cached.hasValue(),
-                                    null,
-                                    null,
-                                    null,
-                                    false);}
+                                if (rec) {
+                                    hld.cctx.events().addEvent(cached.partition(),
+                                        cached.key(),
+                                        ctx.localNodeId(),
+                                        (IgniteUuid)null,
+                                        null,
+                                        EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
+                                        null,
+                                        false,
+                                        cached.rawGet(),
+                                        cached.hasValue(),
+                                        null,
+                                        null,
+                                        null,
+                                        false);
+                                }
                             }
                         }
                         finally {

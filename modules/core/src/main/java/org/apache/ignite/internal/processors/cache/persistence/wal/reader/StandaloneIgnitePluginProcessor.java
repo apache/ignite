@@ -25,14 +25,14 @@ import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.plugin.PluginProvider;
 
 /**
- *
+ * No operation, empty plugin processor for creating WAL iterator without node start up
  */
-public class StandaloneIgnitePluginProcessor extends IgnitePluginProcessor {
+class StandaloneIgnitePluginProcessor extends IgnitePluginProcessor {
     /**
      * @param ctx Kernal context.
      * @param cfg Ignite configuration.
      */
-    public StandaloneIgnitePluginProcessor(GridKernalContext ctx, IgniteConfiguration cfg) throws IgniteCheckedException {
+    StandaloneIgnitePluginProcessor(GridKernalContext ctx, IgniteConfiguration cfg) throws IgniteCheckedException {
         super(ctx, cfg, Collections.<PluginProvider>emptyList());
     }
 }

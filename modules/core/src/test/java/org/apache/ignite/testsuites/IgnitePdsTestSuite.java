@@ -18,16 +18,20 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTestWithPersistence;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsClientNearCachePutGetTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDynamicCacheTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSingleNodePutGetPersistenceTest;
-import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsEvictionTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCacheRestoreTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.file.DefaultPageSizeBackwardsCompatibilityTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCheckpointSimulationWithRealCpDisabledTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsEvictionTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTreePageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTreeReuseListPageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.MetadataStoragePageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImplNoLoadTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImplTest;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesWriteThrottleSmokeTest;
 import org.apache.ignite.internal.processors.database.IgniteDbClientNearCachePutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbDynamicCacheSelfTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMultiNodePutGetTest;
@@ -70,6 +74,15 @@ public class IgnitePdsTestSuite extends TestSuite {
         suite.addTestSuite(IgnitePdsSingleNodePutGetPersistenceTest.class);
         suite.addTestSuite(IgnitePdsDynamicCacheTest.class);
         suite.addTestSuite(IgnitePdsClientNearCachePutGetTest.class);
+
+        suite.addTestSuite(IgniteClusterActivateDeactivateTestWithPersistence.class);
+
+        suite.addTestSuite(IgnitePdsCacheRestoreTest.class);
+
+        suite.addTestSuite(DefaultPageSizeBackwardsCompatibilityTest.class);
+
+        // Write throttling
+        suite.addTestSuite(PagesWriteThrottleSmokeTest.class);
 
         return suite;
     }

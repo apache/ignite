@@ -44,9 +44,10 @@ namespace ignite
                  * @param connection Associated connection.
                  * @param sql SQL query string.
                  * @param params SQL params.
+                 * @param timeout Timeout in seconds.
                  */
-                BatchQuery(diagnostic::Diagnosable& diag, Connection& connection,
-                    const std::string& sql, const app::ParameterSet& params);
+                BatchQuery(diagnostic::Diagnosable& diag, Connection& connection, const std::string& sql,
+                    const app::ParameterSet& params, int32_t& timeout);
 
                 /**
                  * Destructor.
@@ -74,7 +75,7 @@ namespace ignite
                  * @return Operation result.
                  */
                 virtual SqlResult::Type FetchNextRow(app::ColumnBindingMap& columnBindings);
-                
+
                 /**
                  * Get data of the specified column in the result set.
                  *
@@ -152,6 +153,9 @@ namespace ignite
 
                 /** Data retrieved. */
                 bool dataRetrieved;
+
+                /** Timeout. */
+                int32_t& timeout;
             };
         }
     }

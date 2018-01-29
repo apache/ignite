@@ -16,7 +16,7 @@
  */
 
 import StringBuilder from './StringBuilder';
-import VersionService from 'app/modules/configuration/Version.service';
+import VersionService from 'app/services/Version.service';
 
 const versionService = new VersionService();
 
@@ -42,17 +42,19 @@ export default class IgniteMavenGenerator {
         deps.push({groupId, artifactId, version, jar});
     }
 
-    pickDependency(deps, key, dfltVer, igniteVer) {
+    pickDependency(acc, key, dfltVer, igniteVer) {
+        const deps = POM_DEPENDENCIES[key];
+
+        if (_.isNil(deps))
+            return;
+
         const extractVersion = (version) => {
             return _.isArray(version) ? _.find(version, (v) => versionService.since(igniteVer, v.range)).version : version;
         };
 
-        if (!_.has(POM_DEPENDENCIES, key))
-            return;
-
-        const {groupId, artifactId, version, jar} = POM_DEPENDENCIES[key];
-
-        this.addDependency(deps, groupId || 'org.apache.ignite', artifactId, extractVersion(version) || dfltVer, jar);
+        _.forEach(_.castArray(deps), ({groupId, artifactId, version, jar}) => {
+            this.addDependency(acc, groupId || 'org.apache.ignite', artifactId, extractVersion(version) || dfltVer, jar);
+        });
     }
 
     addResource(sb, dir, exclude) {
@@ -143,8 +145,10 @@ export default class IgniteMavenGenerator {
 
     /**
      * Add dependency for specified store factory if not exist.
+     *
      * @param deps Already added dependencies.
      * @param storeFactory Store factory to add dependency.
+     * @param igniteVer Ignite version.
      */
     storeFactoryDependency(deps, storeFactory, igniteVer) {
         if (storeFactory.dialect && (!storeFactory.connectVia || storeFactory.connectVia === 'DataSource'))

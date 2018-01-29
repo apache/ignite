@@ -31,7 +31,6 @@
     overflow-y: auto;
     overflow-x: hidden;
     max-height: $max-visible-items * $item-height;
-    max-width: 280px;
     box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.3);
     border-radius: $ignite-button-border-radius;
     border: 1px solid #c5c5c5;
@@ -73,6 +72,31 @@
         &:last-child > .bssm-item-button {
             border-bottom: none;
             padding-bottom: 10px;
+        }
+    }
+
+    .bssm-click-overlay {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: -1;
+    }
+    
+    &.bssm-multiple {
+        .bssm-active-indicator {
+            display: initial;
+        }
+    }
+
+    &:not(.bssm-multiple) {
+        .bssm-active-indicator {
+            display: none;
+        }
+
+        & > li > .bssm-item-button__active {
+            background-color: #e5f2f9;
         }
     }
 }

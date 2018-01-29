@@ -42,7 +42,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
- * TODO https://issues.apache.org/jira/browse/IGNITE-2229
  * Tests cache in-place modification logic with iterative value increment.
  */
 public class IgniteCacheFullTextQueryNodeJoiningSelfTest extends GridCommonAbstractTest {
@@ -107,6 +106,8 @@ public class IgniteCacheFullTextQueryNodeJoiningSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testFullTextQueryNodeJoin() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-2229");
+
         for (int r = 0; r < 5; r++) {
             startGrids(GRID_CNT);
 

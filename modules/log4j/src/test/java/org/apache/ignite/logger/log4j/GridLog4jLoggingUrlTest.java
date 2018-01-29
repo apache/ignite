@@ -18,6 +18,7 @@
 package org.apache.ignite.logger.log4j;
 
 import java.io.File;
+import java.net.URL;
 import junit.framework.TestCase;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -31,6 +32,9 @@ public class GridLog4jLoggingUrlTest extends TestCase {
     /** */
     private IgniteLogger log;
 
+    /** Logger config */
+    private URL url;
+
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {
         File xml = GridTestUtils.resolveIgnitePath("modules/core/src/test/config/log4j-test.xml");
@@ -38,15 +42,20 @@ public class GridLog4jLoggingUrlTest extends TestCase {
         assert xml != null;
         assert xml.exists();
 
-        log = new Log4JLogger(xml.toURI().toURL()).getLogger(getClass());
+        url = xml.toURI().toURL();
+        log = new Log4JLogger(url).getLogger(getClass());
     }
 
     /**
      * Tests log4j logging SPI.
      */
     public void testLog() {
-        assert log.isDebugEnabled();
-        assert log.isInfoEnabled();
+        System.out.println(log.toString());
+
+        assertTrue(log.toString().contains("Log4JLogger"));
+        assertTrue(log.toString().contains(url.getPath()));
+
+        assertTrue(log.isInfoEnabled());
 
         log.debug("This is 'debug' message.");
         log.info("This is 'info' message.");

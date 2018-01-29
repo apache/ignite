@@ -23,47 +23,47 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * SQL listener query metadata request.
+ * JDBC query metadata request.
  */
 public class JdbcQueryMetadataRequest extends JdbcRequest {
     /** Query ID. */
-    private long queryId;
+    private long qryId;
 
     /**
      * Constructor.
      */
-    public JdbcQueryMetadataRequest() {
+    JdbcQueryMetadataRequest() {
         super(QRY_META);
     }
 
     /**
-     * @param queryId Query ID.
+     * @param qryId Query ID.
      */
-    public JdbcQueryMetadataRequest(long queryId) {
+    public JdbcQueryMetadataRequest(long qryId) {
         super(QRY_META);
 
-        this.queryId = queryId;
+        this.qryId = qryId;
     }
 
     /**
      * @return Query ID.
      */
     public long queryId() {
-        return queryId;
+        return qryId;
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
-        writer.writeLong(queryId);
+        writer.writeLong(qryId);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
-        queryId = reader.readLong();
+        qryId = reader.readLong();
     }
 
     /** {@inheritDoc} */

@@ -23,7 +23,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collections;
 import java.util.List;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -31,8 +30,6 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -176,7 +173,7 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
             @Override public void run() throws Exception {
                 jdbcRun(CREATE_INDEX);
             }
-        }, IgniteQueryErrorCode.INDEX_ALREADY_EXISTS);
+        });
     }
 
     /**
@@ -227,7 +224,7 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
             @Override public void run() throws Exception {
                 jdbcRun(DROP_INDEX);
             }
-        }, IgniteQueryErrorCode.INDEX_NOT_FOUND);
+        });
     }
 
     /**
@@ -312,45 +309,21 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
      * Ensure that SQL exception is thrown.
      *
      * @param r Runnable.
-     * @param expCode Error code.
      */
-    private static void assertSqlException(RunnableX r, int expCode) {
+    private static void assertSqlException(RunnableX r) {
         // We expect IgniteSQLException with given code inside CacheException inside JDBC SQLException.
 
         try {
             r.run();
         }
-        catch (SQLException ex) {
-            if (ex.getCause() != null) {
-                try {
-                    throw ex.getCause();
-                }
-                catch (CacheException ex1) {
-                    if (ex1.getCause() != null) {
-                        try {
-                            throw ex1.getCause();
-                        }
-                        catch (IgniteSQLException e) {
-                            assertEquals("Unexpected error code [expected=" + expCode + ", actual=" + e.statusCode() + ']',
-                                expCode, e.statusCode());
-
-                            return;
-                        }
-                        catch (Throwable t) {
-                            fail("Unexpected exception: " + t);
-                        }
-                    }
-                }
-                catch (Throwable t) {
-                    fail("Unexpected exception: " + t);
-                }
-            }
+        catch (SQLException e) {
+            return;
         }
         catch (Exception e) {
             fail("Unexpected exception: " + e);
         }
 
-        fail(IgniteSQLException.class.getSimpleName() +  " is not thrown.");
+        fail(SQLException.class.getSimpleName() +  " is not thrown.");
     }
 
     /**

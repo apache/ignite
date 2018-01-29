@@ -29,7 +29,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -37,8 +36,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.TestDelayingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -47,16 +46,12 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ThreadLocalRandom8;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -367,32 +362,11 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
     /**
      *
      */
-    private static class DelayCommunicationSpi extends TcpCommunicationSpi {
+    private static class DelayCommunicationSpi extends TestDelayingCommunicationSpi {
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
-            throws IgniteSpiException {
-            try {
-                if (delayMessage((GridIoMessage)msg))
-                    U.sleep(ThreadLocalRandom8.current().nextInt(250) + 1);
-            }
-            catch (IgniteInterruptedCheckedException e) {
-                throw new IgniteSpiException(e);
-            }
-
-            super.sendMessage(node, msg, ackC);
-        }
-
-        /**
-         * Checks if message should be delayed.
-         *
-         * @param msg Message to check.
-         * @return {@code True} if message should be delayed.
-         */
-        private boolean delayMessage(GridIoMessage msg) {
-            Object origMsg = msg.message();
-
-            return delay &&
-                ((origMsg instanceof GridNearAtomicAbstractUpdateRequest) || (origMsg instanceof GridDhtAtomicAbstractUpdateRequest));
+        @Override protected boolean delayMessage(Message msg, GridIoMessage ioMsg) {
+            return delay && ((msg instanceof GridNearAtomicAbstractUpdateRequest) ||
+                (msg instanceof GridDhtAtomicAbstractUpdateRequest));
         }
     }
 }

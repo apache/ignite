@@ -21,19 +21,21 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * SQL listener column metadata.
+ * JDBC column metadata.
  */
 public class JdbcColumnMeta implements JdbcRawBinarylizable {
     /** Cache name. */
     private String schemaName;
 
     /** Table name. */
-    private String tableName;
+    private String tblName;
 
     /** Column name. */
-    private String columnName;
+    private String colName;
 
     /** Data type. */
     private int dataType;
@@ -47,20 +49,39 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
     /**
      * Default constructor is used for serialization.
      */
-    public JdbcColumnMeta() {
+    JdbcColumnMeta() {
+        // No-op.
     }
 
     /**
      * @param info Field metadata.
      */
-    public JdbcColumnMeta(GridQueryFieldMetadata info) {
+    JdbcColumnMeta(GridQueryFieldMetadata info) {
         this.schemaName = info.schemaName();
-        this.tableName = info.typeName();
-        this.columnName = info.fieldName();
+        this.tblName = info.typeName();
+        this.colName = info.fieldName();
 
         dataType = JdbcThinUtils.type(info.fieldTypeName());
         dataTypeName = JdbcThinUtils.typeName(info.fieldTypeName());
         dataTypeClass = info.fieldTypeName();
+    }
+
+    /**
+     * @param schemaName Schema.
+     * @param tblName Table.
+     * @param colName Column.
+     * @param cls Type.
+     */
+    public JdbcColumnMeta(String schemaName, String tblName, String colName, Class<?> cls) {
+        this.schemaName = schemaName;
+        this.tblName = tblName;
+        this.colName = colName;
+
+        String type = cls.getName();
+
+        dataType = JdbcThinUtils.type(type);
+        dataTypeName = JdbcThinUtils.typeName(type);
+        dataTypeClass = type;
     }
 
     /**
@@ -74,14 +95,14 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
      * @return Table name.
      */
     public String tableName() {
-        return tableName;
+        return tblName;
     }
 
     /**
      * @return Column name.
      */
     public String columnName() {
-        return columnName;
+        return colName;
     }
 
     /**
@@ -108,8 +129,8 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) {
         writer.writeString(schemaName);
-        writer.writeString(tableName);
-        writer.writeString(columnName);
+        writer.writeString(tblName);
+        writer.writeString(colName);
 
         writer.writeInt(dataType);
         writer.writeString(dataTypeName);
@@ -119,11 +140,39 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) {
         schemaName = reader.readString();
-        tableName = reader.readString();
-        columnName = reader.readString();
+        tblName = reader.readString();
+        colName = reader.readString();
 
         dataType = reader.readInt();
         dataTypeName = reader.readString();
         dataTypeClass = reader.readString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        JdbcColumnMeta meta = (JdbcColumnMeta)o;
+
+        return F.eq(schemaName, meta.schemaName) && F.eq(tblName, meta.tblName) && F.eq(colName, meta.colName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int result = schemaName != null ? schemaName.hashCode() : 0;
+
+        result = 31 * result + (tblName != null ? tblName.hashCode() : 0);
+        result = 31 * result + colName.hashCode();
+
+        return result;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcColumnMeta.class, this);
     }
 }

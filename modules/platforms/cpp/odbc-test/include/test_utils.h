@@ -43,6 +43,15 @@ namespace ignite_test
     enum { ODBC_BUFFER_SIZE = 1024 };
 
     /**
+     * Extract error state.
+     *
+     * @param handleType Type of the handle.
+     * @param handle Handle.
+     * @return Error state.
+     */
+    std::string GetOdbcErrorState(SQLSMALLINT handleType, SQLHANDLE handle);
+
+    /**
      * Extract error message.
      *
      * @param handleType Type of the handle.

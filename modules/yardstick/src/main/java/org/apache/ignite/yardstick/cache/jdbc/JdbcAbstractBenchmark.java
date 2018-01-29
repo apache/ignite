@@ -123,7 +123,7 @@ public abstract class JdbcAbstractBenchmark extends IgniteAbstractBenchmark {
     private void dropTestDatabase() throws SQLException {
         try (Connection conn = connection()) {
             try (Statement stmt = conn.createStatement()) {
-                if (!conn.getMetaData().getDatabaseProductName().equals("Ignite Cache"))
+                if (!conn.getMetaData().getDatabaseProductName().equals("Apache Ignite"))
                     stmt.executeUpdate("drop database " + dbName);
             }
         }
@@ -194,7 +194,7 @@ public abstract class JdbcAbstractBenchmark extends IgniteAbstractBenchmark {
     void clearTable(String tblName) throws SQLException {
         try (Connection conn = connection()) {
             try (PreparedStatement stmt = conn.prepareStatement("drop table " + tblName)) {
-                if (!conn.getMetaData().getDatabaseProductName().equals("Ignite Cache"))
+                if (!conn.getMetaData().getDatabaseProductName().equals("Apache Ignite"))
                     stmt.executeUpdate();
             }
         }
