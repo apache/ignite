@@ -38,9 +38,6 @@ namespace Apache.Ignite.Core.Tests.Client
         /** Grid count. */
         private readonly int _gridCount = 1;
 
-        /** Whether SSL should be enabled. */
-        private readonly bool _ssl;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientTestBase"/> class.
         /// </summary>
@@ -52,10 +49,9 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientTestBase"/> class.
         /// </summary>
-        public ClientTestBase(int gridCount, bool ssl = false)
+        public ClientTestBase(int gridCount)
         {
             _gridCount = gridCount;
-            _ssl = ssl;
         }
 
         /// <summary>
@@ -144,14 +140,7 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             return new IgniteClientConfiguration
             {
-                Host = IPAddress.Loopback.ToString(),
-                SslStreamFactory = _ssl
-                    ? new SslStreamFactory
-                    {
-                        CertificatePath = @"Config\thin-client-cert.pfx",
-                        CertificatePassword = "123456"
-                    }
-                    : null
+                Host = IPAddress.Loopback.ToString()
             };
         }
 

@@ -28,14 +28,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     public sealed class CacheTestSsl : CacheTest
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="CacheTestSsl"/> class.
-        /// </summary>
-        public CacheTestSsl() : base(1, true)
-        {
-            // No-op.
-        }
-
-        /// <summary>
         /// Gets the Ignite configuration.
         /// </summary>
         protected override IgniteConfiguration GetIgniteConfiguration()
@@ -57,7 +49,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             return new IgniteClientConfiguration(base.GetClientConfiguration())
             {
-                Port = 11110
+                Port = 11110,
+                SslStreamFactory = new SslStreamFactory
+                {
+                    CertificatePath = @"Config\thin-client-cert.pfx",
+                    CertificatePassword = "123456"
+                }
             };
         }
     }
