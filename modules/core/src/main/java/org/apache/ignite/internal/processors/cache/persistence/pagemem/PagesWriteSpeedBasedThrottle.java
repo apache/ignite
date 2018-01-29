@@ -59,32 +59,35 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
     private volatile double initDirtyRatioAtCpBegin = MIN_RATIO_NO_THROTTLE;
 
     /**
-     * Target (maximum) dirty pages ratio, after which throttling will start using {@link #lastEstimatedSpeedForMarkAll}.
+     * Target (maximum) dirty pages ratio, after which throttling will start using
+     * {@link #getParkTime(double, long, int, int, long, long)}.
      */
     private volatile double targetDirtyRatio;
 
     /**
-     * Current dirty pages ratio (percent of dirty pages in most used segment).
+     * Current dirty pages ratio (percent of dirty pages in most used segment), negative value means no cp is running.
      */
     private volatile double currDirtyRatio;
 
-    /**
-     * Characteristic function: how close to throttle by size.
-     * Shows how close current dirty ratio is to target (max) dirty ratio.
-     */
-    private volatile double throttleCloseMeasurement;
-
-    /** Speed of marking pages dirty. Value from past 500-750 millis only. Pages/second. */
-    private final PagesWriteSpeedTracker speedMarkDirty = new PagesWriteSpeedTracker(250, 2);
-
     /** Speed average checkpoint write speed. Current and 3 past checkpoints used. Pages/second. */
-    private final PagesWriteSpeedTracker speedCpWrite = new PagesWriteSpeedTracker();
+    private final IntervalBasedMeasurement speedCpWrite = new IntervalBasedMeasurement();
 
     /** Last estimated speed for marking all clear pages as dirty till the end of checkpoint. */
-    private volatile long lastEstimatedSpeedForMarkAll;
+    private volatile long speedForMarkAll;
 
     /** Threads set. Contains identifiers of all threads which were marking pages for current checkpoint. */
     private final GridConcurrentHashSet<Long> threadIds = new GridConcurrentHashSet<>();
+
+    /**
+     * Used for calculating speed of marking pages dirty.
+     * Value from past 750-1000 millis only.
+     * {@link IntervalBasedMeasurement#getSpeedOpsPerSec(long)} returns pages marked/second.
+     * {@link IntervalBasedMeasurement#getAverage()} returns average throttle time.
+     * */
+    private final IntervalBasedMeasurement speedMarkAndAvgParkTime = new IntervalBasedMeasurement(250, 3);
+
+    /** Total pages, possible to store in page memory. */
+    private long totalPages;
 
     /**
      * @param pageMemory Page memory.
@@ -94,22 +97,19 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
         GridCacheDatabaseSharedManager dbSharedMgr) {
         this.pageMemory = pageMemory;
         this.dbSharedMgr = dbSharedMgr;
+        totalPages = pageMemory.totalPages();
     }
 
     /** {@inheritDoc} */
     @Override public void onMarkDirty(boolean isPageInCheckpoint) {
         assert dbSharedMgr.checkpointLockIsHeldByThread();
 
-        double dirtyPagesRatio = pageMemory.getDirtyPagesRatio();
-
-        currDirtyRatio = dirtyPagesRatio;
-
         AtomicInteger writtenPagesCntr = dbSharedMgr.writtenPagesCounter();
 
         if (writtenPagesCntr == null) {
-            lastEstimatedSpeedForMarkAll = 0;
-            throttleCloseMeasurement = 0;
-            targetDirtyRatio = 1;
+            speedForMarkAll = 0;
+            targetDirtyRatio = -1;
+            currDirtyRatio = -1;
 
             return; // Don't throttle if checkpoint is not running.
         }
@@ -121,19 +121,18 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
 
         long fullyCompletedPages = (cpWrittenPages + cpSyncedPages) / 2; // written & sync'ed
 
-        long curMs = System.currentTimeMillis();
+        long curNanoTime = System.nanoTime();
 
-        speedCpWrite.setCounter(fullyCompletedPages, curMs);
+        speedCpWrite.setCounter(fullyCompletedPages, curNanoTime);
 
-        long markDirtySpeed = speedMarkDirty.getSpeedPagesPerSec(curMs);
+        long markDirtySpeed = speedMarkAndAvgParkTime.getSpeedOpsPerSec(curNanoTime);
 
-        long curCpWriteSpeed = speedCpWrite.getSpeedPagesPerSec(curMs);
+        long curCpWriteSpeed = speedCpWrite.getSpeedOpsPerSec(curNanoTime);
 
         threadIds.add(Thread.currentThread().getId());
 
-        int nThreads = threadIds.size();
-
         ThrottleMode level = ThrottleMode.NO; //should apply delay (throttling) for current page modification
+
         if (isPageInCheckpoint) {
             int checkpointBufLimit = pageMemory.checkpointBufferPagesSize() * 2 / 3;
 
@@ -141,9 +140,11 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
                 level = ThrottleMode.EXPONENTIAL;
         }
 
-        long speedForMarkAll  = 0;
         long throttleParkTimeNs = 0;
+
         if (level == ThrottleMode.NO ) {
+            int nThreads = threadIds.size();
+
             int cpTotalPages = dbSharedMgr.currentCheckpointPagesCount();
 
             if (cpTotalPages == 0) {
@@ -156,55 +157,88 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
                 }
             }
             else {
+                double dirtyPagesRatio = pageMemory.getDirtyPagesRatio();
+
+                currDirtyRatio = dirtyPagesRatio;
+
                 detectCpPagesWriteStart(cpWrittenPages, dirtyPagesRatio);
 
-                speedForMarkAll = calcSpeedToMarkAllSpaceTillEndOfCp(dirtyPagesRatio,
+                throttleParkTimeNs = getParkTime(dirtyPagesRatio,
                     fullyCompletedPages,
-                    curCpWriteSpeed,
-                    cpTotalPages);
+                    cpTotalPages,
+                    nThreads,
+                    markDirtySpeed,
+                    curCpWriteSpeed);
 
-                double targetDirtyRatio = calcTargetDirtyRatio(fullyCompletedPages, cpTotalPages);
-
-                this.targetDirtyRatio = targetDirtyRatio;
-
-                throttleCloseMeasurement = dirtyPagesRatio / targetDirtyRatio;
-
-
-                boolean throttleByCpSpeed = curCpWriteSpeed > 0 && markDirtySpeed > (1.05 * curCpWriteSpeed);
-
-                boolean markingTooFast = speedForMarkAll > 0 && markDirtySpeed > speedForMarkAll;
-                boolean throttleBySizeAndMarkSpeed = dirtyPagesRatio > targetDirtyRatio && markingTooFast;
-
-                boolean throttleBySizeAndSmallSpace = dirtyPagesRatio > targetDirtyRatio && (dirtyPagesRatio > 0.73);
-
-                if ((throttleBySizeAndMarkSpeed || throttleBySizeAndSmallSpace) && throttleByCpSpeed)
-                    level = ThrottleMode.EXPONENTIAL;
-                else if (throttleByCpSpeed) {
+                if (throttleParkTimeNs > 0)
                     level = ThrottleMode.LIMITED;
-
-                    throttleParkTimeNs = calcDelayTime(curCpWriteSpeed, nThreads, 2);
-                }
-                else if (throttleBySizeAndMarkSpeed) {
-                    level = ThrottleMode.LIMITED;
-
-                    throttleParkTimeNs = calcDelayTime(speedForMarkAll, nThreads, 2);
-                }
             }
         }
 
-        lastEstimatedSpeedForMarkAll = speedForMarkAll;
-
-        if (level == ThrottleMode.NO)
+        if (level == ThrottleMode.NO) {
             exponentialBackoffCntr.set(0);
+
+            throttleParkTimeNs = 0;
+        }
         else if (level == ThrottleMode.LIMITED && throttleParkTimeNs > 0)
             LockSupport.parkNanos(throttleParkTimeNs);
-        else {
+        else if (level == ThrottleMode.EXPONENTIAL) {
             int exponent = exponentialBackoffCntr.getAndIncrement();
 
-            LockSupport.parkNanos((long)(STARTING_THROTTLE_NANOS * Math.pow(BACKOFF_RATIO, exponent)));
+            throttleParkTimeNs = (long)(STARTING_THROTTLE_NANOS * Math.pow(BACKOFF_RATIO, exponent));
+
+            LockSupport.parkNanos(throttleParkTimeNs);
         }
 
-        speedMarkDirty.incrementCounter();
+        speedMarkAndAvgParkTime.addMeasurementForAverageCalculation(throttleParkTimeNs);
+    }
+
+    /**
+     * @param dirtyPagesRatio actual percent of dirty pages.
+     * @param fullyCompletedPages written & fsynced pages count.
+     * @param cpTotalPages total checkpoint scope.
+     * @param nThreads number of threads providing data during current checkpoint.
+     * @param markDirtySpeed registered mark dirty speed, pages/sec.
+     * @param curCpWriteSpeed average checkpoint write speed, pages/sec.
+     * @return time in nanoseconds to part or 0 if throttling is not required.
+     */
+    long getParkTime(
+        double dirtyPagesRatio,
+        long fullyCompletedPages,
+        int cpTotalPages,
+        int nThreads,
+        long markDirtySpeed,
+        long curCpWriteSpeed) {
+
+        long speedForMarkAll = calcSpeedToMarkAllSpaceTillEndOfCp(dirtyPagesRatio,
+            fullyCompletedPages,
+            curCpWriteSpeed,
+            cpTotalPages);
+
+        double targetDirtyRatio = calcTargetDirtyRatio(fullyCompletedPages, cpTotalPages);
+
+        this.speedForMarkAll = speedForMarkAll; //publish for metrics
+        this.targetDirtyRatio = targetDirtyRatio; //publish for metrics
+
+        boolean lowSpaceLeft = dirtyPagesRatio > targetDirtyRatio && (dirtyPagesRatio + 0.05 > MAX_DIRTY_PAGES);
+        int slowdown = lowSpaceLeft ? 3 : 2;
+
+        boolean markingTooFast = speedForMarkAll > 0 && markDirtySpeed > speedForMarkAll;
+        boolean throttleBySizeAndMarkSpeed = dirtyPagesRatio > targetDirtyRatio && markingTooFast;
+
+        //for case of speedForMarkAll >> markDirtySpeed, allow write little bit faster than CP average
+        double allowWriteFasterThanCp = (speedForMarkAll > 0 && markDirtySpeed > 0 && speedForMarkAll > markDirtySpeed)
+            ? (0.1 * speedForMarkAll / markDirtySpeed)
+            : 0.0;
+
+        double fasterThanCpWriteSpeed = lowSpaceLeft
+            ? 1.0
+            : 1.0 + allowWriteFasterThanCp;
+        boolean throttleByCpSpeed = curCpWriteSpeed > 0 && markDirtySpeed > (fasterThanCpWriteSpeed * curCpWriteSpeed);
+
+        long delayByCpWrite = throttleByCpSpeed ? calcDelayTime(curCpWriteSpeed, nThreads, slowdown) : 0;
+        long delayByMarkAllWrite = throttleBySizeAndMarkSpeed ? calcDelayTime(speedForMarkAll, nThreads, slowdown) : 0;
+        return Math.max(delayByCpWrite, delayByMarkAllWrite);
     }
 
     /**
@@ -223,7 +257,10 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
         if (curCpWriteSpeed == 0)
             return 0;
 
-        double remainedClear = (MAX_DIRTY_PAGES - dirtyPagesRatio) * pageMemory.totalPages();
+        if (dirtyPagesRatio >= MAX_DIRTY_PAGES)
+            return 1;
+
+        double remainedClear = (MAX_DIRTY_PAGES - dirtyPagesRatio) * totalPages;
 
         double timeRemainedSeconds = 1.0 * (cpTotalPages - fullyCompletedPages) / curCpWriteSpeed;
 
@@ -257,8 +294,8 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
         if (slowdownMultiplier < 1.0)
             return 0;
 
-        if (baseSpeed == 0)
-            return TimeUnit.SECONDS.toNanos(1) * nThreads;
+        if (baseSpeed <= 0)
+            return 0;
 
         long updTimeNsForOnePage = TimeUnit.SECONDS.toNanos(1) * nThreads / (baseSpeed);
 
@@ -286,9 +323,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
 
     /** {@inheritDoc} */
     @Override public void onBeginCheckpoint() {
-        long curMs = System.currentTimeMillis();
-
-        speedCpWrite.setCounter(0L, curMs);
+        speedCpWrite.setCounter(0L, System.nanoTime());
 
         initDirtyRatioAtCpBegin = MIN_RATIO_NO_THROTTLE;
 
@@ -301,15 +336,15 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
         exponentialBackoffCntr.set(0);
 
         speedCpWrite.finishInterval();
-        speedMarkDirty.finishInterval();
+        speedMarkAndAvgParkTime.finishInterval();
         threadIds.clear();
     }
 
     /**
      * @return Exponential backoff counter.
      */
-    public int throttleLevel() {
-        return exponentialBackoffCntr.get();
+    public long throttleParkTime() {
+        return speedMarkAndAvgParkTime.getAverage();
     }
 
     /**
@@ -323,21 +358,19 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
      * @return Current dirty pages ratio.
      */
     public double getCurrDirtyRatio() {
-        return currDirtyRatio;
-    }
+        double ratio = currDirtyRatio;
 
-    /**
-     * @return Returns {@link #throttleCloseMeasurement}.
-     */
-    public double getThrottleCloseMeasurement() {
-        return throttleCloseMeasurement;
+        if (ratio >= 0)
+            return ratio;
+
+        return pageMemory.getDirtyPagesRatio();
     }
 
     /**
      * @return  Speed of marking pages dirty. Value from past 500-750 millis only. Pages/second.
      */
     public long getMarkDirtySpeed() {
-        return speedMarkDirty.getSpeedPagesPerSecOptional();
+        return speedMarkAndAvgParkTime.getSpeedPagesPerSecOptional();
     }
 
     /**
@@ -348,10 +381,10 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
     }
 
     /**
-     * @return Returns {@link #lastEstimatedSpeedForMarkAll}.
+     * @return Returns {@link #speedForMarkAll}.
      */
     public long getLastEstimatedSpeedForMarkAll() {
-        return lastEstimatedSpeedForMarkAll;
+        return speedForMarkAll;
     }
 
     /**
