@@ -65,7 +65,6 @@ import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
@@ -641,7 +640,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             BaselineTopologyHistory historyToSend = null;
 
             if (joiningNodeData != null) {
-                if (!joiningNodeData.hasJoiningNodeData()) {
+                if (!joiningNodeData.hasJoiningNodeData() || compatibilityMode) {
                     //compatibility mode: old nodes don't send any data on join, so coordinator of new version
                     //doesn't send BaselineTopology history, only its current globalState
                     dataBag.addGridCommonData(STATE_PROC.ordinal(), globalState);
