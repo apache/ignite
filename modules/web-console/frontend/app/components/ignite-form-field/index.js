@@ -19,6 +19,7 @@ import angular from 'angular';
 
 import {ngMessages} from './ngMessages.directive';
 import './style.scss';
+import './style-2.scss';
 
 export default angular
     .module('ignite-console.ignite-form-field', [])
