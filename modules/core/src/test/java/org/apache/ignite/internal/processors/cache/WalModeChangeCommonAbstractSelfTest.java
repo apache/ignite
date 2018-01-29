@@ -161,8 +161,7 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
     protected void assertWalEnable(Ignite node, String cacheName, boolean expRes) {
         boolean res = walEnable(node, cacheName);
 
-        if (!jdbc)
-            assertEquals(expRes, res);
+        assertEquals(expRes, res);
     }
 
     /**
