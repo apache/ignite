@@ -1208,7 +1208,19 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                 if (val == null && !create)
                     return null;
+                else if(val!=null && val instanceof GridCacheSemaphoreState){
+                    GridCacheSemaphoreState semState=(GridCacheSemaphoreState)val;
 
+                    for(UUID nodeId: semState.getWaiters().keySet()){
+                        ClusterNode node =ctx.cluster().get().node(nodeId);
+                        if(node==null){
+                            sem.onNodeRemoved(nodeId);
+                            if (log.isDebugEnabled())
+                                log.debug("Removed node found to be waiting which is no longer active: " +nodeId);
+                        }
+                    }
+                }
+           
                 AtomicDataStructureValue retVal = (val == null ? new GridCacheSemaphoreState(cnt,
                     new HashMap<UUID, Integer>(), failoverSafe, ctx.discovery().gridStartTime()) : null);
 
