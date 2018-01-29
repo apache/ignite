@@ -64,6 +64,10 @@ namespace Apache.Ignite.Core.Client
 
         /// <summary>
         /// Gets or sets the certificate file (pfx) path.
+        /// <para />
+        /// Java certificates can be converted with <c>keytool</c>:
+        /// <c>keytool -importkeystore -srckeystore thekeystore.jks -srcstoretype JKS
+        /// -destkeystore thekeystore.pfx -deststoretype PKCS12</c>
         /// </summary>
         public string CertificatePath { get; set; }
 
