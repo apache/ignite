@@ -103,7 +103,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     private ClusterNode crdNode;
 
     /** Users info version. */
-    private long usersInfoVersion = 0;
+    private long usersInfoVersion;
 
     /**
      * @param ctx Kernal context.
@@ -207,7 +207,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      */
     private void cancelFutures() {
         for (UserOperationFinishFuture fut : userOpFinishMap.values())
-            fut.onDone(UserOperationResult.createExchangeDisabledResult());
+            fut.onDone(UserOperationResult.createExchangeDisabledResult(fut.op.id()));
     }
 
     /**
@@ -254,7 +254,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         User usr = op.user();
 
         if (!users.containsKey(usr.name()))
-            throw new IgniteAuthenticationException("User not exists. [login=" + usr.name() + ']');
+            throw new IgniteAuthenticationException("User doesn't exist. [userName=" + usr.name() + ']');
 
         metastorage.remove(STORE_USER_PREFIX + usr.name());
 
@@ -275,7 +275,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         User usr = op.user();
 
         if (!users.containsKey(usr.name()))
-            throw new IgniteAuthenticationException("User not exists. [login=" + usr.name() + ']');
+            throw new IgniteAuthenticationException("User doesn't exist. [userName=" + usr.name() + ']');
 
         metastorage.write(STORE_USER_PREFIX + usr.name(), usr);
 
@@ -294,7 +294,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * @return User object on successful authenticate. Otherwise returns {@code null}.
      * @throws IgniteCheckedException On authentication error.
      */
-    public User authenticate(String login, String passwd) throws IgniteCheckedException {
+    public AuthorizationContext authenticate(String login, String passwd) throws IgniteCheckedException {
         if (ctx.clientNode()) {
             GridFutureAdapter<User> fut = new GridFutureAdapter<>();
 
@@ -306,67 +306,93 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 ctx.io().sendToGridTopic(coordinator(), GridTopic.TOPIC_AUTH, msg, GridIoPolicy.SYSTEM_POOL);
             }
 
-            return fut.get();
+            return new AuthorizationContext(fut.get());
         }
-        else {
-            User usr;
+        else
+            return new AuthorizationContext(authenticateOnServer(login, passwd));
+    }
 
-            synchronized (mux) {
-                usr = users.get(login);
-            }
+    /**
+     * Authenticate user.
+     *
+     * @param login User's login.
+     * @param passwd Plain text password.
+     * @return User object on successful authenticate. Otherwise returns {@code null}.
+     * @throws IgniteCheckedException On authentication error.
+     */
+    private User authenticateOnServer(String login, String passwd) throws IgniteCheckedException {
+        assert !ctx.clientNode() : "Must be used on server node";
 
-            if (usr == null)
-                throw new UserAuthenticationException("The user name or password is incorrect. [userName=" + login + ']');
+        User usr;
 
-            if (usr.authorize(passwd))
-                return usr;
-            else
-                throw new UserAuthenticationException("The user name or password is incorrect. [userName=" + login + ']');
+        synchronized (mux) {
+            usr = users.get(login);
         }
+
+        if (usr == null)
+            throw new UserAuthenticationException("The user name or password is incorrect. [userName=" + login + ']');
+
+        if (usr.authorize(passwd))
+            return usr;
+        else
+            throw new UserAuthenticationException("The user name or password is incorrect. [userName=" + login + ']');
     }
 
     /**
      * Adds new user.
      *
+     * @param actx Authorization context.
      * @param login User's login.
      * @param passwd Plain text password.
      * @throws IgniteAuthenticationException On error.
      */
-    public void addUser(String login, String passwd) throws IgniteCheckedException {
+    public void addUser(AuthorizationContext actx, String login, String passwd) throws IgniteCheckedException {
+        assert actx != null;
+
         UserManagementOperation op = new UserManagementOperation(User.create(login, passwd),
             UserManagementOperation.OperationType.ADD);
 
-        execUserOperation(op);
+        execUserOperation(actx, op);
     }
 
     /**
+     * @param actx Authorization context.
      * @param login User name.
      * @throws IgniteCheckedException On error.
      */
-    public void removeUser(String login) throws IgniteCheckedException {
+    public void removeUser(AuthorizationContext actx, String login) throws IgniteCheckedException {
+        assert actx != null;
+
         UserManagementOperation op = new UserManagementOperation(User.create(login),
             UserManagementOperation.OperationType.REMOVE);
 
-        execUserOperation(op);
+        execUserOperation(actx, op);
     }
 
     /**
+     * @param actx Authorization context.
      * @param login User name.
      * @param passwd User password.
      * @throws IgniteCheckedException On error.
      */
-    public void updateUser(String login, String passwd) throws IgniteCheckedException {
+    public void updateUser(AuthorizationContext actx, String login, String passwd) throws IgniteCheckedException {
         UserManagementOperation op = new UserManagementOperation(User.create(login, passwd),
             UserManagementOperation.OperationType.UPDATE);
 
-        execUserOperation(op);
+        execUserOperation(actx, op);
     }
 
     /**
+     * @param actx Authorization context.
      * @param op User operation.
      * @throws IgniteCheckedException On error.
      */
-    private void execUserOperation(UserManagementOperation op) throws IgniteCheckedException {
+    private void execUserOperation(AuthorizationContext actx, UserManagementOperation op)
+        throws IgniteCheckedException {
+        assert actx != null;
+
+        actx.checkUserOperation(op);
+
         UserOperationFuture fut = new UserOperationFuture(op);
 
         opFuts.putIfAbsent(op.id(), fut);
@@ -420,7 +446,8 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
         if (!dataBag.commonDataCollectedFor(AUTH_PROC.ordinal())) {
             synchronized (mux) {
-                dataBag.addGridCommonData(AUTH_PROC.ordinal(), new UsersData(users.values(), activeOperations, ver));
+                dataBag.addGridCommonData(AUTH_PROC.ordinal(),
+                    new UsersData(users.values(), activeOperations, usersInfoVersion));
             }
         }
     }
@@ -435,17 +462,24 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
                 for (UserManagementOperation op : usersData.activeOps)
                     exec.execute(new UserOperationWorker(op));
+
+                usersInfoVersion = usersData.usrVer;
             }
         }
     }
 
     /**
-     *
+     * @throws IgniteCheckedException On error.
      */
-    private void addDefaultUser() {
+    private void addDefaultUser() throws IgniteCheckedException {
         synchronized (mux) {
             User u = User.defaultUser();
 
+            metastorage.write(STORE_USER_PREFIX + u.name(), u);
+
+            updateUsersVersion();
+
+            users.put(u.name(), u);
         }
     }
 
@@ -537,7 +571,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     private void onAuthenticateRequestMessage(UUID nodeId, UserAuthenticateRequestMessage msg) {
         UserAuthenticateResponseMessage respMsg;
         try {
-            User u = authenticate(msg.name(), msg.password());
+            User u = authenticateOnServer(msg.name(), msg.password());
 
             respMsg = new UserAuthenticateResponseMessage(msg.id(), u, null);
         }
@@ -624,14 +658,15 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         }
 
         /**
-         * @param id Node ID.
+         * @param nodeId Node ID.
          * @param errMsg Error message.
          */
-        synchronized void onOperationFailOnNode(UUID id, String errMsg) {
-            receivedAcks.add(id);
+        synchronized void onOperationFailOnNode(UUID nodeId, String errMsg) {
+            receivedAcks.add(nodeId);
 
-            onDone(UserOperationResult.createFailureResult(
-                new UserAuthenticationException("Operation failed. [nodeId=" + id + ", err=" + errMsg + ']', op)));
+            onDone(UserOperationResult.createFailureResult(op.id(),
+                new UserAuthenticationException("Operation failed. [nodeId=" + nodeId + ", op=" + op +
+                    ", err=" + errMsg + ']')));
         }
 
         /**
@@ -822,7 +857,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      */
     private final class UsersData implements Serializable {
         /** Users. */
-        private final List<User> usrs;
+        private final ArrayList<User> usrs;
 
         /** Active user operations. */
         private final List<UserManagementOperation> activeOps;
@@ -833,10 +868,10 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         /**
          * @param usrs Users.
          * @param ops Active operations on cluster.
-         * @param ver
+         * @param ver Users info version.
          */
         UsersData(Collection<User> usrs, List<UserManagementOperation> ops, long ver) {
-            this.usrs = new ArrayList(usrs);
+            this.usrs = new ArrayList<>(usrs);
             activeOps = ops;
             usrVer = ver;
         }

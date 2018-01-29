@@ -50,6 +50,8 @@ public class UserOperationResult {
      * @param error Error.
      */
     private UserOperationResult(ResultType resType, IgniteUuid opId, IgniteCheckedException error) {
+        assert opId != null;
+
         this.resType = resType;
         this.opId = opId;
         this.error = error;
@@ -94,19 +96,21 @@ public class UserOperationResult {
     }
 
     /**
+     * @param opId Operation ID.
      * @param error Error.
      * @return Exchange result.
      */
-    static UserOperationResult createFailureResult(IgniteCheckedException error) {
+    static UserOperationResult createFailureResult(IgniteUuid opId, IgniteCheckedException error) {
         assert error != null;
 
-        return new UserOperationResult(ResultType.FAILURE, null, error);
+        return new UserOperationResult(ResultType.FAILURE, opId, error);
     }
 
     /**
+     * @param opId Operation ID.
      * @return Exchange result.
      */
-    static UserOperationResult createExchangeDisabledResult() {
-        return new UserOperationResult(ResultType.EXCHANGE_DISABLED, null, null);
+    static UserOperationResult createExchangeDisabledResult(IgniteUuid opId) {
+        return new UserOperationResult(ResultType.EXCHANGE_DISABLED, opId, null);
     }
 }

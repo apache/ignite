@@ -23,16 +23,16 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Exception that represents authentication failure.
  */
-public class UserAuthenticationException extends IgniteCheckedException {
+public class IgniteAccessControlException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates authentication exception with given error message.
+     * Creates access control exception.
      *
      * @param msg Error message.
      */
-    public UserAuthenticationException(String msg) {
+    public IgniteAccessControlException(String msg) {
         super(msg);
     }
 
@@ -42,7 +42,8 @@ public class UserAuthenticationException extends IgniteCheckedException {
      * @param msg Error message.
      * @param cause Optional nested exception (can be {@code null}).
      */
-    public UserAuthenticationException(String msg, @Nullable Throwable cause) {
+    public IgniteAccessControlException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
+
 }
