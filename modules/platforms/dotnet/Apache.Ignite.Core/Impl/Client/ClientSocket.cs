@@ -73,8 +73,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private volatile Exception _exception;
 
         /** Locker. */
-        private readonly ReaderWriterLockSlim _sendRequestLock = 
-            new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+        private readonly object _sendRequestSyncRoot = new object();
 
         /** Background socket receiver trigger. */
         private readonly ManualResetEventSlim _listenerEvent = new ManualResetEventSlim();
@@ -322,12 +321,11 @@ namespace Apache.Ignite.Core.Impl.Client
 
             // If there are no pending async requests, we can execute this operation synchronously,
             // which is more efficient.
-
-            // TODO: SSL: The Write method cannot be called when another write operation is pending.
-            // We may have to force sync mode in SSL, or at least write in sync mode.
-            if (_sendRequestLock.TryEnterWriteLock(0))
+            var lockTaken = false;
+            try
             {
-                try
+                Monitor.TryEnter(_sendRequestSyncRoot, 0, ref lockTaken);
+                if (lockTaken)
                 {
                     CheckException();
 
@@ -343,12 +341,12 @@ namespace Apache.Ignite.Core.Impl.Client
                         return response;
                     }
                 }
-                finally
+            }
+            finally
+            {
+                if (lockTaken)
                 {
-                    if (_sendRequestLock.IsWriteLockHeld)
-                    {
-                        _sendRequestLock.ExitWriteLock();
-                    }
+                    Monitor.Exit(_sendRequestSyncRoot);
                 }
             }
 
@@ -364,8 +362,7 @@ namespace Apache.Ignite.Core.Impl.Client
             // Do not enter lock when disposed.
             CheckException();
 
-            _sendRequestLock.EnterReadLock();
-            try
+            lock (_sendRequestSyncRoot)
             {
                 CheckException();
 
@@ -378,10 +375,6 @@ namespace Apache.Ignite.Core.Impl.Client
                 _stream.Write(reqMsg.Buffer, 0, reqMsg.Length);
                 _listenerEvent.Set();
                 return req.CompletionSource.Task;
-            }
-            finally
-            {
-                _sendRequestLock.ExitReadLock();
             }
         }
 
@@ -622,14 +615,6 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     _timeoutCheckTimer.Dispose();
                 }
-
-                // Wait for lock to be released and dispose.
-                if (!_sendRequestLock.IsWriteLockHeld)
-                {
-                    _sendRequestLock.EnterWriteLock();
-                }
-                _sendRequestLock.ExitWriteLock();
-                _sendRequestLock.Dispose();
 
                 _isDisposed = true;
             }
