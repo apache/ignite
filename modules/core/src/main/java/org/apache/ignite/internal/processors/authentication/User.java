@@ -27,7 +27,6 @@ import java.security.SecureRandom;
 import java.util.Objects;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -38,18 +37,14 @@ import org.jetbrains.annotations.Nullable;
 /**
  */
 public class User implements Serializable, Message {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Default user name. */
-    public static final String DFLT_USER_NAME = "ignite";
+    public static final String DFAULT_USER_NAME = "ignite";
 
     /** Default user password. */
     private static final String DFLT_USER_PASSWORD = "ignite";
-
-    /** Default user salt. */
-    private static final byte[] DFLT_USER_SALT =
-        {18, 105, 67, 38, 1, -2, -19, 62, -7, 126,  13,  66, -90, -84, -35, -43};
-
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** Salt length. */
     private static final int SALT_LEN = 16;
@@ -121,7 +116,7 @@ public class User implements Serializable, Message {
      * @return Created user.
      */
     public static User defaultUser() {
-        return new User(DFLT_USER_NAME, password(DFLT_USER_PASSWORD, DFLT_USER_SALT), DFLT_USER_SALT);
+        return create(DFAULT_USER_NAME, DFLT_USER_PASSWORD);
     }
 
     /**

@@ -31,7 +31,7 @@ public class UserManagementOperationFinishedMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Id. */
+    /** Operation Id. */
     private IgniteUuid opId;
 
     /** Error message. */

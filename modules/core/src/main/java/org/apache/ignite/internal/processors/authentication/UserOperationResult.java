@@ -17,13 +17,14 @@
 package org.apache.ignite.internal.processors.authentication;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  *
  */
 public class UserOperationResult {
     /**  */
-    private final UserManagementOperation op;
+    private final IgniteUuid opId;
 
     /** */
     private final ResultType resType;
@@ -45,20 +46,20 @@ public class UserOperationResult {
 
     /**
      * @param resType Result type.
-     * @param op User management operation.
+     * @param opId User management operation ID.
      * @param error Error.
      */
-    private UserOperationResult(ResultType resType, UserManagementOperation op, IgniteCheckedException error) {
+    private UserOperationResult(ResultType resType, IgniteUuid opId, IgniteCheckedException error) {
         this.resType = resType;
-        this.op = op;
+        this.opId = opId;
         this.error = error;
     }
 
     /**
-     * @return Exchange user result.
+     * @return Operation ID.
      */
-    public UserManagementOperation operation() {
-        return op;
+    public IgniteUuid operationId() {
+        return opId;
     }
 
     /**
@@ -83,13 +84,13 @@ public class UserOperationResult {
     }
 
     /**
-     * @param op User management operation.
+     * @param opId User management operation ID.
      * @return Exchange result.
      */
-    static UserOperationResult createSuccessfulResult(UserManagementOperation op) {
-        assert op != null;
+    static UserOperationResult createSuccessfulResult(IgniteUuid opId) {
+        assert opId != null;
 
-        return new UserOperationResult(ResultType.SUCCESS, op, null);
+        return new UserOperationResult(ResultType.SUCCESS, opId, null);
     }
 
     /**

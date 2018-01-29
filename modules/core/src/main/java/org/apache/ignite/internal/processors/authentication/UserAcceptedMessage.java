@@ -42,19 +42,19 @@ public class UserAcceptedMessage implements DiscoveryCustomMessage {
 
     /** Operation. */
     @GridToStringInclude
-    private final UserManagementOperation op;
+    private final IgniteUuid opId;
 
     /** Error. */
     private final IgniteCheckedException error;
 
     /**
-     * @param op User Action
+     * @param opId Acknowledgement operation ID.
      * @param error Error.
      */
-    UserAcceptedMessage(UserManagementOperation op, IgniteCheckedException error) {
-        assert op != null || error != null;
+    UserAcceptedMessage(IgniteUuid opId, IgniteCheckedException error) {
+        assert opId != null || error != null;
 
-        this.op = op;
+        this.opId = opId;
         this.error = error;
     }
 
@@ -80,10 +80,10 @@ public class UserAcceptedMessage implements DiscoveryCustomMessage {
     }
 
     /**
-     * @return User action.
+     * @return User ioeration ID.
      */
-    UserManagementOperation operation() {
-        return op;
+    IgniteUuid operationId() {
+        return opId;
     }
 
     /**

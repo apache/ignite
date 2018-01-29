@@ -70,21 +70,7 @@ public class AuthenticationSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testAddUserOnServer() throws Exception {
-        startGrids(3);
-
-        grid(0).context().authentication().addUser("test", "test");
-
-        User u = grid(0).context().authentication().authenticate("test", "test");
-
-        assertNotNull(u);
-        assertEquals("test", u.name());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAddUserOnClient() throws Exception {
+    public void testAddRemoveUser() throws Exception {
         startGrids(3);
 
         checkAddRemoveUser(grid(0), grid(0));
@@ -96,6 +82,41 @@ public class AuthenticationSelfTest extends GridCommonAbstractTest {
         checkAddRemoveUser(grid(1), grid(CLI_NODE));
         checkAddRemoveUser(grid(CLI_NODE), grid(1));
         checkAddRemoveUser(grid(CLI_NODE), grid(CLI_NODE));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDefaultUser() throws Exception {
+        startGrids(3);
+
+        User u = grid(0).context().authentication().authenticate("ignite", "ignite");
+
+        assertNotNull(u);
+        assertEquals("test", u.name());
+
+        u = grid(1).context().authentication().authenticate("ignite", "ignite");
+
+        assertNotNull(u);
+        assertEquals("test", u.name());
+
+        u = grid(CLI_NODE).context().authentication().authenticate("ignite", "ignite");
+
+        assertNotNull(u);
+        assertEquals("test", u.name());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAddOnJoinNode() throws Exception {
+        startGrids(3);
+
+        User u = grid(0).context().authentication().authenticate("ignite", "ignite");
+
+        assertNotNull(u);
+        assertEquals("test", u.name());
+
     }
 
     /**
