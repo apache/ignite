@@ -62,12 +62,13 @@ public abstract class BulkLoadParser {
      * Creates a parser for a given format options.
      *
      * @param format The input format object.
+     * @param params Various input parameters not related to the format.
      * @return The parser.
      * @throws IllegalArgumentException if the format is not known to the factory.
      */
-    public static BulkLoadParser createParser(BulkLoadFormat format) {
+    public static BulkLoadParser createParser(BulkLoadFormat format, BulkLoadParameters params) {
         if (format instanceof BulkLoadCsvFormat)
-            return new BulkLoadCsvParser(format);
+            return new BulkLoadCsvParser(format, params);
 
         throw new IllegalArgumentException("Internal error: format is not defined");
     }

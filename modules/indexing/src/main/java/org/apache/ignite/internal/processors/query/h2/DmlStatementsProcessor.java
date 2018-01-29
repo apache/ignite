@@ -1019,8 +1019,6 @@ public class DmlStatementsProcessor {
         if (cmd.batchSize() == null)
             cmd.batchSize(BulkLoadParameters.DEFAULT_BATCH_SIZE);
 
-        BulkLoadParser inputParser = BulkLoadParser.createParser(cmd.inputFormat());
-
         GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
         if (tbl == null)
@@ -1057,8 +1055,13 @@ public class DmlStatementsProcessor {
             }
         };
 
-        return new BulkLoadContext(new BulkLoadParameters(cmd.localFileName(), cmd.batchSize()),
-            inputParser, dataConverter, outputWriter);
+        BulkLoadParameters params = new BulkLoadParameters(
+            cmd.localFileName(),
+            cmd.batchSize());
+
+        BulkLoadParser inputParser = BulkLoadParser.createParser(cmd.inputFormat(), params);
+
+        return new BulkLoadContext(params, inputParser, dataConverter, outputWriter);
     }
 
     /** */

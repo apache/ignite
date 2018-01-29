@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.bulkload;
 
+import org.jetbrains.annotations.NotNull;
+
+import java.nio.charset.Charset;
+
 /** Bulk load parameters -- which was specified by the user or their default values. */
 public class BulkLoadParameters {
 
@@ -31,11 +35,14 @@ public class BulkLoadParameters {
     /** Size of a file batch for COPY command. */
     public static final int DEFAULT_BATCH_SIZE = 4 * 1024 * 1024;
 
+    /** The default input charset. */
+    public static final Charset DEFAULT_INPUT_CHARSET = Charset.forName("UTF-8");
+
     /** Local name of the file to send to server */
-    private String locFileName;
+    @NotNull private final String locFileName;
 
     /** File batch size in bytes. */
-    private int batchSize;
+    private final int batchSize;
 
     /**
      * Creates a bulk load parameters.
@@ -57,9 +64,9 @@ public class BulkLoadParameters {
     }
 
     /**
-     * Returns the batchSize.
+     * Returns the batch size.
      *
-     * @return batchSize.
+     * @return The batch size.
      */
     public int batchSize() {
         return batchSize;

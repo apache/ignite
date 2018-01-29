@@ -26,9 +26,6 @@ import java.util.List;
 /** A superclass and a factory for bulk load format options. */
 public abstract class BulkLoadFormat {
 
-    /** The default input charset. */
-    public static final Charset DEFAULT_INPUT_CHARSET = Charset.forName("UTF-8");
-
     /**
      * Returns the format name.
      * @return The format name.
