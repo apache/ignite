@@ -28,12 +28,12 @@ namespace Apache.Ignite.Core.Tests.Client
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests the thin client mode with a raw secure socket.
+    /// Tests the thin client mode with a raw secure socket stream.
     /// </summary>
     public class RawSecureSocketTest
     {
         /// <summary>
-        /// Tests the SSL on server.
+        /// Tests that we can do handshake over SSL without using Ignite.NET APIs.
         /// </summary>
         [Test]
         public void TestHandshake()
