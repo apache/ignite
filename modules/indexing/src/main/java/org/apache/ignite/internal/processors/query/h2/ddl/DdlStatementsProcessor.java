@@ -67,6 +67,7 @@ import org.h2.command.ddl.DropIndex;
 import org.h2.command.ddl.DropTable;
 import org.h2.table.Column;
 import org.h2.value.DataType;
+import org.h2.value.Value;
 
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.PARAM_WRAP_VALUE;
@@ -348,7 +349,8 @@ public class DdlStatementsProcessor {
 
                         QueryField field = new QueryField(col.columnName(),
                             DataType.getTypeClassName(col.column().getType()),
-                            col.column().isNullable(), col.defaultValue());
+                            col.column().isNullable(), col.column().getType() == Value.STRING_IGNORECASE,
+                            col.defaultValue());
 
                         cols.add(field);
 
@@ -505,6 +507,8 @@ public class DdlStatementsProcessor {
 
         Set<String> notNullFields = null;
 
+        Set<String> caseInsensitiveFields = null;
+
         HashMap<String, Object> dfltValues = new HashMap<>();
 
         for (Map.Entry<String, GridSqlColumn> e : createTbl.columns().entrySet()) {
@@ -519,6 +523,13 @@ public class DdlStatementsProcessor {
                     notNullFields = new HashSet<>();
 
                 notNullFields.add(e.getKey());
+            }
+
+            if (col.getType() == Value.STRING_IGNORECASE) {
+                if (caseInsensitiveFields == null)
+                    caseInsensitiveFields = new HashSet<>();
+
+                caseInsensitiveFields.add(e.getKey());
             }
 
             Object dfltVal = gridCol.defaultValue();
@@ -580,6 +591,8 @@ public class DdlStatementsProcessor {
 
             res = res0;
         }
+
+        res.setCaseInsensitiveFields(caseInsensitiveFields);
 
         return res;
     }

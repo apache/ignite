@@ -69,6 +69,9 @@ public class QueryBinaryProperty implements GridQueryProperty {
     private final boolean notNull;
 
     /** */
+    private final boolean caseInsensitive;
+
+    /** */
     private final Object defaultValue;
 
     /**
@@ -84,7 +87,7 @@ public class QueryBinaryProperty implements GridQueryProperty {
      * @param defaultValue Default value.
      */
     public QueryBinaryProperty(GridKernalContext ctx, String propName, QueryBinaryProperty parent,
-        Class<?> type, @Nullable Boolean key, String alias, boolean notNull, Object defaultValue) {
+        Class<?> type, @Nullable Boolean key, String alias, boolean notNull, boolean caseInsensitive, Object defaultValue) {
         this.ctx = ctx;
 
         log = ctx.log(QueryBinaryProperty.class);
@@ -94,6 +97,7 @@ public class QueryBinaryProperty implements GridQueryProperty {
         this.parent = parent;
         this.type = type;
         this.notNull = notNull;
+        this.caseInsensitive = caseInsensitive;
 
         if (key != null)
             this.isKeyProp = key ? 1 : -1;
@@ -280,6 +284,10 @@ public class QueryBinaryProperty implements GridQueryProperty {
     /** {@inheritDoc} */
     @Override public boolean notNull() {
         return notNull;
+    }
+
+    @Override public boolean caseInsensitive() {
+        return caseInsensitive;
     }
 
     /** {@inheritDoc} */

@@ -64,6 +64,13 @@ public @interface QuerySqlField {
     boolean notNull() default false;
 
     /**
+     * Specifies whether the specified field is case insensitive.
+     *
+     * @return {@code True} if the field is case insensitive.
+     */
+    boolean caseInsensitive() default false;
+
+    /**
      * Array of index groups this field belongs to. Groups are used for compound indexes,
      * whenever index should be created on more than one field. All fields within the same
      * group will belong to the same index.

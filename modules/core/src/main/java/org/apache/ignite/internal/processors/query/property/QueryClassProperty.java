@@ -47,6 +47,9 @@ public class QueryClassProperty implements GridQueryProperty {
     /** */
     private final boolean notNull;
 
+    /** */
+    private final boolean caseInsensitive;
+
     /**
      * Constructor.
      *
@@ -57,7 +60,7 @@ public class QueryClassProperty implements GridQueryProperty {
      * @param coCtx Cache Object Context.
      */
     public QueryClassProperty(QueryPropertyAccessor accessor, boolean key, String name,
-        boolean notNull, @Nullable CacheObjectContext coCtx) {
+        boolean notNull, boolean caseInsensitive, @Nullable CacheObjectContext coCtx) {
         this.accessor = accessor;
 
         this.key = key;
@@ -65,6 +68,8 @@ public class QueryClassProperty implements GridQueryProperty {
         this.name = !F.isEmpty(name) ? name : accessor.getPropertyName();
 
         this.notNull = notNull;
+
+        this.caseInsensitive = caseInsensitive;
 
         this.coCtx = coCtx;
     }
@@ -140,6 +145,10 @@ public class QueryClassProperty implements GridQueryProperty {
     /** {@inheritDoc} */
     @Override public boolean notNull() {
         return notNull;
+    }
+
+    @Override public boolean caseInsensitive() {
+        return caseInsensitive;
     }
 
     /** {@inheritDoc} */

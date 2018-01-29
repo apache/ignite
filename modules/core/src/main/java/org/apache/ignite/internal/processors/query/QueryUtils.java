@@ -241,6 +241,7 @@ public class QueryUtils {
         normalEntity.setKeyFieldName(entity.getKeyFieldName());
         normalEntity.setValueFieldName(entity.getValueFieldName());
         normalEntity.setNotNullFields(entity.getNotNullFields());
+        normalEntity.setCaseInsensitiveFields(entity.getCaseInsensitiveFields());
         normalEntity.setDefaultFieldValues(entity.getDefaultFieldValues());
 
         // Normalize table name.
@@ -516,6 +517,7 @@ public class QueryUtils {
         throws IgniteCheckedException {
         Set<String> keyFields = qryEntity.getKeyFields();
         Set<String> notNulls = qryEntity.getNotNullFields();
+        Set<String> caseInsensitives = qryEntity.getCaseInsensitiveFields();
         Map<String, Object> dlftVals = qryEntity.getDefaultFieldValues();
 
         // We have to distinguish between empty and null keyFields when the key is not of SQL type -
@@ -545,11 +547,13 @@ public class QueryUtils {
 
             boolean notNull = notNulls != null && notNulls.contains(entry.getKey());
 
+            boolean caseInsensitive = caseInsensitives != null && caseInsensitives.contains(entry.getKey());
+
             Object dfltVal = dlftVals != null ? dlftVals.get(entry.getKey()) : null;
 
             QueryBinaryProperty prop = buildBinaryProperty(ctx, entry.getKey(),
                 U.classForName(entry.getValue(), Object.class, true),
-                d.aliases(), isKeyField, notNull, dfltVal);
+                d.aliases(), isKeyField, notNull, caseInsensitive, dfltVal);
 
             d.addProperty(prop, false);
         }
@@ -567,6 +571,7 @@ public class QueryUtils {
     public static void processClassMeta(QueryEntity qryEntity, QueryTypeDescriptorImpl d, CacheObjectContext coCtx)
         throws IgniteCheckedException {
         Set<String> notNulls = qryEntity.getNotNullFields();
+        Set<String> caseInsensitive = qryEntity.getCaseInsensitiveFields();
 
         for (Map.Entry<String, String> entry : qryEntity.getFields().entrySet()) {
             GridQueryProperty prop = buildProperty(
@@ -578,6 +583,7 @@ public class QueryUtils {
                 U.classForName(entry.getValue(), Object.class),
                 d.aliases(),
                 notNulls != null && notNulls.contains(entry.getKey()),
+                caseInsensitive != null && caseInsensitive.contains(entry.getKey()),
                 coCtx);
 
             d.addProperty(prop, false);
@@ -697,7 +703,8 @@ public class QueryUtils {
      * @throws IgniteCheckedException On error.
      */
     public static QueryBinaryProperty buildBinaryProperty(GridKernalContext ctx, String pathStr, Class<?> resType,
-        Map<String, String> aliases, @Nullable Boolean isKeyField, boolean notNull, Object dlftVal) throws IgniteCheckedException {
+        Map<String, String> aliases, @Nullable Boolean isKeyField, boolean notNull, boolean caseInsensitive,
+        Object dlftVal) throws IgniteCheckedException {
         String[] path = pathStr.split("\\.");
 
         QueryBinaryProperty res = null;
@@ -713,7 +720,7 @@ public class QueryUtils {
             String alias = aliases.get(fullName.toString());
 
             // The key flag that we've found out is valid for the whole path.
-            res = new QueryBinaryProperty(ctx, prop, res, resType, isKeyField, alias, notNull, dlftVal);
+            res = new QueryBinaryProperty(ctx, prop, res, resType, isKeyField, alias, notNull, caseInsensitive, dlftVal);
         }
 
         return res;
@@ -731,7 +738,7 @@ public class QueryUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static QueryClassProperty buildClassProperty(Class<?> keyCls, Class<?> valCls, String pathStr,
-        Class<?> resType, Map<String,String> aliases, boolean notNull, CacheObjectContext coCtx)
+        Class<?> resType, Map<String,String> aliases, boolean notNull, boolean caseInsensitive, CacheObjectContext coCtx)
         throws IgniteCheckedException {
         QueryClassProperty res = buildClassProperty(
             true,
@@ -740,10 +747,11 @@ public class QueryUtils {
             resType,
             aliases,
             notNull,
+            caseInsensitive,
             coCtx);
 
         if (res == null) // We check key before value consistently with BinaryProperty.
-            res = buildClassProperty(false, valCls, pathStr, resType, aliases, notNull, coCtx);
+            res = buildClassProperty(false, valCls, pathStr, resType, aliases, notNull, caseInsensitive, coCtx);
 
         if (res == null)
             throw new IgniteCheckedException(propertyInitializationExceptionMessage(keyCls, valCls, pathStr, resType));
@@ -766,7 +774,7 @@ public class QueryUtils {
      */
     public static GridQueryProperty buildProperty(Class<?> keyCls, Class<?> valCls, String keyFieldName,
         String valueFieldName, String pathStr, Class<?> resType, Map<String,String> aliases, boolean notNull,
-        CacheObjectContext coCtx) throws IgniteCheckedException {
+        boolean caseInsensitive, CacheObjectContext coCtx) throws IgniteCheckedException {
         if (pathStr.equals(keyFieldName))
             return new KeyOrValProperty(true, pathStr, keyCls);
 
@@ -779,6 +787,7 @@ public class QueryUtils {
                 resType,
                 aliases,
                 notNull,
+                caseInsensitive,
                 coCtx);
     }
 
@@ -810,7 +819,7 @@ public class QueryUtils {
      */
     @SuppressWarnings("ConstantConditions")
     public static QueryClassProperty buildClassProperty(boolean key, Class<?> cls, String pathStr, Class<?> resType,
-        Map<String,String> aliases, boolean notNull, CacheObjectContext coCtx) {
+        Map<String,String> aliases, boolean notNull, boolean caseInsensitive, CacheObjectContext coCtx) {
         String[] path = pathStr.split("\\.");
 
         QueryClassProperty res = null;
@@ -830,7 +839,7 @@ public class QueryUtils {
             if (accessor == null)
                 return null;
 
-            QueryClassProperty tmp = new QueryClassProperty(accessor, key, alias, notNull, coCtx);
+            QueryClassProperty tmp = new QueryClassProperty(accessor, key, alias, notNull, caseInsensitive, coCtx);
 
             tmp.parent(res);
 
@@ -1370,6 +1379,10 @@ public class QueryUtils {
         /** {@inheritDoc} */
         @Override public boolean notNull() {
             return true;
+        }
+
+        @Override public boolean caseInsensitive() {
+            return false;
         }
 
         /** {@inheritDoc} */

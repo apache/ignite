@@ -55,6 +55,7 @@ import org.h2.value.ValueLong;
 import org.h2.value.ValueNull;
 import org.h2.value.ValueShort;
 import org.h2.value.ValueString;
+import org.h2.value.ValueStringIgnoreCase;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
@@ -132,8 +133,12 @@ public class GridH2RowDescriptor {
 
         Class[] classes = allFields.values().toArray(new Class[fields.length]);
 
-        for (int i = 0; i < fieldTypes.length; i++)
-            fieldTypes[i] = DataType.getTypeFromClass(classes[i]);
+        for (int i = 0; i < fieldTypes.length; i++) {
+            if(classes[i] == String.class && type.property(fields[i]).caseInsensitive())
+                fieldTypes[i] = Value.STRING_IGNORECASE;
+            else
+                fieldTypes[i] = DataType.getTypeFromClass(classes[i]);
+        }
 
         props = new GridQueryProperty[fields.length];
 
@@ -245,6 +250,8 @@ public class GridH2RowDescriptor {
                 return ValueDecimal.get((BigDecimal)obj);
             case Value.STRING:
                 return ValueString.get(obj.toString());
+            case Value.STRING_IGNORECASE:
+                return ValueStringIgnoreCase.get(obj.toString());
             case Value.BYTES:
                 return ValueBytes.get((byte[])obj);
             case Value.JAVA_OBJECT:

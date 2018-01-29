@@ -55,6 +55,9 @@ public class QueryEntityTypeDescriptor {
     private Set<String> notNullFields = new HashSet<>();
 
     /** */
+    private Set<String> caseInsensitiveFields = new HashSet<>();
+
+    /** */
     private QueryEntityIndexDescriptor fullTextIdx;
 
     /** */
@@ -191,6 +194,22 @@ public class QueryEntityTypeDescriptor {
      */
     public Set<String> notNullFields() {
         return notNullFields;
+    }
+
+    /**
+     * Adds a case insensitive field.
+     *
+     * @param field case insensitive field.
+     */
+    public void addCaseInsensitiveField(String field) {
+        caseInsensitiveFields.add(field);
+    }
+
+    /**
+     * @return case insensitive fields.
+     */
+    public Set<String> caseInsensitiveFields() {
+        return caseInsensitiveFields;
     }
 
     /**

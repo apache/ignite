@@ -52,6 +52,7 @@ import org.h2.table.IndexColumn;
 import org.h2.table.TableBase;
 import org.h2.table.TableType;
 import org.h2.value.DataType;
+import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.LongAdder8;
@@ -918,7 +919,11 @@ public class GridH2Table extends TableBase {
                 }
 
                 try {
-                    Column c = new Column(col.name(), DataType.getTypeFromClass(Class.forName(col.typeName())));
+                    Class<?> cls = Class.forName(col.typeName());
+                    int fieldType = cls == String.class && col.isCaseInsensitive() ?
+                        Value.STRING_IGNORECASE : DataType.getTypeFromClass(cls);
+
+                    Column c = new Column(col.name(), fieldType);
 
                     c.setNullable(col.isNullable());
 

@@ -86,6 +86,9 @@ public class QueryEntity implements Serializable {
     /** Fields that must have non-null value. NB: DO NOT remove underscore to avoid clashes with QueryEntityEx. */
     private Set<String> _notNullFields;
 
+    /** Set of case insensitive fields. */
+    private Set<String> caseInsensitiveFields;
+
     /** Fields default values. */
     private Map<String, Object> defaultFieldValues = new HashMap<>();
 
@@ -117,6 +120,8 @@ public class QueryEntity implements Serializable {
         tableName = other.tableName;
 
         _notNullFields = other._notNullFields != null ? new HashSet<>(other._notNullFields) : null;
+
+        caseInsensitiveFields = other.caseInsensitiveFields != null ? new HashSet<>(other.caseInsensitiveFields) : null;
 
         defaultFieldValues = other.defaultFieldValues != null ? new HashMap<>(other.defaultFieldValues)
             : new HashMap<String, Object>();
@@ -391,6 +396,26 @@ public class QueryEntity implements Serializable {
     }
 
     /**
+     * Gets a set of case insensitive fields.
+     *
+     * @return Set of case insensitive fields.
+     */
+    public Set<String> getCaseInsensitiveFields() {
+        return caseInsensitiveFields;
+    }
+
+    /**
+     * Sets a set of case insensitive fields.
+     *
+     * @param caseInsensitiveFields set of case insensitive fields.
+     * @return {@code this} for chaining.
+     */
+    public QueryEntity setCaseInsensitiveFields(Set<String> caseInsensitiveFields) {
+        this.caseInsensitiveFields = caseInsensitiveFields;
+        return this;
+    }
+
+    /**
      * Gets fields default values.
      *
      * @return Field's name to default value map.
@@ -503,6 +528,9 @@ public class QueryEntity implements Serializable {
 
         if (!F.isEmpty(desc.notNullFields()))
             entity.setNotNullFields(desc.notNullFields());
+
+        if (!F.isEmpty(desc.caseInsensitiveFields()))
+            entity.setCaseInsensitiveFields(desc.caseInsensitiveFields());
 
         return entity;
     }
@@ -629,6 +657,9 @@ public class QueryEntity implements Serializable {
             if (sqlAnn.notNull())
                 desc.addNotNullField(prop.fullName());
 
+            if (sqlAnn.caseInsensitive())
+                desc.addCaseInsensitiveField(prop.fullName());
+
             if ((!F.isEmpty(sqlAnn.groups()) || !F.isEmpty(sqlAnn.orderedGroups()))
                 && sqlAnn.inlineSize() != QueryIndex.DFLT_INLINE_SIZE) {
                 throw new CacheException("Inline size cannot be set on a field with group index [" +
@@ -670,13 +701,14 @@ public class QueryEntity implements Serializable {
             F.eqNotOrdered(idxs, entity.idxs) &&
             F.eq(tableName, entity.tableName) &&
             F.eq(_notNullFields, entity._notNullFields) &&
+            F.eq(caseInsensitiveFields, entity.caseInsensitiveFields) &&
             F.eq(defaultFieldValues, entity.defaultFieldValues);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(keyType, valType, keyFieldName, valueFieldName, fields, keyFields, aliases, idxs,
-            tableName, _notNullFields, defaultFieldValues);
+            tableName, _notNullFields, caseInsensitiveFields, defaultFieldValues);
     }
 
     /** {@inheritDoc} */

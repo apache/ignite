@@ -68,6 +68,9 @@ public enum H2DatabaseType {
     VARCHAR("VARCHAR"),
 
     /** */
+    VARCHAR_IGNORECASE("VARCHAR_IGNORECASE"),
+
+    /** */
     CHAR("CHAR"),
 
     /** */
@@ -126,6 +129,18 @@ public enum H2DatabaseType {
      */
     H2DatabaseType(String dbType) {
         this.dbType = dbType;
+    }
+
+    /**
+     * Resolves enum by class.
+     *
+     * @param cls Class.
+     * @return Enum value.
+     */
+    public static H2DatabaseType fromClass(Class<?> cls, boolean isCaseSensitive) {
+        if(isCaseSensitive && cls == String.class)
+            return VARCHAR_IGNORECASE;
+        return fromClass(cls);
     }
 
     /**

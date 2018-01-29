@@ -37,6 +37,9 @@ public class QueryField implements Serializable {
     /** Nullable flag. */
     private final boolean nullable;
 
+    /** Case insensitive flag. */
+    private final boolean caseInsensitive;
+
     /** Default value. */
     private final Object dfltValue;
 
@@ -46,7 +49,7 @@ public class QueryField implements Serializable {
      * @param nullable Nullable flag.
      */
     public QueryField(String name, String typeName, boolean nullable) {
-        this(name, typeName, nullable, null);
+        this(name, typeName, nullable, false, null);
     }
 
     /**
@@ -55,10 +58,11 @@ public class QueryField implements Serializable {
      * @param nullable Nullable flag.
      * @param dfltValue Default value.
      */
-    public QueryField(String name, String typeName, boolean nullable, Object dfltValue) {
+    public QueryField(String name, String typeName, boolean nullable, boolean caseInsensitive, Object dfltValue) {
         this.name = name;
         this.typeName = typeName;
         this.nullable = nullable;
+        this.caseInsensitive = caseInsensitive;
         this.dfltValue = dfltValue;
     }
 
@@ -81,6 +85,13 @@ public class QueryField implements Serializable {
      */
     public boolean isNullable() {
         return nullable;
+    }
+
+    /**
+     * @return {@code true}, if field is case insensitive.
+     */
+    public boolean isCaseInsensitive() {
+        return caseInsensitive;
     }
 
     /**
