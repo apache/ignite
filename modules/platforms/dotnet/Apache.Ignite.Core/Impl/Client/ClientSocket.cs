@@ -322,6 +322,9 @@ namespace Apache.Ignite.Core.Impl.Client
 
             // If there are no pending async requests, we can execute this operation synchronously,
             // which is more efficient.
+
+            // TODO: SSL: The Write method cannot be called when another write operation is pending.
+            // We may have to force sync mode in SSL, or at least write in sync mode.
             if (_sendRequestLock.TryEnterWriteLock(0))
             {
                 try
