@@ -140,7 +140,7 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <summary>
         /// Gets the client configuration.
         /// </summary>
-        protected IgniteClientConfiguration GetClientConfiguration()
+        protected virtual IgniteClientConfiguration GetClientConfiguration()
         {
             return new IgniteClientConfiguration
             {

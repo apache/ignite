@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
     using System;
+    using Apache.Ignite.Core.Client;
     using NUnit.Framework;
 
     /// <summary>
@@ -39,15 +40,25 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// </summary>
         protected override IgniteConfiguration GetIgniteConfiguration()
         {
-            // TODO: Enable SSL. Add our own configs (copy from CPP or whatever).
-            var cfg = base.GetIgniteConfiguration();
-
+            // TODO: Add our own configs.
             Environment.SetEnvironmentVariable("IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH",
                 @"c:\w\incubator-ignite\modules\platforms\cpp\odbc-test\config");
 
-            cfg.SpringConfigUrl = @"c:\w\incubator-ignite\modules\platforms\cpp\odbc-test\config\queries-ssl.xml";
+            return new IgniteConfiguration(base.GetIgniteConfiguration())
+            {
+                SpringConfigUrl = @"c:\w\incubator-ignite\modules\platforms\cpp\odbc-test\config\queries-ssl.xml"
+            };
+        }
 
-            return cfg;
+        /// <summary>
+        /// Gets the client configuration.
+        /// </summary>
+        protected override IgniteClientConfiguration GetClientConfiguration()
+        {
+            return new IgniteClientConfiguration(base.GetClientConfiguration())
+            {
+                Port = 11110
+            };
         }
     }
 }
