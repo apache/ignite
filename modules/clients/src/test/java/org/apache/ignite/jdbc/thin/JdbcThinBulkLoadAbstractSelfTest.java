@@ -189,6 +189,23 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     }
 
     /**
+     * Dead-on-arrival test. Imports two-entry CSV file into a table and checks
+     * the created entries using SELECT statement.
+     *
+     * @throws SQLException If failed.
+     */
+    public void testAsciiCharset() throws SQLException {
+        int updatesCnt = stmt.executeUpdate(
+            "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" charset ascii into " + TBL_NAME +
+                " (_key, age, firstName, lastName)" +
+                " format csv");
+
+        assertEquals(2, updatesCnt);
+
+        checkCacheContents(TBL_NAME, true, 2);
+    }
+
+    /**
      * Imports two-entry CSV file with UTF-8 characters into a table and checks
      * the created entries using SELECT statement.
      *
@@ -217,6 +234,23 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
             "copy from \"" + BULKLOAD_UTF_CSV_FILE + "\" into " + TBL_NAME +
                 " (_key, age, firstName, lastName)" +
                 " format csv batch_size 1");
+
+        assertEquals(2, updatesCnt);
+
+        checkUtfCacheContents(TBL_NAME, true, 2);
+    }
+
+    /**
+     * Imports two-entry CSV file with UTF-8 characters into a table and checks
+     * the created entries using SELECT statement.
+     *
+     * @throws SQLException If failed.
+     */
+    public void testUtfWithCharset() throws SQLException {
+        int updatesCnt = stmt.executeUpdate(
+            "copy from \"" + BULKLOAD_UTF_CSV_FILE + "\" charset \"utf-8\" into " + TBL_NAME +
+                " (_key, age, firstName, lastName)" +
+                " format csv");
 
         assertEquals(2, updatesCnt);
 

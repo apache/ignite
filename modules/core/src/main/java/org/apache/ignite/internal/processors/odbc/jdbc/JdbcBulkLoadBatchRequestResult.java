@@ -24,6 +24,12 @@ import org.apache.ignite.internal.processors.bulkload.BulkLoadParameters;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
+import java.nio.charset.UnsupportedCharsetException;
+
+import static org.apache.ignite.internal.sql.SqlParserUtils.error;
+
 /**
  * A request from server (in form of reply) to send files from client to server,
  * which is sent as a response to SQL COPY command (see IGNITE-6917 for details).
@@ -87,6 +93,7 @@ public class JdbcBulkLoadBatchRequestResult extends JdbcResult {
 
         writer.writeLong(queryId);
         writer.writeString(params.localFileName());
+        writer.writeString(params.locFileCharset().name());
         writer.writeInt(params.batchSize());
     }
 
@@ -97,12 +104,24 @@ public class JdbcBulkLoadBatchRequestResult extends JdbcResult {
         queryId = reader.readLong();
 
         String locFileName = reader.readString();
+        String charsetName = reader.readString();
         int batchSize = reader.readInt();
+
+        Charset charset;
+        try {
+            charset = Charset.forName(charsetName);
+        }
+        catch (IllegalCharsetNameException e) {
+            throw new BinaryObjectException("Illegal charset name: '" + charsetName + "'");
+        }
+        catch (UnsupportedCharsetException e) {
+            throw new BinaryObjectException("Charset is not supported: '" + charsetName + "'");
+        }
 
         if (batchSize < BulkLoadParameters.MIN_BATCH_SIZE || batchSize > BulkLoadParameters.MAX_BATCH_SIZE)
             throw new BinaryObjectException("Invalid batch size: " + batchSize);
 
-        params = new BulkLoadParameters(locFileName, batchSize);
+        params = new BulkLoadParameters(locFileName, charset, batchSize);
     }
 
     /** {@inheritDoc} */

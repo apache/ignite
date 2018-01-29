@@ -44,6 +44,8 @@ public class SqlParserCopySelfTest extends SqlParserAbstractSelfTest {
             "copy from \"any.file\" to Person (_key, age, firstName, lastName) format csv",
             "Unexpected token: \"TO\" (expected: \"INTO\")");
 
+        // Column list
+
         assertParseError(null,
             "copy from \"any.file\" into Person () format csv",
             "Unexpected token: \")\" (expected: \"[identifier]\")");
@@ -56,6 +58,8 @@ public class SqlParserCopySelfTest extends SqlParserAbstractSelfTest {
             "copy from \"any.file\" into Person format csv",
             "Unexpected token: \"FORMAT\" (expected: \"(\")");
 
+        // Format
+
         assertParseError(null,
             "copy from \"any.file\" into Person (_key, age, firstName, lastName)",
             "Unexpected end of command (expected: \"FORMAT\")");
@@ -63,5 +67,19 @@ public class SqlParserCopySelfTest extends SqlParserAbstractSelfTest {
         assertParseError(null,
             "copy from \"any.file\" into Person (_key, age, firstName, lastName) format lsd",
             "Unknown format name: LSD");
+
+        // Charset
+
+        assertParseError(null,
+            "copy from \"any.file\" charset nonexistent into Person (_key, age, firstName, lastName) format lsd",
+            "Charset is not supported: 'NONEXISTENT'");
+
+        assertParseError(null,
+            "copy from \"any.file\" charset \"\" into Person (_key, age, firstName, lastName) format lsd",
+            "Unknown charset name: ''");
+
+        assertParseError(null,
+            "copy from \"any.file\" charset \"8^)\" into Person (_key, age, firstName, lastName) format lsd",
+            "Unknown charset name: '8^)'");
     }
 }

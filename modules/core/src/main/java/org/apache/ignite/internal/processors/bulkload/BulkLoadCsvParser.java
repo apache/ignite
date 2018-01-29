@@ -27,11 +27,12 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadContext;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 
+import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-import static org.apache.ignite.internal.processors.bulkload.BulkLoadFormat.DEFAULT_INPUT_CHARSET;
+import static org.apache.ignite.internal.processors.bulkload.BulkLoadParameters.DEFAULT_INPUT_CHARSET;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_CONTINUE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_ERROR;
@@ -45,18 +46,21 @@ public class BulkLoadCsvParser extends BulkLoadParser {
     /** Decoder for the input stream of bytes */
     private final PipelineBlock<byte[], char[]> decoder;
 
+    /** A block that appends its input to {@code List<String>}. Used as a records collector. */
     private final StrListAppenderBlock strListAppenderBlock;
 
-    /** Creates bulk load CSV parser.
+    /**
+     * Creates bulk load CSV parser.
      *
      * @param format Format options (parsed from COPY command on the server side).
+     * @param params Input file parameters.
      */
-    public BulkLoadCsvParser(BulkLoadFormat format) {
+    public BulkLoadCsvParser(BulkLoadFormat format, BulkLoadParameters params) {
         super(format);
 
         nextBatchIdx = 0;
 
-        decoder = new CharsetDecoderBlock(DEFAULT_INPUT_CHARSET);
+        decoder = new CharsetDecoderBlock(params.locFileCharset());
 
         strListAppenderBlock = new StrListAppenderBlock();
 
@@ -90,6 +94,13 @@ public class BulkLoadCsvParser extends BulkLoadParser {
         }
     }
 
+    /**
+     * Parses a batch of records
+     * @param req The request with all parameters.
+     * @param isLastBatch true, if it is a last batch.
+     * @return Iterable over the parsed records.
+     * @throws IgniteCheckedException if parsing has failed.
+     */
     private Iterable<List<Object>> parseBatch(JdbcBulkLoadBatchRequest req, boolean isLastBatch)
         throws IgniteCheckedException {
 

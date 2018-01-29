@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.bulkload;
 
+import org.jetbrains.annotations.NotNull;
+
+import java.nio.charset.Charset;
+
 /** Bulk load parameters -- which was specified by the user or their default values. */
 public class BulkLoadParameters {
 
@@ -31,35 +35,52 @@ public class BulkLoadParameters {
     /** Size of a file batch for COPY command. */
     public static final int DEFAULT_BATCH_SIZE = 4 * 1024 * 1024;
 
+    /** The default input charset. */
+    public static final Charset DEFAULT_INPUT_CHARSET = Charset.forName("UTF-8");
+
     /** Local name of the file to send to server */
-    private String locFileName;
+    @NotNull private final String locFileName;
+
+    /** File charset. */
+    @NotNull private final Charset locFileCharset;
 
     /** File batch size in bytes. */
-    private int batchSize;
+    private final int batchSize;
 
     /**
      * Creates a bulk load parameters.
      * @param locFileName File name to send from client to server.
+     * @param charset The local file character set.
      * @param batchSize Batch size (Number of bytes in a portion of a file to send in one Jdbc request/response).
      */
-    public BulkLoadParameters(String locFileName, int batchSize) {
+    public BulkLoadParameters(@NotNull String locFileName, @NotNull Charset charset, int batchSize) {
         this.locFileName = locFileName;
+        locFileCharset = charset;
         this.batchSize = batchSize;
     }
 
     /**
      * Returns the local name of file to send.
      *
-     * @return locFileName the local name of file to send.
+     * @return The local name of file to send.
      */
     public String localFileName() {
         return locFileName;
     }
 
     /**
-     * Returns the batchSize.
+     * Returns the local file charset.
      *
-     * @return batchSize.
+     * @return The local file charset.
+     */
+    public Charset locFileCharset() {
+        return locFileCharset;
+    }
+
+    /**
+     * Returns the batch size.
+     *
+     * @return batch sizes.
      */
     public int batchSize() {
         return batchSize;
