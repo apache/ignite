@@ -49,7 +49,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 {
                     CertificatePath = @"Config\Client\thin-client-cert.pfx",
                     CertificatePassword = "123456",
-                    SkipServerCertificateValidation = true
+                    SkipServerCertificateValidation = true,
+                    CheckCertificateRevocation = true
                 }
             };
         }
