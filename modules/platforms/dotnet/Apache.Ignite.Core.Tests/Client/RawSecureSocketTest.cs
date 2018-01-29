@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Tests.Client
     using System.IO;
     using System.Net.Security;
     using System.Net.Sockets;
-    using System.Security.Authentication;
     using System.Security.Cryptography.X509Certificates;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Impl.Binary.IO;
@@ -56,7 +55,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 {
                     var certsCollection = new X509CertificateCollection(new X509Certificate[] {LoadCertificateFile()});
 
-                    sslStream.AuthenticateAsClient(cfg.Host, certsCollection, SslProtocols.Default, false);
+                    sslStream.AuthenticateAsClient(cfg.Host, certsCollection, false);
 
                     Assert.IsTrue(sslStream.IsAuthenticated);
                     Assert.IsTrue(sslStream.IsMutuallyAuthenticated);

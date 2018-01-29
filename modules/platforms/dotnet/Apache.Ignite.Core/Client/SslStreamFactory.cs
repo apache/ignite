@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Client
 {
     using System.IO;
     using System.Net.Security;
-    using System.Security.Authentication;
     using System.Security.Cryptography.X509Certificates;
     using Apache.Ignite.Core.Impl.Common;
 
@@ -38,7 +37,7 @@ namespace Apache.Ignite.Core.Client
             var cert = new X509Certificate2(CertificatePath, CertificatePassword);
             var certs = new X509CertificateCollection(new X509Certificate[] { cert });
 
-            sslStream.AuthenticateAsClient(targetHost, certs, SslProtocols.Default, CheckCertificateRevocation);
+            sslStream.AuthenticateAsClient(targetHost, certs, CheckCertificateRevocation);
 
             return sslStream;
         }
