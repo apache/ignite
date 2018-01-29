@@ -21,15 +21,16 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.jsr166.ThreadLocalRandom8;
 
 /**
  *
@@ -135,21 +136,23 @@ public class ConcurrentMapTest {
     private static long runOps(final Map<Integer,Integer> map, final int iterCnt, int threadCnt) throws Exception {
         long start = System.currentTimeMillis();
 
-        GridTestUtils.runMultiThreaded(() -> {
-            ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();
+        GridTestUtils.runMultiThreaded(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-            for (int i = 0; i < iterCnt; i++) {
-                // Put random.
-                map.put(rnd.nextInt(0, 10000), 0);
+                for (int i = 0; i < iterCnt; i++) {
+                    // Put random.
+                    map.put(rnd.nextInt(0, 10000), 0);
 
-                // Read random.
-                map.get(rnd.nextInt(0, 10000));
+                    // Read random.
+                    map.get(rnd.nextInt(0, 10000));
 
-                // Remove random.
-                map.remove(rnd.nextInt(0, 10000));
+                    // Remove random.
+                    map.remove(rnd.nextInt(0, 10000));
+                }
+
+                return null;
             }
-
-            return null;
         }, threadCnt, "thread");
 
         return System.currentTimeMillis() - start;

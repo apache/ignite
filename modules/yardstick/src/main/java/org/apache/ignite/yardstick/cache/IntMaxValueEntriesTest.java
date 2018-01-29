@@ -21,10 +21,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.LongAdder;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.jsr166.LongAdder8;
 
 import static org.yardstickframework.BenchmarkUtils.println;
 
@@ -55,7 +55,7 @@ public class IntMaxValueEntriesTest extends IgniteCacheAbstractBenchmark {
 
         final List<Thread> threads = new ArrayList<>(THREADS);
 
-        final LongAdder8 addedCnt = new LongAdder8();
+        final LongAdder addedCnt = new LongAdder();
 
         int delta = (int)((KEYS_HI + Math.abs(KEYS_LO)) / THREADS);
 

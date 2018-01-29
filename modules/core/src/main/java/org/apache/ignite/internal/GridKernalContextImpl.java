@@ -91,6 +91,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
@@ -385,6 +386,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     private GridInternalSubscriptionProcessor internalSubscriptionProc;
 
+    /** Node invalidation flag. */
+    private volatile boolean invalidated;
+
     /**
      * No-arg constructor is required by externalization.
      */
@@ -438,7 +442,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService qryExecSvc,
         ExecutorService schemaExecSvc,
         @Nullable Map<String, ? extends ExecutorService> customExecSvcs,
-        List<PluginProvider> plugins
+        List<PluginProvider> plugins,
+        IgnitePredicate<String> clsFilter
     ) {
         assert grid != null;
         assert cfg != null;
@@ -464,7 +469,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.schemaExecSvc = schemaExecSvc;
         this.customExecSvcs = customExecSvcs;
 
-        marshCtx = new MarshallerContextImpl(plugins);
+        marshCtx = new MarshallerContextImpl(plugins, clsFilter);
 
         try {
             spring = SPRING.create(false);
@@ -1089,6 +1094,16 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /**{@inheritDoc}*/
     @Override public PdsFoldersResolver pdsFolderResolver() {
         return pdsFolderRslvr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean invalidated() {
+        return invalidated;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void invalidate() {
+        invalidated = true;
     }
 
     /** {@inheritDoc} */

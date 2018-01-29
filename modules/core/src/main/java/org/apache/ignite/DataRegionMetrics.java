@@ -162,7 +162,7 @@ public interface DataRegionMetrics {
     /**
      * Gets memory page size.
      *
-     * @return page size in bytes.
+     * @return Page size in bytes.
      */
     public int getPageSize();
 }

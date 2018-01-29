@@ -18,9 +18,10 @@
 package org.apache.ignite.lang.utils;
 
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ThreadLocalRandom8;
 
 /**
  * Tests for {@link ConcurrentHashMap}.
@@ -50,21 +51,23 @@ public class GridConcurrentHashMapSelfTest extends GridCommonAbstractTest {
     private long runOps(final int iterCnt, int threadCnt) throws Exception {
         long start = System.currentTimeMillis();
 
-        multithreaded(() -> {
-            ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();
+        multithreaded(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-            for (int i = 0; i < iterCnt; i++) {
-                // Put random.
-                map.put(rnd.nextInt(0, 10000), 0);
+                for (int i = 0; i < iterCnt; i++) {
+                    // Put random.
+                    map.put(rnd.nextInt(0, 10000), 0);
 
-                // Read random.
-                map.get(rnd.nextInt(0, 10000));
+                    // Read random.
+                    map.get(rnd.nextInt(0, 10000));
 
-                // Remove random.
-                map.remove(rnd.nextInt(0, 10000));
+                    // Remove random.
+                    map.remove(rnd.nextInt(0, 10000));
+                }
+
+                return null;
             }
-
-            return null;
         }, threadCnt);
 
         return System.currentTimeMillis() - start;

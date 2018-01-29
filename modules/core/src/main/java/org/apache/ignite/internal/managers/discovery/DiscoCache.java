@@ -87,8 +87,11 @@ public class DiscoCache {
     /** Alive nodes. */
     final Set<UUID> alives = new GridConcurrentHashSet<>();
 
-    /** */
+    /** Minimum {@link IgniteProductVersion} across all nodes including client nodes. */
     private final IgniteProductVersion minNodeVer;
+
+    /** Minimum {@link IgniteProductVersion} across alive server nodes. */
+    private final IgniteProductVersion minSrvNodeVer;
 
     /** */
     private final AffinityTopologyVersion topVer;
@@ -139,7 +142,8 @@ public class DiscoCache {
         Set<UUID> alives0,
         @Nullable Map<UUID, Short> nodeIdToConsIdx,
         @Nullable  Map<Short, UUID> consIdxToNodeId,
-        IgniteProductVersion minNodeVer
+        IgniteProductVersion minNodeVer,
+        IgniteProductVersion minSrvNodeVer
     ) {
         this.topVer = topVer;
         this.state = state;
@@ -155,6 +159,7 @@ public class DiscoCache {
         this.nodeMap = nodeMap;
         alives.addAll(alives0);
         this.minNodeVer = minNodeVer;
+        this.minSrvNodeVer = minSrvNodeVer;
         this.nodeIdToConsIdx = nodeIdToConsIdx;
         this.consIdxToNodeId = consIdxToNodeId;
 
@@ -185,6 +190,13 @@ public class DiscoCache {
      */
     public IgniteProductVersion minimumNodeVersion() {
         return minNodeVer;
+    }
+
+    /**
+     * @return Minimum server node version.
+     */
+    public IgniteProductVersion minimumServerNodeVersion() {
+        return minSrvNodeVer;
     }
 
     /**
@@ -425,7 +437,8 @@ public class DiscoCache {
             alives,
             nodeIdToConsIdx,
             consIdxToNodeId,
-            minNodeVer);
+            minNodeVer,
+            minSrvNodeVer);
     }
 
     /** {@inheritDoc} */
