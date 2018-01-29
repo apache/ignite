@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.jdbc2;
 
+import org.apache.ignite.cache.CachePeekMode;
+
 import java.sql.Statement;
 
 /**
@@ -33,6 +35,7 @@ public abstract class JdbcAbstractUpdateStatementSelfTest extends JdbcAbstractDm
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
         jcache(0).clear();
+        int sz = jcache(0).size(CachePeekMode.ALL);
         try (Statement s = conn.createStatement()) {
             s.executeUpdate(ITEMS_SQL);
         }

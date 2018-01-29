@@ -48,7 +48,7 @@ public abstract class BulkLoadParser {
      * Returns a list of records parsed (in most cases this is a list of strings).
      *
      * <p>Note that conversion between parsed and database table type is done by the other
-     * object (a subclass of {@link BulkLoadEntryConverter)) by the request processing code.
+     * object (a subclass of {@link BulkLoadEntryConverter}) by the request processing code.
      * This method is not obliged to do this conversion.
      *
      * @param ctx Context of the bulk load operation.

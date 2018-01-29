@@ -193,7 +193,8 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType
 @SuppressWarnings({"UnnecessaryFullyQualifiedName", "NonFinalStaticVariableUsedInClassInitialization"})
 public class IgniteH2Indexing implements GridQueryIndexing {
 
-    public static final Pattern INTERNAL_CMD_RE = Pattern.compile("INDEX|^COPY ", Pattern.CASE_INSENSITIVE);
+    public static final Pattern INTERNAL_CMD_RE = Pattern.compile("^(create|drop)\\s+index|^alter\\s+table|^copy",
+        Pattern.CASE_INSENSITIVE);
 
     /*
      * Register IO for indexes.
