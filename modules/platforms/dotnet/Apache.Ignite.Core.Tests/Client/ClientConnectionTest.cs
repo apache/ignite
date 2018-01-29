@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Tests.Client
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Sockets;
@@ -238,20 +237,16 @@ namespace Apache.Ignite.Core.Tests.Client
             // Async.
             var task = cache.PutAllAsync(data);
             Assert.IsFalse(task.IsCompleted);
-            var aex = Assert.Throws<AggregateException>(() => task.Wait());
-            var socketEx = (SocketException) aex.GetBaseException().InnerException;
-            Assert.IsNotNull(socketEx);
-            Assert.AreEqual(SocketError.TimedOut, socketEx.SocketErrorCode);
+            var ex = Assert.Catch(() => task.Wait());
+            Assert.AreEqual(SocketError.TimedOut, GetSocketException(ex).SocketErrorCode);
 
             // Sync (reconnect for clean state).
             Ignition.StopAll(true);
             Ignition.Start(TestUtils.GetTestConfiguration());
             client = Ignition.StartClient(cfg);
             cache = client.CreateCache<int, string>("s");
-            var ex = Assert.Throws<IOException>(() => cache.PutAll(data));
-            socketEx = (SocketException)ex.InnerException;
-            Assert.IsNotNull(socketEx);
-            Assert.AreEqual(SocketError.TimedOut, socketEx.SocketErrorCode);
+            ex = Assert.Catch(() => cache.PutAll(data));
+            Assert.AreEqual(SocketError.TimedOut, GetSocketException(ex).SocketErrorCode);
         }
 
         /// <summary>
@@ -320,10 +315,8 @@ namespace Apache.Ignite.Core.Tests.Client
                 
                 // Idle check frequency is 2 seconds.
                 Thread.Sleep(4000);
-                var ex = Assert.Throws<IOException>(() => cache.Get(1));
-                var socketEx = (SocketException) ex.InnerException;
-                Assert.IsNotNull(socketEx);
-                Assert.AreEqual(SocketError.ConnectionAborted, socketEx.SocketErrorCode);
+                var ex = Assert.Catch(() => cache.Get(1));
+                Assert.AreEqual(SocketError.ConnectionAborted, GetSocketException(ex).SocketErrorCode);
             }
         }
 
@@ -356,6 +349,29 @@ namespace Apache.Ignite.Core.Tests.Client
         private static IgniteClientConfiguration GetClientConfiguration()
         {
             return new IgniteClientConfiguration { Host = IPAddress.Loopback.ToString() };
+        }
+
+        /// <summary>
+        /// Finds SocketException in the hierarchy.
+        /// </summary>
+        private static SocketException GetSocketException(Exception ex)
+        {
+            Assert.IsNotNull(ex);
+            var origEx = ex;
+
+            while (ex != null)
+            {
+                var socketEx = ex as SocketException;
+
+                if (socketEx != null)
+                {
+                    return socketEx;
+                }
+
+                ex = ex.InnerException;
+            }
+            
+            throw new Exception("SocketException not found.", origEx);
         }
     }
 }
