@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
     using System.IO;
+    using System.Security.Authentication;
     using Apache.Ignite.Core.Client;
     using NUnit.Framework;
 
@@ -51,7 +52,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                     CertificatePath = Path.Combine("Config", "Client", "thin-client-cert.pfx"),
                     CertificatePassword = "123456",
                     SkipServerCertificateValidation = true,
-                    CheckCertificateRevocation = true
+                    CheckCertificateRevocation = true,
+#if !NETCOREAPP2_0
+                    SslProtocols = SslProtocols.Tls
+#else
+                    SslProtocols = SslProtocols.Tls12
+#endif                
                 }
             };
         }
