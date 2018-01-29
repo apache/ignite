@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
+    using System.IO;
     using Apache.Ignite.Core.Client;
     using NUnit.Framework;
 
@@ -33,7 +34,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             return new IgniteConfiguration(base.GetIgniteConfiguration())
             {
-                SpringConfigUrl = @"Config\Client\server-with-ssl.xml"
+                SpringConfigUrl = Path.Combine("Config", "Client", "server-with-ssl.xml")
             };
         }
 
@@ -47,7 +48,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 Port = 11110,
                 SslStreamFactory = new SslStreamFactory
                 {
-                    CertificatePath = @"Config\Client\thin-client-cert.pfx",
+                    CertificatePath = Path.Combine("Config", "Client", "thin-client-cert.pfx"),
                     CertificatePassword = "123456",
                     SkipServerCertificateValidation = true,
                     CheckCertificateRevocation = true

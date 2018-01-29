@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             var icfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = @"Config\Client\server-with-ssl.xml"
+                SpringConfigUrl = Path.Combine("Config", "Client", "server-with-ssl.xml")
             };
 
             using (Ignition.Start(icfg))
@@ -90,7 +90,7 @@ namespace Apache.Ignite.Core.Tests.Client
             // Conveting from JKS to PFX:
             // keytool -importkeystore -srckeystore thekeystore.jks -srcstoretype JKS
             // -destkeystore thekeystore.pfx -deststoretype PKCS12
-            return new X509Certificate2(@"Config\Client\thin-client-cert.pfx", "123456");
+            return new X509Certificate2(Path.Combine("Config", "Client", "thin-client-cert.pfx"), "123456");
         }
 
         /// <summary>
