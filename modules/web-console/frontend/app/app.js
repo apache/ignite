@@ -92,6 +92,7 @@ import UnsavedChangesGuard from './services/UnsavedChangesGuard.service';
 import Clusters from './services/Clusters';
 import Caches from './services/Caches';
 import {CSV} from './services/CSV';
+import {$exceptionHandler} from './services/exceptionHandler.js';
 
 import AngularStrapTooltip from './services/AngularStrapTooltip.decorator';
 import AngularStrapSelect from './services/AngularStrapSelect.decorator';
@@ -227,6 +228,7 @@ angular.module('ignite-console', [
     // Ignite modules.
     IgniteModules.name
 ])
+.service($exceptionHandler.name, $exceptionHandler)
 // Directives.
 .directive(...igniteAutoFocus)
 .directive(...igniteBsAffixUpdate)

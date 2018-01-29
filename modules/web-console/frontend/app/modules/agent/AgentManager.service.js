@@ -47,6 +47,9 @@ class ConnectionState {
     update(demo, count, clusters) {
         this.clusters = clusters;
 
+        if (_.isEmpty(this.clusters))
+            this.cluster = null;
+
         if (_.isNil(this.cluster))
             this.cluster = _.head(clusters);
 

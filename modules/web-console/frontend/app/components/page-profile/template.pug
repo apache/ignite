@@ -60,7 +60,7 @@ mixin lbl-not-required(txt)
                             a(ng-click='$ctrl.toggleToken()') {{$ctrl.ui.expandedToken ? 'Cancel security token changing...' : 'Show security token...'}}
                         div(ng-if='$ctrl.ui.expandedToken')
                             +lbl('Security token:')
-                            label {{$ctrl.ui.user.token || 'No security token. Regenerate please.'}}
+                            label#current-security-token {{$ctrl.ui.user.token || 'No security token. Regenerate please.'}}
                             i.tipLabel.fa.fa-refresh(ng-click='$ctrl.generateToken()' bs-tooltip='' data-title='Generate random security token')
                             i.tipLabel.fa.fa-clipboard(ignite-copy-to-clipboard='{{$ctrl.ui.user.token}}' bs-tooltip='' data-title='Copy security token to clipboard')
                             i.tipLabel.icon-help(ng-if=lines bs-tooltip='' data-title='The security token is used for authorization of web agent')

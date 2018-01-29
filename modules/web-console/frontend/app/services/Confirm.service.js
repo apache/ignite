@@ -16,6 +16,7 @@
  */
 
 import templateUrl from 'views/templates/confirm.tpl.pug';
+import {CancellationError} from 'app/errors/CancellationError';
 
 export const REJECTED_BY_USER = 'REJECTED_BY_USER';
 
@@ -86,7 +87,7 @@ export default ['IgniteConfirm', ['$rootScope', '$q', '$modal', '$animate', ($ro
     scope.confirmCancel = () => {
         _hide();
 
-        deferred.reject({cancelled: true});
+        deferred.reject(new CancellationError());
     };
 
     /**

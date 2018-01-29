@@ -28,7 +28,6 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.stream.StreamTransformer;
 import org.jetbrains.annotations.Nullable;
 
@@ -222,11 +221,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_MAX_COMPLETED_TX_COUNT = "IGNITE_MAX_COMPLETED_TX_COUNT";
 
     /**
-     * Concurrency level for all concurrent hash maps created by Ignite.
-     */
-    public static final String IGNITE_MAP_CONCURRENCY_LEVEL = "IGNITE_MAP_CONCURRENCY_LEVEL";
-
-    /**
      * Transactions that take more time, than value of this property, will be output to log
      * with warning level. {@code 0} (default value) disables warning on slow transactions.
      */
@@ -319,13 +313,6 @@ public final class IgniteSystemProperties {
 
     /** Ttl of removed cache entries (ms). */
     public static final String IGNITE_CACHE_REMOVED_ENTRIES_TTL = "IGNITE_CACHE_REMOVED_ENTRIES_TTL";
-
-    /** Maximum amount of concurrent updates per system thread in atomic caches in case of PRIMARY_SYNC or FULL_ASYNC
-     * write synchronization mode. If this limit is exceeded then update will be performed with FULL_SYNC
-     * synchronization mode. If value is {@code 0} then limit is unbounded.
-     */
-    public static final String IGNITE_ATOMIC_CACHE_MAX_CONCURRENT_DHT_UPDATES =
-        "IGNITE_ATOMIC_CACHE_MAX_CONCURRENT_DHT_UPDATES";
 
     /**
      * Comma separated list of addresses in format "10.100.22.100:45000,10.100.22.101:45000".
@@ -479,9 +466,6 @@ public final class IgniteSystemProperties {
     /** Number of cache operation retries in case of topology exceptions. */
     public static final String IGNITE_CACHE_RETRIES_COUNT = "IGNITE_CACHE_RETRIES_COUNT";
 
-    /** Number of times pending cache objects will be dumped to the log in case of partition exchange timeout. */
-    public static final String IGNITE_DUMP_PENDING_OBJECTS_THRESHOLD = "IGNITE_DUMP_PENDING_OBJECTS_THRESHOLD";
-
     /** If this property is set to {@code true} then Ignite will log thread dump in case of partition exchange timeout. */
     public static final String IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT = "IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT";
 
@@ -523,6 +507,12 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2 =
         "IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2";
+
+    /** Defines path to the file that contains list of classes allowed to safe deserialization.*/
+    public static final String IGNITE_MARSHALLER_WHITELIST = "IGNITE_MARSHALLER_WHITELIST";
+
+    /** Defines path to the file that contains list of classes disallowed to safe deserialization.*/
+    public static final String IGNITE_MARSHALLER_BLACKLIST = "IGNITE_MARSHALLER_BLACKLIST";
 
     /**
      * If set to {@code true}, then default selected keys set is used inside
@@ -689,16 +679,7 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_FORCE_START_JAVA7 = "IGNITE_FORCE_START_JAVA7";
 
-    /** Returns true for system properties only avoiding sending sensitive information. */
-    private static final IgnitePredicate<Map.Entry<String, String>> PROPS_FILTER = new IgnitePredicate<Map.Entry<String, String>>() {
-        @Override public boolean apply(final Map.Entry<String, String> entry) {
-            final String key = entry.getKey();
-
-            return key.startsWith("java.") || key.startsWith("os.") || key.startsWith("user.");
-        }
-    };
-
-     /**
+    /**
      * When set to {@code true}, Ignite switches to compatibility mode with versions that don't
      * support service security permissions. In this case security permissions will be ignored
      * (if they set).
@@ -738,11 +719,6 @@ public final class IgniteSystemProperties {
      * connection.
      */
     public static final String IGNITE_ENABLE_FORCIBLE_NODE_KILL = "IGNITE_ENABLE_FORCIBLE_NODE_KILL";
-
-    /**
-     *
-     */
-    public static final String IGNITE_WAL_ARCHIVE_COMPACT_SKIP_DELTA_RECORD = "IGNITE_WAL_ARCHIVE_COMPACT_SKIP_DELTA_RECORD";
 
     /**
      * Tasks stealing will be started if tasks queue size per data-streamer thread exceeds this threshold.
@@ -1022,27 +998,5 @@ public final class IgniteSystemProperties {
         }
 
         return sysProps;
-    }
-
-    /**
-     * Does the same as {@link #snapshot()} but filters out
-     * possible sensitive user data.
-     *
-     * @return Snapshot of system properties.
-     */
-    @SuppressWarnings("unchecked")
-    public static Properties safeSnapshot() {
-        final Properties props = snapshot();
-
-        final Iterator<Map.Entry<Object, Object>> iter = props.entrySet().iterator();
-
-        while (iter.hasNext()) {
-            final Map.Entry entry = iter.next();
-
-            if (!PROPS_FILTER.apply(entry))
-                iter.remove();
-        }
-
-        return props;
     }
 }

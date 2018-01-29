@@ -15,28 +15,13 @@
  * limitations under the License.
  */
 
-import { suite, test, setup } from 'mocha';
+import {CancellationError} from 'app/errors/CancellationError';
 
-suite('ExampleTestSuite', () => {
-    setup(() => {
-        // browser.get('http://localhost:9000/');
-    });
+export function $exceptionHandler($log) {
+    return function(exception, cause) {
+        if (exception instanceof CancellationError) return;
+        $log.error(exception, cause);
+    };
+}
 
-    test('initially has a greeting', (done) => {
-        done();
-
-        // element(by.model('ui.email')).sendKeys('jhon@doe.com');
-    });
-
-    test('initially has a greeting', (done) => {
-        done();
-
-        // element(by.model('ui.email')).sendKeys('jhon@doe.com');
-    });
-
-    test('initially has a greeting', (done) => {
-        done();
-
-        // element(by.model('ui.email')).sendKeys('jhon@doe.com');
-    });
-});
+$exceptionHandler.$inject = ['$log'];
