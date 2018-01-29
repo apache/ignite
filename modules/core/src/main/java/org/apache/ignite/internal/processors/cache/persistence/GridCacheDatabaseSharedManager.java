@@ -356,7 +356,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Counter for fsynced checkpoint pages. Not null only if checkpoint is running. */
     private volatile AtomicInteger syncedPagesCntr = null;
 
-    /** Number of pages in current checkpoint. */
+    /** Counter for evictted checkpoint pages. Not null only if checkpoint is running. */
+    private volatile AtomicInteger evictedPagesCntr = null;
+
+    /** Number of pages in current checkpoint at the beginning of checkpoint. */
     private volatile int currCheckpointPagesCnt;
 
     /** */
@@ -975,6 +978,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     // Only after write we can write page into snapshot.
                     snapshotMgr.flushDirtyPageHandler(fullId, pageBuf, tag);
+
+                    AtomicInteger cntr = evictedPagesCntr;
+
+                    if (cntr != null)
+                        cntr.incrementAndGet();
                 }
             },
             changeTracker,
@@ -2577,6 +2585,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
+     * @return Counter for evicted pages during current checkpoint. Not null only if checkpoint is running.
+     */
+    public AtomicInteger evictedPagesCntr() {
+        return evictedPagesCntr;
+    }
+
+    /**
      * @return Number of pages in current checkpoint. If checkpoint is not running, returns 0.
      */
     public int currentCheckpointPagesCount() {
@@ -2767,6 +2782,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 writtenPagesCntr = new AtomicInteger();
                 syncedPagesCntr = new AtomicInteger();
+                evictedPagesCntr = new AtomicInteger();
 
                 boolean interrupted = true;
 
@@ -3164,6 +3180,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             synchronized (this) {
                 writtenPagesCntr = null;
                 syncedPagesCntr = null;
+                evictedPagesCntr = null;
 
                 for (DataRegion memPlc : dataRegions()) {
                     if (!memPlc.config().isPersistenceEnabled())
