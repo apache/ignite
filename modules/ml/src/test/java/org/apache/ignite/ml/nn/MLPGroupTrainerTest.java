@@ -75,13 +75,17 @@ public class MLPGroupTrainerTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test training 'xor' by RMSProp.
+     */
+    public void testXORRMSProp() {
+        doTestXOR(UpdateStrategies.RMSProp());
+    }
+
+    /**
      * Test training 'xor' by SimpleGD.
      */
     public void testXORGD() {
-        doTestXOR(new UpdatesStrategy<>(
-            new SimpleGDUpdateCalculator().withLearningRate(0.5),
-            SimpleGDParameterUpdate::sumLocal,
-            SimpleGDParameterUpdate::avg));
+        doTestXOR(UpdateStrategies.RMSProp());
     }
 
     /**
