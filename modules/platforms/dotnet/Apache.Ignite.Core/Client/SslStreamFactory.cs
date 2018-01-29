@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Client
 {
+    using System.ComponentModel;
     using System.IO;
     using System.Net.Security;
     using System.Security.Authentication;
@@ -28,6 +29,19 @@ namespace Apache.Ignite.Core.Client
     /// </summary>
     public class SslStreamFactory : ISslStreamFactory
     {
+        /// <summary>
+        /// Default SSL protocols.
+        /// </summary>
+        public const SslProtocols DefaultSslProtocols = SslProtocols.Tls;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SslStreamFactory"/> class.
+        /// </summary>
+        public SslStreamFactory()
+        {
+            SslProtocols = DefaultSslProtocols;
+        }
+
         /** <inehritdoc /> */
         public SslStream Create(Stream stream, string targetHost)
         {
@@ -38,7 +52,7 @@ namespace Apache.Ignite.Core.Client
             var cert = new X509Certificate2(CertificatePath, CertificatePassword);
             var certs = new X509CertificateCollection(new X509Certificate[] { cert });
 
-            sslStream.AuthenticateAsClient(targetHost, certs, SslProtocols.Tls, CheckCertificateRevocation);
+            sslStream.AuthenticateAsClient(targetHost, certs, SslProtocols, CheckCertificateRevocation);
 
             return sslStream;
         }
@@ -86,5 +100,11 @@ namespace Apache.Ignite.Core.Client
         /// Gets or sets a value indicating whether the certificate revocation list is checked during authentication.
         /// </summary>
         public bool CheckCertificateRevocation { get; set; }
+
+        /// <summary>
+        /// Gets or sets the SSL protocols.
+        /// </summary>
+        [DefaultValue(DefaultSslProtocols)]
+        public SslProtocols SslProtocols { get; set; }
     }
 }
