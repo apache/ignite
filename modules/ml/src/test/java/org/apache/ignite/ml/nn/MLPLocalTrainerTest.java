@@ -30,6 +30,7 @@ import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainer;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.optimization.updatecalculators.NesterovUpdateCalculator;
 import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalculator;
+import org.apache.ignite.ml.optimization.updatecalculators.RMSPropUpdateCalculator;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.junit.Test;
@@ -67,7 +68,7 @@ public class MLPLocalTrainerTest {
      */
     @Test
     public void testXORRMSProp() {
-        xorTest(() -> new RMSPropUpdateCalculator());
+        xorTest(RMSPropUpdateCalculator::new);
     }
 
     /**

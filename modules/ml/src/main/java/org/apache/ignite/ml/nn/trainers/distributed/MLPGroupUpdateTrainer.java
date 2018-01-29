@@ -207,9 +207,10 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
             MLPGroupUpdateTrainingContext<U> ctx = entryAndContext.context();
             Map.Entry<GroupTrainerCacheKey<Void>, MLPGroupTrainingCacheValue> entry = entryAndContext.entry();
             MLPGroupUpdateTrainingData<U> data = ctx.data();
+            ParameterUpdateCalculator<? super MultilayerPerceptron, U> calculator = data.updateCalculator();
 
             return new MLPGroupUpdateTrainingLoopData<>(entry.getValue().perceptron(),
-                data.updateCalculator(), data.stepsCnt(), data.updateReducer(), ctx.previousUpdate(), entry.getKey(),
+                calculator, data.stepsCnt(), data.updateReducer(), ctx.previousUpdate(), entry.getKey(),
                 data.batchSupplier(), data.loss(), data.tolerance());
         };
     }

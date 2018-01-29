@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.optimization.updatecalculators;
 
 import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
@@ -33,7 +32,7 @@ import org.apache.ignite.ml.optimization.SmoothParametrized;
  * Let w_i be vector of parameters of model on i-th iteration.
  * w_{i + 1} = w_i - \eta / (\sqrt{E[g^2]_i + \epsilon}) g_i.
  */
-public class RMSPropUpdateCalculator<M extends SmoothParametrized<M>> implements ParameterUpdateCalculator<M, RMSPropParameterUpdate> {
+public class RMSPropUpdateCalculator implements ParameterUpdateCalculator<SmoothParametrized, RMSPropParameterUpdate> {
     /**
      * Gamma from formulas in class description.
      */
@@ -77,14 +76,14 @@ public class RMSPropUpdateCalculator<M extends SmoothParametrized<M>> implements
     }
 
     /** {@inheritDoc} */
-    @Override public RMSPropParameterUpdate init(M mdl, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
+    @Override public RMSPropParameterUpdate init(SmoothParametrized mdl, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
         this.loss = loss;
 
         return new RMSPropParameterUpdate(mdl.parametersCount());
     }
 
     /** {@inheritDoc} */
-    @Override public RMSPropParameterUpdate calculateNewUpdate(M mdl, RMSPropParameterUpdate updaterParameters, int iteration,
+    @Override public RMSPropParameterUpdate calculateNewUpdate(SmoothParametrized mdl, RMSPropParameterUpdate updaterParameters, int iteration,
         Matrix inputs, Matrix groundTruth) {
         Vector curGrad = mdl.differentiateByParameters(loss, inputs, groundTruth);
 
@@ -101,7 +100,7 @@ public class RMSPropUpdateCalculator<M extends SmoothParametrized<M>> implements
     }
 
     /** {@inheritDoc} */
-    @Override public <M1 extends M> M1 update(M1 mdl, RMSPropParameterUpdate update) {
+    @Override public <M1 extends SmoothParametrized> M1 update(M1 mdl, RMSPropParameterUpdate update) {
         return (M1)mdl.withParameters(mdl.parameters().minus(update.update()));
     }
 
@@ -111,8 +110,8 @@ public class RMSPropUpdateCalculator<M extends SmoothParametrized<M>> implements
      * @param learningRate Learning rate.
      * @return This object.
      */
-    public RMSPropUpdateCalculator<M> withLearningRate(double learningRate) {
-        return new RMSPropUpdateCalculator<>(gamma, learningRate, epsilon);
+    public RMSPropUpdateCalculator withLearningRate(double learningRate) {
+        return new RMSPropUpdateCalculator(gamma, learningRate, epsilon);
     }
 
     /**
@@ -121,8 +120,8 @@ public class RMSPropUpdateCalculator<M extends SmoothParametrized<M>> implements
      * @param gamma Gamma.
      * @return This object.
      */
-    public RMSPropUpdateCalculator<M> withGamma(double gamma) {
-        return new RMSPropUpdateCalculator<>(gamma, learningRate, epsilon);
+    public RMSPropUpdateCalculator withGamma(double gamma) {
+        return new RMSPropUpdateCalculator(gamma, learningRate, epsilon);
     }
 
     /**
@@ -131,7 +130,7 @@ public class RMSPropUpdateCalculator<M extends SmoothParametrized<M>> implements
      * @param epsilon Epsilon.
      * @return This object.
      */
-    public RMSPropUpdateCalculator<M> withEpsilon(double epsilon) {
-        return new RMSPropUpdateCalculator<>(gamma, learningRate, epsilon);
+    public RMSPropUpdateCalculator withEpsilon(double epsilon) {
+        return new RMSPropUpdateCalculator(gamma, learningRate, epsilon);
     }
 }

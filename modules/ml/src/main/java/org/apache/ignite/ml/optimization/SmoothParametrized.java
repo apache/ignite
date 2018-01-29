@@ -26,7 +26,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 /**
  * Interface for models which are smooth functions of their parameters.
  */
-public interface SmoothParametrized<M extends Parametrized<M>> extends Parametrized<M>, Model<Matrix, Matrix> {
+public interface SmoothParametrized<M extends BaseParametrized<M>> extends BaseParametrized<M>, Model<Matrix, Matrix> {
     /**
      * Compose function in the following way: feed output of this model as input to second argument to loss function.
      * After that we have a function g of three arguments: input, ground truth, parameters.
