@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
-    using System;
     using Apache.Ignite.Core.Client;
     using NUnit.Framework;
 
@@ -32,13 +31,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         /// </summary>
         protected override IgniteConfiguration GetIgniteConfiguration()
         {
-            // TODO: Add our own configs.
-            Environment.SetEnvironmentVariable("IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH",
-                @"c:\w\incubator-ignite\modules\platforms\cpp\odbc-test\config");
-
             return new IgniteConfiguration(base.GetIgniteConfiguration())
             {
-                SpringConfigUrl = @"c:\w\incubator-ignite\modules\platforms\cpp\odbc-test\config\queries-ssl.xml"
+                SpringConfigUrl = @"Config\Client\server-with-ssl.xml"
             };
         }
 
@@ -52,7 +47,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 Port = 11110,
                 SslStreamFactory = new SslStreamFactory
                 {
-                    CertificatePath = @"Config\thin-client-cert.pfx",
+                    CertificatePath = @"Config\Client\thin-client-cert.pfx",
                     CertificatePassword = "123456",
                     SkipServerCertificateValidation = true
                 }
