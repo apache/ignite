@@ -23,11 +23,12 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.examples.ml.dataset.model.Person;
 import org.apache.ignite.ml.dataset.DatasetFactory;
 import org.apache.ignite.ml.dataset.api.SimpleDataset;
 
 /**
- * How to create a DLC dataset from an existing Ignite Cache?
+ * How to create a cache based dataset from an existing Ignite Cache?
  */
 public class CacheBasedDatasetExample {
     /** Run example. */
@@ -37,17 +38,11 @@ public class CacheBasedDatasetExample {
 
             IgniteCache<Integer, Person> persons = createCache(ignite);
 
-            // Initialization of the d-learn context. After this step context cache will be created with partitions
-            // placed on the same nodes as the upstream Ignite Cache.
-
-            // Loading of the d-learn context. During this step data will be transferred from the upstream cache to
-            // context cache with specified transformation (it will be performed locally because partitions are on the
-            // same nodes). In this case for every partition in upstream cache will be created labeled dataset partition
-            // and this new partition will be filled with help of specified feature and label extractors.
+            // Creates a cache based simple dataset containing features and providing standard dataset API.
             SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(
                 ignite,
                 persons,
-                (k, v) -> new double[]{ v.age, v.salary },
+                (k, v) -> new double[]{ v.getAge(), v.getSalary() },
                 2
             );
 
@@ -86,24 +81,5 @@ public class CacheBasedDatasetExample {
         persons.put(3, new Person("George", 53, 120000));
         persons.put(4, new Person("Karl", 24, 70000));
         return persons;
-    }
-
-    /** */
-    private static class Person {
-        /** */
-        private final String name;
-
-        /** */
-        private final double age;
-
-        /** */
-        private final double salary;
-
-        /** */
-        public Person(String name, double age, double salary) {
-            this.name = name;
-            this.age = age;
-            this.salary = salary;
-        }
     }
 }

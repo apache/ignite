@@ -145,7 +145,13 @@ public class SimpleDataset<C extends Serializable> extends DatasetWrapper<C, Sim
         return cov;
     }
 
-    /** */
+    /**
+     * Returns the sum of the two specified vectors.  Be aware that it is in-place operation.
+     *
+     * @param a first vector
+     * @param b second vector
+     * @return sum of the two specified vectors
+     */
     private static double[] sum(double[] a, double[] b) {
         for (int i = 0; i < a.length; i++)
             a[i] += b[i];
@@ -153,7 +159,13 @@ public class SimpleDataset<C extends Serializable> extends DatasetWrapper<C, Sim
         return a;
     }
 
-    /** */
+    /**
+     * Returns the sum of the two specified matrices. Be aware that it is in-place operation.
+     *
+     * @param a first matrix
+     * @param b second matrix
+     * @return sum of the two specified matrices
+     */
     private static double[][] sum(double[][] a, double[][] b) {
         for (int i = 0; i < a.length; i++)
             for (int j = 0; j < a[i].length; j++)
@@ -162,7 +174,14 @@ public class SimpleDataset<C extends Serializable> extends DatasetWrapper<C, Sim
         return a;
     }
 
-    /** */
+    /**
+     * Multiplies all elements of the specified matrix on specified multiplier {@code alpha}. Be aware that it is
+     * in-place operation.
+     *
+     * @param a matrix to be scaled
+     * @param alpha multiplier
+     * @return scaled matrix
+     */
     private static double[][] scale(double[][] a, double alpha) {
         for (int i = 0; i < a.length; i++)
             for (int j = 0; j < a[i].length; j++)
@@ -171,15 +190,24 @@ public class SimpleDataset<C extends Serializable> extends DatasetWrapper<C, Sim
         return a;
     }
 
-    /** */
+    /**
+     * Util class that keeps values and count of rows this value has been calculated on.
+     *
+     * @param <V> type of a value
+     */
     private static class ValueWithCount<V> {
-        /** */
+        /** Value. */
         private final V val;
 
-        /** */
+        /** Count of rows the value has been calculated on. */
         private final int cnt;
 
-        /** */
+        /**
+         * Constructs a new instance of value with count.
+         *
+         * @param val value
+         * @param cnt count of rows the value has been calculated on
+         */
         ValueWithCount(V val, int cnt) {
             this.val = val;
             this.cnt = cnt;

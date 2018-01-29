@@ -230,14 +230,27 @@ public class ComputeUtils {
      * Extracts partition {@code context} from the Ignite Cache.
      *
      * @param ignite Ignite instance
-     * @param datasetCacheName collection of cache names
+     * @param datasetCacheName dataset cache names
      * @param part partition index
      * @param <C> type of a partition {@code context}
-     * @return
+     * @return partition {@code context}
      */
     public static <C extends Serializable> C getContext(Ignite ignite, String datasetCacheName, int part) {
-        IgniteCache<Integer, C> learningCtxCache = ignite.cache(datasetCacheName);
-        return learningCtxCache.get(part);
+        IgniteCache<Integer, C> datasetCache = ignite.cache(datasetCacheName);
+        return datasetCache.get(part);
+    }
+
+    /**
+     * Saves the specified partition {@code context} into the Ignite Cache.
+     *
+     * @param ignite Ignite instance
+     * @param datasetCacheName dataset cache name
+     * @param part partition index
+     * @param <C> type of a partition {@code context}
+     */
+    public static <C extends Serializable> void saveContext(Ignite ignite, String datasetCacheName, int part, C ctx) {
+        IgniteCache<Integer, C> datasetCache = ignite.cache(datasetCacheName);
+        datasetCache.put(part, ctx);
     }
 
     /**
