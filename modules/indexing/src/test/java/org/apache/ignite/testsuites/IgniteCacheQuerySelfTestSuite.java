@@ -143,7 +143,7 @@ import org.apache.ignite.internal.processors.query.IgniteSqlDefaultValueTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlDistributedJoinSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlParameterizedQueryTest;
-import org.apache.ignite.internal.processors.query.IgniteSqlSysViewsSelfTest;
+import org.apache.ignite.internal.processors.query.IgniteSqlSystemViewsSelfTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlBigIntegerKeyTest;
 import org.apache.ignite.internal.processors.query.IgniteQueryDedicatedPoolTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlSkipReducerOnUpdateDmlSelfTest;
@@ -384,7 +384,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(H2ConnectionLeaksSelfTest.class);
         suite.addTestSuite(IgniteCheckClusterStateBeforeExecuteQueryTest.class);
         suite.addTestSuite(OptimizedMarshallerIndexNameTest.class);
-        suite.addTestSuite(IgniteSqlSysViewsSelfTest.class);
+        suite.addTestSuite(IgniteSqlSystemViewsSelfTest.class);
 
         suite.addTestSuite(IgniteSqlDefaultValueTest.class);
 

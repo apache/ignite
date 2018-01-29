@@ -30,11 +30,11 @@ import org.h2.value.Value;
 /**
  * System view: transactions.
  */
-public class GridH2SysViewImplTransactions extends GridH2SysView {
+public class GridH2SystemViewImplTransactions extends GridH2SystemView {
     /**
      * @param ctx Grid context.
      */
-    public GridH2SysViewImplTransactions(GridKernalContext ctx) {
+    public GridH2SystemViewImplTransactions(GridKernalContext ctx) {
         super("LOCAL_TRANSACTIONS", "Current node active transactions", ctx,
             newColumn("XID"),
             newColumn("START_NODE_ID", Value.UUID),

@@ -32,7 +32,7 @@ import org.h2.value.ValueTimestamp;
 /**
  * System view base class.
  */
-public abstract class GridH2SysView {
+public abstract class GridH2SystemView {
     /** Default row count approximation. */
     protected static final long DEFAULT_ROW_COUNT_APPROXIMATION = 100L;
 
@@ -61,7 +61,7 @@ public abstract class GridH2SysView {
      * @param indexes Indexed columns.
      * @param cols Columns.
      */
-    public GridH2SysView(String tblName, String desc, GridKernalContext ctx, String[] indexes, Column... cols) {
+    public GridH2SystemView(String tblName, String desc, GridKernalContext ctx, String[] indexes, Column... cols) {
         assert tblName != null;
         assert ctx != null;
         assert cols != null;
@@ -81,7 +81,7 @@ public abstract class GridH2SysView {
      * @param ctx Context.
      * @param cols Columns.
      */
-    public GridH2SysView(String tblName, String desc, GridKernalContext ctx, Column... cols) {
+    public GridH2SystemView(String tblName, String desc, GridKernalContext ctx, Column... cols) {
         this(tblName, desc, ctx, new String[] {}, cols);
     }
 

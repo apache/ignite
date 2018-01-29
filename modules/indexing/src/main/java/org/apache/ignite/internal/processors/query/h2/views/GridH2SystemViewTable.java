@@ -33,12 +33,12 @@ import org.h2.table.TableType;
 /**
  * System view H2 table.
  */
-public class GridH2SysViewTable extends TableBase {
+public class GridH2SystemViewTable extends TableBase {
     /** Scan index. */
-    protected final GridH2SysViewIndex scanIdx;
+    protected final GridH2SystemViewIndex scanIdx;
 
     /** System view. */
-    protected final GridH2SysView sysView;
+    protected final GridH2SystemView sysView;
 
     /**
      * Indexes.
@@ -51,7 +51,7 @@ public class GridH2SysViewTable extends TableBase {
      * @param data Data.
      * @param sysView System view.
      */
-    public GridH2SysViewTable(CreateTableData data, GridH2SysView sysView) {
+    public GridH2SystemViewTable(CreateTableData data, GridH2SystemView sysView) {
         super(data);
 
         assert sysView != null;
@@ -60,7 +60,7 @@ public class GridH2SysViewTable extends TableBase {
 
         this.setColumns(sysView.getColumns());
 
-        scanIdx = new GridH2SysViewIndex(this);
+        scanIdx = new GridH2SystemViewIndex(this);
 
         indexes = new ArrayList<>();
         indexes.add(scanIdx);
@@ -73,7 +73,7 @@ public class GridH2SysViewTable extends TableBase {
             for (int i = 0; i < indexedCols.length; i++)
                 cols[i] = getColumn(indexedCols[i]);
 
-            GridH2SysViewIndex idx = new GridH2SysViewIndex(this, cols);
+            GridH2SystemViewIndex idx = new GridH2SystemViewIndex(this, cols);
 
             indexes.add(idx);
         }

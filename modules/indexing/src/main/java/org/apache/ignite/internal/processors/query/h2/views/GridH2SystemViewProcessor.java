@@ -29,12 +29,9 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 /**
  * System views processor.
  */
-public class GridH2SysViewProcessor {
+public class GridH2SystemViewProcessor {
     /** Table schema name. */
     public static final String SCHEMA_NAME = "IGNITE";
-
-    /** Registered views. */
-    private final Collection<GridH2SysView> registeredViews = new ArrayList<>();
 
     /**
      * Starts system views processor.
@@ -43,21 +40,19 @@ public class GridH2SysViewProcessor {
      * @param idx indexing.
      */
     public void start(GridKernalContext ctx, IgniteH2Indexing idx) {
-        IgniteLogger log = ctx.log(GridH2SysViewProcessor.class);
+        IgniteLogger log = ctx.log(GridH2SystemViewProcessor.class);
 
         log.info("Starting system views processor");
 
         Connection c = idx.connectionForSchema(SCHEMA_NAME);
 
         try {
-            Collection<GridH2SysView> viewsToRegister = new ArrayList<>();
+            Collection<GridH2SystemView> viewsToRegister = new ArrayList<>();
 
-            viewsToRegister.add(new GridH2SysViewImplTransactions(ctx));
+            viewsToRegister.add(new GridH2SystemViewImplTransactions(ctx));
 
-            for (GridH2SysView view : viewsToRegister) {
-                GridH2SysViewTableEngine.registerView(c, view);
-
-                registeredViews.add(view);
+            for (GridH2SystemView view : viewsToRegister) {
+                GridH2SystemViewTableEngine.registerView(c, view);
 
                 if (log.isDebugEnabled())
                     log.debug("Registered system view: " + view.getTableName());

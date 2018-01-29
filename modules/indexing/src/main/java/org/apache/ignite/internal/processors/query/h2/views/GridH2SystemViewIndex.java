@@ -35,7 +35,7 @@ import org.h2.table.TableFilter;
 /**
  * System view H2 index.
  */
-public class GridH2SysViewIndex extends BaseIndex {
+public class GridH2SystemViewIndex extends BaseIndex {
     /** Default full scan cost. */
     private static final double DEFAULT_FULL_SCAN_COST = 100d;
 
@@ -43,7 +43,7 @@ public class GridH2SysViewIndex extends BaseIndex {
      * @param tbl Table.
      * @param col Column.
      */
-    GridH2SysViewIndex(GridH2SysViewTable tbl, Column... col) {
+    GridH2SystemViewIndex(GridH2SystemViewTable tbl, Column... col) {
         IndexColumn[] idxCols;
 
         if (col != null && col.length > 0)
@@ -71,8 +71,8 @@ public class GridH2SysViewIndex extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, SearchRow first, SearchRow last) {
-        if (table instanceof GridH2SysViewTable) {
-            Iterable<Row> rows = ((GridH2SysViewTable)table).getRows(ses, first, last);
+        if (table instanceof GridH2SystemViewTable) {
+            Iterable<Row> rows = ((GridH2SystemViewTable)table).getRows(ses, first, last);
 
             return new GridH2Cursor(rows.iterator());
         }

@@ -27,7 +27,7 @@ import org.apache.ignite.transactions.Transaction;
 /**
  * Tests for ignite SQL system views.
  */
-public class IgniteSqlSysViewsSelfTest extends GridCommonAbstractTest {
+public class IgniteSqlSystemViewsSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -38,7 +38,7 @@ public class IgniteSqlSysViewsSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testLocalTransactionsSysView() throws Exception {
+    public void testLocalTransactionsSystemView() throws Exception {
         int txCnt = 3;
 
         final Ignite ignite = startGrid();

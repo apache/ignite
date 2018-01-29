@@ -27,19 +27,19 @@ import org.h2.table.Table;
 /**
  * System view H2 table engine.
  */
-public class GridH2SysViewTableEngine implements TableEngine {
+public class GridH2SystemViewTableEngine implements TableEngine {
     /** */
-    private static volatile GridH2SysView view;
+    private static volatile GridH2SystemView view;
 
     /**
      * @param conn Connection.
      * @param view View.
      */
-    public static synchronized void registerView(Connection conn, GridH2SysView view)
+    public static synchronized void registerView(Connection conn, GridH2SystemView view)
         throws SQLException {
-        GridH2SysViewTableEngine.view = view;
+        GridH2SystemViewTableEngine.view = view;
 
-        String sql = view.getCreateSQL() + " ENGINE \"" + GridH2SysViewTableEngine.class.getName() + "\"";
+        String sql = view.getCreateSQL() + " ENGINE \"" + GridH2SystemViewTableEngine.class.getName() + "\"";
 
         try {
             try (Statement s = conn.createStatement()) {
@@ -47,12 +47,12 @@ public class GridH2SysViewTableEngine implements TableEngine {
             }
         }
         finally {
-            GridH2SysViewTableEngine.view = null;
+            GridH2SystemViewTableEngine.view = null;
         }
     }
 
     /** {@inheritDoc} */
     @Override public Table createTable(CreateTableData data) {
-        return new GridH2SysViewTable(data, view);
+        return new GridH2SystemViewTable(data, view);
     }
 }
