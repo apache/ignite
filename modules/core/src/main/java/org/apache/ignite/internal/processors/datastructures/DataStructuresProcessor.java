@@ -1209,7 +1209,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     return null;
 
                 // check Semephore state is consistent with Cluster state. 
-                if(val!=null && val instanceof GridCacheSemaphoreState){
+                if(val!=null  && sem!=null && val instanceof GridCacheSemaphoreState){
                     GridCacheSemaphoreState semState=(GridCacheSemaphoreState)val;
 
                     for(UUID nodeId: semState.getWaiters().keySet()){
