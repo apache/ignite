@@ -25,7 +25,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.jsr166.ThreadLocalRandom8;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  *
@@ -38,7 +38,7 @@ public abstract class TestDelayingCommunicationSpi extends TcpCommunicationSpi {
             GridIoMessage ioMsg = (GridIoMessage)msg;
 
             if (delayMessage(ioMsg.message(), ioMsg))
-                U.sleep(ThreadLocalRandom8.current().nextInt(delayMillis()) + 1);
+                U.sleep(ThreadLocalRandom.current().nextInt(delayMillis()) + 1);
         }
         catch (IgniteInterruptedCheckedException e) {
             throw new IgniteSpiException(e);

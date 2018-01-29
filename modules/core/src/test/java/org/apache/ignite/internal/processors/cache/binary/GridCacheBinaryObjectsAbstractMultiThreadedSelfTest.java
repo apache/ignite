@@ -23,6 +23,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -44,7 +45,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
@@ -132,7 +132,7 @@ public abstract class GridCacheBinaryObjectsAbstractMultiThreadedSelfTest extend
     @SuppressWarnings("BusyWait") public void testGetPut() throws Exception {
         final AtomicBoolean flag = new AtomicBoolean();
 
-        final LongAdder8 cnt = new LongAdder8();
+        final LongAdder cnt = new LongAdder();
 
         IgniteInternalFuture<?> f = multithreadedAsync(
             new Callable<Object>() {

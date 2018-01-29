@@ -29,7 +29,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ThreadLocalRandom8;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  *
@@ -82,7 +82,7 @@ public class IpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
 
                         for (; ; ) {
                             int len = Math.min(DATA.length - bytesWritten,
-                                ThreadLocalRandom8.current().nextInt(256) + 1);
+                                ThreadLocalRandom.current().nextInt(256) + 1);
 
                             space.write(DATA, bytesWritten, len, 0);
 
@@ -125,7 +125,7 @@ public class IpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
 
                         for (; ; ) {
                             int len = Math.min(DATA.length - bytesRead,
-                                ThreadLocalRandom8.current().nextInt(32) + 1);
+                                ThreadLocalRandom.current().nextInt(32) + 1);
 
                             int len0 = space.read(buf, bytesRead, len, 0);
 

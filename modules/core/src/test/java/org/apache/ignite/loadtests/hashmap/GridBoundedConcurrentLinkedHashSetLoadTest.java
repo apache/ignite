@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.loadtests.util.GridCumulativeAverage;
-import org.jsr166.LongAdder8;
+import java.util.concurrent.atomic.LongAdder;
 
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.SINGLE_Q;
@@ -57,7 +57,7 @@ public class GridBoundedConcurrentLinkedHashSetLoadTest {
 
         X.println("Set: " + set);
 
-        final LongAdder8 execCnt = new LongAdder8();
+        final LongAdder execCnt = new LongAdder();
 
         final AtomicBoolean finish = new AtomicBoolean();
 

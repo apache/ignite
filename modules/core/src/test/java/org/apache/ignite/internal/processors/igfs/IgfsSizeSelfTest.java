@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.igfs;
 
 import java.io.IOException;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -45,7 +46,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.jsr166.ThreadLocalRandom8;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -597,7 +597,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     private Collection<IgfsFile> write() throws Exception {
         Collection<IgfsFile> res = new HashSet<>(FILES_CNT, 1.0f);
 
-        ThreadLocalRandom8 rand = ThreadLocalRandom8.current();
+        ThreadLocalRandom rand = ThreadLocalRandom.current();
 
         for (int i = 0; i < FILES_CNT; i++) {
             // Create empty file locally.

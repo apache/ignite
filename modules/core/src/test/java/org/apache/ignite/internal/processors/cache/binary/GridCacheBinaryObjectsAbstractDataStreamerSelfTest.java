@@ -38,7 +38,7 @@ import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.LongAdder8;
+import java.util.concurrent.atomic.LongAdder;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
@@ -119,7 +119,7 @@ public abstract class GridCacheBinaryObjectsAbstractDataStreamerSelfTest extends
     public void testGetPut() throws Exception {
         final AtomicBoolean flag = new AtomicBoolean();
 
-        final LongAdder8 cnt = new LongAdder8();
+        final LongAdder cnt = new LongAdder();
 
         try (IgniteDataStreamer<Object, Object> ldr = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
             IgniteInternalFuture<?> f = multithreadedAsync(

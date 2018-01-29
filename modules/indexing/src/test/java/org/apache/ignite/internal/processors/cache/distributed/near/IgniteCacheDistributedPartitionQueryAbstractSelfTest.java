@@ -55,7 +55,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.util.AttributeNodeFilter;
-import org.jsr166.ThreadLocalRandom8;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -350,7 +350,7 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
                             DepositKey dk = new DepositKey(depositId++, new ClientKey(clientId, regionId));
 
                             Deposit depo = new Deposit();
-                            depo.amount = ThreadLocalRandom8.current().nextLong(1_000_001);
+                            depo.amount = ThreadLocalRandom.current().nextLong(1_000_001);
                             depStr.addData(dk, depo);
                         }
 

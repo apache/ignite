@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.LongAdder8;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * Eagerly removes expired entries from cache when
@@ -333,7 +333,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         private static final long serialVersionUID = 0L;
 
         /** Size. */
-        private final LongAdder8 size = new LongAdder8();
+        private final LongAdder size = new LongAdder();
 
         /**
          * @return Size based on performed operations.
