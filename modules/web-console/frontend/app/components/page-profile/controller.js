@@ -34,12 +34,7 @@ export default class PageProfileController {
         this.User.read()
             .then((user) => self.ui.user = angular.copy(user));
 
-        self.ui.countries = this.Countries.getAll().map(({ name, code }) => {
-            return {
-                value: name,
-                label: name
-            };
-        });
+        self.ui.countries = this.Countries.getAll();
     }
 
     toggleToken() {
