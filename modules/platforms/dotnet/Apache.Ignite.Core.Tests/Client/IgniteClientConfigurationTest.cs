@@ -75,6 +75,13 @@ namespace Apache.Ignite.Core.Tests.Client
                     CompactFooter = false,
                     KeepDeserialized = false,
                     Types = new[] {"foo", "bar"}
+                },
+                SslStreamFactory = new SslStreamFactory
+                {
+                    CertificatePath = "abc.pfx",
+                    CertificatePassword = "foo",
+                    CheckCertificateRevocation = true,
+                    SkipServerCertificateValidation = true
                 }
             };
 
