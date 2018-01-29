@@ -26,11 +26,13 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import java.sql.BatchUpdateException;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK;
@@ -42,26 +44,27 @@ import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
  * COPY statement tests.
  */
 public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractDmlStatementSelfTest {
-    public static final String TBL_NAME = "Person";
+    private static final String TBL_NAME = "Person";
 
     /** JDBC statement. */
     private Statement stmt;
 
     /** A CSV file with zero records */
-    private String BULKLOAD_EMPTY_CSV_FILE =
-        resolveIgnitePath("/modules/clients/src/test/resources/bulkload0.csv").getAbsolutePath();
+
+    private static final String BULKLOAD_EMPTY_CSV_FILE =
+        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload0.csv")).getAbsolutePath();
 
     /** A CSV file with one record. */
-    private String BULKLOAD_ONE_LINE_CSV_FILE =
-        resolveIgnitePath("/modules/clients/src/test/resources/bulkload1.csv").getAbsolutePath();
+    private static final String BULKLOAD_ONE_LINE_CSV_FILE =
+        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload1.csv")).getAbsolutePath();
 
     /** A CSV file with two records. */
-    private String BULKLOAD_TWO_LINES_CSV_FILE =
-        resolveIgnitePath("/modules/clients/src/test/resources/bulkload2.csv").getAbsolutePath();
+    private static final String BULKLOAD_TWO_LINES_CSV_FILE =
+        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload2.csv")).getAbsolutePath();
 
     /** A file with UTF records. */
-    private String BULKLOAD_UTF_CSV_FILE =
-        resolveIgnitePath("/modules/clients/src/test/resources/bulkload2_utf.csv").getAbsolutePath();
+    private static final String BULKLOAD_UTF_CSV_FILE =
+        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload2_utf.csv")).getAbsolutePath();
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfig() {
@@ -74,6 +77,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @return The cache configuration.
      */
+    @SuppressWarnings("unchecked")
     private CacheConfiguration cacheConfigWithIndexedTypes() {
         CacheConfiguration<?,?> cache = defaultCacheConfiguration();
 
@@ -94,10 +98,25 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
         return cache;
     }
 
+    /**
+     * Returns true if we are testing near cache.
+     *
+     * @return true if we are testing near cache.
+     */
     protected abstract boolean nearCache();
 
+    /**
+     * Returns cache atomicity mode we are testing.
+     *
+     * @return The cache atomicity mode we are testing.
+     */
     protected abstract CacheAtomicityMode atomicityMode();
 
+    /**
+     * Returns cache mode we are testing.
+     *
+     * @return The cache mode we are testing.
+     */
     protected abstract CacheMode cacheMode();
 
     /**
@@ -347,6 +366,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @throws SQLException If failed.
      */
+    @SuppressWarnings("unchecked")
     public void testConfigureQueryEntityAndBulkLoad() throws SQLException {
         ignite(0).getOrCreateCache(cacheConfigWithQueryEntity());
 
@@ -376,6 +396,11 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
         checkCacheContents(TBL_NAME, true, 2);
     }
 
+    /**
+     * Verifies exception thrown if COPY is added into a batch.
+     *
+     * @throws SQLException If failed.
+     */
     public void testMultipleStatement() throws SQLException {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -394,6 +419,118 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
                 return null;
             }
         }, BatchUpdateException.class, "COPY command cannot be executed in batch mode.");
+    }
+
+    /**
+     * Verifies that COPY command is rejected by Statement.executeQuery().
+     *
+     * @throws SQLException If failed.
+     */
+    public void testExecuteQuery() throws SQLException {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                stmt.executeQuery(
+                    "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into " + TBL_NAME +
+                        " (_key, age, firstName, lastName)" +
+                        " format csv");
+
+                return null;
+            }
+        }, SQLException.class, "The query isn't SELECT query");
+    }
+
+    /**
+     * Verifies that COPY command works in Statement.execute().
+     *
+     * @throws SQLException If failed.
+     */
+    public void testExecute() throws SQLException {
+        boolean isRowSet = stmt.execute(
+            "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into " + TBL_NAME +
+                " (_key, age, firstName, lastName)" +
+                " format csv");
+
+        assertFalse(isRowSet);
+
+        checkCacheContents(TBL_NAME, true, 2);
+    }
+
+    /**
+     * Verifies that COPY command can be called with PreparedStatement.executeUpdate().
+     *
+     * @throws SQLException If failed.
+     */
+    public void testPreparedStatementWithExecuteUpdate() throws SQLException {
+        PreparedStatement pstmt = conn.prepareStatement(
+            "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into " + TBL_NAME +
+                " (_key, age, firstName, lastName)" +
+                " format csv");
+
+        int updatesCnt = pstmt.executeUpdate();
+
+        assertEquals(2, updatesCnt);
+
+        checkCacheContents(TBL_NAME, true, 2);
+    }
+
+    /**
+     * Verifies that COPY command reports error when used with PreparedStatement parameter.
+     *
+     * @throws SQLException If failed.
+     */
+    public void testPreparedStatementWithParameter() throws SQLException {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    PreparedStatement pstmt = conn.prepareStatement(
+                        "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into " + TBL_NAME +
+                            " (_key, age, firstName, lastName)" +
+                            " format ?");
+
+                    pstmt.setString(1, "csv");
+
+                    pstmt.executeUpdate();
+
+                    return null;
+                }
+            }, SQLException.class, "Unexpected token: \"?\" (expected: \"[identifier]\"");
+    }
+
+    /**
+     * Verifies that COPY command can be called with PreparedStatement.execute().
+     *
+     * @throws SQLException If failed.
+     */
+    public void testPreparedStatementWithExecute() throws SQLException {
+        PreparedStatement pstmt = conn.prepareStatement(
+            "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into " + TBL_NAME +
+                " (_key, age, firstName, lastName)" +
+                " format csv");
+
+        boolean isRowSet = pstmt.execute();
+
+        assertFalse(isRowSet);
+
+        checkCacheContents(TBL_NAME, true, 2);
+    }
+
+    /**
+     * Verifies that COPY command is rejected by PreparedStatement.executeQuery().
+     *
+     * @throws SQLException If failed.
+     */
+    public void testPreparedStatementWithExecuteQuery() throws SQLException {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                PreparedStatement pstmt = conn.prepareStatement(
+                    "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into " + TBL_NAME +
+                        " (_key, age, firstName, lastName)" +
+                        " format csv");
+
+                pstmt.executeQuery();
+
+                return null;
+            }
+        }, SQLException.class, "The query isn't SELECT query");
     }
 
     /**
