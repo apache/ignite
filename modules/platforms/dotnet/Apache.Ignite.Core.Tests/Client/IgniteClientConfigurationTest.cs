@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using System;
     using System.Configuration;
     using System.IO;
+    using System.Security.Authentication;
     using System.Text;
     using System.Xml;
     using Apache.Ignite.Core.Binary;
@@ -81,7 +82,8 @@ namespace Apache.Ignite.Core.Tests.Client
                     CertificatePath = "abc.pfx",
                     CertificatePassword = "foo",
                     CheckCertificateRevocation = true,
-                    SkipServerCertificateValidation = true
+                    SkipServerCertificateValidation = true,
+                    SslProtocols = SslProtocols.None
                 }
             };
 
