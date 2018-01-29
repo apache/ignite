@@ -32,5 +32,14 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             // No-op.
         }
+
+        /// <summary>
+        /// Gets the Ignite configuration.
+        /// </summary>
+        protected override IgniteConfiguration GetIgniteConfiguration()
+        {
+            // TODO: Enable SSL. Add our own configs (copy from CPP or whatever).
+            return base.GetIgniteConfiguration();
+        }
     }
 }
