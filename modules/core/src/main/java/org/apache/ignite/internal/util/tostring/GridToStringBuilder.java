@@ -1000,6 +1000,9 @@ public class GridToStringBuilder {
      * @return String representation of an array.
      */
     public static String arrayToString(Class arrType, Object arr) {
+        if (arr == null)
+            return "null";
+
         if (arrType.equals(byte[].class))
             return Arrays.toString((byte[])arr);
         if (arrType.equals(boolean[].class))
