@@ -32,105 +32,65 @@ namespace Apache.Ignite.Core.Tests.Client
     /// </summary>
     public class RawSecureSocketTest
     {
-        // TODO: See queries_ssl_test.cpp, queries-ssl.xml
-        // https://ggsystems.atlassian.net/wiki/spaces/GG/pages/4219735/Set+up+SSL+connection+between+nodes
-
-
+        /// <summary>
+        /// Tests the SSL on server.
+        /// </summary>
         [Test]
         public void TestSslOnServer()
         {
-            // S:\W\incubator-ignite\modules\platforms\cpp\odbc-test\config\ssl\server.jks
-            // IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH
-
-            Environment.SetEnvironmentVariable("IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH", 
-                @"c:\w\incubator-ignite\modules\platforms\cpp\odbc-test\config");
-
             var icfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = @"c:\w\incubator-ignite\modules\platforms\cpp\odbc-test\config\queries-ssl.xml"
+                SpringConfigUrl = @"Config\Client\server-with-ssl.xml"
             };
 
-            using (var ignite = Ignition.Start(icfg))
+            using (Ignition.Start(icfg))
             {
                 var cfg = new IgniteClientConfiguration
                 {
                     Host = "127.0.0.1",
                     Port = 11110
                 };
-                //using (var client = Ignition.StartClient(cfg))
-                //{
-                //    client.GetCacheNames();
-                //}
 
-                RunClient(cfg.Host, cfg.Host, cfg.Port);
+                using (var client = new TcpClient(cfg.Host, cfg.Port))
+                using (var sslStream = new SslStream(client.GetStream(), false, ValidateServerCertificate, null))
+                {
+                    var certsCollection = new X509CertificateCollection(new X509Certificate[] {LoadCertificateFile()});
+
+                    sslStream.AuthenticateAsClient(cfg.Host, certsCollection, SslProtocols.Default, false);
+
+                    Assert.IsTrue(sslStream.IsAuthenticated);
+                    Assert.IsTrue(sslStream.IsMutuallyAuthenticated);
+                    Assert.IsTrue(sslStream.IsEncrypted);
+
+                    DoHandshake(sslStream);
+                }
             }
         }
 
-
-        // The following method is invoked by the RemoteCertificateValidationDelegate.
+        /// <summary>
+        /// Validates the server certificate.
+        /// </summary>
         private static bool ValidateServerCertificate(
               object sender,
               X509Certificate certificate,
               X509Chain chain,
               SslPolicyErrors sslPolicyErrors)
         {
+            Console.WriteLine("Validating certificate: " + certificate);
+            Console.WriteLine("Certificate errors: " + sslPolicyErrors);
+
             return true;
-            /**
-            if (sslPolicyErrors == SslPolicyErrors.None)
-                return true;
-
-            Console.WriteLine("Certificate error: {0}", sslPolicyErrors);
-
-            // Do not allow this client to communicate with unauthenticated servers.
-            return false;*/
         }
 
-        private static void RunClient(string machineName, string serverName, int port)
-        {
-            // Create a TCP/IP client socket.
-            // machineName is the host running the server application.
-            var client = new TcpClient(machineName, port);
-            Console.WriteLine("Client connected.");
-            
-            // Create an SSL stream that will close the client's stream.
-            var sslStream = new SslStream(client.GetStream(), false, ValidateServerCertificate, null);
-
-            // The server name must match the name on the server certificate.
-            var certificate = LoadCertificateFile();
-            var certsCollection = new X509CertificateCollection(new X509Certificate[] { certificate });
-
-            try
-            {
-                sslStream.AuthenticateAsClient(serverName, certsCollection, SslProtocols.Default, false);
-            }
-            catch (AuthenticationException)
-            {
-                Console.WriteLine("Authentication failed - closing the connection.");
-                client.Close();
-                throw;
-            }
-
-            Assert.IsTrue(sslStream.IsAuthenticated);
-            Assert.IsTrue(sslStream.IsMutuallyAuthenticated);
-            Assert.IsTrue(sslStream.IsEncrypted);
-
-            DoHandshake(sslStream);
-
-            client.Close();
-            Console.WriteLine("Client closed.");
-        }
-
+        /// <summary>
+        /// Loads the certificate file.
+        /// </summary>
         private static X509Certificate2 LoadCertificateFile()
         {
-            // File has been created with the command:
-            // openssl pkcs12 -export -out cert.pfx -in client_full.pem -certfile ca.pem
-
-            // Instead we can convert from JKS directly with 
-            // keytool -importkeystore -srckeystore thekeystore.jks -srcstoretype JKS -destkeystore thekeystore.pfx -deststoretype PKCS12
-
-            // TODO: In C++ there is some key store with root cert, server and client certs are signed with root cert.
-            // How do we check certs against some trusted store?
-            return new X509Certificate2(@"Config\thin-client-cert.pfx", "123456");
+            // Conveting from JKS to PFX:
+            // keytool -importkeystore -srckeystore thekeystore.jks -srcstoretype JKS
+            // -destkeystore thekeystore.pfx -deststoretype PKCS12
+            return new X509Certificate2(@"Config\Client\thin-client-cert.pfx", "123456");
         }
 
         /// <summary>
