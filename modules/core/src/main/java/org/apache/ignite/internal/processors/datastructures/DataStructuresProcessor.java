@@ -1208,24 +1208,33 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                 if (val == null && !create)
                     return null;
-                else if(val!=null && val instanceof GridCacheSemaphoreState){
-                    GridCacheSemaphoreState semState=(GridCacheSemaphoreState)val;
-
-                    for(UUID nodeId: semState.getWaiters().keySet()){
-                        ClusterNode node =ctx.cluster().get().node(nodeId);
-                        if(node==null){
-                            sem.onNodeRemoved(nodeId);
-                            if (log.isDebugEnabled())
-                                log.debug("Removed node found to be waiting which is no longer active: " +nodeId);
-                        }
-                    }
-                }
            
                 AtomicDataStructureValue retVal = (val == null ? new GridCacheSemaphoreState(cnt,
                     new HashMap<UUID, Integer>(), failoverSafe, ctx.discovery().gridStartTime()) : null);
 
                 GridCacheSemaphoreEx sem0 = new GridCacheSemaphoreImpl(name, key, cache);
 
+                //check Cluster state against semaphore state
+                if(val!=null){ 
+                    ctx.closure().callLocalSafe(
+                        new Callable<Object>() {
+                            @Override
+                            public Object call() throws Exception {
+                                GridCacheSemaphoreState semState=(GridCacheSemaphoreState)val;
+
+                                for (UUID nodeId : semState.getWaiters().keySet()) {
+                                    ClusterNode node = ctx.cluster().get().node(nodeId);
+                                    if (node == null) {
+                                        sem0.onNodeRemoved(nodeId);
+                                        if (log.isDebugEnabled())
+                                            log.debug("Removed node found to be waiting which is no longer active: " + nodeId);
+                                    }
+                                }
+                                return null;
+                            }},
+                        false);
+                }
+                
                 return new T2<>(sem0, retVal);
             }
         }, cfg, name, SEMAPHORE, create, GridCacheSemaphoreEx.class);
