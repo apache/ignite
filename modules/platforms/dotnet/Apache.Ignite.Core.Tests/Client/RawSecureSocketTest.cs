@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Tests.Client
         /// Tests the SSL on server.
         /// </summary>
         [Test]
-        public void TestSslOnServer()
+        public void TestHandshake()
         {
             var icfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
