@@ -498,7 +498,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testCacheStartAndStreamOpenFromDifferentNodes() throws Exception {
+    public void testDataStreamerWaitsUntilDynamicCacheStartIsFinished() throws Exception {
         final Ignite ignite0 = startGrids(2);
         final Ignite ignite1 = grid(1);
 
