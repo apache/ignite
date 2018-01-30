@@ -58,7 +58,7 @@ public class SqlParserCopySelfTest extends SqlParserAbstractSelfTest {
             "copy from \"any.file\" into Person format csv",
             "Unexpected token: \"FORMAT\" (expected: \"(\")");
 
-        // Format
+        // FORMAT
 
         assertParseError(null,
             "copy from \"any.file\" into Person (_key, age, firstName, lastName)",
@@ -68,7 +68,7 @@ public class SqlParserCopySelfTest extends SqlParserAbstractSelfTest {
             "copy from \"any.file\" into Person (_key, age, firstName, lastName) format lsd",
             "Unknown format name: LSD");
 
-        // Charset
+        // FORMAT CSV CHARSET
 
         assertParseError(null,
             "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv charset nonexistent",
@@ -81,5 +81,32 @@ public class SqlParserCopySelfTest extends SqlParserAbstractSelfTest {
         assertParseError(null,
             "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv charset \"8^)\"",
             "Unknown charset name: '8^)'");
+
+        // BATCH_SIZE
+
+        assertParseError(null,
+            "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv" +
+                " batch_size " + Integer.MIN_VALUE,
+            "Batch size should be within [1..");
+
+        assertParseError(null,
+            "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv" +
+                " batch_size 0",
+            "Batch size should be within [1..");
+
+        assertParseError(null,
+            "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv" +
+                " batch_size " + Integer.MAX_VALUE,
+            "Batch size should be within [1..2147483135]");
+
+        assertParseError(null,
+            "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv" +
+                " batch_size",
+            "Unexpected end of command (expected: \"[integer]\")");
+
+        assertParseError(null,
+            "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv" +
+                " batch_size bitch",
+            "Unexpected token: \"BITCH\" (expected: \"[integer]\")");
     }
 }

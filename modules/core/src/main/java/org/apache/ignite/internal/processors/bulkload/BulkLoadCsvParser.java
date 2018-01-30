@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadContext;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 
+import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -41,11 +42,11 @@ public class BulkLoadCsvParser extends BulkLoadParser {
     /** Next batch index (for a very simple check that all batches were delivered to us). */
     private long nextBatchIdx;
 
-    /** Decoder for the input stream of bytes */
-    private final PipelineBlock<byte[], char[]> decoder;
+    /** Processing pipeline input block: a decoder for the input stream of bytes */
+    private final PipelineBlock<byte[], char[]> inputBlock;
 
-    /** A block that appends its input to {@code List<String>}. Used as a records collector. */
-    private final StrListAppenderBlock strListAppenderBlock;
+    /** A record collecting block that appends its input to {@code List<String>}. */
+    private final StrListAppenderBlock collectorBlock;
 
     /**
      * Creates bulk load CSV parser.
@@ -59,13 +60,15 @@ public class BulkLoadCsvParser extends BulkLoadParser {
 
         nextBatchIdx = 0;
 
-        decoder = new CharsetDecoderBlock(csvFormat.inputCharset());
+        Charset charset = csvFormat.inputCharset();
 
-        strListAppenderBlock = new StrListAppenderBlock();
+        inputBlock = new CharsetDecoderBlock(charset != null ? charset : BulkLoadFormat.DEFAULT_INPUT_CHARSET);
 
-        decoder.append(new LineSplitterBlock(BulkLoadCsvFormat.LINE_SEP_RE))
+        collectorBlock = new StrListAppenderBlock();
+
+        inputBlock.append(new LineSplitterBlock(BulkLoadCsvFormat.LINE_SEP_RE))
                .append(new CsvLineProcessorBlock(BulkLoadCsvFormat.FIELD_SEP_RE, BulkLoadCsvFormat.QUOTE_CHARS))
-               .append(strListAppenderBlock);
+               .append(collectorBlock);
     }
 
     /** {@inheritDoc} */
@@ -104,9 +107,10 @@ public class BulkLoadCsvParser extends BulkLoadParser {
         throws IgniteCheckedException {
 
         List<List<Object>> result = new LinkedList<>();
-        strListAppenderBlock.output(result);
 
-        decoder.accept(req.data(), isLastBatch);
+        collectorBlock.output(result);
+
+        inputBlock.accept(req.data(), isLastBatch);
 
         return result;
     }

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.bulkload;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.nio.charset.Charset;
 import java.util.regex.Pattern;
 
@@ -36,7 +38,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
     public static final String NAME = "CSV";
 
     /** File charset. */
-    private Charset inputCharset = null;
+    @Nullable private Charset inputCharset;
 
     /**
      * Creates CSV format with default parameters.
@@ -45,20 +47,20 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
     }
 
     /**
-     * Returns the name of the format.
+     * Returns the name of the format, null if not set.
      *
-     * @return The name of the format.
+     * @return The name of the format, null if not set.
      */
     @Override public String name() {
         return NAME;
     }
 
     /**
-     * Returns the input file charset.
+     * Returns the input file charset, null if not set.
      *
-     * @return The input file charset.
+     * @return The input file charset, null if not set.
      */
-    public Charset inputCharset() {
+    public @Nullable Charset inputCharset() {
         return inputCharset;
     }
 
@@ -67,7 +69,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @param charset The input file charset.
      */
-    public void inputCharset(Charset charset) {
+    public void inputCharset(@Nullable Charset charset) {
         this.inputCharset = charset;
     }
 }

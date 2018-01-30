@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.sql.command;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.bulkload.BulkLoadContext;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadCsvFormat;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadFormat;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadParameters;
@@ -33,7 +32,6 @@ import java.nio.charset.UnsupportedCharsetException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.apache.ignite.internal.processors.bulkload.BulkLoadFormat.DEFAULT_INPUT_CHARSET;
 import static org.apache.ignite.internal.sql.SqlParserUtils.error;
 import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIdentifier;
@@ -49,16 +47,16 @@ import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword
 public class SqlBulkLoadCommand implements SqlCommand {
 
     /** Local file name to send from client to server. */
-    private String localFileName;
+    private String locFileName;
 
     /** Local file encoding. */
-    private Charset localFileCharset;
+    private Charset locFileCharset;
 
     /** Schema name + table name. */
     private SqlQualifiedName tblQName;
 
     /** User-specified list of columns. */
-    private List<String> columns;
+    private List<String> cols;
 
     /** File format. */
     private BulkLoadFormat inputFormat;
@@ -95,7 +93,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
      * @param lex The lexer.
      */
     private void parseFileName(SqlLexer lex) {
-        localFileName = parseIdentifier(lex);
+        locFileName = parseIdentifier(lex);
     }
 
     /**
@@ -110,17 +108,17 @@ public class SqlBulkLoadCommand implements SqlCommand {
     }
 
     /**
-     * Parses the list of columns.
+     * Parses the list of cols.
      *
      * @param lex The lexer.
      */
     private void parseColumns(SqlLexer lex) {
         skipIfMatches(lex, SqlLexerTokenType.PARENTHESIS_LEFT);
 
-        columns = new ArrayList<>();
+        cols = new ArrayList<>();
 
         do {
-            columns.add(parseColumn(lex));
+            cols.add(parseColumn(lex));
         }
         while (!skipCommaOrRightParenthesis(lex));
     }
@@ -132,9 +130,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
      * @return The column name.
      */
     private String parseColumn(SqlLexer lex) {
-        String name = parseIdentifier(lex);
-
-        return name;
+        return parseIdentifier(lex);
     }
 
     /**
@@ -148,17 +144,19 @@ public class SqlBulkLoadCommand implements SqlCommand {
         String name = parseIdentifier(lex);
 
         try {
-            inputFormat = BulkLoadFormat.createFormatFor(name);
+            BulkLoadFormat fmt = BulkLoadFormat.createFormatFor(name);
 
-            switch (inputFormat.name()) {
+            switch (fmt.name()) {
                 case BulkLoadCsvFormat.NAME:
-                    parseCsvOptions(lex, (BulkLoadCsvFormat) inputFormat);
+                    parseCsvOptions(lex, (BulkLoadCsvFormat) fmt);
 
                     break;
 
                 default:
                     throw new IllegalArgumentException();
             }
+
+            inputFormat = fmt;
         }
         catch (IgniteCheckedException e) {
             throw error(lex, "Unknown format name: " + name + ". Currently supported formats are: "
@@ -166,6 +164,12 @@ public class SqlBulkLoadCommand implements SqlCommand {
         }
     }
 
+    /**
+     * Parses CSV format options.
+     *
+     * @param lex The lexer.
+     * @param format CSV format object to configure.
+     */
     private void parseCsvOptions(SqlLexer lex, BulkLoadCsvFormat format) {
         Charset charset = parseCharset(lex);
 
@@ -194,7 +198,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
             }
         }
 
-        return DEFAULT_INPUT_CHARSET;
+        return null;
     }
 
     /**
@@ -210,9 +214,12 @@ public class SqlBulkLoadCommand implements SqlCommand {
 
                     int sz = parseInt(lex);
 
-                    if (sz < BulkLoadParameters.MIN_BATCH_SIZE || sz > BulkLoadParameters.MAX_BATCH_SIZE)
-                        throw error(lex, "Batch size should be within [" +
-                            BulkLoadParameters.MIN_BATCH_SIZE + ".." + BulkLoadParameters.MAX_BATCH_SIZE + "]: " + sz);
+                    try {
+                        BulkLoadParameters.checkBatchSize(sz);
+                    }
+                    catch (IllegalArgumentException e) {
+                        throw error(lex, e.getMessage());
+                    }
 
                     batchSize = sz;
 
@@ -233,6 +240,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
         return tblQName.schemaName();
     }
 
+    /** {@inheritDoc} */
     @Override public void schemaName(String schemaName) {
         this.tblQName.schemaName(schemaName);
     }
@@ -261,17 +269,17 @@ public class SqlBulkLoadCommand implements SqlCommand {
      * @return The local file name.
      */
     public String localFileName() {
-        return localFileName;
+        return locFileName;
 
     }
 
     /**
      * Sets the local file name.
      *
-     * @param localFileName The local file name.
+     * @param locFileName The local file name.
      */
-    public void localFileName(String localFileName) {
-        this.localFileName = localFileName;
+    public void localFileName(String locFileName) {
+        this.locFileName = locFileName;
     }
 
     /**
@@ -280,7 +288,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
      * @return The list of columns.
      */
     public List<String> columns() {
-        return columns;
+        return cols;
     }
 
     /**
@@ -316,17 +324,17 @@ public class SqlBulkLoadCommand implements SqlCommand {
      * @return The local file charset or null if it is not set.
      */
     public Charset localFileCharset() {
-        return localFileCharset;
+        return locFileCharset;
 
     }
 
     /**
      * Sets the local file charset.
      *
-     * @param localFileCharset The local file charset or null if the default should be used.
+     * @param locFileCharset The local file charset or null if the default should be used.
      */
-    public void localFileCharset(Charset localFileCharset) {
-        this.localFileCharset = localFileCharset;
+    public void localFileCharset(Charset locFileCharset) {
+        this.locFileCharset = locFileCharset;
     }
 
     /** {@inheritDoc} */
