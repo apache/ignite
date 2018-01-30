@@ -106,7 +106,7 @@ public class SqlParserCopySelfTest extends SqlParserAbstractSelfTest {
 
         assertParseError(null,
             "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv" +
-                " batch_size bitch",
-            "Unexpected token: \"BITCH\" (expected: \"[integer]\")");
+                " batch_size postmark",
+            "Unexpected token: \"POSTMARK\" (expected: \"[integer]\")");
     }
 }
