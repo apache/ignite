@@ -15,31 +15,22 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-import component from './component';
-import template from 'views/base2.pug';
-import './style.scss';
+.page-profile {
+    .docs-header {
+        display: flex;
+        flex-direction: row;
+        align-items: baseline;
 
-export default angular
-    .module('ignite-console.page-profile', [
-        'ignite-console.user'
-    ])
-    .config(['$stateProvider', ($stateProvider) => {
-        // set up the states
-        $stateProvider.state('base.settings.profile', {
-            url: '/profile',
-            views: {
-                '@': {
-                    template
-                },
-                '@base.settings.profile': {
-                    component: 'pageProfile'
-                }
-            },
-            permission: 'profile',
-            tfMetaTags: {
-                title: 'User profile'
-            }
-        });
-    }])
-    .component('pageProfile', component);
+        margin: 40px 0 20px 0;
+
+        h1 {
+            font-size: 24px;
+            margin: 0 10px 0 0;
+        }
+    }
+
+    .panel--ignite {
+    	padding: 10px 30px;
+    }
+}
+    

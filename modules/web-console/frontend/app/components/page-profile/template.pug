@@ -22,40 +22,45 @@ mixin lbl(txt)
 mixin lbl-not-required(txt)
     label.col-sm-2.labelFormField #{txt}
 
-.row
-    .docs-content
-        .docs-header
+.row.page-profile
+    header.header-with-selector
+        div
             h1 User profile
-            hr
-        .docs-body.theme--ignite.theme--ignite-2
+
+        div
+            button.btn-ignite.btn-ignite--primary(ng-click='$ctrl.saveUser()' ng-disabled='$ctrl.form.$invalid') Save
+
+    .row.theme--ignite.theme--ignite-2
+        ul.tabs.tabs--blue
+        .panel--ignite
             -var form = '$ctrl.form'
             form.form-horizontal(name='$ctrl.form' novalidate)
                 .row
                     .col-50
-                        +ignite-form-field-text('First name:', '$ctrl.ui.user.firstName', '"firstName"', false, true, 'Input first name')(
+                        +ignite-form-field-text-2('First name:', '$ctrl.ui.user.firstName', '"firstName"', false, true, 'Input first name')(
                             ignite-auto-focus
                             ignite-on-enter-focus-move='lastNameInput' 
                         )
                 .row
                     .col-50
-                        +ignite-form-field-text('Last name:', '$ctrl.ui.user.lastName', '"lastName"', false, true, 'Input last name')(
+                        +ignite-form-field-text-2('Last name:', '$ctrl.ui.user.lastName', '"lastName"', false, true, 'Input last name')(
                             ignite-on-enter-focus-move='emailInput'
                         )
                 .row
                     .col-50
-                        +ignite-form-field-text('Email:', '$ctrl.ui.user.email', '"email"', false, true, 'Input email')(
+                        +ignite-form-field-text-2('Email:', '$ctrl.ui.user.email', '"email"', false, true, 'Input email')(
                             ignite-on-enter-focus-move='phoneInput'
+                            type='email'
                         )
-                        //- type='email'
                 .row
                     .col-50
-                        +ignite-form-field-text('Phone:', '$ctrl.ui.user.phone', '"phone"', false, true, 'Input phone')(
+                        +ignite-form-field-text-2('Phone:', '$ctrl.ui.user.phone', '"phone"', false, true, 'Input phone')(
                             ignite-on-enter-focus-move='companyInput'
+                            type='tel'
                         )
-                        //- type='tel'
                 .row
                     .col-50
-                        +ignite-form-field-text('Company:', '$ctrl.ui.user.company', '"company"', false, true, 'Input company name')(
+                        +ignite-form-field-text-2('Company:', '$ctrl.ui.user.company', '"company"', false, true, 'Input company name')(
                             ignite-on-enter-focus-move='countryInput' 
                         )
                 .row
@@ -83,17 +88,14 @@ mixin lbl-not-required(txt)
                 
                 .row(ng-if='$ctrl.ui.expandedPassword')
                     .col-50
-                        +ignite-form-field-password('New password:', '$ctrl.ui.user.password', '"password"', false, true, 'New password')(
+                        +ignite-form-field-password-2('New password:', '$ctrl.ui.user.password', '"password"', false, true, 'New password')(
                             ignite-auto-focus
                             ignite-on-enter-focus-move='passwordConfirmInput' 
                         )
 
                 .row(ng-if='$ctrl.ui.expandedPassword')
                     .col-50
-                        +ignite-form-field-password('New password:', 'user.confirm', '"passwordConfirm"', false, true, 'Confirm new password')(
+                        +ignite-form-field-password-2('New password:', 'user.confirm', '"passwordConfirm"', false, true, 'Confirm new password')(
                             ignite-on-enter-focus-move='passwordConfirmInput'
                             ignite-match='$ctrl.ui.user.password'
                         )
-
-                .col-xs-12.col-sm-12.details-row
-                    button.btn.btn-primary(ng-click='$ctrl.saveUser()' ng-disabled='$ctrl.form.$invalid') Save

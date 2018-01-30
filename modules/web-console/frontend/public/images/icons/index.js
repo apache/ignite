@@ -34,3 +34,4 @@ export connectedClusters from './connectedClusters.svg';
 export plus from './plus.svg';
 export copy from './copy.svg';
 export home from './home.svg';
+export exclamation from './exclamation.svg';

@@ -30,3 +30,28 @@ mixin form-field-feedback(name, error, message)
         ignite-error-message=message
         ignite-restore-input-focus
     )
+
+mixin form-field-feedback-2(name, error, message)
+    -var __field = `${form}[${name}]`
+    -var __error = `${__field}.$error.${error}`
+    -var __pristine = `${__field}.$pristine`
+
+    .form-field-feedback-2(
+        ng-if=`!${__pristine} && ${__error}`
+        name=`{{ ${name} }}`
+
+        ignite-error=error
+        ignite-error-message=message
+        ignite-restore-input-focus
+    )
+        div(
+            bs-tooltip
+            data-title=message
+            data-placement='top'
+            data-template=`
+                <div class="tooltip tooltip--error in" ng-show="title">
+                    <div class="tooltip-arrow"></div>
+                    <div class="tooltip-inner" ng-bind-html="title"></div>
+                </div>`
+        )
+        svg(ignite-icon='exclamation')
