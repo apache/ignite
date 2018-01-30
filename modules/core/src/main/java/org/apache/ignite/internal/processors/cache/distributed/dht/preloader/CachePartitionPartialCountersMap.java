@@ -110,22 +110,22 @@ public class CachePartitionPartialCountersMap implements Serializable {
      * @return {@code True} if element was actually removed.
      */
     public boolean remove(int partId) {
-        int idx = partitionIndex(partId);
+        int removedIdx = partitionIndex(partId);
 
-        if (idx < 0)
+        if (removedIdx < 0)
             return false;
 
-        for (int i = curIdx - 1; i >= idx; i--) {
+        int lastIdx = --curIdx;
+
+        for (int i = removedIdx; i < lastIdx; i++) {
             partIds[i] = partIds[i + 1];
             initialUpdCntrs[i] = initialUpdCntrs[i + 1];
             updCntrs[i] = updCntrs[i + 1];
         }
 
-        partIds[curIdx] = 0;
-        initialUpdCntrs[curIdx] = 0;
-        updCntrs[curIdx] = 0;
-
-        curIdx--;
+        partIds[lastIdx] = 0;
+        initialUpdCntrs[lastIdx] = 0;
+        updCntrs[lastIdx] = 0;
 
         return true;
     }
