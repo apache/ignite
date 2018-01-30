@@ -419,11 +419,11 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             List<Exception> errors = null;
 
-            foreach (var ipEndPoint in GetEndPoints(cfg))
+            foreach (var endPoint in GetEndPoints(cfg))
             {
                 try
                 {
-                    var socket = new Socket(ipEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp)
+                    var socket = new Socket(endPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp)
                     {
                         NoDelay = cfg.TcpNoDelay,
                         Blocking = true,
@@ -441,7 +441,7 @@ namespace Apache.Ignite.Core.Impl.Client
                         socket.ReceiveBufferSize = cfg.SocketReceiveBufferSize;
                     }
 
-                    socket.Connect(ipEndPoint);
+                    socket.Connect(endPoint);
 
                     return socket;
                 }
@@ -487,24 +487,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Gets the endpoints: all combinations of IP addresses and ports according to configuration.
         /// </summary>
-        private static IEnumerable<IPEndPoint> GetEndPoints(IgniteClientConfiguration cfg)
+        private static IEnumerable<EndPoint> GetEndPoints(IgniteClientConfiguration cfg)
         {
-            var host = cfg.Host;
-
-            if (host == null)
-            {
-                throw new IgniteException("IgniteClientConfiguration.Host cannot be null.");
-            }
-
-            // GetHostEntry accepts IPs, but TryParse is a more efficient shortcut.
-            IPAddress ip;
-
-            if (IPAddress.TryParse(host, out ip))
-            {
-                return new[] {new IPEndPoint(ip, cfg.Port)};
-            }
-
-            return Dns.GetHostEntry(host).AddressList.Select(x => new IPEndPoint(x, cfg.Port));
+            yield return new DnsEndPoint(cfg.Host, cfg.Port);
         }
 
         /// <summary>
