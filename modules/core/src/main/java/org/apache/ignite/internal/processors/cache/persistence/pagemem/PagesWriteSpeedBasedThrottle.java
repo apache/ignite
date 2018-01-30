@@ -166,17 +166,21 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
 
                 detectCpPagesWriteStart(cpWrittenPages, dirtyPagesRatio);
 
-                int notEvictedPagesTotal = cpTotalPages - cpEvictedPage;
+                if (dirtyPagesRatio >= MAX_DIRTY_PAGES)
+                    level = ThrottleMode.NO; // too late to throttle, will wait on safe to update instead.
+                else {
+                    int notEvictedPagesTotal = cpTotalPages - cpEvictedPage;
 
-                throttleParkTimeNs = getParkTime(dirtyPagesRatio,
-                    fullyCompletedPages,
-                    notEvictedPagesTotal < 0 ? 0 : notEvictedPagesTotal,
-                    nThreads,
-                    markDirtySpeed,
-                    curCpWriteSpeed);
+                    throttleParkTimeNs = getParkTime(dirtyPagesRatio,
+                        fullyCompletedPages,
+                        notEvictedPagesTotal < 0 ? 0 : notEvictedPagesTotal,
+                        nThreads,
+                        markDirtySpeed,
+                        curCpWriteSpeed);
 
-                if (throttleParkTimeNs > 0)
-                    level = ThrottleMode.LIMITED;
+                    if (throttleParkTimeNs > 0)
+                        level = ThrottleMode.LIMITED;
+                }
             }
         }
 
@@ -226,9 +230,13 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
         this.targetDirtyRatio = targetDirtyRatio; //publish for metrics
 
         boolean lowSpaceLeft = dirtyPagesRatio > targetDirtyRatio && (dirtyPagesRatio + 0.05 > MAX_DIRTY_PAGES);
-        int slowdown = lowSpaceLeft ? 2 : 1;
+        int slowdown = lowSpaceLeft ? 3 : 1;
 
-        boolean markingTooFast = speedForMarkAll > 0 && markDirtySpeed > speedForMarkAll;
+        double multiplierForSpeedForMarkAll = lowSpaceLeft
+            ? 0.8
+            : 1.0;
+
+        boolean markingTooFast = speedForMarkAll > 0 && markDirtySpeed > multiplierForSpeedForMarkAll * speedForMarkAll;
         boolean throttleBySizeAndMarkSpeed = dirtyPagesRatio > targetDirtyRatio && markingTooFast;
 
         //for case of speedForMarkAll >> markDirtySpeed, allow write little bit faster than CP average
@@ -262,8 +270,11 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
         if (curCpWriteSpeed == 0)
             return 0;
 
+        if (cpTotalPages <= 0)
+            return 0;
+
         if (dirtyPagesRatio >= MAX_DIRTY_PAGES)
-            return 1;
+            return 0;
 
         double remainedClear = (MAX_DIRTY_PAGES - dirtyPagesRatio) * totalPages;
 
@@ -375,14 +386,14 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
      * @return  Speed of marking pages dirty. Value from past 750-1000 millis only. Pages/second.
      */
     public long getMarkDirtySpeed() {
-        return speedMarkAndAvgParkTime.getSpeedPagesPerSecOptional();
+        return speedMarkAndAvgParkTime.getSpeedOpsPerSec(System.nanoTime());
     }
 
     /**
      * @return Speed average checkpoint write speed. Current and 3 past checkpoints used. Pages/second.
      */
     public long getCpWriteSpeed() {
-        return speedCpWrite.getSpeedPagesPerSecOptional();
+        return speedCpWrite.getSpeedOpsPerSecReadOnly();
     }
 
     /**
@@ -397,7 +408,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
      * @return metric started from 0.0 and showing how much throttling is involved into current marking process.
      */
     public double throttleWeight() {
-        long speed = getMarkDirtySpeed();
+        long speed = speedMarkAndAvgParkTime.getSpeedOpsPerSec(System.nanoTime());
 
         if (speed <= 0)
             return 0;

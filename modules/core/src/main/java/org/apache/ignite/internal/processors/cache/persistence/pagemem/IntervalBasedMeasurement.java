@@ -25,9 +25,31 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Speed tracker for determine speed of processing based on increments or exact counters value. Measurement is perfromed
- * using several intervals. Too old measurements are dropped. To determine speed current measurement is reduced with all
- * historical.
+ * Speed tracker for determine speed of processing based on increments or exact counters value. <br>
+ * Measurement is performed using several intervals (1 current + 3 historical by default). <br>
+ * Too old measurements (intervals) may be dropped if automatic switch mode activated.<br>
+ * To determine speed current measurement is reduced with all historical.<br>
+ *     <br>
+ *  For mode of manual measurements switch it is possible to use
+ *  <br> default ctor
+ *  {@link #IntervalBasedMeasurement()} and methods <br>
+ *     {@link #setCounter(long, long)} (automatically opens interval if not opened) and <br>
+ *     {@link #finishInterval()} to close measurement.<br>
+ *     <br>
+ *  For mode of automatic measurements switch it is possible to use
+ *  <br> parametrized ctor
+ *  {@link #IntervalBasedMeasurement(int, int)} and methods <br>
+ *     {@link #setCounter(long, long)} (automatically opens interval if not opened) or
+ *     {@link #addMeasurementForAverageCalculation(long)} to provide metrics value in addition to event.<br>
+ *     {@link #finishInterval()} is also supported, but not required<br>
+ *     <br>
+ *
+ *  To get results of speed calculation it is possible to use <br>
+ *  Method {@link #getSpeedOpsPerSec(long)} to get current speed (and swicth/open interval if needed). <br>
+ *   or method {@link #getSpeedOpsPerSecReadOnly()} to get current speed without interval modification.<br>
+ *
+ *  If metric value was provided using {@link #addMeasurementForAverageCalculation(long)}
+ *  then method {@link #getAverage()} can be used to get resulting metrics average value during period of time.
  */
 class IntervalBasedMeasurement {
     /** Nanos in second. */
@@ -48,10 +70,10 @@ class IntervalBasedMeasurement {
      */
     private final ConcurrentLinkedQueue<MeasurementInterval> prevMeasurements = new ConcurrentLinkedQueue<>();
 
-     /**
+    /**
      * Default constructor. No automatic switch, 3 historical measurements.
      */
-     IntervalBasedMeasurement() {
+    IntervalBasedMeasurement() {
         this(-1, 3);
     }
 
@@ -79,7 +101,7 @@ class IntervalBasedMeasurement {
      *
      * @return speed in pages per second based on current data.
      */
-    long getSpeedPagesPerSecOptional() {
+    long getSpeedOpsPerSecReadOnly() {
         MeasurementInterval interval = measurementIntervalAtomicRef.get();
 
         long curNanoTime = System.nanoTime();
@@ -178,13 +200,6 @@ class IntervalBasedMeasurement {
     }
 
     /**
-     * Increments page count in current interval, switches interval if needed.
-     */
-    public void incrementCounter() {
-        interval(System.nanoTime()).cntr.incrementAndGet();
-    }
-
-    /**
      * Set exact value for counter in current measurement interval, useful only for manually managed measurements.
      *
      * @param val new value to set.
@@ -215,9 +230,10 @@ class IntervalBasedMeasurement {
     }
 
     /**
-     * Gets current speed, does not start measurement.
+     * Gets average metric value previously reported by {@link #addMeasurementForAverageCalculation(long)}.
+     * This method may start new interval measurement or switch current.
      *
-     * @return speed in pages per second based on current data.
+     * @return average metric value.
      */
     public long getAverage() {
         long time = System.nanoTime();
@@ -251,7 +267,7 @@ class IntervalBasedMeasurement {
 
     /**
      * Adds measurement to be used for average calculation. Calling this method will later calculate speed of
-     * measurements come.
+     * measurements come. Result can be taken from {@link #getAverage()}.
      *
      * @param val value measured now, to be used for average calculation.
      */

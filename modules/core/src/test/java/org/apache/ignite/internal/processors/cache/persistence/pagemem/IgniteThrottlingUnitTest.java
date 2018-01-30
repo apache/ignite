@@ -102,7 +102,7 @@ public class IgniteThrottlingUnitTest {
         System.out.println("speed measured " + speed);
         assertTrue(speed > 1000);
 
-        Thread.sleep(200);
+        Thread.sleep(230);
 
         assertEquals(0, measurement.getSpeedOpsPerSec(System.nanoTime()));
     }
@@ -147,10 +147,11 @@ public class IgniteThrottlingUnitTest {
             23103) == 0);
 
         //mark speed 22413 for mark all remaining as dirty
-        assertTrue(throttle.getParkTime(0.01, 100, 400000,
+        long time = throttle.getParkTime(0.024, 100, 400000,
             1,
             24000,
-            23103) > 0);
+            23103);
+        assertTrue(time > 0);
 
         assertTrue(throttle.getParkTime(0.01,
             100,
@@ -180,5 +181,22 @@ public class IgniteThrottlingUnitTest {
 
         assertTrue(time3 > time2);
         assertTrue(time4 > time3);
+    }
+
+    @Test
+    public void tooMuchPagesMarkedDirty() {
+        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null);
+
+       // 363308	350004	348976	10604
+        long time = throttle.getParkTime(0.75,
+            ((350004 + 348976) / 2),
+            350004-10604,
+            4,
+            279,
+            23933);
+
+        System.err.println(time);
+
+        assertTrue(time == 0);
     }
 }
