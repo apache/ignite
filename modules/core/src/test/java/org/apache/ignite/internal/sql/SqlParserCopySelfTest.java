@@ -71,15 +71,15 @@ public class SqlParserCopySelfTest extends SqlParserAbstractSelfTest {
         // Charset
 
         assertParseError(null,
-            "copy from \"any.file\" charset nonexistent into Person (_key, age, firstName, lastName) format lsd",
+            "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv charset nonexistent",
             "Charset is not supported: 'NONEXISTENT'");
 
         assertParseError(null,
-            "copy from \"any.file\" charset \"\" into Person (_key, age, firstName, lastName) format lsd",
+            "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv charset \"\"",
             "Unknown charset name: ''");
 
         assertParseError(null,
-            "copy from \"any.file\" charset \"8^)\" into Person (_key, age, firstName, lastName) format lsd",
+            "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv charset \"8^)\"",
             "Unknown charset name: '8^)'");
     }
 }

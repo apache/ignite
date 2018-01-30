@@ -27,12 +27,10 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadContext;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 
-import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-import static org.apache.ignite.internal.processors.bulkload.BulkLoadParameters.DEFAULT_INPUT_CHARSET;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_CONTINUE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_ERROR;
@@ -51,16 +49,17 @@ public class BulkLoadCsvParser extends BulkLoadParser {
 
     /**
      * Creates bulk load CSV parser.
+     *  @param format Format options (parsed from COPY command on the server side).
      *
-     * @param format Format options (parsed from COPY command on the server side).
-     * @param params Input file parameters.
      */
-    public BulkLoadCsvParser(BulkLoadFormat format, BulkLoadParameters params) {
+    public BulkLoadCsvParser(BulkLoadFormat format) {
         super(format);
+
+        BulkLoadCsvFormat csvFormat = (BulkLoadCsvFormat)format;
 
         nextBatchIdx = 0;
 
-        decoder = new CharsetDecoderBlock(params.locFileCharset());
+        decoder = new CharsetDecoderBlock(csvFormat.inputCharset());
 
         strListAppenderBlock = new StrListAppenderBlock();
 

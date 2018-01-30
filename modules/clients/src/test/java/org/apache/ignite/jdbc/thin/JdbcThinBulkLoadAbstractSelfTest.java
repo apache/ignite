@@ -63,8 +63,12 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
         Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload2.csv")).getAbsolutePath();
 
     /** A file with UTF records. */
-    private static final String BULKLOAD_UTF_CSV_FILE =
-        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload2_utf.csv")).getAbsolutePath();
+    private static final String BULKLOAD_UTF8_CSV_FILE =
+        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload2_utf8.csv")).getAbsolutePath();
+
+    /** A file with UTF records. */
+    private static final String BULKLOAD_CP1251_CSV_FILE =
+        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload2_windows1251.csv")).getAbsolutePath();
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfig() {
@@ -189,20 +193,35 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     }
 
     /**
-     * Dead-on-arrival test. Imports two-entry CSV file into a table and checks
-     * the created entries using SELECT statement.
+     * Verifies that ASCII encoding is recognized and imported.
      *
      * @throws SQLException If failed.
      */
     public void testAsciiCharset() throws SQLException {
         int updatesCnt = stmt.executeUpdate(
-            "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" charset ascii into " + TBL_NAME +
+            "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into " + TBL_NAME +
                 " (_key, age, firstName, lastName)" +
-                " format csv");
+                " format csv charset ascii");
 
         assertEquals(2, updatesCnt);
 
         checkCacheContents(TBL_NAME, true, 2);
+    }
+
+    /**
+     * Verifies that ASCII encoding is recognized and imported.
+     *
+     * @throws SQLException If failed.
+     */
+    public void testWin1251Charset() throws SQLException {
+        int updatesCnt = stmt.executeUpdate(
+            "copy from \"" + BULKLOAD_CP1251_CSV_FILE + "\" into " + TBL_NAME +
+                " (_key, age, firstName, lastName)" +
+                " format csv charset \"windows-1251\"");
+
+        assertEquals(2, updatesCnt);
+
+        checkNationalCacheContents(TBL_NAME, true, 2);
     }
 
     /**
@@ -211,15 +230,15 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @throws SQLException If failed.
      */
-    public void testUtf() throws SQLException {
+    public void testDefaultCharset() throws SQLException {
         int updatesCnt = stmt.executeUpdate(
-            "copy from \"" + BULKLOAD_UTF_CSV_FILE + "\" into " + TBL_NAME +
+            "copy from \"" + BULKLOAD_UTF8_CSV_FILE + "\" into " + TBL_NAME +
                 " (_key, age, firstName, lastName)" +
                 " format csv");
 
         assertEquals(2, updatesCnt);
 
-        checkUtfCacheContents(TBL_NAME, true, 2);
+        checkNationalCacheContents(TBL_NAME, true, 2);
     }
 
     /**
@@ -229,15 +248,15 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @throws SQLException If failed.
      */
-    public void testUtfBatchSize_1() throws SQLException {
+    public void testDefaultCharsetBatchSize1() throws SQLException {
         int updatesCnt = stmt.executeUpdate(
-            "copy from \"" + BULKLOAD_UTF_CSV_FILE + "\" into " + TBL_NAME +
+            "copy from \"" + BULKLOAD_UTF8_CSV_FILE + "\" into " + TBL_NAME +
                 " (_key, age, firstName, lastName)" +
                 " format csv batch_size 1");
 
         assertEquals(2, updatesCnt);
 
-        checkUtfCacheContents(TBL_NAME, true, 2);
+        checkNationalCacheContents(TBL_NAME, true, 2);
     }
 
     /**
@@ -246,15 +265,15 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @throws SQLException If failed.
      */
-    public void testUtfWithCharset() throws SQLException {
+    public void testUtf8Charset() throws SQLException {
         int updatesCnt = stmt.executeUpdate(
-            "copy from \"" + BULKLOAD_UTF_CSV_FILE + "\" charset \"utf-8\" into " + TBL_NAME +
+            "copy from \"" + BULKLOAD_UTF8_CSV_FILE + "\" into " + TBL_NAME +
                 " (_key, age, firstName, lastName)" +
-                " format csv");
+                " format csv charset \"utf-8\"");
 
         assertEquals(2, updatesCnt);
 
-        checkUtfCacheContents(TBL_NAME, true, 2);
+        checkNationalCacheContents(TBL_NAME, true, 2);
     }
 
     /**
@@ -423,7 +442,8 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     public void testBatchSize_1() throws SQLException {
         int updatesCnt = stmt.executeUpdate(
             "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\"" +
-            " into " + TBL_NAME + " (_key, age, firstName, lastName) format csv batch_size 1");
+            " into " + TBL_NAME + " (_key, age, firstName, lastName)" +
+            " format csv batch_size 1");
 
         assertEquals(2, updatesCnt);
 
@@ -444,7 +464,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
                 stmt.addBatch("copy from \"" + BULKLOAD_ONE_LINE_CSV_FILE + "\" into " + TBL_NAME +
                     " (_key, age, firstName, lastName)" +
                     " format csv");
-                stmt.addBatch("copy from \"" + BULKLOAD_UTF_CSV_FILE + "\" into " + TBL_NAME +
+                stmt.addBatch("copy from \"" + BULKLOAD_UTF8_CSV_FILE + "\" into " + TBL_NAME +
                     " (_key, age, firstName, lastName)" +
                     " format csv");
 
@@ -614,7 +634,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      * @param recCnt Number of records to expect.
      * @throws SQLException When one of checks has failed.
      */
-    private void checkUtfCacheContents(String tblName, boolean checkLastName, int recCnt) throws SQLException {
+    private void checkNationalCacheContents(String tblName, boolean checkLastName, int recCnt) throws SQLException {
         ResultSet rs = stmt.executeQuery("select _key, age, firstName, lastName from " + tblName);
 
         assert rs != null;

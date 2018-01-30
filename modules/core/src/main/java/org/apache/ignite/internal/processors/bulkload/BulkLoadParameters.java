@@ -35,14 +35,8 @@ public class BulkLoadParameters {
     /** Size of a file batch for COPY command. */
     public static final int DEFAULT_BATCH_SIZE = 4 * 1024 * 1024;
 
-    /** The default input charset. */
-    public static final Charset DEFAULT_INPUT_CHARSET = Charset.forName("UTF-8");
-
     /** Local name of the file to send to server */
     @NotNull private final String locFileName;
-
-    /** File charset. */
-    @NotNull private final Charset locFileCharset;
 
     /** File batch size in bytes. */
     private final int batchSize;
@@ -50,12 +44,10 @@ public class BulkLoadParameters {
     /**
      * Creates a bulk load parameters.
      * @param locFileName File name to send from client to server.
-     * @param charset The local file character set.
      * @param batchSize Batch size (Number of bytes in a portion of a file to send in one Jdbc request/response).
      */
-    public BulkLoadParameters(@NotNull String locFileName, @NotNull Charset charset, int batchSize) {
+    public BulkLoadParameters(@NotNull String locFileName, int batchSize) {
         this.locFileName = locFileName;
-        locFileCharset = charset;
         this.batchSize = batchSize;
     }
 
@@ -66,15 +58,6 @@ public class BulkLoadParameters {
      */
     public String localFileName() {
         return locFileName;
-    }
-
-    /**
-     * Returns the local file charset.
-     *
-     * @return The local file charset.
-     */
-    public Charset locFileCharset() {
-        return locFileCharset;
     }
 
     /**

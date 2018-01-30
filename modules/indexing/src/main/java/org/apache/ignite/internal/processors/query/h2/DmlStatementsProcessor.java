@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import java.nio.charset.Charset;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -49,7 +48,6 @@ import org.apache.ignite.internal.processors.bulkload.BulkLoadContext;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadEntryConverter;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadParameters;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadParser;
-import org.apache.ignite.internal.processors.bulkload.pipeline.CharsetDecoderBlock;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
@@ -87,7 +85,6 @@ import org.h2.command.dml.Merge;
 import org.h2.command.dml.Update;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.bulkload.BulkLoadParameters.DEFAULT_INPUT_CHARSET;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
@@ -1058,14 +1055,9 @@ public class DmlStatementsProcessor {
             }
         };
 
-        Charset charset = cmd.localFileCharset();
+        BulkLoadParameters params = new BulkLoadParameters(cmd.localFileName(), cmd.batchSize());
 
-        BulkLoadParameters params = new BulkLoadParameters(
-            cmd.localFileName(),
-            charset == null ? DEFAULT_INPUT_CHARSET : charset,
-            cmd.batchSize());
-
-        BulkLoadParser inputParser = BulkLoadParser.createParser(cmd.inputFormat(), params);
+        BulkLoadParser inputParser = BulkLoadParser.createParser(cmd.inputFormat());
 
         return new BulkLoadContext(params, inputParser, dataConverter, outputWriter);
     }

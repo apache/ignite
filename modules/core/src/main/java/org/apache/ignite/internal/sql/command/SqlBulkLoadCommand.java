@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.sql.command;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadContext;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadCsvFormat;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadFormat;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadParameters;
 import org.apache.ignite.internal.sql.SqlKeyword;
@@ -31,6 +33,7 @@ import java.nio.charset.UnsupportedCharsetException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.apache.ignite.internal.processors.bulkload.BulkLoadFormat.DEFAULT_INPUT_CHARSET;
 import static org.apache.ignite.internal.sql.SqlParserUtils.error;
 import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIdentifier;
@@ -74,8 +77,6 @@ public class SqlBulkLoadCommand implements SqlCommand {
 
         parseFileName(lex);
 
-        parseCharset(lex);
-
         parseTableName(lex);
 
         parseColumns(lex);
@@ -95,29 +96,6 @@ public class SqlBulkLoadCommand implements SqlCommand {
      */
     private void parseFileName(SqlLexer lex) {
         localFileName = parseIdentifier(lex);
-    }
-
-    /**
-     * Parses file character set.
-     *
-     * @param lex The lexer.
-     */
-    private void parseCharset(SqlLexer lex) {
-        if (matchesKeyword(lex.lookAhead(), SqlKeyword.CHARSET)) {
-            lex.shift();
-
-            String charsetName = parseIdentifier(lex, SqlKeyword.INTO);
-
-            try {
-                localFileCharset = Charset.forName(charsetName);
-            }
-            catch (IllegalCharsetNameException e) {
-                throw error(lex, "Unknown charset name: '" + charsetName + "'");
-            }
-            catch (UnsupportedCharsetException e) {
-                throw error(lex, "Charset is not supported: '" + charsetName + "'");
-            }
-        }
     }
 
     /**
@@ -171,10 +149,52 @@ public class SqlBulkLoadCommand implements SqlCommand {
 
         try {
             inputFormat = BulkLoadFormat.createFormatFor(name);
-        } catch (IgniteCheckedException e) {
+
+            switch (inputFormat.name()) {
+                case BulkLoadCsvFormat.NAME:
+                    parseCsvOptions(lex, (BulkLoadCsvFormat) inputFormat);
+
+                    break;
+
+                default:
+                    throw new IllegalArgumentException();
+            }
+        }
+        catch (IgniteCheckedException e) {
             throw error(lex, "Unknown format name: " + name + ". Currently supported formats are: "
                 + BulkLoadFormat.formatNames());
         }
+    }
+
+    private void parseCsvOptions(SqlLexer lex, BulkLoadCsvFormat format) {
+        Charset charset = parseCharset(lex);
+
+        format.inputCharset(charset);
+    }
+
+    /**
+     * Parses file character set.
+     *
+     * @param lex The lexer.
+     */
+    private Charset parseCharset(SqlLexer lex) {
+        if (matchesKeyword(lex.lookAhead(), SqlKeyword.CHARSET)) {
+            lex.shift();
+
+            String charsetName = parseIdentifier(lex);
+
+            try {
+                return Charset.forName(charsetName);
+            }
+            catch (IllegalCharsetNameException e) {
+                throw error(lex, "Unknown charset name: '" + charsetName + "'");
+            }
+            catch (UnsupportedCharsetException e) {
+                throw error(lex, "Charset is not supported: '" + charsetName + "'");
+            }
+        }
+
+        return DEFAULT_INPUT_CHARSET;
     }
 
     /**
