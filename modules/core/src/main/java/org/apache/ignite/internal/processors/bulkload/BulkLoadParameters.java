@@ -80,7 +80,7 @@ public class BulkLoadParameters {
     /**
      * Returns the batch size.
      *
-     * @return batch sizes.
+     * @return The batch size.
      */
     public int batchSize() {
         return batchSize;
