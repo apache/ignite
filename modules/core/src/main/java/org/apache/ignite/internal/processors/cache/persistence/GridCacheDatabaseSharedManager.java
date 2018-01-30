@@ -937,10 +937,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             chpBufSize = cacheSize;
         }
 
-        boolean writeThrottlingEnabled = persistenceCfg.isWriteThrottlingEnabled();
+        PageMemoryImpl.ThrottlingPolicy plc = persistenceCfg.isWriteThrottlingEnabled()
+            ? PageMemoryImpl.ThrottlingPolicy.SPEED_BASED
+            : PageMemoryImpl.ThrottlingPolicy.NONE;
 
-        if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED, false))
-            writeThrottlingEnabled = true;
+        String val = IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED);
+
+        if (val != null) {
+            if ("ratio".equalsIgnoreCase(val))
+                plc = PageMemoryImpl.ThrottlingPolicy.TARGET_RATIO_BASED;
+            else if ("speed".equalsIgnoreCase(val) || Boolean.valueOf(val))
+                plc = PageMemoryImpl.ThrottlingPolicy.SPEED_BASED;
+        }
 
         GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker;
 
@@ -988,7 +996,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             changeTracker,
             this,
             memMetrics,
-            writeThrottlingEnabled
+            plc
         );
 
         memMetrics.pageMemory(pageMem);
