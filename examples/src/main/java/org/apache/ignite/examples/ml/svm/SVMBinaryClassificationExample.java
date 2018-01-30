@@ -17,6 +17,7 @@
 
 package org.apache.ignite.examples.ml.svm;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -25,6 +26,7 @@ import java.nio.file.Paths;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.Trainer;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledDatasetTestTrainPair;
@@ -53,7 +55,7 @@ public class SVMBinaryClassificationExample {
     private static final String SEPARATOR = ",";
 
     /** Path to the Iris dataset. */
-    private static final String TITANIC_DATASET = "../datasets/titanic.txt";
+    private static final String TITANIC_DATASET = "examples/src/main/resources/datasets/titanic.txt";
 
     /**
      * Executes example.
@@ -71,11 +73,11 @@ public class SVMBinaryClassificationExample {
 
                 try {
                     // Prepare path to read
-                    URL url = SVMBinaryClassificationExample.class.getResource(TITANIC_DATASET);
-                    if (url == null)
-                        throw new RuntimeException("Can't get URL for: " + TITANIC_DATASET);
+                    File file = IgniteUtils.resolveIgnitePath(TITANIC_DATASET);
+                    if (file == null)
+                        throw new RuntimeException("Can't find file: " + TITANIC_DATASET);
 
-                    Path path = Paths.get(url.toURI());
+                    Path path = file.toPath();
 
                     // Read dataset from file
                     LabeledDataset dataset = LabeledDatasetLoader.loadFromTxtFile(path, SEPARATOR, true, false);
@@ -116,7 +118,7 @@ public class SVMBinaryClassificationExample {
                     System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
                     System.out.println("\n>>> Prediction percentage " + (1 - amountOfErrors / (double) test.rowSize()));
 
-                } catch (URISyntaxException | IOException e) {
+                } catch (IOException e) {
                     e.printStackTrace();
                     System.out.println("\n>>> Unexpected exception, check resources: " + e);
                 } finally {
