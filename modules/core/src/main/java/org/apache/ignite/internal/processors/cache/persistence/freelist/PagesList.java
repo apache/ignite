@@ -404,12 +404,12 @@ public abstract class PagesList extends DataStructure {
      * Adds stripe to the given bucket.
      *
      * @param bucket Bucket.
-     * @param reuse {@code True} if possible to use reuse list.
      * @param bag Reuse bag.
+     * @param reuse {@code True} if possible to use reuse list.
      * @throws IgniteCheckedException If failed.
      * @return Tail page ID.
      */
-    private Stripe addStripe(int bucket, boolean reuse, ReuseBag bag) throws IgniteCheckedException {
+    private Stripe addStripe(int bucket, ReuseBag bag, boolean reuse) throws IgniteCheckedException {
         long pageId = allocatePage(bag, reuse);
 
         init(pageId, PagesListNodeIO.VERSIONS.latest());
@@ -517,7 +517,7 @@ public abstract class PagesList extends DataStructure {
             assert stripeIdx != -1 : igniteThread;
 
             while (tails == null || stripeIdx >= tails.length) {
-                addStripe(bucket, true, bag);
+                addStripe(bucket, bag, true);
 
                 tails = getBucket(bucket);
             }
@@ -526,7 +526,7 @@ public abstract class PagesList extends DataStructure {
         }
 
         if (tails == null)
-            return addStripe(bucket, true, bag);
+            return addStripe(bucket, bag, true);
 
         return randomTail(tails);
     }
@@ -989,7 +989,7 @@ public abstract class PagesList extends DataStructure {
             Stripe[] stripes = getBucket(bucket);
 
             if (stripes == null || stripes.length < MAX_STRIPES_PER_BUCKET) {
-                addStripe(bucket, !isReuseBucket(bucket), bag);
+                addStripe(bucket, bag, !isReuseBucket(bucket));
 
                 return 0L;
             }
