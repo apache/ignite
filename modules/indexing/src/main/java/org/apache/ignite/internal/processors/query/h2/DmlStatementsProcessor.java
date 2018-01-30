@@ -1055,11 +1055,9 @@ public class DmlStatementsProcessor {
             }
         };
 
-        BulkLoadParameters params = new BulkLoadParameters(
-            cmd.localFileName(),
-            cmd.batchSize());
+        BulkLoadParameters params = new BulkLoadParameters(cmd.localFileName(), cmd.batchSize());
 
-        BulkLoadParser inputParser = BulkLoadParser.createParser(cmd.inputFormat(), params);
+        BulkLoadParser inputParser = BulkLoadParser.createParser(cmd.inputFormat());
 
         return new BulkLoadContext(params, inputParser, dataConverter, outputWriter);
     }

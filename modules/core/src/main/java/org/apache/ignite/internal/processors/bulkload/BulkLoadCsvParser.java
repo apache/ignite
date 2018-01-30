@@ -42,30 +42,29 @@ public class BulkLoadCsvParser extends BulkLoadParser {
     /** Next batch index (for a very simple check that all batches were delivered to us). */
     private long nextBatchIdx;
 
-    /** Decoder for the input stream of bytes */
-    private final PipelineBlock<byte[], char[]> decoder;
+    /** Processing pipeline input block: a decoder for the input stream of bytes */
+    private final PipelineBlock<byte[], char[]> inputBlock;
 
-    /** A block that appends its input to {@code List<String>}. Used as a records collector. */
-    private final StrListAppenderBlock strListAppenderBlock;
+    /** A record collecting block that appends its input to {@code List<String>}. */
+    private final StrListAppenderBlock collectorBlock;
 
     /**
      * Creates bulk load CSV parser.
-     *
-     * @param format Format options (parsed from COPY command on the server side).
-     * @param params Input file parameters.
+
+     *  @param format Format options (parsed from COPY command on the server side).
      */
-    public BulkLoadCsvParser(BulkLoadFormat format, BulkLoadParameters params) {
+    public BulkLoadCsvParser(BulkLoadFormat format) {
         super(format);
 
         nextBatchIdx = 0;
 
-        decoder = new CharsetDecoderBlock(DEFAULT_INPUT_CHARSET);
+        inputBlock = new CharsetDecoderBlock(DEFAULT_INPUT_CHARSET);
 
-        strListAppenderBlock = new StrListAppenderBlock();
+        collectorBlock = new StrListAppenderBlock();
 
-        decoder.append(new LineSplitterBlock(BulkLoadCsvFormat.LINE_SEP_RE))
+        inputBlock.append(new LineSplitterBlock(BulkLoadCsvFormat.LINE_SEP_RE))
                .append(new CsvLineProcessorBlock(BulkLoadCsvFormat.FIELD_SEP_RE, BulkLoadCsvFormat.QUOTE_CHARS))
-               .append(strListAppenderBlock);
+               .append(collectorBlock);
     }
 
     /** {@inheritDoc} */
@@ -104,9 +103,10 @@ public class BulkLoadCsvParser extends BulkLoadParser {
         throws IgniteCheckedException {
 
         List<List<Object>> result = new LinkedList<>();
-        strListAppenderBlock.output(result);
 
-        decoder.accept(req.data(), isLastBatch);
+        collectorBlock.output(result);
+
+        inputBlock.accept(req.data(), isLastBatch);
 
         return result;
     }

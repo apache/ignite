@@ -42,13 +42,13 @@ import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword
 public class SqlBulkLoadCommand implements SqlCommand {
 
     /** Local file name to send from client to server. */
-    private String localFileName;
+    private String locFileName;
 
     /** Schema name + table name. */
     private SqlQualifiedName tblQName;
 
     /** User-specified list of columns. */
-    private List<String> columns;
+    private List<String> cols;
 
     /** File format. */
     private BulkLoadFormat inputFormat;
@@ -84,7 +84,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
      * @param lex The lexer.
      */
     private void parseFileName(SqlLexer lex) {
-        localFileName = parseIdentifier(lex);
+        locFileName = parseIdentifier(lex);
     }
 
     /**
@@ -106,10 +106,10 @@ public class SqlBulkLoadCommand implements SqlCommand {
     private void parseColumns(SqlLexer lex) {
         skipIfMatches(lex, SqlLexerTokenType.PARENTHESIS_LEFT);
 
-        columns = new ArrayList<>();
+        cols = new ArrayList<>();
 
         do {
-            columns.add(parseColumn(lex));
+            cols.add(parseColumn(lex));
         }
         while (!skipCommaOrRightParenthesis(lex));
     }
@@ -121,9 +121,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
      * @return The column name.
      */
     private String parseColumn(SqlLexer lex) {
-        String name = parseIdentifier(lex);
-
-        return name;
+        return parseIdentifier(lex);
     }
 
     /**
@@ -157,9 +155,12 @@ public class SqlBulkLoadCommand implements SqlCommand {
 
                     int sz = parseInt(lex);
 
-                    if (sz < BulkLoadParameters.MIN_BATCH_SIZE || sz > BulkLoadParameters.MAX_BATCH_SIZE)
-                        throw error(lex, "Batch size should be within [" +
-                            BulkLoadParameters.MIN_BATCH_SIZE + ".." + BulkLoadParameters.MAX_BATCH_SIZE + "]: " + sz);
+                    try {
+                        BulkLoadParameters.checkBatchSize(sz);
+                    }
+                    catch (IllegalArgumentException e) {
+                        throw error(lex, e.getMessage());
+                    }
 
                     batchSize = sz;
 
@@ -180,6 +181,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
         return tblQName.schemaName();
     }
 
+    /** {@inheritDoc} */
     @Override public void schemaName(String schemaName) {
         this.tblQName.schemaName(schemaName);
     }
@@ -208,17 +210,16 @@ public class SqlBulkLoadCommand implements SqlCommand {
      * @return The local file name.
      */
     public String localFileName() {
-        return localFileName;
-
+        return locFileName;
     }
 
     /**
      * Sets the local file name.
      *
-     * @param localFileName The local file name.
+     * @param locFileName The local file name.
      */
-    public void localFileName(String localFileName) {
-        this.localFileName = localFileName;
+    public void localFileName(String locFileName) {
+        this.locFileName = locFileName;
     }
 
     /**
@@ -227,7 +228,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
      * @return The list of columns.
      */
     public List<String> columns() {
-        return columns;
+        return cols;
     }
 
     /**

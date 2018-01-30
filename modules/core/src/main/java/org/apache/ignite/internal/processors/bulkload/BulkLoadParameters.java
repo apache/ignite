@@ -27,7 +27,8 @@ public class BulkLoadParameters {
     /** Minimal batch size. */
     public static final int MIN_BATCH_SIZE = 1;
 
-    /** Maximal batch size. Note that the batch is wrapped to transport objects and the overall packet should fit
+    /**
+     * Maximal batch size. Note that the batch is wrapped to transport objects and the overall packet should fit
      * into a Java array.
      */
     public static final int MAX_BATCH_SIZE = Integer.MAX_VALUE - 512;
@@ -49,7 +50,7 @@ public class BulkLoadParameters {
      * @param locFileName File name to send from client to server.
      * @param batchSize Batch size (Number of bytes in a portion of a file to send in one Jdbc request/response).
      */
-    public BulkLoadParameters(String locFileName, int batchSize) {
+    public BulkLoadParameters(@NotNull String locFileName, int batchSize) {
         this.locFileName = locFileName;
         this.batchSize = batchSize;
     }
@@ -57,9 +58,9 @@ public class BulkLoadParameters {
     /**
      * Returns the local name of file to send.
      *
-     * @return locFileName the local name of file to send.
+     * @return The local name of file to send.
      */
-    public String localFileName() {
+    public @NotNull String localFileName() {
         return locFileName;
     }
 
@@ -70,5 +71,17 @@ public class BulkLoadParameters {
      */
     public int batchSize() {
         return batchSize;
+    }
+
+    /**
+     * Checks if batch size value is valid.
+     *
+     * @param sz The batch size to check.
+     * @throws IllegalArgumentException if batch size is invalid.
+     */
+    public static void checkBatchSize(int sz) {
+        if (sz < MIN_BATCH_SIZE || sz > MAX_BATCH_SIZE)
+            throw new IllegalArgumentException("Batch size should be within [" +
+                BulkLoadParameters.MIN_BATCH_SIZE + ".." + BulkLoadParameters.MAX_BATCH_SIZE + "]: " + sz);
     }
 }

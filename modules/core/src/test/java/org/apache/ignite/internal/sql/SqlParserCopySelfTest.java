@@ -44,6 +44,8 @@ public class SqlParserCopySelfTest extends SqlParserAbstractSelfTest {
             "copy from \"any.file\" to Person (_key, age, firstName, lastName) format csv",
             "Unexpected token: \"TO\" (expected: \"INTO\")");
 
+        // Column list
+
         assertParseError(null,
             "copy from \"any.file\" into Person () format csv",
             "Unexpected token: \")\" (expected: \"[identifier]\")");
@@ -55,6 +57,8 @@ public class SqlParserCopySelfTest extends SqlParserAbstractSelfTest {
         assertParseError(null,
             "copy from \"any.file\" into Person format csv",
             "Unexpected token: \"FORMAT\" (expected: \"(\")");
+
+        // FORMAT
 
         assertParseError(null,
             "copy from \"any.file\" into Person (_key, age, firstName, lastName)",
