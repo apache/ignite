@@ -114,10 +114,15 @@ namespace Apache.Ignite.Core.Client
         /// or separately. <see cref="Host"/> and <see cref="Port"/> just define one of the endpoints.
         /// <para />
         /// When multiple endpoints are specified, failover and load-balancing mechanism is enabled:
-        /// * Ignite picks random endpoint and connects to it
-        /// * On disconnect, next endpoint is picked from the list
+        /// * Ignite picks random endpoint and connects to it.
+        /// * On disconnect, next endpoint is picked from the list.
         /// </summary>
         public ICollection<EndPoint> EndPoints { get; private set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether automatic reconnect is disabled.
+        /// </summary>
+        public bool ReconnectDisabled { get; set; }
 
         /// <summary>
         /// Gets or sets the size of the socket send buffer. When set to 0, operating system default is used.
