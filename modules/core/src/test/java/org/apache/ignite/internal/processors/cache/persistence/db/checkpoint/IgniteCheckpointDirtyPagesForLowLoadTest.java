@@ -134,13 +134,17 @@ public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstract
                 if (log.isInfoEnabled())
                     log.info("Put to cache [" + fullname + "] value " + d);
 
+                long start = System.nanoTime();
                 try {
-                    final int cpTimeout = 5000;
+                    final int cpTimeout = 25000;
 
                     db.wakeupForCheckpoint("").get(cpTimeout, TimeUnit.MILLISECONDS);
                 }
                 catch (IgniteFutureTimeoutCheckedException ignored) {
-                    log.error("Timeout during waiting for checkpoint to start");
+                    long msPassed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+
+                    log.error("Timeout during waiting for checkpoint to start:" +
+                        " [" + msPassed + "] but checkpoint is not running");
 
                     continue;
                 }
