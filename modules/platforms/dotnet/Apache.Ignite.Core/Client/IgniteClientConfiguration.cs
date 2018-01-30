@@ -18,7 +18,10 @@
 namespace Apache.Ignite.Core.Client
 {
     using System;
+    using System.Collections.Generic;
     using System.ComponentModel;
+    using System.Linq;
+    using System.Net;
     using System.Xml;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
@@ -63,6 +66,7 @@ namespace Apache.Ignite.Core.Client
             SocketReceiveBufferSize = DefaultSocketBufferSize;
             TcpNoDelay = DefaultTcpNoDelay;
             SocketTimeout = DefaultSocketTimeout;
+            EndPoints = new List<EndPoint>();
         }
 
         /// <summary>
@@ -90,6 +94,7 @@ namespace Apache.Ignite.Core.Client
 
             BinaryProcessor = cfg.BinaryProcessor;
             SslStreamFactory = cfg.SslStreamFactory;
+            EndPoints = cfg.EndPoints.ToList();
         }
 
         /// <summary>
@@ -102,6 +107,17 @@ namespace Apache.Ignite.Core.Client
         /// </summary>
         [DefaultValue(DefaultPort)]
         public int Port { get; set; }
+
+        /// <summary>
+        /// Gets or sets endpoints to connect to.
+        /// This property can be set in combination with <see cref="Host"/> and <see cref="Port"/> properties,
+        /// or separately. <see cref="Host"/> and <see cref="Port"/> just define one of the endpoints.
+        /// <para />
+        /// When multiple endpoints are specified, failover and load-balancing mechanism is enabled:
+        /// * Ignite picks random endpoint and connects to it
+        /// * On disconnect, next endpoint is picked from the list
+        /// </summary>
+        public ICollection<EndPoint> EndPoints { get; private set; }
 
         /// <summary>
         /// Gets or sets the size of the socket send buffer. When set to 0, operating system default is used.
