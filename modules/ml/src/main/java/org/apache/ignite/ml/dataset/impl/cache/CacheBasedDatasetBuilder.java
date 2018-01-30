@@ -41,10 +41,10 @@ import org.apache.ignite.ml.dataset.impl.cache.util.DatasetAffinityFunctionWrapp
 public class CacheBasedDatasetBuilder<K, V, C extends Serializable, D extends AutoCloseable>
     implements DatasetBuilder<C, D> {
     /** Number of retries for the case when one of partitions not found on the node where loading is performed. */
-    private static final int RETRIES = 100;
+    private static final int RETRIES = 15 * 60;
 
     /** Retry interval (ms) for the case when one of partitions not found on the node where loading is performed. */
-    private static final int RETRY_INTERVAL = 500;
+    private static final int RETRY_INTERVAL = 1000;
 
     /** Template of the name of Ignite Cache containing partition {@code context}. */
     private static final String DATASET_CACHE_TEMPLATE = "%s_DATASET_%s";

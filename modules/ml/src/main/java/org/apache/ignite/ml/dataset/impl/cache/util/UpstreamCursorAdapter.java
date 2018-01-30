@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.dataset.impl.cache.util;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import javax.cache.Cache;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 
@@ -32,22 +33,31 @@ public class UpstreamCursorAdapter<K, V> implements Iterator<UpstreamEntry<K, V>
     /** Cache entry iterator. */
     private final Iterator<Cache.Entry<K, V>> delegate;
 
+    /** Size. */
+    private long cnt;
+
     /**
      * Constructs a new instance of iterator.
      *
      * @param delegate cache entry iterator
      */
-    UpstreamCursorAdapter(Iterator<Cache.Entry<K, V>> delegate) {
+    UpstreamCursorAdapter(Iterator<Cache.Entry<K, V>> delegate, long cnt) {
         this.delegate = delegate;
+        this.cnt = cnt;
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasNext() {
-        return delegate.hasNext();
+        return delegate.hasNext() && cnt > 0;
     }
 
     /** {@inheritDoc} */
     @Override public UpstreamEntry<K, V> next() {
+        if (cnt == 0)
+            throw new NoSuchElementException();
+
+        cnt--;
+
         Cache.Entry<K, V> next = delegate.next();
 
         if (next == null)

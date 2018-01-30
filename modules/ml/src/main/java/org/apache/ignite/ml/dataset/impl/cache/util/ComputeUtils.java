@@ -29,12 +29,12 @@ import java.util.concurrent.locks.LockSupport;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterGroup;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
@@ -74,7 +74,7 @@ public class ComputeUtils {
         BitSet completionFlags = new BitSet(partitions);
         Collection<R> results = new ArrayList<>();
 
-        for (int t = 0; t < retries; t++) {
+        for (int t = 0; t <= retries; t++) {
             ClusterGroup clusterGrp = ignite.cluster().forDataNodes(primaryCache);
 
             // Sends jobs.
@@ -83,11 +83,10 @@ public class ComputeUtils {
                 if (!completionFlags.get(part)) {
                     final int currPart = part;
 
-                    futures.put(currPart, ignite.compute(clusterGrp).affinityCallAsync(cacheNames, currPart, () -> {
-                        checkAllPartitionsAvailable(Ignition.localIgnite(), cacheNames, currPart);
-
-                        return fun.apply(currPart);
-                    }));
+                    futures.put(
+                        currPart,
+                        ignite.compute(clusterGrp).affinityCallAsync(cacheNames, currPart, () -> fun.apply(currPart))
+                    );
                 }
 
             // Collects results.
@@ -97,7 +96,7 @@ public class ComputeUtils {
                     results.add(res);
                     completionFlags.set(part);
                 }
-                catch (PartitionNotFoundException ignore) {
+                catch (IgniteException ignore) {
                 }
 
             if (completionFlags.cardinality() == partitions)
@@ -129,7 +128,8 @@ public class ComputeUtils {
 
     /**
      * Extracts partition {@code data} from the local storage, if it's not found in local storage recovers this {@code
-     * data} from a partition {@code upstream} and {@code context}.
+     * data} from a partition {@code upstream} and {@code context}. Be aware that this method should be called from
+     * the node where partition is placed.
      *
      * @param ignite Ignite instance
      * @param upstreamCacheName name of an {@code upstream} cache
@@ -163,10 +163,9 @@ public class ComputeUtils {
             qry.setLocal(true);
             qry.setPartition(part);
 
-            // TODO: how to guarantee that cache size will not be changed between these calls?
             long cnt = upstreamCache.localSizeLong(part);
             try (QueryCursor<Cache.Entry<K, V>> cursor = upstreamCache.query(qry)) {
-                return partDataBuilder.build(new UpstreamCursorAdapter<>(cursor.iterator()), cnt, ctx);
+                return partDataBuilder.build(new UpstreamCursorAdapter<>(cursor.iterator(), cnt), cnt, ctx);
             }
         });
 
@@ -198,7 +197,7 @@ public class ComputeUtils {
             long cnt = locUpstreamCache.localSizeLong(part);
             C ctx;
             try (QueryCursor<Cache.Entry<K, V>> cursor = locUpstreamCache.query(qry)) {
-                ctx = ctxBuilder.build(new UpstreamCursorAdapter<>(cursor.iterator()), cnt);
+                ctx = ctxBuilder.build(new UpstreamCursorAdapter<>(cursor.iterator(), cnt), cnt);
             }
 
             IgniteCache<Integer, C> datasetCache = locIgnite.cache(datasetCacheName);
@@ -251,27 +250,5 @@ public class ComputeUtils {
     public static <C extends Serializable> void saveContext(Ignite ignite, String datasetCacheName, int part, C ctx) {
         IgniteCache<Integer, C> datasetCache = ignite.cache(datasetCacheName);
         datasetCache.put(part, ctx);
-    }
-
-    /**
-     * Checks that partitions with the specified partition index of all caches are placed on the same node. In case of
-     * rebalancing it's not guaranteed that partitions of caches even with the same affinity function will be moved
-     * synchronously. A workaround used here is based on optimistic locking with checking that partitions available on
-     * the node.
-     *
-     * @param ignite Ignite instance
-     * @param cacheNames collection of cache names
-     * @param part partition index
-     */
-    private static void checkAllPartitionsAvailable(Ignite ignite, Collection<String> cacheNames, int part) {
-        for (String cacheName : cacheNames) {
-            Affinity<?> affinity = ignite.affinity(cacheName);
-
-            ClusterNode partNode = affinity.mapPartitionToNode(part);
-            ClusterNode locNode = ignite.cluster().localNode();
-
-            if (!partNode.equals(locNode))
-                throw new PartitionNotFoundException(cacheName, locNode.id(), part);
-        }
     }
 }

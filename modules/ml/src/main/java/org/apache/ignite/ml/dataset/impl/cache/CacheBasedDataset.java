@@ -44,10 +44,10 @@ import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoCloseable>
     implements Dataset<C, D> {
     /** Number of retries for the case when one of partitions not found on the node where computation is performed. */
-    private static final int RETRIES = 100;
+    private static final int RETRIES = 15 * 60;
 
     /** Retry interval (ms) for the case when one of partitions not found on the node where computation is performed. */
-    private static final int RETRY_INTERVAL = 500;
+    private static final int RETRY_INTERVAL = 1000;
 
     /** Ignite instance. */
     private final Ignite ignite;

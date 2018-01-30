@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.ml.dataset.impl.cache;
 
 import java.util.ArrayList;
@@ -23,11 +40,14 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+/**
+ * Tests for {@link CacheBasedDataset}.
+ */
 public class CacheBasedDatasetTest extends GridCommonAbstractTest {
-    /** Number of nodes in grid */
+    /** Number of nodes in grid. */
     private static final int NODE_COUNT = 4;
 
-    /** */
+    /** Ignite instance. */
     private Ignite ignite;
 
     /** {@inheritDoc} */
@@ -41,9 +61,7 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         /* Grid instance. */
         ignite = grid(NODE_COUNT);
@@ -52,10 +70,11 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests that partitions of upstream cache and context cache are reserved during computations on base learning
-     * context. Reservation means that partitions won't be unloaded from the node before computation will be completed.
+     * Tests that partitions of the upstream cache and the partition {@code context} cache are reserved during
+     * computations on dataset. Reservation means that partitions won't be unloaded from the node before computation is
+     * completed.
      */
-    public void testPartitionExchangeDuringComputeWithReturnCallOnBaseContext() {
+    public void testPartitionExchangeDuringComputeCall() {
         int partitions = 4;
 
         IgniteCache<Integer, String> upstreamCache = generateTestData(4, 0);
@@ -83,13 +102,12 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
         computationsLock.lock();
 
         try {
-            new Thread(() -> dataset.compute((part, partIndex) -> {
+            new Thread(() -> dataset.compute((data, partIndex) -> {
                 // track number of started computations
                 ignite.atomicLong(numOfStartedComputationsId.toString(), 0, false).incrementAndGet();
                 ignite.reentrantLock(computationsLockId.toString(), false, true, false).lock();
                 ignite.reentrantLock(computationsLockId.toString(), false, true, false).unlock();
-                return 42;
-            }, (a, b) -> 42)).start();
+            })).start();
             // wait all computations to start
 
             while (numOfStartedComputations.get() < partitions) {
@@ -107,10 +125,11 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests that partitions of upstream cache and context cache are reserved during computations on base learning
-     * context. Reservation means that partitions won't be unloaded from the node before computation will be completed.
+     * Tests that partitions of the upstream cache and the partition {@code context} cache are reserved during
+     * computations on dataset. Reservation means that partitions won't be unloaded from the node before computation is
+     * completed.
      */
-    public void testPartitionExchangeDuringComputeCallOnBaseContext() {
+    public void testPartitionExchangeDuringComputeWithCtxCall() {
         int partitions = 4;
 
         IgniteCache<Integer, String> upstreamCache = generateTestData(4, 0);
@@ -125,7 +144,6 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
 
         CacheBasedDataset<Integer, String, Long, AutoCloseable> dataset = builder.build();
 
-
         assertTrue("Before computation all partitions should not be reserved",
             areAllPartitionsNotReserved(upstreamCache.getName(), dataset.getDatasetCache().getName()));
 
@@ -139,7 +157,7 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
         computationsLock.lock();
 
         try {
-            new Thread(() -> dataset.compute((part, partIndex) -> {
+            new Thread(() -> dataset.computeWithCtx((ctx, data, partIndex) -> {
                 // track number of started computations
                 ignite.atomicLong(numOfStartedComputationsId.toString(), 0, false).incrementAndGet();
                 ignite.reentrantLock(computationsLockId.toString(), false, true, false).lock();
