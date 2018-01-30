@@ -17,15 +17,14 @@
 
 package org.apache.ignite.examples.ml.knn.classification;
 
+import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.knn.models.KNNModel;
 import org.apache.ignite.ml.knn.models.KNNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
@@ -53,7 +52,7 @@ public class KNNClassificationExample {
     private static final String SEPARATOR = "\t";
 
     /** Path to the Iris dataset. */
-    private static final String KNN_IRIS_TXT = "../datasets/iris.txt";
+    private static final String KNN_IRIS_TXT = "examples/src/main/resources/datasets/iris.txt";
 
     /**
      * Executes example.
@@ -71,11 +70,11 @@ public class KNNClassificationExample {
 
                 try {
                     // Prepare path to read
-                    URL url = KNNClassificationExample.class.getResource(KNN_IRIS_TXT);
-                    if (url == null)
-                        throw new RuntimeException("Can't get URL for: " + KNN_IRIS_TXT);
+                    File file = IgniteUtils.resolveIgnitePath(KNN_IRIS_TXT);
+                    if (file == null)
+                        throw new RuntimeException("Can't find file: " + KNN_IRIS_TXT);
 
-                    Path path = Paths.get(url.toURI());
+                    Path path = file.toPath();
 
                     // Read dataset from file
                     LabeledDataset dataset = LabeledDatasetLoader.loadFromTxtFile(path, SEPARATOR, true, false);
@@ -138,7 +137,7 @@ public class KNNClassificationExample {
                     }
 
                 }
-                catch (URISyntaxException | IOException e) {
+                catch (IOException e) {
                     e.printStackTrace();
                     System.out.println("\n>>> Unexpected exception, check resources: " + e);
                 }
