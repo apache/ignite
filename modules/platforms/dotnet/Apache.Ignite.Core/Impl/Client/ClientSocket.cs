@@ -246,7 +246,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             Debug.Assert(messageLen == 12);
 
-            _stream.Write(buf, 0, messageLen);
+            SocketWrite(buf, messageLen);
 
             // Decode response.
             var res = ReceiveMessage();
@@ -291,11 +291,11 @@ namespace Apache.Ignite.Core.Impl.Client
             // Socket.Receive can return any number of bytes, even 1.
             // We should repeat Receive calls until required amount of data has been received.
             var buf = new byte[size];
-            var received = _stream.Read(buf,0, size);
+            var received = SocketRead(buf, 0, size);
 
             while (received < size)
             {
-                var res = _stream.Read(buf, received, size - received);
+                var res = SocketRead(buf, received, size - received);
 
                 if (res == 0)
                 {
@@ -331,7 +331,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
                     if (_requests.IsEmpty)
                     {
-                        _stream.Write(reqMsg.Buffer, 0, reqMsg.Length);
+                        SocketWrite(reqMsg.Buffer, reqMsg.Length);
 
                         var respMsg = ReceiveMessage();
                         var response = new BinaryHeapStream(respMsg);
@@ -372,7 +372,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 Debug.Assert(added);
 
                 // Send.
-                _stream.Write(reqMsg.Buffer, 0, reqMsg.Length);
+                SocketWrite(reqMsg.Buffer, reqMsg.Length);
                 _listenerEvent.Set();
                 return req.CompletionSource.Task;
             }
@@ -408,6 +408,23 @@ namespace Apache.Ignite.Core.Impl.Client
             stream.WriteInt(0, stream.Position - 4); // Write message size.
 
             return new RequestMessage(requestId, stream.GetArray(), stream.Position);
+        }
+
+        /// <summary>
+        /// Writes to the socket.
+        /// </summary>
+        private void SocketWrite(byte[] buf, int len)
+        {
+            // TODO: Retry same host a couple of times, then fail over to the next one?
+            _stream.Write(buf, 0, len);
+        }
+
+        /// <summary>
+        /// Reads from the socket.
+        /// </summary>
+        private int SocketRead(byte[] buf, int pos, int len)
+        {
+            return _stream.Read(buf, pos, len);
         }
 
         /// <summary>
