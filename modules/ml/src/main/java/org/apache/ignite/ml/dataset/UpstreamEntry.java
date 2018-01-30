@@ -20,8 +20,8 @@ package org.apache.ignite.ml.dataset;
 /**
  * Entry of the {@code upstream}.
  *
- * @param <K> type of a key in {@code upstream} data
- * @param <V> type of a value in {@code upstream} data
+ * @param <K> Type of a key in {@code upstream} data.
+ * @param <V> Type of a value in {@code upstream} data.
  */
 public class UpstreamEntry<K, V> {
     /** Key. */
@@ -33,8 +33,8 @@ public class UpstreamEntry<K, V> {
     /**
      * Constructs a new instance of upstream entry.
      *
-     * @param key key
-     * @param val value
+     * @param key Key.
+     * @param val Value.
      */
     public UpstreamEntry(K key, V val) {
         this.key = key;

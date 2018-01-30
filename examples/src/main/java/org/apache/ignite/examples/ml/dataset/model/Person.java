@@ -31,9 +31,9 @@ public class Person {
     /**
      * Constructs a new instance of person.
      *
-     * @param name name
-     * @param age age
-     * @param salary salary
+     * @param name Name.
+     * @param age Age.
+     * @param salary Salary.
      */
     public Person(String name, double age, double salary) {
         this.name = name;

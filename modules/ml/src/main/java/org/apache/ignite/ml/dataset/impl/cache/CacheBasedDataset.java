@@ -36,10 +36,10 @@ import org.apache.ignite.ml.math.functions.IgniteTriFunction;
  * An implementation of dataset based on Ignite Cache, which is used as {@code upstream} and as reliable storage for
  * partition {@code context} as well.
  *
- * @param <K> type of a key in {@code upstream} data
- * @param <V> type of a value in {@code upstream} data
- * @param <C> type of a partition {@code context}
- * @param <D> type of a partition {@code data}
+ * @param <K> Type of a key in {@code upstream} data.
+ * @param <V> Type of a value in {@code upstream} data.
+ * @param <C> Type of a partition {@code context}.
+ * @param <D> Type of a partition {@code data}.
  */
 public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoCloseable>
     implements Dataset<C, D> {
@@ -68,11 +68,11 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
      * Constructs a new instance of dataset based on Ignite Cache, which is used as {@code upstream} and as reliable storage for
      * partition {@code context} as well.
      *
-     * @param ignite Ignite instance
-     * @param upstreamCache Ignite Cache with {@code upstream} data
-     * @param datasetCache Ignite Cache with partition {@code context}
-     * @param partDataBuilder partition {@code data} builder
-     * @param datasetId dataset ID
+     * @param ignite Ignite instance.
+     * @param upstreamCache Ignite Cache with {@code upstream} data.
+     * @param datasetCache Ignite Cache with partition {@code context}.
+     * @param partDataBuilder Partition {@code data} builder.
+     * @param datasetId Dataset ID.
      */
     public CacheBasedDataset(Ignite ignite, IgniteCache<K, V> upstreamCache,
         IgniteCache<Integer, C> datasetCache, PartitionDataBuilder<K, V, C, D> partDataBuilder,
@@ -139,11 +139,11 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
      * partitions with guarantee that partitions with the same index of upstream and partition {@code context} caches
      * will be on the same node during the computation and will not be moved before computation is finished.
      *
-     * @param fun function that applies to all partitions
-     * @param reduce function that reduces results of {@code fun}
-     * @param identity identity
-     * @param <R> type of a result
-     * @return final result
+     * @param fun Function that applies to all partitions.
+     * @param reduce Function that reduces results of {@code fun}.
+     * @param identity Identity.
+     * @param <R> Type of a result.
+     * @return Final result.
      */
     private <R> R computeForAllPartitions(IgniteFunction<Integer, R> fun, IgniteBinaryOperator<R> reduce, R identity) {
         Collection<String> cacheNames = Arrays.asList(datasetCache.getName(), upstreamCache.getName());

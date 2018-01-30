@@ -26,8 +26,8 @@ import org.apache.ignite.ml.dataset.UpstreamEntry;
  * Cursor adapter used to transform {@link Cache.Entry} received from Ignite Cache query cursor into DLC-specific
  * {@link UpstreamEntry}.
  *
- * @param <K> type of an upstream value key
- * @param <V> type of an upstream value
+ * @param <K> Type of an upstream value key.
+ * @param <V> Type of an upstream value.
  */
 public class UpstreamCursorAdapter<K, V> implements Iterator<UpstreamEntry<K, V>> {
     /** Cache entry iterator. */
@@ -39,7 +39,7 @@ public class UpstreamCursorAdapter<K, V> implements Iterator<UpstreamEntry<K, V>
     /**
      * Constructs a new instance of iterator.
      *
-     * @param delegate cache entry iterator
+     * @param delegate Cache entry iterator.
      */
     UpstreamCursorAdapter(Iterator<Cache.Entry<K, V>> delegate, long cnt) {
         this.delegate = delegate;

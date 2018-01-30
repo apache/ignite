@@ -37,9 +37,9 @@ public class SimpleDatasetData implements AutoCloseable {
      * Constructs a new instance of partition {@code data} of the {@link SimpleDataset} containing matrix of features in
      * flat column-major format stored in heap.
      *
-     * @param features matrix of features in a dense flat column-major format
-     * @param rows number of rows
-     * @param cols number of columns
+     * @param features Matrix of features in a dense flat column-major format.
+     * @param rows Number of rows.
+     * @param cols Number of columns.
      */
     public SimpleDatasetData(double[] features, int rows, int cols) {
         this.features = features;

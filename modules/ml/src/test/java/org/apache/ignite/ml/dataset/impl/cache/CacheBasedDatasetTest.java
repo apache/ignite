@@ -182,8 +182,8 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
     /**
      * Checks that all partitions of all specified caches are not reserved.
      *
-     * @param cacheNames cache names to be checked
-     * @return {@code true} if all partitions are not reserved, otherwise {@code false}
+     * @param cacheNames Cache names to be checked.
+     * @return {@code true} if all partitions are not reserved, otherwise {@code false}.
      */
     private boolean areAllPartitionsNotReserved(String... cacheNames) {
         return checkAllPartitions(partition -> partition.reservations() == 0, cacheNames);
@@ -192,8 +192,8 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
     /**
      * Checks that all partitions of all specified caches not reserved.
      *
-     * @param cacheNames cache names to be checked
-     * @return {@code true} if all partitions are reserved, otherwise {@code false}
+     * @param cacheNames Cache names to be checked.
+     * @return {@code true} if all partitions are reserved, otherwise {@code false}.
      */
     private boolean areAllPartitionsReserved(String... cacheNames) {
         return checkAllPartitions(partition -> partition.reservations() != 0, cacheNames);
@@ -202,9 +202,9 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
     /**
      * Checks that all partitions of all specified caches satisfies the given predicate.
      *
-     * @param pred predicate
-     * @param cacheNames cache names
-     * @return {@code true} if all partitions satisfies the given predicate
+     * @param pred Predicate.
+     * @param cacheNames Cache names.
+     * @return {@code true} if all partitions satisfies the given predicate.
      */
     private boolean checkAllPartitions(IgnitePredicate<GridDhtLocalPartition> pred, String... cacheNames) {
         boolean flag = false;
@@ -340,7 +340,7 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
     /**
      * Generates Ignite Cache with data for tests.
      *
-     * @return Ignite Cache with data for tests
+     * @return Ignite Cache with data for tests.
      */
     private IgniteCache<Integer, String> generateTestData(int partitions, int backups) {
         CacheConfiguration<Integer, String> cacheConfiguration = new CacheConfiguration<>();

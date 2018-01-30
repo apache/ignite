@@ -91,9 +91,9 @@ public class CacheBasedDatasetBuilderTest extends GridCommonAbstractTest {
     /**
      * Generate an Ignite Cache with the specified size and number of partitions for testing purposes.
      *
-     * @param size size of an Ignite Cache
-     * @param parts number of partitions
-     * @return Ignite Cache instance
+     * @param size Size of an Ignite Cache.
+     * @param parts Number of partitions.
+     * @return Ignite Cache instance.
      */
     private IgniteCache<Integer, String> createTestCache(int size, int parts) {
         CacheConfiguration<Integer, String> cacheConfiguration = new CacheConfiguration<>();

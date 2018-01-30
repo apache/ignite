@@ -26,8 +26,8 @@ import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 /**
  * A dataset wrapper that allows to introduce new functionality based on common {@code compute} methods.
  *
- * @param <C> type of a partition {@code context}
- * @param <D> type of a partition {@code data}
+ * @param <C> Type of a partition {@code context}.
+ * @param <D> Type of a partition {@code data}.
  *
  * @see SimpleDataset
  * @see SimpleLabeledDataset
@@ -39,7 +39,7 @@ public class DatasetWrapper<C extends Serializable, D extends AutoCloseable> imp
     /**
      * Constructs a new instance of dataset wrapper that delegates {@code compute} actions to the actual delegate.
      *
-     * @param delegate delegate that performs {@code compute} actions
+     * @param delegate Delegate that performs {@code compute} actions.
      */
     public DatasetWrapper(Dataset<C, D> delegate) {
         this.delegate = delegate;

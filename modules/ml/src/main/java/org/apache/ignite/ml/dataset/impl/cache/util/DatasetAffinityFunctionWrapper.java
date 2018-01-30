@@ -37,7 +37,7 @@ public class DatasetAffinityFunctionWrapper implements AffinityFunction {
     /**
      * Constructs a new instance of affinity function wrapper.
      *
-     * @param delegate affinity function which actually performs all methods except {@code partition()}
+     * @param delegate Affinity function which actually performs all methods except {@code partition()}.
      */
     public DatasetAffinityFunctionWrapper(AffinityFunction delegate) {
         this.delegate = delegate;
@@ -56,8 +56,8 @@ public class DatasetAffinityFunctionWrapper implements AffinityFunction {
     /**
      * Returns key as a partition index.
      *
-     * @param key partition index
-     * @return partition index
+     * @param key Partition index.
+     * @return Partition index.
      */
     @Override public int partition(Object key) {
         return (Integer) key;

@@ -79,7 +79,7 @@ public class LocalDatasetBuilderTest {
         /**
          * Constructs a new test partition data instance.
          *
-         * @param data data
+         * @param data Data.
          */
         TestPartitionData(int[] data) {
             this.data = data;

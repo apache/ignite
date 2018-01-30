@@ -28,8 +28,8 @@ import org.apache.ignite.ml.math.functions.IgniteTriFunction;
  * An implementation of dataset based on local data structures such as {@code Map} and {@code List} and doesn't requires
  * Ignite environment. Introduces for testing purposes mostly, but can be used for simple local computations as well.
  *
- * @param <C> type of a partition {@code context}
- * @param <D> type of a partition {@code data}
+ * @param <C> Type of a partition {@code context}.
+ * @param <D> Type of a partition {@code data}.
  */
 public class LocalDataset<C extends Serializable, D extends AutoCloseable> implements Dataset<C, D> {
     /** Partition {@code context} storage. */
@@ -42,8 +42,8 @@ public class LocalDataset<C extends Serializable, D extends AutoCloseable> imple
      * Constructs a new instance of dataset based on local data structures such as {@code Map} and {@code List} and
      * doesn't requires Ignite environment.
      *
-     * @param ctx partition {@code context} storage
-     * @param data partition {@code data} storage
+     * @param ctx Partition {@code context} storage.
+     * @param data Partition {@code data} storage.
      */
     LocalDataset(List<C> ctx, List<D> data) {
         this.ctx = ctx;
@@ -51,7 +51,8 @@ public class LocalDataset<C extends Serializable, D extends AutoCloseable> imple
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R computeWithCtx(IgniteTriFunction<C, D, Integer, R> map, IgniteBinaryOperator<R> reduce, R identity) {
+    @Override public <R> R computeWithCtx(IgniteTriFunction<C, D, Integer, R> map, IgniteBinaryOperator<R> reduce,
+        R identity) {
         R res = identity;
 
         for (int part = 0; part < ctx.size(); part++)

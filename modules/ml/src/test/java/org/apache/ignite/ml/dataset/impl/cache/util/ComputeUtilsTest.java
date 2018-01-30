@@ -250,7 +250,7 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
         /**
          * Constructs a new instance of test partition data.
          *
-         * @param val values
+         * @param val Value.
          */
         TestPartitionData(Integer val) {
             this.val = val;
@@ -275,7 +275,7 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
         /**
          * Constructs a new instance of test affinity function.
          *
-         * @param node cluster node partition will be assigned on
+         * @param node Cluster node partition will be assigned on.
          */
         TestAffinityFunction(ClusterNode node) {
             this.node = node;

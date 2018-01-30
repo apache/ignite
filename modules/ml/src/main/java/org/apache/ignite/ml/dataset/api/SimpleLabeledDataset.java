@@ -24,14 +24,14 @@ import org.apache.ignite.ml.dataset.api.data.SimpleLabeledDatasetData;
 /**
  * A simple labeled dataset introduces additional methods based on a matrix of features and labels vector.
  *
- * @param <C> type of a partition {@code context}
+ * @param <C> Type of a partition {@code context}.
  */
 public class SimpleLabeledDataset<C extends Serializable> extends DatasetWrapper<C, SimpleLabeledDatasetData> {
     /**
      * Creates a new instance of simple labeled dataset that introduces additional methods based on a matrix of features
      * and labels vector.
      *
-     * @param delegate delegate that performs {@code compute} actions
+     * @param delegate Delegate that performs {@code compute} actions.
      */
     public SimpleLabeledDataset(Dataset<C, SimpleLabeledDatasetData> delegate) {
         super(delegate);

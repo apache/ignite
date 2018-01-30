@@ -29,11 +29,10 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
  * partition {@code data} not found on the node that performs computation (it might be the result of a previous node
  * failure or rebalancing).
  *
- * @param <K> type of a key in <tt>upstream</tt> data
- * @param <V> type of a value in <tt>upstream</tt> data
- * @param <C> type of a partition <tt>context</tt>
- * @param <D> type of a partition <tt>data</tt>
- *
+ * @param <K> Type of a key in <tt>upstream</tt> data.
+ * @param <V> Type of a value in <tt>upstream</tt> data.
+ * @param <C> Type of a partition <tt>context</tt>.
+ * @param <D> Type of a partition <tt>data</tt>.
  * @see SimpleDatasetDataBuilder
  * @see SimpleLabeledDatasetDataBuilder
  */
@@ -42,10 +41,10 @@ public interface PartitionDataBuilder<K, V, C extends Serializable, D extends Au
     /**
      * Builds a new partition {@code data} from a partition {@code upstream} data and partition {@code context}
      *
-     * @param upstreamData partition {@code upstream} data
-     * @param upstreamDataSize partition {@code upstream} data size
-     * @param ctx partition {@code context}
-     * @return partition {@code data}
+     * @param upstreamData Partition {@code upstream} data.
+     * @param upstreamDataSize Partition {@code upstream} data size.
+     * @param ctx Partition {@code context}.
+     * @return Partition {@code data}.
      */
     public D build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize, C ctx);
 
@@ -53,11 +52,12 @@ public interface PartitionDataBuilder<K, V, C extends Serializable, D extends Au
      * Makes a composed partition {@code data} builder that first builds a {@code data} and then applies the specified
      * function on the result.
      *
-     * @param fun function that applied after first partition {@code data} is built
-     * @param <D2> new type of a partition {@code data}
-     * @return composed partition {@code data} builder
+     * @param fun Function that applied after first partition {@code data} is built.
+     * @param <D2> New type of a partition {@code data}.
+     * @return Composed partition {@code data} builder.
      */
-    default public <D2 extends AutoCloseable> PartitionDataBuilder<K, V, C, D2> andThen(IgniteBiFunction<D, C, D2> fun) {
-       return (upstreamData, upstreamDataSize, ctx) -> fun.apply(build(upstreamData, upstreamDataSize, ctx), ctx);
+    default public <D2 extends AutoCloseable> PartitionDataBuilder<K, V, C, D2> andThen(
+        IgniteBiFunction<D, C, D2> fun) {
+        return (upstreamData, upstreamDataSize, ctx) -> fun.apply(build(upstreamData, upstreamDataSize, ctx), ctx);
     }
 }

@@ -94,7 +94,7 @@ public class AlgorithmSpecificDatasetExample {
         /**
          * Constructs a new instance of dataset wrapper that delegates {@code compute} actions to the actual delegate.
          *
-         * @param delegate delegate that performs {@code compute} actions
+         * @param delegate Delegate that performs {@code compute} actions.
          */
         AlgorithmSpecificDataset(
             Dataset<AlgorithmSpecificPartitionContext, SimpleLabeledDatasetData> delegate) {

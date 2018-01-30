@@ -27,9 +27,9 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 /**
  * A partition {@code data} builder that makes {@link SimpleLabeledDatasetData}.
  *
- * @param <K> type of a key in <tt>upstream</tt> data
- * @param <V> type of a value in <tt>upstream</tt> data
- * @param <C> type of a partition <tt>context</tt>
+ * @param <K> Type of a key in <tt>upstream</tt> data.
+ * @param <V> Type of a value in <tt>upstream</tt> data.
+ * @param <C> type of a partition <tt>context</tt>.
  */
 public class SimpleLabeledDatasetDataBuilder<K, V, C extends Serializable>
     implements PartitionDataBuilder<K, V, C, SimpleLabeledDatasetData> {
@@ -48,9 +48,9 @@ public class SimpleLabeledDatasetDataBuilder<K, V, C extends Serializable>
     /**
      * Constructs a new instance of partition {@code data} builder that makes {@link SimpleLabeledDatasetData}.
      *
-     * @param featureExtractor function that extracts features from an {@code upstream} data
-     * @param lbExtractor function that extracts labels from an {@code upstream} data
-     * @param cols number of columns (features)
+     * @param featureExtractor Function that extracts features from an {@code upstream} data.
+     * @param lbExtractor Function that extracts labels from an {@code upstream} data.
+     * @param cols Number of columns (features).
      */
     public SimpleLabeledDatasetDataBuilder(IgniteBiFunction<K, V, double[]> featureExtractor,
         IgniteBiFunction<K, V, Double> lbExtractor, int cols) {

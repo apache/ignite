@@ -25,7 +25,7 @@ import org.apache.ignite.ml.dataset.api.data.SimpleDatasetData;
 /**
  * A simple dataset introduces additional methods based on a matrix of features.
  *
- * @param <C> type of a partition {@code context}
+ * @param <C> Type of a partition {@code context}.
  */
 public class SimpleDataset<C extends Serializable> extends DatasetWrapper<C, SimpleDatasetData> {
     /** BLAS (Basic Linear Algebra Subprograms) instance. */
@@ -34,7 +34,7 @@ public class SimpleDataset<C extends Serializable> extends DatasetWrapper<C, Sim
     /**
      * Creates a new instance of simple dataset that introduces additional methods based on a matrix of features.
      *
-     * @param delegate delegate that performs {@code compute} actions
+     * @param delegate Delegate that performs {@code compute} actions.
      */
     public SimpleDataset(Dataset<C, SimpleDatasetData> delegate) {
         super(delegate);
@@ -43,7 +43,7 @@ public class SimpleDataset<C extends Serializable> extends DatasetWrapper<C, Sim
     /**
      * Calculates mean value by all columns.
      *
-     * @return mean values
+     * @return Mean values.
      */
     public double[] mean() {
         ValueWithCount<double[]> res = delegate.compute((data, partIdx) -> {
@@ -71,7 +71,7 @@ public class SimpleDataset<C extends Serializable> extends DatasetWrapper<C, Sim
     /**
      * Calculates standard deviation by all columns.
      *
-     * @return standard deviations
+     * @return Standard deviations.
      */
     public double[] std() {
         double[] mean = mean();
@@ -102,7 +102,7 @@ public class SimpleDataset<C extends Serializable> extends DatasetWrapper<C, Sim
     /**
      * Calculates covariance matrix by all columns.
      *
-     * @return covariance matrix
+     * @return Covariance matrix.
      */
     public double[][] cov() {
         double[] mean = mean();
@@ -132,7 +132,7 @@ public class SimpleDataset<C extends Serializable> extends DatasetWrapper<C, Sim
     /**
      * Calculates correlation matrix by all columns.
      *
-     * @return correlation matrix
+     * @return Correlation matrix.
      */
     public double[][] corr() {
         double[][] cov = cov();
@@ -148,9 +148,9 @@ public class SimpleDataset<C extends Serializable> extends DatasetWrapper<C, Sim
     /**
      * Returns the sum of the two specified vectors.  Be aware that it is in-place operation.
      *
-     * @param a first vector
-     * @param b second vector
-     * @return sum of the two specified vectors
+     * @param a First vector.
+     * @param b Second vector.
+     * @return Sum of the two specified vectors.
      */
     private static double[] sum(double[] a, double[] b) {
         for (int i = 0; i < a.length; i++)
@@ -162,9 +162,9 @@ public class SimpleDataset<C extends Serializable> extends DatasetWrapper<C, Sim
     /**
      * Returns the sum of the two specified matrices. Be aware that it is in-place operation.
      *
-     * @param a first matrix
-     * @param b second matrix
-     * @return sum of the two specified matrices
+     * @param a First matrix.
+     * @param b Second matrix.
+     * @return Sum of the two specified matrices.
      */
     private static double[][] sum(double[][] a, double[][] b) {
         for (int i = 0; i < a.length; i++)
@@ -178,9 +178,9 @@ public class SimpleDataset<C extends Serializable> extends DatasetWrapper<C, Sim
      * Multiplies all elements of the specified matrix on specified multiplier {@code alpha}. Be aware that it is
      * in-place operation.
      *
-     * @param a matrix to be scaled
-     * @param alpha multiplier
-     * @return scaled matrix
+     * @param a Matrix to be scaled.
+     * @param alpha Multiplier.
+     * @return Scaled matrix.
      */
     private static double[][] scale(double[][] a, double alpha) {
         for (int i = 0; i < a.length; i++)
@@ -193,7 +193,7 @@ public class SimpleDataset<C extends Serializable> extends DatasetWrapper<C, Sim
     /**
      * Util class that keeps values and count of rows this value has been calculated on.
      *
-     * @param <V> type of a value
+     * @param <V> Type of a value.
      */
     private static class ValueWithCount<V> {
         /** Value. */
@@ -205,8 +205,8 @@ public class SimpleDataset<C extends Serializable> extends DatasetWrapper<C, Sim
         /**
          * Constructs a new instance of value with count.
          *
-         * @param val value
-         * @param cnt count of rows the value has been calculated on
+         * @param val Value.
+         * @param cnt Count of rows the value has been calculated on.
          */
         ValueWithCount(V val, int cnt) {
             this.val = val;

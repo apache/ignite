@@ -25,8 +25,8 @@ import org.apache.ignite.ml.dataset.api.context.EmptyContext;
 /**
  * A partition {@code context} builder that makes {@link EmptyContext}.
  *
- * @param <K> type of a key in {@code upstream} data
- * @param <V> type of a value in {@code upstream} data
+ * @param <K> Type of a key in {@code upstream} data.
+ * @param <V> Type of a value in {@code upstream} data.
  */
 public class EmptyContextBuilder<K, V> implements PartitionContextBuilder<K, V, EmptyContext> {
     /** */
