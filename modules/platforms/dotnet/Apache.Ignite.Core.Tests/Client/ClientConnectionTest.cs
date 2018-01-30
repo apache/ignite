@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
     using NUnit.Framework;
 
@@ -111,7 +112,7 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestDefaultConfigThrows()
         {
-            Assert.Throws<ArgumentNullException>(() => Ignition.StartClient(new IgniteClientConfiguration()));
+            Assert.Throws<IgniteException>(() => Ignition.StartClient(new IgniteClientConfiguration()));
         }
 
         /// <summary>

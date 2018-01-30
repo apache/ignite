@@ -773,7 +773,6 @@ namespace Apache.Ignite.Core
         public static IIgniteClient StartClient(IgniteClientConfiguration clientConfiguration)
         {
             IgniteArgumentCheck.NotNull(clientConfiguration, "clientConfiguration");
-            IgniteArgumentCheck.NotNull(clientConfiguration.Host, "clientConfiguration.Host");
 
             return new IgniteClient(clientConfiguration);
         }
