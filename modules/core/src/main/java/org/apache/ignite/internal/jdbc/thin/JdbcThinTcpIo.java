@@ -25,7 +25,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.sql.SQLException;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.ignite.IgniteCheckedException;
@@ -133,7 +133,7 @@ public class JdbcThinTcpIo {
                     ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, exception);
         }
 
-        List<String> inaccessibleAddrs = new LinkedList<>();
+        List<String> inaccessibleAddrs = new ArrayList<>();
         for (InetAddress addr : addrs) {
             try {
                 connect(addr, timeout);
