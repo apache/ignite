@@ -30,9 +30,9 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.T3;
@@ -303,11 +303,8 @@ class GridDhtPartitionSupplier {
                             iter = grp.offheap().rebalanceIterator(part, d.topologyVersion(),
                                 d.isHistorical(part) ? d.partitionCounter(part) : null);
 
-                            if (!iter.historical()) {
+                            if (!iter.historical())
                                 assert !grp.persistenceEnabled() || !d.isHistorical(part);
-
-                                s.clean(part);
-                            }
                             else
                                 assert grp.persistenceEnabled() && d.isHistorical(part);
                         }
@@ -415,6 +412,9 @@ class GridDhtPartitionSupplier {
 
                     // Mark as last supply message.
                     s.last(part, loc.updateCounter());
+
+                    if (!d.isHistorical(part))
+                        s.clean(part);
 
                     phase = SupplyContextPhase.NEW;
 

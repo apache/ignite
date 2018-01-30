@@ -135,7 +135,7 @@ public class MavenUtils {
 
         assert endTagPos >= 0 : "Couldn't define path to Maven local repository";
 
-        return output.substring(output.lastIndexOf(">", endTagPos) + 1, endTagPos);
+        return output.substring(output.lastIndexOf('>', endTagPos) + 1, endTagPos);
     }
 
     /**
@@ -147,7 +147,7 @@ public class MavenUtils {
     private static void downloadArtifact(String artifact) throws Exception {
         X.println("Downloading artifact... Identifier: " + artifact);
 
-        exec(buildMvnCommand() + " dependency:get -Dartifact=" + artifact +
+        exec(buildMvnCommand() + " org.apache.maven.plugins:maven-dependency-plugin:3.0.2:get -Dartifact=" + artifact +
             (useGgRepo ? " -DremoteRepositories=" + GG_MVN_REPO : ""));
 
         X.println("Download is finished");
