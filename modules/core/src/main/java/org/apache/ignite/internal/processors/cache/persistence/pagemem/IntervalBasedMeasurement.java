@@ -271,7 +271,7 @@ class IntervalBasedMeasurement {
      *
      * @param val value measured now, to be used for average calculation.
      */
-    public void addMeasurementForAverageCalculation(long val) {
+    void addMeasurementForAverageCalculation(long val) {
         MeasurementInterval interval = interval(System.nanoTime());
 
         interval.cntr.incrementAndGet();
