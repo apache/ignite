@@ -365,6 +365,31 @@ public abstract class DataStructure implements PageLockListener {
     }
 
     /**
+     * @param pageId Page id.
+     * @param page Page.
+     * @param pageAddr Page address.
+     * @param walPlc Wal policy.
+     * @return Recycled data page ID.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final long recycleDataPage(
+        long pageId,
+        long page,
+        long pageAddr,
+        Boolean walPlc) throws IgniteCheckedException {
+        long recycled = PageIdUtils.link(
+            PageIdUtils.pageId(INDEX_PARTITION, FLAG_IDX, PageIdUtils.pageIndex(pageId)),
+            PageIO.getRotatedIdPart(pageAddr));
+
+        PageIO.setPageId(pageAddr, recycled);
+
+        if (needWalDeltaRecord(pageId, page, walPlc))
+            wal.log(new RecycleRecord(grpId, pageId, recycled));
+
+        return recycled;
+    }
+
+    /**
      * @return Page size.
      */
     protected final int pageSize() {
