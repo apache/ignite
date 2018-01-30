@@ -32,6 +32,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -65,6 +66,9 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectByteArrayImpl;
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectImpl;
 import org.apache.ignite.internal.processors.cacheobject.UserKeyCacheObjectImpl;
+import org.apache.ignite.internal.util.MutableSingletonList;
+import org.apache.ignite.internal.util.MutableSingletonMap;
+import org.apache.ignite.internal.util.MutableSingletonSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -97,6 +101,15 @@ public class BinaryUtils {
 
     /** Binary classes. */
     private static final Collection<Class<?>> BINARY_CLS = new HashSet<>();
+
+    /** Class for SingletonList obtained at runtime. */
+    public static final Class<? extends Collection> SINGLETON_LIST_CLS = Collections.singletonList(null).getClass();
+
+    /** Class for SingletonMap obtained at runtime. */
+    public static final Class<? extends Map> SINGLETON_MAP_CLS = Collections.singletonMap(null, null).getClass();
+
+    /** Class for SingletonSet obtained at runtime. */
+    public static final Class<? extends Collection> SINGLETON_SET_CLS = Collections.singleton(null).getClass();
 
     /** Flag: user type. */
     public static final short FLAG_USR_TYP = 0x0001;
@@ -644,7 +657,8 @@ public class BinaryUtils {
             cls == LinkedHashMap.class ||
             (!wrapTrees() && cls == TreeMap.class) ||
             cls == ConcurrentHashMap8.class ||
-            cls == ConcurrentHashMap.class;
+            cls == ConcurrentHashMap.class ||
+            (isSingletonCollectionSerializationEnabled() && cls == SINGLETON_MAP_CLS);
     }
 
     /**
@@ -667,6 +681,12 @@ public class BinaryUtils {
             return new ConcurrentHashMap8<>(U.capacity(((Map)map).size()));
         else if (cls == ConcurrentHashMap.class)
             return new ConcurrentHashMap<>(U.capacity(((Map)map).size()));
+
+        if (isSingletonCollectionSerializationEnabled()) {
+            if(cls == SINGLETON_MAP_CLS){
+                return new MutableSingletonMap<>();
+            }
+        }
 
         return null;
     }
@@ -703,7 +723,8 @@ public class BinaryUtils {
             (!wrapTrees() && cls == TreeSet.class) ||
             cls == ConcurrentSkipListSet.class ||
             cls == ArrayList.class ||
-            cls == LinkedList.class;
+            cls == LinkedList.class ||
+            BinaryUtils.isSingletonCollection(cls);
     }
 
     /**
@@ -764,6 +785,15 @@ public class BinaryUtils {
             return new ArrayList<>(((Collection)col).size());
         else if (cls == LinkedList.class)
             return new LinkedList<>();
+
+        if (BinaryUtils.isSingletonCollectionSerializationEnabled()) {
+            if (cls == SINGLETON_LIST_CLS) {
+                return new MutableSingletonList<>();
+            }
+            else if (cls == SINGLETON_SET_CLS) {
+                return new MutableSingletonSet<>();
+            }
+        }
 
         return null;
     }
@@ -1158,7 +1188,7 @@ public class BinaryUtils {
      * @return {@code True} if this is a special collection class.
      */
     public static boolean isSpecialCollection(Class cls) {
-        return ArrayList.class.equals(cls) || LinkedList.class.equals(cls) ||
+        return ArrayList.class.equals(cls) || LinkedList.class.equals(cls) || BinaryUtils.isSingletonCollection(cls) ||
             HashSet.class.equals(cls) || LinkedHashSet.class.equals(cls);
     }
 
@@ -1169,7 +1199,7 @@ public class BinaryUtils {
      * @return {@code True} if this is a special map class.
      */
     public static boolean isSpecialMap(Class cls) {
-        return HashMap.class.equals(cls) || LinkedHashMap.class.equals(cls);
+        return HashMap.class.equals(cls) || LinkedHashMap.class.equals(cls) || BinaryUtils.isSingletonMap(cls);
     }
 
     /**
@@ -2049,6 +2079,16 @@ public class BinaryUtils {
 
                     break;
 
+                case GridBinaryMarshaller.SINGLETON_LIST:
+                    col = new MutableSingletonList<>();
+
+                    break;
+
+                case GridBinaryMarshaller.SINGLETON_SET:
+                    col = new MutableSingletonSet<>();
+
+                    break;
+
                 case GridBinaryMarshaller.HASH_SET:
                     col = U.newHashSet(size);
 
@@ -2079,7 +2119,7 @@ public class BinaryUtils {
         for (int i = 0; i < size; i++)
             col.add(deserializeOrUnmarshal(in, ctx, ldr, handles, deserialize));
 
-        return col;
+        return U.unwrapSingletonCollection(col);
     }
 
     /**
@@ -2121,6 +2161,11 @@ public class BinaryUtils {
 
                     break;
 
+                case GridBinaryMarshaller.SINGLETON_MAP:
+                    map = new MutableSingletonMap<>();
+
+                    break;
+
                 default:
                     throw new BinaryObjectException("Invalid map type: " + mapType);
             }
@@ -2135,7 +2180,7 @@ public class BinaryUtils {
             map.put(key, val);
         }
 
-        return map;
+        return U.unwrapSingletonMap(map);
     }
 
     /**
@@ -2244,6 +2289,38 @@ public class BinaryUtils {
         }
         else
             return null;
+    }
+
+    /**
+     * Determines whether singleton collection serialization enabled.
+     *
+     * @return {@code true} if custom Java serialization logic exists, {@code false} otherwise.
+     * @see IgniteSystemProperties#IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION
+     */
+    public static boolean isSingletonCollectionSerializationEnabled() {
+        return Boolean.getBoolean(IgniteSystemProperties.IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION);
+    }
+
+    /**
+     * Determines whether target class could be serialized as singleton collection.
+     *
+     * @param cls target class.
+     * @return {@code True} if target class could be serialized as singleton collection.
+     */
+    public static boolean isSingletonCollection(Class cls) {
+        return cls != null && isSingletonCollectionSerializationEnabled() &&
+            (SINGLETON_LIST_CLS.equals(cls) || SINGLETON_SET_CLS.equals(cls));
+    }
+
+
+    /**
+     * Determines whether target map could be serialized as singleton map.
+     *
+     * @param cls target class.
+     * @return {@code True} if target class could be serialized as singleton map.
+     */
+    public static boolean isSingletonMap(Class cls) {
+        return cls != null && isSingletonCollectionSerializationEnabled() && SINGLETON_MAP_CLS.equals(cls);
     }
 
     /**
