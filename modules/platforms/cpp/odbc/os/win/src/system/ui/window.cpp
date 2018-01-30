@@ -130,6 +130,13 @@ namespace ignite
 
                 void Window::GetText(std::string& text) const
                 {
+                    if (!IsEnabled())
+                    {
+                        text.clear();
+
+                        return;
+                    }
+
                     int len = GetWindowTextLength(handle);
 
                     if (len <= 0)
@@ -154,7 +161,7 @@ namespace ignite
 
                 bool Window::IsChecked() const
                 {
-                    return Button_GetCheck(handle) == BST_CHECKED;
+                    return IsEnabled() && Button_GetCheck(handle) == BST_CHECKED;
                 }
 
                 void Window::SetChecked(bool state)

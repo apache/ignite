@@ -278,7 +278,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Safely gets all assembly types.
         /// </summary>
-        private static IEnumerable<Type> GetAssemblyTypesSafe(Assembly asm)
+        public static IEnumerable<Type> GetAssemblyTypesSafe(Assembly asm)
         {
             try
             {

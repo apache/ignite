@@ -26,6 +26,7 @@ import java.io.ObjectStreamException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -34,6 +35,8 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -49,7 +52,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Cache sequence implementation.
  */
-public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenceEx, IgniteChangeGlobalStateSupport, Externalizable {
+public final class GridCacheAtomicSequenceImpl extends AtomicDataStructureProxy<GridCacheAtomicSequenceValue>
+    implements GridCacheAtomicSequenceEx, IgniteChangeGlobalStateSupport, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -60,27 +64,6 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
                 return new IgniteBiTuple<>();
             }
         };
-
-    /** Logger. */
-    private IgniteLogger log;
-
-    /** Sequence name. */
-    private String name;
-
-    /** Removed flag. */
-    private volatile boolean rmvd;
-
-    /** Check removed flag. */
-    private boolean rmvCheck;
-
-    /** Sequence key. */
-    private GridCacheInternalKey key;
-
-    /** Sequence projection. */
-    private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView;
-
-    /** Cache context. */
-    private volatile GridCacheContext<GridCacheInternalKey, GridCacheAtomicSequenceValue> ctx;
 
     /** Local value of sequence. */
     @GridToStringInclude(sensitive = true)
@@ -131,24 +114,13 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
         long locVal,
         long upBound)
     {
-        assert key != null;
-        assert seqView != null;
+        super(name, key, seqView);
+
         assert locVal <= upBound;
 
         this.batchSize = batchSize;
-        this.ctx = seqView.context();
-        this.key = key;
-        this.seqView = seqView;
         this.upBound = upBound;
         this.locVal = locVal;
-        this.name = name;
-
-        log = ctx.logger(getClass());
-    }
-
-    /** {@inheritDoc} */
-    @Override public String name() {
-        return name;
     }
 
     /** {@inheritDoc} */
@@ -291,58 +263,10 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
         }
     }
 
-    /**
-     * Check removed status.
-     *
-     * @throws IllegalStateException If removed.
-     */
-    private void checkRemoved() throws IllegalStateException {
-        if (rmvd)
-            throw removedError();
-
-        if (rmvCheck) {
-            try {
-                rmvd = seqView.get(key) == null;
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-
-            rmvCheck = false;
-
-            if (rmvd) {
-                ctx.kernalContext().dataStructures().onRemoved(key, this);
-
-                throw removedError();
-            }
-        }
-    }
-
-    /**
-     * @return Error.
-     */
-    private IllegalStateException removedError() {
-        return new IllegalStateException("Sequence was removed from cache: " + name);
-    }
-
     /** {@inheritDoc} */
-    @Override public boolean onRemoved() {
-        return rmvd = true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void needCheckNotRemoved() {
-        rmvCheck = true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheInternalKey key() {
-        return key;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean removed() {
-        return rmvd;
+    @Override protected void invalidateLocalState() {
+        locVal = 0;
+        upBound = -1;
     }
 
     /** {@inheritDoc} */
@@ -371,8 +295,8 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
             @Override public Long call() throws Exception {
                 assert distUpdateFreeTop.isHeldByCurrentThread() || distUpdateLockedTop.isHeldByCurrentThread();
 
-                try (GridNearTxLocal tx = CU.txStartInternal(ctx, seqView, PESSIMISTIC, REPEATABLE_READ)) {
-                    GridCacheAtomicSequenceValue seq = seqView.get(key);
+                try (GridNearTxLocal tx = CU.txStartInternal(ctx, cacheView, PESSIMISTIC, REPEATABLE_READ)) {
+                    GridCacheAtomicSequenceValue seq = cacheView.get(key);
 
                     checkRemoved();
 
@@ -428,7 +352,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
                     // Global counter must be more than reserved upper bound.
                     seq.set(newUpBound + 1);
 
-                    seqView.put(key, seq);
+                    cacheView.put(key, seq);
 
                     tx.commit();
 
@@ -441,17 +365,6 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
                 }
             }
         };
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onActivate(GridKernalContext kctx) {
-        ctx = kctx.cache().<GridCacheInternalKey, GridCacheAtomicSequenceValue>context().cacheContext(ctx.cacheId());
-        seqView = ctx.cache();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onDeActivate(GridKernalContext kctx) {
-        // No-op.
     }
 
     /** {@inheritDoc} */

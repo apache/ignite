@@ -17,11 +17,15 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Statement;
 import org.apache.ignite.jdbc.JdbcErrorsAbstractSelfTest;
 import org.apache.ignite.lang.IgniteCallable;
+
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Test SQLSTATE codes propagation with thin client driver.
@@ -44,7 +48,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
 
                 return null;
             }
-        }, "08001");
+        }, "08001", "Failed to connect to Ignite cluster [host=unknown.host");
     }
 
     /**
@@ -59,7 +63,7 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
 
                 return null;
             }
-        }, "08001");
+        }, "08001", "Property cannot be upper than 65535");
     }
 
     /**
@@ -72,6 +76,37 @@ public class JdbcThinErrorsSelfTest extends JdbcErrorsAbstractSelfTest {
             @Override public void run(Connection conn) throws Exception {
                 conn.setTransactionIsolation(1000);
             }
-        }, "0700E");
+        }, "0700E", "Invalid transaction isolation level.");
+    }
+
+    /**
+     * Test error code for the case when error is caused on batch execution.
+     * @throws SQLException if failed.
+     */
+    @SuppressWarnings("MagicConstant")
+    public void testBatchUpdateException() throws SQLException {
+        try (final Connection conn = getConnection()) {
+            try (Statement stmt = conn.createStatement()) {
+                stmt.executeUpdate("CREATE TABLE test (id int primary key, val varchar)");
+
+                stmt.addBatch("insert into test (id, val) values (1, 'val1')");
+                stmt.addBatch("insert into test (id, val) values (2, 'val2')");
+                stmt.addBatch("insert into test (id1, val1) values (3, 'val3')");
+
+                stmt.executeBatch();
+
+                fail("BatchUpdateException is expected");
+            }
+            catch (BatchUpdateException e) {
+                assertEquals(3, e.getUpdateCounts().length);
+
+                assertArrayEquals("", new int[] {1, 1, Statement.EXECUTE_FAILED}, e.getUpdateCounts());
+
+                assertEquals("42000", e.getSQLState());
+
+                assertTrue("Unexpected error message: " + e.getMessage(), e.getMessage() != null &&
+                    e.getMessage().contains("Failed to parse query. Column \"ID1\" not found"));
+            }
+        }
     }
 }

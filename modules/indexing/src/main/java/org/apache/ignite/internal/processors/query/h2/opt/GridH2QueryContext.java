@@ -380,6 +380,7 @@ public class GridH2QueryContext {
     /**
      * @param nodeStop Node is stopping.
      */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void clearContext(boolean nodeStop) {
         cleared = true;
 
@@ -583,6 +584,9 @@ public class GridH2QueryContext {
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
+            if (o == null || !(o instanceof SourceKey))
+                return false;
+
             SourceKey srcKey = (SourceKey)o;
 
             return batchLookupId == srcKey.batchLookupId && segmentId == srcKey.segmentId &&

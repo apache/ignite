@@ -19,14 +19,14 @@ package org.apache.ignite.internal.visor.node;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
- * DTO object for {@link PersistentStoreConfiguration}.
+ * DTO object for {@link DataStorageConfiguration}.
  */
 public class VisorPersistentStoreConfiguration extends VisorDataTransferObject {
     /** */
@@ -99,26 +99,25 @@ public class VisorPersistentStoreConfiguration extends VisorDataTransferObject {
     /**
      * @param cfg Persistent store configuration.
      */
-    public VisorPersistentStoreConfiguration(PersistentStoreConfiguration cfg) {
-        persistenceStorePath = cfg.getPersistentStorePath();
-        checkpointingFreq = cfg.getCheckpointingFrequency();
+    public VisorPersistentStoreConfiguration(DataStorageConfiguration cfg) {
+        persistenceStorePath = cfg.getStoragePath();
+        checkpointingFreq = cfg.getCheckpointFrequency();
         lockWaitTime = cfg.getLockWaitTime();
-        checkpointingPageBufSize = cfg.getCheckpointingPageBufferSize();
-        checkpointingThreads = cfg.getCheckpointingThreads();
+        checkpointingThreads = cfg.getCheckpointThreads();
         walHistSize = cfg.getWalHistorySize();
         walSegments = cfg.getWalSegments();
         walSegmentSize = cfg.getWalSegmentSize();
-        walStorePath = cfg.getWalStorePath();
+        walStorePath = cfg.getWalPath();
         walArchivePath = cfg.getWalArchivePath();
         metricsEnabled = cfg.isMetricsEnabled();
         walMode = cfg.getWalMode();
-        tlbSize = cfg.getTlbSize();
+        tlbSize = cfg.getWalBufferSize();
         walFlushFreq = cfg.getWalFlushFrequency();
         walFsyncDelay = cfg.getWalFsyncDelayNanos();
         walRecordIterBuffSize = cfg.getWalRecordIteratorBufferSize();
         alwaysWriteFullPages = cfg.isAlwaysWriteFullPages();
-        subIntervals = cfg.getSubIntervals();
-        rateTimeInterval = cfg.getRateTimeInterval();
+        subIntervals = cfg.getMetricsSubIntervalCount();
+        rateTimeInterval = cfg.getMetricsRateTimeInterval();
     }
 
     /**

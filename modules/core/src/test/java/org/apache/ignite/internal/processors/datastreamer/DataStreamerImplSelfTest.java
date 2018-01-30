@@ -27,6 +27,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
@@ -38,6 +39,7 @@ import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -428,6 +430,64 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         }
 
         assertFalse(logWriter.toString().contains("DataStreamer will retry data transfer at stable topology"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientEventsNotCausingRemaps() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        IgniteDataStreamer<Object, Object> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME);
+
+        ((DataStreamerImpl)streamer).maxRemapCount(3);
+
+        streamer.addData(1, 1);
+
+        for (int topChanges = 0; topChanges < 30; topChanges++) {
+            IgniteEx node = startGrid(getConfiguration("flapping-client").setClientMode(true));
+
+            streamer.addData(1, 1);
+
+            node.close();
+
+            streamer.addData(1, 1);
+        }
+
+        streamer.flush();
+        streamer.close();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testServerEventsCauseRemaps() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        IgniteDataStreamer<Object, Object> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME);
+
+        ((DataStreamerImpl)streamer).maxRemapCount(0);
+
+        streamer.addData(1, 1);
+
+        startGrid(2);
+
+        try {
+            streamer.addData(1, 1);
+
+            streamer.flush();
+        }
+        catch (IllegalStateException ex) {
+            assert ex.getMessage().contains("Data streamer has been closed");
+
+            return;
+        }
+
+        fail("Expected exception wasn't thrown");
     }
 
     /**

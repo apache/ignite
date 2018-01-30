@@ -28,7 +28,10 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Data transfer object for SQL connector configuration.
+ *
+ * Deprecated as of Apache Ignite 2.3
  */
+@Deprecated
 public class VisorSqlConnectorConfiguration extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;

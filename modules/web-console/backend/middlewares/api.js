@@ -25,6 +25,11 @@ module.exports = {
 
 module.exports.factory = () => {
     return (req, res, next) => {
+        // Set headers to avoid API caching in browser (esp. IE)
+        res.header('Cache-Control', 'must-revalidate');
+        res.header('Expires', '-1');
+        res.header('Last-Modified', new Date().toUTCString());
+
         res.api = {
             error(err) {
                 if (err.name === 'MongoError')

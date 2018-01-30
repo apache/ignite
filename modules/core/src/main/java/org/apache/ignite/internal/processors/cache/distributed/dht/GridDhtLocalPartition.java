@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -49,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -127,10 +126,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     @GridToStringExclude
     private final long createTime = U.currentTimeMillis();
 
-    /** Eviction history. */
-    @GridToStringExclude
-    private final Map<KeyCacheObject, GridCacheVersion> evictHist = new HashMap<>();
-
     /** Lock. */
     @GridToStringExclude
     private final ReentrantLock lock = new ReentrantLock();
@@ -203,11 +198,24 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         try {
             store = grp.offheap().createCacheDataStore(id);
+
+            // Inject row cache cleaner on store creation
+            // Used in case the cache with enabled SqlOnheapCache is single cache at the cache group
+            if (ctx.kernalContext().query().moduleEnabled()) {
+                GridQueryRowCacheCleaner cleaner = ctx.kernalContext().query().getIndexing()
+                    .rowCacheCleaner(grp.groupId());
+
+                if (store != null && cleaner != null)
+                    store.setRowCacheCleaner(cleaner);
+            }
         }
         catch (IgniteCheckedException e) {
             // TODO ignite-db
             throw new IgniteException(e);
         }
+
+        // Todo log moving state
+        casState(state.get(), MOVING);
     }
 
     /**
@@ -429,53 +437,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * @param key Key.
-     * @param ver Version.
-     */
-    public void onEntryEvicted(KeyCacheObject key, GridCacheVersion ver) {
-        assert key != null;
-        assert ver != null;
-        assert lock.isHeldByCurrentThread(); // Only one thread can enter this method at a time.
-
-        if (state() != MOVING)
-            return;
-
-        Map<KeyCacheObject, GridCacheVersion> evictHist0 = evictHist;
-
-        if (evictHist0 != null) {
-            GridCacheVersion ver0 = evictHist0.get(key);
-
-            if (ver0 == null || ver0.isLess(ver)) {
-                GridCacheVersion ver1 = evictHist0.put(key, ver);
-
-                assert ver1 == ver0;
-            }
-        }
-    }
-
-    /**
-     * Cache preloader should call this method within partition lock.
-     *
-     * @param key Key.
-     * @param ver Version.
-     * @return {@code True} if preloading is permitted.
-     */
-    public boolean preloadingPermitted(KeyCacheObject key, GridCacheVersion ver) {
-        assert key != null;
-        assert ver != null;
-        assert lock.isHeldByCurrentThread(); // Only one thread can enter this method at a time.
-
-        if (state() != MOVING)
-            return false;
-
-        GridCacheVersion ver0 = evictHist.get(key);
-
-        // Permit preloading if version in history
-        // is missing or less than passed in.
-        return ver0 == null || ver0.isLess(ver);
-    }
-
-    /**
      * Reserves a partition so it won't be cleared.
      *
      * @return {@code True} if reserved.
@@ -553,7 +514,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return {@code true} if cas succeeds.
      */
     private boolean casState(long state, GridDhtPartitionState toState) {
-        if (ctx.database().persistenceEnabled()) {
+        if (grp.persistenceEnabled() && grp.walEnabled()) {
             synchronized (this) {
                 boolean update = this.state.compareAndSet(state, setPartState(state, toState));
 
@@ -592,9 +553,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             if (casState(state, OWNING)) {
                 if (log.isDebugEnabled())
                     log.debug("Owned partition: " + this);
-
-                // No need to keep history any more.
-                evictHist.clear();
 
                 return true;
             }
@@ -636,9 +594,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             if (casState(state, LOST)) {
                 if (log.isDebugEnabled())
                     log.debug("Marked partition as LOST: " + this);
-
-                // No need to keep history any more.
-                evictHist.clear();
 
                 return true;
             }

@@ -31,7 +31,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Cache;
-    using Apache.Ignite.Core.Impl.Cache.Expiry;
     using Apache.Ignite.Core.Tests.Query;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
@@ -48,8 +47,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         [TestFixtureSetUp]
         public void StartGrids()
         {
-            TestUtils.KillProcesses();
-
             IgniteConfiguration cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 BinaryConfiguration = new BinaryConfiguration(
@@ -58,7 +55,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                     typeof(TestReferenceObject),
                     typeof(BinarizableAddArgCacheEntryProcessor),
                     typeof(BinarizableTestException)),
-                SpringConfigUrl = "config\\native-client-test-cache.xml"
+                SpringConfigUrl = "Config\\native-client-test-cache.xml"
             };
 
             for (int i = 0; i < GridCount(); i++)
@@ -513,6 +510,32 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsTrue(cache.Replace(1, 2, 3));
 
             Assert.AreEqual(3, cache.Get(1));
+        }
+
+        [Test]
+        [Ignore("IGNITE-7072")]
+        public void TestReplaceBinary()
+        {
+            var cache = Cache<object, object>();
+            var key = new {Foo = "bar"};
+            var val = new {Bar = "baz", Id = 1};
+            var val2 = new {Bar = "baz2", Id = 2};
+            var val3 = new {Bar = "baz3", Id = 3};
+
+            Assert.IsFalse(cache.ContainsKey(key));
+            Assert.AreEqual(false, cache.Replace(key, val));
+            Assert.IsFalse(cache.ContainsKey(key));
+
+            cache.Put(key, val);
+            Assert.AreEqual(val, cache.Get(key));
+            Assert.IsTrue(cache.Replace(key, val2));
+            Assert.AreEqual(val2, cache.Get(key));
+
+            Assert.IsFalse(cache.Replace(key, -1, 3));
+            Assert.AreEqual(val2, cache.Get(key));
+
+            Assert.IsTrue(cache.Replace(key, val2, val3));
+            Assert.AreEqual(val3, cache.Get(key));
         }
 
         [Test]
@@ -1303,6 +1326,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             while (e.MoveNext())
             {
                 ICacheEntry<int, int> entry = e.Current;
+
+                Assert.IsNotNull(entry);
 
                 Assert.IsTrue(keys.Contains(entry.Key), "Unexpected entry: " + entry);
 
@@ -2236,78 +2261,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        public void TestCreate()
-        {
-            // Create a cache with random name
-            var randomName = "template" + Guid.NewGuid();
-
-            // Can't get non-existent cache with Cache method
-            Assert.Throws<ArgumentException>(() => GetIgnite(0).GetCache<int, int>(randomName));
-            Assert.IsFalse(GetIgnite(0).GetCacheNames().Contains(randomName));
-
-            var cache = GetIgnite(0).CreateCache<int, int>(randomName);
-            Assert.IsTrue(GetIgnite(0).GetCacheNames().Contains(randomName));
-
-            cache.Put(1, 10);
-
-            Assert.AreEqual(10, cache.Get(1));
-
-            // Can't create again
-            Assert.Throws<IgniteException>(() => GetIgnite(0).CreateCache<int, int>(randomName));
-
-            var cache0 = GetIgnite(0).GetCache<int, int>(randomName);
-
-            Assert.AreEqual(10, cache0.Get(1));
-        }
-
-        [Test]
-        public void TestGetOrCreate()
-        {
-            // Create a cache with random name
-            var randomName = "template" + Guid.NewGuid();
-
-            // Can't get non-existent cache with Cache method
-            Assert.Throws<ArgumentException>(() => GetIgnite(0).GetCache<int, int>(randomName));
-
-            var cache = GetIgnite(0).GetOrCreateCache<int, int>(randomName);
-
-            cache.Put(1, 10);
-
-            Assert.AreEqual(10, cache.Get(1));
-
-            var cache0 = GetIgnite(0).GetOrCreateCache<int, int>(randomName);
-
-            Assert.AreEqual(10, cache0.Get(1));
-
-            var cache1 = GetIgnite(0).GetCache<int, int>(randomName);
-
-            Assert.AreEqual(10, cache1.Get(1));
-        }
-
-        [Test]
-        public void TestDestroy()
-        {
-            var cacheName = "template" + Guid.NewGuid();
-
-            var ignite = GetIgnite(0);
-
-            var cache = ignite.CreateCache<int, int>(cacheName);
-
-            Assert.IsNotNull(ignite.GetCache<int, int>(cacheName));
-            Assert.IsTrue(GetIgnite(0).GetCacheNames().Contains(cacheName));
-
-            ignite.DestroyCache(cache.Name);
-
-            Assert.IsFalse(GetIgnite(0).GetCacheNames().Contains(cacheName));
-
-            var ex = Assert.Throws<ArgumentException>(() => ignite.GetCache<int, int>(cacheName));
-
-            Assert.IsTrue(ex.Message.StartsWith("Cache doesn't exist"));
-
-            Assert.Throws<InvalidOperationException>(() => cache.Get(1));
-        }
-
-        [Test]
         public void TestCacheNames()
         {
             var cacheNames = GetIgnite(0).GetCacheNames();
@@ -2549,6 +2502,27 @@ namespace Apache.Ignite.Core.Tests.Cache
             public int Id;
 
             public Container Inner;
+        }
+
+        private class ExpiryPolicyFactory : IFactory<IExpiryPolicy>
+        {
+            /** */
+            private readonly IExpiryPolicy _expiryPolicy;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="ExpiryPolicyFactory"/> class.
+            /// </summary>
+            /// <param name="expiryPolicy">The expiry policy.</param>
+            public ExpiryPolicyFactory(IExpiryPolicy expiryPolicy)
+            {
+                _expiryPolicy = expiryPolicy;
+            }
+
+            /** <inheritdoc /> */
+            public IExpiryPolicy CreateInstance()
+            {
+                return _expiryPolicy;
+            }
         }
     }
 }

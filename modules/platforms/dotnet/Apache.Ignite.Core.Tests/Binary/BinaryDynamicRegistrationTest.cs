@@ -113,7 +113,8 @@ namespace Apache.Ignite.Core.Tests.Binary
                     {
                         CacheStoreFactory = new StoreFactory(),
                         ReadThrough = true,
-                        WriteThrough = true
+                        WriteThrough = true,
+                        KeepBinaryInStore = true
                     }
                 }
             };
@@ -125,7 +126,8 @@ namespace Apache.Ignite.Core.Tests.Binary
                 {
                     CacheStoreFactory = new StoreFactory(),
                     ReadThrough = true,
-                    WriteThrough = true
+                    WriteThrough = true,
+                    KeepBinaryInStore = true
                 });
                 dynCache[2] = new Foo { Str = "test2", Int = 3 };
 
@@ -203,7 +205,8 @@ namespace Apache.Ignite.Core.Tests.Binary
                     {
                         CacheStoreFactory = new StoreFactory {StringProp = "test", IntProp = 9},
                         ReadThrough = true,
-                        WriteThrough = true
+                        WriteThrough = true,
+                        KeepBinaryInStore = true
                     }
                 }
             };
@@ -410,7 +413,11 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// </summary>
         private static void Test(IIgnite ignite1, IIgnite ignite2)
         {
-            var cfg = new CacheConfiguration("cache") {CacheMode = CacheMode.Partitioned};
+            var cfg = new CacheConfiguration("cache")
+            {
+                CacheMode = CacheMode.Partitioned,
+                WriteSynchronizationMode = CacheWriteSynchronizationMode.FullSync
+            };
 
             // Put on one grid.
             var cache1 = ignite1.GetOrCreateCache<int, object>(cfg);

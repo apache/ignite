@@ -26,6 +26,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.cache.CacheException;
+import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.DataRegionMetricsAdapter;
+import org.apache.ignite.DataStorageMetricsAdapter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
@@ -40,15 +43,16 @@ import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.IgniteQueue;
-import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -137,27 +141,11 @@ public class IgniteProcessProxy implements IgniteEx {
         throws Exception {
         this.cfg = cfg;
         this.locJvmGrid = locJvmGrid;
-        this.log = log.getLogger("jvm-" + id.toString().substring(0, id.toString().indexOf('-')));
+        this.log = logger(log, "jvm-" + id.toString().substring(0, id.toString().indexOf('-')));
 
-        String cfgFileName = IgniteNodeRunner.storeToFile(cfg.setNodeId(id), resetDiscovery);
+        String params = params(cfg, resetDiscovery);
 
-        Collection<String> filteredJvmArgs = new ArrayList<>();
-
-        filteredJvmArgs.add("-ea");
-
-        Marshaller marsh = cfg.getMarshaller();
-
-        if (marsh != null)
-            filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + marsh.getClass().getName());
-        else
-            filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + BinaryMarshaller.class.getName());
-
-        for (String arg : U.jvmArgs()) {
-            if (arg.startsWith("-Xmx") || arg.startsWith("-Xms") ||
-                arg.startsWith("-cp") || arg.startsWith("-classpath") ||
-                (marsh != null && arg.startsWith("-D" + IgniteTestResources.MARSH_CLASS_NAME)))
-                filteredJvmArgs.add(arg);
-        }
+        Collection<String> filteredJvmArgs = filteredJvmArgs();
 
         final CountDownLatch rmtNodeStartedLatch = new CountDownLatch(1);
 
@@ -165,8 +153,8 @@ public class IgniteProcessProxy implements IgniteEx {
             locJvmGrid.events().localListen(new NodeStartedListener(id, rmtNodeStartedLatch), EventType.EVT_NODE_JOINED);
 
         proc = GridJavaProcess.exec(
-            IgniteNodeRunner.class.getCanonicalName(),
-            cfgFileName, // Params.
+            igniteNodeRunnerClassName(),
+            params,
             this.log,
             // Optional closure to be called each time wrapped process prints line to system.out or system.err.
             new IgniteInClosure<String>() {
@@ -191,6 +179,68 @@ public class IgniteProcessProxy implements IgniteEx {
             throw new IllegalStateException("There was found instance assotiated with " + cfg.getIgniteInstanceName() +
                 ", instance= " + prevVal + ". New started node was stopped.");
         }
+    }
+
+    /**
+     * Creates new logger instance based on given logger and given category.
+     *
+     * @param log Base logger.
+     * @param ctgr Category.
+     * @return Initiated logger.
+     * @throws Exception In case of an error.
+     */
+    protected IgniteLogger logger(IgniteLogger log, Object ctgr) throws Exception {
+        return log.getLogger(ctgr);
+    }
+
+    /**
+     * Gets Ignite node runner class name.
+     *
+     * @return Node runner class name.
+     * @throws Exception In case of an error.
+     */
+    protected String igniteNodeRunnerClassName() throws Exception {
+        return IgniteNodeRunner.class.getCanonicalName();
+    }
+
+    /**
+     * Creates parameters which will be passed to new Ignite Process as command line arguments.
+     *
+     * @param cfg Configuration.
+     * @param resetDiscovery Reset DiscoverySpi at the configuration.
+     * @return Params to be passed to new Ignite process.
+     * @throws Exception In case of an error.
+     */
+    protected String params(IgniteConfiguration cfg, boolean resetDiscovery) throws Exception {
+        return IgniteNodeRunner.storeToFile(cfg.setNodeId(id), resetDiscovery);
+    }
+
+    /**
+     * Creates list of JVM arguments to be used to start new Ignite process in separate JVM.
+     *
+     * @return JVM arguments.
+     * @throws Exception In case of an error.
+     */
+    protected Collection<String> filteredJvmArgs() throws Exception {
+        Collection<String> filteredJvmArgs = new ArrayList<>();
+
+        filteredJvmArgs.add("-ea");
+
+        Marshaller marsh = cfg.getMarshaller();
+
+        if (marsh != null)
+            filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + marsh.getClass().getName());
+        else
+            filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + BinaryMarshaller.class.getName());
+
+        for (String arg : U.jvmArgs()) {
+            if (arg.startsWith("-Xmx") || arg.startsWith("-Xms") ||
+                arg.startsWith("-cp") || arg.startsWith("-classpath") ||
+                (marsh != null && arg.startsWith("-D" + IgniteTestResources.MARSH_CLASS_NAME)))
+                filteredJvmArgs.add(arg);
+        }
+
+        return filteredJvmArgs;
     }
 
     /**
@@ -696,18 +746,33 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<MemoryMetrics> memoryMetrics() {
+    @Override public Collection<DataRegionMetrics> dataRegionMetrics() {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public DataRegionMetrics dataRegionMetrics(String memPlcName) {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public DataStorageMetrics dataStorageMetrics() {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<MemoryMetrics> memoryMetrics() {
+        return DataRegionMetricsAdapter.collectionOf(dataRegionMetrics());
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
-        throw new UnsupportedOperationException("Operation isn't supported yet.");
+        return DataRegionMetricsAdapter.valueOf(dataRegionMetrics(memPlcName));
     }
 
     /** {@inheritDoc} */
     @Override public PersistenceMetrics persistentStoreMetrics() {
-        throw new UnsupportedOperationException("Operation isn't supported yet.");
+        return DataStorageMetricsAdapter.valueOf(dataStorageMetrics());
     }
 
     /** {@inheritDoc} */

@@ -27,9 +27,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.console.demo.service.DemoCachesLoadService;
 import org.apache.ignite.console.demo.service.DemoComputeLoadService;
 import org.apache.ignite.console.demo.service.DemoRandomCacheLoadService;
@@ -53,8 +53,10 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_ASCII;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE;
 import static org.apache.ignite.console.demo.AgentDemoUtils.newScheduledThreadPool;
 import static org.apache.ignite.events.EventType.EVTS_DISCOVERY;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.VISOR_TASK_EVTS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_ADDRS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_PORT;
 
@@ -92,7 +94,13 @@ public class AgentClusterDemo {
         cfg.setIgniteInstanceName((client ? "demo-client-" : "demo-server-" ) + gridIdx);
         cfg.setLocalHost("127.0.0.1");
         cfg.setEventStorageSpi(new MemoryEventStorageSpi());
-        cfg.setIncludeEventTypes(EVTS_DISCOVERY);
+
+        int[] evts = new int[EVTS_DISCOVERY.length + VISOR_TASK_EVTS.length];
+
+        System.arraycopy(EVTS_DISCOVERY, 0, evts, 0, EVTS_DISCOVERY.length);
+        System.arraycopy(VISOR_TASK_EVTS, 0, evts, EVTS_DISCOVERY.length, VISOR_TASK_EVTS.length);
+
+        cfg.setIncludeEventTypes(evts);
 
         cfg.getConnectorConfiguration().setPort(basePort);
 
@@ -125,15 +133,16 @@ public class AgentClusterDemo {
         cfg.setGridLogger(new Slf4jLogger(log));
         cfg.setMetricsLogFrequency(0);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+        DataRegionConfiguration dataRegCfg = new DataRegionConfiguration();
+        dataRegCfg.setName("demo");
+        dataRegCfg.setMetricsEnabled(true);
+        dataRegCfg.setMaxSize(DFLT_DATA_REGION_INITIAL_SIZE);
 
-        MemoryPolicyConfiguration memPlc = new MemoryPolicyConfiguration();
-        memPlc.setName("demo");
-        memPlc.setMetricsEnabled(true);
+        DataStorageConfiguration dataStorageCfg = new DataStorageConfiguration();
+        dataStorageCfg.setDefaultDataRegionConfiguration(dataRegCfg);
+        dataStorageCfg.setSystemRegionMaxSize(DFLT_DATA_REGION_INITIAL_SIZE);
 
-        memCfg.setMemoryPolicies(memPlc);
-
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(dataStorageCfg);
 
         if (client)
             cfg.setClientMode(true);
@@ -150,10 +159,10 @@ public class AgentClusterDemo {
         services.deployMultiple("Demo service: Multiple instances", new DemoServiceMultipleInstances(), 7, 3);
         services.deployNodeSingleton("Demo service: Node singleton", new DemoServiceNodeSingleton());
         services.deployClusterSingleton("Demo service: Cluster singleton", new DemoServiceClusterSingleton());
+        services.deployClusterSingleton("Demo caches load service", new DemoCachesLoadService(20));
         services.deployKeyAffinitySingleton("Demo service: Key affinity singleton",
             new DemoServiceKeyAffinity(), DemoCachesLoadService.CAR_CACHE_NAME, "id");
 
-        services.deployClusterSingleton("Demo caches load service", new DemoCachesLoadService(20));
         services.deployNodeSingleton("RandomCache load service", new DemoRandomCacheLoadService(20));
 
         services.deployMultiple("Demo service: Compute load", new DemoComputeLoadService(), 2, 1);
@@ -188,8 +197,10 @@ public class AgentClusterDemo {
                     int idx = cnt.incrementAndGet();
                     int port = basePort.get();
 
+                    IgniteEx ignite = null;
+
                     try {
-                        IgniteEx ignite = (IgniteEx)Ignition.start(igniteConfiguration(port, idx, false));
+                        ignite = (IgniteEx)Ignition.start(igniteConfiguration(port, idx, false));
 
                         if (idx == 0) {
                             Collection<String> jettyAddrs = ignite.localNode().attribute(ATTR_REST_JETTY_ADDRS);
@@ -212,8 +223,6 @@ public class AgentClusterDemo {
                             demoUrl = String.format("http://%s:%d", jettyHost, jettyPort);
 
                             initLatch.countDown();
-
-                            deployServices(ignite.services(ignite.cluster().forServers()));
                         }
                     }
                     catch (Throwable e) {
@@ -227,13 +236,15 @@ public class AgentClusterDemo {
                     }
                     finally {
                         if (idx == NODE_CNT) {
+                            deployServices(ignite.services(ignite.cluster().forServers()));
+
                             log.info("DEMO: All embedded nodes for demo successfully started");
 
                             execSrv.shutdown();
                         }
                     }
                 }
-            }, 1, 10, TimeUnit.SECONDS);
+            }, 1, 5, TimeUnit.SECONDS);
         }
 
         return initLatch;

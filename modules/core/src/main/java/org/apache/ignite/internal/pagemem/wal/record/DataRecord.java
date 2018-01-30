@@ -21,13 +21,14 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Logical data record with cache operation description.
  * This record contains information about operation we want to do.
  * Contains operation type (put, remove) and (Key, Value, Version) for each {@link DataEntry}
  */
-public class DataRecord extends WALRecord {
+public class DataRecord extends TimeStampRecord {
     /** */
     @GridToStringInclude
     private List<DataEntry> writeEntries;
@@ -48,13 +49,30 @@ public class DataRecord extends WALRecord {
      * @param writeEntry Write entry.
      */
     public DataRecord(DataEntry writeEntry) {
-        this(Collections.singletonList(writeEntry));
+        this(writeEntry, U.currentTimeMillis());
     }
 
     /**
      * @param writeEntries Write entries.
      */
     public DataRecord(List<DataEntry> writeEntries) {
+        this(writeEntries, U.currentTimeMillis());
+    }
+
+    /**
+     * @param writeEntry Write entry.
+     */
+    public DataRecord(DataEntry writeEntry, long timestamp) {
+        this(Collections.singletonList(writeEntry), timestamp);
+    }
+
+    /**
+     * @param writeEntries Write entries.
+     * @param timestamp TimeStamp.
+     */
+    public DataRecord(List<DataEntry> writeEntries, long timestamp) {
+        super(timestamp);
+
         this.writeEntries = writeEntries;
     }
 

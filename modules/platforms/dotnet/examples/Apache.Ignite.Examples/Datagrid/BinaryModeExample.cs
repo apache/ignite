@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Examples.Datagrid
 {
     using System;
-    using System.Collections;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
@@ -81,7 +80,11 @@ namespace Apache.Ignite.Examples.Datagrid
                                 new QueryField(NameField, typeof(string)),
                                 new QueryField(CompanyIdField, typeof(int))
                             },
-                            Indexes = new[] {new QueryIndex(false, QueryIndexType.FullText, NameField)}
+                            Indexes = new[]
+                            {
+                                new QueryIndex(false, QueryIndexType.FullText, NameField),
+                                new QueryIndex(false, QueryIndexType.Sorted, CompanyIdField)
+                            }
                         },
                         new QueryEntity
                         {
@@ -174,7 +177,10 @@ namespace Apache.Ignite.Examples.Datagrid
 
             var qry = cache.Query(new SqlQuery(PersonType,
                 "from Person, Company " +
-                "where Person.CompanyId = Company.Id and Company.Name = ?", orgName));
+                "where Person.CompanyId = Company.Id and Company.Name = ?", orgName)
+            {
+                EnableDistributedJoins = true
+            });
 
             Console.WriteLine();
             Console.WriteLine(">>> Persons working for " + orgName + ":");
@@ -189,12 +195,12 @@ namespace Apache.Ignite.Examples.Datagrid
         /// <param name="cache">Cache.</param>
         private static void SqlFieldsQueryExample(ICache<int, IBinaryObject> cache)
         {
-            var qry = cache.QueryFields(new SqlFieldsQuery("select name from Person order by name"));
+            var qry = cache.Query(new SqlFieldsQuery("select name from Person order by name"));
 
             Console.WriteLine();
             Console.WriteLine(">>> All person names:");
 
-            foreach (IList row in qry)
+            foreach (var row in qry)
                 Console.WriteLine(">>>     " + row[0]);
         }
 

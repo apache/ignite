@@ -44,6 +44,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -97,7 +98,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
-import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -474,7 +474,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         final AtomicBoolean warmupFinished = new AtomicBoolean();
         final AtomicBoolean done = new AtomicBoolean();
         final CyclicBarrier bar = new CyclicBarrier(threads + 1);
-        final LongAdder8 cnt = new LongAdder8();
+        final LongAdder cnt = new LongAdder();
         final long sleepDuration = 5000;
         final byte[] payLoad = new byte[payLoadSize];
         final Map<UUID, IoTestThreadLocalNodeResults>[] res = new Map[threads];
@@ -1667,7 +1667,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         ClusterNode node = ctx.discovery().node(nodeId);
 
         if (node == null)
-            throw new IgniteCheckedException("Failed to send message to node (has node left grid?): " + nodeId);
+            throw new ClusterTopologyCheckedException("Failed to send message to node (has node left grid?): " + nodeId);
 
         sendToCustomTopic(node, topic, msg, plc);
     }
@@ -1685,7 +1685,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         ClusterNode node = ctx.discovery().node(nodeId);
 
         if (node == null)
-            throw new IgniteCheckedException("Failed to send message to node (has node left grid?): " + nodeId);
+            throw new ClusterTopologyCheckedException("Failed to send message to node (has node left grid?): " + nodeId);
 
         send(node, topic, topic.ordinal(), msg, plc, false, 0, false, null, false);
     }

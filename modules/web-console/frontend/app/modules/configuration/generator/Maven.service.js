@@ -16,7 +16,7 @@
  */
 
 import StringBuilder from './StringBuilder';
-import VersionService from 'app/modules/configuration/Version.service';
+import VersionService from 'app/services/Version.service';
 
 const versionService = new VersionService();
 

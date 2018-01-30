@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.lang.GridCursor;
-import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
@@ -85,7 +85,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, final SearchRow lower, final SearchRow upper) {
         IndexingQueryFilter f = threadLocalFilter();
-        IgniteBiPredicate<Object, Object> p = null;
+        IndexingQueryCacheFilter p = null;
 
         if (f != null) {
             String cacheName = getTable().cacheName();
@@ -121,23 +121,6 @@ public class H2PkHashIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public GridH2Row findOne(GridH2Row row) {
-        try {
-            for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores()) {
-                CacheDataRow found = store.find(cctx, row.key);
-
-                if (found != null)
-                    tbl.rowDescriptor().createRow(row.key(), row.partition(), row.value(), row.version(), 0);
-            }
-
-            return null;
-        }
-        catch (IgniteCheckedException e) {
-            throw DbException.convert(e);
-        }
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings("StatementWithEmptyBody")
     @Override public GridH2Row put(GridH2Row row) {
         // Should not be called directly. Rows are inserted into underlying cache data stores.
@@ -145,6 +128,14 @@ public class H2PkHashIndex extends GridH2IndexBase {
         assert false;
 
         throw DbException.getUnsupportedException("put");
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean putx(GridH2Row row) {
+        // Should not be called directly. Rows are inserted into underlying cache data stores.
+        assert false;
+
+        throw DbException.getUnsupportedException("putx");
     }
 
     /** {@inheritDoc} */
@@ -157,16 +148,15 @@ public class H2PkHashIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean removex(SearchRow row) {
+        // Should not be called directly. Rows are removed from underlying cache data stores.
+        assert false;
+
+        throw DbException.getUnsupportedException("removex");
+    }
+
+    /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder, HashSet<Column> allColumnsSet) {
-        long rowCnt = getRowCountApproximation();
-
-        double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
-
-        int mul = getDistributedMultiplier(ses, filters, filter);
-
-        // TODO : How to calculate cost?
-
-//        return mul * baseCost;
         return Double.MAX_VALUE;
     }
 
@@ -205,13 +195,13 @@ public class H2PkHashIndex extends GridH2IndexBase {
         final GridCursor<? extends CacheDataRow> cursor;
 
         /** */
-        final IgniteBiPredicate<Object, Object> filter;
+        final IndexingQueryCacheFilter filter;
 
         /**
          * @param cursor Cursor.
          * @param filter Filter.
          */
-        private H2Cursor(GridCursor<? extends CacheDataRow> cursor, IgniteBiPredicate<Object, Object> filter) {
+        private H2Cursor(GridCursor<? extends CacheDataRow> cursor, IndexingQueryCacheFilter filter) {
             assert cursor != null;
 
             this.cursor = cursor;
@@ -223,11 +213,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
             try {
                 CacheDataRow dataRow = cursor.get();
 
-                GridH2Row row = tbl.rowDescriptor().createRow(dataRow.key(), dataRow.partition(), dataRow.value(), dataRow.version(), 0);
-
-                row.link(dataRow.link());
-
-                return row;
+                return tbl.rowDescriptor().createRow(dataRow);
             }
             catch (IgniteCheckedException e) {
                 throw DbException.convert(e);
@@ -248,17 +234,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
 
                     CacheDataRow dataRow = cursor.get();
 
-                    GridH2Row row = tbl.rowDescriptor().createRow(dataRow.key(), dataRow.partition(), dataRow.value(), dataRow.version(), 0);
-
-                    row.link(dataRow.link());
-
-                    Object key = row.getValue(0).getObject();
-                    Object val = row.getValue(1).getObject();
-
-                    assert key != null;
-                    assert val != null;
-
-                    if (filter.apply(key, val))
+                    if (filter.applyPartition(dataRow.partition()))
                         return true;
                 }
 

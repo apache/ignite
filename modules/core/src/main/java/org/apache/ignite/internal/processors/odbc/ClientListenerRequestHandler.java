@@ -35,9 +35,10 @@ public interface ClientListenerRequestHandler {
      * Handle exception.
      *
      * @param e Exception.
+     * @param req Request.
      * @return Error response.
      */
-    public ClientListenerResponse handleException(Exception e);
+    public ClientListenerResponse handleException(Exception e, ClientListenerRequest req);
 
     /**
      * Write successful handshake response.

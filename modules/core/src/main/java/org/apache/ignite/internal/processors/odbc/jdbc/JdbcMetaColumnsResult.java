@@ -51,6 +51,25 @@ public class JdbcMetaColumnsResult extends JdbcResult {
     }
 
     /**
+     * Used by children classes.
+     * @param type Type ID.
+     */
+    protected JdbcMetaColumnsResult(byte type) {
+        super(type);
+    }
+
+    /**
+     * Used by children classes.
+     * @param type Type ID.
+     * @param meta Columns metadata.
+     */
+    protected JdbcMetaColumnsResult(byte type, Collection<JdbcColumnMeta> meta) {
+        super(type);
+
+        this.meta = new ArrayList<>(meta);
+    }
+
+    /**
      * @return Columns metadata.
      */
     public List<JdbcColumnMeta> meta() {
@@ -83,13 +102,20 @@ public class JdbcMetaColumnsResult extends JdbcResult {
             meta = new ArrayList<>(size);
 
             for (int i = 0; i < size; ++i) {
-                JdbcColumnMeta m = new JdbcColumnMeta();
+                JdbcColumnMeta m = createMetaColumn();
 
                 m.readBinary(reader);
 
                 meta.add(m);
             }
         }
+    }
+
+    /**
+     * @return Empty columns metadata to deserialization.
+     */
+    protected JdbcColumnMeta createMetaColumn() {
+        return new JdbcColumnMeta();
     }
 
     /** {@inheritDoc} */

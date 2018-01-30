@@ -26,6 +26,7 @@ import java.sql.Statement;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.LongAdder;
 import javax.cache.Cache;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
@@ -50,7 +51,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.LongAdder8;
 
 /**
  * {@link CacheStore} implementation backed by JDBC. This implementation
@@ -164,11 +164,11 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
 
     /** Opened connections. */
     @GridToStringExclude
-    private final LongAdder8 opened = new LongAdder8();
+    private final LongAdder opened = new LongAdder();
 
     /** Closed connections. */
     @GridToStringExclude
-    private final LongAdder8 closed = new LongAdder8();
+    private final LongAdder closed = new LongAdder();
 
     /** Test mode flag. */
     @GridToStringExclude

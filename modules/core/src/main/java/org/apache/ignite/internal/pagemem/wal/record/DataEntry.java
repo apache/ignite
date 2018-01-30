@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents Data Entry ({@link #key}, {@link #val value}) pair update {@link #op operation} in WAL log.
@@ -32,13 +33,13 @@ public class DataEntry {
     @GridToStringInclude
     protected int cacheId;
 
-    /** Cache object key */
+    /** Cache object key. */
     protected KeyCacheObject key;
 
-    /** Cache object value */
-    protected CacheObject val;
+    /** Cache object value. May be {@code} null for {@link GridCacheOperation#DELETE} */
+    @Nullable protected CacheObject val;
 
-    /** Entry operation performed */
+    /** Entry operation performed. */
     @GridToStringInclude
     protected GridCacheOperation op;
 
@@ -67,7 +68,7 @@ public class DataEntry {
     /**
      * @param cacheId Cache ID.
      * @param key Key.
-     * @param val Value.
+     * @param val Value or null for delete operation.
      * @param op Operation.
      * @param nearXidVer Near transaction version.
      * @param writeVer Write version.
@@ -78,7 +79,7 @@ public class DataEntry {
     public DataEntry(
         int cacheId,
         KeyCacheObject key,
-        CacheObject val,
+        @Nullable CacheObject val,
         GridCacheOperation op,
         GridCacheVersion nearXidVer,
         GridCacheVersion writeVer,
@@ -96,8 +97,8 @@ public class DataEntry {
         this.partId = partId;
         this.partCnt = partCnt;
 
-        // Only CREATE, UPDATE and DELETE operations should be stored in WAL.
-        assert op == GridCacheOperation.CREATE || op == GridCacheOperation.UPDATE || op == GridCacheOperation.DELETE : op;
+        // Only READ, CREATE, UPDATE and DELETE operations should be stored in WAL.
+        assert op == GridCacheOperation.READ || op == GridCacheOperation.CREATE || op == GridCacheOperation.UPDATE || op == GridCacheOperation.DELETE : op;
     }
 
     /**

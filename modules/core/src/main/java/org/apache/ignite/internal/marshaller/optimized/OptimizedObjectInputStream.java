@@ -70,7 +70,6 @@ import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshalle
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.INT;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.INT_ARR;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.JDK;
-import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.JDK_MARSH;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.LINKED_HASH_MAP;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.LINKED_HASH_SET;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.LINKED_LIST;
@@ -227,7 +226,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
 
             case JDK:
                 try {
-                    return JDK_MARSH.unmarshal(this, clsLdr);
+                    return ctx.jdkMarshaller().unmarshal(this, clsLdr);
                 }
                 catch (IgniteCheckedException e) {
                     IOException ioEx = e.getCause(IOException.class);
@@ -338,7 +337,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                 int typeId = readInt();
 
                 OptimizedClassDescriptor desc = typeId == 0 ?
-                    classDescriptor(clsMap, U.forName(readUTF(), clsLdr), ctx, mapper):
+                    classDescriptor(clsMap, U.forName(readUTF(), clsLdr, ctx.classNameFilter()), ctx, mapper):
                     classDescriptor(clsMap, typeId, clsLdr, ctx, mapper);
 
                 curCls = desc.describedClass();

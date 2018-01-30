@@ -225,6 +225,21 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         return consistentId;
     }
 
+    /**
+     * Sets consistent globally unique node ID which survives node restarts.
+     *
+     * @param consistentId Consistent globally unique node ID.
+     */
+    public void setConsistentId(Serializable consistentId) {
+        this.consistentId = consistentId;
+
+        final Map<String, Object> map = new HashMap<>(attrs);
+
+        map.put(ATTR_NODE_CONSISTENT_ID, consistentId);
+
+        attrs = Collections.unmodifiableMap(map);
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T attribute(String name) {
@@ -608,8 +623,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
         Object consistentIdAttr = attrs.get(ATTR_NODE_CONSISTENT_ID);
 
-        consistentId = consistentIdAttr != null ? consistentIdAttr : U.consistentId(addrs, discPort);
-
         // Cluster metrics
         byte[] mtr = U.readByteArray(in);
 
@@ -633,6 +646,11 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         intOrder = in.readLong();
         ver = (IgniteProductVersion)in.readObject();
         clientRouterNodeId = U.readUuid(in);
+
+        if (isClient())
+            consistentId = consistentIdAttr != null ? consistentIdAttr : id;
+        else
+            consistentId = consistentIdAttr != null ? consistentIdAttr : U.consistentId(addrs, discPort);
     }
 
     /** {@inheritDoc} */
@@ -652,7 +670,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
     /**
      * IMPORTANT!
-     * Only purpose of this constructor is creating node which contains only necessary data to store on disc
+     * Only purpose of this constructor is creating node which contains necessary data to store on disc only
      * @param node to copy data from
      */
     public TcpDiscoveryNode(
@@ -667,6 +685,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         this.daemon = node.isDaemon();
         this.clientRouterNodeId = node.isClient() ? node.id() : null;
 
-        attrs = Collections.emptyMap();
+        attrs = Collections.singletonMap(ATTR_NODE_CONSISTENT_ID, consistentId);
     }
 }

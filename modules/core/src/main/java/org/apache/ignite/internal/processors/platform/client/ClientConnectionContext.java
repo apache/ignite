@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext;
@@ -123,7 +122,8 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
         long curCnt0 = curCnt.get();
 
         if (curCnt0 >= maxCursors) {
-            throw new IgniteException("Too many open cursors (either close other open cursors or increase the " +
+            throw new IgniteClientException(ClientStatus.TOO_MANY_CURSORS,
+                "Too many open cursors (either close other open cursors or increase the " +
                 "limit through ClientConnectorConfiguration.maxOpenCursorsPerConnection) [maximum=" + maxCursors +
                 ", current=" + curCnt0 + ']');
         }

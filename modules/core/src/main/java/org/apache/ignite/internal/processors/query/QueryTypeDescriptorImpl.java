@@ -24,12 +24,12 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -106,6 +106,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /** */
     private List<GridQueryProperty> validateProps;
+
+    /** */
+    private List<GridQueryProperty> propsWithDefaultValue;
 
     /**
      * Constructor.
@@ -380,7 +383,33 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             validateProps.add(prop);
         }
 
+        if (prop.defaultValue() != null) {
+            if (propsWithDefaultValue == null)
+                propsWithDefaultValue = new ArrayList<>();
+
+            propsWithDefaultValue.add(prop);
+        }
+
         fields.put(name, prop.type());
+    }
+
+    /**
+     * Removes a property with specified name.
+     *
+     * @param name Name of a property to remove.
+     */
+    public void removeProperty(String name) throws IgniteCheckedException {
+        GridQueryProperty prop = props.remove(name);
+
+        if (prop == null)
+            throw new IgniteCheckedException("Property with name '" + name + "' does not exist.");
+
+        if (validateProps != null)
+            validateProps.remove(prop);
+
+        uppercaseProps.remove(name.toUpperCase());
+
+        fields.remove(name);
     }
 
     /**
@@ -453,7 +482,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * Sets key field name.
      * @param keyFieldName Key field name.
      */
-    public void keyFieldName(String keyFieldName) {
+    void keyFieldName(String keyFieldName) {
         this.keyFieldName = keyFieldName;
     }
 
@@ -464,10 +493,10 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /**
      * Sets value field name.
-     * @param valueFieldName value field name.
+     * @param valFieldName value field name.
      */
-    public void valueFieldName(String valueFieldName) {
-        this.valFieldName = valueFieldName;
+    void valueFieldName(String valFieldName) {
+        this.valFieldName = valFieldName;
     }
 
     /** {@inheritDoc} */
@@ -480,6 +509,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         return keyFieldName != null ? aliases.get(keyFieldName) : null;
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public String valueFieldAlias() {
         return valFieldName != null ? aliases.get(valFieldName) : null;
     }
@@ -487,17 +517,47 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override public void validateKeyAndValue(Object key, Object val) throws IgniteCheckedException {
-        if (validateProps == null)
+        if (F.isEmpty(validateProps))
             return;
 
-        final int size = validateProps.size();
+        for (int i = 0; i < validateProps.size(); ++i) {
+            GridQueryProperty prop = validateProps.get(i);
 
-        for (int idx = 0; idx < size; ++idx) {
-            GridQueryProperty prop = validateProps.get(idx);
+            Object propVal;
 
-            if (prop.value(key, val) == null)
-                throw new IgniteSQLException("Null value is not allowed for field '" + prop.name() + "'",
-                    IgniteQueryErrorCode.NULL_VALUE);
+            int errCode;
+
+            if (F.eq(prop.name(), keyFieldName)) {
+                propVal = key;
+
+                errCode = IgniteQueryErrorCode.NULL_KEY;
+            }
+            else if (F.eq(prop.name(), valFieldName)) {
+                propVal = val;
+
+                errCode = IgniteQueryErrorCode.NULL_VALUE;
+            }
+            else {
+                propVal = prop.value(key, val);
+
+                errCode = IgniteQueryErrorCode.NULL_VALUE;
+            }
+
+            if (propVal == null)
+                throw new IgniteSQLException("Null value is not allowed for column '" + prop.name() + "'", errCode);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    @Override public void setDefaults(Object key, Object val) throws IgniteCheckedException {
+        if (F.isEmpty(propsWithDefaultValue))
+            return;
+
+        for (int i = 0; i < propsWithDefaultValue.size(); ++i) {
+            GridQueryProperty prop = propsWithDefaultValue.get(i);
+
+            prop.setValue(key, val, prop.defaultValue());
         }
     }
 }

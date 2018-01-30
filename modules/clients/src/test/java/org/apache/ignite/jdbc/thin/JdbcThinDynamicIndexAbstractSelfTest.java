@@ -309,7 +309,7 @@ public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstr
         assertEquals(expSize, cache().size());
 
         try (Statement stmt = conn.createStatement()) {
-            conn.setSchema(DEFAULT_CACHE_NAME);
+            conn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
 
             try (ResultSet rs = stmt.executeQuery("SELECT COUNT(*) from Person")) {
                 assertEquals(expSize, getSingleValue(rs));

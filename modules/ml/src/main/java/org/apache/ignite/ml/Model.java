@@ -18,13 +18,10 @@
 package org.apache.ignite.ml;
 
 import java.util.function.BiFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /** Basic interface for all models. */
-@FunctionalInterface
-public interface Model<T, V> {
-    /** Predict a result for value. */
-    public V predict(T val);
-
+public interface Model<T, V> extends IgniteFunction<T, V> {
     /**
      * Combines this model with other model via specified combiner
      *
@@ -32,7 +29,7 @@ public interface Model<T, V> {
      * @param combiner Combiner.
      * @return Combination of models.
      */
-    public default <X, W> Model<T, X> combine(Model<T, W> other, BiFunction<V, W, X> combiner) {
-        return v -> combiner.apply(predict(v), other.predict(v));
+    default <X, W> Model<T, X> combine(Model<T, W> other, BiFunction<V, W, X> combiner) {
+        return v -> combiner.apply(apply(v), other.apply(v));
     }
 }

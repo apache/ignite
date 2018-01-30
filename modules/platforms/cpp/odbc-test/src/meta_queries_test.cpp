@@ -40,6 +40,7 @@
 #include "test_type.h"
 #include "complex_type.h"
 #include "test_utils.h"
+#include "odbc_test_suite.h"
 
 using namespace ignite;
 using namespace ignite::cache;
@@ -55,70 +56,8 @@ using namespace boost::unit_test;
 /**
  * Test setup fixture.
  */
-struct MetaQueriesTestSuiteFixture 
+struct MetaQueriesTestSuiteFixture : public odbc::OdbcTestSuite
 {
-    /**
-     * Establish connection to node.
-     *
-     * @param connectStr Connection string.
-     */
-    void Connect(const std::string& connectStr)
-    {
-        // Allocate an environment handle
-        SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env);
-
-        BOOST_REQUIRE(env != NULL);
-
-        // We want ODBC 3 support
-        SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<void*>(SQL_OV_ODBC3), 0);
-
-        // Allocate a connection handle
-        SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
-
-        BOOST_REQUIRE(dbc != NULL);
-
-        // Connect string
-        std::vector<SQLCHAR> connectStr0;
-
-        connectStr0.reserve(connectStr.size() + 1);
-        std::copy(connectStr.begin(), connectStr.end(), std::back_inserter(connectStr0));
-
-        SQLCHAR outstr[ODBC_BUFFER_SIZE];
-        SQLSMALLINT outstrlen;
-
-        // Connecting to ODBC server.
-        SQLRETURN ret = SQLDriverConnect(dbc, NULL, &connectStr0[0], static_cast<SQLSMALLINT>(connectStr0.size()),
-            outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
-
-        if (!SQL_SUCCEEDED(ret))
-        {
-            Ignition::Stop(grid.GetName(), true);
-
-            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_DBC, dbc));
-        }
-
-        // Allocate a statement handle
-        SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
-
-        BOOST_REQUIRE(stmt != NULL);
-    }
-
-    /**
-     * Disconnect.
-     */
-    void Disconnect()
-    {
-        // Releasing statement handle.
-        SQLFreeHandle(SQL_HANDLE_STMT, stmt);
-
-        // Disconneting from the server.
-        SQLDisconnect(dbc);
-
-        // Releasing allocated handles.
-        SQLFreeHandle(SQL_HANDLE_DBC, dbc);
-        SQLFreeHandle(SQL_HANDLE_ENV, env);
-    }
-
     /**
      * Start additional node with the specified name.
      *
@@ -126,11 +65,7 @@ struct MetaQueriesTestSuiteFixture
      */
     static Ignite StartAdditionalNode(const char* name)
     {
-#ifdef IGNITE_TESTS_32
-        return StartNode("queries-test-noodbc-32.xml", name);
-#else
-        return StartNode("queries-test-noodbc.xml", name);
-#endif
+        return StartTestNode("queries-test.xml", name);
     }
 
     /**
@@ -164,20 +99,37 @@ struct MetaQueriesTestSuiteFixture
     }
 
     /**
+     * Check string column.
+     *
+     * @param stmt Statement.
+     * @param colId Column ID to check.
+     * @param value Expected value.
+     */
+    void CheckStringColumn(SQLHSTMT stmt, int colId, const std::string& value)
+    {
+        char buf[1024];
+        SQLLEN bufLen = sizeof(buf);
+
+        SQLRETURN ret = SQLGetData(stmt, colId, SQL_C_CHAR, buf, sizeof(buf), &bufLen);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        if (bufLen <= 0)
+            BOOST_CHECK(value.empty());
+        else
+            BOOST_CHECK_EQUAL(std::string(buf, static_cast<size_t>(bufLen)), value);
+    }
+
+    /**
      * Constructor.
      */
     MetaQueriesTestSuiteFixture() :
+        grid(0),
         cache1(0),
-        cache2(0),
-        env(NULL),
-        dbc(NULL),
-        stmt(NULL)
+        cache2(0)
     {
-#ifdef IGNITE_TESTS_32
-        grid = StartNode("queries-test-32.xml", "NodeMain");
-#else
-        grid = StartNode("queries-test.xml", "NodeMain");
-#endif
+        grid = StartTestNode("queries-test.xml", "NodeMain");
 
         cache1 = grid.GetCache<int64_t, TestType>("cache");
         cache2 = grid.GetCache<int64_t, ComplexType>("cache2");
@@ -188,9 +140,7 @@ struct MetaQueriesTestSuiteFixture
      */
     ~MetaQueriesTestSuiteFixture()
     {
-        Disconnect();
-
-        Ignition::StopAll(true);
+        // No-op.
     }
 
     /** Node started during the test. */
@@ -201,15 +151,6 @@ struct MetaQueriesTestSuiteFixture
 
     /** Second cache instance. */
     Cache<int64_t, ComplexType> cache2;
-
-    /** ODBC Environment. */
-    SQLHENV env;
-
-    /** ODBC Connect. */
-    SQLHDBC dbc;
-
-    /** ODBC Statement. */
-    SQLHSTMT stmt;
 };
 
 BOOST_FIXTURE_TEST_SUITE(MetaQueriesTestSuite, MetaQueriesTestSuiteFixture)
@@ -348,6 +289,82 @@ BOOST_AUTO_TEST_CASE(TestGetInfoScrollOptions)
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_DBC, dbc));
 
     BOOST_CHECK_NE(val, 0);
+}
+
+BOOST_AUTO_TEST_CASE(TestDdlTablesMeta)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=PUBLIC");
+
+    SQLCHAR createTable[] = "create table TestTable(id int primary key, testColumn varchar)";
+    SQLRETURN ret = SQLExecDirect(stmt, createTable, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    SQLCHAR empty[] = "";
+    SQLCHAR table[] = "TestTable";
+
+    ret = SQLTables(stmt, empty, SQL_NTS, empty, SQL_NTS, table, SQL_NTS, empty, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFetch(stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    CheckStringColumn(stmt, 1, "");
+    CheckStringColumn(stmt, 2, "\"PUBLIC\"");
+    CheckStringColumn(stmt, 3, "TESTTABLE");
+    CheckStringColumn(stmt, 4, "TABLE");
+
+    ret = SQLFetch(stmt);
+
+    BOOST_REQUIRE_EQUAL(ret, SQL_NO_DATA);
+}
+
+BOOST_AUTO_TEST_CASE(TestDdlColumnsMeta)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=PUBLIC");
+
+    SQLCHAR createTable[] = "create table TestTable(id int primary key, testColumn varchar)";
+    SQLRETURN ret = SQLExecDirect(stmt, createTable, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    SQLCHAR empty[] = "";
+    SQLCHAR table[] = "TestTable";
+
+    ret = SQLColumns(stmt, empty, SQL_NTS, empty, SQL_NTS, table, SQL_NTS, empty, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFetch(stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    CheckStringColumn(stmt, 1, "");
+    CheckStringColumn(stmt, 2, "\"PUBLIC\"");
+    CheckStringColumn(stmt, 3, "TESTTABLE");
+    CheckStringColumn(stmt, 4, "ID");
+
+    ret = SQLFetch(stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    CheckStringColumn(stmt, 1, "");
+    CheckStringColumn(stmt, 2, "\"PUBLIC\"");
+    CheckStringColumn(stmt, 3, "TESTTABLE");
+    CheckStringColumn(stmt, 4, "TESTCOLUMN");
+
+    ret = SQLFetch(stmt);
+
+    BOOST_REQUIRE_EQUAL(ret, SQL_NO_DATA);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

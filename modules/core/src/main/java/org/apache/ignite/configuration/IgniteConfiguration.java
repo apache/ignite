@@ -199,6 +199,9 @@ public class IgniteConfiguration {
     /** Default value for active on start flag. */
     public static final boolean DFLT_ACTIVE_ON_START = true;
 
+    /** Default value for auto-activation flag. */
+    public static final boolean DFLT_AUTO_ACTIVATION = true;
+
     /** Default failure detection timeout in millis. */
     @SuppressWarnings("UnnecessaryBoxing")
     public static final Long DFLT_FAILURE_DETECTION_TIMEOUT = new Long(10_000);
@@ -457,13 +460,21 @@ public class IgniteConfiguration {
     private ExecutorConfiguration[] execCfgs;
 
     /** Page memory configuration. */
+    @Deprecated
     private MemoryConfiguration memCfg;
 
     /** Persistence store configuration. */
+    @Deprecated
     private PersistentStoreConfiguration pstCfg;
+
+    /** Page memory configuration. */
+    private DataStorageConfiguration dsCfg;
 
     /** Active on start flag. */
     private boolean activeOnStart = DFLT_ACTIVE_ON_START;
+
+    /** Auto-activation flag. */
+    private boolean autoActivation = DFLT_AUTO_ACTIVATION;
 
     /** */
     private long longQryWarnTimeout = DFLT_LONG_QRY_WARN_TIMEOUT;
@@ -509,7 +520,9 @@ public class IgniteConfiguration {
         addrRslvr = cfg.getAddressResolver();
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
         atomicCfg = cfg.getAtomicConfiguration();
+        autoActivation = cfg.isAutoActivationEnabled();
         binaryCfg = cfg.getBinaryConfiguration();
+        dsCfg = cfg.getDataStorageConfiguration();
         memCfg = cfg.getMemoryConfiguration();
         pstCfg = cfg.getPersistentStoreConfiguration();
         cacheCfg = cfg.getCacheConfiguration();
@@ -2157,6 +2170,29 @@ public class IgniteConfiguration {
      *
      * @return Memory configuration.
      */
+    public DataStorageConfiguration getDataStorageConfiguration() {
+        return dsCfg;
+    }
+
+    /**
+     * Sets durable memory configuration.
+     *
+     * @param dsCfg Data storage configuration.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setDataStorageConfiguration(DataStorageConfiguration dsCfg) {
+        this.dsCfg = dsCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets page memory configuration.
+     *
+     * @return Memory configuration.
+     * @deprecated Use {@link DataStorageConfiguration} instead.
+     */
+    @Deprecated
     public MemoryConfiguration getMemoryConfiguration() {
         return memCfg;
     }
@@ -2166,7 +2202,9 @@ public class IgniteConfiguration {
      *
      * @param memCfg Memory configuration.
      * @return {@code this} for chaining.
+     * @deprecated Use {@link DataStorageConfiguration} instead.
      */
+    @Deprecated
     public IgniteConfiguration setMemoryConfiguration(MemoryConfiguration memCfg) {
         this.memCfg = memCfg;
 
@@ -2177,14 +2215,20 @@ public class IgniteConfiguration {
      * Gets persistence configuration used by Apache Ignite Persistent Store.
      *
      * @return Persistence configuration.
+     *
+     * @deprecated Part of old API. Use {@link DataStorageConfiguration} for configuring persistence instead.
      */
+    @Deprecated
     public PersistentStoreConfiguration getPersistentStoreConfiguration() {
         return pstCfg;
     }
 
     /**
-     * @return Flag {@code true} if persistent enable, {@code false} if disable.
+     * @return Flag {@code true} if persistence is enabled, {@code false} if disabled.
+     *
+     * @deprecated Part of legacy configuration API. Doesn't work if new configuration API is used.
      */
+    @Deprecated
     public boolean isPersistentStoreEnabled() {
         return pstCfg != null;
     }
@@ -2194,7 +2238,10 @@ public class IgniteConfiguration {
      *
      * @param pstCfg Persistence configuration.
      * @return {@code this} for chaining.
+     *
+     * @deprecated Part of old API. Use {@link DataStorageConfiguration} for configuring persistence instead.
      */
+    @Deprecated
     public IgniteConfiguration setPersistentStoreConfiguration(PersistentStoreConfiguration pstCfg) {
         this.pstCfg = pstCfg;
 
@@ -2207,6 +2254,9 @@ public class IgniteConfiguration {
      * significantly speed up large topology startup time.
      * <p>
      * Default value is {@link #DFLT_ACTIVE_ON_START}.
+     * <p>
+     * This flag is ignored when {@link DataStorageConfiguration} is present:
+     * cluster is always inactive on start when Ignite Persistence is enabled.
      *
      * @return Active on start flag value.
      */
@@ -2217,6 +2267,9 @@ public class IgniteConfiguration {
     /**
      * Sets flag indicating whether the cluster will be active on start. This value should be the same on all
      * nodes in the cluster.
+     * <p>
+     * This flag is ignored when {@link DataStorageConfiguration} is present:
+     * cluster is always inactive on start when Ignite Persistence is enabled.
      *
      * @param activeOnStart Active on start flag value.
      * @return {@code this} instance.
@@ -2224,6 +2277,36 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setActiveOnStart(boolean activeOnStart) {
         this.activeOnStart = activeOnStart;
+
+        return this;
+    }
+
+    /**
+     * Get the flag indicating that cluster is enabled to activate automatically.
+     *
+     * If it is set to {@code true} and BaselineTopology is set as well than cluster activates automatically
+     * when all nodes from the BaselineTopology join the cluster.
+     *
+     * <p>
+     * Default value is {@link #DFLT_AUTO_ACTIVATION}.
+     * <p>
+     *
+     * @return Auto activation enabled flag value.
+     */
+    public boolean isAutoActivationEnabled() {
+        return autoActivation;
+    }
+
+    /**
+     * Sets flag indicating whether the cluster is enabled to activate automatically.
+     * This value should be the same on all nodes in the cluster.
+     *
+     * @param autoActivation Auto activation enabled flag value.
+     * @return {@code this} instance.
+     * @see #isAutoActivationEnabled()
+     */
+    public IgniteConfiguration setAutoActivationEnabled(boolean autoActivation) {
+        this.autoActivation = autoActivation;
 
         return this;
     }

@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
-import org.jsr166.ConcurrentHashMap8;
-
 import java.util.Collection;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
@@ -31,13 +29,13 @@ public class H2Schema {
     private final String schemaName;
 
     /** */
-    private final GridUnsafeMemory offheap = null;
+    private final ConcurrentMap<String, H2TableDescriptor> tbls = new ConcurrentHashMap<>();
 
     /** */
-    private final ConcurrentMap<String, H2TableDescriptor> tbls = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<H2TypeKey, H2TableDescriptor> typeToTbl = new ConcurrentHashMap<>();
 
-    /** */
-    private final ConcurrentMap<String, H2TableDescriptor> typeToTbl = new ConcurrentHashMap8<>();
+    /** Usage count. */
+    private int usageCnt;
 
     /**
      * Constructor.
@@ -56,10 +54,21 @@ public class H2Schema {
     }
 
     /**
-     * @return Unsafe memory.
+     * Increments counter for number of caches having this schema.
+     *
+     * @return New value of caches counter.
      */
-    public GridUnsafeMemory offheap() {
-        return offheap;
+    public int incrementUsageCount() {
+        return ++usageCnt;
+    }
+
+    /**
+     * Increments counter for number of caches having this schema.
+     *
+     * @return New value of caches counter.
+     */
+    public int decrementUsageCount() {
+        return --usageCnt;
     }
 
     /**
@@ -81,8 +90,8 @@ public class H2Schema {
      * @param typeName Type name.
      * @return Table.
      */
-    public H2TableDescriptor tableByTypeName(String typeName) {
-        return typeToTbl.get(typeName);
+    public H2TableDescriptor tableByTypeName(String cacheName, String typeName) {
+        return typeToTbl.get(new H2TypeKey(cacheName, typeName));
     }
 
     /**
@@ -92,7 +101,7 @@ public class H2Schema {
         if (tbls.putIfAbsent(tbl.tableName(), tbl) != null)
             throw new IllegalStateException("Table already registered: " + tbl.fullTableName());
 
-        if (typeToTbl.putIfAbsent(tbl.typeName(), tbl) != null)
+        if (typeToTbl.putIfAbsent(new H2TypeKey(tbl.cache().name(), tbl.typeName()), tbl) != null)
             throw new IllegalStateException("Table already registered: " + tbl.fullTableName());
     }
 
@@ -102,7 +111,7 @@ public class H2Schema {
     public void remove(H2TableDescriptor tbl) {
         tbls.remove(tbl.tableName());
 
-        typeToTbl.remove(tbl.typeName());
+        typeToTbl.remove(new H2TypeKey(tbl.cache().name(), tbl.typeName()));
     }
 
     /**
@@ -115,7 +124,7 @@ public class H2Schema {
 
         tbls.remove(tbl.tableName());
 
-        typeToTbl.remove(tbl.typeName());
+        typeToTbl.remove(new H2TypeKey(tbl.cache().name(), tbl.typeName()));
     }
 
     /**

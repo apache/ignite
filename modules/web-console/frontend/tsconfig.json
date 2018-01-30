@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "allowSyntheticDefaultImports": true,
+        "target": "ES2017",
+        "allowJs": true,
+        "checkJs": true,
+        "baseUrl": ".",
+        "paths": {
+            "*": ["*", "node_modules/*"]
+        }
+    }
+}
