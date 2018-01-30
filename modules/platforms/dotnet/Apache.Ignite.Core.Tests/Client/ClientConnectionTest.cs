@@ -107,6 +107,48 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
+        /// Tests client config with EndPoints property.
+        /// </summary>
+        [Test]
+        public void TestEndPoints()
+        {
+            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            {
+                ignite.CreateCache<int, int>("foo");
+
+                const int port = IgniteClientConfiguration.DefaultPort;
+
+                // DnsEndPoint.
+                var cfg = new IgniteClientConfiguration
+                {
+                    EndPoints =
+                    {
+                        new DnsEndPoint("localhost", port, AddressFamily.InterNetwork)
+                    }
+                };
+
+                using (var client = Ignition.StartClient(cfg))
+                {
+                    Assert.AreEqual("foo", client.GetCacheNames().Single());
+                }
+
+                // IPEndPoint.
+                cfg = new IgniteClientConfiguration
+                {
+                    EndPoints =
+                    {
+                        new IPEndPoint(new IPAddress(new byte[] {127, 0, 0, 1}), port)
+                    }
+                };
+
+                using (var client = Ignition.StartClient(cfg))
+                {
+                    Assert.AreEqual("foo", client.GetCacheNames().Single());
+                }
+            }
+        }
+
+        /// <summary>
         /// Tests that default configuration throws.
         /// </summary>
         [Test]
@@ -330,7 +372,7 @@ namespace Apache.Ignite.Core.Tests.Client
             using (Ignition.Start(TestUtils.GetTestConfiguration()))
             {
                 // Connect to Ignite REST endpoint.
-                var cfg = new IgniteClientConfiguration {Host = "127.0.0.1", Port = 11211 };
+                var cfg = new IgniteClientConfiguration {Host = "127.0.0.1", Port = 11211};
                 var ex = Assert.Throws<SocketException>(() => Ignition.StartClient(cfg));
                 Assert.AreEqual(SocketError.ConnectionAborted, ex.SocketErrorCode);
             }
