@@ -379,6 +379,24 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
+        /// Tests the failover and reconnect logic.
+        /// </summary>
+        [Test]
+        public void TestFailoverReconnect()
+        {
+            // Connect client and check.
+            Ignition.Start(TestUtils.GetTestConfiguration());
+            var client = Ignition.StartClient(new IgniteClientConfiguration("127.0.0.1"));
+            Assert.AreEqual(0, client.GetCacheNames().Count);
+
+            // Stop server.
+            Ignition.StopAll(true);
+            client.GetCacheNames();
+
+            // TODO: ???
+        }
+
+        /// <summary>
         /// Starts the client.
         /// </summary>
         private static IIgniteClient StartClient()

@@ -70,6 +70,17 @@ namespace Apache.Ignite.Core.Client
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="IgniteClientConfiguration" /> class.
+        /// </summary>
+        /// <param name="host">The host to connect to.</param>
+        public IgniteClientConfiguration(string host) : this()
+        {
+            IgniteArgumentCheck.NotNull(host, "host");
+
+            Host = host;
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="IgniteClientConfiguration"/> class.
         /// </summary>
         /// <param name="cfg">The configuration to copy.</param>
