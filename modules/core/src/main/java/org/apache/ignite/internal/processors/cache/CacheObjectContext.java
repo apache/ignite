@@ -29,6 +29,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -199,7 +200,7 @@ import org.apache.ignite.internal.util.typedef.F;
         for (Object obj : col)
             col0.add(unwrapBinary(obj, keepBinary, cpy));
 
-        return col0;
+        return U.unwrapSingletonCollection(col0);
     }
 
     /**
@@ -238,7 +239,7 @@ import org.apache.ignite.internal.util.typedef.F;
         for (Map.Entry<Object, Object> e : map.entrySet())
             map0.put(unwrapBinary(e.getKey(), keepBinary, cpy), unwrapBinary(e.getValue(), keepBinary, cpy));
 
-        return map0;
+        return U.unwrapSingletonMap(map0);
     }
 
     /**
