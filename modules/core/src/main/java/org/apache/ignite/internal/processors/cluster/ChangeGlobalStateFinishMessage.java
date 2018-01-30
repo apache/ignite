@@ -72,7 +72,7 @@ public class ChangeGlobalStateFinishMessage implements DiscoveryCustomMessage {
     }
 
     /**
-     * @return
+     * @return true if cluster state changed successfully
      */
     public boolean success() {
         return transitionRes == null ? clusterActive : transitionRes;
