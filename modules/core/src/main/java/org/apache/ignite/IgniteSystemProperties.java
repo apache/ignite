@@ -19,6 +19,7 @@ package org.apache.ignite;
 
 import java.io.Serializable;
 import java.lang.management.RuntimeMXBean;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
@@ -596,6 +597,12 @@ public final class IgniteSystemProperties {
 
     /** Ignite marshaller cache reread pause. */
     public static final String IGNITE_MARSHALLER_CACHE_REREAD_PAUSE = "IGNITE_MARSHALLER_CACHE_REREAD_PAUSE";
+
+    /**
+     * Property allowing to serialize a singleton collections obtained by {@link Collections#singletonList(Object)},
+     * {@link Collections#singleton(Object)} and {@link Collections#singletonMap(Object, Object)}.
+     */
+    public static final String IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION = "IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION";
 
     /**
      * Enforces singleton.
