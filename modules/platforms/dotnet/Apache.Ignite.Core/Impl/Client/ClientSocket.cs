@@ -489,7 +489,37 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private static IEnumerable<EndPoint> GetEndPoints(IgniteClientConfiguration cfg)
         {
-            yield return new DnsEndPoint(cfg.Host, cfg.Port);
+            var host = cfg.Host;
+
+            if (host == null && cfg.EndPoints.Count == 0)
+            {
+                throw new IgniteException("IgniteClientConfiguration does not contain any endpoints: " +
+                                          "Host is null, EndPoints is empty.");
+            }
+
+            var res = new List<EndPoint>(cfg.EndPoints.Count + (host == null ? 0 : 4));
+
+            if (host != null)
+            {
+                // GetHostEntry accepts IPs, but TryParse is a more efficient shortcut.
+                IPAddress ip;
+
+                if (IPAddress.TryParse(host, out ip))
+                {
+                    res.Add(new IPEndPoint(ip, cfg.Port));
+                }
+                else
+                {
+                    foreach (var x in Dns.GetHostEntry(host).AddressList)
+                    {
+                        res.Add(new IPEndPoint(x, cfg.Port));
+                    }
+                }
+            }
+
+            res.AddRange(cfg.EndPoints);
+
+            return res;
         }
 
         /// <summary>
