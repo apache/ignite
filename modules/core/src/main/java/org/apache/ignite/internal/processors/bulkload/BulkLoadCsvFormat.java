@@ -23,16 +23,28 @@ import java.util.regex.Pattern;
 public class BulkLoadCsvFormat extends BulkLoadFormat {
 
     /** Line separator pattern. */
-    public static final Pattern LINE_SEP_RE = Pattern.compile("[\r\n]+");
+    public static final Pattern DEFAULT_LINE_SEP_RE = Pattern.compile("[\r\n]+");
 
     /** Field separator pattern. */
-    public static final Pattern FIELD_SEP_RE = Pattern.compile(",");
+    public static final Pattern DEFAULT_FIELD_SEP_RE = Pattern.compile(",");
 
     /** Quote characters */
-    public static final String QUOTE_CHARS = "\"";
+    public static final String DEFAULT_QUOTE_CHARS = "\"";
+
+    /** Default escape sequence start characters. */
+    public static final String DEFAULT_ESCAPE_CHARS = "\\";
+
+    /** Line comment start pattern. */
+    public static final Pattern DEFAULT_COMMENT_CHARS = null;
 
     /** Format name. */
     public static final String NAME = "CSV";
+
+    private Pattern lineSeparatorRe;
+    private Pattern fieldSeparatorRe;
+    private String quoteChars;
+    private Pattern commentChars;
+    private String escapeChars;
 
     /**
      * Returns the name of the format.
@@ -41,5 +53,95 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      */
     @Override public String name() {
         return NAME;
+    }
+
+    /**
+     * Returns the line separator pattern.
+     *
+     * @return The line separator pattern.
+     */
+    public Pattern lineSeparatorRe() {
+        return lineSeparatorRe;
+    }
+
+    /**
+     * Sets the line separator pattern.
+     *
+     * @param lineSeparatorRe The line separator pattern.
+     */
+    public void lineSeparatorRe(Pattern lineSeparatorRe) {
+        this.lineSeparatorRe = lineSeparatorRe;
+    }
+
+    /**
+     * Returns the field separator pattern.
+     *
+     * @return The field separator pattern.
+     */
+    public Pattern fieldSeparatorRe() {
+        return fieldSeparatorRe;
+    }
+
+    /**
+     * Sets the field separator pattern.
+     *
+     * @param fieldSeparatorRe The field separator pattern.
+     */
+    public void fieldSeparatorRe(Pattern fieldSeparatorRe) {
+        this.fieldSeparatorRe = fieldSeparatorRe;
+    }
+
+    /**
+     * Returns the quote characters.
+     *
+     * @return The quote characters.
+     */
+    public String quoteChars() {
+        return quoteChars;
+    }
+
+    /**
+     * Sets the quote characters.
+     *
+     * @param quoteChars The quote characters.
+     */
+    public void quoteChars(String quoteChars) {
+        this.quoteChars = quoteChars;
+    }
+
+    /**
+     * Returns the line comment start pattern.
+     *
+     * @return The line comment start pattern.
+     */
+    public Pattern commentChars() {
+        return commentChars;
+    }
+
+    /**
+     * Sets the line comment start pattern.
+     *
+     * @param commentChars The line comment start pattern.
+     */
+    public void commentChars(Pattern commentChars) {
+        this.commentChars = commentChars;
+    }
+
+    /**
+     * Returns the escape characters.
+     *
+     * @return The escape characters.
+     */
+    public String escapeChars() {
+        return escapeChars;
+    }
+
+    /**
+     * Sets the escape characters.
+     *
+     * @param escapeChars The escape characters.
+     */
+    public void escapeChars(String escapeChars) {
+        this.escapeChars = escapeChars;
     }
 }

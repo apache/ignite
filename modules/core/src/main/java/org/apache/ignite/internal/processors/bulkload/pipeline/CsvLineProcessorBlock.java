@@ -19,32 +19,57 @@ package org.apache.ignite.internal.processors.bulkload.pipeline;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** A {@link PipelineBlock}, which splits line according to CSV format rules and unquotes fields.
- * The next block {@link PipelineBlock#accept(Object, boolean)} is called per-line. */
+/**
+ * A {@link PipelineBlock}, which splits line according to CSV format rules and unquotes fields.
+ *
+ * <p>The next block {@link PipelineBlock#accept(Object, boolean)} is called per-line.
+ */
 public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
 
     /** Field delimiter pattern. */
     private final Pattern fieldDelimiter;
 
-    /* Quote character. */
+    /* Quote characters. */
     private final String quoteChars;
+
+    /** Line comment start characters. */
+    @Nullable private final Pattern commentStartRe;
+
+    /** Escape sequence start characters. */
+    @Nullable private final String escapeChars;
 
     /**
      * Creates a CSV line parser.
+     *
      * @param fieldDelimiter The pattern for the field delimiter.
-     * @param quoteChars Quoting character. */
-    public CsvLineProcessorBlock(Pattern fieldDelimiter, String quoteChars) {
+     * @param quoteChars Quoting character.
+     * @param commentStartRe Line comment start characters.
+     * @param escapeChars Escape sequence start characters.
+     */
+    public CsvLineProcessorBlock(@NotNull Pattern fieldDelimiter, @NotNull String quoteChars,
+        @Nullable Pattern commentStartRe, @Nullable String escapeChars) {
+
         super();
 
+        this.commentStartRe = commentStartRe;
+        this.escapeChars = escapeChars;
         this.fieldDelimiter = fieldDelimiter;
         this.quoteChars = quoteChars;
     }
 
     /** {@inheritDoc} */
     @Override public void accept(String input, boolean isEof) throws IgniteCheckedException {
+
+        input = stripComment(input);
+
+        if (input == null)
+            return;
+
         String[] output = fieldDelimiter.split(input);
 
         for (int i = 0; i < output.length; i++)
@@ -64,5 +89,24 @@ public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
         int endPos = quoteChars.indexOf(str.charAt(str.length() - 1)) != -1 ? str.length() - 1 : str.length();
 
         return str.substring(startPos, endPos);
+    }
+
+    /**
+     * Strips the line comment, if exists.
+     *
+     */
+    @Nullable private String stripComment(String input) {
+        if (commentStartRe != null) {
+            Matcher commentMatcher = commentStartRe.matcher(input);
+
+            if (commentMatcher.find()) {
+                if (commentMatcher.start() == 0)
+                    return null;
+
+                return input.substring(0, commentMatcher.start());
+            }
+        }
+
+        return input;
     }
 }

@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import static org.apache.ignite.internal.processors.bulkload.BulkLoadParameters.DEFAULT_INPUT_CHARSET;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_CONTINUE;
@@ -56,15 +57,32 @@ public class BulkLoadCsvParser extends BulkLoadParser {
     public BulkLoadCsvParser(BulkLoadFormat format) {
         super(format);
 
+        BulkLoadCsvFormat csvFormat = (BulkLoadCsvFormat)format;
+
         nextBatchIdx = 0;
 
         inputBlock = new CharsetDecoderBlock(DEFAULT_INPUT_CHARSET);
 
         collectorBlock = new StrListAppenderBlock();
 
-        inputBlock.append(new LineSplitterBlock(BulkLoadCsvFormat.LINE_SEP_RE))
-               .append(new CsvLineProcessorBlock(BulkLoadCsvFormat.FIELD_SEP_RE, BulkLoadCsvFormat.QUOTE_CHARS))
-               .append(collectorBlock);
+        Pattern lineSepRe = csvFormat.lineSeparatorRe() == null ?
+            BulkLoadCsvFormat.DEFAULT_LINE_SEP_RE : csvFormat.lineSeparatorRe();
+
+        Pattern fieldSepRe = csvFormat.fieldSeparatorRe() == null ?
+            BulkLoadCsvFormat.DEFAULT_LINE_SEP_RE : csvFormat.lineSeparatorRe();
+
+        Pattern commentChars = csvFormat.commentChars() == null ?
+            BulkLoadCsvFormat.DEFAULT_COMMENT_CHARS : csvFormat.commentChars();
+
+        String quoteChars = csvFormat.quoteChars() == null ?
+            BulkLoadCsvFormat.DEFAULT_QUOTE_CHARS : csvFormat.quoteChars();
+
+        String escapeChars = csvFormat.escapeChars() == null ?
+            BulkLoadCsvFormat.DEFAULT_ESCAPE_CHARS : csvFormat.escapeChars();
+
+        inputBlock.append(new LineSplitterBlock(lineSepRe))
+                  .append(new CsvLineProcessorBlock(fieldSepRe, escapeChars, commentChars, quoteChars))
+                  .append(collectorBlock);
     }
 
     /** {@inheritDoc} */
