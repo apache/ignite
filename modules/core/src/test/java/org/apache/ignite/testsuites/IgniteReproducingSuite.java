@@ -18,7 +18,6 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.IgniteCheckpointDirtyPagesForLowLoadTest;
 
 /**
  * Test suite for cycled run tests on PR code. <br>
@@ -31,13 +30,16 @@ import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.Ign
  * This suite is not included into main build
  */
 public class IgniteReproducingSuite extends TestSuite {
+    /**
+     * @return suite with test(s) for reproduction some problem.
+     * @throws Exception if failed.
+     */
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Issue Reproducing Test Suite");
 
         //uncomment to add some test
-        for (int i = 0; i < 100; i++)
-            suite.addTestSuite(IgniteCheckpointDirtyPagesForLowLoadTest.class);
-
+        //for (int i = 0; i < 100; i++)
+        //    suite.addTestSuite(IgniteCheckpointDirtyPagesForLowLoadTest.class);
 
         return suite;
     }
