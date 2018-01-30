@@ -50,8 +50,8 @@ public class BulkLoadCsvParser extends BulkLoadParser {
 
     /**
      * Creates bulk load CSV parser.
+
      *  @param format Format options (parsed from COPY command on the server side).
-     *
      */
     public BulkLoadCsvParser(BulkLoadFormat format) {
         super(format);

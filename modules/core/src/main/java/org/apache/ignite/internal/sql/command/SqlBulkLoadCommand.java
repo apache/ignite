@@ -86,7 +86,6 @@ public class SqlBulkLoadCommand implements SqlCommand {
         return this;
     }
 
-
     /**
      * Parses the file name.
      *
@@ -108,7 +107,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
     }
 
     /**
-     * Parses the list of cols.
+     * Parses the list of columns.
      *
      * @param lex The lexer.
      */
@@ -270,7 +269,6 @@ public class SqlBulkLoadCommand implements SqlCommand {
      */
     public String localFileName() {
         return locFileName;
-
     }
 
     /**
@@ -325,7 +323,6 @@ public class SqlBulkLoadCommand implements SqlCommand {
      */
     public Charset localFileCharset() {
         return locFileCharset;
-
     }
 
     /**
