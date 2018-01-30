@@ -194,7 +194,9 @@ import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -10320,6 +10322,39 @@ public abstract class IgniteUtils {
      */
     public static LockTracer lockTracer(Lock lock) {
         return new LockTracer(lock);
+    }
+
+    /**
+     * @param addr pointer in memory
+     * @param len how much byte to read (should divide 8)
+     *
+     * @return hex representation of memory region
+     */
+    public static String toHexString(long addr, int len) {
+        assert (len & 0b111) == 0 && len > 0;
+
+        StringBuilder sb = new StringBuilder(len * 2);
+
+        for (int i = 0; i < len; i += 8)
+            sb.append(U.hexLong(GridUnsafe.getLong(addr + i)));
+
+        return sb.toString();
+    }
+
+    /**
+     * @param buf which content should be converted to string
+     *
+     * @return hex representation of memory region
+     */
+    public static String toHexString(ByteBuffer buf) {
+        assert (buf.capacity() & 0b111) == 0;
+
+        StringBuilder sb = new StringBuilder(buf.capacity() * 2);
+
+        for (int i = 0; i < buf.capacity(); i += 8)
+            sb.append(U.hexLong(buf.getLong(i)));
+
+        return sb.toString();
     }
 
     /**
