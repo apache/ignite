@@ -1959,6 +1959,10 @@ BOOST_AUTO_TEST_CASE(TestQueryTimeoutQuery)
 
 BOOST_AUTO_TEST_CASE(TestQueryTimeoutBatch)
 {
+
+    char dd;
+    std::cin >> dd;
+
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
     SQLRETURN ret = SQLSetStmtAttr(stmt, SQL_ATTR_QUERY_TIMEOUT, reinterpret_cast<SQLPOINTER>(5), 0);
