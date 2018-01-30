@@ -410,7 +410,7 @@ public abstract class PagesList extends DataStructure {
      * @return Tail page ID.
      */
     private Stripe addStripe(int bucket, boolean reuse, ReuseBag bag) throws IgniteCheckedException {
-        long pageId = reuse ? allocatePage(bag) : allocatePageNoReuse();
+        long pageId = allocatePage(bag, reuse);
 
         init(pageId, PagesListNodeIO.VERSIONS.latest());
 
@@ -621,7 +621,7 @@ public abstract class PagesList extends DataStructure {
             final long tailPage = acquirePage(tailId);
 
             try {
-                long tailAddr = writeLockPage(tailId, tailPage, bucket, lockAttempt++); // Explicit check.
+                long tailAddr = writeLockPage(tailId, tailPage, bucket, lockAttempt++, bag); // Explicit check.
 
                 if (tailAddr == 0L)
                     continue;
@@ -965,10 +965,11 @@ public abstract class PagesList extends DataStructure {
      * @param page Page pointer.
      * @param bucket Bucket.
      * @param lockAttempt Lock attempts counter.
+     * @param bag Reuse bag.
      * @return Page address if page is locked of {@code null} if can retry lock.
      * @throws IgniteCheckedException If failed.
      */
-    private long writeLockPage(long pageId, long page, int bucket, int lockAttempt)
+    private long writeLockPage(long pageId, long page, int bucket, int lockAttempt, ReuseBag bag)
         throws IgniteCheckedException {
         // Striped pool optimization.
         IgniteThread igniteThread = IgniteThread.current();
@@ -988,7 +989,7 @@ public abstract class PagesList extends DataStructure {
             Stripe[] stripes = getBucket(bucket);
 
             if (stripes == null || stripes.length < MAX_STRIPES_PER_BUCKET) {
-                addStripe(bucket, !isReuseBucket(bucket), null);
+                addStripe(bucket, !isReuseBucket(bucket), bag);
 
                 return 0L;
             }
@@ -1014,7 +1015,7 @@ public abstract class PagesList extends DataStructure {
             final long tailPage = acquirePage(tailId);
 
             try {
-                long tailAddr = writeLockPage(tailId, tailPage, bucket, lockAttempt++); // Explicit check.
+                long tailAddr = writeLockPage(tailId, tailPage, bucket, lockAttempt++, null); // Explicit check.
 
                 if (tailAddr == 0L)
                     continue;
