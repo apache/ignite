@@ -27,7 +27,8 @@
 
 #include <sstream>
 
-#include "ignite/odbc/system/socket_client.h"
+#include "ignite/common/concurrent.h"
+#include "ignite/odbc/system/tcp_socket_client.h"
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/log.h"
 
@@ -94,39 +95,44 @@ namespace ignite
 {
     namespace odbc
     {
-        namespace tcp
+        namespace system
         {
 
-            SocketClient::SocketClient() :
+            TcpSocketClient::TcpSocketClient() :
                 socketHandle(INVALID_SOCKET),
                 blocking(true)
             {
                 // No-op.
             }
 
-            SocketClient::~SocketClient()
+            TcpSocketClient::~TcpSocketClient()
             {
                 Close();
             }
 
-            bool SocketClient::Connect(const char* hostname, uint16_t port, diagnostic::Diagnosable& diag)
+            bool TcpSocketClient::Connect(const char* hostname, uint16_t port, diagnostic::Diagnosable& diag)
             {
+                static common::concurrent::CriticalSection initCs;
                 static bool networkInited = false;
 
                 // Initing networking if is not inited.
                 if (!networkInited)
                 {
-                    WSADATA wsaData;
-
-                    networkInited = (WSAStartup(MAKEWORD(2, 2), &wsaData) == 0);
-
+                    common::concurrent::CsLockGuard lock(initCs);
                     if (!networkInited)
                     {
-                        LOG_MSG("Networking initialisation failed: " << GetLastSocketErrorMessage());
+                        WSADATA wsaData;
 
-                        diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not initialize Windows networking.");
+                        networkInited = (WSAStartup(MAKEWORD(2, 2), &wsaData) == 0);
 
-                        return false;
+                        if (!networkInited)
+                        {
+                            LOG_MSG("Networking initialisation failed: " << GetLastSocketErrorMessage());
+
+                            diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not initialize Windows networking.");
+
+                            return false;
+                        }
                     }
                 }
 
@@ -213,7 +219,7 @@ namespace ignite
                 return socketHandle != INVALID_SOCKET;
             }
 
-            void SocketClient::Close()
+            void TcpSocketClient::Close()
             {
                 if (socketHandle != INVALID_SOCKET)
                 {
@@ -223,7 +229,7 @@ namespace ignite
                 }
             }
 
-            int SocketClient::Send(const int8_t* data, size_t size, int32_t timeout)
+            int TcpSocketClient::Send(const int8_t* data, size_t size, int32_t timeout)
             {
                 if (!blocking)
                 {
@@ -236,7 +242,7 @@ namespace ignite
                 return send(socketHandle, reinterpret_cast<const char*>(data), static_cast<int>(size), 0);
             }
 
-            int SocketClient::Receive(int8_t* buffer, size_t size, int32_t timeout)
+            int TcpSocketClient::Receive(int8_t* buffer, size_t size, int32_t timeout)
             {
                 if (!blocking)
                 {
@@ -249,7 +255,12 @@ namespace ignite
                 return recv(socketHandle, reinterpret_cast<char*>(buffer), static_cast<int>(size), 0);
             }
 
-            void SocketClient::TrySetOptions(diagnostic::Diagnosable& diag)
+            bool TcpSocketClient::IsBlocking() const
+            {
+                return blocking;
+            }
+
+            void TcpSocketClient::TrySetOptions(diagnostic::Diagnosable& diag)
             {
                 BOOL trueOpt = TRUE;
                 ULONG uTrueOpt = TRUE;
@@ -388,7 +399,7 @@ namespace ignite
 #endif
             }
 
-            int SocketClient::WaitOnSocket(int32_t timeout, bool rd)
+            int TcpSocketClient::WaitOnSocket(int32_t timeout, bool rd)
             {
                 int ready = 0;
                 int lastError = 0;
@@ -414,9 +425,9 @@ namespace ignite
                         readFds, writeFds, NULL, (timeout == 0 ? NULL : &tv));
 
                     if (ready == SOCKET_ERROR)
-                        lastError = WSAGetLastError();
+                        lastError = GetLastSocketError();
 
-                } while (ready == SOCKET_ERROR && lastError == WSAEINTR);
+                } while (ready == SOCKET_ERROR && IsSocketOperationInterrupted(lastError));
 
                 if (ready == SOCKET_ERROR)
                     return -lastError;
@@ -425,6 +436,25 @@ namespace ignite
                     return WaitResult::TIMEOUT;
 
                 return WaitResult::SUCCESS;
+            }
+
+            int TcpSocketClient::GetLastSocketError()
+            {
+                return WSAGetLastError();
+            }
+
+            int TcpSocketClient::GetLastSocketError(int handle)
+            {
+                int lastError = 0;
+                socklen_t size = sizeof(lastError);
+                int res = getsockopt(handle, SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&lastError), &size);
+
+                return res == SOCKET_ERROR ? 0 : lastError;
+            }
+
+            bool TcpSocketClient::IsSocketOperationInterrupted(int errorCode)
+            {
+                return errorCode == WSAEINTR;
             }
         }
     }
