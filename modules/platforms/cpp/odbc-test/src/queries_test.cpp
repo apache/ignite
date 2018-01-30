@@ -228,7 +228,7 @@ struct QueriesTestSuiteFixture : odbc::OdbcTestSuite
 
     static Ignite StartAdditionalNode(const char* name)
     {
-        return StartTestNode("queries-test-noodbc.xml", name);
+        return StartTestNode("queries-test.xml", name);
     }
 
     /** Node started during the test. */
@@ -1340,7 +1340,7 @@ void CheckObjectData(int8_t* data, int32_t len, T const& value)
     BinaryObject obj(BinaryObjectImpl::FromMemory(mem, 0, 0));
 
     T actual = obj.Deserialize<T>();
-    
+
     BOOST_CHECK_EQUAL(value, actual);
 }
 
@@ -1374,7 +1374,7 @@ BOOST_AUTO_TEST_CASE(TestKeyVal)
     int8_t column6[ODBC_BUFFER_SIZE] = { 0 };
     //strField
     char column7[ODBC_BUFFER_SIZE] = { 0 };
-    
+
     SQLLEN column1Len = sizeof(column1);
     SQLLEN column2Len = sizeof(column2);
     SQLLEN column3Len = sizeof(column3);
@@ -1438,13 +1438,17 @@ BOOST_AUTO_TEST_CASE(TestKeyVal)
     CheckObjectData(column4, static_cast<int32_t>(column4Len), obj);
 
     BOOST_CHECK_EQUAL(column5, obj.i32Field);
-    
+
     CheckObjectData(column6, static_cast<int32_t>(column6Len), obj.objField);
 
     BOOST_CHECK_EQUAL(column7, obj.strField);
 
     ret = SQLFetch(stmt);
     BOOST_CHECK(ret == SQL_NO_DATA);
+
+    ret = SQLFreeStmt(stmt, SQL_CLOSE);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
     SQLCHAR requestStar[] = "SELECT _key, _val, * FROM ComplexType";
 
@@ -1534,7 +1538,7 @@ BOOST_AUTO_TEST_CASE(TestExecuteAfterCursorClose)
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
     ret = SQLFetch(stmt);
-    
+
     if (!SQL_SUCCEEDED(ret))
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
