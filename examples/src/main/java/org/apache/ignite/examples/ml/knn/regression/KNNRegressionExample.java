@@ -72,7 +72,7 @@ public class KNNRegressionExample {
                     // Prepare path to read
                     File file = IgniteUtils.resolveIgnitePath(KNN_CLEARED_MACHINES_TXT);
                     if (file == null)
-                        throw new RuntimeException("Can't found file: " + KNN_CLEARED_MACHINES_TXT);
+                        throw new RuntimeException("Can't find file: " + KNN_CLEARED_MACHINES_TXT);
 
                     Path path = file.toPath();
 

@@ -72,7 +72,7 @@ public class KNNClassificationExample {
                     // Prepare path to read
                     File file = IgniteUtils.resolveIgnitePath(KNN_IRIS_TXT);
                     if (file == null)
-                        throw new RuntimeException("Can't found file: " + KNN_IRIS_TXT);
+                        throw new RuntimeException("Can't find file: " + KNN_IRIS_TXT);
 
                     Path path = file.toPath();
 
