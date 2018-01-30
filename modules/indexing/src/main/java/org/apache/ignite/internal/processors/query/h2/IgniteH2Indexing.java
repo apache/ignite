@@ -113,7 +113,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
-import org.apache.ignite.internal.processors.query.h2.views.GridH2SystemViewProcessor;
+import org.apache.ignite.internal.processors.query.h2.views.IgniteSqlMetaViewProcessor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
@@ -339,7 +339,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private DdlStatementsProcessor ddlProc;
 
     /** */
-    private GridH2SystemViewProcessor sysViewProc;
+    private IgniteSqlMetaViewProcessor metaViewProc;
 
     /** */
     private final ConcurrentMap<QueryTable, GridH2Table> dataTables = new ConcurrentHashMap8<>();
@@ -2445,14 +2445,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             dmlProc.start(ctx, this);
             ddlProc.start(ctx, this);
 
-            if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS))
-                log.info("System views are disabled");
+            if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_DISABLE_META_VIEWS))
+                log.info("Meta views are disabled");
             else {
-                createSchema(GridH2SystemViewProcessor.SCHEMA_NAME);
+                createSchema(IgniteSqlMetaViewProcessor.SCHEMA_NAME);
 
-                sysViewProc = new GridH2SystemViewProcessor();
+                metaViewProc = new IgniteSqlMetaViewProcessor();
 
-                sysViewProc.start(ctx, this);
+                metaViewProc.start(ctx, this);
             }
         }
 

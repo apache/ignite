@@ -27,39 +27,39 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 
 /**
- * System views processor.
+ * Meta views processor.
  */
-public class GridH2SystemViewProcessor {
+public class IgniteSqlMetaViewProcessor {
     /** Table schema name. */
     public static final String SCHEMA_NAME = "IGNITE";
 
     /**
-     * Starts system views processor.
+     * Starts meta views processor.
      *
      * @param ctx Kernal context.
      * @param idx indexing.
      */
     public void start(GridKernalContext ctx, IgniteH2Indexing idx) {
-        IgniteLogger log = ctx.log(GridH2SystemViewProcessor.class);
+        IgniteLogger log = ctx.log(IgniteSqlMetaViewProcessor.class);
 
-        log.info("Starting system views processor");
+        log.info("Starting meta views processor");
 
         Connection c = idx.connectionForSchema(SCHEMA_NAME);
 
         try {
-            Collection<GridH2SystemView> viewsToRegister = new ArrayList<>();
+            Collection<IgniteSqlMetaView> viewsToRegister = new ArrayList<>();
 
-            viewsToRegister.add(new GridH2SystemViewImplTransactions(ctx));
+            viewsToRegister.add(new IgniteSqlMetaViewImplTransactions(ctx));
 
-            for (GridH2SystemView view : viewsToRegister) {
-                GridH2SystemViewTableEngine.registerView(c, view);
+            for (IgniteSqlMetaView view : viewsToRegister) {
+                IgniteSqlMetaTableEngine.registerView(c, view);
 
                 if (log.isDebugEnabled())
-                    log.debug("Registered system view: " + view.getTableName());
+                    log.debug("Registered meta view: " + view.getTableName());
             }
         }
         catch (SQLException e) {
-            log.error("Failed to register system views: ", e);
+            log.error("Failed to register meta views: ", e);
 
             throw new IgniteException(e);
         }

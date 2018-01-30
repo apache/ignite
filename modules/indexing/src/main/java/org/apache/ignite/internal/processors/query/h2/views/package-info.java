@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains H2-based ignite system views implementation.
+ * Contains H2-based ignite meta views implementation.
  */
 package org.apache.ignite.internal.processors.query.h2.views;

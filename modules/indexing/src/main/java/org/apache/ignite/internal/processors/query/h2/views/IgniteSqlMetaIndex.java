@@ -33,9 +33,9 @@ import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 
 /**
- * System view H2 index.
+ * Meta view H2 index.
  */
-public class GridH2SystemViewIndex extends BaseIndex {
+public class IgniteSqlMetaIndex extends BaseIndex {
     /** Default full scan cost. */
     private static final double DEFAULT_FULL_SCAN_COST = 100d;
 
@@ -43,7 +43,7 @@ public class GridH2SystemViewIndex extends BaseIndex {
      * @param tbl Table.
      * @param col Column.
      */
-    GridH2SystemViewIndex(GridH2SystemViewTable tbl, Column... col) {
+    IgniteSqlMetaIndex(IgniteSqlMetaTable tbl, Column... col) {
         IndexColumn[] idxCols;
 
         if (col != null && col.length > 0)
@@ -71,8 +71,8 @@ public class GridH2SystemViewIndex extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, SearchRow first, SearchRow last) {
-        if (table instanceof GridH2SystemViewTable) {
-            Iterable<Row> rows = ((GridH2SystemViewTable)table).getRows(ses, first, last);
+        if (table instanceof IgniteSqlMetaTable) {
+            Iterable<Row> rows = ((IgniteSqlMetaTable)table).getRows(ses, first, last);
 
             return new GridH2Cursor(rows.iterator());
         }

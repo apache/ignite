@@ -25,21 +25,21 @@ import org.h2.command.ddl.CreateTableData;
 import org.h2.table.Table;
 
 /**
- * System view H2 table engine.
+ * Meta view H2 table engine.
  */
-public class GridH2SystemViewTableEngine implements TableEngine {
+public class IgniteSqlMetaTableEngine implements TableEngine {
     /** */
-    private static volatile GridH2SystemView view;
+    private static volatile IgniteSqlMetaView view;
 
     /**
      * @param conn Connection.
      * @param view View.
      */
-    public static synchronized void registerView(Connection conn, GridH2SystemView view)
+    public static synchronized void registerView(Connection conn, IgniteSqlMetaView view)
         throws SQLException {
-        GridH2SystemViewTableEngine.view = view;
+        IgniteSqlMetaTableEngine.view = view;
 
-        String sql = view.getCreateSQL() + " ENGINE \"" + GridH2SystemViewTableEngine.class.getName() + "\"";
+        String sql = view.getCreateSQL() + " ENGINE \"" + IgniteSqlMetaTableEngine.class.getName() + "\"";
 
         try {
             try (Statement s = conn.createStatement()) {
@@ -47,12 +47,12 @@ public class GridH2SystemViewTableEngine implements TableEngine {
             }
         }
         finally {
-            GridH2SystemViewTableEngine.view = null;
+            IgniteSqlMetaTableEngine.view = null;
         }
     }
 
     /** {@inheritDoc} */
     @Override public Table createTable(CreateTableData data) {
-        return new GridH2SystemViewTable(data, view);
+        return new IgniteSqlMetaTable(data, view);
     }
 }

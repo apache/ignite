@@ -25,16 +25,16 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
 /**
- * Tests for ignite SQL system views.
+ * Tests for ignite SQL meta views.
  */
-public class IgniteSqlSystemViewsSelfTest extends GridCommonAbstractTest {
+public class IgniteSqlMetaViewsSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
 
     /**
-     * Test local transactions system view.
+     * Test local transactions meta view.
      *
      * @throws Exception If failed.
      */

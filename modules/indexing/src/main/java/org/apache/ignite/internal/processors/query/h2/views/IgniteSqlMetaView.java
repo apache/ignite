@@ -30,9 +30,9 @@ import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 
 /**
- * System view base class.
+ * Meta view base class.
  */
-public abstract class GridH2SystemView {
+public abstract class IgniteSqlMetaView {
     /** Default row count approximation. */
     protected static final long DEFAULT_ROW_COUNT_APPROXIMATION = 100L;
 
@@ -61,7 +61,7 @@ public abstract class GridH2SystemView {
      * @param indexes Indexed columns.
      * @param cols Columns.
      */
-    public GridH2SystemView(String tblName, String desc, GridKernalContext ctx, String[] indexes, Column... cols) {
+    public IgniteSqlMetaView(String tblName, String desc, GridKernalContext ctx, String[] indexes, Column... cols) {
         assert tblName != null;
         assert ctx != null;
         assert cols != null;
@@ -81,7 +81,7 @@ public abstract class GridH2SystemView {
      * @param ctx Context.
      * @param cols Columns.
      */
-    public GridH2SystemView(String tblName, String desc, GridKernalContext ctx, Column... cols) {
+    public IgniteSqlMetaView(String tblName, String desc, GridKernalContext ctx, Column... cols) {
         this(tblName, desc, ctx, new String[] {}, cols);
     }
 

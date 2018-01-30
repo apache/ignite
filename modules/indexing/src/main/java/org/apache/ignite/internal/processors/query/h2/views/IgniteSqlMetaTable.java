@@ -31,14 +31,14 @@ import org.h2.table.TableBase;
 import org.h2.table.TableType;
 
 /**
- * System view H2 table.
+ * Meta view H2 table.
  */
-public class GridH2SystemViewTable extends TableBase {
+public class IgniteSqlMetaTable extends TableBase {
     /** Scan index. */
-    protected final GridH2SystemViewIndex scanIdx;
+    protected final IgniteSqlMetaIndex scanIdx;
 
-    /** System view. */
-    protected final GridH2SystemView sysView;
+    /** Meta view. */
+    protected final IgniteSqlMetaView view;
 
     /**
      * Indexes.
@@ -49,23 +49,23 @@ public class GridH2SystemViewTable extends TableBase {
 
     /**
      * @param data Data.
-     * @param sysView System view.
+     * @param view Meta view.
      */
-    public GridH2SystemViewTable(CreateTableData data, GridH2SystemView sysView) {
+    public IgniteSqlMetaTable(CreateTableData data, IgniteSqlMetaView view) {
         super(data);
 
-        assert sysView != null;
+        assert view != null;
 
-        this.sysView = sysView;
+        this.view = view;
 
-        this.setColumns(sysView.getColumns());
+        this.setColumns(view.getColumns());
 
-        scanIdx = new GridH2SystemViewIndex(this);
+        scanIdx = new IgniteSqlMetaIndex(this);
 
         indexes = new ArrayList<>();
         indexes.add(scanIdx);
 
-        for (String index : sysView.getIndexes()) {
+        for (String index : view.getIndexes()) {
             String[] indexedCols = index.split(",");
 
             Column[] cols = new Column[indexedCols.length];
@@ -73,7 +73,7 @@ public class GridH2SystemViewTable extends TableBase {
             for (int i = 0; i < indexedCols.length; i++)
                 cols[i] = getColumn(indexedCols[i]);
 
-            GridH2SystemViewIndex idx = new GridH2SystemViewIndex(this, cols);
+            IgniteSqlMetaIndex idx = new IgniteSqlMetaIndex(this, cols);
 
             indexes.add(idx);
         }
@@ -86,7 +86,7 @@ public class GridH2SystemViewTable extends TableBase {
 
     /** {@inheritDoc} */
     @Override public String getCreateSQL() {
-        return sysView.getCreateSQL();
+        return view.getCreateSQL();
     }
 
     /** {@inheritDoc} */
@@ -147,17 +147,17 @@ public class GridH2SystemViewTable extends TableBase {
 
     /** {@inheritDoc} */
     @Override public long getRowCount(Session ses) {
-        return sysView.getRowCount();
+        return view.getRowCount();
     }
 
     /** {@inheritDoc} */
     @Override public boolean canGetRowCount() {
-        return sysView.canGetRowCount();
+        return view.canGetRowCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getRowCountApproximation() {
-        return sysView.getRowCount();
+        return view.getRowCount();
     }
 
     /** {@inheritDoc} */
@@ -211,6 +211,6 @@ public class GridH2SystemViewTable extends TableBase {
      * @param last Last.
      */
     public Iterable<Row> getRows(Session ses, SearchRow first, SearchRow last) {
-        return sysView.getRows(ses, first, last);
+        return view.getRows(ses, first, last);
     }
 }
