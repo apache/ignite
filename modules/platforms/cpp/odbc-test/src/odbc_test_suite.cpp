@@ -61,10 +61,7 @@ namespace ignite
             Prepare();
 
             // Connect string
-            std::vector<SQLCHAR> connectStr0;
-
-            connectStr0.reserve(connectStr.size() + 1);
-            std::copy(connectStr.begin(), connectStr.end(), std::back_inserter(connectStr0));
+            std::vector<SQLCHAR> connectStr0(connectStr.begin(), connectStr.end());
 
             SQLCHAR outstr[ODBC_BUFFER_SIZE];
             SQLSMALLINT outstrlen;
