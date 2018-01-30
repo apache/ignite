@@ -416,6 +416,9 @@ namespace Apache.Ignite.Core.Impl.Client
         private void SocketWrite(byte[] buf, int len)
         {
             // TODO: Retry same host a couple of times, then fail over to the next one?
+            // Every disconnect causes session end on the server side, we can't receive responses for existing requests.
+            // So we should do failover outside this class, I think.
+            // Keep some static server index in there to connect to the "next" server maybe.
             _stream.Write(buf, 0, len);
         }
 
