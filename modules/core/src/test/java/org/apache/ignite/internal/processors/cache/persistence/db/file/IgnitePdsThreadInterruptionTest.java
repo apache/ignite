@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.file;
 
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -31,7 +32,6 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ThreadLocalRandom8;
 
 /**
  * Test what interruptions of writing threads do not affect PDS.
@@ -135,7 +135,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
         Runnable clo = new Runnable() {
             @Override
             public void run() {
-                cache.get(ThreadLocalRandom8.current().nextInt(maxKey / 5));
+                cache.get(ThreadLocalRandom.current().nextInt(maxKey / 5));
             }
         };
         for (int i = 0; i < workers.length; i++) {
@@ -212,7 +212,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
                 IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
 
                 while (!stop)
-                    cache.put(ThreadLocalRandom8.current().nextInt(maxKey), payload);
+                    cache.put(ThreadLocalRandom.current().nextInt(maxKey), payload);
             }
         };
 
