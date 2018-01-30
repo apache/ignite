@@ -508,7 +508,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 for (Object item : col)
                     pCol.add(marshalToBinary(item));
 
-                return pCol;
+                return U.unwrapSingletonCollection(pCol);
             }
         }
 
@@ -521,7 +521,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 for (Map.Entry<?, ?> e : map.entrySet())
                     pMap.put(marshalToBinary(e.getKey()), marshalToBinary(e.getValue()));
 
-                return pMap;
+                return U.unwrapSingletonMap(pMap);
             }
         }
 

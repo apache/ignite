@@ -277,6 +277,12 @@ public class BinaryContext {
         mapTypes.put(HashMap.class, GridBinaryMarshaller.HASH_MAP);
         mapTypes.put(LinkedHashMap.class, GridBinaryMarshaller.LINKED_HASH_MAP);
 
+        if (BinaryUtils.isSingletonCollectionSerializationEnabled()) {
+            colTypes.put(BinaryUtils.SINGLETON_LIST_CLS, GridBinaryMarshaller.SINGLETON_LIST);
+            colTypes.put(BinaryUtils.SINGLETON_SET_CLS, GridBinaryMarshaller.SINGLETON_SET);
+            mapTypes.put(BinaryUtils.SINGLETON_MAP_CLS, GridBinaryMarshaller.SINGLETON_MAP);
+        }
+
         // IDs range from [0..200] is used by Java SDK API and GridGain legacy API
 
         registerPredefinedType(Byte.class, GridBinaryMarshaller.BYTE);
