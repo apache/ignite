@@ -133,19 +133,36 @@ public class JdbcThinTcpIo {
                     ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, exception);
         }
 
-        List<String> inaccessibleAddrs = new ArrayList<>();
+        List<String> inaccessibleAddrs = null;
+        List<Exception> exceptions = null;
+
         for (InetAddress addr : addrs) {
             try {
                 connect(addr, timeout);
                 break;
             } catch(IOException | IgniteCheckedException exception) {
+                if (inaccessibleAddrs == null)
+                    inaccessibleAddrs = new ArrayList<>();
+
                 inaccessibleAddrs.add(addr.getHostAddress());
+
+                if (exceptions == null)
+                    exceptions = new ArrayList<>();
+
+                exceptions.add(exception);
             }
         }
 
-        if (inaccessibleAddrs.size() == addrs.length) {
-            throw new SQLException("Failed to connect to server [host=" + connProps.getHost() + ", addresses=" +
+        if ((inaccessibleAddrs != null) && (inaccessibleAddrs.size() == addrs.length)) {
+            SQLException e = new SQLException("Failed to connect to server [host=" + connProps.getHost() + ", addresses=" +
                     inaccessibleAddrs + ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED);
+
+            if (exceptions != null)
+                for(Exception ex : exceptions) {
+                    e.addSuppressed(ex);
+                }
+
+            throw e;
         }
 
         handshake(CURRENT_VER);
@@ -181,6 +198,7 @@ public class JdbcThinTcpIo {
      * Get all addresses by host name.
      * @param host Host name.
      * @return Addresses.
+     * @throws UnknownHostException If host is unavailable.
      */
     protected InetAddress[] getAllAddressesByHost(String host) throws UnknownHostException {
         return InetAddress.getAllByName(host);
