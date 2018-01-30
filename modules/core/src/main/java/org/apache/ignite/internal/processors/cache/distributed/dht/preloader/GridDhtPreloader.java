@@ -220,7 +220,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                 ClusterNode histSupplier = null;
 
-                if (ctx.database().persistenceEnabled() && exchFut != null) {
+                if (grp.persistenceEnabled() && exchFut != null) {
                     UUID nodeId = exchFut.partitionHistorySupplier(grp.groupId(), p);
 
                     if (nodeId != null)
@@ -235,7 +235,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         continue; // For.
                     }
 
-                    assert ctx.database().persistenceEnabled();
+                    assert grp.persistenceEnabled();
                     assert remoteOwners(p, topVer).contains(histSupplier) : remoteOwners(p, topVer);
 
                     GridDhtPartitionDemandMessage msg = assigns.get(histSupplier);
@@ -250,7 +250,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     msg.addPartition(p, true);
                 }
                 else {
-                    if (ctx.database().persistenceEnabled()) {
+                    if (grp.persistenceEnabled()) {
                         if (part.state() == RENTING || part.state() == EVICTED) {
                             IgniteInternalFuture<?> rentFut = part.rent(false);
 

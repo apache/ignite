@@ -892,11 +892,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public boolean persistenceEnabled() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public void onCacheGroupsStopped(
         Collection<IgniteBiTuple<CacheGroupContext, Boolean>> stoppedGrps
     ) {
@@ -1699,45 +1694,50 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     // TODO: https://issues.apache.org/jira/browse/IGNITE-6097
                     grp.offheap().onPartitionInitialCounterUpdated(i, 0);
 
-                    long partMetaId = pageMem.partitionMetaPageId(grpId, i);
-                    long partMetaPage = pageMem.acquirePage(grpId, partMetaId);
+                    checkpointReadLock();
 
                     try {
-                        long pageAddr = pageMem.writeLock(grpId, partMetaId, partMetaPage);
-
-                        boolean changed = false;
+                        long partMetaId = pageMem.partitionMetaPageId(grpId, i);
+                        long partMetaPage = pageMem.acquirePage(grpId, partMetaId);
 
                         try {
-                            PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
+                            long pageAddr = pageMem.writeLock(grpId, partMetaId, partMetaPage);
 
-                            T2<Integer, Long> fromWal = partStates.get(new T2<>(grpId, i));
+                            boolean changed = false;
 
-                            if (fromWal != null) {
+                            try {
+                                PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
+
+                            T2<Integer, Long> fromWal = partStates.get(new T2<>(grpId, i));if (fromWal != null) {
                                 int stateId = fromWal.get1();
 
-                                io.setPartitionState(pageAddr, (byte)stateId);
+                                    io.setPartitionState(pageAddr, (byte)stateId);
 
-                                changed = updateState(part, stateId);
+                                    changed = updateState(part, stateId);
 
-                                if (stateId == GridDhtPartitionState.OWNING.ordinal()) {
-                                    grp.offheap().onPartitionInitialCounterUpdated(i, fromWal.get2());
+                                if (stateId ==  GridDhtPartitionState.OWNING.ordinal()) {grp.offheap().onPartitionInitialCounterUpdated(i, fromWal.get2());
 
-                                    if (part.initialUpdateCounter() < fromWal.get2()) {
+                                    if (part.initialUpdateCounter() < fromWal.get2() ) {
+
                                         part.initialUpdateCounter(fromWal.get2());
 
-                                        changed = true;
+                                            changed = true;
+                                        }
                                     }
                                 }
+                                else
+                                    changed = updateState(part, (int)io.getPartitionState(pageAddr));
                             }
-                            else
-                                changed = updateState(part, (int)io.getPartitionState(pageAddr));
+                            finally {
+                                pageMem.writeUnlock(grpId, partMetaId, partMetaPage, null, changed);
+                            }
                         }
                         finally {
-                            pageMem.writeUnlock(grpId, partMetaId, partMetaPage, null, changed);
+                            pageMem.releasePage(grpId, partMetaId, partMetaPage);
                         }
                     }
                     finally {
-                        pageMem.releasePage(grpId, partMetaId, partMetaPage);
+                        checkpointReadUnlock();
                     }
                 }
             }
@@ -1851,7 +1851,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 if (tag != null) {
                     tmpWriteBuf.rewind();
 
-                    PageStore store = storeMgr.writeInternal(fullId.groupId(), fullId.pageId(), tmpWriteBuf, tag);
+                    PageStore store = storeMgr.writeInternal(fullId.groupId(), fullId.pageId(), tmpWriteBuf, tag, true);
 
                     tmpWriteBuf.rewind();
 
@@ -1977,6 +1977,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         /** Shutdown now. */
         private volatile boolean shutdownNow;
+
+        /** */
+        private long lastCpTs;
 
         /**
          * @param gridName Grid name.
@@ -2355,6 +2358,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 long cpTs = System.currentTimeMillis();
 
+                // This can happen in an unlikely event of two checkpoints happening
+                // within a currentTimeMillis() granularity window.
+                if (cpTs == lastCpTs)
+                    cpTs++;
+
+                lastCpTs = cpTs;
+
                 CheckpointEntry cpEntry = writeCheckpointEntry(
                     tmpWriteBuf,
                     cpTs,
@@ -2616,6 +2626,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         fullId, tmpWriteBuf, persStoreMetrics.metricsEnabled() ? tracker : null);
 
                     if (tag != null) {
+                        assert PageIO.getType(tmpWriteBuf) != 0 : "Invalid state. Type is 0! pageId = " + U.hexLong(fullId.pageId());
+                        assert PageIO.getVersion(tmpWriteBuf) != 0 : "Invalid state. Version is 0! pageId = " + U.hexLong(fullId.pageId());
+
                         tmpWriteBuf.rewind();
 
                         if (persStoreMetrics.metricsEnabled()) {
@@ -2637,9 +2650,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         tmpWriteBuf.rewind();
 
-                        PageIO.setCrc(writeAddr, 0);
-
-                        PageStore store = storeMgr.writeInternal(grpId, fullId.pageId(), tmpWriteBuf, tag);
+                        PageStore store = storeMgr.writeInternal(grpId, fullId.pageId(), tmpWriteBuf, tag, false);
 
                         updStores.add(store);
                     }

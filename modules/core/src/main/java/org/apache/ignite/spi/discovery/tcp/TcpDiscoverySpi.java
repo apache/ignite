@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.io.StreamCorruptedException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -40,7 +41,9 @@ import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocketFactory;
 import org.apache.ignite.Ignite;
@@ -264,6 +267,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
 
     /** Maximum ack timeout value for receiving message acknowledgement in milliseconds (value is <tt>600,000ms</tt>). */
     public static final long DFLT_MAX_ACK_TIMEOUT = 10 * 60 * 1000;
+
+    /** Ssl message pattern for StreamCorruptedException. */
+    private static Pattern sslMsgPattern = Pattern.compile("invalid stream header: 150\\d0\\d00");
 
     /** Local address. */
     protected String locAddr;
@@ -1478,6 +1484,24 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     }
 
     /**
+     * @param node Target node.
+     * @param sock Socket.
+     * @param out Stream to write to.
+     * @param msg Message.
+     * @param timeout Timeout.
+     * @throws IOException If IO failed or write timed out.
+     * @throws IgniteCheckedException If marshalling failed.
+     */
+    protected void writeToSocket(
+        ClusterNode node,
+        Socket sock,
+        OutputStream out,
+        TcpDiscoveryAbstractMessage msg,
+        long timeout) throws IOException, IgniteCheckedException {
+        writeToSocket(sock, out, msg, timeout);
+    }
+
+    /**
      * Writes message to the socket.
      *
      * @param sock Socket.
@@ -1598,6 +1622,22 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
                     "long GC pauses on remote node) [curTimeout=" + timeout +
                     ", rmtAddr=" + sock.getRemoteSocketAddress() + ", rmtPort=" + sock.getPort() + ']');
 
+            StreamCorruptedException streamCorruptedCause = X.cause(e, StreamCorruptedException.class);
+
+            if (streamCorruptedCause != null) {
+                // Lets check StreamCorruptedException for SSL Alert message
+                // Sample SSL Alert message: 15:03:03:00:02:02:0a
+                // 15 = Alert
+                // 03:03 = SSL version
+                // 00:02 = payload length
+                // 02:0a = critical (02) / unexpected message (0a)
+                // So, check message for "invalid stream header: 150X0X00"
+
+                String msg = streamCorruptedCause.getMessage();
+
+                if (msg != null && sslMsgPattern.matcher(msg).matches())
+                    streamCorruptedCause.initCause(new SSLException("Detected SSL alert in StreamCorruptedException"));
+            }
             throw e;
         }
         finally {

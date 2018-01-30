@@ -299,7 +299,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public void unregisterCache(String spaceName, boolean destroy) throws IgniteCheckedException {
+        @Override public void unregisterCache(String spaceName, boolean rmvIdx) throws IgniteCheckedException {
             // No-op
         }
 

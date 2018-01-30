@@ -134,20 +134,20 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritDoc /> */
-        public void UpdateWriteStructure(BinaryStructure exp, int pathIdx, IList<BinaryStructureUpdate> updates)
+        public void UpdateWriteStructure(int pathIdx, IList<BinaryStructureUpdate> updates)
         {
             lock (this)
             {
-                _writerTypeStruct = _writerTypeStruct.Merge(exp, pathIdx, updates);
+                _writerTypeStruct = _writerTypeStruct.Merge(pathIdx, updates);
             }
         }
 
         /** <inheritDoc /> */
-        public void UpdateReadStructure(BinaryStructure exp, int pathIdx, IList<BinaryStructureUpdate> updates)
+        public void UpdateReadStructure(int pathIdx, IList<BinaryStructureUpdate> updates)
         {
             lock (this)
             {
-                _readerTypeStructure = _readerTypeStructure.Merge(exp, pathIdx, updates);
+                _readerTypeStructure = _readerTypeStructure.Merge(pathIdx, updates);
             }
         }
 

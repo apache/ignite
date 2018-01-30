@@ -810,6 +810,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ackOsInfo();
         ackLanguageRuntime();
         ackRemoteManagement();
+        ackLogger();
         ackVmArguments(rtBean);
         ackClassPaths(rtBean);
         ackSystemProperties();
@@ -1430,7 +1431,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             long safeToUse = ram - Math.max(4L << 30, (long)(ram * 0.2));
 
             if (total > safeToUse) {
-                U.quietAndWarn(log, "Nodes started on local machine require more than 80% of physical RAM what can " +
+                U.quietAndWarn(log, "Nodes started on local machine require more than 20% of physical RAM what can " +
                     "lead to significant slowdown due to swapping (please decrease JVM heap size, data region " +
                     "size or checkpoint buffer size) [required=" + (total >> 20) + "MB, available=" +
                     (ram >> 20) + "MB]");
@@ -1962,6 +1963,16 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
+     * Acks Logger configuration.
+     */
+    private void ackLogger() {
+        assert log != null;
+
+        if (log.isInfoEnabled())
+            log.info("Logger: " + log.getLoggerInfo() );
+    }
+
+    /**
      * Acks ASCII-logo. Thanks to http://patorjk.com/software/taag
      */
     private void ackAsciiLogo() {
@@ -2004,6 +2015,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 if (fileName != null)
                     U.quiet(false, "  ^-- Logging to file '" + fileName + '\'');
+
+                U.quiet(false, "  ^-- Logging by '" + log.getLoggerInfo() + '\'');
 
                 U.quiet(false,
                     "  ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or \"-v\" to ignite.{sh|bat}",
