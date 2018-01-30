@@ -824,8 +824,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         AffinityTopologyVersion topVer) throws IgniteCheckedException {
         final GridDhtLocalPartition loc = grp.topology().localPartition(part, topVer, false);
 
-        if (loc == null || loc.state() != OWNING || !loc.reserve())
+        if (loc == null || !loc.reserve())
             return null;
+
+        // It is necessary to check state after reservation to avoid race conditions.
+        if (loc.state() != OWNING) {
+            loc.release();
+
+            return null;
+        }
 
         CacheDataStore data = partitionData(part);
 
