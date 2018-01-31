@@ -65,7 +65,6 @@ import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
@@ -643,7 +642,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             BaselineTopologyHistory historyToSend = null;
 
             if (joiningNodeData != null) {
-                if (!joiningNodeData.hasJoiningNodeData()) {
+                if (!joiningNodeData.hasJoiningNodeData() || compatibilityMode) {
                     //compatibility mode: old nodes don't send any data on join, so coordinator of new version
                     //doesn't send BaselineTopology history, only its current globalState
                     dataBag.addGridCommonData(STATE_PROC.ordinal(), globalState);
@@ -791,39 +790,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         return bltNodes;
     }
 
-    /**
-     * Verifies all nodes in current cluster topology support BaselineTopology feature
-     * so compatibilityMode flag is enabled to reset.
-     *
-     * @param discoCache
-     */
-    private void verifyBaselineTopologySupport(DiscoCache discoCache) {
-        if (discoCache.minimumServerNodeVersion().compareTo(MIN_BLT_SUPPORTING_VER) < 0) {
-            SB sb = new SB("Cluster contains nodes that don't support BaselineTopology: [");
-
-            for (ClusterNode cn : discoCache.serverNodes()) {
-                if (cn.version().compareTo(MIN_BLT_SUPPORTING_VER) < 0)
-                    sb
-                        .a("[")
-                        .a(cn.consistentId())
-                        .a(":")
-                        .a(cn.version())
-                        .a("], ");
-            }
-
-            sb.d(sb.length() - 2, sb.length());
-
-            throw new IgniteException(sb.a("]").toString());
-        }
-    }
-
     /** */
     private IgniteInternalFuture<?> changeGlobalState0(final boolean activate,
         BaselineTopology blt, boolean forceChangeBaselineTopology) {
         if (ctx.isDaemon() || ctx.clientNode()) {
             GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
-
-            verifyBaselineTopologySupport(ctx.discovery().discoCache());
 
             sendComputeChangeGlobalState(activate, blt, forceChangeBaselineTopology, fut);
 
