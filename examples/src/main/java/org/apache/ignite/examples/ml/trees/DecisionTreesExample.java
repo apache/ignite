@@ -50,6 +50,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.examples.ml.MLExamplesCommonArgs;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.Model;
@@ -141,25 +142,31 @@ public class DecisionTreesExample {
         mnistPaths.put(MNIST_TEST_IMAGES, "t10k-images-idx3-ubyte");
         mnistPaths.put(MNIST_TEST_LABELS, "t10k-labels-idx1-ubyte");
 
-        if (!getMNIST(mnistPaths.values())) {
-            System.out.println(">>> You should have MNIST dataset in " + MNIST_DIR + " to run this example.");
-            return;
-        }
 
         try {
             // Parse the command line arguments.
             CommandLine line = parser.parse(buildOptions(), args);
+            if (line.hasOption(MLExamplesCommonArgs.UNATTENDED)) {
+                System.out.println(">>> Stopping example because 'unattended' mode is used");
+                return;
+            }
 
-            trainingImagesPath = IgniteUtils.resolveIgnitePath(MNIST_DIR + "/" + mnistPaths.get(MNIST_TRAIN_IMAGES)).getPath();
-            trainingLabelsPath = IgniteUtils.resolveIgnitePath(MNIST_DIR + "/" + mnistPaths.get(MNIST_TRAIN_LABELS)).getPath();
-            testImagesPath = IgniteUtils.resolveIgnitePath(MNIST_DIR + "/" + mnistPaths.get(MNIST_TEST_IMAGES)).getPath();
-            testLabelsPath = IgniteUtils.resolveIgnitePath(MNIST_DIR + "/" + mnistPaths.get(MNIST_TEST_LABELS)).getPath();
             igniteCfgPath = line.getOptionValue(CONFIG, DEFAULT_CONFIG);
         }
         catch (ParseException e) {
             e.printStackTrace();
             return;
         }
+
+        if (!getMNIST(mnistPaths.values())) {
+            System.out.println(">>> You should have MNIST dataset in " + MNIST_DIR + " to run this example.");
+            return;
+        }
+
+        trainingImagesPath = IgniteUtils.resolveIgnitePath(MNIST_DIR + "/" + mnistPaths.get(MNIST_TRAIN_IMAGES)).getPath();
+        trainingLabelsPath = IgniteUtils.resolveIgnitePath(MNIST_DIR + "/" + mnistPaths.get(MNIST_TRAIN_LABELS)).getPath();
+        testImagesPath = IgniteUtils.resolveIgnitePath(MNIST_DIR + "/" + mnistPaths.get(MNIST_TEST_IMAGES)).getPath();
+        testLabelsPath = IgniteUtils.resolveIgnitePath(MNIST_DIR + "/" + mnistPaths.get(MNIST_TEST_LABELS)).getPath();
 
         try (Ignite ignite = Ignition.start(igniteCfgPath)) {
             IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
@@ -198,7 +205,7 @@ public class DecisionTreesExample {
      * @return Value of predicate 'MNIST dataset is present in expected folder'.
      * @throws IOException In case of file system errors.
      */
-    public static boolean getMNIST(Collection<String> mnistFileNames) throws IOException {
+    private static boolean getMNIST(Collection<String> mnistFileNames) throws IOException {
         List<String> missing = mnistFileNames.stream().filter(f -> IgniteUtils.resolveIgnitePath(MNIST_DIR + "/" + f) == null).collect(Collectors.toList());
 
         if (!missing.isEmpty()) {
@@ -258,7 +265,12 @@ public class DecisionTreesExample {
             .withDescription("Path to the config.")
             .isRequired(false).create();
 
+        Option unattended = OptionBuilder.withArgName(MLExamplesCommonArgs.UNATTENDED).withLongOpt(MLExamplesCommonArgs.UNATTENDED)
+            .withDescription("Is example run unattended.")
+            .isRequired(false).create();
+
         options.addOption(configOpt);
+        options.addOption(unattended);
 
         return options;
     }
