@@ -16,6 +16,9 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 
 /**
@@ -29,6 +32,9 @@ class SegmentArchivedMonitor {
      */
     private volatile long lastAbsArchivedIdx = -1;
 
+    /** Listeners. */
+    private List<Consumer<Long>> listeners = new ArrayList<>();
+
     /**
      * @return Last archived segment absolute index.
      */
@@ -40,9 +46,20 @@ class SegmentArchivedMonitor {
      * @param lastAbsArchivedIdx new value of last archived segment index
      */
     synchronized void setLastArchivedAbsoluteIndex(long lastAbsArchivedIdx) {
-        this.lastAbsArchivedIdx = lastAbsArchivedIdx;
+        synchronized (this) {
+            this.lastAbsArchivedIdx = lastAbsArchivedIdx;
 
-        notifyAll();
+            notifyAll();
+        }
+
+        listeners.forEach(listener -> listener.accept(lastAbsArchivedIdx));
+    }
+
+    /**
+     * @param segmentArchived processor to call.
+     */
+    synchronized void addListener(Consumer<Long> segmentArchived) {
+        listeners.add(segmentArchived);
     }
 
     /**

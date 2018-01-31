@@ -51,7 +51,7 @@ import org.jetbrains.annotations.Nullable;
  *  If metric value was provided using {@link #addMeasurementForAverageCalculation(long)}
  *  then method {@link #getAverage()} can be used to get resulting metrics average value during period of time.
  */
-class IntervalBasedMeasurement {
+public class IntervalBasedMeasurement {
     /** Nanos in second. */
     private static final long NANOS_IN_SECOND = TimeUnit.SECONDS.toNanos(1);
 
@@ -81,7 +81,7 @@ class IntervalBasedMeasurement {
      * @param intervalSwitchMs Interval switch milliseconds.
      * @param maxMeasurements Max historical measurements to keep.
      */
-    IntervalBasedMeasurement(int intervalSwitchMs, int maxMeasurements) {
+    public IntervalBasedMeasurement(int intervalSwitchMs, int maxMeasurements) {
         this.intervalSwitchNanos = intervalSwitchMs > 0 ? intervalSwitchMs * TimeUnit.MILLISECONDS.toNanos(1) : -1;
         this.maxMeasurements = maxMeasurements;
     }
@@ -101,7 +101,7 @@ class IntervalBasedMeasurement {
      *
      * @return speed in pages per second based on current data.
      */
-    long getSpeedOpsPerSecReadOnly() {
+    public long getSpeedOpsPerSecReadOnly() {
         MeasurementInterval interval = measurementIntervalAtomicRef.get();
 
         long curNanoTime = System.nanoTime();
@@ -210,6 +210,25 @@ class IntervalBasedMeasurement {
     }
 
     /**
+     * Adds provided value for counter in current measurement interval.
+     *
+     * @param val new value to add to counter.
+     * @param curNanoTime current nano time.
+     */
+    public void addCounter(long val, long curNanoTime) {
+        interval(curNanoTime).cntr.addAndGet(val);
+    }
+
+    /**
+     * Adds provided value for counter in current measurement interval.
+     *
+     * @param val new value to add to counter.
+     */
+    public void addCounter(long val) {
+        addCounter(val, System.nanoTime());
+    }
+
+    /**
      * Manually switch interval to empty (not started measurement).
      */
     void finishInterval() {
@@ -271,7 +290,7 @@ class IntervalBasedMeasurement {
      *
      * @param val value measured now, to be used for average calculation.
      */
-    void addMeasurementForAverageCalculation(long val) {
+    public void addMeasurementForAverageCalculation(long val) {
         MeasurementInterval interval = interval(System.nanoTime());
 
         interval.cntr.incrementAndGet();

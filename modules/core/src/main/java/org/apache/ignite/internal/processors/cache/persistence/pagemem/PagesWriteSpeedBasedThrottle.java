@@ -306,7 +306,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
      * @param coefficient how much it is needed to slowdown base speed. 1.0 means delay to get exact base speed.
      * @return sleep time in nanoseconds.
      */
-    private long calcDelayTime(long baseSpeed, int nThreads, double coefficient) {
+    public static long calcDelayTime(long baseSpeed, int nThreads, double coefficient) {
         if (coefficient <= 0.0)
             return 0;
 

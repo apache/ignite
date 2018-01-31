@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesWriteSpeedBasedThrottle;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WalLogThrottle;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
@@ -118,6 +119,8 @@ class ProgressWatchdog {
             "markDirtySpeed",
             "cpWriteSpeed",
             "estMarkAllSpeed",
+            "archiverSpeed",
+            "walThrottleParkTime",
             "avg." + operation + "/sec",
             "dirtyPages",
             "cpWrittenPages",
@@ -318,35 +321,48 @@ class ProgressWatchdog {
                         estWrAllSpeed = 99_999;
                 }
             }
-
-            FileWriteAheadLogManager wal = (FileWriteAheadLogManager)cacheSctx.wal();
-
-            idx = 0;
-            lastArchIdx = 0;
-
-            walArchiveSegments = wal.walArchiveSegments();
-            walWorkSegments = idx - lastArchIdx;
-
-            /* // uncomment when currentWritePointer is available
-             FileWALPointer ptr = wal.currentWritePointer();
-               FileWALPointer prevWalPtr = this.prevWalPtrRef.getAndSet(ptr);
-
-               if (prevWalPtr != null) {
-                   long idxDiff = ptr.index() - prevWalPtr.index();
-                   long offDiff = ptr.fileOffset() - prevWalPtr.fileOffset();
-                   long bytesDiff = idxDiff * maxWalSegmentSize + offDiff;
-
-                   long bytesPerSec = (bytesDiff * 1000) / elapsedMsFromPrevTick;
-
-                   walSpeed = getMBytesPrintable(bytesPerSec);
-               } else
-                   walSpeed = "0";
-             */
-
-            walSpeed = "0";
         }
         catch (Exception e) {
             X.error(e.getClass().getSimpleName() + ":" + e.getMessage());
+        }
+
+        FileWriteAheadLogManager wal = (FileWriteAheadLogManager)cacheSctx.wal();
+        WalLogThrottle logThrottle = null;
+        try {
+            logThrottle = U.field(wal, "logThrottle");
+        }
+        catch (Exception e) {
+            X.error(e.getClass().getSimpleName() + ":" + e.getMessage());
+        }
+
+        FileWALPointer ptr = wal.currentWritePointer();
+        idx = ptr.index();
+        lastArchIdx = wal.lastAbsArchivedIdx();
+
+        walArchiveSegments = wal.walArchiveSegments();
+        walWorkSegments = idx - lastArchIdx;
+
+        FileWALPointer prevWalPtr = prevWalPtrRef.getAndSet(ptr);
+        int maxSegmentSize = dsCfg.getWalSegmentSize();
+
+        if (prevWalPtr != null) {
+            long idxDiff = ptr.index() - prevWalPtr.index();
+            long offDiff = ptr.fileOffset() - prevWalPtr.fileOffset();
+            long bytesDiff = idxDiff * maxSegmentSize + offDiff;
+
+            long bytesPerSec = (bytesDiff * 1000) / elapsedMsFromPrevTick;
+
+            walSpeed = getMBytesPrintable(bytesPerSec);
+        }
+        else
+            walSpeed = "0";
+
+
+        String archiverSpeed = "";
+        String walThrottleParkTime = "";
+        if (logThrottle != null) {
+            archiverSpeed = getMBytesPrintable(logThrottle.archiverSpeedBytesPerSec());
+            walThrottleParkTime = Long.toString(logThrottle.averageParkTime());
         }
 
         long elapsedSecs = elapsedMs / 1000;
@@ -357,8 +373,9 @@ class ProgressWatchdog {
             "cpWriteSpeed=" + cpWriteSpeed + " " +
             "cpSyncSpeed=" + cpSyncSpeed + " " +
             "walSpeed= " + walSpeed + " " +
-            "walWorkSeg.="+walWorkSegments + " " +
-            "markDirtySpeed=" + markDirtySpeed +" " +
+            "archiverSpeed=" + archiverSpeed + " " +
+            "walWorkSeg.=" + walWorkSegments + " " +
+            "markDirtySpeed=" + markDirtySpeed + " " +
             "Avg. " + operation + " " + averagePutPerSec + " recs/sec, " +
             "dirtyP=" + dirtyPages + ", " +
             "cpWrittenP.=" + cpWrittenPages + ", " +
@@ -382,6 +399,8 @@ class ProgressWatchdog {
             markDirtySpeed,
             cpWriteSpeedInPages,
             estWrAllSpeed,
+            archiverSpeed,
+            walThrottleParkTime,
             averagePutPerSec,
             dirtyPages,
             cpWrittenPages,

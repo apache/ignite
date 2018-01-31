@@ -38,6 +38,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -282,6 +283,26 @@ public class PageMemoryImpl implements PageMemoryEx {
         rwLock = new OffheapReadWriteLock(128);
 
         this.memMetrics = memMetrics;
+    }
+
+    /**
+     * @param dsCfg configuration
+     * @return selected throttling policy
+     */
+    public static ThrottlingPolicy getPolicy(DataStorageConfiguration dsCfg) {
+        ThrottlingPolicy plc = dsCfg.isWriteThrottlingEnabled()
+            ? ThrottlingPolicy.SPEED_BASED
+            : ThrottlingPolicy.NONE;
+
+        String val = IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED);
+
+        if (val != null) {
+            if ("ratio".equalsIgnoreCase(val))
+                plc = ThrottlingPolicy.TARGET_RATIO_BASED;
+            else if ("speed".equalsIgnoreCase(val) || Boolean.valueOf(val))
+                plc = ThrottlingPolicy.SPEED_BASED;
+        }
+        return plc;
     }
 
     /** {@inheritDoc} */

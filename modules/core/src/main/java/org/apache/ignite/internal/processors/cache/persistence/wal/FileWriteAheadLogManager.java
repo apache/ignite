@@ -86,6 +86,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
@@ -285,6 +286,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     @Nullable private volatile FileArchiver archiver;
 
+    /** Logger throttle. */
+    @Nullable private volatile WalLogThrottle logThrottle;
+
     /** Compressor. */
     private volatile FileCompressor compressor;
 
@@ -399,6 +403,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             if (lastAbsArchivedIdx > 0)
                 archivedMonitor.setLastArchivedAbsoluteIndex(lastAbsArchivedIdx);
+
+            if (archiver != null && PageMemoryImpl.getPolicy(dsCfg) == PageMemoryImpl.ThrottlingPolicy.SPEED_BASED)
+                logThrottle = new WalLogThrottle(this, dsCfg, archivedMonitor);
 
             if (dsCfg.isWalCompactionEnabled()) {
                 compressor = new FileCompressor();
@@ -691,8 +698,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         // Need to calculate record size first.
         rec.size(serializer.size(rec));
 
+        WalLogThrottle throttle = logThrottle;
+
+        if (throttle != null)
+            throttle.onRecordLog(rec, currWrHandle);
+
         while (true) {
-            if (rec.rollOver()){
+            if (rec.rollOver()) {
                 assert cctx.database().checkpointLockIsHeldByThread();
 
                 long idx = currWrHandle.idx;
@@ -2368,8 +2380,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /**
      * File handle for one log segment.
      */
-    @SuppressWarnings("SignalWithoutCorrespondingAwait")
-    private class FileWriteHandle extends FileHandle {
+    @SuppressWarnings("SignalWithoutCorrespondingAwait") class FileWriteHandle extends FileHandle {
         /** */
         private final RecordSerializer serializer;
 
@@ -3067,6 +3078,26 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         catch (Exception e) {
             U.warn(log, "Failed to flush WAL record queue", e);
         }
+    }
+
+    /**
+     * @return currently written (not necessarily sync'ed) WAL position. May return null.
+     */
+    public FileWALPointer currentWritePointer() {
+        FileWriteHandle handle = currentHandle();
+
+        if (handle == null)
+            return null;
+
+        return new FileWALPointer(handle.idx, (int)handle.written, 0);
+    }
+
+    /**
+     *
+     * @return archived index, -1 means no files were archived
+     */
+    public long lastAbsArchivedIdx() {
+        return archivedMonitor.lastArchivedAbsoluteIndex();
     }
 
     /**
