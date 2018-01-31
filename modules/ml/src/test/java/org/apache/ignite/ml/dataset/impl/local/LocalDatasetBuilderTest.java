@@ -36,9 +36,9 @@ public class LocalDatasetBuilderTest {
         for (int i = 0; i < 100; i++)
             data.put(i, i);
 
-        LocalDatasetBuilder<Integer, Integer, Serializable, TestPartitionData> builder = new LocalDatasetBuilder<>(
-            data,
-            10,
+        LocalDatasetBuilder<Integer, Integer> builder = new LocalDatasetBuilder<>(data, 10);
+
+        LocalDataset<Serializable, TestPartitionData> dataset = builder.build(
             (upstream, upstreamSize) -> null,
             (upstream, upstreamSize, ctx) -> {
                 int[] arr = new int[Math.toIntExact(upstreamSize)];
@@ -50,8 +50,6 @@ public class LocalDatasetBuilderTest {
                 return new TestPartitionData(arr);
             }
         );
-
-        LocalDataset<Serializable, TestPartitionData> dataset = builder.build();
 
         AtomicLong cnt = new AtomicLong();
 

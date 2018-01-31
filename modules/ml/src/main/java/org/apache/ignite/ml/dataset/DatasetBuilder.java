@@ -26,19 +26,24 @@ import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
  * building specific datasets such as allocation required data structures and initialization of {@code context} part of
  * partitions.
  *
- * @param <C> Type of a partition {@code context}.
- * @param <D> Type of a partition {@code data}.
+ * @param <K> Type of a key in {@code upstream} data.
+ * @param <V> Type of a value in {@code upstream} data.
  *
  * @see CacheBasedDatasetBuilder
  * @see LocalDatasetBuilder
  * @see Dataset
  */
-public interface DatasetBuilder<C extends Serializable, D extends AutoCloseable> {
+public interface DatasetBuilder<K, V> {
     /**
      * Constructs a new instance of {@link Dataset} that includes allocation required data structures and
      * initialization of {@code context} part of partitions.
      *
+     * @param partCtxBuilder Partition {@code context} builder.
+     * @param partDataBuilder Partition {@code data} builder.
+     * @param <C> Type of a partition {@code context}.
+     * @param <D> Type of a partition {@code data}.
      * @return Dataset.
      */
-    public Dataset<C, D> build();
+    public <C extends Serializable, D extends AutoCloseable> Dataset<C, D> build(
+        PartitionContextBuilder<K, V, C> partCtxBuilder, PartitionDataBuilder<K, V, C, D> partDataBuilder);
 }

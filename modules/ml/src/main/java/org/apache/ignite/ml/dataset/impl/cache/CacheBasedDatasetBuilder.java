@@ -35,11 +35,8 @@ import org.apache.ignite.ml.dataset.impl.cache.util.DatasetAffinityFunctionWrapp
  *
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
- * @param <C> Type of a partition {@code context}.
- * @param <D> Type of a partition {@code data}.
  */
-public class CacheBasedDatasetBuilder<K, V, C extends Serializable, D extends AutoCloseable>
-    implements DatasetBuilder<C, D> {
+public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     /** Number of retries for the case when one of partitions not found on the node where loading is performed. */
     private static final int RETRIES = 15 * 60;
 
@@ -55,31 +52,21 @@ public class CacheBasedDatasetBuilder<K, V, C extends Serializable, D extends Au
     /** Ignite Cache with {@code upstream} data. */
     private final IgniteCache<K, V> upstreamCache;
 
-    /** Partition {@code context} builder. */
-    private final PartitionContextBuilder<K, V, C> partCtxBuilder;
-
-    /** Partition {@code data} builder. */
-    private final PartitionDataBuilder<K, V, C, D> partDataBuilder;
-
     /**
      * Constructs a new instance of cache based dataset builder that makes {@link CacheBasedDataset}.
      *
      * @param ignite Ignite instance.
      * @param upstreamCache Ignite Cache with {@code upstream} data.
-     * @param partCtxBuilder Ignite Cache with partition {@code context}.
-     * @param partDataBuilder Partition {@code data} builder.
      */
-    public CacheBasedDatasetBuilder(Ignite ignite, IgniteCache<K, V> upstreamCache,
-        PartitionContextBuilder<K, V, C> partCtxBuilder, PartitionDataBuilder<K, V, C, D> partDataBuilder) {
+    public CacheBasedDatasetBuilder(Ignite ignite, IgniteCache<K, V> upstreamCache) {
         this.ignite = ignite;
         this.upstreamCache = upstreamCache;
-        this.partCtxBuilder = partCtxBuilder;
-        this.partDataBuilder = partDataBuilder;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public CacheBasedDataset<K, V, C, D> build() {
+    @Override public <C extends Serializable, D extends AutoCloseable> CacheBasedDataset<K, V, C, D> build(
+        PartitionContextBuilder<K, V, C> partCtxBuilder, PartitionDataBuilder<K, V, C, D> partDataBuilder) {
         UUID datasetId = UUID.randomUUID();
 
         // Retrieves affinity function of the upstream Ignite Cache.

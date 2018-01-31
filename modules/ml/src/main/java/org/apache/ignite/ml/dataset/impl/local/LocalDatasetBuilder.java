@@ -34,42 +34,29 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
  *
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
- * @param <C> Type of a partition {@code context}.
- * @param <D> Type of a partition {@code data}.
  */
-public class LocalDatasetBuilder<K, V, C extends Serializable, D extends AutoCloseable>
-    implements DatasetBuilder<C, D> {
+public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     /** {@code Map} with upstream data. */
     private final Map<K, V> upstreamMap;
 
     /** Number of partitions. */
     private final int partitions;
 
-    /** Partition {@code context} builder. */
-    private final PartitionContextBuilder<K, V, C> partCtxBuilder;
-
-    /** Partition {@code data} builder. */
-    private final PartitionDataBuilder<K, V, C, D> partDataBuilder;
-
     /**
      * Constructs a new instance of local dataset builder that makes {@link LocalDataset}.
      *
      * @param upstreamMap {@code Map} with upstream data.
      * @param partitions Number of partitions.
-     * @param partCtxBuilder Partition {@code context} builder.
-     * @param partDataBuilder Partition {@code data} builder.
      */
-    public LocalDatasetBuilder(Map<K, V> upstreamMap, int partitions,
-        PartitionContextBuilder<K, V, C> partCtxBuilder, PartitionDataBuilder<K, V, C, D> partDataBuilder) {
+    public LocalDatasetBuilder(Map<K, V> upstreamMap, int partitions) {
         this.upstreamMap = upstreamMap;
         this.partitions = partitions;
-        this.partCtxBuilder = partCtxBuilder;
-        this.partDataBuilder = partDataBuilder;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public LocalDataset<C, D> build() {
+    @Override public <C extends Serializable, D extends AutoCloseable> LocalDataset<C, D> build(
+        PartitionContextBuilder<K, V, C> partCtxBuilder, PartitionDataBuilder<K, V, C, D> partDataBuilder) {
         List<C> ctxList = new ArrayList<>();
         List<D> dataList = new ArrayList<>();
 

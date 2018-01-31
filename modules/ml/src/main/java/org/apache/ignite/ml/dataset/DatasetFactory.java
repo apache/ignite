@@ -88,7 +88,7 @@ public class DatasetFactory {
     public static <K, V, C extends Serializable, D extends AutoCloseable> Dataset<C, D> create(
         Ignite ignite, IgniteCache<K, V> upstreamCache, PartitionContextBuilder<K, V, C> partCtxBuilder,
         PartitionDataBuilder<K, V, C, D> partDataBuilder) {
-        return new CacheBasedDatasetBuilder<>(ignite, upstreamCache, partCtxBuilder, partDataBuilder).build();
+        return new CacheBasedDatasetBuilder<>(ignite, upstreamCache).build(partCtxBuilder, partDataBuilder);
     }
 
     /**
@@ -201,7 +201,7 @@ public class DatasetFactory {
     public static <K, V, C extends Serializable, D extends AutoCloseable> Dataset<C, D> create(
         Map<K, V> upstreamMap, int partitions, PartitionContextBuilder<K, V, C> partCtxBuilder,
         PartitionDataBuilder<K, V, C, D> partDataBuilder) {
-        return new LocalDatasetBuilder<>(upstreamMap, partitions, partCtxBuilder, partDataBuilder).build();
+        return new LocalDatasetBuilder<>(upstreamMap, partitions).build(partCtxBuilder, partDataBuilder);
     }
 
     /**

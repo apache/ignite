@@ -79,15 +79,12 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, String> upstreamCache = generateTestData(4, 0);
 
-        CacheBasedDatasetBuilder<Integer, String, Long, AutoCloseable> builder =
-            new CacheBasedDatasetBuilder<>(
-                ignite,
-                upstreamCache,
-                (upstream, upstreamSize) -> upstreamSize,
-                (upstream, upstreamSize, ctx) -> null
-            );
+        CacheBasedDatasetBuilder<Integer, String> builder = new CacheBasedDatasetBuilder<>(ignite, upstreamCache);
 
-        CacheBasedDataset<Integer, String, Long, AutoCloseable> dataset = builder.build();
+        CacheBasedDataset<Integer, String, Long, AutoCloseable> dataset = builder.build(
+            (upstream, upstreamSize) -> upstreamSize,
+            (upstream, upstreamSize, ctx) -> null
+        );
 
         assertTrue("Before computation all partitions should not be reserved",
             areAllPartitionsNotReserved(upstreamCache.getName(), dataset.getDatasetCache().getName()));
@@ -134,15 +131,12 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, String> upstreamCache = generateTestData(4, 0);
 
-        CacheBasedDatasetBuilder<Integer, String, Long, AutoCloseable> builder =
-            new CacheBasedDatasetBuilder<>(
-                ignite,
-                upstreamCache,
-                (upstream, upstreamSize) -> upstreamSize,
-                (upstream, upstreamSize, ctx) -> null
-            );
+        CacheBasedDatasetBuilder<Integer, String> builder = new CacheBasedDatasetBuilder<>(ignite, upstreamCache);
 
-        CacheBasedDataset<Integer, String, Long, AutoCloseable> dataset = builder.build();
+        CacheBasedDataset<Integer, String, Long, AutoCloseable> dataset = builder.build(
+            (upstream, upstreamSize) -> upstreamSize,
+            (upstream, upstreamSize, ctx) -> null
+        );
 
         assertTrue("Before computation all partitions should not be reserved",
             areAllPartitionsNotReserved(upstreamCache.getName(), dataset.getDatasetCache().getName()));
