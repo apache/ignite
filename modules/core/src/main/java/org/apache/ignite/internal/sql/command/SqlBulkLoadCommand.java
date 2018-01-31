@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.apache.ignite.internal.sql.SqlParserUtils.error;
-import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIdentifier;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseInt;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdentifier;
@@ -48,9 +47,6 @@ public class SqlBulkLoadCommand implements SqlCommand {
 
     /** Local file name to send from client to server. */
     private String locFileName;
-
-    /** Local file encoding. */
-    private Charset locFileCharset;
 
     /** Schema name + table name. */
     private SqlQualifiedName tblQName;
@@ -170,34 +166,28 @@ public class SqlBulkLoadCommand implements SqlCommand {
      * @param format CSV format object to configure.
      */
     private void parseCsvOptions(SqlLexer lex, BulkLoadCsvFormat format) {
-        Charset charset = parseCharset(lex);
+        while (lex.lookAhead().tokenType() == SqlLexerTokenType.DEFAULT) {
+            switch (lex.lookAhead().token()) {
+                case SqlKeyword.CHARSET: {
+                    lex.shift();
 
-        format.inputCharset(charset);
-    }
+                    String charsetName = parseIdentifier(lex);
 
-    /**
-     * Parses file character set.
-     *
-     * @param lex The lexer.
-     */
-    private Charset parseCharset(SqlLexer lex) {
-        if (matchesKeyword(lex.lookAhead(), SqlKeyword.CHARSET)) {
-            lex.shift();
+                    try {
+                        format.inputCharset(Charset.forName(charsetName));
+                    }
+                    catch (IllegalCharsetNameException e) {
+                        throw error(lex, "Unknown charset name: '" + charsetName + "'");
+                    }
+                    catch (UnsupportedCharsetException e) {
+                        throw error(lex, "Charset is not supported: '" + charsetName + "'");
+                    }
+                }
 
-            String charsetName = parseIdentifier(lex);
-
-            try {
-                return Charset.forName(charsetName);
-            }
-            catch (IllegalCharsetNameException e) {
-                throw error(lex, "Unknown charset name: '" + charsetName + "'");
-            }
-            catch (UnsupportedCharsetException e) {
-                throw error(lex, "Charset is not supported: '" + charsetName + "'");
+                default:
+                    return;
             }
         }
-
-        return null;
     }
 
     /**
@@ -310,24 +300,6 @@ public class SqlBulkLoadCommand implements SqlCommand {
      */
     public void batchSize(int batchSize) {
         this.batchSize = batchSize;
-    }
-
-    /**
-     * Returns local file charset or null if it is not set.
-     *
-     * @return The local file charset or null if it is not set.
-     */
-    public Charset localFileCharset() {
-        return locFileCharset;
-    }
-
-    /**
-     * Sets the local file charset.
-     *
-     * @param locFileCharset The local file charset or null if the default should be used.
-     */
-    public void localFileCharset(Charset locFileCharset) {
-        this.locFileCharset = locFileCharset;
     }
 
     /** {@inheritDoc} */
