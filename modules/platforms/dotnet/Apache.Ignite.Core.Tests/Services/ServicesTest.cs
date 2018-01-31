@@ -349,12 +349,14 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual("baz", prx.Method("baz"));
 
             // Non-existent member.
-            // TODO
-            Assert.Throws<ServiceInvocationException>(() => prx.FooBar(1));
+            var ex = Assert.Throws<ServiceInvocationException>(() => prx.FooBar(1));
+            Assert.AreEqual(
+                string.Format("Failed to invoke proxy: there is no method 'FooBar' in type '{0}' with 1 arguments",
+                    typeof(TestIgniteServiceSerializable)), (ex.InnerException ?? ex).Message);
 
             // Exception in service.
-            // TODO
-            Assert.Throws<ServiceInvocationException>(() => prx.ErrMethod(123));
+            ex = Assert.Throws<ServiceInvocationException>(() => prx.ErrMethod(123));
+            Assert.AreEqual("ExpectedException", (ex.InnerException ?? ex).Message.Substring(0, 17));
         }
 
         /// <summary>
