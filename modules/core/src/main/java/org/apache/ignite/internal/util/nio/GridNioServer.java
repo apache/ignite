@@ -2149,7 +2149,12 @@ public class GridNioServer<T> {
                 dumpSelectorInfo(sb, keys);
 
             for (SelectionKey key : keys) {
-                GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
+                GridNioKeyAttachment attach = (GridNioKeyAttachment)key.attachment();
+
+                if (!attach.hasSession())
+                    continue;
+
+                GridSelectorNioSessionImpl ses = attach.session();
 
                 boolean sesInfo = p == null || p.apply(ses);
 
