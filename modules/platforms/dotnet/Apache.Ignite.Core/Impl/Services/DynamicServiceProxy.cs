@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /// </returns>
         public override bool TryGetMember(GetMemberBinder binder, out object result)
         {
-            result = _invokeMethod(binder.Name, null);
+            result = _invokeMethod("get_" + binder.Name, null);
             return true;
         }
     }
