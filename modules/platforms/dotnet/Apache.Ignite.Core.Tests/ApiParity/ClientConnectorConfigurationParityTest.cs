@@ -25,10 +25,10 @@ namespace Apache.Ignite.Core.Tests.ApiParity
     /// </summary>
     public class ClientConnectorConfigurationParityTest
     {
-        /** Properties that are missing on .NET side. */
-        private static readonly string[] MissingProperties =
+        /** Members that are missing on .NET side and should be added in future. */
+        private static readonly string[] MissingMembers =
         {
-            // IGNITE-7228    
+            // IGNITE-7228
             "isSslEnabled", "isUseIgniteSslContextFactory", "isSslClientAuth", "SslContextFactory"
         };
 
@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         {
             ParityTest.CheckConfigurationParity(
                 @"modules\core\src\main\java\org\apache\ignite\configuration\ClientConnectorConfiguration.java",
-                typeof(ClientConnectorConfiguration), knownMissingProperties: MissingProperties);
+                typeof(ClientConnectorConfiguration), knownMissingProperties: MissingMembers);
         }
     }
 }
