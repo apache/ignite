@@ -351,7 +351,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)ctx.database();
 
             if (throttlingPlc == ThrottlingPolicy.SPEED_BASED)
-                writeThrottle = new PagesWriteSpeedBasedThrottle(this, db);
+                writeThrottle = new PagesWriteSpeedBasedThrottle(this, db, log);
             else if(throttlingPlc == ThrottlingPolicy.TARGET_RATIO_BASED)
                 writeThrottle = new PagesWriteThrottle(this, db);
         }
