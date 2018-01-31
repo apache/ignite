@@ -207,12 +207,20 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
         if (throttleParkTimeNs > 0) {
             recurrentLogIfNeed();
 
-            LockSupport.parkNanos(throttleParkTimeNs);
+            doPark(throttleParkTimeNs);
         }
 
         speedMarkAndAvgParkTime.addMeasurementForAverageCalculation(throttleParkTimeNs);
     }
 
+    /**
+     * Disables the current thread for thread scheduling purposes. May be overriden by subclasses for tests
+     *
+     * @param throttleParkTimeNs the maximum number of nanoseconds to wait
+     */
+    protected void doPark(long throttleParkTimeNs) {
+        LockSupport.parkNanos(throttleParkTimeNs);
+    }
 
     /**
      * @return number of written pages.
@@ -265,14 +273,14 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
         if (prevWarnTime.compareAndSet(prevWarningNs, curNs)) {
             String msg = String.format("Throttling is applied to page mark " +
                     "[weight=%.2f, mark=%d pages/sec, checkpointWrite=%d pages/sec, " +
-                    "estIdealMark=%d pages/sec, curDirty=%.2f, targetDirty=%.2f, avgParkTime=%d ns," +
+                    "estIdealMark=%d pages/sec, curDirty=%.2f, targetDirty=%.2f, avgParkTime=%d ns, " +
                     "pages: (total=%d, evicted=%d, written=%d, synced=%d, cpBufUsed=%d, cpBufTotal=%d)]",
                 weight, getMarkDirtySpeed(), getCpWriteSpeed(),
                 getLastEstimatedSpeedForMarkAll(), getCurrDirtyRatio(), getTargetDirtyRatio(), throttleParkTime(),
                 cpTotalPages(), cpEvictedPages(), cpWrittenPages(), cpSyncedPages(),
                 pageMemory.checkpointBufferPagesCount(), pageMemory.checkpointBufferPagesSize());
 
-            log.warning(msg);
+            log.info(msg);
         }
     }
 
