@@ -437,6 +437,9 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         assert ctx.database().checkpointLockIsHeldByThread();
 
+        if (isThrottlingEnabled())
+            writeThrottle.onMarkDirty(false);
+
         long pageId = storeMgr.allocatePage(cacheId, partId, flags);
 
         assert PageIdUtils.pageIndex(pageId) > 0; //it's crucial for tracking pages (zero page is super one)
@@ -1369,7 +1372,11 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /**
      * @param page Page pointer.
+     * @param fullId full page ID.
+     * @param walPlc
      * @param walPlc Full page WAL record policy.
+     * @param markDirty set dirty flag to page.
+     * @param restore
      */
     private void writeUnlockPage(
         long page,
@@ -1378,13 +1385,13 @@ public class PageMemoryImpl implements PageMemoryEx {
         boolean markDirty,
         boolean restore
     ) {
-        boolean dirty = isDirty(page);
+        boolean wasDirty = isDirty(page);
 
         //if page is for restore, we shouldn't mark it as changed
-        if (!restore && markDirty && !dirty && changeTracker != null)
+        if (!restore && markDirty && !wasDirty && changeTracker != null)
             changeTracker.apply(page, fullId, this);
 
-        boolean pageWalRec = markDirty && walPlc != FALSE && (walPlc == TRUE || !dirty);
+        boolean pageWalRec = markDirty && walPlc != FALSE && (walPlc == TRUE || !wasDirty);
 
         assert GridUnsafe.getInt(page + PAGE_OVERHEAD + 4) == 0; //TODO GG-11480
 
@@ -1402,7 +1409,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         try {
             rwLock.writeUnlock(page + PAGE_LOCK_OFFSET, PageIdUtils.tag(pageId));
 
-            if (isThrottlingEnabled() && !restore && markDirty)
+            if (isThrottlingEnabled() && !restore && markDirty && !wasDirty)
                 writeThrottle.onMarkDirty(isInCheckpoint(fullId));
         }
         catch (AssertionError ex) {
@@ -1491,12 +1498,13 @@ public class PageMemoryImpl implements PageMemoryEx {
     /**
      * This method must be called in synchronized context.
      *
+     * @param pageId full page ID.
      * @param absPtr Absolute pointer.
      * @param dirty {@code True} dirty flag.
      * @param forceAdd If this flag is {@code true}, then the page will be added to the dirty set regardless whether the
      * old flag was dirty or not.
      */
-    void setDirty(FullPageId pageId, long absPtr, boolean dirty, boolean forceAdd) {
+    private void setDirty(FullPageId pageId, long absPtr, boolean dirty, boolean forceAdd) {
         boolean wasDirty = PageHeader.dirty(absPtr, dirty);
 
         if (dirty) {

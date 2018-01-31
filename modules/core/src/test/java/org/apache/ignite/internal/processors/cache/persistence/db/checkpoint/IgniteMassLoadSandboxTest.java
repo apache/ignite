@@ -313,7 +313,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             ignite.active(true);
 
             final IgniteCache<Object, HugeIndexedObject> cache = ignite.cache(CACHE_NAME);
-            int totalRecs = 200_000;
+            int totalRecs = 400_000;
             final int threads = 10;
             final int recsPerThread = totalRecs / threads;
             final Collection<Callable<?>> tasks = new ArrayList<>();
