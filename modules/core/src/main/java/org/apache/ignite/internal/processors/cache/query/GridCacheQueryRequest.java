@@ -226,6 +226,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param subjId Subject ID.
      * @param taskHash Task name hash code.
      * @param topVer Topology version.
+     * @param mvccVer Mvcc version.
      * @param addDepInfo Deployment info flag.
      */
     public GridCacheQueryRequest(
