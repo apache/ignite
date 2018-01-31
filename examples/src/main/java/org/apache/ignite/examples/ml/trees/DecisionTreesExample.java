@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.function.Function;
@@ -45,8 +46,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
@@ -147,8 +146,10 @@ public class DecisionTreesExample {
         try {
             // Parse the command line arguments.
             CommandLine line = parser.parse(buildOptions(), args);
+
             if (line.hasOption(MLExamplesCommonArgs.UNATTENDED)) {
-                System.out.println(">>> Stopped example because 'unattended' mode is used.");
+                System.out.println(">>> Skipped example execution because 'unattended' mode is used.");
+                System.out.println(">>> Decision trees example finished.");
                 return;
             }
 
@@ -164,10 +165,14 @@ public class DecisionTreesExample {
             return;
         }
 
-        trainingImagesPath = IgniteUtils.resolveIgnitePath(MNIST_DIR + "/" + mnistPaths.get(MNIST_TRAIN_IMAGES)).getPath();
-        trainingLabelsPath = IgniteUtils.resolveIgnitePath(MNIST_DIR + "/" + mnistPaths.get(MNIST_TRAIN_LABELS)).getPath();
-        testImagesPath = IgniteUtils.resolveIgnitePath(MNIST_DIR + "/" + mnistPaths.get(MNIST_TEST_IMAGES)).getPath();
-        testLabelsPath = IgniteUtils.resolveIgnitePath(MNIST_DIR + "/" + mnistPaths.get(MNIST_TEST_LABELS)).getPath();
+        trainingImagesPath = Objects.requireNonNull(IgniteUtils.resolveIgnitePath(MNIST_DIR + "/" +
+            mnistPaths.get(MNIST_TRAIN_IMAGES))).getPath();
+        trainingLabelsPath = Objects.requireNonNull(IgniteUtils.resolveIgnitePath(MNIST_DIR + "/" +
+            mnistPaths.get(MNIST_TRAIN_LABELS))).getPath();
+        testImagesPath = Objects.requireNonNull(IgniteUtils.resolveIgnitePath(MNIST_DIR + "/" +
+            mnistPaths.get(MNIST_TEST_IMAGES))).getPath();
+        testLabelsPath = Objects.requireNonNull(IgniteUtils.resolveIgnitePath(MNIST_DIR + "/" +
+            mnistPaths.get(MNIST_TEST_LABELS))).getPath();
 
         try (Ignite ignite = Ignition.start(igniteCfgPath)) {
             IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
@@ -245,7 +250,8 @@ public class DecisionTreesExample {
             System.out.println(">>> Unzipping " + f + "...");
             unzip(MNIST_DIR + "/" + f, MNIST_DIR + "/" + s);
 
-            IgniteUtils.resolveIgnitePath(MNIST_DIR + "/" + f).delete();
+            System.out.println(">>> Deleting gzip " + f + ", status: " +
+                Objects.requireNonNull(IgniteUtils.resolveIgnitePath(MNIST_DIR + "/" + f)).delete());
 
             System.out.println(">>> Done.");
         }
