@@ -15,37 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml;
+package org.apache.ignite.ml.dataset;
 
-import org.apache.ignite.ml.clustering.ClusteringTestSuite;
-import org.apache.ignite.ml.dataset.DatasetTestSuite;
-import org.apache.ignite.ml.knn.KNNTestSuite;
-import org.apache.ignite.ml.math.MathImplMainTestSuite;
-import org.apache.ignite.ml.nn.MLPTestSuite;
-import org.apache.ignite.ml.optimization.OptimizationTestSuite;
-import org.apache.ignite.ml.regressions.RegressionsTestSuite;
-import org.apache.ignite.ml.trainers.group.TrainersGroupTestSuite;
-import org.apache.ignite.ml.trees.DecisionTreesTestSuite;
+import org.apache.ignite.ml.dataset.api.DatasetWrapperTest;
+import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilderTest;
+import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetTest;
+import org.apache.ignite.ml.dataset.impl.cache.util.ComputeUtilsTest;
+import org.apache.ignite.ml.dataset.impl.cache.util.DatasetAffinityFunctionWrapperTest;
+import org.apache.ignite.ml.dataset.impl.cache.util.PartitionDataStorageTest;
+import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilderTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Test suite for all module tests.
+ * Test suite for all tests located in org.apache.ignite.ml.dataset.* package.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    MathImplMainTestSuite.class,
-    RegressionsTestSuite.class,
-    ClusteringTestSuite.class,
-    DecisionTreesTestSuite.class,
-    KNNTestSuite.class,
-    LocalModelsTest.class,
-    MLPTestSuite.class,
-    TrainersGroupTestSuite.class,
-    OptimizationTestSuite.class,
-    DatasetTestSuite.class
-
+    DatasetWrapperTest.class,
+    ComputeUtilsTest.class,
+    DatasetAffinityFunctionWrapperTest.class,
+    PartitionDataStorageTest.class,
+    CacheBasedDatasetBuilderTest.class,
+    CacheBasedDatasetTest.class,
+    LocalDatasetBuilderTest.class
 })
-public class IgniteMLTestSuite {
+public class DatasetTestSuite {
     // No-op.
 }

@@ -37,14 +37,14 @@ import org.apache.ignite.ml.dataset.api.data.SimpleLabeledDatasetData;
  */
 public class AlgorithmSpecificDatasetExample {
     /** Run example. */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> D-Learn Cache Dataset example started.");
 
             IgniteCache<Integer, Person> persons = createCache(ignite);
 
             // Creates a algorithm specific dataset to perform linear regression.
-            AlgorithmSpecificDataset dataset = DatasetFactory.create(
+            try (AlgorithmSpecificDataset dataset = DatasetFactory.create(
                 ignite,
                 persons,
                 (upstream, upstreamSize) -> new AlgorithmSpecificPartitionContext(),
@@ -66,22 +66,22 @@ public class AlgorithmSpecificDatasetExample {
 
                     return new SimpleLabeledDatasetData(a, rows, data.getCols() + 1, data.getLabels());
                 })
-            ).wrap(AlgorithmSpecificDataset::new);
+            ).wrap(AlgorithmSpecificDataset::new)) {
+                // Trains linear regression model using gradient descent.
+                double[] linearRegressionMdl = new double[2];
 
-            // Trains linear regression model using gradient descent.
-            double[] linearRegressionMdl = new double[2];
+                for (int i = 0; i < 1000; i++) {
+                    double[] gradient = dataset.gradient(linearRegressionMdl);
 
-            for (int i = 0; i < 1000; i++) {
-                double[] gradient = dataset.gradient(linearRegressionMdl);
+                    if (BLAS.getInstance().dnrm2(gradient.length, gradient, 1) < 1e-4)
+                        break;
 
-                if (BLAS.getInstance().dnrm2(gradient.length, gradient, 1) < 1e-4)
-                    break;
+                    for (int j = 0; j < gradient.length; j++)
+                        linearRegressionMdl[j] -= 0.1 / persons.size() * gradient[j];
+                }
 
-                for (int j = 0; j < gradient.length; j++)
-                    linearRegressionMdl[j] -= 0.1 / persons.size() * gradient[j];
+                System.out.println("Linear Regression Model: " + Arrays.toString(linearRegressionMdl));
             }
-
-            System.out.println("Linear Regression Model: " + Arrays.toString(linearRegressionMdl));
         }
     }
 

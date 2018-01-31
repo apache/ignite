@@ -23,7 +23,7 @@ import javax.cache.Cache;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 
 /**
- * Cursor adapter used to transform {@link Cache.Entry} received from Ignite Cache query cursor into DLC-specific
+ * Cursor adapter used to transform {@code Cache.Entry} received from Ignite Cache query cursor into DLC-specific
  * {@link UpstreamEntry}.
  *
  * @param <K> Type of an upstream value key.
