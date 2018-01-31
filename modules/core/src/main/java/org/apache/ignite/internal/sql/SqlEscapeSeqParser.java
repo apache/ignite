@@ -330,7 +330,7 @@ public class SqlEscapeSeqParser {
         int lastCopiedPos = 0;
 
         for (int curPos = 0; curPos < input.length(); curPos++) {
-            if (escapeChars.indexOf(input.charAt(curPos)) != -1)
+            if (escapeChars.indexOf(input.charAt(curPos)) == -1)
                 continue;
 
             output.append(input, lastCopiedPos, curPos);
@@ -351,7 +351,7 @@ public class SqlEscapeSeqParser {
             switch (seqParser.state()) {
                 case ERROR:
                     if (errorReporter != null)
-                        errorReporter.accept("Can't parse input '" + input.substring(lastCopiedPos, curPos),
+                        errorReporter.accept("Can't parse input '" + input.substring(lastCopiedPos, curPos) + "'",
                             lastCopiedPos);
 
                     break;

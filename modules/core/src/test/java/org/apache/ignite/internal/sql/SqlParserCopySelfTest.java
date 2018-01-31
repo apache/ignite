@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.sql;
 
+import org.apache.ignite.internal.util.typedef.X;
+
 /**
  * Tests for SQL parser: COPY command.
  */
@@ -67,5 +69,43 @@ public class SqlParserCopySelfTest extends SqlParserAbstractSelfTest {
         assertParseError(null,
             "copy from \"any.file\" into Person (_key, age, firstName, lastName) format lsd",
             "Unknown format name: LSD");
+
+        // FORMAT CSV options
+
+        assertParseError(null,
+            "copy from \"any.file\" into Person (col1, col2) format csv linesep",
+            "Unexpected end of command (expected: \"[quoted string]\")");
+
+        assertParseError(null,
+            "copy from \"any.file\" into Person (col1, col2) format csv fieldsep",
+            "Unexpected end of command (expected: \"[quoted string]\")");
+
+        assertParseError(null,
+            "copy from \"any.file\" into Person (col1, col2) format csv quote",
+            "Unexpected end of command (expected: \"[quoted string]\")");
+
+        assertParseError(null,
+            "copy from \"any.file\" into Person (col1, col2) format csv escape",
+            "Unexpected end of command (expected: \"[quoted string]\")");
+
+        assertParseError(null,
+            "copy from \"any.file\" into Person (col1, col2) format csv comment",
+            "Unexpected end of command (expected: \"[quoted string]\")");
+
+        assertParseSuccess(null,
+            "copy from \"any.file\" into Person (col1, col2)" +
+                " format csv fieldsep \":\"" +
+                " batch_size 1");
+
+        assertParseSuccess(null,
+            "copy from \"any.file\" into Person (col1, col2)" +
+                " format csv fieldsep \":\" linesep \"\n\" quote \"\\\"\" escape \"\" comment \";\"" +
+                " batch_size 1");
+    }
+
+    public static void assertParseSuccess(String schemaName, String sql) {
+        new SqlParser(schemaName, sql).nextCommand();
+
+        X.println("Successfully parsed SQL statement: " + sql);
     }
 }

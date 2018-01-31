@@ -26,6 +26,7 @@ import org.apache.ignite.internal.sql.SqlEscapeSeqParser;
 import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.ArrayList;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import static org.apache.ignite.internal.sql.SqlParserUtils.error;
+import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIdentifier;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseInt;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdentifier;
@@ -173,7 +175,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
 
                     String arg = parseStrWithEscapeSeq(lex);
 
-                    format.lineSeparatorRe(Pattern.compile(arg));
+                    format.lineSeparatorRe(F.isEmpty(arg) ? null : Pattern.compile(arg));
 
                     break;
                 }
@@ -183,7 +185,17 @@ public class SqlBulkLoadCommand implements SqlCommand {
 
                     String arg = parseStrWithEscapeSeq(lex);
 
-                    format.fieldSeparatorRe(Pattern.compile(arg));
+                    format.fieldSeparatorRe(F.isEmpty(arg) ? null : Pattern.compile(arg));
+
+                    break;
+                }
+
+                case SqlKeyword.QUOTE: {
+                    lex.shift();
+
+                    String arg = parseStrWithEscapeSeq(lex);
+
+                    format.quoteChars(F.isEmpty(arg) ? null : arg);
 
                     break;
                 }
@@ -193,7 +205,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
 
                     String arg = parseStrWithEscapeSeq(lex);
 
-                    format.commentChars(Pattern.compile(arg));
+                    format.commentChars(F.isEmpty(arg) ? null : Pattern.compile(arg));
 
                     break;
                 }
@@ -203,7 +215,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
 
                     String arg = parseStrWithEscapeSeq(lex);
 
-                    format.escapeChars(arg);
+                    format.escapeChars(F.isEmpty(arg) ? null : arg);
 
                     break;
                 }
@@ -222,7 +234,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
      * @return The token with escape sequences replaced.
      */
     private String parseStrWithEscapeSeq(final SqlLexer lex) {
-        if (lex.lookAhead().tokenType() == SqlLexerTokenType.DEFAULT) {
+        if (lex.lookAhead().tokenType() == SqlLexerTokenType.QUOTED) {
             lex.shift();
 
             String result = SqlEscapeSeqParser.replaceAll(lex.token(), DEFAULT_ESCAPE_CHARS, (errStr, pos) -> {
@@ -232,7 +244,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
             return result;
         }
         else
-            throw error(lex, "[string]");
+            throw errorUnexpectedToken(lex.lookAhead(), "[quoted string]");
     }
 
     /**
