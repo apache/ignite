@@ -353,8 +353,14 @@ namespace Apache.Ignite.Core.Tests.Services
 
             // Exception in service.
             // TODO
+        }
 
-            // Proxy on the same node.
+        /// <summary>
+        /// Tests dynamic service proxies with local service instance.
+        /// </summary>
+        [Test]
+        public void TestGetDynamicServiceProxyLocal()
+        {
             // TODO
         }
 
