@@ -550,7 +550,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                 try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                     AtomicDataStructureValue val = cache.get(key);
-
+                   
                     if (isObsolete(val))
                         val = null;
 
@@ -1215,24 +1215,23 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 GridCacheSemaphoreEx sem0 = new GridCacheSemaphoreImpl(name, key, cache);
 
                 //check Cluster state against semaphore state
-                if(val!=null){ 
-                    ctx.closure().callLocalSafe(
-                        new Callable<Object>() {
-                            @Override
-                            public Object call() throws Exception {
-                                GridCacheSemaphoreState semState=(GridCacheSemaphoreState)val;
-
-                                for (UUID nodeId : semState.getWaiters().keySet()) {
-                                    ClusterNode node = ctx.cluster().get().node(nodeId);
-                                    if (node == null) {
-                                        sem0.onNodeRemoved(nodeId);
-                                        if (log.isDebugEnabled())
-                                            log.debug("Removed node found to be waiting which is no longer active: " + nodeId);
-                                    }
-                                }
-                                return null;
-                            }},
-                        false);
+                if(val!=null){
+                    GridCacheSemaphoreState semState=(GridCacheSemaphoreState)val;
+                    boolean updated=false;
+                    Map<UUID,Integer> waiters = semState.getWaiters();
+                    Integer removedPermits=0;
+                    for(UUID nodeId:waiters.keySet()){
+                        ClusterNode node = ctx.cluster().get().node(nodeId);
+                        if(node==null){
+                            waiters.remove(nodeId);
+                            updated=true;
+                        }
+                    }
+                    if(updated) {
+                        semState.setWaiters(waiters);
+                        semState.setCount(cnt);
+                        retVal=semState;
+                    }
                 }
                 
                 return new T2<>(sem0, retVal);
