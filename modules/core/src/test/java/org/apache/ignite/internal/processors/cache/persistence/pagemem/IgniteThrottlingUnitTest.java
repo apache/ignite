@@ -226,19 +226,23 @@ public class IgniteThrottlingUnitTest {
         doAnswer(invocation -> {
             Object[] args = invocation.getArguments();
 
-            System.out.println("log.warning() called with arguments: " + Arrays.toString(args));
+            System.out.println("log.info() called with arguments: " + Arrays.toString(args));
 
             warnings.incrementAndGet();
 
             return null;
-        }).when(log).warning(anyString());
+        }).when(log).info(anyString());
 
         AtomicInteger written = new AtomicInteger();
         GridCacheDatabaseSharedManager db = mock(GridCacheDatabaseSharedManager.class);
         when(db.checkpointLockIsHeldByThread()).thenReturn(true);
         when(db.writtenPagesCounter()).thenReturn(written);
 
-        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, db, log);
+        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, db, log) {
+            @Override protected void doPark(long throttleParkTimeNs) {
+                //do nothing
+            }
+        };
         throttle.onBeginCheckpoint();
         written.set(200); //emulating some pages written
 
