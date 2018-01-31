@@ -190,17 +190,6 @@ public abstract class JdbcThinAbstractDmlStatementSelfTest extends JdbcThinAbstr
     }
 
     /**
-     * Execute given SQL statement.
-     * @param sql Statement.
-     * @throws SQLException if failed.
-     */
-    protected void jdbcRun(String sql) throws SQLException {
-        try (Statement stmt = conn.createStatement()) {
-            stmt.execute(sql);
-        }
-    }
-
-    /**
      * Person.
      */
     @SuppressWarnings("UnusedDeclaration")

@@ -105,11 +105,10 @@ public class JdbcBulkLoadSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param allowOverwrite Allow overwriting of existing keys.
      * @return Connection to use for the test.
      * @throws Exception if failed.
      */
-    private Connection createConnection(boolean allowOverwrite) throws Exception {
+    private Connection createConnection() throws Exception {
         Properties props = new Properties();
 
         return DriverManager.getConnection(BASE_URL, props);
@@ -132,17 +131,13 @@ public class JdbcBulkLoadSelfTest extends GridCommonAbstractTest {
     public void testBulkLoadThrows() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                conn = createConnection(false);
+                conn = createConnection();
 
-                try {
-                    Statement stmt = conn.createStatement();
+                try (Statement stmt = conn.createStatement()) {
                     stmt.executeUpdate("copy from \"dummy.csv\" into Person" +
                         " (_key, id, firstName, lastName) format csv");
 
                     return null;
-                }
-                finally {
-                    conn.close();
                 }
             }
         }, SQLException.class, "COPY command is currently supported only in thin JDBC driver.");

@@ -184,7 +184,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @throws SQLException If failed.
      */
-    public void testDOA() throws SQLException {
+    public void testBasicStatement() throws SQLException {
         int updatesCnt = stmt.executeUpdate(BASIC_SQL_COPY_STMT);
 
         assertEquals(2, updatesCnt);
@@ -350,7 +350,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     public void testCreateAndBulkLoadTable() throws SQLException {
         String tblName = QueryUtils.DFLT_SCHEMA + ".\"PersonTbl\"";
 
-        jdbcRun("create table " + tblName +
+        execute(conn, "create table " + tblName +
             " (id int primary key, age int, firstName varchar(30), lastName varchar(30))");
 
         int updatesCnt = stmt.executeUpdate(

@@ -182,7 +182,6 @@ public final class UpdatePlan {
      * @throws IgniteCheckedException if failed.
      */
     public IgniteBiTuple<?, ?> processRow(List<?> row) throws IgniteCheckedException {
-
         if (row.size() < colNames.length)
             throw new IgniteSQLException("Not enough values in a row: " + row.size() + " instead of " + colNames.length,
                 IgniteQueryErrorCode.ENTRY_PROCESSING);

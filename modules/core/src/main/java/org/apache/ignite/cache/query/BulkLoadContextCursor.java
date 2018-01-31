@@ -20,7 +20,6 @@ package org.apache.ignite.cache.query;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadContext;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -30,9 +29,8 @@ import java.util.List;
  * hold result (a context) from bulk load (COPY) command.
  * */
 public class BulkLoadContextCursor implements FieldsQueryCursor<List<?>> {
-
     /** Bulk load context from SQL command. */
-    private BulkLoadContext bulkLoadContext;
+    private final BulkLoadContext bulkLoadContext;
 
     /**
      * Creates a cursor.
@@ -54,10 +52,7 @@ public class BulkLoadContextCursor implements FieldsQueryCursor<List<?>> {
 
     /** {@inheritDoc} */
     @Override public List<List<?>> getAll() {
-        // With Java generics it's not possible to convert this using two singletonList() calls
-        List<List<?>> result = new ArrayList<>();
-        result.add(Collections.singletonList(bulkLoadContext));
-        return result;
+        return Collections.singletonList(Collections.singletonList(bulkLoadContext));
     }
 
     /** {@inheritDoc} */
@@ -72,6 +67,9 @@ public class BulkLoadContextCursor implements FieldsQueryCursor<List<?>> {
 
     /** {@inheritDoc} */
     @Override public String getFieldName(int idx) {
+        if (idx != 0)
+            throw new IndexOutOfBoundsException();
+
         return "bulkLoadContext"; // dummy stub
     }
 

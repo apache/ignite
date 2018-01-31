@@ -17,15 +17,7 @@
 
 package org.apache.ignite.jdbc.thin;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -34,6 +26,14 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
+
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.Callable;
 
 /**
  * Test that checks indexes handling with JDBC.
@@ -111,6 +111,17 @@ public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstr
      * @return Whether to use near cache.
      */
     protected abstract boolean nearCache();
+
+    /**
+     * Execute given SQL statement.
+     * @param sql Statement.
+     * @throws SQLException if failed.
+     */
+    private void jdbcRun(String sql) throws SQLException {
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql);
+        }
+    }
 
     /**
      * @param rs Result set.
