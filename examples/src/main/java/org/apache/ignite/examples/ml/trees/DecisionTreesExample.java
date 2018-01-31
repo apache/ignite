@@ -125,6 +125,8 @@ public class DecisionTreesExample {
      * @param args Program arguments.
      */
     public static void main(String[] args) throws IOException {
+        System.out.println(">>> Decision trees example started.");
+
         String igniteCfgPath;
 
         CommandLineParser parser = new BasicParser();
@@ -142,12 +144,11 @@ public class DecisionTreesExample {
         mnistPaths.put(MNIST_TEST_IMAGES, "t10k-images-idx3-ubyte");
         mnistPaths.put(MNIST_TEST_LABELS, "t10k-labels-idx1-ubyte");
 
-
         try {
             // Parse the command line arguments.
             CommandLine line = parser.parse(buildOptions(), args);
             if (line.hasOption(MLExamplesCommonArgs.UNATTENDED)) {
-                System.out.println(">>> Stopping example because 'unattended' mode is used");
+                System.out.println(">>> Stopped example because 'unattended' mode is used.");
                 return;
             }
 
@@ -174,28 +175,40 @@ public class DecisionTreesExample {
             int ptsCnt = 60000;
             int featCnt = 28 * 28;
 
-            Stream<DenseLocalOnHeapVector> trainingMnistStream = MnistUtils.mnist(trainingImagesPath, trainingLabelsPath, new Random(123L), ptsCnt);
-            Stream<DenseLocalOnHeapVector> testMnistStream = MnistUtils.mnist(testImagesPath, testLabelsPath, new Random(123L), 10_000);
+            Stream<DenseLocalOnHeapVector> trainingMnistStream = MnistUtils.mnist(trainingImagesPath, trainingLabelsPath,
+                new Random(123L), ptsCnt);
+
+            Stream<DenseLocalOnHeapVector> testMnistStream = MnistUtils.mnist(testImagesPath, testLabelsPath,
+                new Random(123L), 10_000);
 
             IgniteCache<BiIndex, Double> cache = createBiIndexedCache(ignite);
 
             loadVectorsIntoBiIndexedCache(cache.getName(), trainingMnistStream.iterator(), featCnt + 1, ignite);
 
-            ColumnDecisionTreeTrainer<GiniSplitCalculator.GiniData> trainer =
-                new ColumnDecisionTreeTrainer<>(10, ContinuousSplitCalculators.GINI.apply(ignite), RegionCalculators.GINI, RegionCalculators.MOST_COMMON, ignite);
+            ColumnDecisionTreeTrainer<GiniSplitCalculator.GiniData> trainer = new ColumnDecisionTreeTrainer<>(10,
+                ContinuousSplitCalculators.GINI.apply(ignite),
+                RegionCalculators.GINI,
+                RegionCalculators.MOST_COMMON,
+                ignite);
 
             System.out.println(">>> Training started");
             long before = System.currentTimeMillis();
             DecisionTreeModel mdl = trainer.train(new BiIndexedCacheColumnDecisionTreeTrainerInput(cache, new HashMap<>(), ptsCnt, featCnt));
             System.out.println(">>> Training finished in " + (System.currentTimeMillis() - before));
 
-            IgniteTriFunction<Model<Vector, Double>, Stream<IgniteBiTuple<Vector, Double>>, Function<Double, Double>, Double> mse = Estimators.errorsPercentage();
-            Double accuracy = mse.apply(mdl, testMnistStream.map(v -> new IgniteBiTuple<>(v.viewPart(0, featCnt), v.getX(featCnt))), Function.identity());
+            IgniteTriFunction<Model<Vector, Double>, Stream<IgniteBiTuple<Vector, Double>>, Function<Double, Double>, Double> mse =
+                Estimators.errorsPercentage();
+
+            Double accuracy = mse.apply(mdl, testMnistStream.map(v ->
+                new IgniteBiTuple<>(v.viewPart(0, featCnt), v.getX(featCnt))), Function.identity());
+
             System.out.println(">>> Errs percentage: " + accuracy);
         }
         catch (IOException e) {
             e.printStackTrace();
         }
+
+        System.out.println(">>> Decision trees example finished.");
     }
 
     /**
@@ -206,10 +219,13 @@ public class DecisionTreesExample {
      * @throws IOException In case of file system errors.
      */
     private static boolean getMNIST(Collection<String> mnistFileNames) throws IOException {
-        List<String> missing = mnistFileNames.stream().filter(f -> IgniteUtils.resolveIgnitePath(MNIST_DIR + "/" + f) == null).collect(Collectors.toList());
+        List<String> missing = mnistFileNames.stream().
+            filter(f -> IgniteUtils.resolveIgnitePath(MNIST_DIR + "/" + f) == null).
+            collect(Collectors.toList());
 
         if (!missing.isEmpty()) {
-            System.out.println(">>> You have not fully downloaded MNIST dataset in directory " + MNIST_DIR + ", do you want it to be downloaded? [y]/n");
+            System.out.println(">>> You have not fully downloaded MNIST dataset in directory " + MNIST_DIR +
+                ", do you want it to be downloaded? [y]/n");
             Scanner s = new Scanner(System.in);
             String str = s.nextLine();
 
@@ -261,11 +277,16 @@ public class DecisionTreesExample {
     @NotNull private static Options buildOptions() {
         Options options = new Options();
 
-        Option configOpt = OptionBuilder.withArgName(CONFIG).withLongOpt(CONFIG).hasArg()
+        Option configOpt = OptionBuilder
+            .withArgName(CONFIG)
+            .withLongOpt(CONFIG)
+            .hasArg()
             .withDescription("Path to the config.")
             .isRequired(false).create();
 
-        Option unattended = OptionBuilder.withArgName(MLExamplesCommonArgs.UNATTENDED).withLongOpt(MLExamplesCommonArgs.UNATTENDED)
+        Option unattended = OptionBuilder
+            .withArgName(MLExamplesCommonArgs.UNATTENDED)
+            .withLongOpt(MLExamplesCommonArgs.UNATTENDED)
             .withDescription("Is example run unattended.")
             .isRequired(false).create();
 
@@ -287,19 +308,8 @@ public class DecisionTreesExample {
         // Write to primary.
         cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
 
-        // Atomic transactions only.
-        cfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-
-        // No eviction.
-        cfg.setEvictionPolicy(null);
-
         // No copying of values.
         cfg.setCopyOnRead(false);
-
-        // Cache is partitioned.
-        cfg.setCacheMode(CacheMode.PARTITIONED);
-
-        cfg.setBackups(0);
 
         cfg.setName("TMP_BI_INDEXED_CACHE");
 
@@ -331,7 +341,7 @@ public class DecisionTreesExample {
                 sampleIdx++;
 
                 if (sampleIdx % 1000 == 0)
-                    System.out.println("Loaded " + sampleIdx + " vectors.");
+                    System.out.println(">>> Loaded " + sampleIdx + " vectors.");
             }
         }
     }
