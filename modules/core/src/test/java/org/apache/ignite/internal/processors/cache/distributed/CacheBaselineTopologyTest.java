@@ -573,7 +573,10 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         assertEquals(val2, primary.cache(CACHE_NAME).get(key));
         assertEquals(val2, backup.cache(CACHE_NAME).get(key));
 
-        primary.cache(CACHE_NAME).rebalance().get();
+        for (int i = 0; i < NODE_COUNT; i++)
+            grid(i).cache(CACHE_NAME).rebalance().get();
+
+        awaitPartitionMapExchange();
 
         affNodes = (List<ClusterNode>) ig.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
 
