@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
@@ -40,9 +39,9 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.FullPa
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesStripedConcurrentHashSet;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.NotNull;
+import org.jsr166.ConcurrentLinkedHashMap;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -98,7 +97,7 @@ public class SplitAndSortCpPagesTest {
 
         final AtomicInteger totalPagesAfterSort = new AtomicInteger();
 
-        BiFunction<FullPageIdsBuffer, ConcurrentHashMap<PageStore, LongAdder>, Callable<Void>> taskFactory
+        BiFunction<FullPageIdsBuffer, ConcurrentLinkedHashMap<PageStore, LongAdder>, Callable<Void>> taskFactory
             = (ids, map) -> new Callable<Void>() {
             @Override public Void call() throws Exception {
                 final int len = ids.remaining();
@@ -126,7 +125,7 @@ public class SplitAndSortCpPagesTest {
         AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(6, getClass().getSimpleName(), log);
 
 
-        BiFunction<FullPageIdsBuffer, ConcurrentHashMap<PageStore, LongAdder>, Callable<Void>> taskFactory
+        BiFunction<FullPageIdsBuffer, ConcurrentLinkedHashMap<PageStore, LongAdder>, Callable<Void>> taskFactory
             = (ids, map) -> () -> null;
 
         List<FullPageIdsBuffer> pageIds = scope.toBuffers();
@@ -179,11 +178,11 @@ public class SplitAndSortCpPagesTest {
     @Test
     public void testAsyncAllPagesArePresent() throws Exception {
         CheckpointScope scope = getTestCollection();
-        final ConcurrentHashMap<FullPageId, FullPageId> map = createCopyAsMap(scope);
+        final ConcurrentLinkedHashMap<FullPageId, FullPageId> map = createCopyAsMap(scope);
 
         AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(16, getClass().getSimpleName(), log);
 
-        BiFunction<FullPageIdsBuffer, ConcurrentHashMap<PageStore, LongAdder>, Callable<Void>> taskFactory
+        BiFunction<FullPageIdsBuffer, ConcurrentLinkedHashMap<PageStore, LongAdder>, Callable<Void>> taskFactory
             = (ids, map1) -> () -> {
             for (FullPageId id : ids.toArray()) {
                 map.remove(id);
@@ -203,8 +202,8 @@ public class SplitAndSortCpPagesTest {
      * @param scope Checkpoint scope.
      * @return map with scope pages.
      */
-    private ConcurrentHashMap<FullPageId, FullPageId> createCopyAsMap(CheckpointScope scope) {
-        ConcurrentHashMap<FullPageId, FullPageId> map = new ConcurrentHashMap<>();
+    private ConcurrentLinkedHashMap<FullPageId, FullPageId> createCopyAsMap(CheckpointScope scope) {
+        ConcurrentLinkedHashMap<FullPageId, FullPageId> map = new ConcurrentLinkedHashMap<>();
         List<FullPageIdsBuffer> ids = scope.toBuffers();
 
         for (FullPageIdsBuffer next : ids) {
@@ -227,7 +226,7 @@ public class SplitAndSortCpPagesTest {
         AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(16, getClass().getSimpleName(), log);
 
 
-        BiFunction<FullPageIdsBuffer, ConcurrentHashMap<PageStore, LongAdder>, Callable<Void>> taskFactory
+        BiFunction<FullPageIdsBuffer, ConcurrentLinkedHashMap<PageStore, LongAdder>, Callable<Void>> taskFactory
             =  (ids, map) -> new Callable<Void>() {
             @Override public Void call() throws Exception {
 
@@ -264,7 +263,7 @@ public class SplitAndSortCpPagesTest {
     @Test
     public void testWithEviction() throws Exception {
         final CheckpointScope scope = getTestCollection();
-        final ConcurrentHashMap<FullPageId, FullPageId> ctrlMap = createCopyAsMap(scope);
+        final ConcurrentLinkedHashMap<FullPageId, FullPageId> ctrlMap = createCopyAsMap(scope);
 
         final CountDownLatch evictingThreadStarted = new CountDownLatch(1);
         final Random random = new Random();
@@ -303,7 +302,7 @@ public class SplitAndSortCpPagesTest {
 
         final AsyncCheckpointer asyncCheckpointer = new AsyncCheckpointer(16, getClass().getSimpleName(), log);
 
-        BiFunction<FullPageIdsBuffer, ConcurrentHashMap<PageStore, LongAdder>, Callable<Void>> taskFactory =
+        BiFunction<FullPageIdsBuffer, ConcurrentLinkedHashMap<PageStore, LongAdder>, Callable<Void>> taskFactory =
             (ids, map) -> () -> {
                 for (FullPageId id : ids.toArray()) {
                     ctrlMap.remove(id);

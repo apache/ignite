@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -29,6 +28,7 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentLinkedHashMap;
 
 public class CheckpointFsyncScope {
     private List<Stripe> independentStripes = new ArrayList<>();
@@ -60,7 +60,7 @@ public class CheckpointFsyncScope {
     }
 
     public static class Stripe {
-        public ConcurrentHashMap<PageStore, LongAdder> fsyncScope = new ConcurrentHashMap<>();
+        public ConcurrentLinkedHashMap<PageStore, LongAdder> fsyncScope = new ConcurrentLinkedHashMap<>();
         public CountDownDynamicFuture future = new CountDownDynamicFuture(0);
 
         public void incrementTasksCount() {

@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
+import org.jsr166.ConcurrentLinkedHashMap;
 
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.SEQUENTIAL_CP_PAGE_COMPARATOR;
 
@@ -143,7 +144,7 @@ public class AsyncCheckpointer {
      * @return future will be completed when background writing is done.
      */
     public CheckpointFsyncScope quickSortAndWritePages(CheckpointScope cpScope,
-        BiFunction<FullPageIdsBuffer, ConcurrentHashMap<PageStore, LongAdder>, Callable<Void>> taskFactory) {
+        BiFunction<FullPageIdsBuffer, ConcurrentLinkedHashMap<PageStore, LongAdder>, Callable<Void>> taskFactory) {
 
         final ForkNowForkLaterStrategy stgy = () -> {
             if (asyncRunner.getActiveCount() < checkpointThreads) {
@@ -196,13 +197,13 @@ public class AsyncCheckpointer {
     }
 
     /**
-     * @param wrCpPagesFactory factory for one chunk writting tasks.
+     * @param wrCpPagesFactory factory for one chunk writing tasks.
      * @param cpScope scope of pages to be written.
      * @param persistenceCfg config.
      * @return fsync scope, probably striped
      */
     public CheckpointFsyncScope submitWriteCheckpointPages(
-        BiFunction<FullPageIdsBuffer, ConcurrentHashMap<PageStore, LongAdder>, Callable<Void>> wrCpPagesFactory,
+        BiFunction<FullPageIdsBuffer, ConcurrentLinkedHashMap<PageStore, LongAdder>, Callable<Void>> wrCpPagesFactory,
         CheckpointScope cpScope, DataStorageConfiguration persistenceCfg) {
         CheckpointFsyncScope fsyncScope;
         if (persistenceCfg.getCheckpointWriteOrder() == CheckpointWriteOrder.SEQUENTIAL
