@@ -82,15 +82,19 @@ public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
 
     /**
      * Trims quote characters from beginning and end of the string.
+     * If ony one character is specified, the quotes are not stripped (without reporting an error).
      *
      * @param str String to trim.
      * @return The trimmed string.
      */
     @NotNull private String trim(String str) {
-        int startPos = quoteChars.indexOf(str.charAt(0)) != -1 ? 1 : 0;
-        int endPos = quoteChars.indexOf(str.charAt(str.length() - 1)) != -1 ? str.length() - 1 : str.length();
+        if (quoteChars.indexOf(str.charAt(0)) == -1)
+            return str;
 
-        return str.substring(startPos, endPos);
+        if (quoteChars.indexOf(str.charAt(str.length() - 1)) == -1)
+            return str;
+
+        return str.substring(1, str.length() - 1);
     }
 
     /**
