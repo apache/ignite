@@ -17,34 +17,37 @@
 
 package org.apache.ignite.internal.processors.bulkload;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.regex.Pattern;
 
 /** A placeholder for bulk load CSV format parser options. */
 public class BulkLoadCsvFormat extends BulkLoadFormat {
 
     /** Line separator pattern. */
-    public static final Pattern DEFAULT_LINE_SEP_RE = Pattern.compile("[\r\n]+");
+    @NotNull public static final Pattern DEFAULT_LINE_SEP_RE = Pattern.compile("[\r\n]+");
 
     /** Field separator pattern. */
-    public static final Pattern DEFAULT_FIELD_SEP_RE = Pattern.compile(",");
+    @NotNull public static final Pattern DEFAULT_FIELD_SEP_RE = Pattern.compile(",");
 
     /** Quote characters */
-    public static final String DEFAULT_QUOTE_CHARS = "\"";
+    @NotNull public static final String DEFAULT_QUOTE_CHARS = "\"";
 
     /** Default escape sequence start characters. */
-    public static final String DEFAULT_ESCAPE_CHARS = "\\";
+    @Nullable public static final String DEFAULT_ESCAPE_CHARS = null;
 
     /** Line comment start pattern. */
-    public static final Pattern DEFAULT_COMMENT_CHARS = null;
+    @Nullable public static final Pattern DEFAULT_COMMENT_CHARS = null;
 
     /** Format name. */
     public static final String NAME = "CSV";
 
-    private Pattern lineSeparatorRe;
-    private Pattern fieldSeparatorRe;
-    private String quoteChars;
-    private Pattern commentChars;
-    private String escapeChars;
+    @Nullable private Pattern lineSeparatorRe;
+    @Nullable private Pattern fieldSeparatorRe;
+    @Nullable private String quoteChars;
+    @Nullable private Pattern commentChars;
+    @Nullable private String escapeChars;
 
     /**
      * Returns the name of the format.
@@ -60,7 +63,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @return The line separator pattern.
      */
-    public Pattern lineSeparatorRe() {
+    public @Nullable Pattern lineSeparatorRe() {
         return lineSeparatorRe;
     }
 
@@ -69,7 +72,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @param lineSeparatorRe The line separator pattern.
      */
-    public void lineSeparatorRe(Pattern lineSeparatorRe) {
+    public void lineSeparatorRe(@Nullable Pattern lineSeparatorRe) {
         this.lineSeparatorRe = lineSeparatorRe;
     }
 
@@ -78,7 +81,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @return The field separator pattern.
      */
-    public Pattern fieldSeparatorRe() {
+    public @Nullable Pattern fieldSeparatorRe() {
         return fieldSeparatorRe;
     }
 
@@ -87,7 +90,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @param fieldSeparatorRe The field separator pattern.
      */
-    public void fieldSeparatorRe(Pattern fieldSeparatorRe) {
+    public void fieldSeparatorRe(@Nullable Pattern fieldSeparatorRe) {
         this.fieldSeparatorRe = fieldSeparatorRe;
     }
 
@@ -96,7 +99,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @return The quote characters.
      */
-    public String quoteChars() {
+    public @Nullable String quoteChars() {
         return quoteChars;
     }
 
@@ -105,7 +108,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @param quoteChars The quote characters.
      */
-    public void quoteChars(String quoteChars) {
+    public void quoteChars(@Nullable String quoteChars) {
         this.quoteChars = quoteChars;
     }
 
@@ -114,7 +117,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @return The line comment start pattern.
      */
-    public Pattern commentChars() {
+    public @Nullable Pattern commentChars() {
         return commentChars;
     }
 
@@ -123,7 +126,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @param commentChars The line comment start pattern.
      */
-    public void commentChars(Pattern commentChars) {
+    public void commentChars(@Nullable Pattern commentChars) {
         this.commentChars = commentChars;
     }
 
@@ -132,7 +135,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @return The escape characters.
      */
-    public String escapeChars() {
+    public @Nullable String escapeChars() {
         return escapeChars;
     }
 
@@ -141,7 +144,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @param escapeChars The escape characters.
      */
-    public void escapeChars(String escapeChars) {
+    public void escapeChars(@Nullable String escapeChars) {
         this.escapeChars = escapeChars;
     }
 }

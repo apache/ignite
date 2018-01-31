@@ -23,6 +23,9 @@ import org.apache.ignite.internal.sql.SqlLexer;
  * Generic SQL command.
  */
 public interface SqlCommand {
+
+    String DEFAULT_ESCAPE_CHARS = "\\";
+
     /**
      * Parse command.
      *

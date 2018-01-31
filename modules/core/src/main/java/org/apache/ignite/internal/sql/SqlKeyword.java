@@ -57,6 +57,9 @@ public class SqlKeyword {
     /** Keyword: CHARACTER. */
     public static final String CHARACTER = "CHARACTER";
 
+    /** Keyword: COMMENT. */
+    public static final String COMMENT = "COMMENT";
+
     /** Keyword: COPY. */
     public static final String COPY = "COPY";
 
@@ -84,8 +87,14 @@ public class SqlKeyword {
     /** Keyword: DROP. */
     public static final String DROP = "DROP";
 
+    /** Keyword: ESCAPE. */
+    public static final String ESCAPE = "ESCAPE";
+
     /** Keyword: EXISTS. */
     public static final String EXISTS = "EXISTS";
+
+    /** Keyword: FIELDSEP. */
+    public static final String FIELDSEP = "FIELDSEP";
 
     /** Keyword: FLOAT. */
     public static final String FLOAT = "FLOAT";
@@ -138,6 +147,9 @@ public class SqlKeyword {
     /** Keyword: KEY. */
     public static final String KEY = "KEY";
 
+    /** Keyword: LINESEP. */
+    public static final String LINESEP = "LINESEP";
+
     /** Keyword: LOGGING. */
     public static final String LOGGING = "LOGGING";
 
@@ -176,6 +188,9 @@ public class SqlKeyword {
 
     /** Keyword: PRIMARY. */
     public static final String PRIMARY = "PRIMARY";
+
+    /** Keyword: QUOTE. */
+    public static final String QUOTE = "QUOTE";
 
     /** Keyword: REAL. */
     public static final String REAL = "REAL";
@@ -237,7 +252,7 @@ public class SqlKeyword {
         try {
             for (Field field : SqlKeyword.class.getDeclaredFields()) {
                 if (F.eq(String.class, field.getType())) {
-                    String val = (String) field.get(null);
+                    String val = (String)field.get(null);
 
                     KEYWORDS.add(val);
                 }

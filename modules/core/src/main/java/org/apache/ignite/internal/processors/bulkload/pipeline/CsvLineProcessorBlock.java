@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.bulkload.pipeline;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.sql.SqlEscapeSeqParser;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -67,19 +69,19 @@ public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
 
         input = stripComment(input);
 
-        if (input == null)
+        if (F.isEmpty(input))
             return;
 
         String[] output = fieldDelimiter.split(input);
 
         for (int i = 0; i < output.length; i++)
-            output[i] = trim(output[i]);
+            output[i] = replaceEscSeq(trim(output[i]));
 
         nextBlock.accept(output, isEof);
     }
 
     /**
-     * Trims quote characters from beginning and end of the line.
+     * Trims quote characters from beginning and end of the string.
      *
      * @param str String to trim.
      * @return The trimmed string.
@@ -94,8 +96,10 @@ public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
     /**
      * Strips the line comment, if exists.
      *
+     * @param input Input line
+     * @return The line with comment stripped or null if the comment occupied the whole line
      */
-    @Nullable private String stripComment(String input) {
+    @Nullable private String stripComment(@NotNull String input) {
         if (commentStartRe != null) {
             Matcher commentMatcher = commentStartRe.matcher(input);
 
@@ -108,5 +112,18 @@ public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
         }
 
         return input;
+    }
+
+    /**
+     * Replaces escape sequences in the string. Invalid escape sequences are silently removed.
+     *
+     * @param input The string to process.
+     * @return The result with escape sequences replaced and invalid escape sequences removed.
+     */
+    @Nullable private String replaceEscSeq(@Nullable String input) {
+        if (escapeChars == null)
+            return input;
+
+        return SqlEscapeSeqParser.replaceAll(input, escapeChars, null);
     }
 }

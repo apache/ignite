@@ -18,8 +18,11 @@
 package org.apache.ignite.internal.sql.command;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadCsvFormat;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadFormat;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadParameters;
+import org.apache.ignite.internal.sql.SqlEscapeSeqParser;
 import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
@@ -27,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import static org.apache.ignite.internal.sql.SqlParserUtils.error;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIdentifier;
@@ -135,11 +139,100 @@ public class SqlBulkLoadCommand implements SqlCommand {
         String name = parseIdentifier(lex);
 
         try {
-            inputFormat = BulkLoadFormat.createFormatFor(name);
-        } catch (IgniteCheckedException e) {
+            BulkLoadFormat fmt = BulkLoadFormat.createFormatFor(name);
+
+            switch (fmt.name()) {
+                case BulkLoadCsvFormat.NAME:
+                    parseCsvOptions(lex, (BulkLoadCsvFormat) fmt);
+
+                    break;
+
+                default:
+                    throw new IgniteIllegalStateException("Format handling is not implemented: " + fmt.name());
+            }
+
+            inputFormat = fmt;
+        }
+        catch (IgniteCheckedException e) {
             throw error(lex, "Unknown format name: " + name + ". Currently supported formats are: "
                 + BulkLoadFormat.formatNames());
         }
+    }
+
+    /**
+     * Parses CSV format options.
+     *
+     * @param lex The lexer.
+     * @param format CSV format object to configure.
+     */
+    private void parseCsvOptions(SqlLexer lex, BulkLoadCsvFormat format) {
+        while (lex.lookAhead().tokenType() == SqlLexerTokenType.DEFAULT) {
+            switch (lex.lookAhead().token()) {
+                case SqlKeyword.LINESEP: {
+                    lex.shift();
+
+                    String arg = parseStrWithEscapeSeq(lex);
+
+                    format.lineSeparatorRe(Pattern.compile(arg));
+
+                    break;
+                }
+
+                case SqlKeyword.FIELDSEP: {
+                    lex.shift();
+
+                    String arg = parseStrWithEscapeSeq(lex);
+
+                    format.fieldSeparatorRe(Pattern.compile(arg));
+
+                    break;
+                }
+
+                case SqlKeyword.COMMENT: {
+                    lex.shift();
+
+                    String arg = parseStrWithEscapeSeq(lex);
+
+                    format.commentChars(Pattern.compile(arg));
+
+                    break;
+                }
+
+                case SqlKeyword.ESCAPE: {
+                    lex.shift();
+
+                    String arg = parseStrWithEscapeSeq(lex);
+
+                    format.escapeChars(arg);
+
+                    break;
+                }
+
+                default:
+                    return;
+            }
+        }
+    }
+
+    /**
+     * Requires a string to be the next token and replaces escape sequences in it using
+     * {@link #DEFAULT_ESCAPE_CHARS} as escape sequence start symbol.
+     *
+     * @param lex The lexer.
+     * @return The token with escape sequences replaced.
+     */
+    private String parseStrWithEscapeSeq(final SqlLexer lex) {
+        if (lex.lookAhead().tokenType() == SqlLexerTokenType.DEFAULT) {
+            lex.shift();
+
+            String result = SqlEscapeSeqParser.replaceAll(lex.token(), DEFAULT_ESCAPE_CHARS, (errStr, pos) -> {
+                throw error(lex, errStr);
+            });
+
+            return result;
+        }
+        else
+            throw error(lex, "[string]");
     }
 
     /**
@@ -155,12 +248,8 @@ public class SqlBulkLoadCommand implements SqlCommand {
 
                     int sz = parseInt(lex);
 
-                    try {
-                        BulkLoadParameters.checkBatchSize(sz);
-                    }
-                    catch (IllegalArgumentException e) {
-                        throw error(lex, e.getMessage());
-                    }
+                    if (!BulkLoadParameters.isValidBatchSize(sz))
+                        throw error(lex, BulkLoadParameters.batchSizeErrorMsg(sz));
 
                     batchSize = sz;
 

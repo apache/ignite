@@ -69,7 +69,7 @@ public class BulkLoadCsvParser extends BulkLoadParser {
             BulkLoadCsvFormat.DEFAULT_LINE_SEP_RE : csvFormat.lineSeparatorRe();
 
         Pattern fieldSepRe = csvFormat.fieldSeparatorRe() == null ?
-            BulkLoadCsvFormat.DEFAULT_LINE_SEP_RE : csvFormat.lineSeparatorRe();
+            BulkLoadCsvFormat.DEFAULT_FIELD_SEP_RE : csvFormat.lineSeparatorRe();
 
         Pattern commentChars = csvFormat.commentChars() == null ?
             BulkLoadCsvFormat.DEFAULT_COMMENT_CHARS : csvFormat.commentChars();
@@ -81,7 +81,7 @@ public class BulkLoadCsvParser extends BulkLoadParser {
             BulkLoadCsvFormat.DEFAULT_ESCAPE_CHARS : csvFormat.escapeChars();
 
         inputBlock.append(new LineSplitterBlock(lineSepRe))
-                  .append(new CsvLineProcessorBlock(fieldSepRe, escapeChars, commentChars, quoteChars))
+                  .append(new CsvLineProcessorBlock(fieldSepRe, quoteChars, commentChars, escapeChars))
                   .append(collectorBlock);
     }
 

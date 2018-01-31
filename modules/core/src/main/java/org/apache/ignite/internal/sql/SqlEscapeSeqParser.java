@@ -18,6 +18,11 @@
 package org.apache.ignite.internal.sql;
 
 import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.function.BiConsumer;
 
 /** Parses SQL escape sequences and converts them to string. */
 public class SqlEscapeSeqParser {
@@ -88,7 +93,7 @@ public class SqlEscapeSeqParser {
      */
     private void acceptPrefix(char c) {
         if (state != State.START)
-            throw new IgniteIllegalStateException("Internal error");
+            throw invalidStateException();
 
         state = State.PROCESSING;
 
@@ -173,6 +178,46 @@ public class SqlEscapeSeqParser {
         }
     }
 
+    /**
+     * Tells the parser that end of input has occured.
+     *
+     * @return The new state of the parser. See {@link State} for details.
+     */
+    public State acceptEnd() {
+        int inputLen = input.length();
+
+        switch (state) {
+            case FINISHED_CHAR_ACCEPTED:
+            case FINISHED_CHAR_REJECTED:
+            case ERROR:
+                break;
+
+            case START:
+                state = State.ERROR;
+
+                break;
+
+            case PROCESSING:
+                if (radix != SINGLE_CHAR_RADIX) {
+                    assert inputLen <= maxLen;
+
+                    if (inputLen >= minLen && isValidUnicodeInput())
+                        state = State.FINISHED_CHAR_ACCEPTED;
+                    else
+                        state = State.ERROR;
+
+                    return state;
+                }
+
+                break;
+
+            default:
+                throw invalidStateException();
+        }
+
+        return state;
+    }
+
     /** Checks if the character is a valid digit in the current {@link #radix}. */
     private boolean isValidDigit(char c) {
         if (radix < 10)
@@ -214,13 +259,22 @@ public class SqlEscapeSeqParser {
     }
 
     /**
+     * Returns the state.
+     *
+     * @return The state.
+     */
+    public State state() {
+        return state;
+    }
+
+    /**
      * Converts the input to the string it encodes.
      *
      * @return The string decoded from the escape sequence.
      */
     public String convertedStr() {
         if (state != State.FINISHED_CHAR_ACCEPTED && state != State.FINISHED_CHAR_REJECTED)
-            throw new IgniteIllegalStateException("Internal error");
+            throw invalidStateException();
 
         if (radix == SINGLE_CHAR_RADIX)
             return Character.toString(convertEscSeqChar(input.charAt(0)));
@@ -252,5 +306,84 @@ public class SqlEscapeSeqParser {
             default:
                 return c;
         }
+    }
+
+    /**
+     * Replaces all occurences of escape sequences in the string and returns the result.
+     *
+     * @param input The input string.
+     * @param escapeChars Escape sequence start characters.
+     * @param errorReporter Error reporter function or null to silently drop invalid escape sequences.
+     *      It may throw an unchecked exception to terminate processing.
+     *      The error function accepts the invalid escape sequence substring and its position in the input.
+     * @return The string with escape sequences replaced or null if input was null.
+     * @throws RuntimeException Any exception that errorReporter might throw.
+     */
+    public static @Nullable String replaceAll(@Nullable String input, String escapeChars,
+        BiConsumer<String, Integer> errorReporter) {
+
+        if (F.isEmpty(input))
+            return input;
+
+        StringBuilder output = new StringBuilder(input.length());
+
+        int lastCopiedPos = 0;
+
+        for (int curPos = 0; curPos < input.length(); curPos++) {
+            if (escapeChars.indexOf(input.charAt(curPos)) != -1)
+                continue;
+
+            output.append(input, lastCopiedPos, curPos);
+            lastCopiedPos = curPos;
+
+            SqlEscapeSeqParser seqParser = new SqlEscapeSeqParser();
+
+            do {
+                curPos++;
+
+                if (curPos >= input.length()) {
+                    seqParser.acceptEnd();
+
+                    break;
+                }
+            } while (seqParser.accept(input.charAt(curPos)) == State.PROCESSING);
+
+            switch (seqParser.state()) {
+                case ERROR:
+                    if (errorReporter != null)
+                        errorReporter.accept("Can't parse input '" + input.substring(lastCopiedPos, curPos),
+                            lastCopiedPos);
+
+                    break;
+
+                case FINISHED_CHAR_REJECTED:
+                    curPos--;
+
+                    // FALL THROUGH
+
+                case FINISHED_CHAR_ACCEPTED:
+                    output.append(seqParser.convertedStr());
+
+                    break;
+
+                default:
+                    throw invalidStateException();
+            }
+
+            lastCopiedPos = curPos;
+        }
+
+        output.append(input, lastCopiedPos, input.length());
+
+        return output.toString();
+    }
+
+    /**
+     * Create invalid escape sequence parser state exception.
+     *
+     * @return The invalid escape sequence parser state exception.
+     */
+    @NotNull private static IgniteIllegalStateException invalidStateException() {
+        return new IgniteIllegalStateException("Invalid escape sequence processor state");
     }
 }
