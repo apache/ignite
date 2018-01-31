@@ -969,10 +969,11 @@ BOOST_AUTO_TEST_CASE(TestSqlQueryDistributedJoins)
     // Starting second node.
     Ignite node2 = StartNode("Node2");
 
+    int firstKey = 0;
     int entryCnt = 1000;
 
     // Filling caches
-    for (int i = 0; i < entryCnt; i++)
+    for (int i = firstKey; i < firstKey + entryCnt; i++)
     {
         std::stringstream stream;
 
@@ -987,7 +988,8 @@ BOOST_AUTO_TEST_CASE(TestSqlQueryDistributedJoins)
     // Test query with no results.
     SqlQuery qry("QueryPerson",
         "from \"QueryPerson\".QueryPerson, \"QueryRelation\".QueryRelation "
-        "where \"QueryPerson\".QueryPerson.age = \"QueryRelation\".QueryRelation.someVal");
+        "where (\"QueryPerson\".QueryPerson.age = \"QueryRelation\".QueryRelation.someVal) "
+        "and (\"QueryPerson\".QueryPerson._key < 1000)");
 
     QueryCursor<int, QueryPerson> cursor = cache1.Query(qry);
 
@@ -1245,17 +1247,18 @@ BOOST_AUTO_TEST_CASE(TestSqlFieldsQueryDistributedJoins)
     // Starting second node.
     Ignite node2 = StartNode("Node2");
 
+    int firstKey = 2000;
     int entryCnt = 1000;
 
     // Filling caches
-    for (int i = 0; i < entryCnt; i++)
+    for (int i = firstKey; i < firstKey + entryCnt; i++)
     {
         std::stringstream stream;
 
         stream << "A" << i;
 
         cache1.Put(i, QueryPerson(stream.str(), i * 10, MakeDateGmt(1970 + i),
-            MakeTimestampGmt(2016, 1, 1, i / 60, i % 60)));
+            MakeTimestampGmt(2016, 1, 1, (i / 60) % 24, i % 60)));
 
         cache2.Put(i + 1, QueryRelation(i, i * 10));
     }
@@ -1265,7 +1268,9 @@ BOOST_AUTO_TEST_CASE(TestSqlFieldsQueryDistributedJoins)
         "select age, name "
         "from \"QueryPerson\".QueryPerson "
         "inner join \"QueryRelation\".QueryRelation "
-        "on \"QueryPerson\".QueryPerson.age = \"QueryRelation\".QueryRelation.someVal");
+        "on \"QueryPerson\".QueryPerson.age = \"QueryRelation\".QueryRelation.someVal "
+        "where (\"QueryPerson\".QueryPerson._key < 3000) and "
+        "(\"QueryPerson\".QueryPerson._key >= 2000)");
 
     QueryFieldsCursor cursor = cache1.Query(qry);
 
