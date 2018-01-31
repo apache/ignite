@@ -865,6 +865,15 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
+        /// Tests Java service invocation with dynamic proxy.
+        /// </summary>
+        [Test]
+        public void TestCallJavaServiceDynamicProxy()
+        {
+            // TODO
+        }
+
+        /// <summary>
         /// Tests the footer setting.
         /// </summary>
         [Test]

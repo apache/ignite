@@ -55,6 +55,8 @@ namespace Apache.Ignite.Core.Impl.Services
         /// </returns>
         public override bool TryGetMember(GetMemberBinder binder, out object result)
         {
+            // Note that we don't know whether it is a field or a property,
+            // but services are supposed to be accessed through an interface, so property is assumed.
             result = _invokeMethod("get_" + binder.Name, null);
             return true;
         }
@@ -72,6 +74,8 @@ namespace Apache.Ignite.Core.Impl.Services
         /// </returns>
         public override bool TrySetMember(SetMemberBinder binder, object value)
         {
+            // Note that we don't know whether it is a field or a property,
+            // but services are supposed to be accessed through an interface, so property is assumed.
             _invokeMethod("set_" + binder.Name, new[] { value });
             return true;
         }
