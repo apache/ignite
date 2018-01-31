@@ -155,12 +155,8 @@ public class SqlBulkLoadCommand implements SqlCommand {
 
                     int sz = parseInt(lex);
 
-                    try {
-                        BulkLoadParameters.checkBatchSize(sz);
-                    }
-                    catch (IllegalArgumentException e) {
-                        throw error(lex, e.getMessage());
-                    }
+                    if (!BulkLoadParameters.isValidBatchSize(sz))
+                        throw error(lex, BulkLoadParameters.batchSizeErrorMsg(sz));
 
                     batchSize = sz;
 

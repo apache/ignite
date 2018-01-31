@@ -79,9 +79,12 @@ public class BulkLoadParameters {
      * @param sz The batch size to check.
      * @throws IllegalArgumentException if batch size is invalid.
      */
-    public static void checkBatchSize(int sz) {
-        if (sz < MIN_BATCH_SIZE || sz > MAX_BATCH_SIZE)
-            throw new IllegalArgumentException("Batch size should be within [" +
-                BulkLoadParameters.MIN_BATCH_SIZE + ".." + BulkLoadParameters.MAX_BATCH_SIZE + "]: " + sz);
+    public static boolean isValidBatchSize(int sz) {
+        return sz >= MIN_BATCH_SIZE && sz <= MAX_BATCH_SIZE;
+    }
+
+    public static String batchSizeErrorMsg(int sz) {
+        return "Batch size should be within [" +
+            BulkLoadParameters.MIN_BATCH_SIZE + ".." + BulkLoadParameters.MAX_BATCH_SIZE + "]: " + sz;
     }
 }
