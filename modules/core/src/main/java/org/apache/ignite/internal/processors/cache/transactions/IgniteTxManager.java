@@ -1632,7 +1632,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                             if (txEntry2 == txEntry1)
                                 break;
 
-                            txEntry2.cached().txUnlock(tx);
+                            txUnlock(tx, txEntry2);
                         }
 
                         return false;
@@ -1670,35 +1670,39 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @param tx Transaction.
+     * @param txEntry Entry to unlock.
+     */
+    private void txUnlock(IgniteInternalTx tx, IgniteTxEntry txEntry) {
+        while (true) {
+            try {
+                GridCacheEntryEx entry = txEntry.cached();
+
+                assert entry != null;
+
+                if (entry.detached())
+                    break;
+
+                entry.txUnlock(tx);
+
+                break;
+            }
+            catch (GridCacheEntryRemovedException ignored) {
+                if (log.isDebugEnabled())
+                    log.debug("Got removed entry in TM txUnlock(..) method (will retry): " + txEntry);
+
+                txEntry.cached(txEntry.context().cache().entryEx(txEntry.key(), tx.topologyVersion()));
+            }
+        }
+    }
+
+    /**
      * @param tx Owning transaction.
      * @param entries Entries to unlock.
      */
     private void unlockMultiple(IgniteInternalTx tx, Iterable<IgniteTxEntry> entries) {
-        for (IgniteTxEntry txEntry : entries) {
-            GridCacheContext cacheCtx = txEntry.context();
-
-            while (true) {
-                try {
-                    GridCacheEntryEx entry = txEntry.cached();
-
-                    assert entry != null;
-
-                    if (entry.detached())
-                        break;
-
-                    entry.txUnlock(tx);
-
-                    break;
-                }
-                catch (GridCacheEntryRemovedException ignored) {
-                    if (log.isDebugEnabled())
-                        log.debug("Got removed entry in TM unlockMultiple(..) method (will retry): " + txEntry);
-
-                    // Renew cache entry.
-                    txEntry.cached(cacheCtx.cache().entryEx(txEntry.key(), tx.topologyVersion()));
-                }
-            }
-        }
+        for (IgniteTxEntry txEntry : entries)
+            txUnlock(tx, txEntry);
     }
 
     /**

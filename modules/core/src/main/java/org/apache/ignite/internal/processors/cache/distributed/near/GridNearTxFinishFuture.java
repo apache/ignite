@@ -434,7 +434,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                     return;
                 }
                 else {
-                    // Abort locks.
+                    // Abort lock futures.
                     if (lockFut instanceof GridDhtColocatedLockFuture)
                         ((GridDhtColocatedLockFuture)lockFut).onRollback(tx.rollbackException());
                     else if (lockFut instanceof GridNearLockFuture)
