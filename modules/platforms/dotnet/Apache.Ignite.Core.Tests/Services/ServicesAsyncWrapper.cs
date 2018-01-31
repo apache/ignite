@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Tests.Services
             }
             catch (AggregateException ex)
             {
-                throw ex.InnerException;
+                throw ex.InnerException ?? ex;
             }
         }
 
@@ -110,7 +110,7 @@ namespace Apache.Ignite.Core.Tests.Services
             }
             catch (AggregateException ex)
             {
-                throw ex.InnerException;
+                throw ex.InnerException ?? ex;
             }
         }
 
@@ -129,7 +129,7 @@ namespace Apache.Ignite.Core.Tests.Services
             }
             catch (AggregateException ex)
             {
-                throw ex.InnerException;
+                throw ex.InnerException ?? ex;
             }
         }
 
