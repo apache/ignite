@@ -333,8 +333,21 @@ namespace Apache.Ignite.Core.Tests.Services
             // Get proxy.
             var prx = Grid3.GetServices().GetDynamicServiceProxy(SvcName, false);
 
-            // Check proxy.
+            // Property getter.
             Assert.AreEqual(37, prx.TestProperty);
+
+            // Property setter.
+
+            // Method invoke.
+
+            // Non-existent member.
+            // TODO
+
+            // Exception in service.
+            // TODO
+
+            // Proxy on the same node.
+            // TODO
         }
 
         /// <summary>
