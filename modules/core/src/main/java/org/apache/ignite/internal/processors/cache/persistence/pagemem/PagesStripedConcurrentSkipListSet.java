@@ -18,10 +18,10 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.util.Comparator;
 import java.util.Set;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
-import org.jsr166.LongAdder8;
 
 /**
  * Special set to store page IDs in buckets based on cache Group ID + partition ID.
@@ -47,7 +47,7 @@ public class PagesStripedConcurrentSkipListSet extends PagesStripedConcurrentHas
         private static final long serialVersionUID = 0L;
 
         /** Size. */
-        private final LongAdder8 size = new LongAdder8();
+        private final LongAdder size = new LongAdder();
 
         /**
          * @param comp Comparator.

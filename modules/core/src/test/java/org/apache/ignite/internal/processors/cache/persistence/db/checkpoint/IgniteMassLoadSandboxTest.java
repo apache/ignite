@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 import junit.framework.TestCase;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
@@ -71,7 +72,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
-import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
@@ -254,7 +254,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     }
 
     private static class ProgressWatchdog {
-        private final LongAdder8 longAdder8 = new LongAdder8();
+        private final LongAdder longAdder8 = new LongAdder();
         private final FileWriter txtWriter;
 
         private ScheduledExecutorService svc = Executors.newScheduledThreadPool(1);
