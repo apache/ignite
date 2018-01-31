@@ -661,7 +661,7 @@
                                             setClientVersion('new.ignite.version.fixed', 'new.client.version');
                                         </script>
 
-                                        <echo message="Update ignite.version in dotnet client" />
+                                        <echo message="Update ignite.version in .NET" />
                                         <echo message="${new.client.version}" />
 
                                         <replaceregexp byline="true" encoding="UTF-8">
@@ -682,7 +682,7 @@
                                             </fileset>
                                         </replaceregexp>
 
-                                        <echo message="Update ignite.version in cpp client" />
+                                        <echo message="Update ignite.version in C++" />
                                         <replaceregexp byline="true" encoding="UTF-8">
                                             <regexp pattern="(AC_INIT.+\[)\d+\.\d+\.\d+.*?(\].+)" />
                                             <substitution expression="\1${new.client.version}\2" />
