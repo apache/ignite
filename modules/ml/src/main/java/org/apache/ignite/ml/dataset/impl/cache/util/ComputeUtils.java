@@ -143,7 +143,6 @@ public class ComputeUtils {
      * @param <D> Type of a partition {@code data}.
      * @return Partition {@code data}.
      */
-    @SuppressWarnings("unchecked")
     public static <K, V, C extends Serializable, D extends AutoCloseable> D getData(Ignite ignite,
         String upstreamCacheName, String datasetCacheName, UUID datasetId, int part,
         PartitionDataBuilder<K, V, C, D> partDataBuilder) {

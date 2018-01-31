@@ -44,6 +44,7 @@ class PartitionDataStorage {
      * @param supplier Partition {@code data} supplier.
      * @return Partition {@code data}.
      */
+    @SuppressWarnings("unchecked")
     <D> D computeDataIfAbsent(int part, Supplier<D> supplier) {
         Object data = storage.get(part);
 
