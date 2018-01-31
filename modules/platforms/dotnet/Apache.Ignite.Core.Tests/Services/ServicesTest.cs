@@ -318,6 +318,26 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
+        /// Tests dynamic service proxies.
+        /// </summary>
+        [Test]
+        public void TestGetDynamicServiceProxy()
+        {
+            // Deploy to remotes.
+            var svc = new TestIgniteServiceSerializable { TestProperty = 37 };
+            Grid1.GetCluster().ForRemotes().GetServices().DeployNodeSingleton(SvcName, svc);
+
+            // Make sure there is no local instance on grid3
+            Assert.IsNull(Grid3.GetServices().GetService<ITestIgniteService>(SvcName));
+
+            // Get proxy.
+            var prx = Grid3.GetServices().GetDynamicServiceProxy(SvcName, false);
+
+            // Check proxy.
+            Assert.AreEqual(37, prx.TestProperty);
+        }
+
+        /// <summary>
         /// Tests the duck typing: proxy interface can be different from actual service interface, 
         /// only called method signature should be compatible.
         /// </summary>
