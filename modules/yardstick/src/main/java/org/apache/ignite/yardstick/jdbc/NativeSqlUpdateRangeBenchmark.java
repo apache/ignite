@@ -35,6 +35,8 @@ public class NativeSqlUpdateRangeBenchmark extends AbstractNativeBenchmark {
      * {@inheritDoc}
      */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        final ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
         long expRsSize;
 
         SqlFieldsQuery qry;
@@ -42,14 +44,16 @@ public class NativeSqlUpdateRangeBenchmark extends AbstractNativeBenchmark {
         if (args.sqlRange() == 1) {
             qry = new SqlFieldsQuery("UPDATE test_long SET val = (val + 1) WHERE id = ?");
 
-            qry.setArgs(ThreadLocalRandom.current().nextLong(args.range()) + 1);
+            qry.setArgs(rnd.nextLong(args.range()) + 1);
 
             expRsSize = 1;
         }
         else {
             qry = new SqlFieldsQuery("UPDATE test_long SET val = (val + 1) WHERE id BETWEEN ? AND ?");
 
-            long id = ThreadLocalRandom.current().nextLong(args.range() - args.sqlRange()) + 1;
+            long blocksCnt = args.range() / args.sqlRange();
+            long id = rnd.nextLong(blocksCnt) * args.sqlRange() + 1;
+
             long maxId = id + args.sqlRange() - 1;
 
             qry.setArgs(id, maxId);

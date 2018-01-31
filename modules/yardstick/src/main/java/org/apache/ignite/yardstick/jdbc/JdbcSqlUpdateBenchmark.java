@@ -47,12 +47,16 @@ public class JdbcSqlUpdateBenchmark extends AbstractJdbcBenchmark {
 
         if (args.sqlRange() == 1){
             long updateKey = rnd.nextLong(args.range()) + 1;
+
             update = singleUpdate.get();
             update.setLong(1, updateKey);
+
             expectedResSize = 1;
         }
         else {
-            long id = rnd.nextLong(args.range() - args.sqlRange()) + 1;
+            long blocksCnt = args.range() / args.sqlRange();
+            long id = rnd.nextLong(blocksCnt) * args.sqlRange() + 1;
+
             long maxId = id + args.sqlRange() - 1;
 
             update = rangeUpdate.get();
