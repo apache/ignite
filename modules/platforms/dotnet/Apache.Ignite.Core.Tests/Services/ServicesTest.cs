@@ -780,13 +780,9 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaService()
         {
-            const string javaSvcName = "javaService";
-
             // Deploy Java service
-            Grid1.GetCompute()
-                .ExecuteJavaTask<object>("org.apache.ignite.platform.PlatformDeployServiceTask", javaSvcName);
-
-            TestUtils.WaitForCondition(() => Services.GetServiceDescriptors().Any(x => x.Name == javaSvcName), 1000);
+            const string javaSvcName = "javaService";
+            DeployJavaService(javaSvcName);
 
             // Verify decriptor
             var descriptor = Services.GetServiceDescriptors().Single(x => x.Name == javaSvcName);
@@ -870,7 +866,90 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaServiceDynamicProxy()
         {
-            // TODO
+            const string javaSvcName = "javaService";
+            DeployJavaService(javaSvcName);
+
+            var svc = Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true);
+
+            // Basics
+            Assert.IsTrue(svc.isInitialized());
+            Assert.IsTrue(TestUtils.WaitForCondition(() => svc.isExecuted(), 500));
+            Assert.IsFalse(svc.isCancelled());
+
+            // Primitives
+            Assert.AreEqual(4, svc.test((byte)3));
+            Assert.AreEqual(5, svc.test((short)4));
+            Assert.AreEqual(6, svc.test(5));
+            Assert.AreEqual(6, svc.test((long)5));
+            Assert.AreEqual(3.8f, svc.test(2.3f));
+            Assert.AreEqual(5.8, svc.test(3.3));
+            Assert.IsFalse(svc.test(true));
+            Assert.AreEqual('b', svc.test('a'));
+            Assert.AreEqual("Foo!", svc.test("Foo"));
+
+            // Nullables (Java wrapper types)
+            Assert.AreEqual(4, svc.testWrapper(3));
+            Assert.AreEqual(5, svc.testWrapper((short?)4));
+            Assert.AreEqual(6, svc.testWrapper((int?)5));
+            Assert.AreEqual(6, svc.testWrapper((long?)5));
+            Assert.AreEqual(3.8f, svc.testWrapper(2.3f));
+            Assert.AreEqual(5.8, svc.testWrapper(3.3));
+            Assert.AreEqual(false, svc.testWrapper(true));
+            Assert.AreEqual('b', svc.testWrapper('a'));
+
+            // Arrays
+            Assert.AreEqual(new byte[] { 2, 3, 4 }, svc.testArray(new byte[] { 1, 2, 3 }));
+            Assert.AreEqual(new short[] { 2, 3, 4 }, svc.testArray(new short[] { 1, 2, 3 }));
+            Assert.AreEqual(new[] { 2, 3, 4 }, svc.testArray(new[] { 1, 2, 3 }));
+            Assert.AreEqual(new long[] { 2, 3, 4 }, svc.testArray(new long[] { 1, 2, 3 }));
+            Assert.AreEqual(new float[] { 2, 3, 4 }, svc.testArray(new float[] { 1, 2, 3 }));
+            Assert.AreEqual(new double[] { 2, 3, 4 }, svc.testArray(new double[] { 1, 2, 3 }));
+            Assert.AreEqual(new[] { "a1", "b1" }, svc.testArray(new[] { "a", "b" }));
+            Assert.AreEqual(new[] { 'c', 'd' }, svc.testArray(new[] { 'b', 'c' }));
+            Assert.AreEqual(new[] { false, true, false }, svc.testArray(new[] { true, false, true }));
+
+            // Nulls
+            Assert.AreEqual(9, svc.testNull(8));
+            Assert.IsNull(svc.testNull(null));
+
+            // params / varargs
+            Assert.AreEqual(5, svc.testParams(1, 2, 3, 4, "5"));
+            Assert.AreEqual(0, svc.testParams());
+
+            // Overloads
+            Assert.AreEqual(3, svc.test(2, "1"));
+            Assert.AreEqual(3, svc.test("1", 2));
+
+            // Binary
+            Assert.AreEqual(7, svc.testBinarizable(new PlatformComputeBinarizable { Field = 6 }).Field);
+
+            // Binary collections
+            var arr = new[] { 10, 11, 12 }.Select(x => new PlatformComputeBinarizable { Field = x }).ToArray<object>();
+            Assert.AreEqual(new[] { 11, 12, 13 }, ((ICollection)svc.testBinarizableCollection(arr))
+                .OfType<PlatformComputeBinarizable>().Select(x => x.Field).ToArray());
+            Assert.AreEqual(new[] {11, 12, 13},
+                ((ICollection) svc.testBinarizableArray(arr))
+                .OfType<PlatformComputeBinarizable>().Select(x => x.Field).ToArray());
+
+            // Binary object
+            var binSvc = Services.WithKeepBinary().WithServerKeepBinary()
+                .GetDynamicServiceProxy(javaSvcName, false);
+
+            Assert.AreEqual(15,
+                binSvc.testBinaryObject(
+                    Grid1.GetBinary().ToBinary<IBinaryObject>(new PlatformComputeBinarizable { Field = 6 }))
+                    .GetField<int>("Field"));
+        }
+
+        /// <summary>
+        /// Deploys the java service.
+        /// </summary>
+        private void DeployJavaService(string javaSvcName)
+        {
+            Grid1.GetCompute()
+                .ExecuteJavaTask<object>("org.apache.ignite.platform.PlatformDeployServiceTask", javaSvcName);
+
+            TestUtils.WaitForCondition(() => Services.GetServiceDescriptors().Any(x => x.Name == javaSvcName), 1000);
         }
 
         /// <summary>
