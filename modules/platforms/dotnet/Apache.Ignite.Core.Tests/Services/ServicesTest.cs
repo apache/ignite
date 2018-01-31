@@ -912,24 +912,12 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(9, svc.testNull(8));
             Assert.IsNull(svc.testNull(null));
 
-            // params / varargs
-            Assert.AreEqual(5, svc.testParams(1, 2, 3, 4, "5"));
-            Assert.AreEqual(0, svc.testParams());
-
             // Overloads
             Assert.AreEqual(3, svc.test(2, "1"));
             Assert.AreEqual(3, svc.test("1", 2));
 
             // Binary
             Assert.AreEqual(7, svc.testBinarizable(new PlatformComputeBinarizable { Field = 6 }).Field);
-
-            // Binary collections
-            var arr = new[] { 10, 11, 12 }.Select(x => new PlatformComputeBinarizable { Field = x }).ToArray<object>();
-            Assert.AreEqual(new[] { 11, 12, 13 }, ((ICollection)svc.testBinarizableCollection(arr))
-                .OfType<PlatformComputeBinarizable>().Select(x => x.Field).ToArray());
-            Assert.AreEqual(new[] {11, 12, 13},
-                ((ICollection) svc.testBinarizableArray(arr))
-                .OfType<PlatformComputeBinarizable>().Select(x => x.Field).ToArray());
 
             // Binary object
             var binSvc = Services.WithKeepBinary().WithServerKeepBinary()
