@@ -331,14 +331,22 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNull(Grid3.GetServices().GetService<ITestIgniteService>(SvcName));
 
             // Get proxy.
-            var prx = Grid3.GetServices().GetDynamicServiceProxy(SvcName, false);
+            dynamic prx = Grid3.GetServices().GetDynamicServiceProxy(SvcName, false);
 
             // Property getter.
             Assert.AreEqual(37, prx.TestProperty);
+            Assert.IsTrue(prx.Initialized);
+            Assert.IsTrue(prx.Executed);
+            Assert.IsFalse(prx.Cancelled);
+            Assert.AreEqual(SvcName, prx.LastCallContextName);
 
             // Property setter.
+            prx.TestProperty = 42;
+            Assert.AreEqual(42, prx.TestProperty);
 
             // Method invoke.
+            Assert.AreEqual(prx.ToString(), svc.ToString());
+
 
             // Non-existent member.
             // TODO
