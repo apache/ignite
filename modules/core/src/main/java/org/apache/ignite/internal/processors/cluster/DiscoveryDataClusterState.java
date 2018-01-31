@@ -146,10 +146,17 @@ public class DiscoveryDataClusterState implements Serializable {
     }
 
     /**
-     * @return {@code True} if state change is in progress.
+     * @return {@code True} if any cluster state change is in progress (e.g. active state change, baseline change).
      */
     public boolean transition() {
         return transitionReqId != null;
+    }
+
+    /**
+     * @return {@code True} if cluster active state change is in progress, {@code false} otherwise.
+     */
+    public boolean activeStateChanging() {
+        return transition() && active != prevState.active;
     }
 
     /**
