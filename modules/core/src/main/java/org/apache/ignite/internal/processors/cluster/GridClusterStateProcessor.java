@@ -180,7 +180,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         assert globalState != null;
 
-        if (globalState.transition()) {
+        if (globalState.transition() && globalState.activeStateChanging()) {
             Boolean transitionRes = globalState.transitionResult();
 
             if (transitionRes != null)

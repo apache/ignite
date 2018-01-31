@@ -63,7 +63,7 @@ checkJava() {
         exit 1
     fi
 
-    "$JAVA" -version 2>&1 | grep -qE 'java version "(1.8.*|9.*)"' || {
+    "$JAVA" -version 2>&1 | grep -qE 'version "(1.8.*|9.*)"' || {
         echo "$0, ERROR:"
         echo "The version of JAVA installed in JAVA_HOME=$JAVA_HOME is incorrect."
         echo "Please point JAVA_HOME variable to installation of JDK 1.8 or JDK 9."
