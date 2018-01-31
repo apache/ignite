@@ -28,13 +28,13 @@ import org.h2.result.SearchRow;
 import org.h2.value.Value;
 
 /**
- * Meta view: transactions.
+ * Meta view: local transactions.
  */
-public class IgniteSqlMetaViewImplTransactions extends IgniteSqlMetaView {
+public class IgniteSqlMetaViewLocalTransactions extends IgniteSqlMetaView {
     /**
      * @param ctx Grid context.
      */
-    public IgniteSqlMetaViewImplTransactions(GridKernalContext ctx) {
+    public IgniteSqlMetaViewLocalTransactions(GridKernalContext ctx) {
         super("LOCAL_TRANSACTIONS", "Current node active transactions", ctx,
             newColumn("XID"),
             newColumn("START_NODE_ID", Value.UUID),
