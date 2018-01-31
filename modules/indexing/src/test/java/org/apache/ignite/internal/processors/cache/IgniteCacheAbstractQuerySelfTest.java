@@ -1467,8 +1467,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      */
     private void checkSqlQueryEvents() throws Exception {
         final IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
-        final boolean evtsEnabled = cache.getConfiguration(CacheConfiguration.class).isEventsEnabled();
-        final CountDownLatch execLatch = new CountDownLatch(!evtsEnabled ? 0 :
+        final boolean evtsDisabled = cache.getConfiguration(CacheConfiguration.class).isEventsDisabled();
+        final CountDownLatch execLatch = new CountDownLatch(evtsDisabled ? 0 :
             cacheMode() == REPLICATED ? 1 : gridCount());
 
         IgnitePredicate[] lsnrs = new IgnitePredicate[gridCount()];
@@ -1478,7 +1478,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                 @Override public boolean apply(Event evt) {
                     assert evt instanceof CacheQueryExecutedEvent;
 
-                    if (!evtsEnabled)
+                    if (evtsDisabled)
                         fail("Events are disabled");
 
                     CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
@@ -1523,9 +1523,9 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     public void testScanQueryEvents() throws Exception {
         final Map<Integer, Integer> map = new ConcurrentHashMap8<>();
         final IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
-        final boolean evtsEnabled = cache.getConfiguration(CacheConfiguration.class).isEventsEnabled();
-        final CountDownLatch latch = new CountDownLatch(evtsEnabled ? 10 : 0);
-        final CountDownLatch execLatch = new CountDownLatch(!evtsEnabled ? 0 :
+        final boolean evtsDisabled = cache.getConfiguration(CacheConfiguration.class).isEventsDisabled();
+        final CountDownLatch latch = new CountDownLatch(evtsDisabled ? 0 : 10);
+        final CountDownLatch execLatch = new CountDownLatch(evtsDisabled ? 0 :
             cacheMode() == REPLICATED ? 1 : gridCount());
 
         IgnitePredicate[] objReadLsnrs = new IgnitePredicate[gridCount()];
@@ -1536,7 +1536,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                 @Override public boolean apply(Event evt) {
                     assert evt instanceof CacheQueryReadEvent;
 
-                    if (!evtsEnabled)
+                    if (evtsDisabled)
                         fail("Events are disabled");
 
                     CacheQueryReadEvent<Integer, Integer> qe = (CacheQueryReadEvent<Integer, Integer>)evt;
@@ -1565,7 +1565,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                 @Override public boolean apply(Event evt) {
                     assert evt instanceof CacheQueryExecutedEvent;
 
-                    if (!evtsEnabled)
+                    if (evtsDisabled)
                         fail("Events are disabled");
 
                     CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
@@ -1606,7 +1606,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             assert latch.await(1000, MILLISECONDS);
             assert execLatch.await(1000, MILLISECONDS);
 
-            if (evtsEnabled) {
+            if (!evtsDisabled) {
                 assertEquals(10, map.size());
 
                 for (int i = 10; i < 20; i++)
@@ -1627,9 +1627,9 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     public void testTextQueryEvents() throws Exception {
         final Map<UUID, Person> map = new ConcurrentHashMap8<>();
         final IgniteCache<UUID, Person> cache = jcache(UUID.class, Person.class);
-        final boolean evtsEnabled = cache.getConfiguration(CacheConfiguration.class).isEventsEnabled();
-        final CountDownLatch latch = new CountDownLatch(evtsEnabled ? 2 : 0);
-        final CountDownLatch execLatch = new CountDownLatch(!evtsEnabled ? 0 :
+        final boolean evtsDisabled = cache.getConfiguration(CacheConfiguration.class).isEventsDisabled();
+        final CountDownLatch latch = new CountDownLatch(evtsDisabled ? 0 : 2);
+        final CountDownLatch execLatch = new CountDownLatch(evtsDisabled ? 0 :
             cacheMode() == REPLICATED ? 1 : gridCount());
 
         IgnitePredicate[] objReadLsnrs = new IgnitePredicate[gridCount()];
@@ -1640,7 +1640,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                 @Override public boolean apply(Event evt) {
                     assert evt instanceof CacheQueryReadEvent;
 
-                    if (!evtsEnabled)
+                    if (evtsDisabled)
                         fail("Events are disabled");
 
                     CacheQueryReadEvent<UUID, Person> qe = (CacheQueryReadEvent<UUID, Person>)evt;
@@ -1669,7 +1669,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                 @Override public boolean apply(Event evt) {
                     assert evt instanceof CacheQueryExecutedEvent;
 
-                    if (!evtsEnabled)
+                    if (evtsDisabled)
                         fail("Events are disabled");
 
                     CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
@@ -1709,7 +1709,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             assert latch.await(1000, MILLISECONDS);
             assert execLatch.await(1000, MILLISECONDS);
 
-            if (evtsEnabled) {
+            if (!evtsDisabled) {
                 assertEquals(2, map.size());
 
                 assertEquals("Bob White", map.get(k1).name());
@@ -1729,8 +1729,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      */
     public void testFieldsQueryEvents() throws Exception {
         final IgniteCache<UUID, Person> cache = jcache(UUID.class, Person.class);
-        final boolean evtsEnabled = cache.getConfiguration(CacheConfiguration.class).isEventsEnabled();
-        final CountDownLatch execLatch = new CountDownLatch(!evtsEnabled ? 0 :
+        final boolean evtsDisabled = cache.getConfiguration(CacheConfiguration.class).isEventsDisabled();
+        final CountDownLatch execLatch = new CountDownLatch(evtsDisabled ? 0 :
             cacheMode() == REPLICATED ? 1 : gridCount());
 
         IgnitePredicate[] qryExecLsnrs = new IgnitePredicate[gridCount()];
@@ -1740,7 +1740,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                 @Override public boolean apply(Event evt) {
                     assert evt instanceof CacheQueryExecutedEvent;
 
-                    if (!evtsEnabled)
+                    if (evtsDisabled)
                         fail("Events are disabled");
 
                     CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;

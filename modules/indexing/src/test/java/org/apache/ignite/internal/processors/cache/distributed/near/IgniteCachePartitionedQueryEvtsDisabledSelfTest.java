@@ -25,6 +25,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 public class IgniteCachePartitionedQueryEvtsDisabledSelfTest extends IgniteCachePartitionedQuerySelfTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration() {
-        return super.cacheConfiguration().setEventsEnabled(false);
+        return super.cacheConfiguration().setEventsDisabled(true);
     }
 }

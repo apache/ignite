@@ -133,7 +133,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         CacheConfiguration ccfgEvtsDisabled = new CacheConfiguration(ccfg);
 
         ccfgEvtsDisabled.setName(DEFAULT_CACHE_NAME_EVTS_DISABLED);
-        ccfgEvtsDisabled.setEventsEnabled(false);
+        ccfgEvtsDisabled.setEventsDisabled(true);
 
         cfg.setCacheConfiguration(ccfg, ccfgEvtsDisabled);
 

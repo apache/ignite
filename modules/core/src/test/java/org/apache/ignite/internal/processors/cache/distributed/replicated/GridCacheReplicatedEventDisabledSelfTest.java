@@ -28,7 +28,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 public class GridCacheReplicatedEventDisabledSelfTest extends GridCacheReplicatedEventSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
-        return super.cacheConfiguration(igniteInstanceName).setEventsEnabled(false);
+        return super.cacheConfiguration(igniteInstanceName).setEventsDisabled(true);
     }
 
     /** {@inheritDoc} */

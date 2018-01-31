@@ -181,8 +181,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default query parallelism. */
     public static final int DFLT_QUERY_PARALLELISM = 1;
 
-    /** Default value for events enabled flag. */
-    public static final boolean DFLT_EVENTS_ENABLED = true;
+    /** Default value for events disabled flag. */
+    public static final boolean DFLT_EVENTS_DISABLED = false;
 
     /** Cache name. */
     private String name;
@@ -364,8 +364,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Cache key configuration. */
     private CacheKeyConfiguration[] keyCfg;
 
-    /** Events enabled. */
-    private boolean evtsEnabled = DFLT_EVENTS_ENABLED;
+    /** Events disabled. */
+    private boolean evtsDisabled = DFLT_EVENTS_DISABLED;
 
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
@@ -459,7 +459,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         storeConcurrentLoadAllThreshold = cc.getStoreConcurrentLoadAllThreshold();
         maxQryIterCnt = cc.getMaxQueryIteratorsCount();
         sqlOnheapCache = cc.isSqlOnheapCacheEnabled();
-        evtsEnabled = cc.isEventsEnabled();
+        evtsDisabled = cc.isEventsDisabled();
     }
 
     /**
@@ -2191,22 +2191,22 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Checks whether events are enabled for this cache.
+     * Checks whether events are disabled for this cache.
      *
-     * @return Events enabled flag.
+     * @return Events disabled flag.
      */
-    public Boolean isEventsEnabled() {
-        return evtsEnabled;
+    public Boolean isEventsDisabled() {
+        return evtsDisabled;
     }
 
     /**
-     * Sets events enabled flag.
+     * Sets events disabled flag.
      *
-     * @param evtsEnabled Events enabled flag.
+     * @param evtsDisabled Events disabled flag.
      * @return {@code this} for chaining.
      */
-    public CacheConfiguration<K, V> setEventsEnabled(boolean evtsEnabled) {
-        this.evtsEnabled = evtsEnabled;
+    public CacheConfiguration<K, V> setEventsDisabled(boolean evtsDisabled) {
+        this.evtsDisabled = evtsDisabled;
 
         return this;
     }

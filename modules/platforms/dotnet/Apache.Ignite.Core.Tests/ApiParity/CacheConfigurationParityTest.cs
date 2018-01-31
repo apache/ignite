@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "NodeFilter",  // IGNITE-2890
             "EvictionPolicyFactory",  // IGNITE-6649,
             "isSqlOnheapCacheEnabled",  // IGNITE-7379
-            "isEventsEnabled"  // IGNITE-7346
+            "isEventsDisabled"  // IGNITE-7346
         };
 
         /// <summary>

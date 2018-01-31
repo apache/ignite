@@ -407,7 +407,7 @@ public class CacheGroupContext {
         for (int i = 0; i < caches.size(); i++) {
             GridCacheContext cctx = caches.get(i);
 
-            if (cctx.config().isEventsEnabled() && cctx.recordEvent(type)) {
+            if (!cctx.config().isEventsDisabled() && cctx.recordEvent(type)) {
                 cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
                     cctx.localNode(),
                     "Cache rebalancing event.",
@@ -434,7 +434,7 @@ public class CacheGroupContext {
         for (int i = 0; i < caches.size(); i++) {
             GridCacheContext cctx = caches.get(i);
 
-            if (cctx.config().isEventsEnabled())
+            if (!cctx.config().isEventsDisabled())
                 cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
                     cctx.localNode(),
                     "Cache unloading event.",
@@ -473,7 +473,7 @@ public class CacheGroupContext {
         for (int i = 0; i < caches.size(); i++) {
             GridCacheContext cctx = caches.get(i);
 
-            if (cctx.config().isEventsEnabled())
+            if (!cctx.config().isEventsDisabled())
                 cctx.events().addEvent(part,
                     key,
                     evtNodeId,

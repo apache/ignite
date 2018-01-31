@@ -747,7 +747,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cfgEvtsDisabled = new CacheConfiguration(cfg);
 
         cfgEvtsDisabled.setName("DynamicCacheEvtsDisabled");
-        cfgEvtsDisabled.setEventsEnabled(false);
+        cfgEvtsDisabled.setEventsDisabled(true);
 
         final CountDownLatch[] starts = new CountDownLatch[nodeCount()];
         final CountDownLatch[] stops = new CountDownLatch[nodeCount()];
