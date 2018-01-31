@@ -1,4 +1,4 @@
-# Apache Ignite.NET In-Memory Computing Platform
+# Apache Ignite.NET SDK
 
 <a href="https://ignite.apache.org/"><img src="https://ignite.apache.org/images/logo3.png" hspace="20"/></a><img src="https://ptupitsyn.github.io/images/net-framework.png" hspace="20" />
 
@@ -6,7 +6,7 @@
 
 <a href="https://www.myget.org/gallery/apache-ignite-net-nightly"><img src="https://img.shields.io/myget/apache-ignite-net-nightly/vpre/Apache.Ignite.svg" /></a>
 
-<a href="http://ci.ignite.apache.org/viewType.html?buildTypeId=Ignite20Tests_IgnitePlatformNet&branch_IgniteTests=%3Cdefault%3E"><img src="http://ci.ignite.apache.org/app/rest/builds/buildType:(id:Ignite20Tests_IgnitePlatformNet)/statusIcon" /></a>
+<a href="https://ci.ignite.apache.org/viewType.html?buildTypeId=IgniteTests24Java8_IgnitePlatformNet&branch_IgniteTests24Java8=<default>"><img src="http://ci.ignite.apache.org/app/rest/builds/buildType:(id:IgniteTests24Java8_IgnitePlatformNet)/statusIcon" /></a>
 
 ## Getting Started
 
@@ -18,9 +18,9 @@ You can find the full Apache Ignite documentation here: [Full documentation][doc
 
 ## What is Apache Ignite?
 
-[Apache Ignite][apache-ignite-homepage] is the <b>in-memory</b> computing platform
-that is <b>durable</b>, <b>strongly consistent</b>, and <b>highly available</b>
-with powerful <b>SQL</b>, <b>key-value</b> and <b>processing</b> APIs.
+[Apache Ignite][apache-ignite-homepage] is a memory-centric multi-model distributed
+ <strong>database</strong>, <strong>caching</strong>, and <strong>processing</strong> platform for
+ transactional, analytical, and streaming workloads, delivering in-memory speeds at petabyte scale.
 
 <p align="center">
     <a href="https://apacheignite-net.readme.io/docs/">

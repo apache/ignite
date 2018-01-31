@@ -92,6 +92,8 @@ import ModelNormalizer from './services/ModelNormalizer.service.js';
 import UnsavedChangesGuard from './services/UnsavedChangesGuard.service';
 import Clusters from './services/Clusters';
 import Caches from './services/Caches';
+import {CSV} from './services/CSV';
+import {$exceptionHandler} from './services/exceptionHandler.js';
 
 import AngularStrapTooltip from './services/AngularStrapTooltip.decorator';
 import AngularStrapSelect from './services/AngularStrapSelect.decorator';
@@ -215,9 +217,11 @@ angular.module('ignite-console', [
     listEditable.name,
     clusterSelector.name,
     connectedClusters.name,
+    igniteListOfRegisteredUsers.name,
     // Ignite modules.
     IgniteModules.name
 ])
+.service($exceptionHandler.name, $exceptionHandler)
 // Directives.
 .directive(...igniteAutoFocus)
 .directive(...igniteBsAffixUpdate)
@@ -240,7 +244,6 @@ angular.module('ignite-console', [
 .directive(...igniteRetainSelection)
 .directive('igniteOnFocusOut', igniteOnFocusOut)
 .directive('igniteRestoreInputFocus', igniteRestoreInputFocus)
-.directive('igniteListOfRegisteredUsers', igniteListOfRegisteredUsers)
 .directive('btnIgniteLinkDashedSuccess', btnIgniteLink)
 .directive('btnIgniteLinkDashedSecondary', btnIgniteLink)
 // Services.
@@ -263,6 +266,7 @@ angular.module('ignite-console', [
 .service('IgniteActivitiesUserDialog', IgniteActivitiesUserDialog)
 .service('Clusters', Clusters)
 .service('Caches', Caches)
+.service(CSV.name, CSV)
 // Controllers.
 .controller(...resetPassword)
 .controller(...profile)
