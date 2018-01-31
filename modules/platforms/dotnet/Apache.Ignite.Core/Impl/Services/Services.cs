@@ -400,8 +400,16 @@ namespace Apache.Ignite.Core.Impl.Services
                 return locInst;
             }
 
-            // TODO
-            return new DynamicServiceProxy();
+            var javaProxy = DoOutOpObject(OpServiceProxy, w =>
+            {
+                w.WriteString(name);
+                w.WriteBoolean(sticky);
+            });
+
+            var platform = GetServiceDescriptors().Cast<ServiceDescriptor>().Single(x => x.Name == name).Platform;
+
+            return new DynamicServiceProxy((methodName, args) =>
+                InvokeProxyMethod(javaProxy, methodName, null, args, platform));
         }
 
         /// <summary>
