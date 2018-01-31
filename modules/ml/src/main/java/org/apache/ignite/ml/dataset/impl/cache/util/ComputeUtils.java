@@ -153,7 +153,7 @@ public class ComputeUtils {
             .nodeLocalMap()
             .computeIfAbsent(String.format(DATA_STORAGE_KEY_TEMPLATE, datasetId), key -> new PartitionDataStorage());
 
-        Object data = dataStorage.computeDataIfAbsent(part, () -> {
+        return dataStorage.computeDataIfAbsent(part, () -> {
             IgniteCache<Integer, C> learningCtxCache = ignite.cache(datasetCacheName);
             C ctx = learningCtxCache.get(part);
 
@@ -168,8 +168,6 @@ public class ComputeUtils {
                 return partDataBuilder.build(new UpstreamCursorAdapter<>(cursor.iterator(), cnt), cnt, ctx);
             }
         });
-
-        return (D)data;
     }
 
     /**

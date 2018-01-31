@@ -39,11 +39,12 @@ class PartitionDataStorage {
      * loads it using the specified {@code supplier}. Unlike {@link ConcurrentMap#computeIfAbsent(Object, Function)},
      * this method guarantees that function will be called only once.
      *
+     * @param <D> Type of data.
      * @param part Partition index.
      * @param supplier Partition {@code data} supplier.
      * @return Partition {@code data}.
      */
-    Object computeDataIfAbsent(int part, Supplier<Object> supplier) {
+    <D> D computeDataIfAbsent(int part, Supplier<D> supplier) {
         Object data = storage.get(part);
 
         if (data == null) {
@@ -58,6 +59,6 @@ class PartitionDataStorage {
             }
         }
 
-        return data;
+        return (D)data;
     }
 }
