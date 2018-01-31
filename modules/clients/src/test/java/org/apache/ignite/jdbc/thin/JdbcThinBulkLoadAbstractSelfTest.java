@@ -63,7 +63,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
     /** A CSV file in UTF-8. */
     private static final String BULKLOAD_UTF8_CSV_FILE =
-        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload2_utf.csv"))
+        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload2_utf8.csv"))
             .getAbsolutePath();
 
     /** A CSV file in windows-1251. */
