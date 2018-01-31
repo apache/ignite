@@ -1413,7 +1413,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @return archived index, -1 means no files were archived
      */
     public long lastAbsArchivedIdx() {
-        return archiver == null ? -1 : archiver.lastAbsArchivedIdx;
+        return archivedMonitor.lastArchivedAbsoluteIndex();
     }
 
     /**
