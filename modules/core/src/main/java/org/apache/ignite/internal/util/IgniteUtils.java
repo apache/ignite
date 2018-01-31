@@ -8534,6 +8534,18 @@ public abstract class IgniteUtils {
      * @throws ClassNotFoundException If class not found.
      */
     public static Class<?> forName(String clsName, @Nullable ClassLoader ldr) throws ClassNotFoundException {
+        return U.forName(clsName, ldr, null);
+    }
+
+    /**
+     * Gets class for provided name. Accepts primitive types names.
+     *
+     * @param clsName Class name.
+     * @param ldr Class loader.
+     * @return Class.
+     * @throws ClassNotFoundException If class not found.
+     */
+    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr, IgnitePredicate<String> clsFilter) throws ClassNotFoundException {
         assert clsName != null;
 
         Class<?> cls = primitiveMap.get(clsName);
@@ -8560,6 +8572,9 @@ public abstract class IgniteUtils {
         cls = ldrMap.get(clsName);
 
         if (cls == null) {
+            if (clsFilter != null && !clsFilter.apply(clsName))
+                throw new RuntimeException("Deserialization of class " + clsName + " is disallowed.");
+
             Class old = ldrMap.putIfAbsent(clsName, cls = Class.forName(clsName, true, ldr));
 
             if (old != null)
@@ -10335,6 +10350,39 @@ public abstract class IgniteUtils {
      */
     public static BaselineTopology getBaselineTopology(@NotNull GridCacheContext cctx) {
         return getBaselineTopology(cctx.kernalContext());
+    }
+
+    /**
+     * @param addr pointer in memory
+     * @param len how much byte to read (should divide 8)
+     *
+     * @return hex representation of memory region
+     */
+    public static String toHexString(long addr, int len) {
+        assert (len & 0b111) == 0 && len > 0;
+
+        StringBuilder sb = new StringBuilder(len * 2);
+
+        for (int i = 0; i < len; i += 8)
+            sb.append(U.hexLong(GridUnsafe.getLong(addr + i)));
+
+        return sb.toString();
+    }
+
+    /**
+     * @param buf which content should be converted to string
+     *
+     * @return hex representation of memory region
+     */
+    public static String toHexString(ByteBuffer buf) {
+        assert (buf.capacity() & 0b111) == 0;
+
+        StringBuilder sb = new StringBuilder(buf.capacity() * 2);
+
+        for (int i = 0; i < buf.capacity(); i += 8)
+            sb.append(U.hexLong(buf.getLong(i)));
+
+        return sb.toString();
     }
 
     /**

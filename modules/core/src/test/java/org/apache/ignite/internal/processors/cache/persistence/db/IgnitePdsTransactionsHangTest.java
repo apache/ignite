@@ -24,6 +24,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -45,7 +46,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -177,7 +177,7 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
             final CyclicBarrier cyclicBarrier = new CyclicBarrier(THREADS_CNT);
 
             final AtomicBoolean interrupt = new AtomicBoolean(false);
-            final LongAdder8 operationCnt = new LongAdder8();
+            final LongAdder operationCnt = new LongAdder();
 
             final IgniteCache<Long, TestEntity> cache = g.cache(CACHE_NAME);
 

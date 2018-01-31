@@ -266,6 +266,7 @@ public class LabeledDatasetTest extends BaseKNNTest implements ExternalizableTes
             assertEquals(lbs[i], labels[i]);
     }
 
+    /** */
     @Override public void testExternalization() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 

@@ -1064,6 +1064,10 @@ button.form-control {
 
 .popover-content {
     padding: 5px;
+
+    button {
+        margin-left: 5px;
+    }
 }
 
 .popover:focus {
