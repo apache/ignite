@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -47,6 +48,12 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
     /** Thin client handshake code. */
     public static final byte THIN_CLIENT = 2;
 
+    /** Connection handshake passed. */
+    public static final int CONN_CTX_HANDSHAKE_PASSED = GridNioSessionMetaKey.nextUniqueKey();
+
+    /** Maximum size of the handshake message. */
+    public static final int MAX_HANDSHAKE_MSG_SIZE = 128;
+
     /** Connection-related metadata key. */
     private static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
@@ -62,18 +69,24 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
     /** Logger. */
     private final IgniteLogger log;
 
+    /** Client connection config. */
+    private ClientConnectorConfiguration cliConnCfg;
+
     /**
      * Constructor.
      *
      * @param ctx Context.
      * @param busyLock Shutdown busy lock.
-     * @param maxCursors Maximum allowed cursors.
+     * @param cliConnCfg Client connector configuration.
      */
-    public ClientListenerNioListener(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors) {
+    public ClientListenerNioListener(GridKernalContext ctx, GridSpinBusyLock busyLock,
+        ClientConnectorConfiguration cliConnCfg) {
+        assert cliConnCfg != null;
+
         this.ctx = ctx;
         this.busyLock = busyLock;
-        this.maxCursors = maxCursors;
-
+        this.maxCursors = cliConnCfg.getMaxOpenCursorsPerConnection();
+        this.cliConnCfg = cliConnCfg;
         log = ctx.log(getClass());
     }
 
@@ -106,6 +119,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
 
         if (connCtx == null) {
             onHandshake(ses, msg);
+
+            ses.addMeta(CONN_CTX_HANDSHAKE_PASSED, true);
 
             return;
         }
@@ -190,37 +205,45 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
 
         ClientListenerProtocolVersion ver = ClientListenerProtocolVersion.create(verMajor, verMinor, verMaintenance);
 
-        byte clientType = reader.readByte();
-
-        ClientListenerConnectionContext connCtx = prepareContext(clientType);
-
-        String errMsg = null;
-
-        if (connCtx.isVersionSupported(ver)) {
-            connCtx.initializeFromHandshake(ver, reader);
-
-            ses.addMeta(CONN_CTX_META_KEY, connCtx);
-        }
-        else {
-            log.warning("Unsupported version: " + ver.toString());
-
-            errMsg = "Unsupported version.";
-        }
-
-        // Send response.
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(8), null, null);
 
-        if (errMsg == null)
-            connCtx.handler().writeHandshake(writer);
-        else {
-            ClientListenerProtocolVersion currentVer = connCtx.currentVersion();
+        byte clientType = reader.readByte();
 
-            // Failed handshake response
+        ClientListenerConnectionContext connCtx = null;
+
+        try {
+            connCtx = prepareContext(clientType);
+
+            ensureClientPermissions(clientType);
+
+            if (connCtx.isVersionSupported(ver)) {
+                connCtx.initializeFromHandshake(ver, reader);
+
+                ses.addMeta(CONN_CTX_META_KEY, connCtx);
+            }
+            else {
+                log.warning("Unsupported version: " + ver.toString());
+
+                throw new IgniteCheckedException("Unsupported version.");
+            }
+
+            connCtx.handler().writeHandshake(writer);
+        }
+        catch (IgniteCheckedException e) {
+            log.error("Error on handshake. " + e.getMessage(), e);
+
+            ClientListenerProtocolVersion currVer;
+
+            if (connCtx == null)
+                currVer = ClientListenerProtocolVersion.create(0, 0, 0);
+            else
+                currVer = connCtx.currentVersion();
+
             writer.writeBoolean(false);
-            writer.writeShort(currentVer.major());
-            writer.writeShort(currentVer.minor());
-            writer.writeShort(currentVer.maintenance());
-            writer.doWriteString(errMsg);
+            writer.writeShort(currVer.major());
+            writer.writeShort(currVer.minor());
+            writer.writeShort(currVer.maintenance());
+            writer.doWriteString(e.getMessage());
         }
 
         ses.send(writer.array());
@@ -231,8 +254,9 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
      *
      * @param clientType Client type.
      * @return Context.
+     * @throws IgniteCheckedException If failed.
      */
-    private ClientListenerConnectionContext prepareContext(byte clientType) {
+    private ClientListenerConnectionContext prepareContext(byte clientType) throws IgniteCheckedException {
         switch (clientType) {
             case ODBC_CLIENT:
                 return new OdbcConnectionContext(ctx, busyLock, maxCursors);
@@ -242,9 +266,44 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
 
             case THIN_CLIENT:
                 return new ClientConnectionContext(ctx, maxCursors);
+        }
+
+        throw new IgniteCheckedException("Unknown client type: " + clientType);
+    }
+
+    /**
+     * Ensures if the given type of client is enabled by config.
+     *
+     * @param clientType Client type.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void ensureClientPermissions(byte clientType) throws IgniteCheckedException {
+        switch (clientType) {
+            case ODBC_CLIENT: {
+                if (!cliConnCfg.isOdbcEnabled())
+                    throw new IgniteCheckedException("ODBC connection is not allowed, " +
+                        "see ClientConnectorConfiguration.odbcEnabled.");
+                break;
+            }
+
+            case JDBC_CLIENT: {
+                if (!cliConnCfg.isJdbcEnabled())
+                    throw new IgniteCheckedException("JDBC connection is not allowed, " +
+                        "see ClientConnectorConfiguration.jdbcEnabled.");
+
+                break;
+            }
+
+            case THIN_CLIENT: {
+                if (!cliConnCfg.isThinClientEnabled())
+                    throw new IgniteCheckedException("Thin client connection is not allowed, " +
+                        "see ClientConnectorConfiguration.thinClientEnabled.");
+
+                break;
+            }
 
             default:
-                throw new IgniteException("Unknown client type: " + clientType);
+                throw new IgniteCheckedException("Unknown client type: " + clientType);
         }
     }
 }

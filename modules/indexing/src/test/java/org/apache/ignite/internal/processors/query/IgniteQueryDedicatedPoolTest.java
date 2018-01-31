@@ -36,6 +36,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
+import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -96,14 +97,20 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests that SQL queries are executed in dedicated pool
+     * Tests that SQL queries involving actual network IO are executed in dedicated pool.
      * @throws Exception If failed.
+     * @see GridCacheTwoStepQuery#isLocal()
      */
     public void testSqlQueryUsesDedicatedThreadPool() throws Exception {
         try (Ignite client = startGrid("client")) {
             IgniteCache<Integer, Integer> cache = client.cache(CACHE_NAME);
 
-            QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("select currentPolicy()"));
+            // We do this in order to have 1 row in results of select - function is called once per each row of result.
+            cache.put(1, 1);
+
+            // We have to refer to a cache explicitly in the query in order for it to be executed
+            // in non local distributed manner (yes, there's a "local distributed" manner too - see link above...)
+            QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("select currentPolicy() from Integer"));
 
             List<List<?>> result = cursor.getAll();
 
@@ -113,8 +120,8 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
 
             Byte plc = (Byte)result.get(0).get(0);
 
-            assert plc != null;
-            assert plc == GridIoPolicy.QUERY_POOL;
+            assertNotNull(plc);
+            assertEquals(GridIoPolicy.QUERY_POOL, (byte)plc);
         }
     }
 

@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteDataStorageMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTest2;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsExchangeDuringCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsPageSizesTest;
@@ -50,13 +51,30 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.reader.Ign
 public class IgnitePdsTestSuite2 extends TestSuite {
     /**
      * @return Suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite persistent Store Test Suite 2");
 
         // Integrity test.
         suite.addTestSuite(IgniteDataIntegrityTests.class);
+
+        addRealPageStoreTests(suite);
+
+        // BaselineTopology tests
+        suite.addTestSuite(IgniteAllBaselineNodesOnlineFullApiSelfTest.class);
+        suite.addTestSuite(IgniteOfflineBaselineNodeFullApiSelfTest.class);
+        suite.addTestSuite(IgniteOnlineNodeOutOfBaselineFullApiSelfTest.class);
+
+        return suite;
+    }
+
+    /**
+     * Fills {@code suite} with PDS test subset, which operates with real page store and does actual disk operations.
+     *
+     * @param suite suite to add tests into.
+     */
+    public static void addRealPageStoreTests(TestSuite suite) {
+        // Integrity test.
         suite.addTestSuite(IgnitePdsRecoveryAfterFileCorruptionTest.class);
         suite.addTestSuite(IgnitePdsPageSizesTest.class);
 
@@ -75,6 +93,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgniteWalHistoryReservationsTest.class);
 
         suite.addTestSuite(IgnitePdsContinuousRestartTest.class);
+        suite.addTestSuite(IgnitePdsContinuousRestartTest2.class);
 
         suite.addTestSuite(IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes.class);
 
@@ -89,6 +108,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         suite.addTestSuite(IgniteWalFlushLogOnlySelfTest.class);
 
+        // Test suite uses Standalone WAL iterator to verify PDS content.
         suite.addTestSuite(IgniteWalReaderTest.class);
 
         suite.addTestSuite(IgnitePdsExchangeDuringCheckpointTest.class);
@@ -98,15 +118,8 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         suite.addTestSuite(IgniteWalSerializerVersionTest.class);
 
-        // BaselineTopology tests
-        suite.addTestSuite(IgniteAllBaselineNodesOnlineFullApiSelfTest.class);
-        suite.addTestSuite(IgniteOfflineBaselineNodeFullApiSelfTest.class);
-        suite.addTestSuite(IgniteOnlineNodeOutOfBaselineFullApiSelfTest.class);
-
         suite.addTestSuite(WalCompactionTest.class);
 
         suite.addTestSuite(IgniteCheckpointDirtyPagesForLowLoadTest.class);
-
-        return suite;
     }
 }

@@ -17,15 +17,13 @@
 
 package org.apache.ignite.examples.ml.knn.regression;
 
+import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.ExampleNodeStartup;
-import org.apache.ignite.examples.ml.knn.classification.KNNClassificationExample;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.knn.models.KNNStrategy;
 import org.apache.ignite.ml.knn.regression.KNNMultipleLinearRegression;
 import org.apache.ignite.ml.math.distances.ManhattanDistance;
@@ -54,7 +52,7 @@ public class KNNRegressionExample {
     private static final String SEPARATOR = ",";
 
     /** */
-    private static final String KNN_CLEARED_MACHINES_TXT = "../datasets/cleared_machines.txt";
+    private static final String KNN_CLEARED_MACHINES_TXT = "examples/src/main/resources/datasets/cleared_machines.txt";
 
     /**
      * Executes example.
@@ -72,11 +70,11 @@ public class KNNRegressionExample {
 
                 try {
                     // Prepare path to read
-                    URL url = KNNClassificationExample.class.getResource(KNN_CLEARED_MACHINES_TXT);
-                    if (url == null)
-                        throw new RuntimeException("Can't get URL for: " + KNN_CLEARED_MACHINES_TXT);
+                    File file = IgniteUtils.resolveIgnitePath(KNN_CLEARED_MACHINES_TXT);
+                    if (file == null)
+                        throw new RuntimeException("Can't find file: " + KNN_CLEARED_MACHINES_TXT);
 
-                    Path path = Paths.get(url.toURI());
+                    Path path = file.toPath();
 
                     // Read dataset from file
                     LabeledDataset dataset = LabeledDatasetLoader.loadFromTxtFile(path, SEPARATOR, false, false);
@@ -141,7 +139,7 @@ public class KNNRegressionExample {
 
                     System.out.println("\n>>> R^2 " + detCf);
                 }
-                catch (URISyntaxException | IOException e) {
+                catch (IOException e) {
                     e.printStackTrace();
                     System.out.println("\n>>> Unexpected exception, check resources: " + e);
                 }

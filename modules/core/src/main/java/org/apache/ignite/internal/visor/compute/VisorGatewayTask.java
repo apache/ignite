@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.visor.VisorCoordinatorNodeTask;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -416,7 +417,14 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
 
             if (F.isEmpty(nidsArg) || "null".equals(nidsArg)) {
                 try {
-                    if (VisorOneNodeTask.class.isAssignableFrom(Class.forName(taskName)))
+                    Class<?> taskCls = Class.forName(taskName);
+
+                    if (VisorCoordinatorNodeTask.class.isAssignableFrom(taskCls)) {
+                        ClusterNode crd = ignite.context().discovery().discoCache().oldestAliveServerNode();
+
+                        nids = Collections.singletonList(crd.id());
+                    }
+                    else if (VisorOneNodeTask.class.isAssignableFrom(taskCls))
                         nids = Collections.singletonList(ignite.localNode().id());
                     else {
                         Collection<ClusterNode> nodes = ignite.cluster().nodes();
