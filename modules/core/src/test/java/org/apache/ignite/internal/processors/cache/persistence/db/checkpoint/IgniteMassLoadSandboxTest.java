@@ -311,7 +311,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             final IgniteEx ignite = startGrid(1);
 
             ignite.active(true);
-
+            checkpointFrequency = 20 * 1000;
             final IgniteCache<Object, HugeIndexedObject> cache = ignite.cache(CACHE_NAME);
             int totalRecs = 400_000;
             final int threads = 10;

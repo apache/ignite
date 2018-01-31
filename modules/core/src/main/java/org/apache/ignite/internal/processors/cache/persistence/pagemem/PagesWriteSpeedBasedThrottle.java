@@ -18,7 +18,9 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 
@@ -29,7 +31,7 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
  */
 public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
     /** Maximum dirty pages in region. */
-    public static final double MAX_DIRTY_PAGES = 0.75;
+    private static final double MAX_DIRTY_PAGES = 0.75;
 
     /** Page memory. */
     private final PageMemoryImpl pageMemory;
@@ -86,18 +88,32 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
      * */
     private final IntervalBasedMeasurement speedMarkAndAvgParkTime = new IntervalBasedMeasurement(250, 3);
 
-    /** Total pages, possible to store in page memory. */
+    /** Total pages which is possible to store in page memory. */
     private long totalPages;
+
+    /** Logger. */
+    private IgniteLogger log;
+
+    /** Previous warning time, nanos. */
+    private AtomicLong prevWarnTime = new AtomicLong();
+
+    /** Warning min delay nanoseconds. */
+    private static final long WARN_MIN_DELAY_NS = TimeUnit.SECONDS.toNanos(10);
+
+    /** Warning threshold: minimal level of pressure that causes warning messages to log. */
+    static final double WARN_THRESHOLD = 0.2;
 
     /**
      * @param pageMemory Page memory.
      * @param dbSharedMgr Database manager.
+     * @param log Logger.
      */
     public PagesWriteSpeedBasedThrottle(PageMemoryImpl pageMemory,
-        GridCacheDatabaseSharedManager dbSharedMgr) {
+        GridCacheDatabaseSharedManager dbSharedMgr, IgniteLogger log) {
         this.pageMemory = pageMemory;
         this.dbSharedMgr = dbSharedMgr;
         totalPages = pageMemory.totalPages();
+        this.log = log;
     }
 
     /** {@inheritDoc} */
@@ -116,13 +132,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
 
         int cpWrittenPages = writtenPagesCntr.get();
 
-        AtomicInteger syncedPagesCntr = dbSharedMgr.syncedPagesCounter();
-        int cpSyncedPages = syncedPagesCntr == null ? 0 : syncedPagesCntr.get();
-
-        AtomicInteger evictedPagesCntr = dbSharedMgr.evictedPagesCntr();
-        int cpEvictedPage = evictedPagesCntr == null ? 0 : evictedPagesCntr.get();
-
-        long fullyCompletedPages = (cpWrittenPages + cpSyncedPages) / 2; // written & sync'ed
+        long fullyCompletedPages = (cpWrittenPages + cpSyncedPages()) / 2; // written & sync'ed
 
         long curNanoTime = System.nanoTime();
 
@@ -139,24 +149,24 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
         if (isPageInCheckpoint) {
             int checkpointBufLimit = pageMemory.checkpointBufferPagesSize() * 2 / 3;
 
-            if(pageMemory.checkpointBufferPagesCount() > checkpointBufLimit)
+            if (pageMemory.checkpointBufferPagesCount() > checkpointBufLimit)
                 level = ThrottleMode.EXPONENTIAL;
         }
 
         long throttleParkTimeNs = 0;
 
-        if (level == ThrottleMode.NO ) {
+        if (level == ThrottleMode.NO) {
             int nThreads = threadIds.size();
 
-            int cpTotalPages = dbSharedMgr.currentCheckpointPagesCount();
+            int cpTotalPages = cpTotalPages();
 
             if (cpTotalPages == 0) {
                 boolean throttleByCpSpeed = curCpWriteSpeed > 0 && markDirtySpeed > curCpWriteSpeed;
 
                 if (throttleByCpSpeed) {
-                    level = ThrottleMode.LIMITED;
-
                     throttleParkTimeNs = calcDelayTime(curCpWriteSpeed, nThreads, 1);
+
+                    level = ThrottleMode.LIMITED;
                 }
             }
             else {
@@ -169,7 +179,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
                 if (dirtyPagesRatio >= MAX_DIRTY_PAGES)
                     level = ThrottleMode.NO; // too late to throttle, will wait on safe to update instead.
                 else {
-                    int notEvictedPagesTotal = cpTotalPages - cpEvictedPage;
+                    int notEvictedPagesTotal = cpTotalPages - cpEvictedPages();
 
                     throttleParkTimeNs = getParkTime(dirtyPagesRatio,
                         fullyCompletedPages,
@@ -178,8 +188,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
                         markDirtySpeed,
                         curCpWriteSpeed);
 
-                    if (throttleParkTimeNs > 0)
-                        level = ThrottleMode.LIMITED;
+                    level = ThrottleMode.LIMITED;
                 }
             }
         }
@@ -189,17 +198,81 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
 
             throttleParkTimeNs = 0;
         }
-        else if (level == ThrottleMode.LIMITED && throttleParkTimeNs > 0)
-            LockSupport.parkNanos(throttleParkTimeNs);
         else if (level == ThrottleMode.EXPONENTIAL) {
             int exponent = exponentialBackoffCntr.getAndIncrement();
 
             throttleParkTimeNs = (long)(STARTING_THROTTLE_NANOS * Math.pow(BACKOFF_RATIO, exponent));
+        }
+
+        if (throttleParkTimeNs > 0) {
+            recurrentLogIfNeed();
 
             LockSupport.parkNanos(throttleParkTimeNs);
         }
 
         speedMarkAndAvgParkTime.addMeasurementForAverageCalculation(throttleParkTimeNs);
+    }
+
+
+    /**
+     * @return number of written pages.
+     */
+    private int cpWrittenPages() {
+        AtomicInteger writtenPagesCntr = dbSharedMgr.writtenPagesCounter();
+
+        return writtenPagesCntr == null ? 0 : writtenPagesCntr.get();
+    }
+
+    /**
+     * @return Number of pages in current checkpoint.
+     */
+    private int cpTotalPages() {
+        return dbSharedMgr.currentCheckpointPagesCount();
+    }
+
+    /**
+     * @return  Counter for fsynced checkpoint pages.
+     */
+    private int cpSyncedPages() {
+        AtomicInteger syncedPagesCntr = dbSharedMgr.syncedPagesCounter();
+
+        return syncedPagesCntr == null ? 0 : syncedPagesCntr.get();
+    }
+
+    /**
+     * @return number of evicted pages.
+     */
+    private int cpEvictedPages() {
+        AtomicInteger evictedPagesCntr = dbSharedMgr.evictedPagesCntr();
+
+        return evictedPagesCntr == null ? 0 : evictedPagesCntr.get();
+    }
+
+    /**
+     * Prints warning to log if throttling is occurred and requires markable amount of time.
+     */
+    private void recurrentLogIfNeed() {
+        long prevWarningNs = prevWarnTime.get();
+        long curNs = System.nanoTime();
+
+        if (prevWarningNs != 0 && (curNs - prevWarningNs) <= WARN_MIN_DELAY_NS)
+            return;
+
+        double weight = throttleWeight();
+        if (weight <= WARN_THRESHOLD)
+            return;
+
+        if (prevWarnTime.compareAndSet(prevWarningNs, curNs)) {
+            String msg = String.format("Throttling is applied to page mark " +
+                    "[weight=%.2f, mark=%d pages/sec, checkpointWrite=%d pages/sec, " +
+                    "estIdealMark=%d pages/sec, curDirty=%.2f, targetDirty=%.2f, avgParkTime=%d ns," +
+                    "pages: (total=%d, evicted=%d, written=%d, synced=%d)]",
+                weight, getMarkDirtySpeed(), getCpWriteSpeed(),
+                getLastEstimatedSpeedForMarkAll(), getCurrDirtyRatio(), getTargetDirtyRatio(), throttleParkTime(),
+                cpTotalPages(), cpEvictedPages(), cpWrittenPages(), cpSyncedPages() );
+
+            log.warning(msg);
+        }
     }
 
     /**
