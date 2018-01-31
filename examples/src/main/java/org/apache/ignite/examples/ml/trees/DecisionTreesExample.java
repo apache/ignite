@@ -17,12 +17,20 @@
 
 package org.apache.ignite.examples.ml.trees;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.Scanner;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.zip.GZIPInputStream;
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -70,44 +78,34 @@ import org.jetbrains.annotations.NotNull;
  * It is recommended to start at least one node prior to launching this example if you intend
  * to run it with default memory settings.</p>
  * <p>
- * This example should with program arguments, for example
- * -ts_i /path/to/train-images-idx3-ubyte
- * -ts_l /path/to/train-labels-idx1-ubyte
- * -tss_i /path/to/t10k-images-idx3-ubyte
- * -tss_l /path/to/t10k-labels-idx1-ubyte
+ * This example should be run with program arguments, for example
  * -cfg examples/config/example-ignite.xml.</p>
  * <p>
- * -ts_i specifies path to training set images of MNIST;
- * -ts_l specifies path to training set labels of MNIST;
- * -tss_i specifies path to test set images of MNIST;
- * -tss_l specifies path to test set labels of MNIST;
  * -cfg specifies path to a config path.</p>
  */
-public class MNISTExample {
-    /** Name of parameter specifying path to training set images. */
-    private static final String MNIST_TRAINING_IMAGES_PATH = "ts_i";
-
-    /** Name of parameter specifying path to training set labels. */
-    private static final String MNIST_TRAINING_LABELS_PATH = "ts_l";
-
-    /** Name of parameter specifying path to test set images. */
-    private static final String MNIST_TEST_IMAGES_PATH = "tss_i";
-
-    /** Name of parameter specifying path to test set labels. */
-    private static final String MNIST_TEST_LABELS_PATH = "tss_l";
-
+public class DecisionTreesExample {
     /** Name of parameter specifying path of Ignite config. */
     private static final String CONFIG = "cfg";
 
     /** Default config path. */
     private static final String DEFAULT_CONFIG = "examples/config/example-ignite.xml";
 
+    private static String MNIST_DIR = "examples/src/main/resources/";
+
+    private static String MNIST_TRAIN_IMAGES = "train_images";
+
+    private static String MNIST_TRAIN_LABELS = "train_labels";
+
+    private static String MNIST_TEST_IMAGES = "test_images";
+
+    private static String MNIST_TEST_LABELS = "test_labels";
+
     /**
      * Launches example.
      *
      * @param args Program arguments.
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         String igniteCfgPath;
 
         CommandLineParser parser = new BasicParser();
@@ -118,14 +116,26 @@ public class MNISTExample {
         String testImagesPath;
         String testLabelsPath;
 
+        Map<String, String> mnistPaths = new HashMap<>();
+
+        mnistPaths.put(MNIST_TRAIN_IMAGES, MNIST_DIR + "/train-images-idx3-ubyte");
+        mnistPaths.put(MNIST_TRAIN_LABELS, MNIST_DIR + "/train-labels-idx1-ubyte");
+        mnistPaths.put(MNIST_TEST_IMAGES, MNIST_DIR + "/t10k-images-idx3-ubyte");
+        mnistPaths.put(MNIST_TEST_LABELS, MNIST_DIR + "/t10k-labels-idx1-ubyte");
+
+        if (!getMNIST(mnistPaths.values())) {
+            System.out.println(">>> You should have MNIST dataset in " + MNIST_DIR + " to run this example.");
+            return;
+        }
+
         try {
             // Parse the command line arguments.
             CommandLine line = parser.parse(buildOptions(), args);
 
-            trainingImagesPath = line.getOptionValue(MNIST_TRAINING_IMAGES_PATH);
-            trainingLabelsPath = line.getOptionValue(MNIST_TRAINING_LABELS_PATH);
-            testImagesPath = line.getOptionValue(MNIST_TEST_IMAGES_PATH);
-            testLabelsPath = line.getOptionValue(MNIST_TEST_LABELS_PATH);
+            trainingImagesPath = mnistPaths.get(MNIST_TRAIN_IMAGES);
+            trainingLabelsPath = mnistPaths.get(MNIST_TRAIN_LABELS);
+            testImagesPath = mnistPaths.get(MNIST_TEST_IMAGES);
+            testLabelsPath = mnistPaths.get(MNIST_TEST_LABELS);
             igniteCfgPath = line.getOptionValue(CONFIG, DEFAULT_CONFIG);
         }
         catch (ParseException e) {
@@ -163,36 +173,45 @@ public class MNISTExample {
         }
     }
 
+    public static boolean getMNIST(Collection<String> mnistPaths) throws IOException {
+        List<String> missing = mnistPaths.stream().filter(f -> IgniteUtils.resolveIgnitePath(f) != null).collect(Collectors.toList());
+
+        if (!missing.isEmpty()) {
+            System.out.println(">>> You have not fully downloaded MNIST dataset in directory " + MNIST_DIR + ", do you want it to be downloaded? [y]/n");
+            Scanner s = new Scanner(System.in);
+            String str = s.nextLine();
+
+            if (!str.isEmpty() || str.toLowerCase().equals("y"))
+                return false;
+        }
+
+        for (String s : missing)
+            unzip(s + ".gz", s);
+
+        return true;
+    }
+
+    private static void unzip(String input, String output) throws IOException {
+        byte[] buf = new byte[1024];
+
+        try (GZIPInputStream gis = new GZIPInputStream(new FileInputStream(input));
+             FileOutputStream out = new FileOutputStream(output)) {
+            int sz;
+            while ((sz = gis.read(buf)) > 0)
+                out.write(buf, 0, sz);
+        }
+    }
+
     /**
      * Build cli options.
      */
     @NotNull private static Options buildOptions() {
         Options options = new Options();
 
-        Option trsImagesPathOpt = OptionBuilder.withArgName(MNIST_TRAINING_IMAGES_PATH).withLongOpt(MNIST_TRAINING_IMAGES_PATH).hasArg()
-            .withDescription("Path to the MNIST training set.")
-            .isRequired(true).create();
-
-        Option trsLabelsPathOpt = OptionBuilder.withArgName(MNIST_TRAINING_LABELS_PATH).withLongOpt(MNIST_TRAINING_LABELS_PATH).hasArg()
-            .withDescription("Path to the MNIST training set.")
-            .isRequired(true).create();
-
-        Option tssImagesPathOpt = OptionBuilder.withArgName(MNIST_TEST_IMAGES_PATH).withLongOpt(MNIST_TEST_IMAGES_PATH).hasArg()
-            .withDescription("Path to the MNIST test set.")
-            .isRequired(true).create();
-
-        Option tssLabelsPathOpt = OptionBuilder.withArgName(MNIST_TEST_LABELS_PATH).withLongOpt(MNIST_TEST_LABELS_PATH).hasArg()
-            .withDescription("Path to the MNIST test set.")
-            .isRequired(true).create();
-
         Option configOpt = OptionBuilder.withArgName(CONFIG).withLongOpt(CONFIG).hasArg()
             .withDescription("Path to the config.")
             .isRequired(false).create();
 
-        options.addOption(trsImagesPathOpt);
-        options.addOption(trsLabelsPathOpt);
-        options.addOption(tssImagesPathOpt);
-        options.addOption(tssLabelsPathOpt);
         options.addOption(configOpt);
 
         return options;
