@@ -374,7 +374,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNotNull(svcInst);
 
             // Get dynamic proxy that simply wraps the service instance.
-            var prx = Grid1.GetServices().GetDynamicServiceProxy(SvcName, false);
+            var prx = Grid1.GetServices().GetDynamicServiceProxy(SvcName);
             Assert.AreSame(prx, svcInst);
         }
 
@@ -930,8 +930,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(7, svc.testBinarizable(new PlatformComputeBinarizable { Field = 6 }).Field);
 
             // Binary object
-            var binSvc = Services.WithKeepBinary().WithServerKeepBinary()
-                .GetDynamicServiceProxy(javaSvcName, false);
+            var binSvc = Services.WithKeepBinary().WithServerKeepBinary().GetDynamicServiceProxy(javaSvcName);
 
             Assert.AreEqual(15,
                 binSvc.testBinaryObject(

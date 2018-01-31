@@ -20,11 +20,9 @@ namespace Apache.Ignite.Core.Impl.Services
     using System;
     using System.Diagnostics;
     using System.Dynamic;
-    using Apache.Ignite.Core.Services;
 
     /// <summary>
-    /// Service proxy based on DynamicObject to be used with <c>dynamic</c> keyword
-    /// and <see cref="IServices.GetDynamicServiceProxy"/>.
+    /// Service proxy based on DynamicObject to be used with <c>dynamic</c> keyword.
     /// </summary>
     internal class DynamicServiceProxy : DynamicObject
     {

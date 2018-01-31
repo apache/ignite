@@ -390,8 +390,16 @@ namespace Apache.Ignite.Core.Impl.Services
         }
 
         /** <inheritDoc /> */
+        public dynamic GetDynamicServiceProxy(string name)
+        {
+            return GetDynamicServiceProxy(name, false);
+        }
+
+        /** <inheritDoc /> */
         public dynamic GetDynamicServiceProxy(string name, bool sticky)
         {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
             // In local scenario try to return service instance itself instead of a proxy
             var locInst = GetService<object>(name);
 
