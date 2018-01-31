@@ -224,7 +224,7 @@ public class DataStorageConfiguration implements Serializable {
     /** Always write full pages. */
     private boolean alwaysWriteFullPages = DFLT_WAL_ALWAYS_WRITE_FULL_PAGES;
 
-    /** Factory to provide I/O interface for files */
+    /** Factory to provide I/O interface for data storage files */
     private FileIOFactory fileIOFactory =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY, true) ?
             new AsyncFileIOFactory() : new RandomAccessFileIOFactory();
@@ -824,7 +824,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Factory to provide implementation of FileIO interface
-     * which is used for any file read/write operations
+     * which is used for data storage files read/write operations
      *
      * @return File I/O factory
      */
@@ -834,7 +834,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /**
      * Sets factory to provide implementation of FileIO interface
-     * which is used for any file read/write operations
+     * which is used for data storage files read/write operations
      *
      * @param fileIOFactory File I/O factory
      */

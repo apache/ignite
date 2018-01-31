@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -33,6 +34,7 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
@@ -53,6 +55,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
@@ -116,6 +119,8 @@ public class DdlStatementsProcessor {
 
                 assert tbl.rowDescriptor() != null;
 
+                isDdlSupported(tbl);
+
                 QueryIndex newIdx = new QueryIndex();
 
                 newIdx.setName(cmd0.indexName());
@@ -148,6 +153,8 @@ public class DdlStatementsProcessor {
                 GridH2Table tbl = idx.dataTableForIndex(cmd0.schemaName(), cmd0.indexName());
 
                 if (tbl != null) {
+                    isDdlSupported(tbl);
+
                     fut = ctx.query().dynamicIndexDrop(tbl.cacheName(), cmd0.schemaName(), cmd0.indexName(),
                         cmd0.ifExists());
                 }
@@ -158,6 +165,43 @@ public class DdlStatementsProcessor {
                         throw new SchemaOperationException(SchemaOperationException.CODE_INDEX_NOT_FOUND,
                             cmd0.indexName());
                 }
+            }
+            else if (cmd instanceof SqlAlterTableCommand) {
+                SqlAlterTableCommand cmd0 = (SqlAlterTableCommand)cmd;
+
+                GridH2Table tbl = idx.dataTable(cmd0.schemaName(), cmd0.tableName());
+
+                if (tbl == null) {
+                    ctx.cache().createMissingQueryCaches();
+
+                    tbl = idx.dataTable(cmd0.schemaName(), cmd0.tableName());
+                }
+
+                if (tbl == null) {
+                    throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
+                        cmd0.tableName());
+                }
+
+                Boolean logging = cmd0.logging();
+
+                assert logging != null : "Only LOGGING/NOLOGGING are supported at the moment.";
+
+                IgniteCluster cluster = ctx.grid().cluster();
+
+                if (logging) {
+                    boolean res = cluster.enableWal(tbl.cacheName());
+
+                    if (!res)
+                        throw new IgniteSQLException("Logging already enabled for table: " + cmd0.tableName());
+                }
+                else {
+                    boolean res = cluster.disableWal(tbl.cacheName());
+
+                    if (!res)
+                        throw new IgniteSQLException("Logging already disabled for table: " + cmd0.tableName());
+                }
+
+                fut = new GridFinishedFuture();
             }
             else
                 throw new IgniteSQLException("Unsupported DDL operation: " + sql,
@@ -180,7 +224,7 @@ public class DdlStatementsProcessor {
             throw e;
         }
         catch (Exception e) {
-            throw new IgniteSQLException("Unexpected DDL operation failure: " + e.getMessage(), e);
+            throw new IgniteSQLException(e.getMessage(), e);
         }
     }
 
@@ -209,6 +253,8 @@ public class DdlStatementsProcessor {
                     throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd.tableName());
 
                 assert tbl.rowDescriptor() != null;
+
+                isDdlSupported(tbl);
 
                 QueryIndex newIdx = new QueryIndex();
 
@@ -241,6 +287,8 @@ public class DdlStatementsProcessor {
                 GridH2Table tbl = idx.dataTableForIndex(cmd.schemaName(), cmd.indexName());
 
                 if (tbl != null) {
+                    isDdlSupported(tbl);
+
                     fut = ctx.query().dynamicIndexDrop(tbl.cacheName(), cmd.schemaName(), cmd.indexName(),
                         cmd.ifExists());
                 }
@@ -441,8 +489,23 @@ public class DdlStatementsProcessor {
             throw e;
         }
         catch (Exception e) {
-            throw new IgniteSQLException("Unexpected DDL operation failure: " + e.getMessage(), e);
+            throw new IgniteSQLException(e.getMessage(), e);
         }
+    }
+
+    /**
+     * Check if table supports DDL statement.
+     *
+     * @param tbl Table.
+     */
+    private static void isDdlSupported(GridH2Table tbl) {
+        GridCacheContext cctx = tbl.cache();
+
+        assert cctx != null;
+
+        if (cctx.isLocal())
+            throw new IgniteSQLException("DDL statements are not supported on LOCAL caches",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**

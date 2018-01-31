@@ -22,6 +22,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.LongAdder;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -53,7 +54,6 @@ import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
-import org.jsr166.LongAdder8;
 
 import static java.lang.Thread.sleep;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -409,10 +409,10 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         final TransactionConcurrency[] TC_VALS = TransactionConcurrency.values();
         final TransactionIsolation[] TI_VALS = TransactionIsolation.values();
 
-        final LongAdder8 cntr0 = new LongAdder8();
-        final LongAdder8 cntr1 = new LongAdder8();
-        final LongAdder8 cntr2 = new LongAdder8();
-        final LongAdder8 cntr3 = new LongAdder8();
+        final LongAdder cntr0 = new LongAdder();
+        final LongAdder cntr1 = new LongAdder();
+        final LongAdder cntr2 = new LongAdder();
+        final LongAdder cntr3 = new LongAdder();
 
         final IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
