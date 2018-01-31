@@ -346,13 +346,15 @@ namespace Apache.Ignite.Core.Tests.Services
 
             // Method invoke.
             Assert.AreEqual(prx.ToString(), svc.ToString());
-
+            Assert.AreEqual("baz", prx.Method("baz"));
 
             // Non-existent member.
             // TODO
+            Assert.Throws<ServiceInvocationException>(() => prx.FooBar(1));
 
             // Exception in service.
             // TODO
+            Assert.Throws<ServiceInvocationException>(() => prx.ErrMethod(123));
         }
 
         /// <summary>
