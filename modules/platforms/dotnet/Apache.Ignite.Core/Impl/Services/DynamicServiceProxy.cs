@@ -41,11 +41,8 @@ namespace Apache.Ignite.Core.Impl.Services
             _invokeMethod = invokeMethod;
         }
 
-
         /// <summary>
         /// Provides the implementation for operations that get member values.
-        /// Classes derived from the <see cref="DynamicObject" /> class can override this method
-        /// to specify dynamic behavior for operations such as getting a value for a property.
         /// </summary>
         /// <param name="binder">Provides information about the object that called the dynamic operation.
         /// The binder.Name property provides the name of the member on which the dynamic operation is performed.
@@ -59,6 +56,42 @@ namespace Apache.Ignite.Core.Impl.Services
         public override bool TryGetMember(GetMemberBinder binder, out object result)
         {
             result = _invokeMethod("get_" + binder.Name, null);
+            return true;
+        }
+
+        /// <summary>
+        /// Provides the implementation for operations that set member values.
+        /// </summary>
+        /// <param name="binder">Provides information about the object that called the dynamic operation
+        /// The binder.Name property provides the name of the member to which the value is being assigned. </param>
+        /// <param name="value">The value to set to the member.</param>
+        /// <returns>
+        /// true if the operation is successful; otherwise, false. If this method returns false,
+        /// the run-time binder of the language determines the behavior.
+        /// (In most cases, a language-specific run-time exception is thrown.)
+        /// </returns>
+        public override bool TrySetMember(SetMemberBinder binder, object value)
+        {
+            _invokeMethod("set_" + binder.Name, new[] { value });
+            return true;
+        }
+
+        /// <summary>
+        /// Provides the implementation for operations that invoke a member.
+        /// </summary>
+        /// <param name="binder">Provides information about the dynamic operation.
+        /// The binder.Name property provides the name of the member on which the dynamic operation is performed.
+        /// </param>
+        /// <param name="args">The arguments that are passed to the object member during the invoke operation.</param>
+        /// <param name="result">The result of the member invocation.</param>
+        /// <returns>
+        /// true if the operation is successful; otherwise, false.
+        /// If this method returns false, the run-time binder of the language determines the behavior.
+        /// (In most cases, a language-specific run-time exception is thrown.)
+        /// </returns>
+        public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result)
+        {
+            result = _invokeMethod(binder.Name, args);
             return true;
         }
     }
