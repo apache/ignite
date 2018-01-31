@@ -99,12 +99,8 @@ public class JdbcBulkLoadBatchRequestResult extends JdbcResult {
         String locFileName = reader.readString();
         int batchSize = reader.readInt();
 
-        try {
-            BulkLoadParameters.checkBatchSize(batchSize);
-        }
-        catch (IllegalArgumentException e) {
-            throw new BinaryObjectException(e.getMessage());
-        }
+        if (!BulkLoadParameters.isValidBatchSize(batchSize))
+            throw new BinaryObjectException(BulkLoadParameters.batchSizeErrorMsg(batchSize));
 
         params = new BulkLoadParameters(locFileName, batchSize);
     }
