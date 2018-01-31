@@ -283,7 +283,7 @@ public class DecisionTreesExample {
     @NotNull private static Options buildOptions() {
         Options options = new Options();
 
-        Option configOpt = OptionBuilder
+        Option cfgOpt = OptionBuilder
             .withArgName(CONFIG)
             .withLongOpt(CONFIG)
             .hasArg()
@@ -296,7 +296,7 @@ public class DecisionTreesExample {
             .withDescription("Is example run unattended.")
             .isRequired(false).create();
 
-        options.addOption(configOpt);
+        options.addOption(cfgOpt);
         options.addOption(unattended);
 
         return options;
@@ -326,11 +326,11 @@ public class DecisionTreesExample {
      * Loads vectors into cache.
      *
      * @param cacheName Name of cache.
-     * @param vectorsIterator Iterator over vectors to load.
+     * @param vectorsIter Iterator over vectors to load.
      * @param vectorSize Size of vector.
      * @param ignite Ignite instance.
      */
-    private static void loadVectorsIntoBiIndexedCache(String cacheName, Iterator<? extends Vector> vectorsIterator,
+    private static void loadVectorsIntoBiIndexedCache(String cacheName, Iterator<? extends Vector> vectorsIter,
         int vectorSize, Ignite ignite) {
         try (IgniteDataStreamer<BiIndex, Double> streamer =
                  ignite.dataStreamer(cacheName)) {
@@ -338,8 +338,8 @@ public class DecisionTreesExample {
 
             streamer.perNodeBufferSize(10000);
 
-            while (vectorsIterator.hasNext()) {
-                org.apache.ignite.ml.math.Vector next = vectorsIterator.next();
+            while (vectorsIter.hasNext()) {
+                org.apache.ignite.ml.math.Vector next = vectorsIter.next();
 
                 for (int i = 0; i < vectorSize; i++)
                     streamer.addData(new BiIndex(sampleIdx, i), next.getX(i));
