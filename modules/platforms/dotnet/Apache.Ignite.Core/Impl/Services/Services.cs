@@ -388,6 +388,13 @@ namespace Apache.Ignite.Core.Impl.Services
                 InvokeProxyMethod(javaProxy, method, args, platform));
         }
 
+        /** <inheritDoc /> */
+        public dynamic GetDynamicServiceProxy(string name, bool sticky)
+        {
+            // TODO
+            return GetServiceProxy<object>(name, sticky);
+        }
+
         /// <summary>
         /// Invokes the service proxy method.
         /// </summary>
