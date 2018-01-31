@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Impl.Services
 {
+    using System;
+    using System.Diagnostics;
     using System.Dynamic;
     using Apache.Ignite.Core.Services;
 
@@ -26,5 +28,38 @@ namespace Apache.Ignite.Core.Impl.Services
     /// </summary>
     internal class DynamicServiceProxy : DynamicObject
     {
+        private readonly Func<string, object[], object> _invokeMethod;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DynamicServiceProxy"/> class.
+        /// </summary>
+        /// <param name="invokeMethod">The service invoke method.</param>
+        public DynamicServiceProxy(Func<string, object[], object> invokeMethod)
+        {
+            Debug.Assert(invokeMethod != null);
+
+            _invokeMethod = invokeMethod;
+        }
+
+
+        /// <summary>
+        /// Provides the implementation for operations that get member values.
+        /// Classes derived from the <see cref="DynamicObject" /> class can override this method
+        /// to specify dynamic behavior for operations such as getting a value for a property.
+        /// </summary>
+        /// <param name="binder">Provides information about the object that called the dynamic operation.
+        /// The binder.Name property provides the name of the member on which the dynamic operation is performed.
+        /// </param>
+        /// <param name="result">The result of the get operation.</param>
+        /// <returns>
+        /// true if the operation is successful; otherwise, false. If this method returns false,
+        /// the run-time binder of the language determines the behavior.
+        /// (In most cases, a run-time exception is thrown.)
+        /// </returns>
+        public override bool TryGetMember(GetMemberBinder binder, out object result)
+        {
+            result = _invokeMethod(binder.Name, null);
+            return true;
+        }
     }
 }
