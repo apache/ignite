@@ -20,6 +20,9 @@ package org.apache.ignite.examples.ml.trees;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -118,10 +121,10 @@ public class DecisionTreesExample {
 
         Map<String, String> mnistPaths = new HashMap<>();
 
-        mnistPaths.put(MNIST_TRAIN_IMAGES, MNIST_DIR + "/train-images-idx3-ubyte");
-        mnistPaths.put(MNIST_TRAIN_LABELS, MNIST_DIR + "/train-labels-idx1-ubyte");
-        mnistPaths.put(MNIST_TEST_IMAGES, MNIST_DIR + "/t10k-images-idx3-ubyte");
-        mnistPaths.put(MNIST_TEST_LABELS, MNIST_DIR + "/t10k-labels-idx1-ubyte");
+        mnistPaths.put(MNIST_TRAIN_IMAGES, "train-images-idx3-ubyte");
+        mnistPaths.put(MNIST_TRAIN_LABELS, "train-labels-idx1-ubyte");
+        mnistPaths.put(MNIST_TEST_IMAGES, "t10k-images-idx3-ubyte");
+        mnistPaths.put(MNIST_TEST_LABELS, "t10k-labels-idx1-ubyte");
 
         if (!getMNIST(mnistPaths.values())) {
             System.out.println(">>> You should have MNIST dataset in " + MNIST_DIR + " to run this example.");
@@ -132,10 +135,10 @@ public class DecisionTreesExample {
             // Parse the command line arguments.
             CommandLine line = parser.parse(buildOptions(), args);
 
-            trainingImagesPath = mnistPaths.get(MNIST_TRAIN_IMAGES);
-            trainingLabelsPath = mnistPaths.get(MNIST_TRAIN_LABELS);
-            testImagesPath = mnistPaths.get(MNIST_TEST_IMAGES);
-            testLabelsPath = mnistPaths.get(MNIST_TEST_LABELS);
+            trainingImagesPath = MNIST_DIR + "/" + mnistPaths.get(MNIST_TRAIN_IMAGES);
+            trainingLabelsPath = MNIST_DIR + "/" + mnistPaths.get(MNIST_TRAIN_LABELS);
+            testImagesPath = MNIST_DIR + "/" + mnistPaths.get(MNIST_TEST_IMAGES);
+            testLabelsPath = MNIST_DIR + "/" + mnistPaths.get(MNIST_TEST_LABELS);
             igniteCfgPath = line.getOptionValue(CONFIG, DEFAULT_CONFIG);
         }
         catch (ParseException e) {
@@ -185,8 +188,19 @@ public class DecisionTreesExample {
                 return false;
         }
 
-        for (String s : missing)
-            unzip(s + ".gz", s);
+        for (String s : missing) {
+            String f = s + ".gz";
+            System.out.println("Downloading " + f + "...");
+            URL website = new URL("http://yann.lecun.com/exdb/mnist/" + f);
+            ReadableByteChannel rbc = Channels.newChannel(website.openStream());
+            FileOutputStream fos = new FileOutputStream(MNIST_DIR + "/" + f);
+            fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+            System.out.println("Done.");
+
+            System.out.println("Unzipping " + f + "...");
+            unzip(MNIST_DIR + "/" + f, MNIST_DIR + "/" + s);
+            System.out.println("Done.");
+        }
 
         return true;
     }
