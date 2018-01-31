@@ -94,5 +94,13 @@ namespace Apache.Ignite.Core.Impl.Services
             result = _invokeMethod(binder.Name, args);
             return true;
         }
+
+        /// <summary>
+        /// Returns a <see cref="string" /> that represents this instance.
+        /// </summary>
+        public override string ToString()
+        {
+            return (string) _invokeMethod("ToString", null);
+        }
     }
 }
