@@ -365,7 +365,17 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestGetDynamicServiceProxyLocal()
         {
-            // TODO
+            // Deploy to all nodes.
+            var svc = new TestIgniteServiceSerializable { TestProperty = 37 };
+            Grid1.GetServices().DeployNodeSingleton(SvcName, svc);
+
+            // Make sure there is an instance on grid1.
+            var svcInst = Grid1.GetServices().GetService<ITestIgniteService>(SvcName);
+            Assert.IsNotNull(svcInst);
+
+            // Get dynamic proxy that simply wraps the service instance.
+            var prx = Grid1.GetServices().GetDynamicServiceProxy(SvcName, false);
+            Assert.AreSame(prx, svcInst);
         }
 
         /// <summary>
