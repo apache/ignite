@@ -93,14 +93,29 @@ public class DecisionTreesExample {
     /** Default config path. */
     private static final String DEFAULT_CONFIG = "examples/config/example-ignite.xml";
 
+    /**
+     * Folder in which MNIST dataset is expected.
+     */
     private static String MNIST_DIR = "examples/src/main/resources/";
 
+    /**
+     * Key for MNIST training images.
+     */
     private static String MNIST_TRAIN_IMAGES = "train_images";
 
+    /**
+     * Key for MNIST training labels.
+     */
     private static String MNIST_TRAIN_LABELS = "train_labels";
 
+    /**
+     * Key for MNIST test images.
+     */
     private static String MNIST_TEST_IMAGES = "test_images";
 
+    /**
+     * Key for MNIST test labels.
+     */
     private static String MNIST_TEST_LABELS = "test_labels";
 
     /**
@@ -135,10 +150,10 @@ public class DecisionTreesExample {
             // Parse the command line arguments.
             CommandLine line = parser.parse(buildOptions(), args);
 
-            trainingImagesPath = MNIST_DIR + "/" + mnistPaths.get(MNIST_TRAIN_IMAGES);
-            trainingLabelsPath = MNIST_DIR + "/" + mnistPaths.get(MNIST_TRAIN_LABELS);
-            testImagesPath = MNIST_DIR + "/" + mnistPaths.get(MNIST_TEST_IMAGES);
-            testLabelsPath = MNIST_DIR + "/" + mnistPaths.get(MNIST_TEST_LABELS);
+            trainingImagesPath = IgniteUtils.resolveIgnitePath(MNIST_DIR + "/" + mnistPaths.get(MNIST_TRAIN_IMAGES)).getPath();
+            trainingLabelsPath = IgniteUtils.resolveIgnitePath(MNIST_DIR + "/" + mnistPaths.get(MNIST_TRAIN_LABELS)).getPath();
+            testImagesPath = IgniteUtils.resolveIgnitePath(MNIST_DIR + "/" + mnistPaths.get(MNIST_TEST_IMAGES)).getPath();
+            testLabelsPath = IgniteUtils.resolveIgnitePath(MNIST_DIR + "/" + mnistPaths.get(MNIST_TEST_LABELS)).getPath();
             igniteCfgPath = line.getOptionValue(CONFIG, DEFAULT_CONFIG);
         }
         catch (ParseException e) {
@@ -176,35 +191,52 @@ public class DecisionTreesExample {
         }
     }
 
-    public static boolean getMNIST(Collection<String> mnistPaths) throws IOException {
-        List<String> missing = mnistPaths.stream().filter(f -> IgniteUtils.resolveIgnitePath(f) != null).collect(Collectors.toList());
+    /**
+     * Get MNIST dataset. Value of predicate 'MNIST dataset is present in expected folder' is returned.
+     *
+     * @param mnistFileNames File names of MNIST dataset.
+     * @return Value of predicate 'MNIST dataset is present in expected folder'.
+     * @throws IOException In case of file system errors.
+     */
+    public static boolean getMNIST(Collection<String> mnistFileNames) throws IOException {
+        List<String> missing = mnistFileNames.stream().filter(f -> IgniteUtils.resolveIgnitePath(MNIST_DIR + "/" + f) == null).collect(Collectors.toList());
 
         if (!missing.isEmpty()) {
             System.out.println(">>> You have not fully downloaded MNIST dataset in directory " + MNIST_DIR + ", do you want it to be downloaded? [y]/n");
             Scanner s = new Scanner(System.in);
             String str = s.nextLine();
 
-            if (!str.isEmpty() || str.toLowerCase().equals("y"))
+            if (!str.isEmpty() && !str.toLowerCase().equals("y"))
                 return false;
         }
 
         for (String s : missing) {
             String f = s + ".gz";
-            System.out.println("Downloading " + f + "...");
+            System.out.println(">>> Downloading " + f + "...");
             URL website = new URL("http://yann.lecun.com/exdb/mnist/" + f);
             ReadableByteChannel rbc = Channels.newChannel(website.openStream());
             FileOutputStream fos = new FileOutputStream(MNIST_DIR + "/" + f);
             fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
-            System.out.println("Done.");
+            System.out.println(">>> Done.");
 
-            System.out.println("Unzipping " + f + "...");
+            System.out.println(">>> Unzipping " + f + "...");
             unzip(MNIST_DIR + "/" + f, MNIST_DIR + "/" + s);
-            System.out.println("Done.");
+
+            IgniteUtils.resolveIgnitePath(MNIST_DIR + "/" + f).delete();
+
+            System.out.println(">>> Done.");
         }
 
         return true;
     }
 
+    /**
+     * Unzip file located in {@code input} to {@code output}.
+     *
+     * @param input Input file path.
+     * @param output Output file path.
+     * @throws IOException In case of file system errors.
+     */
     private static void unzip(String input, String output) throws IOException {
         byte[] buf = new byte[1024];
 
