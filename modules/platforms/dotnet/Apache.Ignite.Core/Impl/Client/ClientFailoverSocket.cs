@@ -61,20 +61,35 @@ namespace Apache.Ignite.Core.Impl.Client
         public T DoOutInOp<T>(ClientOp opId, Action<IBinaryStream> writeAction, Func<IBinaryStream, T> readFunc,
             Func<ClientStatusCode, string, T> errorFunc = null)
         {
+            CheckDisposed();
+
             return _socket.DoOutInOp(opId, writeAction, readFunc, errorFunc);
         }
 
         /** <inheritdoc /> */
         public Task<T> DoOutInOpAsync<T>(ClientOp opId, Action<IBinaryStream> writeAction, Func<IBinaryStream, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null)
         {
+            CheckDisposed();
+
             return _socket.DoOutInOpAsync(opId, writeAction, readFunc, errorFunc);
+        }
+
+        /// <summary>
+        /// Checks the disposed state.
+        /// </summary>
+        private void CheckDisposed()
+        {
+            if (_socket == null)
+            {
+                throw new ObjectDisposedException("ClientFailoverSocket");
+            }
         }
 
         /** <inheritdoc /> */
         public void Dispose()
         {
-            // TODO: set some flag, or set socket to null?
             _socket.Dispose();
+            _socket = null;
         }
 
         /// <summary>
@@ -88,7 +103,7 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 try
                 {
-                    _socket = new ClientSocket(_config, endPoint);
+                    _socket = new ClientSocket(_config, endPoint, OnSocketError);
                     return;
                 }
                 catch (SocketException e)
@@ -104,6 +119,14 @@ namespace Apache.Ignite.Core.Impl.Client
 
             throw new AggregateException("Failed to establish Ignite thin client connection, " +
                                          "examine inner exceptions for details.", errors);
+        }
+
+        /// <summary>
+        /// Called when socket error occurs.
+        /// </summary>
+        private void OnSocketError()
+        {
+            // TODO: Reconnect to next endpoint.
         }
 
         /// <summary>
