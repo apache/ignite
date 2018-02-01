@@ -27,8 +27,10 @@ angular.module('ignite-console.user', [
     'ignite-console.core'
 ])
 .factory('sessionRecoverer', ['$injector', '$q', ($injector, $q) => {
+    const ignoredStates = ['', 'signin', 'terms'];
+
     return {
-        ignoredStates: ['', 'signin'],
+        ignoredStates,
         responseError: (response) => {
             // Session has expired
             if (response.status === 401) {
@@ -36,8 +38,8 @@ angular.module('ignite-console.user', [
 
                 const stateName = $injector.get('$uiRouterGlobals').current.name;
 
-                if (!_.includes(this.ignoredStates, stateName))
-                    $injector.get('$state').go('signin');
+                if (!_.includes(ignoredStates, stateName))
+                    $injector.get('$state').go('default-state');
             }
 
             return $q.reject(response);
