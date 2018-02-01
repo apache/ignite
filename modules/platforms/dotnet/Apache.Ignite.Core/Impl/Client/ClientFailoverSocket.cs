@@ -35,6 +35,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Underlying socket. */
         private volatile ClientSocket _socket;
 
+        /** Current endpoint index. */
+        private int _endPointIndex;
+
         /** Config. */
         private readonly IgniteClientConfiguration _config;
 
@@ -51,6 +54,9 @@ namespace Apache.Ignite.Core.Impl.Client
             
             _config = config;
             _endPoints = GetEndPoints(config);
+
+            // Choose random endpoint for load balancing.
+            _endPointIndex = new Random().Next(_endPoints.Count - 1);
 
             Connect();
 
@@ -99,11 +105,16 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             List<Exception> errors = null;
 
-            foreach (var endPoint in _endPoints)
+            for (var i = 0; i < _endPoints.Count; i++)
             {
+                var idx = (_endPointIndex + i) % _endPoints.Count;
+                var endPoint = _endPoints[idx];
+
                 try
                 {
                     _socket = new ClientSocket(_config, endPoint, OnSocketError);
+                    _endPointIndex = idx;
+
                     return;
                 }
                 catch (SocketException e)
@@ -126,7 +137,14 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private void OnSocketError()
         {
-            // TODO: Reconnect to next endpoint.
+            if (_config.ReconnectDisabled)
+            {
+                return;
+            }
+
+            // Reconnect to next endpoint.
+            _endPointIndex++;
+            Connect();
         }
 
         /// <summary>
