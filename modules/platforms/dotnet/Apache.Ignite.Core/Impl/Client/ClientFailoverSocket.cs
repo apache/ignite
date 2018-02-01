@@ -89,6 +89,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 try
                 {
                     _socket = new ClientSocket(_config, endPoint);
+                    return;
                 }
                 catch (SocketException e)
                 {

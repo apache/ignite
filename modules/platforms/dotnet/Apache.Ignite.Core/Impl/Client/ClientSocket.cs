@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Impl.Client
 {
     using System;
     using System.Collections.Concurrent;
-    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
@@ -29,7 +28,6 @@ namespace Apache.Ignite.Core.Impl.Client
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Client;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
 
@@ -417,10 +415,6 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private void SocketWrite(byte[] buf, int len)
         {
-            // TODO: Retry same host a couple of times, then fail over to the next one?
-            // Every disconnect causes session end on the server side, we can't receive responses for existing requests.
-            // So we should do failover outside this class, I think.
-            // Keep some static server index in there to connect to the "next" server maybe.
             _stream.Write(buf, 0, len);
         }
 
