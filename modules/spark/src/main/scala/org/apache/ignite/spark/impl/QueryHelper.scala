@@ -20,9 +20,9 @@ package org.apache.ignite.spark.impl
 import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.spark.IgniteDataFrameSettings._
 import QueryUtils.{compileCreateTable, compileDropTable, compileInsert}
-import org.apache.ignite.internal.IgniteKernal
+import org.apache.ignite.internal.IgniteEx
 import org.apache.ignite.spark.IgniteContext
-import org.apache.ignite.{Ignite, IgniteCache, IgniteException}
+import org.apache.ignite.{Ignite, IgniteException}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Row}
 
@@ -37,7 +37,7 @@ private[apache] object QueryHelper {
       * @param ignite Ignite.
       */
     def dropTable(tableName: String, ignite: Ignite): Unit = {
-        val qryProcessor = ignite.asInstanceOf[IgniteKernal].context().query()
+        val qryProcessor = ignite.asInstanceOf[IgniteEx].context().query()
 
         val qry = compileDropTable(tableName)
 
@@ -55,7 +55,7 @@ private[apache] object QueryHelper {
       */
     def createTable(schema: StructType, tblName: String, primaryKeyFields: Seq[String], createTblOpts: Option[String],
         ignite: Ignite): Unit = {
-        val qryProcessor = ignite.asInstanceOf[IgniteKernal].context().query()
+        val qryProcessor = ignite.asInstanceOf[IgniteEx].context().query()
 
         val qry = compileCreateTable(schema, tblName, primaryKeyFields, createTblOpts)
 
@@ -91,25 +91,12 @@ private[apache] object QueryHelper {
       *
       * @param data Data.
       * @param tblName Table name.
-      * @param numPartitions Number of partitions to write data.
       * @param ctx Ignite context.
       */
-    def saveTable(data: DataFrame, tblName: String, numPartitions: Option[Int], ctx: IgniteContext): Unit = {
+    def saveTable(data: DataFrame, tblName: String, ctx: IgniteContext): Unit = {
         val insertQry = compileInsert(tblName, data.schema)
 
-        val repartitionedDF = numPartitions match {
-            case Some(n) if n <= 0 => throw new IllegalArgumentException(
-                s"Invalid value `$n` for parameter `$OPTION_WRITE_PARTITIONS_NUM` in table writing " +
-                    "via Ignite. The minimum value is 1.")
-
-            case Some(n) if n < data.rdd.getNumPartitions =>
-                data.coalesce(n)
-
-            case _ =>
-                data
-        }
-
-        repartitionedDF.rdd.foreachPartition(iterator => savePartition(iterator, insertQry, tblName, ctx))
+        data.rdd.foreachPartition(iterator => savePartition(iterator, insertQry, tblName, ctx))
     }
 
     /**

@@ -119,13 +119,11 @@ class IgniteRelationProvider extends RelationProvider
 
                     saveTable(data,
                         tblName,
-                        numPartitions(params),
                         ctx)
 
                 case Append ⇒
                     saveTable(data,
                         tblName,
-                        numPartitions(params),
                         ctx)
 
                 case SaveMode.ErrorIfExists =>
@@ -152,7 +150,6 @@ class IgniteRelationProvider extends RelationProvider
 
             saveTable(data,
                 tblName,
-                numPartitions(params),
                 ctx)
         }
 
@@ -222,13 +219,6 @@ class IgniteRelationProvider extends RelationProvider
         else
             tblName.toUpperCase
     }
-
-    /**
-      * @param params Params.
-      * @return Number of partitions.
-      */
-    private def numPartitions(params: Map[String, String]): Option[Int] =
-        params.get(OPTION_WRITE_PARTITIONS_NUM).map(_.toInt)
 
     /**
       * @param params Params.

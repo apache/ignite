@@ -116,23 +116,6 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
                 "Table json_city should contain data from json file.")
         }
 
-        it("Save data with specific partition count") {
-            val citiesDataFrame = spark.read.json(
-                resolveIgnitePath("modules/spark/src/test/resources/cities.json").getAbsolutePath)
-
-            citiesDataFrame.write
-                .format(FORMAT_IGNITE)
-                .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
-                .option(OPTION_TABLE, "json_city_with_partition_num")
-                .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id")
-                .option(OPTION_WRITE_PARTITIONS_NUM, 3)
-                .option(OPTION_CREATE_TABLE_PARAMETERS, "template=replicated")
-                .save()
-
-            assert(rowsCount("json_city") == citiesDataFrame.count(),
-                "Table json_city should contain data from json file.")
-        }
-
         it("Save data frame as a new table with save('table_name')") {
             val rowsCnt = personDataFrame.count()
 
@@ -236,21 +219,6 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
                     .option(OPTION_TABLE, "wrong-table-name")
                     .option(OPTION_CREATE_TABLE_PARAMETERS, "unsupported_with_clause")
                     .mode(Overwrite)
-                    .save()
-            }
-        }
-
-        it("Should throw exception for negative partition number") {
-            intercept[IllegalArgumentException] {
-                personDataFrame
-                    .write
-                    .format(FORMAT_IGNITE)
-                    .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
-                    .option(OPTION_TABLE, PERSON_TBL_NAME_2)
-                    .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id, city_id")
-                    .option(OPTION_CREATE_TABLE_PARAMETERS, "backups=1, affinityKey=city_id")
-                    .option(OPTION_WRITE_PARTITIONS_NUM, -1L)
-                    .mode(Append)
                     .save()
             }
         }
