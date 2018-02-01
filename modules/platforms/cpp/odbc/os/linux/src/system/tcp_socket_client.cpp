@@ -26,7 +26,7 @@
 
 #include <sstream>
 
-#include "ignite/odbc/system/socket_client.h"
+#include "ignite/odbc/system/tcp_socket_client.h"
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/log.h"
 
@@ -72,22 +72,22 @@ namespace ignite
 {
     namespace odbc
     {
-        namespace tcp
+        namespace system
         {
 
-            SocketClient::SocketClient() :
+            TcpSocketClient::TcpSocketClient() :
                 socketHandle(SOCKET_ERROR),
                 blocking(true)
             {
                 // No-op.
             }
 
-            SocketClient::~SocketClient()
+            TcpSocketClient::~TcpSocketClient()
             {
                 Close();
             }
 
-            bool SocketClient::Connect(const char* hostname, uint16_t port, diagnostic::Diagnosable& diag)
+            bool TcpSocketClient::Connect(const char* hostname, uint16_t port, diagnostic::Diagnosable& diag)
             {
                 LOG_MSG("Host: " << hostname << ", port: " << port);
 
@@ -172,7 +172,7 @@ namespace ignite
                 return socketHandle != SOCKET_ERROR;
             }
 
-            void SocketClient::Close()
+            void TcpSocketClient::Close()
             {
                 if (socketHandle != SOCKET_ERROR)
                 {
@@ -182,7 +182,7 @@ namespace ignite
                 }
             }
 
-            int SocketClient::Send(const int8_t* data, size_t size, int32_t timeout)
+            int TcpSocketClient::Send(const int8_t* data, size_t size, int32_t timeout)
             {
                 if (!blocking)
                 {
@@ -195,7 +195,7 @@ namespace ignite
                 return send(socketHandle, reinterpret_cast<const char*>(data), static_cast<int>(size), 0);
             }
 
-            int SocketClient::Receive(int8_t* buffer, size_t size, int32_t timeout)
+            int TcpSocketClient::Receive(int8_t* buffer, size_t size, int32_t timeout)
             {
                 if (!blocking)
                 {
@@ -208,7 +208,12 @@ namespace ignite
                 return recv(socketHandle, reinterpret_cast<char*>(buffer), static_cast<int>(size), 0);
             }
 
-            void SocketClient::TrySetOptions(diagnostic::Diagnosable& diag)
+            bool TcpSocketClient::IsBlocking() const
+            {
+                return blocking;
+            }
+
+            void TcpSocketClient::TrySetOptions(diagnostic::Diagnosable& diag)
             {
                 int trueOpt = 1;
                 int bufSizeOpt = BUFFER_SIZE;
@@ -310,7 +315,7 @@ namespace ignite
 
             }
 
-            int SocketClient::WaitOnSocket(int32_t timeout, bool rd)
+            int TcpSocketClient::WaitOnSocket(int32_t timeout, bool rd)
             {
                 int ready = 0;
                 int lastError = 0;
@@ -336,9 +341,9 @@ namespace ignite
                         readFds, writeFds, NULL, (timeout == 0 ? NULL : &tv));
 
                     if (ready == SOCKET_ERROR)
-                        lastError = errno;
+                        lastError = GetLastSocketError();
 
-                } while (ready == SOCKET_ERROR && lastError == EINTR);
+                } while (ready == SOCKET_ERROR && IsSocketOperationInterrupted(lastError));
 
                 if (ready == SOCKET_ERROR)
                     return -lastError;
@@ -353,6 +358,25 @@ namespace ignite
                     return WaitResult::TIMEOUT;
 
                 return WaitResult::SUCCESS;
+            }
+
+            int TcpSocketClient::GetLastSocketError()
+            {
+                return errno;
+            }
+
+            int TcpSocketClient::GetLastSocketError(int handle)
+            {
+                int lastError = 0;
+                socklen_t size = sizeof(lastError);
+                int res = getsockopt(handle, SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&lastError), &size);
+
+                return res == SOCKET_ERROR ? 0 : lastError;
+            }
+
+            bool TcpSocketClient::IsSocketOperationInterrupted(int errorCode)
+            {
+                return errorCode == EINTR;
             }
         }
     }

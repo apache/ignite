@@ -17,19 +17,21 @@
   limitations under the License.
 -->
 
-<beans xmlns="http://www.springframework.org/schema/beans"
-       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:util="http://www.springframework.org/schema/util"
-       xsi:schemaLocation="
-        http://www.springframework.org/schema/beans
-        http://www.springframework.org/schema/beans/spring-beans.xsd">
+<Configuration monitorInterval="5">
+    <Appenders>
+        <Console name="CONSOLE" target="SYSTEM_OUT">
+            <PatternLayout pattern="[%p] %m%n"/>
+        </Console>
 
-    <!-- Imports no-ODBC Ignite configuration -->
-    <import resource="queries-default.xml"/>
+        <File name="FILE" fileName="${sys:IGNITE_HOME}/work/log/Log4j2ConfigUpdateTest.log" append="true">
+            <PatternLayout pattern="[%p] %m%n"/>
+        </File>
+    </Appenders>
 
-    <bean parent="ignite.cfg">
-        <property name="clientConnectorConfiguration">
-            <null/>
-        </property>
-    </bean>
-</beans>
+    <Loggers>
+        <Root level="INFO">
+            <AppenderRef ref="CONSOLE"/>
+            <AppenderRef ref="FILE"/>
+        </Root>
+    </Loggers>
+</Configuration>

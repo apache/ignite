@@ -24,6 +24,9 @@ public class AuthorizationContext {
     /** User. */
     private final User user;
 
+    /** Current authorization context. */
+    private static ThreadLocal<AuthorizationContext> actx = new ThreadLocal<>();
+
     /**
      * Creates authentication context.
      *
@@ -54,5 +57,19 @@ public class AuthorizationContext {
         if (op.type() == UserManagementOperation.OperationType.REMOVE
             && User.DFAULT_USER_NAME.equals(op.user().name()))
             throw new IgniteAccessControlException("Default user cannot be removed.");
+    }
+
+    /**
+     * @param actx Authorization context to set.
+     */
+    public static void context(AuthorizationContext actx) {
+        AuthorizationContext.actx.set(actx);
+    }
+
+    /**
+     * @return Current authorization context.
+     */
+    public static AuthorizationContext context() {
+        return actx.get();
     }
 }
