@@ -80,6 +80,9 @@ namespace Apache.Ignite.Core.Impl.Client
             return GetSocket().DoOutInOpAsync(opId, writeAction, readFunc, errorFunc);
         }
 
+        /** <inheritdoc /> */
+        public EndPoint CurrentEndPoint { get { return _socket.CurrentEndPoint; } }
+
         /// <summary>
         /// Checks the disposed state.
         /// </summary>

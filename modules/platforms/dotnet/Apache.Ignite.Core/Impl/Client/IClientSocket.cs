@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Client
 {
     using System;
+    using System.Net;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Impl.Binary.IO;
@@ -38,5 +39,10 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         Task<T> DoOutInOpAsync<T>(ClientOp opId, Action<IBinaryStream> writeAction,
             Func<IBinaryStream, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null);
+
+        /// <summary>
+        /// Gets the currently used EndPoint.
+        /// </summary>
+        EndPoint CurrentEndPoint { get; }
     }
 }

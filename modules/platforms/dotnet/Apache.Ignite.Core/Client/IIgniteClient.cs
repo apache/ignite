@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Client
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.Net;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client.Cache;
 
@@ -108,5 +109,10 @@ namespace Apache.Ignite.Core.Client
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         IgniteClientConfiguration GetConfiguration();
+
+        /// <summary>
+        /// Gets the currently used EndPoint.
+        /// </summary>
+        EndPoint CurrentEndPoint { get; }
     }
 }
