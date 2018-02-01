@@ -59,8 +59,6 @@ namespace Apache.Ignite.Core.Impl.Client
             _endPointIndex = new Random().Next(_endPoints.Count - 1);
 
             Connect();
-
-            // TODO: Subscribe to failure, reconnect.
         }
 
         /** <inheritdoc /> */
@@ -137,6 +135,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private void OnSocketError()
         {
+            // TODO: Do not reconnect immediately, only on next operation?
+
             if (_config.ReconnectDisabled)
             {
                 return;
