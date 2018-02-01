@@ -1954,6 +1954,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         String memPlcName = cfg.getDataRegionName();
 
         DataRegion memPlc = sharedCtx.database().dataRegion(memPlcName);
+
+        if(cacheType == CacheType.USER && memPlc == null)
+            throw new IgniteException("No data region was fond for '" +desc.cacheOrGroupName()  +"' cache.");
+
         FreeList freeList = sharedCtx.database().freeList(memPlcName);
         ReuseList reuseList = sharedCtx.database().reuseList(memPlcName);
 

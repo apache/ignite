@@ -114,11 +114,22 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         assert memCfg != null;
 
+        initDfltDataRegionIfRequired(memCfg);
+
         validateConfiguration(memCfg);
 
         pageSize = memCfg.getPageSize();
 
         initDataRegions(memCfg);
+    }
+
+    private void initDfltDataRegionIfRequired(DataStorageConfiguration memCfg) {
+        DataRegionConfiguration dflt = memCfg.getDefaultDataRegionConfiguration();
+
+        if(dflt == null && !cctx.kernalContext().clientNode())
+            dflt = new DataRegionConfiguration();
+
+        memCfg.setDefaultDataRegionConfiguration(dflt);
     }
 
     /**

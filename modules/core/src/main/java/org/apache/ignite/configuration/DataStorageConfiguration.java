@@ -165,7 +165,7 @@ public class DataStorageConfiguration implements Serializable {
     private int concLvl;
 
     /** Configuration of default data region. */
-    private DataRegionConfiguration dfltDataRegConf = new DataRegionConfiguration();
+    private DataRegionConfiguration dfltDataRegConf;
 
     /** Data regions. */
     private DataRegionConfiguration[] dataRegions;
