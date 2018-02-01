@@ -63,6 +63,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             _configuration = new IgniteClientConfiguration(clientConfiguration);
 
+            // TODO: Enable failover socket only when enabled in config?
             _socket = new ClientFailoverSocket(_configuration);
 
             _marsh = new Marshaller(_configuration.BinaryConfiguration)
