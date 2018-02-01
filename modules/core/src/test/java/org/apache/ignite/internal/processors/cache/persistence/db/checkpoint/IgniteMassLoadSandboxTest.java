@@ -25,11 +25,15 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -217,6 +221,80 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             stopAllGrids();
         }
     }
+
+    /**
+     * Runs multithreaded put scenario (no data streamer). Load is generated to page store and to WAL.
+     * @throws Exception if failed.
+     */
+    public void testDataStreamerContinuousPutMultithreaded() throws Exception {
+        try {
+            // System.setProperty(IgniteSystemProperties.IGNITE_DIRTY_PAGES_PARALLEL, "true");
+            // System.setProperty(IgniteSystemProperties.IGNITE_DIRTY_PAGES_SORTED_STORAGE, "true");
+            System.setProperty(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY, "false");
+            System.setProperty(IgniteSystemProperties.IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED, "speed");
+
+            setWalArchAndWorkToSameVal = true;
+
+            customWalMode = WALMode.BACKGROUND;
+
+            final IgniteEx ignite = startGrid(1);
+
+            ignite.active(true);
+
+            final int threads = 1; Runtime.getRuntime().availableProcessors();
+
+            final int recsPerThread = CONTINUOUS_PUT_RECS_CNT / threads;
+
+            final ProgressWatchdog watchdog = new ProgressWatchdog(ignite, "put", PUT_THREAD);
+
+            IgniteDataStreamer<Object, Object> streamer = ignite.dataStreamer(CACHE_NAME);
+
+            streamer.perNodeBufferSize(12);
+
+            final Collection<Callable<?>> tasks = new ArrayList<>();
+            for (int j = 0; j < threads; j++) {
+                final int finalJ = j;
+
+                tasks.add((Callable<Void>)() -> {
+                    for (int i = finalJ * recsPerThread; i < ((finalJ + 1) * recsPerThread); i++)
+                        streamer.addData(i, new HugeIndexedObject(i));
+
+                    return null;
+                });
+            }
+
+            final IgniteCache<Object, HugeIndexedObject> cache = ignite.cache(CACHE_NAME);
+            ScheduledExecutorService svcReport = Executors.newScheduledThreadPool(1);
+
+            AtomicInteger size = new AtomicInteger();
+            svcReport.scheduleAtFixedRate(
+                () -> {
+                    int newSize = cache.size();
+                    int oldSize = size.getAndSet(newSize);
+
+                    watchdog.reportProgress(newSize - oldSize);
+                },
+                250, 250, TimeUnit.MILLISECONDS);
+
+            watchdog.start();
+            GridTestUtils.runMultiThreaded(tasks, PUT_THREAD);
+            streamer.close();
+
+            watchdog.stopping();
+            stopGrid(1);
+
+            watchdog.stop();
+
+            ProgressWatchdog.stopPool(svcReport);
+
+            if (VERIFY_STORAGE)
+                runVerification(threads, recsPerThread);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
 
     /**
      * Verifies data from storage.

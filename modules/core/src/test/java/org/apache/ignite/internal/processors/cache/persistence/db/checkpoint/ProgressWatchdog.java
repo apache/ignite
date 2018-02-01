@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -158,6 +159,7 @@ class ProgressWatchdog {
             if (name.contains("checkpoint-runner")
                 || name.contains("db-checkpoint-thread")
                 || name.contains("wal-file-archiver")
+                || name.contains("data-streamer")
                 || (clientThreadsName!=null && name.contains(clientThreadsName))) {
                 String str = threadInfo.toString();
 
@@ -475,9 +477,14 @@ class ProgressWatchdog {
     public void stop() {
         U.closeQuiet(txtWriter);
 
-        svc.shutdown();
+        ScheduledExecutorService pool = this.svc;
+        stopPool(pool);
+    }
+
+    public static void stopPool(ExecutorService pool) {
+        pool.shutdown();
         try {
-            svc.awaitTermination(10, TimeUnit.SECONDS);
+            pool.awaitTermination(10, TimeUnit.SECONDS);
         }
         catch (InterruptedException e) {
             e.printStackTrace();
