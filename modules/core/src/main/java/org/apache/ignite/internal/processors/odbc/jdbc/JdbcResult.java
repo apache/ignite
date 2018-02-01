@@ -167,7 +167,7 @@ public class JdbcResult implements JdbcRawBinarylizable {
                 break;
 
             case BULK_LOAD_ACK:
-                res = new JdbcBulkLoadBatchAckResult();
+                res = new JdbcBulkLoadAckResult();
 
                 break;
 

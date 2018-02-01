@@ -137,8 +137,8 @@ public class SqlBulkLoadCommand implements SqlCommand {
         try {
             BulkLoadCsvFormat fmt = (BulkLoadCsvFormat) BulkLoadFormat.createFormatFor(name);
 
-            fmt.lineSeparatorRe(BulkLoadCsvFormat.DEFAULT_LINE_SEP_RE);
-            fmt.fieldSeparatorRe(BulkLoadCsvFormat.DEFAULT_FIELD_SEP_RE);
+            fmt.lineSeparator(BulkLoadCsvFormat.DEFAULT_LINE_SEPARATOR);
+            fmt.fieldSeparator(BulkLoadCsvFormat.DEFAULT_FIELD_SEPARATOR);
             fmt.quoteChars(BulkLoadCsvFormat.DEFAULT_QUOTE_CHARS);
             fmt.commentChars(BulkLoadCsvFormat.DEFAULT_COMMENT_CHARS);
             fmt.escapeChars(BulkLoadCsvFormat.DEFAULT_ESCAPE_CHARS);

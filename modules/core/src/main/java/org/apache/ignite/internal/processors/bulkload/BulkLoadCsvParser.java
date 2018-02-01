@@ -23,7 +23,6 @@ import org.apache.ignite.internal.processors.bulkload.pipeline.CsvLineProcessorB
 import org.apache.ignite.internal.processors.bulkload.pipeline.PipelineBlock;
 import org.apache.ignite.internal.processors.bulkload.pipeline.StrListAppenderBlock;
 import org.apache.ignite.internal.processors.bulkload.pipeline.LineSplitterBlock;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -47,26 +46,19 @@ public class BulkLoadCsvParser extends BulkLoadParser {
         collectorBlock = new StrListAppenderBlock();
 
         // Handling of the other options is to be implemented in IGNITE-7537.
-        inputBlock.append(new LineSplitterBlock(format.lineSeparatorRe()))
-               .append(new CsvLineProcessorBlock(format.fieldSeparatorRe(), format.quoteChars()))
+        inputBlock.append(new LineSplitterBlock(format.lineSeparator()))
+               .append(new CsvLineProcessorBlock(format.fieldSeparator(), format.quoteChars()))
                .append(collectorBlock);
     }
 
-    /**
-     * Parses a batch of records.
-     *
-     * @param req The request with all parameters.
-     * @param isLastBatch true, if it is a last batch.
-     * @return Iterable over the parsed records.
-     * @throws IgniteCheckedException if parsing has failed.
-     */
-    @Override protected Iterable<List<Object>> parseBatch(JdbcBulkLoadBatchRequest req, boolean isLastBatch)
+    /** {@inheritDoc} */
+    @Override protected Iterable<List<Object>> parseBatch(byte[] batchData, boolean isLastBatch)
         throws IgniteCheckedException {
         List<List<Object>> res = new LinkedList<>();
 
         collectorBlock.output(res);
 
-        inputBlock.accept(req.data(), isLastBatch);
+        inputBlock.accept(batchData, isLastBatch);
 
         return res;
     }

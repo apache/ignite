@@ -31,7 +31,7 @@ public class BulkLoadStreamerWriter implements BulkLoadCacheWriter {
      * A number of {@link org.apache.ignite.IgniteDataStreamer#addData(java.lang.Object, java.lang.Object)} calls made,
      * since we don't have any kind of result data back from the streamer.
      */
-    private int updateCnt = 0;
+    private long updateCnt = 0;
 
     /**
      * Creates a cache writer.

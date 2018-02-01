@@ -39,7 +39,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.h2.dml.UpdateMode.COPY;
+import static org.apache.ignite.internal.processors.query.h2.dml.UpdateMode.BULK_LOAD;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 
 /**
@@ -183,7 +183,7 @@ public final class UpdatePlan {
      * @throws IgniteCheckedException if failed.
      */
     public IgniteBiTuple<?, ?> processRow(List<?> row) throws IgniteCheckedException {
-        if (mode != COPY && row.size() != colNames.length)
+        if (mode != BULK_LOAD && row.size() != colNames.length)
             throw new IgniteSQLException("Not enough values in a row: " + row.size() + " instead of " + colNames.length,
                 IgniteQueryErrorCode.ENTRY_PROCESSING);
 

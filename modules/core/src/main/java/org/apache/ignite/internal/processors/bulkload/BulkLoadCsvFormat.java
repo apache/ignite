@@ -25,10 +25,10 @@ import java.util.regex.Pattern;
 /** A placeholder for bulk load CSV format parser options. */
 public class BulkLoadCsvFormat extends BulkLoadFormat {
     /** Line separator pattern. */
-    @NotNull public static final Pattern DEFAULT_LINE_SEP_RE = Pattern.compile("[\r\n]+");
+    @NotNull public static final Pattern DEFAULT_LINE_SEPARATOR = Pattern.compile("[\r\n]+");
 
     /** Field separator pattern. */
-    @NotNull public static final Pattern DEFAULT_FIELD_SEP_RE = Pattern.compile(",");
+    @NotNull public static final Pattern DEFAULT_FIELD_SEPARATOR = Pattern.compile(",");
 
     /** Quote characters */
     @NotNull public static final String DEFAULT_QUOTE_CHARS = "\"";
@@ -43,10 +43,10 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
     public static final String NAME = "CSV";
 
     /** Line separator pattern. */
-    @Nullable private Pattern lineSeparatorRe;
+    @Nullable private Pattern lineSeparator;
 
     /** Field separator pattern. */
-    @Nullable private Pattern fieldSeparatorRe;
+    @Nullable private Pattern fieldSeparator;
 
     /** Set of quote characters. */
     @Nullable private String quoteChars;
@@ -71,17 +71,17 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @return The line separator pattern.
      */
-    public @Nullable Pattern lineSeparatorRe() {
-        return lineSeparatorRe;
+    public @Nullable Pattern lineSeparator() {
+        return lineSeparator;
     }
 
     /**
      * Sets the line separator pattern.
      *
-     * @param lineSeparatorRe The line separator pattern.
+     * @param lineSeparator The line separator pattern.
      */
-    public void lineSeparatorRe(@Nullable Pattern lineSeparatorRe) {
-        this.lineSeparatorRe = lineSeparatorRe;
+    public void lineSeparator(@Nullable Pattern lineSeparator) {
+        this.lineSeparator = lineSeparator;
     }
 
     /**
@@ -89,17 +89,17 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @return The field separator pattern.
      */
-    public @Nullable Pattern fieldSeparatorRe() {
-        return fieldSeparatorRe;
+    public @Nullable Pattern fieldSeparator() {
+        return fieldSeparator;
     }
 
     /**
      * Sets the field separator pattern.
      *
-     * @param fieldSeparatorRe The field separator pattern.
+     * @param fieldSeparator The field separator pattern.
      */
-    public void fieldSeparatorRe(@Nullable Pattern fieldSeparatorRe) {
-        this.fieldSeparatorRe = fieldSeparatorRe;
+    public void fieldSeparator(@Nullable Pattern fieldSeparator) {
+        this.fieldSeparator = fieldSeparator;
     }
 
     /**

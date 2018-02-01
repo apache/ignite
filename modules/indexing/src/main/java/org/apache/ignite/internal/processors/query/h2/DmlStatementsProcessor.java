@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
@@ -989,9 +990,7 @@ public class DmlStatementsProcessor {
     public FieldsQueryCursor<List<?>> runDmlStatement(String sql, SqlCommand cmd) throws IgniteCheckedException {
         try {
             if (cmd instanceof SqlBulkLoadCommand) {
-                SqlBulkLoadCommand blCmd = ((SqlBulkLoadCommand)cmd);
-
-                BulkLoadProcessor processor = processBulkLoadCommand(blCmd);
+                BulkLoadProcessor processor = processBulkLoadCommand((SqlBulkLoadCommand)cmd);
 
                 return new BulkLoadContextCursor(processor);
             }
@@ -1016,7 +1015,6 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException If something failed.
      */
     public BulkLoadProcessor processBulkLoadCommand(SqlBulkLoadCommand cmd) throws IgniteCheckedException {
-
         if (cmd.batchSize() == null)
             cmd.batchSize(BulkLoadParameters.DEFAULT_BATCH_SIZE);
 
@@ -1026,14 +1024,13 @@ public class DmlStatementsProcessor {
             throw new IgniteSQLException("Table does not exist: " + cmd.tableName(),
                 IgniteQueryErrorCode.TABLE_NOT_FOUND);
 
-        final UpdatePlan plan = UpdatePlanBuilder.planForBulkLoad(cmd, tbl);
-        final int colCnt = plan.columnNames().length;
+        UpdatePlan plan = UpdatePlanBuilder.planForBulkLoad(cmd, tbl);
 
         IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter = new BulkLoadDataConverter(plan);
 
         GridCacheContext cache = tbl.cache();
 
-        final IgniteDataStreamer<Object, Object> streamer = cache.grid().dataStreamer(cache.name());
+        IgniteDataStreamer<Object, Object> streamer = cache.grid().dataStreamer(cache.name());
 
         BulkLoadCacheWriter outputWriter = new BulkLoadStreamerWriter(streamer);
 

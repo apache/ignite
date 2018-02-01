@@ -22,18 +22,18 @@ package org.apache.ignite.internal.processors.query.h2.dml;
  * or UPDATE/DELETE from subquery or literals/params based.
  */
 public enum UpdateMode {
-    /** MERGE comand. */
+    /** MERGE command. */
     MERGE,
 
-    /** INSERT comand. */
+    /** INSERT command. */
     INSERT,
 
-    /** UPDATE comand. */
+    /** UPDATE command. */
     UPDATE,
 
-    /** DELETE comand. */
+    /** DELETE command. */
     DELETE,
 
-    /** COPY comand. */
-    COPY
+    /** COPY command. */
+    BULK_LOAD
 }

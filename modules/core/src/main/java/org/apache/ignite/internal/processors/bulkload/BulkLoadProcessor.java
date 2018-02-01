@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.bulkload;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.lang.IgniteBiTuple;
 
@@ -54,7 +53,6 @@ public class BulkLoadProcessor {
      */
     public BulkLoadProcessor(BulkLoadParameters params, BulkLoadParser inputParser,
         IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter, BulkLoadCacheWriter outputStreamer) {
-
         this.params = params;
         this.inputParser = inputParser;
         this.dataConverter = dataConverter;
@@ -87,17 +85,22 @@ public class BulkLoadProcessor {
     }
 
     /**
-     * Processes the incoming batch and calls data converter and output streamer.
+     * Processes the incoming batch and writes data to the cache by calling the data converter and output streamer.
      *
-     * @param req The incoming request.
+     * @param batchData Data from the current batch.
+     * @param isLastBatch true if this is the last batch.
      */
-    public void processBatch(JdbcBulkLoadBatchRequest req) throws IgniteCheckedException {
-        Iterable<List<Object>> inputRecords = inputParser.processBatch(req);
+    public void processBatch(byte[] batchData, boolean isLastBatch) throws IgniteCheckedException {
+        Iterable<List<Object>> inputRecords = inputParser.parseBatch(batchData, isLastBatch);
 
         for (List<Object> record : inputRecords) {
             IgniteBiTuple<?, ?> kv = dataConverter.apply(record);
 
             outputStreamer.accept(kv);
         }
+    }
+
+    public void abortProcessing() {
+        // Currently does nothing. Will be used for rolling back a transaction.
     }
 }

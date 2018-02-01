@@ -65,7 +65,6 @@ import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 
 /**
  * Logic for building update plans performed by {@link DmlStatementsProcessor}.
@@ -474,7 +473,7 @@ public final class UpdatePlanBuilder {
         KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false, false);
 
         return new UpdatePlan(
-            UpdateMode.COPY,
+            UpdateMode.BULK_LOAD,
             tbl,
             colNames,
             colTypes,

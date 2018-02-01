@@ -23,9 +23,9 @@ import org.apache.ignite.lang.IgniteBiTuple;
  * A proxy, which stores given key+value pair to a cache.
  */
 public interface BulkLoadCacheWriter extends AutoCloseable {
-
     /**
      * Writes given entry to the cache.
+     *
      * @param entry Entry to store to the cache.
      */
     void accept(IgniteBiTuple<?, ?> entry);
