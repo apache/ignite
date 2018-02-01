@@ -17,20 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.file;
 
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ThreadLocalRandom8;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Test what interruptions of writing threads do not affect PDS.
@@ -40,12 +41,12 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
     private static final int PAGE_SIZE = 1 << 12; // 4096
 
     /** */
-    public static final int THREADS_CNT = 10;
+    public static final int THREADS_CNT = 100;
 
     /**
      * Cache name.
      */
-    private final String cacheName = "cache";
+    private final String CACHE_NAME = "cache";
 
     /** */
     private volatile boolean stop = false;
@@ -54,37 +55,49 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setDataStorageConfiguration(memoryConfiguration());
+        cfg.setDataStorageConfiguration(storageConfiguration());
 
-        cfg.setCacheConfiguration(new CacheConfiguration<>(cacheName));
+        CacheConfiguration ccfg = new CacheConfiguration<>(CACHE_NAME);
+
+        RendezvousAffinityFunction affinityFunction = new RendezvousAffinityFunction();
+        affinityFunction.setPartitions(1);
+
+        ccfg.setAffinity(affinityFunction);
+
+        cfg.setCacheConfiguration(ccfg);
 
         return cfg;
     }
 
     /**
-     * @return Memory config.
+     * @return DataStorage configuration.
      */
-    private DataStorageConfiguration memoryConfiguration() {
-        return new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setName("dfltMemPlc")
-                .setPersistenceEnabled(true)
-            )
-            .setPageSize(PAGE_SIZE)
-            .setConcurrencyLevel(1)
-            .setWalMode(WALMode.LOG_ONLY)
-            .setWalFsyncDelayNanos(0);
+    private DataStorageConfiguration storageConfiguration() {
+        DataRegionConfiguration regionCfg = new DataRegionConfiguration()
+                .setInitialSize(10L * 1024L * 1024L)
+                .setMaxSize(10L * 1024L * 1024L)
+                .setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU);
+
+        DataStorageConfiguration cfg = new DataStorageConfiguration()
+                .setWalMode(WALMode.LOG_ONLY)
+                .setWalFsyncDelayNanos(0)
+                .setPageSize(PAGE_SIZE)
+                .setFileIOFactory(new AsyncFileIOFactory());
+
+        cfg.setDefaultDataRegionConfiguration(regionCfg);
+
+        return cfg;
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         super.beforeTestsStarted();
 
         deleteWorkFiles();
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTest() throws Exception {
         super.afterTestsStopped();
 
         stopAllGrids();
@@ -93,9 +106,91 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests interruptions on WAL write.
+     * Tests interruptions on LFS read.
      *
      * @throws Exception If failed.
+     */
+    public void testInterruptsOnLFSRead() throws Exception {
+        final Ignite ignite = startGrid();
+
+        ignite.active(true);
+
+        final int valLen = 8192;
+
+        final byte[] payload = new byte[valLen];
+
+        final int maxKey = 10_000;
+
+        Thread[] workers = new Thread[THREADS_CNT];
+
+
+        final IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
+        for (int i=0; i < maxKey; i++) {
+            cache.put(i, payload);
+        }
+
+        final AtomicReference<Throwable> fail = new AtomicReference<>();
+
+
+        Runnable clo = new Runnable() {
+            @Override
+            public void run() {
+                cache.get(ThreadLocalRandom.current().nextInt(maxKey / 5));
+            }
+        };
+        for (int i = 0; i < workers.length; i++) {
+            workers[i] = new Thread(clo);
+            workers[i].setName("reader-" + i);
+            workers[i].setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+                @Override public void uncaughtException(Thread t, Throwable e) {
+                    fail.compareAndSet(null, e);
+
+                }
+            });
+        }
+
+        for (Thread worker : workers)
+            worker.start();
+
+        //Thread.sleep(3_000);
+
+        // Interrupts should not affect reads.
+        for (int i = 0;i < workers.length / 2; i++)
+            workers[i].interrupt();
+
+        Thread.sleep(3_000);
+
+        stop = true;
+
+        for (Thread worker : workers)
+            worker.join();
+
+        Throwable t = fail.get();
+
+        assert t == null : t;
+
+
+
+        int verifiedKeys = 0;
+
+        // Post check.
+        for (int i = 0; i < maxKey; i++) {
+            byte[] val = (byte[]) cache.get(i);
+
+            if (val != null) {
+                assertEquals("Illegal length", valLen, val.length);
+
+                verifiedKeys++;
+            }
+        }
+
+        log.info("Verified keys: " + verifiedKeys);
+    }
+
+    /**
+     * Tests interruptions on WAL write.
+     *
+     * @throws Exception
      */
     public void testInterruptsOnWALWrite() throws Exception {
         final Ignite ignite = startGrid();
@@ -114,10 +209,10 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
 
         Runnable clo = new Runnable() {
             @Override public void run() {
-                IgniteCache<Object, Object> cache = ignite.cache(cacheName);
+                IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
 
                 while (!stop)
-                    cache.put(ThreadLocalRandom8.current().nextInt(maxKey), payload);
+                    cache.put(ThreadLocalRandom.current().nextInt(maxKey), payload);
             }
         };
 
@@ -126,8 +221,6 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
             workers[i].setName("writer-" + i);
             workers[i].setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
                 @Override public void uncaughtException(Thread t, Throwable e) {
-                    log.error("Worker thread error", e);
-
                     fail.compareAndSet(null, e);
                 }
             });
@@ -153,7 +246,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
 
         assert t == null : t;
 
-        IgniteCache<Object, Object> cache = ignite.cache(cacheName);
+        IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
 
         int verifiedKeys = 0;
 
@@ -175,6 +268,6 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If fail.
      */
     private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
     }
 }
