@@ -88,14 +88,16 @@ namespace Apache.Ignite.Core.Impl.Client
         /// Initializes a new instance of the <see cref="ClientSocket" /> class.
         /// </summary>
         /// <param name="clientConfiguration">The client configuration.</param>
+        /// <param name="endPoint">The end point to connect to.</param>
         /// <param name="version">Protocol version.</param>
-        public ClientSocket(IgniteClientConfiguration clientConfiguration, ClientProtocolVersion? version = null)
+        public ClientSocket(IgniteClientConfiguration clientConfiguration, EndPoint endPoint,
+            ClientProtocolVersion? version = null)
         {
             Debug.Assert(clientConfiguration != null);
 
             _timeout = clientConfiguration.SocketTimeout;
 
-            _socket = Connect(clientConfiguration);
+            _socket = Connect(clientConfiguration, endPoint);
             _stream = GetSocketStream(_socket, clientConfiguration);
 
             Handshake(version ?? CurrentProtocolVersion);
@@ -433,41 +435,6 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Connects the socket.
         /// </summary>
-        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", 
-            Justification = "Socket is returned from this method.")]
-        private static Socket Connect(IgniteClientConfiguration cfg)
-        {
-            List<Exception> errors = null;
-
-            foreach (var endPoint in GetEndPoints(cfg))
-            {
-                try
-                {
-                    return Connect(cfg, endPoint);
-                }
-                catch (SocketException e)
-                {
-                    if (errors == null)
-                    {
-                        errors = new List<Exception>();
-                    }
-
-                    errors.Add(e);
-                }
-            }
-
-            if (errors == null)
-            {
-                throw new IgniteException("Failed to resolve client host: " + cfg.Host);
-            }
-
-            throw new AggregateException("Failed to establish Ignite thin client connection, " +
-                                         "examine inner exceptions for details.", errors);
-        }
-
-        /// <summary>
-        /// Connects the socket.
-        /// </summary>
         [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope",
             Justification = "Socket is returned from this method.")]
         private static Socket Connect(IgniteClientConfiguration cfg, EndPoint endPoint)
@@ -512,44 +479,6 @@ namespace Apache.Ignite.Core.Impl.Client
             }
 
             return cfg.SslStreamFactory.Create(stream, cfg.Host);
-        }
-
-        /// <summary>
-        /// Gets the endpoints: all combinations of IP addresses and ports according to configuration.
-        /// </summary>
-        private static IEnumerable<EndPoint> GetEndPoints(IgniteClientConfiguration cfg)
-        {
-            var host = cfg.Host;
-
-            if (host == null && cfg.EndPoints.Count == 0)
-            {
-                throw new IgniteException("IgniteClientConfiguration does not contain any endpoints: " +
-                                          "Host is null, EndPoints is empty.");
-            }
-
-            var res = new List<EndPoint>(cfg.EndPoints.Count + (host == null ? 0 : 4));
-
-            if (host != null)
-            {
-                // GetHostEntry accepts IPs, but TryParse is a more efficient shortcut.
-                IPAddress ip;
-
-                if (IPAddress.TryParse(host, out ip))
-                {
-                    res.Add(new IPEndPoint(ip, cfg.Port));
-                }
-                else
-                {
-                    foreach (var x in Dns.GetHostEntry(host).AddressList)
-                    {
-                        res.Add(new IPEndPoint(x, cfg.Port));
-                    }
-                }
-            }
-
-            res.AddRange(cfg.EndPoints);
-
-            return res;
         }
 
         /// <summary>

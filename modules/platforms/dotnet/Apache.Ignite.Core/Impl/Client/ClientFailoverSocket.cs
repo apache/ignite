@@ -18,9 +18,13 @@
 namespace Apache.Ignite.Core.Impl.Client
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Net;
+    using System.Net.Sockets;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
@@ -34,6 +38,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Config. */
         private readonly IgniteClientConfiguration _config;
 
+        /** Endpoints. */
+        private readonly List<EndPoint> _endPoints;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientFailoverSocket"/> class.
         /// </summary>
@@ -43,7 +50,9 @@ namespace Apache.Ignite.Core.Impl.Client
             Debug.Assert(config != null);
             
             _config = config;
-            _socket = new ClientSocket(config);
+            _endPoints = GetEndPoints(config);
+
+            Connect();
 
             // TODO: Subscribe to failure, reconnect.
         }
@@ -66,6 +75,77 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             // TODO: set some flag, or set socket to null?
             _socket.Dispose();
+        }
+
+        /// <summary>
+        /// Connects the socket.
+        /// </summary>
+        private void Connect()
+        {
+            List<Exception> errors = null;
+
+            foreach (var endPoint in _endPoints)
+            {
+                try
+                {
+                    _socket = new ClientSocket(_config, endPoint);
+                }
+                catch (SocketException e)
+                {
+                    if (errors == null)
+                    {
+                        errors = new List<Exception>();
+                    }
+
+                    errors.Add(e);
+                }
+            }
+
+            throw new AggregateException("Failed to establish Ignite thin client connection, " +
+                                         "examine inner exceptions for details.", errors);
+        }
+
+        /// <summary>
+        /// Gets the endpoints: all combinations of IP addresses and ports according to configuration.
+        /// </summary>
+        private static List<EndPoint> GetEndPoints(IgniteClientConfiguration cfg)
+        {
+            var host = cfg.Host;
+
+            if (host == null && cfg.EndPoints.Count == 0)
+            {
+                throw new IgniteException("IgniteClientConfiguration does not contain any endpoints: " +
+                                          "Host is null, EndPoints is empty.");
+            }
+
+            var res = new List<EndPoint>(cfg.EndPoints.Count + (host == null ? 0 : 4));
+
+            if (host != null)
+            {
+                // GetHostEntry accepts IPs, but TryParse is a more efficient shortcut.
+                IPAddress ip;
+
+                if (IPAddress.TryParse(host, out ip))
+                {
+                    res.Add(new IPEndPoint(ip, cfg.Port));
+                }
+                else
+                {
+                    foreach (var x in Dns.GetHostEntry(host).AddressList)
+                    {
+                        res.Add(new IPEndPoint(x, cfg.Port));
+                    }
+                }
+            }
+
+            res.AddRange(cfg.EndPoints);
+
+            if (res.Count == 0)
+            {
+                throw new IgniteException("Failed to resolve client host: " + host);
+            }
+
+            return res;
         }
     }
 }
