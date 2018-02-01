@@ -20,45 +20,47 @@ package org.apache.ignite.yardstick.jdbc;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
+import org.yardstickframework.BenchmarkConfiguration;
 
 /**
  * Native sql benchmark that performs update operations.
  */
 public class NativeSqlUpdateRangeBenchmark extends AbstractNativeBenchmark {
+    /** Generates disjoint (among threads) id ranges */
+    private DisjointRangeGenerator idGen;
+
+    /** Setup method */
+    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
+        super.setUp(cfg);
+        idGen = new DisjointRangeGenerator(cfg.threads(), args.range(), args.sqlRange());
+    }
+
     /**
      * Benchmarked action that performs updates (single row or batch).
      *
      * {@inheritDoc}
      */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        final ThreadLocalRandom rnd = ThreadLocalRandom.current();
+        long startId = idGen.nextRangeStartId();
+        long endId = idGen.endRangeId(startId);
 
-        long expRsSize;
+        long expRsSize = idGen.rangeWidth();
 
         SqlFieldsQuery qry;
 
-        if (args.sqlRange() == 1) {
+        if (idGen.rangeWidth() == 1) {
             qry = new SqlFieldsQuery("UPDATE test_long SET val = (val + 1) WHERE id = ?");
 
-            qry.setArgs(rnd.nextLong(args.range()) + 1);
-
-            expRsSize = 1;
+            // startId == endId
+            qry.setArgs(startId);
         }
         else {
             qry = new SqlFieldsQuery("UPDATE test_long SET val = (val + 1) WHERE id BETWEEN ? AND ?");
 
-            long blocksCnt = args.range() / args.sqlRange();
-            long id = rnd.nextLong(blocksCnt) * args.sqlRange() + 1;
-
-            long maxId = id + args.sqlRange() - 1;
-
-            qry.setArgs(id, maxId);
-
-            expRsSize = args.sqlRange();
+            qry.setArgs(startId, endId);
         }
 
         try (FieldsQueryCursor<List<?>> cursor = ((IgniteEx)ignite()).context().query()

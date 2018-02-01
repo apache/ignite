@@ -19,7 +19,7 @@ package org.apache.ignite.yardstick.jdbc;
 
 import java.sql.PreparedStatement;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
+import org.yardstickframework.BenchmarkConfiguration;
 
 /**
  * JDBC benchmark that performs update operations.
@@ -33,44 +33,47 @@ public class JdbcSqlUpdateBenchmark extends AbstractJdbcBenchmark {
     private final ThreadLocal<PreparedStatement> rangeUpdate = newStatement(
         "UPDATE test_long SET val = (val + 1) WHERE id BETWEEN ? AND ?");
 
+    /**Generates disjoint (among threads) id ranges */
+    private DisjointRangeGenerator idGen;
+
+    /** Setup method */
+    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
+        super.setUp(cfg);
+        idGen = new DisjointRangeGenerator(cfg.threads(), args.range(), args.sqlRange());
+    }
+
     /**
      * Benchmarked action that performs updates.
      *
      * {@inheritDoc}
      */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        long expResSize = idGen.rangeWidth();
+
+        long startId = idGen.nextRangeStartId();
+        long endId = idGen.endRangeId(startId);
 
         PreparedStatement update;
 
-        int expectedResSize;
-
-        if (args.sqlRange() == 1){
-            long updateKey = rnd.nextLong(args.range()) + 1;
-
+        if (idGen.rangeWidth() == 1){
             update = singleUpdate.get();
-            update.setLong(1, updateKey);
 
-            expectedResSize = 1;
+            // startId == endId
+            update.setLong(1, startId);
         }
         else {
-            long blocksCnt = args.range() / args.sqlRange();
-            long id = rnd.nextLong(blocksCnt) * args.sqlRange() + 1;
-
-            long maxId = id + args.sqlRange() - 1;
-
             update = rangeUpdate.get();
-            update.setLong(1, id);
-            update.setLong(2, maxId);
 
-            expectedResSize = args.sqlRange();
+            update.setLong(1, startId);
+            update.setLong(2, endId);
         }
 
         int actualResSize = update.executeUpdate();
 
-        if (actualResSize != expectedResSize) {
+        if (actualResSize != expResSize) {
             throw new Exception("Invalid result set size [actual=" + actualResSize
-                + ", expected=" + expectedResSize + ']');
+                + ", expected=" + expResSize + ']');
         }
 
         return true;
