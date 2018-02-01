@@ -46,12 +46,12 @@ public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
 
     /** {@inheritDoc} */
     @Override public void accept(String input, boolean isEof) throws IgniteCheckedException {
-        String[] output = fieldDelimiter.split(input);
+        String[] fields = fieldDelimiter.split(input);
 
-        for (int i = 0; i < output.length; i++)
-            output[i] = trim(output[i]);
+        for (int i = 0; i < fields.length; i++)
+            fields[i] = trim(fields[i]);
 
-        nextBlock.accept(output, isEof);
+        nextBlock.accept(fields, isEof);
     }
 
     /**

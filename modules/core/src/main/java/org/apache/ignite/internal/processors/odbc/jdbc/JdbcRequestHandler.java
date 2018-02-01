@@ -255,7 +255,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     throw new IllegalArgumentException();
             }
         }
-        catch (RuntimeException | IgniteCheckedException e) {
+        catch (Exception e) {
             LT.error(null, e, "Error processing file batch");
             return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Server error: " + e);
         }
