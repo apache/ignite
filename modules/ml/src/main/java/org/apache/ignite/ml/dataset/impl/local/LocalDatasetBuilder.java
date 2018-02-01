@@ -60,13 +60,14 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         List<C> ctxList = new ArrayList<>();
         List<D> dataList = new ArrayList<>();
 
-        int partSize = upstreamMap.size() / partitions;
+        int partSize = Math.max(1, upstreamMap.size() / partitions);
 
         Iterator<K> firstKeysIter = upstreamMap.keySet().iterator();
         Iterator<K> secondKeysIter = upstreamMap.keySet().iterator();
 
+        int ptr = 0;
         for (int part = 0; part < partitions; part++) {
-            int cnt = Math.min((part + 1) * partSize, upstreamMap.size()) - part * partSize;
+            int cnt = Math.max(partSize, upstreamMap.size() - ptr);
 
             C ctx = partCtxBuilder.build(
                 new IteratorWindow<>(firstKeysIter, k -> new UpstreamEntry<>(k, upstreamMap.get(k)), cnt),
@@ -81,6 +82,8 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
 
             ctxList.add(ctx);
             dataList.add(data);
+
+            ptr += cnt;
         }
 
         return new LocalDataset<>(ctxList, dataList);
