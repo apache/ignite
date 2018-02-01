@@ -87,7 +87,6 @@ object IgniteDataFrameWriteExample extends App {
         personsDataFrame.write
             .format(FORMAT_IGNITE)
             .option(OPTION_CONFIG_FILE, CONFIG)
-            .option(OPTION_CACHE_FOR_DDL, CACHE_NAME)
             .option(OPTION_TABLE, "json_person")
             .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id")
             .option(OPTION_CREATE_TABLE_PARAMETERS, "template=replicated")
@@ -131,7 +130,6 @@ object IgniteDataFrameWriteExample extends App {
             .withColumn("name", reverse(col("name"))) //Edit name column
             .write.format(FORMAT_IGNITE)
             .option(OPTION_CONFIG_FILE, CONFIG)
-            .option(OPTION_CACHE_FOR_DDL, CACHE_NAME)
             .option(OPTION_TABLE, "new_persons")
             .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id, city_id")
             .option(OPTION_CREATE_TABLE_PARAMETERS, "backups=1")
