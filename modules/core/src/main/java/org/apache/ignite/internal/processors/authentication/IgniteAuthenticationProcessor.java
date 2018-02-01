@@ -352,8 +352,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             }
             else
                 users = null;
-
-            log.info("+++ ready");
         }
     }
 
@@ -378,7 +376,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
         if (!dataBag.commonDataCollectedFor(AUTH_PROC.ordinal())) {
             synchronized (mux) {
-                log.info("+++ collect");
                 InitialUsersData d = new InitialUsersData(users.values(), activeOperations, usersInfoVersion);
 
                 if (log.isDebugEnabled())
@@ -481,8 +478,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      */
     private void processOperationLocal(UserManagementOperation op) throws IgniteCheckedException {
         assert op != null && op.user() != null : "Invalid operation: " + op;
-
-//        log.info("+++ DO " + op);
 
         switch (op.type()) {
             case ADD:
@@ -748,8 +743,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 exec.execute(new RefreshUsersStorageWorker(initUsrs.usrs));
 
                 for (UserManagementOperation op : initUsrs.activeOps) {
-//                    log.info("+++ INIT " + op);
-
                     UserOperationFinishFuture fut = new UserOperationFinishFuture(op);
 
                     opFinishFuts.put(op.id(), fut);
@@ -775,9 +768,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 return;
 
             synchronized (mux) {
-//                log.info("+++ PROP " + msg.operation());
-
-
                 if (log.isDebugEnabled())
                     log.debug(msg.toString());
 
@@ -804,8 +794,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, UserAcceptedMessage msg) {
             if (log.isDebugEnabled())
                 log.debug(msg.toString());
-
-//            log.info("+++ ACK " + msg.operationId());
 
             UserOperationFinishFuture f = opFinishFuts.get(msg.operationId());
 
@@ -967,8 +955,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 msg0 = new UserManagementOperationFinishedMessage(op.id(), null);
             }
             catch (Throwable e) {
-                log.warning("+++ FAIL " + op, e);
-
                 msg0 = new UserManagementOperationFinishedMessage(op.id(), e.toString());
             }
             finally {
@@ -986,8 +972,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
             try {
                 fut.get();
-
-//                log.info("+++ DONE " + op);
             }
             catch (IgniteCheckedException e) {
                 if (!e.hasCause(IgniteFutureCancelledException.class))
