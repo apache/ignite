@@ -428,24 +428,26 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
         void init(Collection<InetSocketAddress> addrs) {
             SingleAddressConnectFuture[] futs = new SingleAddressConnectFuture[addrs.size()];
 
-            int idx = 0;
-
-            for (InetSocketAddress addr : addrs) {
+            for (int i = 0; i < addrs.size(); i++) {
                 SingleAddressConnectFuture fut = new SingleAddressConnectFuture(nodeIdx) {
                     @Override void onStatusReceived(boolean res) {
                         receivedAddressStatus(res);
                     }
                 };
 
-                fut.init(addr);
+                futs[i] = fut;
+            }
 
-                futs[idx++] = fut;
+            this.futs = futs;
+
+            int idx = 0;
+
+            for (InetSocketAddress addr : addrs) {
+                futs[idx++].init(addr);
 
                 if (resCnt == Integer.MAX_VALUE)
                     return;
             }
-
-            this.futs = futs;
 
             // Close race.
             if (done())
