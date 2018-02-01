@@ -34,4 +34,11 @@ public interface BulkLoadCacheWriter extends AutoCloseable {
      * Closes the cache writer.
      */
     void close();
+
+    /**
+     * Returns number of entry updates made by the writer.
+     *
+     * @return The number of cache entry updates.
+     */
+    long updateCnt();
 }

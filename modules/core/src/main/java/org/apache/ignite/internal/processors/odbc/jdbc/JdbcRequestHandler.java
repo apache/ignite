@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.sql.BatchUpdateException;
 import java.sql.ParameterMetaData;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -42,8 +41,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadCacheWriter;
-import org.apache.ignite.internal.processors.bulkload.BulkLoadContext;
-import org.apache.ignite.internal.processors.bulkload.BulkLoadEntryConverter;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
@@ -106,7 +104,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private final ConcurrentHashMap<Long, JdbcQueryCursor> qryCursors = new ConcurrentHashMap<>();
 
     /** Current queries cursors. */
-    private final ConcurrentHashMap<Long, JdbcBulkLoadContext> bulkLoadRequests = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, BulkLoadProcessor> bulkLoadRequests = new ConcurrentHashMap<>();
 
     /** Distributed joins flag. */
     private final boolean distributedJoins;
@@ -231,40 +229,27 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Response to the client.
      */
     private ClientListenerResponse processBulkLoadFileBatch(JdbcBulkLoadBatchRequest req) {
-        JdbcBulkLoadContext ctx = bulkLoadRequests.get(req.queryId());
+        BulkLoadProcessor processor = bulkLoadRequests.get(req.queryId());
 
         if (ctx == null)
             return new JdbcResponse(IgniteQueryErrorCode.UNEXPECTED_OPERATION, "Unknown query ID: " + req.queryId()
                     + ". Bulk load session may have been reclaimed due to timeout.");
 
         try {
-            Iterable<List<Object>> inputRecords = ctx.loadContext().inputParser().processBatch(ctx, req);
-            BulkLoadEntryConverter converter = ctx.loadContext().dataConverter();
-
-            BulkLoadCacheWriter streamer = ctx.loadContext().outputStreamer();
-
-            int recCnt = 0;
-            for (List<Object> record : inputRecords) {
-                IgniteBiTuple<?, ?> kv = converter.convertRecord(record);
-
-                streamer.accept(kv);
-
-                recCnt++;
-            }
-
-            ctx.incrementUpdateCountBy(recCnt);
+            processor.processBatch(req);
 
             switch (req.cmd()) {
                 case CMD_FINISHED_ERROR:
                 case CMD_FINISHED_EOF:
                     bulkLoadRequests.remove(req.queryId());
 
-                    ctx.close();
+                    processor.close();
 
-                    return new JdbcResponse(new JdbcQueryExecuteResult(req.queryId(), ctx.updateCnt()));
+                    // fall through
 
                 case CMD_CONTINUE:
-                    return new JdbcResponse(new JdbcQueryExecuteResult(req.queryId(), recCnt));
+                    return new JdbcResponse(new JdbcQueryExecuteResult(req.queryId(),
+                        processor.outputStreamer().updateCnt()));
 
                 default:
                     throw new IllegalArgumentException();
@@ -307,8 +292,12 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 for (JdbcQueryCursor cursor : qryCursors.values())
                     cursor.close();
 
-                for (JdbcBulkLoadContext ctx : bulkLoadRequests.values())
-                    ctx.close();
+                ConcurrentHashMap<Long, BulkLoadProcessor> requests = bulkLoadRequests;
+
+                bulkLoadRequests.clear();
+
+                for (BulkLoadProcessor processor : requests.values())
+                    processor.close();
             }
             finally {
                 busyLock.leaveBusy();
@@ -382,48 +371,42 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFields(qry, true,
                 protocolVer.compareTo(VER_2_3_0) < 0);
 
-            FieldsQueryCursor<List<?>> fieldsCur = (FieldsQueryCursor<List<?>>) results.get(0);
+            FieldsQueryCursor<List<?>> fieldsCur = results.get(0);
+
+            if (fieldsCur instanceof BulkLoadContextCursor) {
+
+                BulkLoadProcessor processor = ((BulkLoadContextCursor)fieldsCur).bulkLoadProcessor();
+
+                bulkLoadRequests.put(qryId, processor);
+
+                return new JdbcResponse(new JdbcBulkLoadBatchRequestResult(qryId, processor.params()));
+            }
 
             if (results.size() == 1) {
+                JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(),
+                    (QueryCursorImpl)fieldsCur);
 
-                if (fieldsCur instanceof BulkLoadContextCursor) {
+                JdbcQueryExecuteResult res;
 
-                    BulkLoadContext bctx = ((BulkLoadContextCursor)fieldsCur).bulkLoadContext();
-
-                    JdbcBulkLoadBatchRequestResult filesToSendResult = new JdbcBulkLoadBatchRequestResult(qryId, bctx.params());
-
-                    JdbcBulkLoadContext jdbcBulkCtx = new JdbcBulkLoadContext(filesToSendResult, bctx);
-
-                    bulkLoadRequests.put(qryId, jdbcBulkCtx);
-
-                    return new JdbcResponse(filesToSendResult);
-                }
+                if (cur.isQuery())
+                    res = new JdbcQueryExecuteResult(qryId, cur.fetchRows(), !cur.hasNext());
                 else {
-                    JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(),
-                        (QueryCursorImpl)fieldsCur);
+                    List<List<Object>> items = cur.fetchRows();
 
-                    JdbcQueryExecuteResult res;
+                    assert items != null && items.size() == 1 && items.get(0).size() == 1
+                        && items.get(0).get(0) instanceof Long :
+                        "Invalid result set for not-SELECT query. [qry=" + sql +
+                            ", res=" + S.toString(List.class, items) + ']';
 
-                    if (cur.isQuery())
-                        res = new JdbcQueryExecuteResult(qryId, cur.fetchRows(), !cur.hasNext());
-                    else {
-                        List<List<Object>> items = cur.fetchRows();
-
-                        assert items != null && items.size() == 1 && items.get(0).size() == 1
-                            && items.get(0).get(0) instanceof Long :
-                            "Invalid result set for not-SELECT query. [qry=" + sql +
-                                ", res=" + S.toString(List.class, items) + ']';
-
-                        res = new JdbcQueryExecuteResult(qryId, (Long)items.get(0).get(0));
-                    }
-
-                    if (res.last() && (!res.isQuery() || autoCloseCursors))
-                        cur.close();
-                    else
-                        qryCursors.put(qryId, cur);
-
-                    return new JdbcResponse(res);
+                    res = new JdbcQueryExecuteResult(qryId, (Long)items.get(0).get(0));
                 }
+
+                if (res.last() && (!res.isQuery() || autoCloseCursors))
+                    cur.close();
+                else
+                    qryCursors.put(qryId, cur);
+
+                return new JdbcResponse(res);
             }
             else {
                 List<JdbcResultInfo> jdbcResults = new ArrayList<>(results.size());
@@ -438,8 +421,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     if (qryCur.isQuery()) {
                         jdbcRes = new JdbcResultInfo(true, -1, qryId);
 
-                        JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(),
-                            (QueryCursorImpl)qryCur);
+                        JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(), qryCur);
 
                         qryCursors.put(qryId, cur);
 

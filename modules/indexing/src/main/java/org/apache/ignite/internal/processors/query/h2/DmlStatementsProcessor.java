@@ -44,10 +44,10 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadCacheWriter;
-import org.apache.ignite.internal.processors.bulkload.BulkLoadContext;
-import org.apache.ignite.internal.processors.bulkload.BulkLoadEntryConverter;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadParameters;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadParser;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadStreamerWriter;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
+import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
@@ -990,9 +991,9 @@ public class DmlStatementsProcessor {
             if (cmd instanceof SqlBulkLoadCommand) {
                 SqlBulkLoadCommand blCmd = ((SqlBulkLoadCommand)cmd);
 
-                BulkLoadContext ctx = bulkLoad(blCmd);
+                BulkLoadProcessor processor = processBulkLoadCommand(blCmd);
 
-                return new BulkLoadContextCursor(ctx);
+                return new BulkLoadContextCursor(processor);
             }
             else
                 throw new IgniteSQLException("Unsupported DML operation: " + sql,
@@ -1014,7 +1015,7 @@ public class DmlStatementsProcessor {
      * @return The context (which is the result of the first request/response).
      * @throws IgniteCheckedException If something failed.
      */
-    public BulkLoadContext bulkLoad(SqlBulkLoadCommand cmd) throws IgniteCheckedException {
+    public BulkLoadProcessor processBulkLoadCommand(SqlBulkLoadCommand cmd) throws IgniteCheckedException {
 
         if (cmd.batchSize() == null)
             cmd.batchSize(BulkLoadParameters.DEFAULT_BATCH_SIZE);
@@ -1026,40 +1027,35 @@ public class DmlStatementsProcessor {
                 IgniteQueryErrorCode.TABLE_NOT_FOUND);
 
         final UpdatePlan plan = UpdatePlanBuilder.planForBulkLoad(cmd, tbl);
-        final int colCount = plan.columnNames().length;
+        final int colCnt = plan.columnNames().length;
 
-        BulkLoadEntryConverter dataConverter = new BulkLoadEntryConverter() {
-            @Override public IgniteBiTuple<?, ?> convertRecord(List<?> record) throws IgniteCheckedException {
-                if (record.size() < colCount) { // IGNITE-7548
-                    ArrayList<Object> newRec = new ArrayList<>(record);
-                    for (int i = record.size(); i < colCount; i++)
-                        newRec.add("");
-                    record = newRec;
+        IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter =
+            new IgniteClosureX<List<?>, IgniteBiTuple<?, ?>>() {
+                @Override public IgniteBiTuple<?, ?> applyx(List<?> record) throws IgniteCheckedException {
+                    if (record.size() < colCnt) { // IGNITE-7548
+                        ArrayList<Object> newRec = new ArrayList<>(record);
+
+                        for (int i = record.size(); i < colCnt; i++)
+                            newRec.add("");
+
+                        record = newRec;
+                    }
+
+                    return plan.processRow(record);
                 }
-
-                return plan.processRow(record);
-            }
-        };
+            };
 
         GridCacheContext cache = tbl.cache();
 
         final IgniteDataStreamer<Object, Object> streamer = cache.grid().dataStreamer(cache.name());
 
-        BulkLoadCacheWriter outputWriter = new BulkLoadCacheWriter() {
-            @Override public void accept(IgniteBiTuple<?, ?> entry) {
-                streamer.addData(entry.getKey(), entry.getValue());
-            }
-
-            @Override public void close() {
-                streamer.close();
-            }
-        };
+        BulkLoadCacheWriter outputWriter = new BulkLoadStreamerWriter(streamer);
 
         BulkLoadParameters params = new BulkLoadParameters(cmd.localFileName(), cmd.batchSize());
 
         BulkLoadParser inputParser = BulkLoadParser.createParser(cmd.inputFormat());
 
-        return new BulkLoadContext(params, inputParser, dataConverter, outputWriter);
+        return new BulkLoadProcessor(params, inputParser, dataConverter, outputWriter);
     }
 
     /** */

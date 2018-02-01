@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cache.query;
 
-import org.apache.ignite.internal.processors.bulkload.BulkLoadContext;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -30,15 +30,15 @@ import java.util.List;
  * */
 public class BulkLoadContextCursor implements FieldsQueryCursor<List<?>> {
     /** Bulk load context from SQL command. */
-    private final BulkLoadContext bulkLoadContext;
+    private final BulkLoadProcessor bulkLoadProcessor;
 
     /**
      * Creates a cursor.
      *
-     * @param bulkLoadContext Bulk load context object to store.
+     * @param bulkLoadProcessor Bulk load context object to store.
      */
-    public BulkLoadContextCursor(BulkLoadContext bulkLoadContext) {
-        this.bulkLoadContext = bulkLoadContext;
+    public BulkLoadContextCursor(BulkLoadProcessor bulkLoadProcessor) {
+        this.bulkLoadProcessor = bulkLoadProcessor;
     }
 
     /**
@@ -46,13 +46,13 @@ public class BulkLoadContextCursor implements FieldsQueryCursor<List<?>> {
      *
      * @return a bulk load context.
      */
-    public BulkLoadContext bulkLoadContext() {
-        return bulkLoadContext;
+    public BulkLoadProcessor bulkLoadProcessor() {
+        return bulkLoadProcessor;
     }
 
     /** {@inheritDoc} */
     @Override public List<List<?>> getAll() {
-        return Collections.singletonList(Collections.singletonList(bulkLoadContext));
+        return Collections.singletonList(Collections.singletonList(bulkLoadProcessor));
     }
 
     /** {@inheritDoc} */
@@ -70,7 +70,7 @@ public class BulkLoadContextCursor implements FieldsQueryCursor<List<?>> {
         if (idx != 0)
             throw new IndexOutOfBoundsException();
 
-        return "bulkLoadContext"; // dummy stub
+        return "bulkLoadProcessor"; // dummy stub
     }
 
     /** {@inheritDoc} */

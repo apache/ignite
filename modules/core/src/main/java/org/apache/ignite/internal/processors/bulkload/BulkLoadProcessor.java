@@ -17,14 +17,19 @@
 
 package org.apache.ignite.internal.processors.bulkload;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest;
+import org.apache.ignite.internal.util.lang.IgniteClosureX;
+import org.apache.ignite.lang.IgniteBiTuple;
+
+import java.util.List;
 
 /**
- * Bulk load (COPY) command context used on server to store information before receiving portions of input from
- * the client side.
+ * Bulk load (COPY) command processor used on server to keep various context data and process portions of input
+ * received from the client side.
  */
-public class BulkLoadContext {
-
+public class BulkLoadProcessor {
     /** Parameters extracted from the SQL COPY command. */
     private final BulkLoadParameters params;
 
@@ -33,22 +38,22 @@ public class BulkLoadContext {
 
     /** Converter, which transforms the list of strings parsed from the input stream to the key+value entry to add to
      * the cache. */
-    private final BulkLoadEntryConverter dataConverter;
+    private final IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter;
 
     /** Streamer that puts actual key/value into the cache. */
     private final BulkLoadCacheWriter outputStreamer;
 
     /**
-     * Creates bulk load context.
+     * Creates bulk load processor.
      *
      * @param params Parameters extracted from the SQL COPY command.
      * @param inputParser Parser of the input bytes.
-     * @param dataConverter Converter, which transforms the list of strings parsed from the input stream to the key+value entry to add to
-     * the cache.
+     * @param dataConverter Converter, which transforms the list of strings parsed from the input stream to the
+     *     key+value entry to add to the cache.
      * @param outputStreamer Streamer that puts actual key/value into the cache.
      */
-    public BulkLoadContext(BulkLoadParameters params, BulkLoadParser inputParser, BulkLoadEntryConverter dataConverter,
-        BulkLoadCacheWriter outputStreamer) {
+    public BulkLoadProcessor(BulkLoadParameters params, BulkLoadParser inputParser,
+        IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter, BulkLoadCacheWriter outputStreamer) {
 
         this.params = params;
         this.inputParser = inputParser;
@@ -66,26 +71,6 @@ public class BulkLoadContext {
     }
 
     /**
-     * Returns the parser of the input bytes.
-     *
-     * @return Parser of the input bytes.
-     */
-    public BulkLoadParser inputParser() {
-        return inputParser;
-    }
-
-    /**
-     * Returns the converter, which transforms the list of strings parsed from the input stream to the key+value
-     * entry to add to the cache.
-     *
-     * @return Converter, which transforms the list of strings parsed from the input stream to the key+value entry
-     * to add to the cache.
-     */
-    public BulkLoadEntryConverter dataConverter() {
-        return dataConverter;
-    }
-
-    /**
      * Returns the streamer that puts actual key/value into the cache.
      *
      * @return Streamer that puts actual key/value into the cache.
@@ -95,9 +80,24 @@ public class BulkLoadContext {
     }
 
     /**
-     * Closes the underlyinng objects ({@link IgniteDataStreamer}).
-     * */
+     * Closes the underlying objects ({@link IgniteDataStreamer}).
+     */
     public void close() {
         outputStreamer.close();
+    }
+
+    /**
+     * Processes the incoming batch and calls data converter and output streamer.
+     *
+     * @param req The incoming request.
+     */
+    public void processBatch(JdbcBulkLoadBatchRequest req) throws IgniteCheckedException {
+        Iterable<List<Object>> inputRecords = inputParser.processBatch(req);
+
+        for (List<Object> record : inputRecords) {
+            IgniteBiTuple<?, ?> kv = dataConverter.apply(record);
+
+            outputStreamer.accept(kv);
+        }
     }
 }
