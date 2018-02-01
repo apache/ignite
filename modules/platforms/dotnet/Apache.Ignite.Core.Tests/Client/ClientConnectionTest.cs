@@ -391,6 +391,11 @@ namespace Apache.Ignite.Core.Tests.Client
             var client = Ignition.StartClient(new IgniteClientConfiguration("127.0.0.1"));
             Assert.AreEqual(0, client.GetCacheNames().Count);
 
+            var ep = client.CurrentEndPoint as IPEndPoint;
+            Assert.IsNotNull(ep);
+            Assert.AreEqual(IgniteClientConfiguration.DefaultPort, ep.Port);
+            Assert.AreEqual("127.0.0.1", ep.Address.ToString());
+
             // Stop server.
             Ignition.StopAll(true);
 
