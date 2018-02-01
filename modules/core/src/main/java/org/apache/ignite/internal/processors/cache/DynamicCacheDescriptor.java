@@ -288,7 +288,7 @@ public class DynamicCacheDescriptor {
     }
 
     /**
-     * @return Start topology version.
+     * @return Start topology version or {@code null} if cache configured statically.
      */
     @Nullable public AffinityTopologyVersion startTopologyVersion() {
         return startTopVer;
