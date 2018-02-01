@@ -23,6 +23,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,12 +34,11 @@ import java.util.regex.Pattern;
  * <p>The next block {@link PipelineBlock#accept(Object, boolean)} is called per-line.
  */
 public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
-
     /** Field delimiter pattern. */
-    private final Pattern fieldDelimiter;
+    @NotNull private final Pattern fldSeparator;
 
     /* Quote characters. */
-    private final String quoteChars;
+    @NotNull private final String quoteChars;
 
     /** Line comment start characters. */
     @Nullable private final Pattern commentStartRe;
@@ -48,36 +49,76 @@ public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
     /**
      * Creates a CSV line parser.
      *
-     * @param fieldDelimiter The pattern for the field delimiter.
+     * @param fldSeparator The pattern for the field delimiter.
      * @param quoteChars Quoting character.
      * @param commentStartRe Line comment start characters.
      * @param escapeChars Escape sequence start characters.
      */
-    public CsvLineProcessorBlock(@NotNull Pattern fieldDelimiter, @NotNull String quoteChars,
+    public CsvLineProcessorBlock(@NotNull Pattern fldSeparator, @NotNull String quoteChars,
         @Nullable Pattern commentStartRe, @Nullable String escapeChars) {
-
-        super();
-
+        this.fldSeparator = fldSeparator;
+        this.quoteChars = quoteChars;
         this.commentStartRe = commentStartRe;
         this.escapeChars = escapeChars;
-        this.fieldDelimiter = fieldDelimiter;
-        this.quoteChars = quoteChars;
     }
 
     /** {@inheritDoc} */
     @Override public void accept(String input, boolean isEof) throws IgniteCheckedException {
-
         input = stripComment(input);
 
         if (F.isEmpty(input))
             return;
 
-        String[] output = fieldDelimiter.split(input);
+        List<String> flds = new LinkedList<>();
 
-        for (int i = 0; i < output.length; i++)
-            output[i] = replaceEscSeq(trim(output[i]));
+        Matcher fieldSepMatcher = fldSeparator.matcher(input);
 
-        nextBlock.accept(output, isEof);
+        int pos = 0;
+        while (pos < input.length()) {
+            char quoteChr = input.charAt(pos);
+
+            String fld;
+
+            if (quoteChars.indexOf(quoteChr) != -1) {
+                pos++;
+
+                int fieldStartPos = pos;
+
+                while (pos < input.length()) {
+                    char curChr = input.charAt(pos);
+
+                    // FIXME SHQ: process escapes
+
+                    if (curChr == quoteChr)
+                        break;
+                }
+
+                fld = input.substring(fieldStartPos, pos);
+
+                // FIXME SHQ: process field separator
+            }
+            else {
+                int fldSepPos;
+                int nextPos;
+                if (fieldSepMatcher.find(pos)) {
+                    fldSepPos = fieldSepMatcher.start();
+                    nextPos = fieldSepMatcher.end();
+                }
+                else
+                    fldSepPos = nextPos = input.length();
+
+                fld = input.substring(pos, fldSepPos);
+                pos = nextPos;
+            }
+
+            fld = replaceEscSeq(trim(fld));
+
+            flds.add(fld);
+        }
+
+        assert nextBlock != null;
+
+        nextBlock.accept(flds.toArray(new String[flds.size()]), isEof);
     }
 
     /**

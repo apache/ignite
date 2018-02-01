@@ -31,18 +31,6 @@ import java.util.List;
  * Parser processes a batch of input data and return a list of records.
  */
 public abstract class BulkLoadParser {
-
-    /** Format options. */
-    private final BulkLoadFormat formatOpts;
-
-    /** Creates a parser with given options.
-     *
-     * @param formatOpts The format options.
-     */
-    protected BulkLoadParser(BulkLoadFormat formatOpts) {
-        this.formatOpts = formatOpts;
-    }
-
     /**
      * Processes a batch of input data. Context and request are supplied as parameters.
      * Returns a list of records parsed (in most cases this is a list of strings).
@@ -67,7 +55,7 @@ public abstract class BulkLoadParser {
      */
     public static BulkLoadParser createParser(BulkLoadFormat format) {
         if (format instanceof BulkLoadCsvFormat)
-            return new BulkLoadCsvParser(format);
+            return new BulkLoadCsvParser((BulkLoadCsvFormat)format);
 
         throw new IllegalArgumentException("Internal error: format is not defined");
     }

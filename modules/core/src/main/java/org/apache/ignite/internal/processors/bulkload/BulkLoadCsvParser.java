@@ -54,34 +54,31 @@ public class BulkLoadCsvParser extends BulkLoadParser {
 
      *  @param format Format options (parsed from COPY command on the server side).
      */
-    public BulkLoadCsvParser(BulkLoadFormat format) {
-        super(format);
-
-        BulkLoadCsvFormat csvFormat = (BulkLoadCsvFormat)format;
-
+    public BulkLoadCsvParser(BulkLoadCsvFormat fmt) {
         nextBatchIdx = 0;
 
         inputBlock = new CharsetDecoderBlock(DEFAULT_INPUT_CHARSET);
 
         collectorBlock = new StrListAppenderBlock();
 
-        Pattern lineSepRe = csvFormat.lineSeparatorRe() == null ?
-            BulkLoadCsvFormat.DEFAULT_LINE_SEP_RE : csvFormat.lineSeparatorRe();
+        if (fmt.lineSeparatorRe() == null)
+            fmt.lineSeparatorRe(BulkLoadCsvFormat.DEFAULT_LINE_SEP_RE);
 
-        Pattern fieldSepRe = csvFormat.fieldSeparatorRe() == null ?
-            BulkLoadCsvFormat.DEFAULT_FIELD_SEP_RE : csvFormat.lineSeparatorRe();
+        if (fmt.fieldSeparatorRe() == null)
+            fmt.fieldSeparatorRe(BulkLoadCsvFormat.DEFAULT_FIELD_SEP_RE);
 
-        Pattern commentChars = csvFormat.commentChars() == null ?
-            BulkLoadCsvFormat.DEFAULT_COMMENT_CHARS : csvFormat.commentChars();
+        if (fmt.commentChars() == null)
+            fmt.commentChars(BulkLoadCsvFormat.DEFAULT_COMMENT_CHARS);
 
-        String quoteChars = csvFormat.quoteChars() == null ?
-            BulkLoadCsvFormat.DEFAULT_QUOTE_CHARS : csvFormat.quoteChars();
+        if (fmt.quoteChars() == null)
+            fmt.quoteChars(BulkLoadCsvFormat.DEFAULT_QUOTE_CHARS);
 
-        String escapeChars = csvFormat.escapeChars() == null ?
-            BulkLoadCsvFormat.DEFAULT_ESCAPE_CHARS : csvFormat.escapeChars();
+        if (fmt.escapeChars() == null)
+            fmt.escapeChars(BulkLoadCsvFormat.DEFAULT_ESCAPE_CHARS);
 
-        inputBlock.append(new LineSplitterBlock(lineSepRe))
-                  .append(new CsvLineProcessorBlock(fieldSepRe, quoteChars, commentChars, escapeChars))
+        inputBlock.append(new LineSplitterBlock(fmt.lineSeparatorRe()))
+                  .append(new CsvLineProcessorBlock(fmt.fieldSeparatorRe(), fmt.quoteChars(),
+                      fmt.commentChars(), fmt.escapeChars()))
                   .append(collectorBlock);
     }
 
