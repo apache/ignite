@@ -445,7 +445,7 @@ public class DmlStatementsProcessor {
             }, null);
 
             if (plan.rowCount() == 1) {
-                IgniteBiTuple t = plan.processRow(cur.iterator().next());
+                IgniteBiTuple t = plan.processRow(cur.iterator().next(), false);
 
                 streamer.addData(t.getKey(), t.getValue());
 
@@ -455,7 +455,7 @@ public class DmlStatementsProcessor {
             Map<Object, Object> rows = new LinkedHashMap<>(plan.rowCount());
 
             for (List<?> row : cur) {
-                final IgniteBiTuple t = plan.processRow(row);
+                final IgniteBiTuple t = plan.processRow(row, false);
 
                 rows.put(t.getKey(), t.getValue());
             }
@@ -756,7 +756,7 @@ public class DmlStatementsProcessor {
 
         // If we have just one item to put, just do so
         if (plan.rowCount() == 1) {
-            IgniteBiTuple t = plan.processRow(cursor.iterator().next());
+            IgniteBiTuple t = plan.processRow(cursor.iterator().next(), false);
 
             cctx.cache().put(t.getKey(), t.getValue());
 
@@ -770,7 +770,7 @@ public class DmlStatementsProcessor {
             for (Iterator<List<?>> it = cursor.iterator(); it.hasNext();) {
                 List<?> row = it.next();
 
-                IgniteBiTuple t = plan.processRow(row);
+                IgniteBiTuple t = plan.processRow(row, false);
 
                 rows.put(t.getKey(), t.getValue());
 
@@ -801,7 +801,7 @@ public class DmlStatementsProcessor {
 
         // If we have just one item to put, just do so
         if (plan.rowCount() == 1) {
-            IgniteBiTuple t = plan.processRow(cursor.iterator().next());
+            IgniteBiTuple t = plan.processRow(cursor.iterator().next(), false);
 
             if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
                 return 1;
@@ -814,7 +814,7 @@ public class DmlStatementsProcessor {
             DmlBatchSender sender = new DmlBatchSender(cctx, pageSize, 1);
 
             for (List<?> row : cursor) {
-                final IgniteBiTuple keyValPair = plan.processRow(row);
+                final IgniteBiTuple keyValPair = plan.processRow(row, false);
 
                 sender.add(keyValPair.getKey(), new InsertEntryProcessor(keyValPair.getValue()),  0);
             }
@@ -864,7 +864,7 @@ public class DmlStatementsProcessor {
         for (List<List<?>> qryRow : cursor) {
             for (List<?> row : qryRow) {
                 try {
-                    final IgniteBiTuple keyValPair = plan.processRow(row);
+                    final IgniteBiTuple keyValPair = plan.processRow(row, false);
 
                     snd.add(keyValPair.getKey(), new InsertEntryProcessor(keyValPair.getValue()), rowNum);
                 }
@@ -1029,7 +1029,7 @@ public class DmlStatementsProcessor {
         final UpdatePlan plan = UpdatePlanBuilder.planForBulkLoad(cmd, tbl);
         final int colCnt = plan.columnNames().length;
 
-        IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter = new BulkLoadDataConverter(colCnt, plan);
+        IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter = new BulkLoadDataConverter(plan);
 
         GridCacheContext cache = tbl.cache();
 
@@ -1158,15 +1158,33 @@ public class DmlStatementsProcessor {
         }
     }
 
+    /**
+     * Converts a row of values to actual key+value using {@link UpdatePlan#processRow(List, boolean)}.
+     */
     private static class BulkLoadDataConverter extends IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> {
-        private final int colCnt;
+        /** Update plan to convert incoming rows. */
         private final UpdatePlan plan;
 
-        public BulkLoadDataConverter(int colCnt, UpdatePlan plan) {
-            this.colCnt = colCnt;
+        /** Columns count in the update plan. */
+        private final int colCnt;
+
+        /**
+         * Creates the converter with the given update plan.
+         *
+         * @param plan The update plan to use.
+         */
+        public BulkLoadDataConverter(UpdatePlan plan) {
             this.plan = plan;
+            this.colCnt = plan.columnNames().length;
         }
 
+        /**
+         * Converts the record to a key+value.
+         *
+         * @param record The record to convert.
+         * @return The key+value.
+         * @throws IgniteCheckedException If conversion failed for some reason.
+         */
         @Override public IgniteBiTuple<?, ?> applyx(List<?> record) throws IgniteCheckedException {
             if (record.size() != colCnt) { // IGNITE-7548.
                 if (record.size() > colCnt) // Double check is an optimization for fast/slow path.
@@ -1181,7 +1199,7 @@ public class DmlStatementsProcessor {
                 }
             }
 
-            return plan.processRow(record);
+            return plan.processRow(record, true);
         }
     }
 }

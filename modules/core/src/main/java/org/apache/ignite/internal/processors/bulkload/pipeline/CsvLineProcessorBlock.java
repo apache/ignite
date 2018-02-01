@@ -22,10 +22,11 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.regex.Pattern;
 
-/** A {@link PipelineBlock}, which splits line according to CSV format rules and unquotes fields.
- * The next block {@link PipelineBlock#accept(Object, boolean)} is called per-line. */
+/**
+ * A {@link PipelineBlock}, which splits line according to CSV format rules and unquotes fields.
+ * The next block {@link PipelineBlock#accept(Object, boolean)} is called per-line.
+ */
 public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
-
     /** Field delimiter pattern. */
     private final Pattern fieldDelimiter;
 

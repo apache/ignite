@@ -26,7 +26,6 @@ import org.jetbrains.annotations.Nullable;
  * input to internal structures).
  */
 public abstract class PipelineBlock<I, O> {
-
     /** The next block in pipeline or null if this block is a terminator. */
     @Nullable protected PipelineBlock<O, ?> nextBlock;
 

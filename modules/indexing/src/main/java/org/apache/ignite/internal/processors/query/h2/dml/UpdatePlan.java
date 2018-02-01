@@ -179,10 +179,12 @@ public final class UpdatePlan {
      * Convert a row into key-value pair.
      *
      * @param row Row to process.
+     * @param allowDifferentColCnt Allow column count in actual row to differ from number of {@link #colNames}.
+     *      When set to true, defaults are used for the columns missing in the row.
      * @throws IgniteCheckedException if failed.
      */
-    public IgniteBiTuple<?, ?> processRow(List<?> row) throws IgniteCheckedException {
-        if (row.size() != colNames.length)
+    public IgniteBiTuple<?, ?> processRow(List<?> row, boolean allowDifferentColCnt) throws IgniteCheckedException {
+        if (!allowDifferentColCnt && row.size() != colNames.length)
             throw new IgniteSQLException("Not enough values in a row: " + row.size() + " instead of " + colNames.length,
                 IgniteQueryErrorCode.ENTRY_PROCESSING);
 
@@ -224,9 +226,11 @@ public final class UpdatePlan {
                     IgniteQueryErrorCode.NULL_VALUE);
         }
 
+        int actualColCnt = Math.min(colNames.length, row.size());
+
         Map<String, Object> newColVals = new HashMap<>();
 
-        for (int i = 0; i < colNames.length; i++) {
+        for (int i = 0; i < actualColCnt; i++) {
             if (i == keyColIdx || i == valColIdx)
                 continue;
 

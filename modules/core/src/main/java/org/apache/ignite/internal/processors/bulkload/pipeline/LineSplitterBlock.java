@@ -28,11 +28,10 @@ import java.util.regex.Pattern;
  * Leftover characters are remembered and used during processing the next input batch, unless EOF flag is specified.
  */
 public class LineSplitterBlock extends PipelineBlock<char[], String> {
-
     /** Line separator pattern */
     private final Pattern delimiter;
 
-    /** Leftover characters from the previous. */
+    /** Leftover characters from the previous invocation of {@link #accept(char[], boolean)}. */
     private StringBuilder leftover = new StringBuilder();
 
     /**

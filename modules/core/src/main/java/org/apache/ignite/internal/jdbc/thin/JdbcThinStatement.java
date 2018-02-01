@@ -48,8 +48,6 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResultInfo;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 
-
-
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.FETCH_FORWARD;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
@@ -226,7 +224,7 @@ public class JdbcThinStatement implements Statement {
                     JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF));
             }
         }
-        catch (SQLException | IOException e) {
+        catch (Exception e) {
             try {
                 conn.sendRequest(new JdbcBulkLoadBatchRequest(
                     cmdResult.queryId(),
@@ -237,10 +235,10 @@ public class JdbcThinStatement implements Statement {
                 throw new SQLException("Cannot send finalization request: " + e1.getMessage(), e);
             }
 
-            if (e instanceof IOException)
-                throw new SQLException("Failed to read file: '" + fileName + "'", SqlStateCode.INTERNAL_ERROR, e);
-            else
+            if (e instanceof SQLException)
                 throw (SQLException) e;
+            else
+                throw new SQLException("Failed to read file: '" + fileName + "'", SqlStateCode.INTERNAL_ERROR, e);
         }
     }
 

@@ -31,7 +31,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * @see SqlBulkLoadCommand
  */
 public class JdbcBulkLoadBatchRequestResult extends JdbcResult {
-
     /** Query ID for matching this command on server in further {@link JdbcBulkLoadBatchRequest} commands. */
     private long queryId;
 
@@ -40,9 +39,7 @@ public class JdbcBulkLoadBatchRequestResult extends JdbcResult {
      * what files to send, batch size, etc. */
     private BulkLoadParameters params;
 
-    /**
-     * Creates uninitialized bulk load batch request result.
-     */
+    /**Creates uninitialized bulk load batch request result. */
     public JdbcBulkLoadBatchRequestResult() {
         super(BULK_LOAD_BATCH_REQUEST);
 

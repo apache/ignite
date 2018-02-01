@@ -20,9 +20,10 @@ package org.apache.ignite.internal.processors.bulkload.pipeline;
 import java.util.Arrays;
 import java.util.List;
 
-/** The PipelineBlock which appends its input to a list set using {@link #output(List)} method. */
+/**
+ * The PipelineBlock which appends its input to a list set using {@link #output(List)} method.
+ */
 public class StrListAppenderBlock extends PipelineBlock<String[], Object> {
-
     /** The output list */
     private List<List<Object>> output;
 

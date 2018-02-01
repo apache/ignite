@@ -41,20 +41,20 @@ public class BulkLoadCsvParser extends BulkLoadParser {
 
      *  @param format Format options (parsed from COPY command on the server side).
      */
-    public BulkLoadCsvParser(BulkLoadFormat format) {
-        BulkLoadCsvFormat csvFormat = (BulkLoadCsvFormat)format;
-
+    public BulkLoadCsvParser(BulkLoadCsvFormat format) {
         inputBlock = new CharsetDecoderBlock(BulkLoadFormat.DEFAULT_INPUT_CHARSET);
 
         collectorBlock = new StrListAppenderBlock();
 
-        inputBlock.append(new LineSplitterBlock(BulkLoadCsvFormat.LINE_SEP_RE))
-               .append(new CsvLineProcessorBlock(BulkLoadCsvFormat.FIELD_SEP_RE, BulkLoadCsvFormat.QUOTE_CHARS))
+        // Handling of the other options is to be implemented in IGNITE-7537.
+        inputBlock.append(new LineSplitterBlock(format.lineSeparatorRe()))
+               .append(new CsvLineProcessorBlock(format.fieldSeparatorRe(), format.quoteChars()))
                .append(collectorBlock);
     }
 
     /**
-     * Parses a batch of records
+     * Parses a batch of records.
+     *
      * @param req The request with all parameters.
      * @param isLastBatch true, if it is a last batch.
      * @return Iterable over the parsed records.

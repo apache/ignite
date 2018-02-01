@@ -39,9 +39,7 @@ public abstract class BulkLoadParser {
     /** Next batch index (for a very simple check that all batches were delivered to us). */
     protected long nextBatchIdx;
 
-    /**
-     * Creates a bulk load parser.
-     */
+    /** Creates a bulk load parser. */
     public BulkLoadParser() {
         nextBatchIdx = 0;
     }
@@ -106,7 +104,7 @@ public abstract class BulkLoadParser {
      */
     public static BulkLoadParser createParser(BulkLoadFormat format) {
         if (format instanceof BulkLoadCsvFormat)
-            return new BulkLoadCsvParser(format);
+            return new BulkLoadCsvParser((BulkLoadCsvFormat)format);
 
         throw new IllegalArgumentException("Internal error: format is not defined");
     }
