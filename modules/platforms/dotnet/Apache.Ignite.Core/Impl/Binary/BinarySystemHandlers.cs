@@ -113,6 +113,9 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             // 14. Enum. Should be read as Array, see WriteEnumArray implementation.
             ReadHandlers[BinaryTypeId.ArrayEnum] = new BinarySystemReader(ReadArray);
+
+            // 15. Optimized marshaller objects.
+            ReadHandlers[BinaryTypeId.OptimizedMarshaller] = new BinarySystemReader(ReadOptimizedMarshallerObject);
         }
 
         /// <summary>
@@ -227,6 +230,11 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 // Object array.
                 return new BinarySystemWriteHandler<object>(WriteArray, true);
+            }
+
+            if (type == typeof(OptimizedMarshallerObject))
+            {
+                return new BinarySystemWriteHandler<OptimizedMarshallerObject>((w, o) => o.Write(w.Stream), false);
             }
 
             return null;
@@ -531,6 +539,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         private static void WriteIgnite(BinaryWriter ctx, object obj)
         {
             ctx.Stream.WriteByte(BinaryUtils.HdrNull);
+        }
+
+        /// <summary>
+        /// Reads the optimized marshaller object.
+        /// </summary>
+        private static object ReadOptimizedMarshallerObject(BinaryReader ctx, Type type)
+        {
+            return new OptimizedMarshallerObject(ctx.Stream);
         }
 
         /**

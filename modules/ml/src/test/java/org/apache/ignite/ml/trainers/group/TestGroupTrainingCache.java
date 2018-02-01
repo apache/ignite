@@ -28,12 +28,12 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 
 /** */
-class TestGroupTrainingCache {
+public class TestGroupTrainingCache {
     /** */
-    private static final String CACHE_NAME = "TEST_GROUP_TRAINING_CACHE";
+    public static String CACHE_NAME = "TEST_GROUP_TRAINING_CACHE";
 
     /** */
-    static IgniteCache<GroupTrainerCacheKey<Double>, Integer> getOrCreate(Ignite ignite) {
+    public static IgniteCache<GroupTrainerCacheKey<Double>, Integer> getOrCreate(Ignite ignite) {
         CacheConfiguration<GroupTrainerCacheKey<Double>, Integer> cfg = new CacheConfiguration<>();
 
         // Write to primary.
@@ -58,13 +58,12 @@ class TestGroupTrainingCache {
     }
 
     /** */
-    static Stream<GroupTrainerCacheKey<Double>> allKeys(int limit, int eachNumCnt, UUID trainingUUID) {
-        @SuppressWarnings("unchecked")
-        GroupTrainerCacheKey<Double>[] a = new GroupTrainerCacheKey[limit * eachNumCnt];
+    public static Stream<GroupTrainerCacheKey<Double>> allKeys(int limit, int eachNumberCnt, UUID trainingUUID) {
+        GroupTrainerCacheKey<Double>[] a =new GroupTrainerCacheKey[limit * eachNumberCnt];
 
         for (int num = 0; num < limit; num++)
-            for (int i = 0; i < eachNumCnt; i++)
-                a[num * eachNumCnt + i] = new GroupTrainerCacheKey<>(num, (double)i, trainingUUID);
+            for (int i = 0; i < eachNumberCnt; i++)
+                a[num * eachNumberCnt + i] = new GroupTrainerCacheKey<>(num, (double)i, trainingUUID);
 
         return Arrays.stream(a);
     }

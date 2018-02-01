@@ -154,9 +154,14 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
             sizeChange = 0;
 
             if (doomed != null) {
-                synchronized (doomed) {
+                doomed.lockEntry();
+
+                try {
                     if (!doomed.deleted())
                         sizeChange--;
+                }
+                finally {
+                    doomed.unlockEntry();
                 }
 
                 if (ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
@@ -284,9 +289,14 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
                     false);
             }
 
-            synchronized (entry) {
+            entry.lockEntry();
+
+            try {
                 if (!entry.deleted())
                     decrementPublicSize(hld, entry);
+            }
+            finally {
+                entry.unlockEntry();
             }
         }
 

@@ -21,49 +21,60 @@ import java.util.UUID;
 import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 
 /** */
-class TestGroupTrainerLocalContext implements HasTrainingUUID {
+public class TestGroupTrainerLocalContext implements HasTrainingUUID {
     /** */
-    private int cnt;
-    /** */
-    private final int maxCnt;
-    /** */
-    private final int eachNumCnt;
-    /** */
-    private final int limit;
-    /** */
-    private final UUID trainingUUID;
+    private int cnt = 0;
 
     /** */
-    TestGroupTrainerLocalContext(int maxCnt, int eachNumCnt, int limit, UUID trainingUUID) {
+    private int maxCnt;
+
+    /** */
+    private int eachNumberCnt;
+
+    /** */
+    private int limit;
+
+    /** */
+    private UUID trainingUUID;
+
+    /** */
+    public TestGroupTrainerLocalContext(int maxCnt, int eachNumberCnt, int limit, UUID trainingUUID) {
         this.maxCnt = maxCnt;
-        this.eachNumCnt = eachNumCnt;
+        this.eachNumberCnt = eachNumberCnt;
         this.limit = limit;
         this.trainingUUID = trainingUUID;
         this.cnt = 0;
     }
 
     /** */
-    int cnt() {
+    public int cnt() {
         return cnt;
     }
 
     /** */
-    void incCnt() {
-        this.cnt++;
+    public void setCnt(int cnt) {
+        this.cnt = cnt;
     }
 
     /** */
-    int maxCnt() {
+    public TestGroupTrainerLocalContext incCnt() {
+        this.cnt++;
+
+        return this;
+    }
+
+    /** */
+    public int maxCnt() {
         return maxCnt;
     }
 
     /** */
-    int eachNumberCnt() {
-        return eachNumCnt;
+    public int eachNumberCnt() {
+        return eachNumberCnt;
     }
 
     /** */
-    int limit() {
+    public int limit() {
         return limit;
     }
 

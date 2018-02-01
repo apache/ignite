@@ -313,56 +313,57 @@ public class SegmentedRingByteBufferTest extends TestCase {
 
         final Object mux = new Object();
 
-        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    barrier.await();
-                }
-                catch (InterruptedException | BrokenBarrierException e) {
-                    e.printStackTrace();
+        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(() -> {
+            try {
+                barrier.await();
+            }
+            catch (InterruptedException | BrokenBarrierException e) {
+                e.printStackTrace();
 
-                    fail();
-                }
+                fail();
+            }
 
-                while (!stop.get()) {
-                    TestObject obj = new TestObject();
+            while (!stop.get()) {
+                TestObject obj = new TestObject();
 
-                    SegmentedRingByteBuffer.WriteSegment seg = buf.offer(obj.size());
-                    ByteBuffer bbuf;
+                SegmentedRingByteBuffer.WriteSegment seg = buf.offer(obj.size());
+                ByteBuffer bbuf;
 
-                    if (seg == null) {
-                        cnt.incrementAndGet();
+                if (seg == null) {
+                    cnt.incrementAndGet();
 
-                        synchronized (mux) {
-                            try {
-                                mux.wait();
-                            }
-                            catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
+                    synchronized (mux) {
+                        try {
+                            if (stop.get())
+                                break;
+
+                            mux.wait();
                         }
-
-                        cnt.decrementAndGet();
-
-                        continue;
+                        catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
                     }
 
-                    bbuf = seg.buffer();
+                    cnt.decrementAndGet();
 
-                    assertEquals(obj.size(), bbuf.remaining());
-
-                    bbuf.putLong(obj.id);
-                    bbuf.putInt(obj.len);
-                    bbuf.put(obj.arr);
-
-                    assertEquals(0, bbuf.remaining());
-
-                    seg.release();
-
-                    long total = totalWritten.addAndGet(obj.size());
-
-                    assertTrue(total <= cap);
+                    continue;
                 }
+
+                bbuf = seg.buffer();
+
+                assertEquals(obj.size(), bbuf.remaining());
+
+                bbuf.putLong(obj.id);
+                bbuf.putInt(obj.len);
+                bbuf.put(obj.arr);
+
+                assertEquals(0, bbuf.remaining());
+
+                seg.release();
+
+                long total = totalWritten.addAndGet(obj.size());
+
+                assertTrue(total <= cap);
             }
         }, producerCnt, "producer-thread");
 
@@ -387,9 +388,9 @@ public class SegmentedRingByteBufferTest extends TestCase {
             }
         }
 
-        stop.set(true);
-
         synchronized (mux) {
+            stop.set(true);
+
             mux.notifyAll();
         }
 
@@ -410,45 +411,43 @@ public class SegmentedRingByteBufferTest extends TestCase {
 
         final CyclicBarrier barrier = new CyclicBarrier(producerCnt);
 
-        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    barrier.await();
+        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(() -> {
+            try {
+                barrier.await();
+            }
+            catch (InterruptedException | BrokenBarrierException e) {
+                e.printStackTrace();
+
+                fail();
+            }
+
+            while (!stop.get()) {
+                TestObject obj = new TestObject();
+
+                SegmentedRingByteBuffer.WriteSegment seg;
+                ByteBuffer bbuf;
+
+                for (;;) {
+                    if (stop.get())
+                        return;
+
+                    seg = buf.offer(obj.size());
+
+                    if (seg != null)
+                        break;
                 }
-                catch (InterruptedException | BrokenBarrierException e) {
-                    e.printStackTrace();
 
-                    fail();
-                }
+                bbuf = seg.buffer();
 
-                while (!stop.get()) {
-                    TestObject obj = new TestObject();
+                assertEquals(obj.size(), bbuf.remaining());
 
-                    SegmentedRingByteBuffer.WriteSegment seg;
-                    ByteBuffer bbuf;
+                bbuf.putLong(obj.id);
+                bbuf.putInt(obj.len);
+                bbuf.put(obj.arr);
 
-                    for (;;) {
-                        if (stop.get())
-                            return;
+                assertEquals(0, bbuf.remaining());
 
-                        seg = buf.offer(obj.size());
-
-                        if (seg != null)
-                            break;
-                    }
-
-                    bbuf = seg.buffer();
-
-                    assertEquals(obj.size(), bbuf.remaining());
-
-                    bbuf.putLong(obj.id);
-                    bbuf.putInt(obj.len);
-                    bbuf.put(obj.arr);
-
-                    assertEquals(0, bbuf.remaining());
-
-                    seg.release();
-                }
+                seg.release();
             }
         }, producerCnt, "producer-thread");
 
@@ -496,47 +495,45 @@ public class SegmentedRingByteBufferTest extends TestCase {
 
         final Set<TestObject> items = Collections.newSetFromMap(new ConcurrentHashMap<TestObject, Boolean>());
 
-        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    barrier.await();
+        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(() -> {
+            try {
+                barrier.await();
+            }
+            catch (InterruptedException | BrokenBarrierException e) {
+                e.printStackTrace();
+
+                fail();
+            }
+
+            while (!stop.get()) {
+                TestObject obj = new TestObject();
+
+                SegmentedRingByteBuffer.WriteSegment seg;
+                ByteBuffer bbuf;
+
+                for (;;) {
+                    if (stop.get())
+                        return;
+
+                    seg = buf.offer(obj.size());
+
+                    if (seg != null)
+                        break;
                 }
-                catch (InterruptedException | BrokenBarrierException e) {
-                    e.printStackTrace();
 
-                    fail();
-                }
+                bbuf = seg.buffer();
 
-                while (!stop.get()) {
-                    TestObject obj = new TestObject();
+                assertEquals(obj.size(), bbuf.remaining());
 
-                    SegmentedRingByteBuffer.WriteSegment seg;
-                    ByteBuffer bbuf;
+                bbuf.putLong(obj.id);
+                bbuf.putInt(obj.len);
+                bbuf.put(obj.arr);
 
-                    for (;;) {
-                        if (stop.get())
-                            return;
+                assertEquals(0, bbuf.remaining());
 
-                        seg = buf.offer(obj.size());
+                assertTrue("Ooops! The same value is already exist in Set! ", items.add(obj));
 
-                        if (seg != null)
-                            break;
-                    }
-
-                    bbuf = seg.buffer();
-
-                    assertEquals(obj.size(), bbuf.remaining());
-
-                    bbuf.putLong(obj.id);
-                    bbuf.putInt(obj.len);
-                    bbuf.put(obj.arr);
-
-                    assertEquals(0, bbuf.remaining());
-
-                    assertTrue("Ooops! The same value is already exist in Set! ", items.add(obj));
-
-                    seg.release();
-                }
+                seg.release();
             }
         }, producerCnt, "producer-thread");
 
@@ -699,8 +696,9 @@ public class SegmentedRingByteBufferTest extends TestCase {
          */
         public TestObject(long id, byte[] arr) {
             this.id = id;
-            this.len = arr.length;
             this.arr = arr;
+
+            len = arr.length;
         }
 
         /**

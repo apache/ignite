@@ -155,7 +155,7 @@ $btn-content-padding-with-border: 9px 11px;
     background-color: $accent-color;
     color: white;
 
-    &:hover, &.hover,
+    &:hover, &.hover, &:focus,
     &:active, &.active {
         &:not([disabled]) {
             color: white;

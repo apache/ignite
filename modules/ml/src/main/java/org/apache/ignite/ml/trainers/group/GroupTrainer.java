@@ -18,15 +18,15 @@
 package org.apache.ignite.ml.trainers.group;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.Trainer;
-import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
+import org.apache.ignite.ml.trainers.Trainer;
 import org.apache.ignite.ml.trainers.group.chain.ComputationsChain;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
@@ -43,7 +43,7 @@ import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
  * with all dependent objects.
  *
  * @param <LC> Type of local context of the training.
- * @param <K> Type of cache keys on which the training is done.
+ * @param <K> Type of data in {@link GroupTrainerCacheKey} keys on which the training is done.
  * @param <V> Type of cache values on which the training is done.
  * @param <IN> Type of data returned after initializing of distributed context.
  * @param <R> Type of result returned after training from each node.
@@ -56,12 +56,12 @@ abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends Seriali
     /**
      * Cache on which training is performed. For example it can be cache of neural networks.
      */
-    IgniteCache<GroupTrainerCacheKey<K>, V> cache;
+    protected IgniteCache<GroupTrainerCacheKey<K>, V> cache;
 
     /**
      * Ignite instance.
      */
-    Ignite ignite;
+    protected Ignite ignite;
 
     /**
      * Construct an instance of this class.
@@ -77,19 +77,24 @@ abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends Seriali
     }
 
     /** {@inheritDoc} */
-    @Override public M train(T data) {
+    @Override public final M train(T data) {
         UUID trainingUUID = UUID.randomUUID();
         LC locCtx = initialLocalContext(data, trainingUUID);
 
         GroupTrainingContext<K, V, LC> ctx = new GroupTrainingContext<>(locCtx, cache, ignite);
         ComputationsChain<LC, K, V, T, T> chain = (i, c) -> i;
-        IgniteFunction<GroupTrainerCacheKey<K>, ResultAndUpdates<IN>> distributedInitializer = distributedInitializer(data);
+        IgniteFunction<GroupTrainerCacheKey<K>, ResultAndUpdates<IN>> distributedInitializer
+            = distributedInitializer(data);
+
+        init(data, trainingUUID);
 
         M res = chain.
-            thenDistributedForKeys(distributedInitializer, (t, lc) -> data.initialKeys(trainingUUID), reduceDistributedInitData()).
+            thenDistributedForKeys(distributedInitializer, (t, lc) -> data.initialKeys(trainingUUID),
+                reduceDistributedInitData()).
             thenLocally(this::locallyProcessInitData).
             thenWhile(this::shouldContinue, trainingLoopStep()).
-            thenDistributedForEntries(this::extractContextForFinalResultCreation, finalResultsExtractor(), this::finalResultKeys, finalResultsReducer(), defaultFinalResult()).
+            thenDistributedForEntries(this::extractContextForFinalResultCreation, finalResultsExtractor(),
+                this::finalResultKeys, finalResultsReducer()).
             thenLocally(this::mapFinalResult).
             process(data, ctx);
 
@@ -107,6 +112,10 @@ abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends Seriali
      */
     protected abstract LC initialLocalContext(T data, UUID trainingUUID);
 
+    /** Override in subclasses if needed. */
+    protected void init(T data, UUID trainingUUID) {
+    }
+
     /**
      * Get function for initialization for each of keys specified in initial key set.
      *
@@ -120,7 +129,7 @@ abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends Seriali
      *
      * @return Reducer to reduce data collected from initialization of each key specified in initial key set.
      */
-    protected abstract IgniteBinaryOperator<IN> reduceDistributedInitData();
+    protected abstract IgniteFunction<List<IN>, IN> reduceDistributedInitData();
 
     /**
      * Transform data from initialization step into data which is fed as input to first step of training loop.
@@ -175,18 +184,11 @@ abstract class GroupTrainer<LC extends HasTrainingUUID, K, V, IN extends Seriali
     protected abstract IgniteFunction<EntryAndContext<K, V, G>, ResultAndUpdates<R>> finalResultsExtractor();
 
     /**
-     * Default final result. Should be identity for finalResultsReducer.
-     *
-     * @return Default final result.
-     */
-    protected abstract R defaultFinalResult();
-
-    /**
      * Get function for reducing final results.
      *
      * @return Function for reducing final results.
      */
-    protected abstract IgniteBinaryOperator<R> finalResultsReducer();
+    protected abstract IgniteFunction<List<R>, R> finalResultsReducer();
 
     /**
      * Map final result to model which is returned by trainer.

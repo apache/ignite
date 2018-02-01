@@ -21,7 +21,9 @@ import org.apache.ignite.ml.clustering.ClusteringTestSuite;
 import org.apache.ignite.ml.knn.KNNTestSuite;
 import org.apache.ignite.ml.math.MathImplMainTestSuite;
 import org.apache.ignite.ml.nn.MLPTestSuite;
+import org.apache.ignite.ml.optimization.OptimizationTestSuite;
 import org.apache.ignite.ml.regressions.RegressionsTestSuite;
+import org.apache.ignite.ml.svm.SVMTestSuite;
 import org.apache.ignite.ml.trainers.group.TrainersGroupTestSuite;
 import org.apache.ignite.ml.trees.DecisionTreesTestSuite;
 import org.junit.runner.RunWith;
@@ -34,12 +36,14 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     MathImplMainTestSuite.class,
     RegressionsTestSuite.class,
+    SVMTestSuite.class,
     ClusteringTestSuite.class,
     DecisionTreesTestSuite.class,
     KNNTestSuite.class,
     LocalModelsTest.class,
     MLPTestSuite.class,
-    TrainersGroupTestSuite.class
+    TrainersGroupTestSuite.class,
+    OptimizationTestSuite.class
 })
 public class IgniteMLTestSuite {
     // No-op.

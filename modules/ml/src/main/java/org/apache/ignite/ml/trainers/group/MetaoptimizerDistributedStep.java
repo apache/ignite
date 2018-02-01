@@ -18,8 +18,8 @@
 package org.apache.ignite.ml.trainers.group;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.stream.Stream;
-import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.trainers.group.chain.DistributedEntryProcessingStep;
@@ -27,12 +27,20 @@ import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 
 /**
- * Distributed step.
+ * Distributed step based on {@link Metaoptimizer}.
  *
- * TODO: IGNITE-7322: add full description.
+ * @param <L> Type of local context.
+ * @param <K> Type of data in {@link GroupTrainerCacheKey}.
+ * @param <V> Type of values of cache on which training is done.
+ * @param <G> Type of distributed context.
+ * @param <I> Type of data to which data returned by distributed initialization is mapped (see {@link Metaoptimizer}).
+ * @param <O> Type of data to which data returned by data processor is mapped (see {@link Metaoptimizer}).
+ * @param <X> Type of data which is processed in training loop step (see {@link Metaoptimizer}).
+ * @param <Y> Type of data returned by training loop step data processor (see {@link Metaoptimizer}).
+ * @param <D> Type of data returned by initialization (see {@link Metaoptimizer}).
  */
-class MetaoptimizerDistributedStep<L extends HasTrainingUUID, K, V, G, I extends Serializable,
-    O extends Serializable, X, Y, D extends Serializable> implements DistributedEntryProcessingStep<L, K, V, G, I, O> {
+class MetaoptimizerDistributedStep<L extends HasTrainingUUID, K, V, G, I extends Serializable, O extends Serializable,
+    X, Y, D extends Serializable> implements DistributedEntryProcessingStep<L, K, V, G, I, O> {
     /**
      * {@link Metaoptimizer}.
      */
@@ -49,7 +57,7 @@ class MetaoptimizerDistributedStep<L extends HasTrainingUUID, K, V, G, I extends
      * @param metaoptimizer Metaoptimizer.
      * @param trainer {@link MetaoptimizerGroupTrainer} for which this distributed step is used.
      */
-    MetaoptimizerDistributedStep(Metaoptimizer<L, X, Y, I, D, O> metaoptimizer,
+    public MetaoptimizerDistributedStep(Metaoptimizer<L, X, Y, I, D, O> metaoptimizer,
         MetaoptimizerGroupTrainer<L, K, V, D, ?, I, ?, ?, G, O, X, Y> trainer) {
         this.metaoptimizer = metaoptimizer;
         this.trainer = trainer;
@@ -83,12 +91,7 @@ class MetaoptimizerDistributedStep<L extends HasTrainingUUID, K, V, G, I extends
     }
 
     /** {@inheritDoc} */
-    @Override public O identity() {
-        return metaoptimizer.postProcessIdentity();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteBinaryOperator<O> reducer() {
+    @Override public IgniteFunction<List<O>, O> reducer() {
         return metaoptimizer.postProcessReducer();
     }
 }

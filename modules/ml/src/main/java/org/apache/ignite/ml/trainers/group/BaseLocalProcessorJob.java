@@ -19,6 +19,7 @@ package org.apache.ignite.ml.trainers.group;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -28,7 +29,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.compute.ComputeJob;
-import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 
@@ -64,12 +64,7 @@ public abstract class BaseLocalProcessorJob<K, V, T, R extends Serializable> imp
     /**
      * Operator used to reduce results from worker.
      */
-    protected IgniteBinaryOperator<R> reducer;
-
-    /**
-     * Identity for reducer.
-     */
-    protected final R identity;
+    protected IgniteFunction<List<R>, R> reducer;
 
     /**
      * Name of cache used for training.
@@ -82,19 +77,16 @@ public abstract class BaseLocalProcessorJob<K, V, T, R extends Serializable> imp
      * @param worker Worker.
      * @param keySupplier Supplier of keys.
      * @param reducer Reducer.
-     * @param identity Identity for reducer.
      * @param trainingUUID UUID of training.
      * @param cacheName Name of cache used for training.
      */
     public BaseLocalProcessorJob(
         IgniteFunction<T, ResultAndUpdates<R>> worker,
         IgniteSupplier<Stream<GroupTrainerCacheKey<K>>> keySupplier,
-        IgniteBinaryOperator<R> reducer,
-        R identity,
+        IgniteFunction<List<R>, R> reducer,
         UUID trainingUUID, String cacheName) {
         this.worker = worker;
         this.keySupplier = keySupplier;
-        this.identity = identity;
         this.reducer = reducer;
         this.trainingUUID = trainingUUID;
         this.cacheName = cacheName;
@@ -111,7 +103,7 @@ public abstract class BaseLocalProcessorJob<K, V, T, R extends Serializable> imp
             map(worker).
             collect(Collectors.toList());
 
-        ResultAndUpdates<R> totalRes = ResultAndUpdates.sum(reducer, identity, resultsAndUpdates);
+        ResultAndUpdates<R> totalRes = ResultAndUpdates.sum(reducer, resultsAndUpdates.stream().filter(Objects::nonNull).collect(Collectors.toList()));
 
         totalRes.applyUpdates(ignite());
 
