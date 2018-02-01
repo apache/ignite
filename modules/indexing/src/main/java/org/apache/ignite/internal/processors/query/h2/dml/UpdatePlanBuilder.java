@@ -474,7 +474,7 @@ public final class UpdatePlanBuilder {
         KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false, false);
 
         return new UpdatePlan(
-            UpdateMode.INSERT,
+            UpdateMode.COPY,
             tbl,
             colNames,
             colTypes,

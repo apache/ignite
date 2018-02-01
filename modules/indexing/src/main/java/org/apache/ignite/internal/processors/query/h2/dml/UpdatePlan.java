@@ -39,6 +39,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.h2.dml.UpdateMode.COPY;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 
 /**
@@ -179,12 +180,10 @@ public final class UpdatePlan {
      * Convert a row into key-value pair.
      *
      * @param row Row to process.
-     * @param allowDifferentColCnt Allow column count in actual row to differ from number of {@link #colNames}.
-     *      When set to true, defaults are used for the columns missing in the row.
      * @throws IgniteCheckedException if failed.
      */
-    public IgniteBiTuple<?, ?> processRow(List<?> row, boolean allowDifferentColCnt) throws IgniteCheckedException {
-        if (!allowDifferentColCnt && row.size() != colNames.length)
+    public IgniteBiTuple<?, ?> processRow(List<?> row) throws IgniteCheckedException {
+        if (mode != COPY && row.size() != colNames.length)
             throw new IgniteSQLException("Not enough values in a row: " + row.size() + " instead of " + colNames.length,
                 IgniteQueryErrorCode.ENTRY_PROCESSING);
 

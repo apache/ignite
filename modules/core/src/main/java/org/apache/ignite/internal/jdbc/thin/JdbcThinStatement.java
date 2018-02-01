@@ -19,7 +19,6 @@ package org.apache.ignite.internal.jdbc.thin;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
@@ -38,7 +37,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequestResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchAckResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteMultipleStatementsResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
@@ -139,8 +138,8 @@ public class JdbcThinStatement implements Statement {
 
         assert res0 != null;
 
-        if (res0 instanceof JdbcBulkLoadBatchRequestResult)
-            res0 = sendFile((JdbcBulkLoadBatchRequestResult)res0);
+        if (res0 instanceof JdbcBulkLoadBatchAckResult)
+            res0 = sendFile((JdbcBulkLoadBatchAckResult)res0);
 
         if (res0 instanceof JdbcQueryExecuteResult) {
             JdbcQueryExecuteResult res = (JdbcQueryExecuteResult)res0;
@@ -192,7 +191,7 @@ public class JdbcThinStatement implements Statement {
      * @param cmdResult Result of invoking COPY command: contains server-parsed
      *    bulk load parameters, such as file name and batch size.
      */
-    private JdbcResult sendFile(JdbcBulkLoadBatchRequestResult cmdResult) throws SQLException {
+    private JdbcResult sendFile(JdbcBulkLoadBatchAckResult cmdResult) throws SQLException {
 
         String fileName = cmdResult.params().localFileName();
         int batchSize = cmdResult.params().batchSize();

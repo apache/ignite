@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  *
  * @see SqlBulkLoadCommand
  */
-public class JdbcBulkLoadBatchRequestResult extends JdbcResult {
+public class JdbcBulkLoadBatchAckResult extends JdbcResult {
     /** Query ID for matching this command on server in further {@link JdbcBulkLoadBatchRequest} commands. */
     private long queryId;
 
@@ -40,8 +40,8 @@ public class JdbcBulkLoadBatchRequestResult extends JdbcResult {
     private BulkLoadParameters params;
 
     /**Creates uninitialized bulk load batch request result. */
-    public JdbcBulkLoadBatchRequestResult() {
-        super(BULK_LOAD_BATCH_REQUEST);
+    public JdbcBulkLoadBatchAckResult() {
+        super(BULK_LOAD_ACK);
 
         queryId = 0;
         params = null;
@@ -53,8 +53,8 @@ public class JdbcBulkLoadBatchRequestResult extends JdbcResult {
      * @param queryId Query ID to send in further {@link JdbcBulkLoadBatchRequest}-s.
      * @param params Various parameters for sending batches from client side.
      */
-    public JdbcBulkLoadBatchRequestResult(long queryId, BulkLoadParameters params) {
-        super(BULK_LOAD_BATCH_REQUEST);
+    public JdbcBulkLoadBatchAckResult(long queryId, BulkLoadParameters params) {
+        super(BULK_LOAD_ACK);
 
         this.queryId = queryId;
         this.params = params;
@@ -104,6 +104,6 @@ public class JdbcBulkLoadBatchRequestResult extends JdbcResult {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcBulkLoadBatchRequestResult.class, this);
+        return S.toString(JdbcBulkLoadBatchAckResult.class, this);
     }
 }
