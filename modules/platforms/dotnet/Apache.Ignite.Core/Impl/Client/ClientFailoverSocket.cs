@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Impl.Client
     internal class ClientFailoverSocket : IClientSocket
     {
         /** Underlying socket. */
-        private volatile ClientSocket _socket;
+        private ClientSocket _socket;
 
         /** Current endpoint index. */
         private int _endPointIndex;
@@ -43,6 +43,12 @@ namespace Apache.Ignite.Core.Impl.Client
 
         /** Endpoints. */
         private readonly List<EndPoint> _endPoints;
+
+        /** Locker. */
+        private readonly object _syncRoot = new object();
+
+        /** Disposed flag. */
+        private bool _disposed;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientFailoverSocket"/> class.
@@ -65,35 +71,45 @@ namespace Apache.Ignite.Core.Impl.Client
         public T DoOutInOp<T>(ClientOp opId, Action<IBinaryStream> writeAction, Func<IBinaryStream, T> readFunc,
             Func<ClientStatusCode, string, T> errorFunc = null)
         {
-            CheckDisposed();
-
-            return _socket.DoOutInOp(opId, writeAction, readFunc, errorFunc);
+            return GetSocket().DoOutInOp(opId, writeAction, readFunc, errorFunc);
         }
 
         /** <inheritdoc /> */
         public Task<T> DoOutInOpAsync<T>(ClientOp opId, Action<IBinaryStream> writeAction, Func<IBinaryStream, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null)
         {
-            CheckDisposed();
-
-            return _socket.DoOutInOpAsync(opId, writeAction, readFunc, errorFunc);
+            return GetSocket().DoOutInOpAsync(opId, writeAction, readFunc, errorFunc);
         }
 
         /// <summary>
         /// Checks the disposed state.
         /// </summary>
-        private void CheckDisposed()
+        private ClientSocket GetSocket()
         {
-            if (_socket == null)
+            lock (_syncRoot)
             {
-                throw new ObjectDisposedException("ClientFailoverSocket");
+                if (_disposed)
+                {
+                    throw new ObjectDisposedException("ClientFailoverSocket");
+                }
+
+                if (_socket == null)
+                {
+                    Connect();
+                }
+
+                return _socket;
             }
         }
 
         /** <inheritdoc /> */
         public void Dispose()
         {
-            _socket.Dispose();
-            _socket = null;
+            lock (_syncRoot)
+            {
+                _disposed = true;
+                _socket.Dispose();
+                _socket = null;
+            }
         }
 
         /// <summary>
@@ -135,16 +151,17 @@ namespace Apache.Ignite.Core.Impl.Client
         /// </summary>
         private void OnSocketError()
         {
-            // TODO: Do not reconnect immediately, only on next operation?
-
             if (_config.ReconnectDisabled)
             {
                 return;
             }
 
-            // Reconnect to next endpoint.
-            _endPointIndex++;
-            Connect();
+            // Reconnect on next operation.
+            lock (_syncRoot)
+            {
+                _endPointIndex++;
+                _socket = null;
+            }
         }
 
         /// <summary>
