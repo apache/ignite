@@ -73,7 +73,7 @@ const compare = (a, b) => {
 
 export default class IgniteVersion {
     constructor() {
-        this.webConsole = '2.2.0';
+        this.webConsole = '2.5.0';
 
         this.supportedVersions = [
             {
