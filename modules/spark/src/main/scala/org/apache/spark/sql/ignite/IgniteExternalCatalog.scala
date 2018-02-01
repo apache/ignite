@@ -43,7 +43,7 @@ import scala.collection.JavaConversions._
   *
   * @param defaultIgniteContext Ignite context to provide access to Ignite instance. If <code>None</code> passed then no-name instance of Ignite used.
   */
-private[ignite] class IgniteExternalCatalog(defaultIgniteContext: IgniteContext, cacheForDDL: Option[String])
+private[ignite] class IgniteExternalCatalog(defaultIgniteContext: IgniteContext)
     extends ExternalCatalog {
     /**
       * Default Ignite instance.
@@ -275,9 +275,8 @@ private[ignite] class IgniteExternalCatalog(defaultIgniteContext: IgniteContext,
 
                 QueryHelper.createTable(tableDefinition.schema,
                     tableDefinition.identifier.table,
-                    props(OPTION_PRIMARY_KEY_FIELDS).split(","),
-                    props.get(OPTION_CREATE_TABLE_OPTIONS),
-                    props(OPTION_CACHE_FOR_DDL),
+                    props(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS).split(","),
+                    props.get(OPTION_CREATE_TABLE_PARAMETERS),
                     ignite)
         }
     }
@@ -290,12 +289,7 @@ private[ignite] class IgniteExternalCatalog(defaultIgniteContext: IgniteContext,
             case Some(table) ⇒
                 val tableName = table.getTableName
 
-                if (cacheForDDL.isEmpty)
-                    throw new IgniteException("cacheForDDL has to be specified in Spark config!")
-
-                QueryHelper.dropTable(cacheForDDL.get,
-                    tableName,
-                    ignite)
+                QueryHelper.dropTable(tableName, ignite)
 
             case None ⇒
                 if (!ignoreIfNotExists)

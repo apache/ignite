@@ -20,8 +20,9 @@ package org.apache.ignite.spark.impl
 import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.spark.IgniteDataFrameSettings._
 import QueryUtils.{compileCreateTable, compileDropTable, compileInsert}
+import org.apache.ignite.internal.IgniteKernal
 import org.apache.ignite.spark.IgniteContext
-import org.apache.ignite.{Ignite, IgniteException}
+import org.apache.ignite.{Ignite, IgniteCache, IgniteException}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Row}
 
@@ -32,14 +33,15 @@ private[apache] object QueryHelper {
     /**
       * Drops provided table.
       *
-      * @param cacheName Cache name.
       * @param tableName Table name.
       * @param ignite Ignite.
       */
-    def dropTable(cacheName: String, tableName: String, ignite: Ignite): Unit = {
-        val cache = ignite.cache[Any, Any](cacheName)
+    def dropTable(tableName: String, ignite: Ignite): Unit = {
+        val qryProcessor = ignite.asInstanceOf[IgniteKernal].context().query()
 
-        cache.query(new SqlFieldsQuery(compileDropTable(tableName))).getAll
+        val qry = compileDropTable(tableName)
+
+        qryProcessor.querySqlFields(new SqlFieldsQuery(qry), true).getAll
     }
 
     /**
@@ -49,14 +51,15 @@ private[apache] object QueryHelper {
       * @param tblName Table name.
       * @param primaryKeyFields Primary key fields.
       * @param createTblOpts Ignite specific options.
-      * @param cacheName Cache name to run SQL query.
       * @param ignite Ignite.
       */
     def createTable(schema: StructType, tblName: String, primaryKeyFields: Seq[String], createTblOpts: Option[String],
-        cacheName: String, ignite: Ignite): Unit = {
-        val cache = ignite.cache[Any, Any](cacheName)
+        ignite: Ignite): Unit = {
+        val qryProcessor = ignite.asInstanceOf[IgniteKernal].context().query()
 
-        cache.query(new SqlFieldsQuery(compileCreateTable(schema, tblName, primaryKeyFields, createTblOpts))).getAll
+        val qry = compileCreateTable(schema, tblName, primaryKeyFields, createTblOpts)
+
+        qryProcessor.querySqlFields(new SqlFieldsQuery(qry), true).getAll
     }
 
     /**
@@ -69,15 +72,7 @@ private[apache] object QueryHelper {
         if (!params.contains(OPTION_TABLE) && !params.contains("path"))
             throw new IgniteException("'table' must be specified.")
 
-        if (!params.contains(OPTION_CACHE_FOR_DDL))
-            throw new IgniteException("'cacheForDDL' must be specified.")
-
-        val cacheForDDLExists = ctx.ignite().cacheNames().contains(params(OPTION_CACHE_FOR_DDL))
-
-        if (!cacheForDDLExists)
-            throw new IgniteException("'cacheForDDL' doesn't exists.")
-
-        params.get(OPTION_PRIMARY_KEY_FIELDS)
+        params.get(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS)
             .map(_.split(','))
             .getOrElse(throw new IgniteException("Can't create table! Primary key fields has to be specified."))
             .map(_.trim)
@@ -99,15 +94,15 @@ private[apache] object QueryHelper {
       * @param numPartitions Number of partitions to write data.
       * @param ctx Ignite context.
       */
-    def saveTable(data: DataFrame, tblName: String, numPartitions: Int, ctx: IgniteContext): Unit = {
+    def saveTable(data: DataFrame, tblName: String, numPartitions: Option[Int], ctx: IgniteContext): Unit = {
         val insertQry = compileInsert(tblName, data.schema)
 
         val repartitionedDF = numPartitions match {
-            case n if n <= 0 => throw new IllegalArgumentException(
+            case Some(n) if n <= 0 => throw new IllegalArgumentException(
                 s"Invalid value `$n` for parameter `$OPTION_WRITE_PARTITIONS_NUM` in table writing " +
                     "via Ignite. The minimum value is 1.")
 
-            case n if n < data.rdd.getNumPartitions =>
+            case Some(n) if n < data.rdd.getNumPartitions =>
                 data.coalesce(n)
 
             case _ =>

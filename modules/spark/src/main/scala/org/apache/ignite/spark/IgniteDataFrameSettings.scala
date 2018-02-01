@@ -67,7 +67,7 @@ object IgniteDataFrameSettings {
       *
       * @see [[https://apacheignite-sql.readme.io/docs/create-table]]
       */
-    val OPTION_CREATE_TABLE_OPTIONS = "createTableOptions"
+    val OPTION_CREATE_TABLE_PARAMETERS = "createTableOptions"
 
     /**
       * Config option to specify comma separated list of primary key fields for a newly created Ignite SQL table.
@@ -79,7 +79,7 @@ object IgniteDataFrameSettings {
       *     .save()
       * }}}
       */
-    val OPTION_PRIMARY_KEY_FIELDS = "primaryKeyFields"
+    val OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS = "primaryKeyFields"
 
     /**
       *
@@ -94,17 +94,4 @@ object IgniteDataFrameSettings {
       * }}}
       */
     val OPTION_WRITE_PARTITIONS_NUM = "writePartitionsNum"
-
-    /**
-      * Config option to specify existing cache name for executing DDL statement when saving DataFrame to Iginte.
-      * Note, that SQL table cache can't be used for a DDL statement for this table.
-      *
-      * @example {{{
-      * val igniteDF = spark.write.format(IGNITE)
-      *     // other options ...
-      *     .option(OPTION_CACHE_FOR_DDL, "cache1")
-      *     .save()
-      * }}}
-      */
-    val OPTION_CACHE_FOR_DDL = "cacheForDDL"
 }

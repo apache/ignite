@@ -107,19 +107,14 @@ class IgniteRelationProvider extends RelationProvider
                 case Overwrite ⇒
                     ensureCreateTableOptions(data.schema, params, ctx)
 
-                    val cacheForDDL = params(OPTION_CACHE_FOR_DDL)
+                    dropTable(tblName, ctx.ignite())
 
-                    dropTable(cacheForDDL,
-                        tblName,
-                        ctx.ignite())
-
-                    val createTblOpts = params.get(OPTION_CREATE_TABLE_OPTIONS)
+                    val createTblOpts = params.get(OPTION_CREATE_TABLE_PARAMETERS)
 
                     createTable(data.schema,
                         tblName,
                         primaryKeyFields(params),
                         createTblOpts,
-                        cacheForDDL,
                         ctx.ignite())
 
                     saveTable(data,
@@ -145,17 +140,14 @@ class IgniteRelationProvider extends RelationProvider
         else {
             ensureCreateTableOptions(data.schema, params, ctx)
 
-            val cacheForDDL = params(OPTION_CACHE_FOR_DDL)
+            val primaryKeyFields = params(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS).split(",")
 
-            val primaryKeyFields = params(OPTION_PRIMARY_KEY_FIELDS).split(",")
-
-            val createTblOpts = params.get(OPTION_CREATE_TABLE_OPTIONS)
+            val createTblOpts = params.get(OPTION_CREATE_TABLE_PARAMETERS)
 
             createTable(data.schema,
                 tblName,
                 primaryKeyFields,
                 createTblOpts,
-                cacheForDDL,
                 ctx.ignite())
 
             saveTable(data,
@@ -235,13 +227,13 @@ class IgniteRelationProvider extends RelationProvider
       * @param params Params.
       * @return Number of partitions.
       */
-    private def numPartitions(params: Map[String, String]): Int =
-        params.getOrElse(OPTION_WRITE_PARTITIONS_NUM, "1").toInt
+    private def numPartitions(params: Map[String, String]): Option[Int] =
+        params.get(OPTION_WRITE_PARTITIONS_NUM).map(_.toInt)
 
     /**
       * @param params Params.
       * @return Sequence of primary key fields.
       */
     private def primaryKeyFields(params: Map[String, String]): Seq[String] =
-        params(OPTION_PRIMARY_KEY_FIELDS).split(",")
+        params(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS).split(",")
 }

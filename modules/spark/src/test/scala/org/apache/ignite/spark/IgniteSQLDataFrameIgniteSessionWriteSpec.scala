@@ -39,9 +39,8 @@ class IgniteSQLDataFrameIgniteSessionWriteSpec extends IgniteSQLDataFrameWriteSp
             citiesDataFrame.write
                 .format(FORMAT_IGNITE)
                 .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
-                .option(OPTION_CACHE_FOR_DDL, "cache1")
-                .option(OPTION_PRIMARY_KEY_FIELDS, "id")
-                .option(OPTION_CREATE_TABLE_OPTIONS, "template=replicated")
+                .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id")
+                .option(OPTION_CREATE_TABLE_PARAMETERS, "template=replicated")
                 .mode(SaveMode.Overwrite)
                 .saveAsTable("city")
 
@@ -60,9 +59,8 @@ class IgniteSQLDataFrameIgniteSessionWriteSpec extends IgniteSQLDataFrameWriteSp
                 .write
                 .format(FORMAT_IGNITE)
                 .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
-                .option(OPTION_CACHE_FOR_DDL, "cache1")
-                .option(OPTION_PRIMARY_KEY_FIELDS, "id")
-                .option(OPTION_CREATE_TABLE_OPTIONS, "template=replicated")
+                .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id")
+                .option(OPTION_CREATE_TABLE_PARAMETERS, "template=replicated")
                 .mode(SaveMode.Append)
                 .partitionBy("id")
                 .saveAsTable("city")
@@ -78,9 +76,8 @@ class IgniteSQLDataFrameIgniteSessionWriteSpec extends IgniteSQLDataFrameWriteSp
             citiesDataFrame.write
                 .format(FORMAT_IGNITE)
                 .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
-                .option(OPTION_CACHE_FOR_DDL, "cache1")
-                .option(OPTION_PRIMARY_KEY_FIELDS, "id")
-                .option(OPTION_CREATE_TABLE_OPTIONS, "template=replicated")
+                .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id")
+                .option(OPTION_CREATE_TABLE_PARAMETERS, "template=replicated")
                 .saveAsTable("new_cities")
 
             assert(rowsCount("new_cities") == citiesDataFrame.count(),
@@ -103,7 +100,6 @@ class IgniteSQLDataFrameIgniteSessionWriteSpec extends IgniteSQLDataFrameWriteSp
             .appName("DataFrameSpec")
             .master("local")
             .config("spark.executor.instances", "2")
-            .config(OPTION_CACHE_FOR_DDL, "cache1")
             .igniteConfigProvider(configProvider)
             .getOrCreate()
     }

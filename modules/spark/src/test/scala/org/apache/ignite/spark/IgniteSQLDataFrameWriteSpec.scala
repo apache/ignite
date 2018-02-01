@@ -41,9 +41,8 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
             personDataFrame.write
                 .format(FORMAT_IGNITE)
                 .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
-                .option(OPTION_CACHE_FOR_DDL, "cache1")
                 .option(OPTION_TABLE, "new_persons")
-                .option(OPTION_PRIMARY_KEY_FIELDS, "id")
+                .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id")
                 .save()
 
             assert(rowsCnt == rowsCount("new_persons"), "Data should be saved into 'new_persons' table")
@@ -55,10 +54,9 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
             personDataFrame.write
                 .format(FORMAT_IGNITE)
                 .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
-                .option(OPTION_CACHE_FOR_DDL, "cache1")
                 .option(OPTION_TABLE, PERSON_TBL_NAME_2)
-                .option(OPTION_PRIMARY_KEY_FIELDS, "id, city_id")
-                .option(OPTION_CREATE_TABLE_OPTIONS, "backups=1, affinityKey=city_id")
+                .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id, city_id")
+                .option(OPTION_CREATE_TABLE_PARAMETERS, "backups=1, affinityKey=city_id")
                 .mode(Overwrite)
                 .save()
 
@@ -72,10 +70,9 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
             personDataFrame.write
                 .format(FORMAT_IGNITE)
                 .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
-                .option(OPTION_CACHE_FOR_DDL, "cache1")
                 .option(OPTION_TABLE, PERSON_TBL_NAME_2)
-                .option(OPTION_PRIMARY_KEY_FIELDS, "id, city_id")
-                .option(OPTION_CREATE_TABLE_OPTIONS, "backups=1, affinityKey=city_id")
+                .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id, city_id")
+                .option(OPTION_CREATE_TABLE_PARAMETERS, "backups=1, affinityKey=city_id")
                 .mode(Ignore)
                 .save()
 
@@ -93,10 +90,9 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
                 .withColumn("id", col("id") + person2RowsCnt) //Edit id column to prevent duplication
                 .write.format(FORMAT_IGNITE)
                 .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
-                .option(OPTION_CACHE_FOR_DDL, "cache1")
                 .option(OPTION_TABLE, PERSON_TBL_NAME_2)
-                .option(OPTION_PRIMARY_KEY_FIELDS, "id, city_id")
-                .option(OPTION_CREATE_TABLE_OPTIONS, "backups=1, affinityKey=city_id")
+                .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id, city_id")
+                .option(OPTION_CREATE_TABLE_PARAMETERS, "backups=1, affinityKey=city_id")
                 .mode(Append)
                 .save()
 
@@ -111,10 +107,9 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
             citiesDataFrame.write
                 .format(FORMAT_IGNITE)
                 .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
-                .option(OPTION_CACHE_FOR_DDL, "cache1")
                 .option(OPTION_TABLE, "json_city")
-                .option(OPTION_PRIMARY_KEY_FIELDS, "id")
-                .option(OPTION_CREATE_TABLE_OPTIONS, "template=replicated")
+                .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id")
+                .option(OPTION_CREATE_TABLE_PARAMETERS, "template=replicated")
                 .save()
 
             assert(rowsCount("json_city") == citiesDataFrame.count(),
@@ -128,11 +123,10 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
             citiesDataFrame.write
                 .format(FORMAT_IGNITE)
                 .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
-                .option(OPTION_CACHE_FOR_DDL, "cache1")
                 .option(OPTION_TABLE, "json_city_with_partition_num")
-                .option(OPTION_PRIMARY_KEY_FIELDS, "id")
+                .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id")
                 .option(OPTION_WRITE_PARTITIONS_NUM, 3)
-                .option(OPTION_CREATE_TABLE_OPTIONS, "template=replicated")
+                .option(OPTION_CREATE_TABLE_PARAMETERS, "template=replicated")
                 .save()
 
             assert(rowsCount("json_city") == citiesDataFrame.count(),
@@ -145,8 +139,7 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
             personDataFrame.write
                 .format(FORMAT_IGNITE)
                 .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
-                .option(OPTION_CACHE_FOR_DDL, "cache1")
-                .option(OPTION_PRIMARY_KEY_FIELDS, "id")
+                .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id")
                 .save("saved_persons")
 
             assert(rowsCnt == rowsCount("saved_persons"), "Data should be saved into 'saved_persons' table")
@@ -159,9 +152,8 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
                 personDataFrame.write
                     .format(FORMAT_IGNITE)
                     .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
-                    .option(OPTION_CACHE_FOR_DDL, "cache1")
                     .option(OPTION_TABLE, PERSON_TBL_NAME)
-                    .option(OPTION_PRIMARY_KEY_FIELDS, "id")
+                    .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id")
                     .mode(SaveMode.ErrorIfExists)
                     .save()
             }
@@ -172,7 +164,6 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
                 personDataFrame.write
                     .format(FORMAT_IGNITE)
                     .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
-                    .option(OPTION_CACHE_FOR_DDL, "cache1")
                     .option(OPTION_TABLE, "persons_no_pk")
                     .save()
             }
@@ -183,41 +174,7 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
                 personDataFrame.write
                     .format(FORMAT_IGNITE)
                     .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
-                    .option(OPTION_CACHE_FOR_DDL, "cache1")
                     .option(OPTION_TABLE, PERSON_TBL_NAME)
-                    .mode(Overwrite)
-                    .save()
-            }
-
-            val tblInfo = sqlTableInfo[Any, Any](client, PERSON_TBL_NAME)
-
-            assert(tblInfo.isDefined, s"Table $PERSON_TBL_NAME should exists.")
-        }
-
-        it("Should throw exception if cache for ddl not specified for existing table") {
-            intercept[IgniteException] {
-                personDataFrame.write
-                    .format(FORMAT_IGNITE)
-                    .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
-                    .option(OPTION_TABLE, PERSON_TBL_NAME)
-                    .option(OPTION_PRIMARY_KEY_FIELDS, "id")
-                    .mode(Overwrite)
-                    .save()
-            }
-
-            val tblInfo = sqlTableInfo[Any, Any](client, PERSON_TBL_NAME)
-
-            assert(tblInfo.isDefined, s"Table $PERSON_TBL_NAME should exists.")
-        }
-
-        it("Should throw exception if unexisted cache specified for ddl") {
-            intercept[IgniteException] {
-                personDataFrame.write
-                    .format(FORMAT_IGNITE)
-                    .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
-                    .option(OPTION_TABLE, PERSON_TBL_NAME)
-                    .option(OPTION_PRIMARY_KEY_FIELDS, "id")
-                    .option(OPTION_CACHE_FOR_DDL, "unknown_cache")
                     .mode(Overwrite)
                     .save()
             }
@@ -232,9 +189,8 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
                 personDataFrame.write
                     .format(FORMAT_IGNITE)
                     .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
-                    .option(OPTION_CACHE_FOR_DDL, "cache1")
                     .option(OPTION_TABLE, PERSON_TBL_NAME)
-                    .option(OPTION_PRIMARY_KEY_FIELDS, "unknown_field")
+                    .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "unknown_field")
                     .mode(Overwrite)
                     .save()
             }
@@ -249,9 +205,8 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
                 personDataFrame.write
                     .format(FORMAT_IGNITE)
                     .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
-                    .option(OPTION_CACHE_FOR_DDL, "cache1")
                     .option(OPTION_TABLE, PERSON_TBL_NAME)
-                    .option(OPTION_PRIMARY_KEY_FIELDS, "id,unknown_field")
+                    .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id,unknown_field")
                     .mode(Overwrite)
                     .save()
             }
@@ -266,9 +221,8 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
                 personDataFrame.write
                     .format(FORMAT_IGNITE)
                     .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
-                    .option(OPTION_CACHE_FOR_DDL, "cache1")
                     .option(OPTION_TABLE, "person_unsupported_with")
-                    .option(OPTION_CREATE_TABLE_OPTIONS, "unsupported_with_clause")
+                    .option(OPTION_CREATE_TABLE_PARAMETERS, "unsupported_with_clause")
                     .mode(Overwrite)
                     .save()
             }
@@ -279,9 +233,8 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
                 personDataFrame.write
                     .format(FORMAT_IGNITE)
                     .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
-                    .option(OPTION_CACHE_FOR_DDL, "cache1")
                     .option(OPTION_TABLE, "wrong-table-name")
-                    .option(OPTION_CREATE_TABLE_OPTIONS, "unsupported_with_clause")
+                    .option(OPTION_CREATE_TABLE_PARAMETERS, "unsupported_with_clause")
                     .mode(Overwrite)
                     .save()
             }
@@ -293,10 +246,9 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
                     .write
                     .format(FORMAT_IGNITE)
                     .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
-                    .option(OPTION_CACHE_FOR_DDL, "cache1")
                     .option(OPTION_TABLE, PERSON_TBL_NAME_2)
-                    .option(OPTION_PRIMARY_KEY_FIELDS, "id, city_id")
-                    .option(OPTION_CREATE_TABLE_OPTIONS, "backups=1, affinityKey=city_id")
+                    .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id, city_id")
+                    .option(OPTION_CREATE_TABLE_PARAMETERS, "backups=1, affinityKey=city_id")
                     .option(OPTION_WRITE_PARTITIONS_NUM, -1L)
                     .mode(Append)
                     .save()

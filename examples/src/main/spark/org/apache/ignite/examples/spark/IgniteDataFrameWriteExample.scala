@@ -89,8 +89,8 @@ object IgniteDataFrameWriteExample extends App {
             .option(OPTION_CONFIG_FILE, CONFIG)
             .option(OPTION_CACHE_FOR_DDL, CACHE_NAME)
             .option(OPTION_TABLE, "json_person")
-            .option(OPTION_PRIMARY_KEY_FIELDS, "id")
-            .option(OPTION_CREATE_TABLE_OPTIONS, "template=replicated")
+            .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id")
+            .option(OPTION_CREATE_TABLE_PARAMETERS, "template=replicated")
             .save()
 
         println("Done!")
@@ -133,8 +133,8 @@ object IgniteDataFrameWriteExample extends App {
             .option(OPTION_CONFIG_FILE, CONFIG)
             .option(OPTION_CACHE_FOR_DDL, CACHE_NAME)
             .option(OPTION_TABLE, "new_persons")
-            .option(OPTION_PRIMARY_KEY_FIELDS, "id, city_id")
-            .option(OPTION_CREATE_TABLE_OPTIONS, "backups=1")
+            .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id, city_id")
+            .option(OPTION_CREATE_TABLE_PARAMETERS, "backups=1")
             .mode(SaveMode.Overwrite) //Overwriting entire table.
             .save()
 
