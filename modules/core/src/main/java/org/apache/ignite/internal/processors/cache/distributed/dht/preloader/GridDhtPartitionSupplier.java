@@ -309,17 +309,7 @@ class GridDhtPartitionSupplier {
 
                 GridDhtLocalPartition loc = top.localPartition(part, d.topologyVersion(), false);
 
-                if (!iter.isPartitionMissing(part) && (loc == null || loc.state() != OWNING)) {
-                    assert false : "Temporary check that this condition never happens";
-
-                    // Demander no longer needs this partition,
-                    // so we send '-1' partition and move on.
-                    iter.setPartitionMissing(part);
-
-                    if (log.isDebugEnabled())
-                        log.debug("Demanding node does not need requested partition " +
-                            "[part=" + part + ", nodeId=" + id + ']');
-                }
+                assert (loc != null && loc.state() == OWNING && loc.reservations() > 0) || iter.isPartitionMissing(part) : loc;
 
                 if (iter.isPartitionMissing(part) && remainingParts.contains(part)) {
                     s.missed(part);
