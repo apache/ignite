@@ -106,6 +106,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRec
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
@@ -321,8 +322,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Thread local with buffers for the checkpoint threads. Each buffer represent one page for durable memory. */
     private ThreadLocal<ByteBuffer> threadBuf;
 
-    /** */
-    private final ConcurrentMap<Integer, IgniteInternalFuture> idxRebuildFuts = new ConcurrentHashMap<>();
+    /** Map from a cacheId to a future indicating that there is an in-progress index rebuild for the given cache. */
+    private final ConcurrentMap<Integer, GridFutureAdapter<Void>> idxRebuildFuts = new ConcurrentHashMap<>();
 
     /**
      * Lock holder for compatible folders mode. Null if lock holder was created at start node. <br>
@@ -1147,33 +1148,59 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         // Before local node join event.
         if (clusterInTransitionStateToActive || (joinEvt && locNode && isSrvNode))
             restoreState();
+
+        if (cctx.kernalContext().query().moduleEnabled()) {
+            ExchangeActions acts = fut.exchangeActions();
+
+            if (acts != null && !F.isEmpty(acts.cacheStartRequests())) {
+                for (ExchangeActions.CacheActionData actionData : acts.cacheStartRequests()) {
+                    int cacheId = CU.cacheId(actionData.request().cacheName());
+
+                    GridFutureAdapter<Void> old = idxRebuildFuts.put(cacheId, new GridFutureAdapter<>());
+
+                    if (old != null)
+                        old.onDone();
+                }
+            }
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void rebuildIndexesIfNeeded(GridDhtPartitionsExchangeFuture fut) {
         if (cctx.kernalContext().query().moduleEnabled()) {
             for (final GridCacheContext cacheCtx : (Collection<GridCacheContext>)cctx.cacheContexts()) {
-                if (cacheCtx.startTopologyVersion().equals(fut.initialVersion()) &&
-                    !cctx.pageStore().hasIndexStore(cacheCtx.groupId()) && cacheCtx.affinityNode()) {
+                if (cacheCtx.startTopologyVersion().equals(fut.initialVersion())) {
                     final int cacheId = cacheCtx.cacheId();
+                    final GridFutureAdapter<Void> usrFut = idxRebuildFuts.get(cacheId);
 
-                    final IgniteInternalFuture<?> rebuildFut = cctx.kernalContext().query()
-                        .rebuildIndexesFromHash(Collections.singletonList(cacheCtx.cacheId()));
+                    if (!cctx.pageStore().hasIndexStore(cacheCtx.groupId()) && cacheCtx.affinityNode()) {
+                        IgniteInternalFuture<?> rebuildFut = cctx.kernalContext().query()
+                            .rebuildIndexesFromHash(Collections.singletonList(cacheCtx.cacheId()));
 
-                    idxRebuildFuts.put(cacheId, rebuildFut);
+                        assert usrFut != null : "Missing user future for cache: " + cacheCtx.name();
 
-                    rebuildFut.listen(new CI1<IgniteInternalFuture>() {
-                        @Override public void apply(IgniteInternalFuture igniteInternalFut) {
-                            idxRebuildFuts.remove(cacheId, rebuildFut);
+                        rebuildFut.listen(new CI1<IgniteInternalFuture>() {
+                            @Override public void apply(IgniteInternalFuture igniteInternalFut) {
+                                idxRebuildFuts.remove(cacheId, usrFut);
 
-                            CacheConfiguration ccfg = cacheCtx.config();
+                                usrFut.onDone(igniteInternalFut.error());
 
-                            if (ccfg != null) {
-                                log().info("Finished indexes rebuilding for cache [name=" + ccfg.getName()
-                                    + ", grpName=" + ccfg.getGroupName() + ']');
+                                CacheConfiguration ccfg = cacheCtx.config();
+
+                                if (ccfg != null) {
+                                    log().info("Finished indexes rebuilding for cache [name=" + ccfg.getName()
+                                        + ", grpName=" + ccfg.getGroupName() + ']');
+                                }
                             }
+                        });
+                    }
+                    else {
+                        if (usrFut != null) {
+                            idxRebuildFuts.remove(cacheId, usrFut);
+
+                            usrFut.onDone();
                         }
-                    });
+                    }
                 }
             }
         }

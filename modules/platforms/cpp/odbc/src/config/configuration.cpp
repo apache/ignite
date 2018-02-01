@@ -46,12 +46,20 @@ namespace ignite
             const std::string Configuration::Key::collocated             = "collocated";
             const std::string Configuration::Key::lazy                   = "lazy";
             const std::string Configuration::Key::skipReducerOnUpdate    = "skip_reducer_on_update";
+            const std::string Configuration::Key::sslMode                = "ssl_mode";
+            const std::string Configuration::Key::sslKeyFile             = "ssl_key_file";
+            const std::string Configuration::Key::sslCertFile            = "ssl_cert_file";
+            const std::string Configuration::Key::sslCaFile              = "ssl_ca_file";
 
             const std::string Configuration::DefaultValue::dsn           = "Apache Ignite DSN";
             const std::string Configuration::DefaultValue::driver        = "Apache Ignite";
             const std::string Configuration::DefaultValue::schema        = "PUBLIC";
             const std::string Configuration::DefaultValue::address       = "";
             const std::string Configuration::DefaultValue::server        = "";
+            const std::string Configuration::DefaultValue::sslMode       = "disable";
+            const std::string Configuration::DefaultValue::sslKeyFile    = "";
+            const std::string Configuration::DefaultValue::sslCertFile   = "";
+            const std::string Configuration::DefaultValue::sslCaFile     = "";
 
             const uint16_t Configuration::DefaultValue::port    = 10800;
             const int32_t Configuration::DefaultValue::pageSize = 1024;

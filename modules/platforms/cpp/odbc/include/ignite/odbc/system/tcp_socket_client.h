@@ -15,24 +15,25 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_SYSTEM_SOCKET_CLIENT
-#define _IGNITE_ODBC_SYSTEM_SOCKET_CLIENT
+#ifndef _IGNITE_ODBC_SYSTEM_TCP_SOCKET_CLIENT
+#define _IGNITE_ODBC_SYSTEM_TCP_SOCKET_CLIENT
 
 #include <stdint.h>
 
 #include "ignite/common/common.h"
 #include "ignite/odbc/diagnostic/diagnosable.h"
+#include "ignite/odbc/socket_client.h"
 
 namespace ignite
 {
     namespace odbc
     {
-        namespace tcp
+        namespace system
         {
             /**
              * Socket client implementation.
              */
-            class SocketClient
+            class TcpSocketClient : public SocketClient
             {
             public:
                 /** Buffers size */
@@ -44,31 +45,15 @@ namespace ignite
                 /** The time in seconds between individual keepalive probes. */
                 enum { KEEP_ALIVE_PROBES_PERIOD = 1 };
 
-                /** Connection establishment timeout in seconds. */
-                enum { CONNECT_TIMEOUT = 5 };
-
-                /**
-                 * Non-negative timeout operation result.
-                 */
-                struct WaitResult
-                {
-                    enum T
-                    {
-                        TIMEOUT = 0,
-
-                        SUCCESS = 1
-                    };
-                };
-
                 /**
                  * Constructor.
                  */
-                SocketClient();
+                TcpSocketClient();
 
                 /**
                  * Destructor.
                  */
-                ~SocketClient();
+                virtual ~TcpSocketClient();
 
                 /**
                  * Establish connection with remote TCP service.
@@ -78,14 +63,14 @@ namespace ignite
                  * @param diag Diagnostics collector.
                  * @return True on success.
                  */
-                bool Connect(const char* hostname, uint16_t port, diagnostic::Diagnosable& diag);
+                virtual bool Connect(const char* hostname, uint16_t port, diagnostic::Diagnosable& diag);
 
                 /**
                  * Close established connection.
                  *
                  * @return True on success.
                  */
-                void Close();
+                virtual void Close();
 
                 /**
                  * Send data by established connection.
@@ -96,7 +81,7 @@ namespace ignite
                  * @return Number of bytes that have been sent on success, 
                  *     WaitResult::TIMEOUT on timeout and -errno on failure.
                  */
-                int Send(const int8_t* data, size_t size, int32_t timeout);
+                virtual int Send(const int8_t* data, size_t size, int32_t timeout);
 
                 /**
                  * Receive data from established connection.
@@ -104,20 +89,35 @@ namespace ignite
                  * @param buffer Pointer to data buffer.
                  * @param size Size of the buffer in bytes.
                  * @param timeout Timeout.
-                 * @return Number of bytes that have been sent on success,
+                 * @return Number of bytes that have been received on success,
                  *     WaitResult::TIMEOUT on timeout and -errno on failure.
                  */
-                int Receive(int8_t* buffer, size_t size, int32_t timeout);
+                virtual int Receive(int8_t* buffer, size_t size, int32_t timeout);
 
                 /**
                  * Check if the socket is blocking or not.
                  * @return @c true if the socket is blocking and false otherwise.
                  */
-                bool IsBlocking() const
-                {
-                    return blocking;
-                }
+                virtual bool IsBlocking() const;
 
+                /**
+                 * Get socket error.
+                 * @return Last socket error.
+                 */
+                static int GetLastSocketError();
+
+                /**
+                 * Get socket error.
+                 * @param handle Socket handle.
+                 * @return Last socket error.
+                 */
+                static int GetLastSocketError(int handle);
+
+                /**
+                 * Check whether socket operation was interupted.
+                 * @return @c true if the socket operation was interupted.
+                 */
+                static bool IsSocketOperationInterrupted(int errorCode);
             private:
                 /**
                  * Tries set socket options.
@@ -142,7 +142,7 @@ namespace ignite
                 /** Blocking flag. */
                 bool blocking;
 
-                IGNITE_NO_COPY_ASSIGNMENT(SocketClient)
+                IGNITE_NO_COPY_ASSIGNMENT(TcpSocketClient)
             };
         }
     }

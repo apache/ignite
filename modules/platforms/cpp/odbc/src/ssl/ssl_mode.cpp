@@ -15,8 +15,29 @@
  * limitations under the License.
  */
 
-/**
- * <!-- Package description. -->
- * Cluster group example.
- */
-package org.apache.ignite.examples.computegrid.cluster;
+#include "ignite/common/utils.h"
+#include "ignite/odbc/ssl/ssl_mode.h"
+
+namespace ignite
+{
+    namespace odbc
+    {
+        namespace ssl
+        {
+            SslMode::T SslMode::FromString(const std::string& val, T dflt)
+            {
+                std::string lowerVal = common::ToLower(val);
+
+                common::StripSurroundingWhitespaces(lowerVal);
+
+                if (lowerVal == "disable")
+                    return SslMode::DISABLE;
+
+                if (lowerVal == "require")
+                    return SslMode::REQUIRE;
+
+                return dflt;
+            }
+        }
+    }
+}
