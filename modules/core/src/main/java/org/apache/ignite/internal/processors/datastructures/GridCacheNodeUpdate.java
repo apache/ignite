@@ -14,32 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.processors.datastructures;
 
-import org.apache.ignite.IgniteLock;
+import java.util.UUID;
 
 /**
- * Grid cache reentrant lock ({@code 'Ex'} stands for external).
+ * Interface used to abstract the NodeUpdates Logic for datastructures.  
+ * 
  */
-public interface GridCacheLockEx extends IgniteLock, GridCacheRemovable, GridCacheNodeUpdate {
+public interface GridCacheNodeUpdate {
+
     /**
-     * Get current reentrant lock latch key.
+     * Callback to notify  on topology changes of node removal.
      *
-     * @return Lock key.
+     * @param nodeId Id of the node that left the grid.
      */
-    public GridCacheInternalKey key();
-
-    /**
-     * Callback to notify reentrant lock on changes.
-     *
-     * @param state New reentrant lock state.
-     */
-    public void onUpdate(GridCacheLockState state);
-
-
-    /**
-     * Callback to notify local reentrant lock instance on node stop.
-     */
-    public void onStop();
+    public void onNodeRemoved(UUID nodeId);
 }

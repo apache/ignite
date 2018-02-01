@@ -145,10 +145,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                         UUID leftNodeId = discoEvt.eventNode().id();
 
                         for (GridCacheRemovable ds : dsMap.values()) {
-                            if (ds instanceof GridCacheSemaphoreEx)
-                                ((GridCacheSemaphoreEx)ds).onNodeRemoved(leftNodeId);
-                            else if (ds instanceof GridCacheLockEx)
-                                ((GridCacheLockEx)ds).onNodeRemoved(leftNodeId);
+                            if (ds instanceof GridCacheNodeUpdate)
+                                ((GridCacheNodeUpdate)ds).onNodeRemoved(leftNodeId);
                         }
 
                         return null;
@@ -228,7 +226,24 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
             if (ds instanceof GridCacheLockEx)
                 ((GridCacheLockEx)ds).onStop();
-        }
+            
+            if(ds instanceof GridCacheNodeUpdate){
+                ctx.closure().callLocalSafe(
+                    new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+
+                            for (GridCacheRemovable ds : dsMap.values()) {
+                                if (ds instanceof GridCacheNodeUpdate)
+                                        ((GridCacheNodeUpdate)ds).onNodeRemoved(ctx.localNodeId());
+                            }
+
+                            return null;
+                        }
+                    },
+                    false);
+            }
+                
+        }   
 
         CountDownLatch init0 = initLatch;
 
@@ -1209,6 +1224,20 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 if (val == null && !create)
                     return null;
 
+                // check Semephore state is consistent with Cluster state. 
+                if(val!=null  && sem!=null && val instanceof GridCacheSemaphoreState){
+                    GridCacheSemaphoreState semState=(GridCacheSemaphoreState)val;
+
+                    for(UUID nodeId: semState.getWaiters().keySet()){
+                        ClusterNode node =ctx.cluster().get().node(nodeId);
+                        if(node==null){
+                            sem.onNodeRemoved(nodeId);
+                            if (log.isDebugEnabled())
+                                log.debug("Removed node found to be waiting which is no longer active: " +nodeId);
+                        }
+                    }
+                }
+                
                 AtomicDataStructureValue retVal = (val == null ? new GridCacheSemaphoreState(cnt,
                     new HashMap<UUID, Integer>(), failoverSafe, ctx.discovery().gridStartTime()) : null);
 
