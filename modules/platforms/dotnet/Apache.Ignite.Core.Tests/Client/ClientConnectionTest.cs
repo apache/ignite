@@ -393,7 +393,13 @@ namespace Apache.Ignite.Core.Tests.Client
 
             // Stop server.
             Ignition.StopAll(true);
-            client.GetCacheNames();
+
+            // First request fails, error is detected.
+            var ex = Assert.Catch(() => client.GetCacheNames());
+            Assert.IsNotNull(GetSocketException(ex));
+
+            // Second request causes reconnect attempt.
+            Assert.AreEqual(0, client.GetCacheNames().Count);
 
             // TODO: ???
         }
