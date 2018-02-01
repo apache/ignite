@@ -24,7 +24,6 @@ import java.util.regex.Pattern;
 
 /** A placeholder for bulk load CSV format parser options. */
 public class BulkLoadCsvFormat extends BulkLoadFormat {
-
     /** Line separator pattern. */
     @NotNull public static final Pattern DEFAULT_LINE_SEP_RE = Pattern.compile("[\r\n]+");
 
@@ -43,18 +42,20 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
     /** Format name. */
     public static final String NAME = "CSV";
 
+    /** Line separator pattern. */
     @Nullable private Pattern lineSeparatorRe;
-    @Nullable private Pattern fieldSeparatorRe;
-    @Nullable private String quoteChars;
-    @Nullable private Pattern commentChars;
-    @Nullable private String escapeChars;
 
-    /**
-     * Creates the format description with null values. SQL parser and executing code
-     * configures the settings via setters.
-     */
-    public BulkLoadCsvFormat() {
-    }
+    /** Field separator pattern. */
+    @Nullable private Pattern fieldSeparatorRe;
+
+    /** Set of quote characters. */
+    @Nullable private String quoteChars;
+
+    /** Line comment start pattern. */
+    @Nullable private Pattern commentChars;
+
+    /** Set of escape start characters. */
+    @Nullable private String escapeChars;
 
     /**
      * Returns the name of the format.

@@ -38,7 +38,7 @@ public class BulkLoadCsvParser extends BulkLoadParser {
 
     /**
      * Creates bulk load CSV parser.
-
+     *
      *  @param format Format options (parsed from COPY command on the server side).
      */
     public BulkLoadCsvParser(BulkLoadCsvFormat format) {
@@ -62,12 +62,12 @@ public class BulkLoadCsvParser extends BulkLoadParser {
      */
     @Override protected Iterable<List<Object>> parseBatch(JdbcBulkLoadBatchRequest req, boolean isLastBatch)
         throws IgniteCheckedException {
-        List<List<Object>> result = new LinkedList<>();
+        List<List<Object>> res = new LinkedList<>();
 
-        collectorBlock.output(result);
+        collectorBlock.output(res);
 
         inputBlock.accept(req.data(), isLastBatch);
 
-        return result;
+        return res;
     }
 }
