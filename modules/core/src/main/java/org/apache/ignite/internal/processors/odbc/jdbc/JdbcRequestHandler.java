@@ -24,6 +24,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadClientParameters;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -240,7 +241,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 case CMD_FINISHED_EOF:
                     bulkLoadRequests.remove(req.queryId());
 
-                    processor.close();
+                    processor.close(req.cmd() == CMD_FINISHED_ERROR);
 
                     // fall through
 
@@ -292,9 +293,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 bulkLoadRequests.clear();
 
-                for (JdbcBulkLoadProcessor processor : requests.values()) {
-                    processor.close();
-                }
+                for (JdbcBulkLoadProcessor processor : requests.values())
+                    processor.close(true);
             }
             finally {
                 busyLock.leaveBusy();
@@ -371,11 +371,14 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             FieldsQueryCursor<List<?>> fieldsCur = results.get(0);
 
             if (fieldsCur instanceof BulkLoadContextCursor) {
-                BulkLoadProcessor processor = ((BulkLoadContextCursor)fieldsCur).bulkLoadProcessor();
+                BulkLoadContextCursor blCur = (BulkLoadContextCursor) fieldsCur;
 
-                bulkLoadRequests.put(qryId, new JdbcBulkLoadProcessor(processor));
+                BulkLoadProcessor blProcessor = blCur.bulkLoadProcessor();
+                BulkLoadClientParameters clientParams = blCur.clientParams();
 
-                return new JdbcResponse(new JdbcBulkLoadAckResult(qryId, processor.params()));
+                bulkLoadRequests.put(qryId, new JdbcBulkLoadProcessor(blProcessor));
+
+                return new JdbcResponse(new JdbcBulkLoadAckResult(qryId, clientParams));
             }
 
             if (results.size() == 1) {

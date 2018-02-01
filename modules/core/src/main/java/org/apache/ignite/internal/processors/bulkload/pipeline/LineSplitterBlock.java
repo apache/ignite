@@ -40,13 +40,11 @@ public class LineSplitterBlock extends PipelineBlock<char[], String> {
      * @param delimiter The line separator pattern.
      */
     public LineSplitterBlock(Pattern delimiter) {
-        super();
-
         this.delimiter = delimiter;
     }
 
     /** {@inheritDoc} */
-    @Override public void accept(char[] chars, boolean isEof) throws IgniteCheckedException {
+    @Override public void accept(char[] chars, boolean isLastPortion) throws IgniteCheckedException {
         leftover.append(chars);
 
         String input = leftover.toString();
@@ -65,7 +63,7 @@ public class LineSplitterBlock extends PipelineBlock<char[], String> {
         if (lastPos != 0)
             leftover.delete(0, lastPos);
 
-        if (isEof && leftover.length() > 0) {
+        if (isLastPortion && leftover.length() > 0) {
             nextBlock.accept(leftover.toString(), true);
             leftover.setLength(0);
         }

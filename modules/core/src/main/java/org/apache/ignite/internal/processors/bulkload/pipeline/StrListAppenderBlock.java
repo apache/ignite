@@ -24,15 +24,13 @@ import java.util.List;
  * The PipelineBlock which appends its input to a list set using {@link #output(List)} method.
  */
 public class StrListAppenderBlock extends PipelineBlock<String[], Object> {
-    /** The output list */
+    /** The output list. */
     private List<List<Object>> output;
 
     /**
      * Creates the block. List can be configured using {@link #output(List)} method.
      */
     public StrListAppenderBlock() {
-        super();
-
         this.output = null;
     }
 
@@ -46,7 +44,7 @@ public class StrListAppenderBlock extends PipelineBlock<String[], Object> {
     }
 
     /** {@inheritDoc} */
-    @Override public void accept(String[] elements, boolean isEof) {
+    @Override public void accept(String[] elements, boolean isLastPortion) {
         output.add(Arrays.asList(elements));
     }
 }

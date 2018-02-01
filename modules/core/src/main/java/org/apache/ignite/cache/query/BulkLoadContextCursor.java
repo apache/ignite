@@ -17,28 +17,34 @@
 
 package org.apache.ignite.cache.query;
 
+import org.apache.ignite.internal.processors.bulkload.BulkLoadClientParameters;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
 /**
- * A special FieldsQueryCursor subclass that is used as a sentinel to
- * hold result (a context) from bulk load (COPY) command.
+ * A special FieldsQueryCursor subclass that is used as a sentinel to hold from bulk load (COPY) command: the bulk load
+ * batch processor and parameters to send to the client.
  * */
 public class BulkLoadContextCursor implements FieldsQueryCursor<List<?>> {
     /** Bulk load context from SQL command. */
-    private final BulkLoadProcessor bulkLoadProcessor;
+    private final BulkLoadProcessor processor;
+
+    /** Bulk load parameters to send to the client. */
+    private final BulkLoadClientParameters clientParams;
 
     /**
      * Creates a cursor.
      *
-     * @param bulkLoadProcessor Bulk load context object to store.
+     * @param processor Bulk load context object to store.
      */
-    public BulkLoadContextCursor(BulkLoadProcessor bulkLoadProcessor) {
-        this.bulkLoadProcessor = bulkLoadProcessor;
+    public BulkLoadContextCursor(BulkLoadProcessor processor, BulkLoadClientParameters clientParams) {
+        this.processor = processor;
+        this.clientParams = clientParams;
     }
 
     /**
@@ -47,12 +53,21 @@ public class BulkLoadContextCursor implements FieldsQueryCursor<List<?>> {
      * @return a bulk load context.
      */
     public BulkLoadProcessor bulkLoadProcessor() {
-        return bulkLoadProcessor;
+        return processor;
+    }
+
+    /**
+     * Returns the bulk load parameters to send to the client.
+     *
+     * @return The bulk load parameters to send to the client.
+     */
+    public BulkLoadClientParameters clientParams() {
+        return clientParams;
     }
 
     /** {@inheritDoc} */
     @Override public List<List<?>> getAll() {
-        return Collections.singletonList(Collections.singletonList(bulkLoadProcessor));
+        return Collections.singletonList(Arrays.asList(processor, clientParams));
     }
 
     /** {@inheritDoc} */
@@ -67,14 +82,14 @@ public class BulkLoadContextCursor implements FieldsQueryCursor<List<?>> {
 
     /** {@inheritDoc} */
     @Override public String getFieldName(int idx) {
-        if (idx != 0)
+        if (idx < 0 || idx > 1)
             throw new IndexOutOfBoundsException();
 
-        return "bulkLoadProcessor"; // dummy stub
+        return idx == 0 ? "processor" : "clientParams"; // dummy stub
     }
 
     /** {@inheritDoc} */
     @Override public int getColumnsCount() {
-        return 1; // dummy stub
+        return 2; // dummy stub
     }
 }

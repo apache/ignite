@@ -22,38 +22,34 @@ import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 
-import java.io.Closeable;
-import java.util.Collections;
-import java.util.List;
-
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_CONTINUE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_ERROR;
 
-public class JdbcBulkLoadProcessor implements Closeable {
+public class JdbcBulkLoadProcessor {
     /** A core processor that handles incoming data packets. */
     private final BulkLoadProcessor processor;
 
     /** Next batch index (for a very simple check that all batches were delivered to us). */
     protected long nextBatchIdx;
 
-    /** FIXME SHQ */
+    /**
+     * Creates a JDBC-specific adapter for bulk load processor.
+     *
+     * @param processor Bulk load processor from the core to delegate calls to.
+     */
     public JdbcBulkLoadProcessor(BulkLoadProcessor processor) {
         this.processor = processor;
         nextBatchIdx = 0;
     }
 
     /**
-     * Processes a batch of input data. Context and request are supplied as parameters.
-     * Returns a list of records parsed (in most cases this is a list of strings).
+     * Completely processes a bulk load batch request.
      *
-     * <p>Note that conversion between parsed and database table type is done by the other
-     * object (see {@link BulkLoadProcessor#dataConverter}) by the request processing code.
-     * This method is not obliged to do this conversion.
+     * Calls {@link BulkLoadProcessor} wrapping around some JDBC-specific logic
+     * (commands, bulk load batch index checking).
      *
      * @param req The current request.
-     * @return The list of records.
-     * @throws IgniteCheckedException If any processing error occurs.
      */
     public void processBatch(JdbcBulkLoadBatchRequest req)
         throws IgniteCheckedException {
@@ -75,8 +71,6 @@ public class JdbcBulkLoadProcessor implements Closeable {
                 break;
 
             case CMD_FINISHED_ERROR:
-                processor.abortProcessing();
-
                 break;
 
             default:
@@ -84,14 +78,22 @@ public class JdbcBulkLoadProcessor implements Closeable {
         }
     }
 
-    /** FIXME SHQ */
-    @Override public void close() {
-        processor.close();
+    /**
+     * Aborts processing and closes the underlying objects.
+     *
+     * @param isAbort true if the processing is aborted.
+     */
+    public void close(boolean isAbort) {
+        processor.close(isAbort);
+        nextBatchIdx = -1;
     }
 
-    /** FIXME SHQ */
+    /**
+     * Provides update counter for sending in the {@link JdbcBatchExecuteResult}.
+     *
+     * @return The update counter for sending in {@link JdbcBatchExecuteResult}.
+     */
     public long updateCnt() {
         return processor.outputStreamer().updateCnt();
-
     }
 }

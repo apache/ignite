@@ -45,7 +45,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadCacheWriter;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
-import org.apache.ignite.internal.processors.bulkload.BulkLoadParameters;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadClientParameters;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadParser;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadStreamerWriter;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
@@ -54,7 +54,6 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
@@ -990,9 +989,7 @@ public class DmlStatementsProcessor {
     public FieldsQueryCursor<List<?>> runDmlStatement(String sql, SqlCommand cmd) throws IgniteCheckedException {
         try {
             if (cmd instanceof SqlBulkLoadCommand) {
-                BulkLoadProcessor processor = processBulkLoadCommand((SqlBulkLoadCommand)cmd);
-
-                return new BulkLoadContextCursor(processor);
+                return processBulkLoadCommand((SqlBulkLoadCommand)cmd);
             }
             else
                 throw new IgniteSQLException("Unsupported DML operation: " + sql,
@@ -1014,9 +1011,9 @@ public class DmlStatementsProcessor {
      * @return The context (which is the result of the first request/response).
      * @throws IgniteCheckedException If something failed.
      */
-    public BulkLoadProcessor processBulkLoadCommand(SqlBulkLoadCommand cmd) throws IgniteCheckedException {
+    public FieldsQueryCursor<List<?>> processBulkLoadCommand(SqlBulkLoadCommand cmd) throws IgniteCheckedException {
         if (cmd.batchSize() == null)
-            cmd.batchSize(BulkLoadParameters.DEFAULT_BATCH_SIZE);
+            cmd.batchSize(BulkLoadClientParameters.DEFAULT_BATCH_SIZE);
 
         GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
@@ -1034,11 +1031,13 @@ public class DmlStatementsProcessor {
 
         BulkLoadCacheWriter outputWriter = new BulkLoadStreamerWriter(streamer);
 
-        BulkLoadParameters params = new BulkLoadParameters(cmd.localFileName(), cmd.batchSize());
-
         BulkLoadParser inputParser = BulkLoadParser.createParser(cmd.inputFormat());
 
-        return new BulkLoadProcessor(params, inputParser, dataConverter, outputWriter);
+        BulkLoadProcessor processor = new BulkLoadProcessor(inputParser, dataConverter, outputWriter);
+
+        BulkLoadClientParameters params = new BulkLoadClientParameters(cmd.localFileName(), cmd.batchSize());
+
+        return new BulkLoadContextCursor(processor, params);
     }
 
     /** */

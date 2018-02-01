@@ -35,23 +35,23 @@ public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
 
     /**
      * Creates a CSV line parser.
+     *
      * @param fieldDelimiter The pattern for the field delimiter.
-     * @param quoteChars Quoting character. */
+     * @param quoteChars Quoting character.
+     */
     public CsvLineProcessorBlock(Pattern fieldDelimiter, String quoteChars) {
-        super();
-
         this.fieldDelimiter = fieldDelimiter;
         this.quoteChars = quoteChars;
     }
 
     /** {@inheritDoc} */
-    @Override public void accept(String input, boolean isEof) throws IgniteCheckedException {
+    @Override public void accept(String input, boolean isLastPortion) throws IgniteCheckedException {
         String[] fields = fieldDelimiter.split(input);
 
         for (int i = 0; i < fields.length; i++)
             fields[i] = trim(fields[i]);
 
-        nextBlock.accept(fields, isEof);
+        nextBlock.accept(fields, isLastPortion);
     }
 
     /**

@@ -21,15 +21,16 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.charset.Charset;
 
-/** Bulk load parameters -- which was specified by the user or their default values. */
-public class BulkLoadParameters {
-
-    /** Minimal batch size. */
+/**
+ * Bulk load parameters, which are parsed from SQL command and sent from server to client.
+ */
+public class BulkLoadClientParameters {
+    /** Minimum batch size. */
     public static final int MIN_BATCH_SIZE = 1;
 
     /**
-     * Maximal batch size. Note that the batch is wrapped to transport objects and the overall packet should fit
-     * into a Java array.
+     * Maximum batch size. Note that the batch is wrapped to transport objects and the overall packet should fit
+     * into a Java array. 512 has been chosen arbitrarily.
      */
     public static final int MAX_BATCH_SIZE = Integer.MAX_VALUE - 512;
 
@@ -47,10 +48,11 @@ public class BulkLoadParameters {
 
     /**
      * Creates a bulk load parameters.
+     *
      * @param locFileName File name to send from client to server.
      * @param batchSize Batch size (Number of bytes in a portion of a file to send in one Jdbc request/response).
      */
-    public BulkLoadParameters(@NotNull String locFileName, int batchSize) {
+    public BulkLoadClientParameters(@NotNull String locFileName, int batchSize) {
         this.locFileName = locFileName;
         this.batchSize = batchSize;
     }
@@ -83,8 +85,14 @@ public class BulkLoadParameters {
         return sz >= MIN_BATCH_SIZE && sz <= MAX_BATCH_SIZE;
     }
 
+    /**
+     * Creates proper batch size error message if {@link #isValidBatchSize(int)} check has failed.
+     *
+     * @param sz The batch size.
+     * @return The string with the error message.
+     */
     public static String batchSizeErrorMsg(int sz) {
         return "Batch size should be within [" +
-            BulkLoadParameters.MIN_BATCH_SIZE + ".." + BulkLoadParameters.MAX_BATCH_SIZE + "]: " + sz;
+            BulkLoadClientParameters.MIN_BATCH_SIZE + ".." + BulkLoadClientParameters.MAX_BATCH_SIZE + "]: " + sz;
     }
 }

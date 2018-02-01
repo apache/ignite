@@ -24,9 +24,9 @@ import java.util.List;
 /**
  * Bulk load file format parser superclass + factory.
  *
- * <p>The parser uses corresponding options (see {@link BulkLoadFormat} class).
- *
  * <p>The parser processes a batch of input data and return a list of records.
+ *
+ * <p>The parser uses corresponding options from {@link BulkLoadFormat} subclass.
  */
 public abstract class BulkLoadParser {
     /**

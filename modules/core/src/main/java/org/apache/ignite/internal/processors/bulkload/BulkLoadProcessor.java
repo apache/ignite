@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.bulkload;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.lang.IgniteBiTuple;
 
@@ -29,43 +30,34 @@ import java.util.List;
  * received from the client side.
  */
 public class BulkLoadProcessor {
-    /** Parameters extracted from the SQL COPY command. */
-    private final BulkLoadParameters params;
-
     /** Parser of the input bytes. */
     private final BulkLoadParser inputParser;
 
-    /** Converter, which transforms the list of strings parsed from the input stream to the key+value entry to add to
-     * the cache. */
+    /**
+     * Converter, which transforms the list of strings parsed from the input stream to the key+value entry to add to
+     * the cache.
+     */
     private final IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter;
 
     /** Streamer that puts actual key/value into the cache. */
     private final BulkLoadCacheWriter outputStreamer;
 
+    private boolean isClosed;
+
     /**
      * Creates bulk load processor.
      *
-     * @param params Parameters extracted from the SQL COPY command.
      * @param inputParser Parser of the input bytes.
      * @param dataConverter Converter, which transforms the list of strings parsed from the input stream to the
      *     key+value entry to add to the cache.
      * @param outputStreamer Streamer that puts actual key/value into the cache.
      */
-    public BulkLoadProcessor(BulkLoadParameters params, BulkLoadParser inputParser,
-        IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter, BulkLoadCacheWriter outputStreamer) {
-        this.params = params;
+    public BulkLoadProcessor(BulkLoadParser inputParser, IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter,
+        BulkLoadCacheWriter outputStreamer) {
         this.inputParser = inputParser;
         this.dataConverter = dataConverter;
         this.outputStreamer = outputStreamer;
-    }
-
-    /**
-     * Returns the parameters extracted from the SQL COPY command.
-     *
-     * @return The parameters extracted from the SQL COPY command.
-     */
-    public BulkLoadParameters params() {
-        return params;
+        isClosed = false;
     }
 
     /**
@@ -78,19 +70,15 @@ public class BulkLoadProcessor {
     }
 
     /**
-     * Closes the underlying objects ({@link IgniteDataStreamer}).
-     */
-    public void close() {
-        outputStreamer.close();
-    }
-
-    /**
      * Processes the incoming batch and writes data to the cache by calling the data converter and output streamer.
      *
      * @param batchData Data from the current batch.
      * @param isLastBatch true if this is the last batch.
      */
     public void processBatch(byte[] batchData, boolean isLastBatch) throws IgniteCheckedException {
+        if (isClosed)
+            throw new IgniteIllegalStateException("Attempt to process a batch on a closed BulkLoadProcessor");
+
         Iterable<List<Object>> inputRecords = inputParser.parseBatch(batchData, isLastBatch);
 
         for (List<Object> record : inputRecords) {
@@ -100,7 +88,14 @@ public class BulkLoadProcessor {
         }
     }
 
-    public void abortProcessing() {
-        // Currently does nothing. Will be used for rolling back a transaction.
+    /**
+     * Aborts processing and closes the underlying objects ({@link IgniteDataStreamer}).
+     *
+     * @param isAbort true if the processing is aborted.
+     */
+    public void close(boolean isAbort) {
+        isClosed = true;
+
+        outputStreamer.close();
     }
 }

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.sql.command;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadCsvFormat;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadFormat;
-import org.apache.ignite.internal.processors.bulkload.BulkLoadParameters;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadClientParameters;
 import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
@@ -164,8 +164,8 @@ public class SqlBulkLoadCommand implements SqlCommand {
 
                     int sz = parseInt(lex);
 
-                    if (!BulkLoadParameters.isValidBatchSize(sz))
-                        throw error(lex, BulkLoadParameters.batchSizeErrorMsg(sz));
+                    if (!BulkLoadClientParameters.isValidBatchSize(sz))
+                        throw error(lex, BulkLoadClientParameters.batchSizeErrorMsg(sz));
 
                     batchSize = sz;
 

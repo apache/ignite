@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.bulkload.BulkLoadParameters;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadClientParameters;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -36,8 +36,9 @@ public class JdbcBulkLoadAckResult extends JdbcResult {
 
     /**
      * Bulk load parameters, which are parsed on the server side and sent to client to specify
-     * what files to send, batch size, etc. */
-    private BulkLoadParameters params;
+     * what files to send, batch size, etc.
+     */
+    private BulkLoadClientParameters params;
 
     /**Creates uninitialized bulk load batch request result. */
     public JdbcBulkLoadAckResult() {
@@ -53,7 +54,7 @@ public class JdbcBulkLoadAckResult extends JdbcResult {
      * @param queryId Query ID to send in further {@link JdbcBulkLoadBatchRequest}-s.
      * @param params Various parameters for sending batches from client side.
      */
-    public JdbcBulkLoadAckResult(long queryId, BulkLoadParameters params) {
+    public JdbcBulkLoadAckResult(long queryId, BulkLoadClientParameters params) {
         super(BULK_LOAD_ACK);
 
         this.queryId = queryId;
@@ -74,7 +75,7 @@ public class JdbcBulkLoadAckResult extends JdbcResult {
      *
      * @return The parameters for the client.
      */
-    public BulkLoadParameters params() {
+    public BulkLoadClientParameters params() {
         return params;
     }
 
@@ -96,10 +97,10 @@ public class JdbcBulkLoadAckResult extends JdbcResult {
         String locFileName = reader.readString();
         int batchSize = reader.readInt();
 
-        if (!BulkLoadParameters.isValidBatchSize(batchSize))
-            throw new BinaryObjectException(BulkLoadParameters.batchSizeErrorMsg(batchSize));
+        if (!BulkLoadClientParameters.isValidBatchSize(batchSize))
+            throw new BinaryObjectException(BulkLoadClientParameters.batchSizeErrorMsg(batchSize));
 
-        params = new BulkLoadParameters(locFileName, batchSize);
+        params = new BulkLoadClientParameters(locFileName, batchSize);
     }
 
     /** {@inheritDoc} */

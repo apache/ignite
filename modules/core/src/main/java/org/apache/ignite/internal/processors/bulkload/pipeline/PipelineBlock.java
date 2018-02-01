@@ -50,11 +50,12 @@ public abstract class PipelineBlock<I, O> {
     }
 
     /**
-     * Accepts a portion of input. {@code isEof} parameter should be set if this is a last portion of the input.
-     * The method must not be called after the eof (so the call with {@code isEof == true} should be the last one.
+     * Accepts a portion of input. {@code isLastPortion} parameter should be set if this is a last portion of the input.
+     * The method must not be called after the end of input (so the call with {@code isLastPortion == true}
+     * should be the last one.
      *
      * @param inputPortion Portion of input.
-     * @param isEof Is this the last portion.
+     * @param isLastPortion Is this the last portion.
      */
-    public abstract void accept(I inputPortion, boolean isEof) throws IgniteCheckedException;
+    public abstract void accept(I inputPortion, boolean isLastPortion) throws IgniteCheckedException;
 }
