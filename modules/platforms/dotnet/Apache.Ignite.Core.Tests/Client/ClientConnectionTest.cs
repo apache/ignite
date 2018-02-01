@@ -170,6 +170,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 var ex = Assert.Throws<IgniteClientException>(() =>
                     new Impl.Client.ClientSocket(GetClientConfiguration(),
                     new DnsEndPoint("localhost", ClientConnectorConfiguration.DefaultPort, AddressFamily.InterNetwork),
+                    null,
                     new Impl.Client.ClientProtocolVersion(-1, -1, -1)));
 
                 Assert.AreEqual(ClientStatusCode.Fail, ex.StatusCode);

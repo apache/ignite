@@ -82,16 +82,22 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Disposed flag. */
         private bool _isDisposed;
 
+        /** Error callback. */
+        private readonly Action _onError;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientSocket" /> class.
         /// </summary>
         /// <param name="clientConfiguration">The client configuration.</param>
         /// <param name="endPoint">The end point to connect to.</param>
+        /// <param name="onError">Error callback.</param>
         /// <param name="version">Protocol version.</param>
-        public ClientSocket(IgniteClientConfiguration clientConfiguration, EndPoint endPoint,
+        public ClientSocket(IgniteClientConfiguration clientConfiguration, EndPoint endPoint, Action onError = null,
             ClientProtocolVersion? version = null)
         {
             Debug.Assert(clientConfiguration != null);
+
+            _onError = onError;
 
             _timeout = clientConfiguration.SocketTimeout;
 
@@ -411,19 +417,41 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /// <summary>
-        /// Writes to the socket.
+        /// Writes to the socket. All socket writes should go through this method.
         /// </summary>
         private void SocketWrite(byte[] buf, int len)
         {
-            _stream.Write(buf, 0, len);
+            try
+            {
+                _stream.Write(buf, 0, len);
+            }
+            catch (Exception)
+            {
+                if (_onError != null)
+                {
+                    _onError();
+                }
+                throw;
+            }
         }
 
         /// <summary>
-        /// Reads from the socket.
+        /// Reads from the socket. All socket reads should go through this method.
         /// </summary>
         private int SocketRead(byte[] buf, int pos, int len)
         {
-            return _stream.Read(buf, pos, len);
+            try
+            {
+                return _stream.Read(buf, pos, len);
+            }
+            catch (Exception)
+            {
+                if (_onError != null)
+                {
+                    _onError();
+                }
+                throw;
+            }
         }
 
         /// <summary>
