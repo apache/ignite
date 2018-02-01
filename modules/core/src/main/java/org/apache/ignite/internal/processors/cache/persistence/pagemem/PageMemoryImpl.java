@@ -743,11 +743,8 @@ public class PageMemoryImpl implements PageMemoryEx {
             checkpointPool.releaseFreePage(tmpBufPtr);
         }
 
-        if (rmv) {
-            memMetrics.updateEvictionRate();
-
+        if (rmv)
             seg.loadedPages.remove(cacheId, PageIdUtils.effectivePageId(pageId), tag);
-        }
 
         if (seg.segCheckpointPages != null)
             seg.segCheckpointPages.remove(new FullPageId(pageId, cacheId));
@@ -2070,8 +2067,6 @@ public class PageMemoryImpl implements PageMemoryEx {
                     continue;
                 }
 
-                memMetrics.updateEvictionRate();
-
                 loadedPages.remove(
                     fullPageId.groupId(),
                     PageIdUtils.effectivePageId(fullPageId.pageId()),
@@ -2148,8 +2143,6 @@ public class PageMemoryImpl implements PageMemoryEx {
                 final FullPageId fullPageId = PageHeader.fullPageId(absEvictAddr);
 
                 if (prepareEvict(fullPageId, absEvictAddr)) {
-                    memMetrics.updateEvictionRate();
-
                     loadedPages.remove(
                         fullPageId.groupId(),
                         PageIdUtils.effectivePageId(fullPageId.pageId()),
