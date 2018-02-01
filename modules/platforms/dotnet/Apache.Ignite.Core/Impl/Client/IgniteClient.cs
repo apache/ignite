@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             _configuration = new IgniteClientConfiguration(clientConfiguration);
 
-            _socket = new ClientSocket(_configuration);
+            _socket = new ClientFailoverSocket(_configuration);
 
             _marsh = new Marshaller(_configuration.BinaryConfiguration)
             {
