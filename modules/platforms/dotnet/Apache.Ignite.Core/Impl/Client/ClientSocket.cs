@@ -443,27 +443,7 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 try
                 {
-                    var socket = new Socket(endPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp)
-                    {
-                        NoDelay = cfg.TcpNoDelay,
-                        Blocking = true,
-                        SendTimeout = (int) cfg.SocketTimeout.TotalMilliseconds,
-                        ReceiveTimeout = (int) cfg.SocketTimeout.TotalMilliseconds
-                    };
-
-                    if (cfg.SocketSendBufferSize != IgniteClientConfiguration.DefaultSocketBufferSize)
-                    {
-                        socket.SendBufferSize = cfg.SocketSendBufferSize;
-                    }
-
-                    if (cfg.SocketReceiveBufferSize != IgniteClientConfiguration.DefaultSocketBufferSize)
-                    {
-                        socket.ReceiveBufferSize = cfg.SocketReceiveBufferSize;
-                    }
-
-                    socket.Connect(endPoint);
-
-                    return socket;
+                    return Connect(cfg, endPoint);
                 }
                 catch (SocketException e)
                 {
@@ -483,6 +463,36 @@ namespace Apache.Ignite.Core.Impl.Client
 
             throw new AggregateException("Failed to establish Ignite thin client connection, " +
                                          "examine inner exceptions for details.", errors);
+        }
+
+        /// <summary>
+        /// Connects the socket.
+        /// </summary>
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope",
+            Justification = "Socket is returned from this method.")]
+        private static Socket Connect(IgniteClientConfiguration cfg, EndPoint endPoint)
+        {
+            var socket = new Socket(endPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp)
+            {
+                NoDelay = cfg.TcpNoDelay,
+                Blocking = true,
+                SendTimeout = (int) cfg.SocketTimeout.TotalMilliseconds,
+                ReceiveTimeout = (int) cfg.SocketTimeout.TotalMilliseconds
+            };
+
+            if (cfg.SocketSendBufferSize != IgniteClientConfiguration.DefaultSocketBufferSize)
+            {
+                socket.SendBufferSize = cfg.SocketSendBufferSize;
+            }
+
+            if (cfg.SocketReceiveBufferSize != IgniteClientConfiguration.DefaultSocketBufferSize)
+            {
+                socket.ReceiveBufferSize = cfg.SocketReceiveBufferSize;
+            }
+
+            socket.Connect(endPoint);
+
+            return socket;
         }
 
         /// <summary>
