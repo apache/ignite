@@ -42,7 +42,7 @@ if exist "%JAVA_HOME%\bin\java.exe" goto checkJdkVersion
 goto error_finish
 
 :checkJdkVersion
-"%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr /R /c:"java version .9\..*" /c:"java version .1\.8\..*" > nul
+"%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr /R /c:"version .9\..*" /c:"version .1\.8\..*" > nul
 if %ERRORLEVEL% equ 0 goto checkIgniteHome1
     echo %0, ERROR:
     echo The version of JAVA installed in %JAVA_HOME% is incorrect.
@@ -144,7 +144,7 @@ if "%ARGS%" == "" set ARGS=%*
 ::
 :: Final JVM_OPTS for Java 9 compatibility
 ::
-"%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr /R /c:"java version .9\..*" > nul && set JVM_OPTS_VISOR=--add-exports java.base/jdk.internal.misc=ALL-UNNAMED --add-exports java.base/sun.nio.ch=ALL-UNNAMED --add-exports java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-modules java.xml.bind %JVM_OPTS%
+"%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr /R /c:"version .9\..*" > nul && set JVM_OPTS_VISOR=--add-exports java.base/jdk.internal.misc=ALL-UNNAMED --add-exports java.base/sun.nio.ch=ALL-UNNAMED --add-exports java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-modules java.xml.bind %JVM_OPTS%
 
 ::
 :: Starts Visor console.
