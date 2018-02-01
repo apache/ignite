@@ -42,6 +42,7 @@ public class BulkLoadProcessor {
     /** Streamer that puts actual key/value into the cache. */
     private final BulkLoadCacheWriter outputStreamer;
 
+    /** Becomes true after {@link #close(boolean)} method is called. */
     private boolean isClosed;
 
     /**
@@ -74,6 +75,7 @@ public class BulkLoadProcessor {
      *
      * @param batchData Data from the current batch.
      * @param isLastBatch true if this is the last batch.
+     * @throws IgniteIllegalStateException when called after {@link #close(boolean)}.
      */
     public void processBatch(byte[] batchData, boolean isLastBatch) throws IgniteCheckedException {
         if (isClosed)
@@ -91,7 +93,7 @@ public class BulkLoadProcessor {
     /**
      * Aborts processing and closes the underlying objects ({@link IgniteDataStreamer}).
      *
-     * @param isAbort true if the processing is aborted.
+     * @param isAbort true if the processing did not terminate normally.
      */
     public void close(boolean isAbort) {
         isClosed = true;

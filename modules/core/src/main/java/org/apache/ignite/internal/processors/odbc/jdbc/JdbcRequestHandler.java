@@ -223,8 +223,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
     /**
      * Processes a file batch sent from client as part of bulk load COPY command.
+     *
      * @param req Request object with a batch of a file received from client.
-     * @return Response to the client.
+     * @return Response to send to the client.
      */
     private ClientListenerResponse processBulkLoadFileBatch(JdbcBulkLoadBatchRequest req) {
         JdbcBulkLoadProcessor processor = bulkLoadRequests.get(req.queryId());
@@ -243,14 +244,16 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                     processor.close(req.cmd() == CMD_FINISHED_ERROR);
 
-                    // fall through
+                    break;
 
                 case CMD_CONTINUE:
-                    return new JdbcResponse(new JdbcQueryExecuteResult(req.queryId(), processor.updateCnt()));
+                    break;
 
                 default:
                     throw new IllegalArgumentException();
             }
+
+            return new JdbcResponse(new JdbcQueryExecuteResult(req.queryId(), processor.updateCnt()));
         }
         catch (Exception e) {
             U.error(null, "Error processing file batch", e);
