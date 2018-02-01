@@ -18,6 +18,8 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.authentication.AuthenticationPersistEnabledTest;
+import org.apache.ignite.internal.processors.authentication.AuthenticationSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeAdvancedSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeCoordinatorNotAffinityNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeSelfTest;
@@ -66,6 +68,9 @@ public class IgniteCacheTestSuite6 extends TestSuite {
 
 //        TODO enable this test after IGNITE-6753, now it takes too long
 //        suite.addTestSuite(IgniteOutOfMemoryPropagationTest.class);
+
+        suite.addTestSuite(AuthenticationSelfTest.class);
+        suite.addTestSuite(AuthenticationPersistEnabledTest.class);
 
         return suite;
     }

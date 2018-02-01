@@ -755,8 +755,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     discoWrk.discoCache = discoCache;
 
-                    if (!isLocDaemon && !ctx.clientDisconnected())
+                    if (!isLocDaemon && !ctx.clientDisconnected()) {
                         ctx.cache().context().exchange().onLocalJoin(discoEvt, discoCache);
+
+                        ctx.authentication().onLocalJoin(discoEvt, discoCache);
+                    }
 
                     IgniteInternalFuture<Boolean> transitionWaitFut = ctx.state().onLocalJoin(discoCache);
 
