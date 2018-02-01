@@ -1029,21 +1029,7 @@ public class DmlStatementsProcessor {
         final UpdatePlan plan = UpdatePlanBuilder.planForBulkLoad(cmd, tbl);
         final int colCnt = plan.columnNames().length;
 
-        IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter =
-            new IgniteClosureX<List<?>, IgniteBiTuple<?, ?>>() {
-                @Override public IgniteBiTuple<?, ?> applyx(List<?> record) throws IgniteCheckedException {
-                    if (record.size() < colCnt) { // IGNITE-7548
-                        ArrayList<Object> newRec = new ArrayList<>(record);
-
-                        for (int i = record.size(); i < colCnt; i++)
-                            newRec.add("");
-
-                        record = newRec;
-                    }
-
-                    return plan.processRow(record);
-                }
-            };
+        IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter = new BulkLoadDataConverter(colCnt, plan);
 
         GridCacheContext cache = tbl.cache();
 
@@ -1172,4 +1158,30 @@ public class DmlStatementsProcessor {
         }
     }
 
+    private static class BulkLoadDataConverter extends IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> {
+        private final int colCnt;
+        private final UpdatePlan plan;
+
+        public BulkLoadDataConverter(int colCnt, UpdatePlan plan) {
+            this.colCnt = colCnt;
+            this.plan = plan;
+        }
+
+        @Override public IgniteBiTuple<?, ?> applyx(List<?> record) throws IgniteCheckedException {
+            if (record.size() != colCnt) { // IGNITE-7548.
+                if (record.size() > colCnt) // Double check is an optimization for fast/slow path.
+                    record = record.subList(0, colCnt);
+                else {
+                    ArrayList<Object> newRec = new ArrayList<>(record);
+
+                    for (int i = record.size(); i < colCnt; i++)
+                        newRec.add("");
+
+                    record = newRec;
+                }
+            }
+
+            return plan.processRow(record);
+        }
+    }
 }
