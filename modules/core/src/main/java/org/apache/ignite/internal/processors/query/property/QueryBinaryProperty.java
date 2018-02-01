@@ -84,6 +84,7 @@ public class QueryBinaryProperty implements GridQueryProperty {
      * @param key {@code true} if key property, {@code false} otherwise, {@code null}  if unknown.
      * @param alias Field alias.
      * @param notNull {@code true} if null value is not allowed.
+     * @param caseInsensitive {@code true} if field is case insensitive.
      * @param defaultValue Default value.
      */
     public QueryBinaryProperty(GridKernalContext ctx, String propName, QueryBinaryProperty parent,
@@ -286,6 +287,7 @@ public class QueryBinaryProperty implements GridQueryProperty {
         return notNull;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean caseInsensitive() {
         return caseInsensitive;
     }

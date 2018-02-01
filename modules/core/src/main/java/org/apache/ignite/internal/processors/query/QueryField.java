@@ -56,6 +56,7 @@ public class QueryField implements Serializable {
      * @param name Field name.
      * @param typeName Class name for this field's values.
      * @param nullable Nullable flag.
+     * @param caseInsensitive Case insensitive flag.
      * @param dfltValue Default value.
      */
     public QueryField(String name, String typeName, boolean nullable, boolean caseInsensitive, Object dfltValue) {

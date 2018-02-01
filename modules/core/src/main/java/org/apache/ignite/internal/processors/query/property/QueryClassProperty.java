@@ -57,6 +57,7 @@ public class QueryClassProperty implements GridQueryProperty {
      * @param key {@code true} if key property, {@code false} otherwise.
      * @param name Property name.
      * @param notNull {@code true} if null value is not allowed.
+     * @param caseInsensitive {@code true} if field is case insensitive.
      * @param coCtx Cache Object Context.
      */
     public QueryClassProperty(QueryPropertyAccessor accessor, boolean key, String name,
@@ -147,6 +148,7 @@ public class QueryClassProperty implements GridQueryProperty {
         return notNull;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean caseInsensitive() {
         return caseInsensitive;
     }

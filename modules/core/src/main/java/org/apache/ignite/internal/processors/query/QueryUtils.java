@@ -698,6 +698,7 @@ public class QueryUtils {
      * @param isKeyField Key ownership flag, as defined in {@link QueryEntity#keyFields}: {@code true} if field belongs
      *      to key, {@code false} if it belongs to value, {@code null} if QueryEntity#keyFields is null.
      * @param notNull {@code true} if {@code null} value is not allowed.
+     * @param caseInsensitive {@code true} if field is case insensitive.
      * @param dlftVal Default value.
      * @return Binary property.
      * @throws IgniteCheckedException On error.
@@ -733,6 +734,7 @@ public class QueryUtils {
      * @param resType Result type.
      * @param aliases Aliases.
      * @param notNull {@code true} if {@code null} value is not allowed.
+     * @param caseInsensitive {@code true} if field is case insensitive.
      * @param coCtx Cache object context.
      * @return Class property.
      * @throws IgniteCheckedException If failed.
@@ -768,6 +770,7 @@ public class QueryUtils {
      * @param resType Result type.
      * @param aliases Aliases.
      * @param notNull {@code true} if {@code null} value is not allowed.
+     * @param caseInsensitive {@code true} if field is case insensitive.
      * @param coCtx Cache object context.
      * @return Class property.
      * @throws IgniteCheckedException If failed.
@@ -814,6 +817,7 @@ public class QueryUtils {
      * @param resType Expected result type.
      * @param aliases Aliases.
      * @param notNull {@code true} if {@code null} value is not allowed.
+     * @param caseInsensitive {@code true} if field is case insensitive.
      * @param coCtx Cache object context.
      * @return Property instance corresponding to the given path.
      */
@@ -1381,6 +1385,7 @@ public class QueryUtils {
             return true;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean caseInsensitive() {
             return false;
         }

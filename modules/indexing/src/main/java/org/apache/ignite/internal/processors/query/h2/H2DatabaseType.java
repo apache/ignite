@@ -135,10 +135,11 @@ public enum H2DatabaseType {
      * Resolves enum by class.
      *
      * @param cls Class.
+     * @param isCaseInsensitive flag to indicate
      * @return Enum value.
      */
-    public static H2DatabaseType fromClass(Class<?> cls, boolean isCaseSensitive) {
-        if(isCaseSensitive && cls == String.class)
+    public static H2DatabaseType fromClass(Class<?> cls, boolean isCaseInsensitive) {
+        if(isCaseInsensitive && cls == String.class)
             return VARCHAR_IGNORECASE;
         return fromClass(cls);
     }
