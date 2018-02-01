@@ -381,10 +381,10 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
-        /// Tests the failover and reconnect logic.
+        /// Tests reconnect logic with single server.
         /// </summary>
         [Test]
-        public void TestFailoverReconnect()
+        public void TestReconnect()
         {
             // Connect client and check.
             Ignition.Start(TestUtils.GetTestConfiguration());
@@ -408,6 +408,15 @@ namespace Apache.Ignite.Core.Tests.Client
             Assert.AreEqual(0, client.GetCacheNames().Count);
 
             // TODO: Test disabled reconnect, test multiple servers.
+        }
+
+        /// <summary>
+        /// Tests reconnect logic with multiple servers.
+        /// </summary>
+        [Test]
+        public void TestFailover()
+        {
+            // TODO
         }
 
         /// <summary>
