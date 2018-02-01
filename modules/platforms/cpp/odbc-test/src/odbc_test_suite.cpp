@@ -40,7 +40,7 @@ namespace ignite
 {
     namespace odbc
     {
-        void OdbcTestSuite::Connect(const std::string& connectStr)
+        void OdbcTestSuite::Prepare()
         {
             // Allocate an environment handle
             SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env);
@@ -54,12 +54,14 @@ namespace ignite
             SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
 
             BOOST_REQUIRE(dbc != NULL);
+        }
+
+        void OdbcTestSuite::Connect(const std::string& connectStr)
+        {
+            Prepare();
 
             // Connect string
-            std::vector<SQLCHAR> connectStr0;
-
-            connectStr0.reserve(connectStr.size() + 1);
-            std::copy(connectStr.begin(), connectStr.end(), std::back_inserter(connectStr0));
+            std::vector<SQLCHAR> connectStr0(connectStr.begin(), connectStr.end());
 
             SQLCHAR outstr[ODBC_BUFFER_SIZE];
             SQLSMALLINT outstrlen;
@@ -81,15 +83,29 @@ namespace ignite
 
         void OdbcTestSuite::Disconnect()
         {
-            // Releasing statement handle.
-            SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+            if (stmt)
+            {
+                // Releasing statement handle.
+                SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+                stmt = NULL;
+            }
 
-            // Disconneting from the server.
-            SQLDisconnect(dbc);
+            if (dbc)
+            {
+                // Disconneting from the server.
+                SQLDisconnect(dbc);
 
-            // Releasing allocated handles.
-            SQLFreeHandle(SQL_HANDLE_DBC, dbc);
-            SQLFreeHandle(SQL_HANDLE_ENV, env);
+                // Releasing allocated handles.
+                SQLFreeHandle(SQL_HANDLE_DBC, dbc);
+                dbc = NULL;
+            }
+
+            if (env)
+            {
+                // Releasing allocated handles.
+                SQLFreeHandle(SQL_HANDLE_ENV, env);
+                env = NULL;
+            }
         }
 
         Ignite OdbcTestSuite::StartTestNode(const char* cfg, const char* name)

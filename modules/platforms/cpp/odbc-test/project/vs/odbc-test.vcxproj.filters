@@ -139,6 +139,9 @@
     <ClCompile Include="..\..\src\odbc_test_suite.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\queries_ssl_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\test_type.h">
@@ -167,16 +170,13 @@
     <None Include="..\..\config\queries-test.xml">
       <Filter>Configs</Filter>
     </None>
-    <None Include="..\..\config\queries-test-noodbc-32.xml">
-      <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\queries-test-noodbc.xml">
-      <Filter>Configs</Filter>
-    </None>
     <None Include="..\..\config\queries-default.xml">
       <Filter>Configs</Filter>
     </None>
-    <None Include="..\..\config\queries-test-default.xml">
+    <None Include="..\..\config\queries-ssl.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\queries-ssl-32.xml">
       <Filter>Configs</Filter>
     </None>
   </ItemGroup>

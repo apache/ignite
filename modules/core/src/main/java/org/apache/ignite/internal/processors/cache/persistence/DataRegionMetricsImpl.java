@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -23,7 +24,6 @@ import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.LongAdder8;
 
 /**
  *
@@ -33,15 +33,15 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     private final IgniteOutClosure<Float> fillFactorProvider;
 
     /** */
-    private final LongAdder8 totalAllocatedPages = new LongAdder8();
+    private final LongAdder totalAllocatedPages = new LongAdder();
 
     /**
      * Counter for number of pages occupied by large entries (one entry is larger than one page).
      */
-    private final LongAdder8 largeEntriesPages = new LongAdder8();
+    private final LongAdder largeEntriesPages = new LongAdder();
 
     /** Counter for number of dirty pages. */
-    private LongAdder8 dirtyPages = new LongAdder8();
+    private LongAdder dirtyPages = new LongAdder();
 
     /** */
     private volatile boolean metricsEnabled;
