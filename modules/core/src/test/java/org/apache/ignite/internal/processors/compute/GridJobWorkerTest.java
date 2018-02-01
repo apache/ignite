@@ -13,6 +13,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.job.GridJobWorker;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lifecycle.LifecycleBean;
@@ -216,11 +217,12 @@ public class GridJobWorkerTest  extends GridCommonAbstractTest {
 
         Collection<Throwable> serverErrors = new ConcurrentLinkedQueue<>();
 
-        runServerNode(serverErrors, allowServerToStopLatch, serverIsStoppingLatch, nodesAreStoppedLatch);
-
-        runClientNode(nodesAreStoppedLatch);
-
         try {
+            GridJobWorker.useStaticLog = false;
+
+            runServerNode(serverErrors, allowServerToStopLatch, serverIsStoppingLatch, nodesAreStoppedLatch);
+            runClientNode(nodesAreStoppedLatch);
+
             assertTrue("Server or client node was not stopped.", nodesAreStoppedLatch.await(30000, TimeUnit.MILLISECONDS));
 
             // Check for NodeStoppingException
@@ -237,6 +239,9 @@ public class GridJobWorkerTest  extends GridCommonAbstractTest {
         catch(InterruptedException e) {
             e.printStackTrace();
             fail("Server or client node was interrupted.");
+        }
+        finally {
+            GridJobWorker.useStaticLog = true;
         }
     }
 }
