@@ -84,6 +84,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
             new ClientConnectorConfiguration()
                 .setSslEnabled(true)
                 .setUseIgniteSslContextFactory(setSslCtxFactoryToIgnite)
+                .setSslClientAuth(true)
                 .setSslContextFactory(setSslCtxFactoryToCli ? sslCtxFactory : null));
 
         cfg.setSslContextFactory(setSslCtxFactoryToIgnite ? sslCtxFactory : null);
@@ -320,6 +321,33 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
                     return null;
                 }
             }, SQLException.class, "Could not create trust KeyStore instance");
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testUnknownClientCertificate() throws Exception {
+        setSslCtxFactoryToCli = true;
+        sslCtxFactory = getTestSslContextFactory();
+
+        startGrids(1);
+
+        try {
+            GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    Connection c = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?useSSL=true" +
+                        "&sslClientCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
+                        "&sslClientCertificateKeyStorePassword=123456" +
+                        "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
+                        "&sslTrustCertificateKeyStorePassword=123456");
+
+                    return null;
+                }
+            }, SQLException.class, "Failed to SSL connect to server");
         }
         finally {
             stopAllGrids();
