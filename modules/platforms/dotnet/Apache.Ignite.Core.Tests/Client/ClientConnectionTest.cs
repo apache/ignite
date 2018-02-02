@@ -420,23 +420,25 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             // Connect client and check.
             Ignition.Start(TestUtils.GetTestConfiguration());
-            var client = Ignition.StartClient(new IgniteClientConfiguration("127.0.0.1")
+            using (var client = Ignition.StartClient(new IgniteClientConfiguration("127.0.0.1")
             {
                 ReconnectDisabled = true
-            });
-            Assert.AreEqual(0, client.GetCacheNames().Count);
+            }))
+            {
+                Assert.AreEqual(0, client.GetCacheNames().Count);
 
-            // Stop server.
-            Ignition.StopAll(true);
+                // Stop server.
+                Ignition.StopAll(true);
 
-            // Request fails, error is detected.
-            var ex = Assert.Catch(() => client.GetCacheNames());
-            Assert.IsNotNull(GetSocketException(ex));
+                // Request fails, error is detected.
+                var ex = Assert.Catch(() => client.GetCacheNames());
+                Assert.IsNotNull(GetSocketException(ex));
 
-            // Restart server, client does not reconnect.
-            Ignition.Start(TestUtils.GetTestConfiguration());
-            ex = Assert.Catch(() => client.GetCacheNames());
-            Assert.IsNotNull(GetSocketException(ex));
+                // Restart server, client does not reconnect.
+                Ignition.Start(TestUtils.GetTestConfiguration());
+                ex = Assert.Catch(() => client.GetCacheNames());
+                Assert.IsNotNull(GetSocketException(ex));
+            }
         }
 
         /// <summary>
@@ -462,33 +464,35 @@ namespace Apache.Ignite.Core.Tests.Client
                 }
             };
 
-            var client = Ignition.StartClient(cfg);
-            Assert.AreEqual(0, client.GetCacheNames().Count);
+            using (var client = Ignition.StartClient(cfg))
+            {
+                Assert.AreEqual(0, client.GetCacheNames().Count);
 
-            // Stop target node.
-            var nodeId = ((IPEndPoint) client.CurrentEndPoint).Port - port;
-            Ignition.Stop(nodeId.ToString(), true);
+                // Stop target node.
+                var nodeId = ((IPEndPoint) client.CurrentEndPoint).Port - port;
+                Ignition.Stop(nodeId.ToString(), true);
 
-            // Check failure.
-            Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
+                // Check failure.
+                Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
 
-            // Check reconnect.
-            Assert.AreEqual(0, client.GetCacheNames().Count);
+                // Check reconnect.
+                Assert.AreEqual(0, client.GetCacheNames().Count);
 
-            // Stop target node.
-            nodeId = ((IPEndPoint) client.CurrentEndPoint).Port - port;
-            Ignition.Stop(nodeId.ToString(), true);
+                // Stop target node.
+                nodeId = ((IPEndPoint) client.CurrentEndPoint).Port - port;
+                Ignition.Stop(nodeId.ToString(), true);
 
-            // Check failure.
-            Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
+                // Check failure.
+                Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
 
-            // Check reconnect.
-            Assert.AreEqual(0, client.GetCacheNames().Count);
+                // Check reconnect.
+                Assert.AreEqual(0, client.GetCacheNames().Count);
 
-            // Stop all nodes.
-            Ignition.StopAll(true);
-            Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
-            Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
+                // Stop all nodes.
+                Ignition.StopAll(true);
+                Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
+                Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
+            }
         }
 
         /// <summary>
