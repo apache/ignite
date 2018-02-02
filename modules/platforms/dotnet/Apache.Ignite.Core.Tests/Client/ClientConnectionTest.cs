@@ -476,7 +476,7 @@ namespace Apache.Ignite.Core.Tests.Client
             Assert.AreEqual(0, client.GetCacheNames().Count);
 
             // Stop target node.
-            nodeId = ((IPEndPoint)client.CurrentEndPoint).Port - port;
+            nodeId = ((IPEndPoint) client.CurrentEndPoint).Port - port;
             Ignition.Stop(nodeId.ToString(), true);
 
             // Check failure.
