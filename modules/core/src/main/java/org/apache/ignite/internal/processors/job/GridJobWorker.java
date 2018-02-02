@@ -996,6 +996,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
     /**
      * This method wraps U.error invocations to check node stopping.
+     *
      * @param msg Message to log using quiet logger.
      * @param e Optional exception.
      */

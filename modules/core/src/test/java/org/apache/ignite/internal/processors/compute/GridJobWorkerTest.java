@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * https://issues.apache.org/jira/browse/IGNITE-7309
  */
-public class GridJobWorkerTest  extends GridCommonAbstractTest {
+public class GridJobWorkerTest extends GridCommonAbstractTest {
     /**
      * Custom class (used as a compute job result type).
      */
@@ -63,7 +63,9 @@ public class GridJobWorkerTest  extends GridCommonAbstractTest {
         /** */
         CustomMarshaller() {
             super();
+
             this.allowServerToStopLatch = null;
+
             this.serverIsStoppingLatch = null;
         }
 
@@ -73,12 +75,15 @@ public class GridJobWorkerTest  extends GridCommonAbstractTest {
          */
         CustomMarshaller(CountDownLatch allowServerToStopLatch, CountDownLatch serverIsStoppingLatch) {
             super();
+
             this.allowServerToStopLatch = allowServerToStopLatch;
+
             this.serverIsStoppingLatch = serverIsStoppingLatch;
         }
 
         /**
          * This method wraps marshal invocations to initiate node stopping and throw an error in process of CustomInteger handling.
+         *
          * @param obj Object to marshal.
          * @return Byte array.
          * @throws IgniteCheckedException If marshalling failed.
@@ -90,6 +95,7 @@ public class GridJobWorkerTest  extends GridCommonAbstractTest {
                 if (clsName.endsWith("$CustomInteger")) {
                     // Await for node stopping.
                     allowServerToStopLatch.countDown();
+
                     try {
                         serverIsStoppingLatch.await();
                     }
@@ -108,6 +114,7 @@ public class GridJobWorkerTest  extends GridCommonAbstractTest {
 
     /**
      * Create server logger.
+     *
      * @param errors Logged errors collection.
      */
     private IgniteLogger createServerLogger(final Collection<Throwable> errors) {
@@ -118,6 +125,7 @@ public class GridJobWorkerTest  extends GridCommonAbstractTest {
 
             @Override public void error(String msg, @Nullable Throwable e) {
                 super.error(msg, e);
+
                 errors.add(e);
             }
 
@@ -154,17 +162,23 @@ public class GridJobWorkerTest  extends GridCommonAbstractTest {
                         }
                     });
 
-                    try(Ignite ignite = Ignition.start(conf)) {
+                    try (Ignite ignite = Ignition.start(conf)) {
                         log().info("Server node started: " + ignite.name());
+
                         allowServerToStopLatch.await();
-                    } catch(Throwable e) {
-                        e.printStackTrace();
-                        fail("Run server node error.");
                     }
-                } catch(Throwable e) {
+                    catch (Throwable e) {
+                        e.printStackTrace();
+
+                        fail("Run server node fail.");
+                    }
+                }
+                catch (Throwable e) {
                     e.printStackTrace();
-                    fail("Prepare server node configuration error.");
-                } finally {
+
+                    fail("Prepare server node configuration fail.");
+                }
+                finally {
                     nodesAreStoppedLatch.countDown();
                 }
             }
@@ -186,7 +200,7 @@ public class GridJobWorkerTest  extends GridCommonAbstractTest {
 
                     conf.setMarshaller(new CustomMarshaller());
 
-                    try(Ignite ignite = Ignition.start(conf)) {
+                    try (Ignite ignite = Ignition.start(conf)) {
                         log().info("Client node started: " + ignite.name());
 
                         IgniteCompute compute = ignite.compute();
@@ -197,9 +211,11 @@ public class GridJobWorkerTest  extends GridCommonAbstractTest {
                             }
                         });
                     }
-                } catch(Throwable e) {
+                }
+                catch (Throwable e) {
                     e.printStackTrace();
-                } finally {
+                }
+                finally {
                     nodesAreStoppedLatch.countDown();
                 }
             }
@@ -221,23 +237,27 @@ public class GridJobWorkerTest  extends GridCommonAbstractTest {
             GridJobWorker.useStaticLog = false;
 
             runServerNode(serverErrors, allowServerToStopLatch, serverIsStoppingLatch, nodesAreStoppedLatch);
+
             runClientNode(nodesAreStoppedLatch);
 
             assertTrue("Server or client node was not stopped.", nodesAreStoppedLatch.await(30000, TimeUnit.MILLISECONDS));
 
             // Check for NodeStoppingException
             boolean found = false;
+
             for (Throwable e : serverErrors) {
                 if (X.hasCause(e, NodeStoppingException.class)) {
                     found = true;
+
                     break;
                 }
             }
 
-            assertTrue("Server errors should contain NodeStoppingException.", found);
+            assertTrue("Server exception should contain NodeStoppingException.", found);
         }
-        catch(InterruptedException e) {
+        catch (InterruptedException e) {
             e.printStackTrace();
+
             fail("Server or client node was interrupted.");
         }
         finally {
