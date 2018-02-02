@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
@@ -110,6 +111,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     private static final ThreadLocal<String> stash = new ThreadLocal<>();
+
+    /** */
+    private static final boolean IS_DAEMON = IgniteSystemProperties.getBoolean(IGNITE_DAEMON);
 
     /*
      * Managers.
@@ -886,7 +890,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public boolean isDaemon() {
-        return config().isDaemon() || "true".equalsIgnoreCase(System.getProperty(IGNITE_DAEMON));
+        return config().isDaemon() || IS_DAEMON;
     }
 
     /** {@inheritDoc} */
