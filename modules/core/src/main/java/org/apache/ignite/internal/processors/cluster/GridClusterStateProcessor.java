@@ -633,7 +633,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             BaselineTopologyHistory historyToSend = null;
 
             if (joiningNodeData != null) {
-                if (!joiningNodeData.hasJoiningNodeData()) {
+                if (!joiningNodeData.hasJoiningNodeData() || compatibilityMode) {
                     //compatibility mode: old nodes don't send any data on join, so coordinator of new version
                     //doesn't send BaselineTopology history, only its current globalState
                     dataBag.addGridCommonData(STATE_PROC.ordinal(), globalState);
