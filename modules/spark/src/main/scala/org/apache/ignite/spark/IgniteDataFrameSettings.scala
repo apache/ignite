@@ -80,18 +80,4 @@ object IgniteDataFrameSettings {
       * }}}
       */
     val OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS = "primaryKeyFields"
-
-    /**
-      *
-      * Config option to specify partition number for a RDD when writing data frame to Ignite.
-      * Each partition will be saved into Ignite as a separate Spark task.
-      *
-      * @example {{{
-      * val igniteDF = spark.write.format(IGNITE)
-      *     // other options ...
-      *     .option(OPTION_WRITE_PARTITIONS_NUM, 42)
-      *     .save()
-      * }}}
-      */
-    val OPTION_WRITE_PARTITIONS_NUM = "writePartitionsNum"
 }
