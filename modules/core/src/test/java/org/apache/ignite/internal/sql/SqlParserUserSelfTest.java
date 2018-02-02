@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.sql;
 
+import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
+import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 
 /**
  * Tests for SQL parser: CREATE INDEX.
@@ -39,7 +41,46 @@ public class SqlParserUserSelfTest extends SqlParserAbstractSelfTest {
             "TEST", "~!'@#$%^&*()_+=-`:\"|?.,/");
 
         assertParseError(null, "CREATE USER 'test' WITH PASSWORD 'test'",
-            "Unexpected token: \"test\" (expected: \"[identifier]\")]");
+            "Unexpected token: \"test\" (expected: \"[identifier]\")");
+        assertParseError(null, "CREATE USER \"PUBLIC\".\"test\" WITH PASSWORD 'test'",
+            "Unexpected token: \".\" (expected: \"WITH\")");
+    }
+
+    /**
+     * Tests for ALTER USER command.
+     *
+     * @throws Exception If failed.
+     */
+    public void testAlterUser() throws Exception {
+        // Base.
+        parseValidateAlter("ALTER USER test WITH PASSWORD 'test'", "TEST", "test");
+        parseValidateAlter("ALTER USER \"test\" WITH PASSWORD 'test'", "test", "test");
+        parseValidateAlter("ALTER USER \"Test Name\" WITH PASSWORD 'PaSSword'",
+            "Test Name", "PaSSword");
+        parseValidateAlter("ALTER USER test WITH PASSWORD '~!''@#$%^&*()_+=-`:\"|?.,/'",
+            "TEST", "~!'@#$%^&*()_+=-`:\"|?.,/");
+
+        assertParseError(null, "ALTER USER 'test' WITH PASSWORD 'test'",
+            "Unexpected token: \"test\" (expected: \"[identifier]\")");
+        assertParseError(null, "ALTER USER \"PUBLIC\".\"test\" WITH PASSWORD 'test'",
+            "Unexpected token: \".\" (expected: \"WITH\")");
+    }
+
+    /**
+     * Tests for ALTER USER command.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDropUser() throws Exception {
+        // Base.
+        parseValidateDrop("DROP USER test", "TEST");
+        parseValidateDrop("DROP USER \"test\"", "test");
+        parseValidateDrop("DROP USER \"Test Name\"", "Test Name");
+
+        assertParseError(null, "DROP USER 'test'",
+            "Unexpected token: \"test\" (expected: \"[identifier]\")");
+        assertParseError(null, "DROP USER \"PUBLIC\".\"test\"",
+            "Unexpected token: \".\"");
     }
 
     /**
@@ -55,6 +96,38 @@ public class SqlParserUserSelfTest extends SqlParserAbstractSelfTest {
 
         assertEquals(expUserName, cmd.userName());
         assertEquals(expPasswd, cmd.password());
+
+        return cmd;
+    }
+
+    /**
+     * Parse and validate SQL script.
+     *
+     * @param sql SQL.
+     * @param expUserName Expected user name.
+     * @param expPasswd Expected user password.
+     * @return Command.
+     */
+    private static SqlAlterUserCommand parseValidateAlter(String sql, String expUserName, String expPasswd) {
+        SqlAlterUserCommand cmd = (SqlAlterUserCommand)new SqlParser(null, sql).nextCommand();
+
+        assertEquals(expUserName, cmd.userName());
+        assertEquals(expPasswd, cmd.password());
+
+        return cmd;
+    }
+
+    /**
+     * Parse and validate SQL script.
+     *
+     * @param sql SQL.
+     * @param expUserName Expected user name.
+     * @return Command.
+     */
+    private static SqlDropUserCommand parseValidateDrop(String sql, String expUserName) {
+        SqlDropUserCommand cmd = (SqlDropUserCommand)new SqlParser(null, sql).nextCommand();
+
+        assertEquals(expUserName, cmd.userName());
 
         return cmd;
     }
