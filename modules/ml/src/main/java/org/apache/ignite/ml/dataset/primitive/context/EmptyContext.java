@@ -15,8 +15,14 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.ml.dataset.primitive.context;
+
+import java.io.Serializable;
+
 /**
- * <!-- Package description. -->
- * Contains partition {@code context} builders.
+ * An empty partition {@code context}.
  */
-package org.apache.ignite.ml.dataset.api.builder.context;
+public class EmptyContext implements Serializable {
+    /** */
+    private static final long serialVersionUID = 4108938672110578991L;
+}

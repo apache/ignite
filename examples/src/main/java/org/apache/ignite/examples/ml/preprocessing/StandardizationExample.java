@@ -26,7 +26,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ml.dataset.model.Person;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.DatasetFactory;
-import org.apache.ignite.ml.dataset.api.SimpleDataset;
+import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.preprocessing.standardization.StandardizationPreprocessor;

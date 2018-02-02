@@ -28,9 +28,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ml.dataset.model.Person;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetFactory;
-import org.apache.ignite.ml.dataset.api.DatasetWrapper;
-import org.apache.ignite.ml.dataset.api.builder.data.SimpleLabeledDatasetDataBuilder;
-import org.apache.ignite.ml.dataset.api.data.SimpleLabeledDatasetData;
+import org.apache.ignite.ml.dataset.primitive.DatasetWrapper;
+import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
+import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
 
 /**
  * How to create a algorithm specific cache based dataset from an existing Ignite Cache?

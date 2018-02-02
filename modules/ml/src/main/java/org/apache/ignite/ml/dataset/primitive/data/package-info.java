@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Base package for machine learning dataset classes representing dataset API.
+ * Contains implementation of partition {@code data}.
  */
-package org.apache.ignite.ml.dataset.api;
+package org.apache.ignite.ml.dataset.primitive.data;

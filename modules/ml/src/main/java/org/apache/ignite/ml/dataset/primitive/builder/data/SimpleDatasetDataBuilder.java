@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.dataset.api.builder.data;
+package org.apache.ignite.ml.dataset.primitive.builder.data;
 
 import java.io.Serializable;
 import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
-import org.apache.ignite.ml.dataset.api.data.SimpleDatasetData;
+import org.apache.ignite.ml.dataset.primitive.data.SimpleDatasetData;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**

@@ -19,7 +19,7 @@ package org.apache.ignite.ml.dataset;
 
 import java.io.Serializable;
 import java.util.Iterator;
-import org.apache.ignite.ml.dataset.api.builder.context.EmptyContextBuilder;
+import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**

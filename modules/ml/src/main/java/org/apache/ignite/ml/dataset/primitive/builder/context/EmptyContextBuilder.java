@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.dataset.api.builder.context;
+package org.apache.ignite.ml.dataset.primitive.builder.context;
 
 import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
-import org.apache.ignite.ml.dataset.api.context.EmptyContext;
+import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 
 /**
  * A partition {@code context} builder that makes {@link EmptyContext}.

@@ -24,7 +24,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.ml.dataset.model.Person;
 import org.apache.ignite.ml.dataset.DatasetFactory;
-import org.apache.ignite.ml.dataset.api.SimpleDataset;
+import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
 
 /**
  * How to create a local dataset from an existing local data?

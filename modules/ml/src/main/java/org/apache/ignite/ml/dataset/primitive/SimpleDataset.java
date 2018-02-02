@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.dataset.api;
+package org.apache.ignite.ml.dataset.primitive;
 
 import com.github.fommil.netlib.BLAS;
 import java.io.Serializable;
 import org.apache.ignite.ml.dataset.Dataset;
-import org.apache.ignite.ml.dataset.api.data.SimpleDatasetData;
+import org.apache.ignite.ml.dataset.primitive.data.SimpleDatasetData;
 
 /**
  * A simple dataset introduces additional methods based on a matrix of features.

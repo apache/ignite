@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains implementation of partition {@code context}.
+ * Contains partition {@code data} builders.
  */
-package org.apache.ignite.ml.dataset.api.context;
+package org.apache.ignite.ml.dataset.primitive.builder.data;

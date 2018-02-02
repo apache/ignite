@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.dataset.api;
+package org.apache.ignite.ml.dataset.primitive;
 
 import java.io.Serializable;
 import org.apache.ignite.ml.dataset.Dataset;

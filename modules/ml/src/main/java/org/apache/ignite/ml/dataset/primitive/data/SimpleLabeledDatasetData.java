@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.dataset.api.data;
+package org.apache.ignite.ml.dataset.primitive.data;
 
-import org.apache.ignite.ml.dataset.api.SimpleDataset;
+import org.apache.ignite.ml.dataset.primitive.SimpleLabeledDataset;
 
 /**
- * A partition {@code data} of the {@link SimpleDataset} containing matrix of features in flat column-major format
- * stored in heap.
+ * A partition {@code data} of the {@link SimpleLabeledDataset} containing matrix of features in flat column-major
+ * format stored in heap and vector of labels stored in heap as well.
  */
-public class SimpleDatasetData implements AutoCloseable {
-    /** Matrix of features in a dense flat column-major format. */
+public class SimpleLabeledDatasetData implements AutoCloseable {
+    /** Matrix with features in a dense flat column-major format. */
     private final double[] features;
 
     /** Number of rows. */
@@ -33,18 +33,23 @@ public class SimpleDatasetData implements AutoCloseable {
     /** Number of columns. */
     private final int cols;
 
+    /** Vector with labels. */
+    private final double[] labels;
+
     /**
-     * Constructs a new instance of partition {@code data} of the {@link SimpleDataset} containing matrix of features in
-     * flat column-major format stored in heap.
+     * Constructs a new instance of partition {@code data} of the {@link SimpleLabeledDataset} containing matrix of
+     * features in flat column-major format stored in heap and vector of labels stored in heap as well.
      *
-     * @param features Matrix of features in a dense flat column-major format.
+     * @param features Matrix with features in a dense flat column-major format.
      * @param rows Number of rows.
      * @param cols Number of columns.
+     * @param labels Vector with labels.
      */
-    public SimpleDatasetData(double[] features, int rows, int cols) {
+    public SimpleLabeledDatasetData(double[] features, int rows, int cols, double[] labels) {
         this.features = features;
         this.rows = rows;
         this.cols = cols;
+        this.labels = labels;
     }
 
     /** */
@@ -60,6 +65,11 @@ public class SimpleDatasetData implements AutoCloseable {
     /** */
     public int getCols() {
         return cols;
+    }
+
+    /** */
+    public double[] getLabels() {
+        return labels;
     }
 
     /** {@inheritDoc} */

@@ -15,14 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.dataset.api.context;
+package org.apache.ignite.ml.dataset.primitive;
 
 import java.io.Serializable;
+import org.apache.ignite.ml.dataset.Dataset;
+import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
 
 /**
- * An empty partition {@code context}.
+ * A simple labeled dataset introduces additional methods based on a matrix of features and labels vector.
+ *
+ * @param <C> Type of a partition {@code context}.
  */
-public class EmptyContext implements Serializable {
-    /** */
-    private static final long serialVersionUID = 4108938672110578991L;
+public class SimpleLabeledDataset<C extends Serializable> extends DatasetWrapper<C, SimpleLabeledDatasetData> {
+    /**
+     * Creates a new instance of simple labeled dataset that introduces additional methods based on a matrix of features
+     * and labels vector.
+     *
+     * @param delegate Delegate that performs {@code compute} actions.
+     */
+    public SimpleLabeledDataset(Dataset<C, SimpleLabeledDatasetData> delegate) {
+        super(delegate);
+    }
 }
