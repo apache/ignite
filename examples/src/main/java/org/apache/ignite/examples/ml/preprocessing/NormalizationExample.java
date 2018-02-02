@@ -29,17 +29,17 @@ import org.apache.ignite.ml.dataset.DatasetFactory;
 import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.preprocessing.standardization.StandardizationPreprocessor;
-import org.apache.ignite.ml.preprocessing.standardization.StandardizationTrainer;
+import org.apache.ignite.ml.preprocessing.normalization.NormalizationPreprocessor;
+import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 
 /**
- * How to use dataset standardization?
+ * How to use dataset normalization?
  */
-public class StandardizationExample {
+public class NormalizationExample {
     /** Run example. */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            System.out.println(">>> Standardization example started.");
+            System.out.println(">>> Normalization example started.");
 
             IgniteCache<Integer, Person> persons = createCache(ignite);
 
@@ -50,7 +50,7 @@ public class StandardizationExample {
                 v.getSalary()
             };
 
-            StandardizationPreprocessor<Integer, Person> preprocessor = new StandardizationTrainer<Integer, Person>()
+            NormalizationPreprocessor<Integer, Person> preprocessor = new NormalizationTrainer<Integer, Person>()
                 .fit(builder, featureExtractor, 2);
 
             // Creates a cache based simple dataset containing features and providing standard dataset API.
@@ -80,7 +80,7 @@ public class StandardizationExample {
                     System.out.println("\t" + Arrays.toString(row));
             }
 
-            System.out.println(">>> Standardization example completed.");
+            System.out.println(">>> Normalization example completed.");
         }
     }
 

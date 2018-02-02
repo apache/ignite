@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.preprocessing.standardization;
+package org.apache.ignite.ml.preprocessing.normalization;
 
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
@@ -25,16 +25,16 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
 
 /**
- * Trainer of the standardization preprocessor.
+ * Trainer of the normalization preprocessor.
  *
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class StandardizationTrainer<K, V> implements PreprocessingTrainer<K, V, double[], double[]> {
+public class NormalizationTrainer<K, V> implements PreprocessingTrainer<K, V, double[], double[]> {
 
-    @Override public StandardizationPreprocessor<K, V> fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public NormalizationPreprocessor<K, V> fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, double[]> basePreprocessor, int cols) {
-        try (Dataset<EmptyContext, StandardizationPartitionData> dataset = datasetBuilder.build(
+        try (Dataset<EmptyContext, NormalizationPartitionData> dataset = datasetBuilder.build(
             (upstream, upstreamSize) -> new EmptyContext(),
             (upstream, upstreamSize, ctx) -> {
                 double[] min = new double[cols];
@@ -55,7 +55,7 @@ public class StandardizationTrainer<K, V> implements PreprocessingTrainer<K, V, 
                             max[i] = row[i];
                     }
                 }
-                return new StandardizationPartitionData(min, max);
+                return new NormalizationPartitionData(min, max);
             }
         )) {
             double[][] minMax = dataset.compute(
@@ -81,7 +81,7 @@ public class StandardizationTrainer<K, V> implements PreprocessingTrainer<K, V, 
                 }
             );
 
-            return new StandardizationPreprocessor<>(minMax[0], minMax[1], basePreprocessor);
+            return new NormalizationPreprocessor<>(minMax[0], minMax[1], basePreprocessor);
         }
         catch (Exception e) {
             throw new RuntimeException(e);

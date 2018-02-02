@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.preprocessing.standardization;
+package org.apache.ignite.ml.preprocessing.normalization;
 
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
 
 /**
- * Tests for {@link StandardizationPreprocessor}.
+ * Tests for {@link NormalizationPreprocessor}.
  */
-public class StandardizationModelTrainer {
+public class NormalizationModelTrainer {
     /** Tests {@code apply()} method. */
     @Test
     public void testApply() {
@@ -35,7 +35,7 @@ public class StandardizationModelTrainer {
             {0., 22., 300.}
         };
 
-        StandardizationPreprocessor<Integer, double[]> preprocessor = new StandardizationPreprocessor<>(
+        NormalizationPreprocessor<Integer, double[]> preprocessor = new NormalizationPreprocessor<>(
             new double[] {0, 4, 1},
             new double[] {4, 22, 300},
             (k, v) -> v

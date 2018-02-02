@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.preprocessing.standardization;
+package org.apache.ignite.ml.preprocessing.normalization;
 
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
- * Preprocessing function that makes standardization. From mathematical point of view it's the following function which
+ * Preprocessing function that makes normalization. From mathematical point of view it's the following function which
  * is applied to every element in dataset:
  *
  * {@code a_i = (a_i - min_i) / (max_i - min_i) for all i},
@@ -31,7 +31,7 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class StandardizationPreprocessor<K, V> implements IgniteBiFunction<K, V, double[]> {
+public class NormalizationPreprocessor<K, V> implements IgniteBiFunction<K, V, double[]> {
     /** */
     private static final long serialVersionUID = 6997800576392623469L;
 
@@ -45,13 +45,13 @@ public class StandardizationPreprocessor<K, V> implements IgniteBiFunction<K, V,
     private final IgniteBiFunction<K, V, double[]> basePreprocessor;
 
     /**
-     * Constructs a new instance of standardization preprocessor.
+     * Constructs a new instance of normalization preprocessor.
      *
      * @param min Minimal values.
      * @param max Maximum values.
      * @param basePreprocessor Base preprocessor.
      */
-    public StandardizationPreprocessor(double[] min, double[] max, IgniteBiFunction<K, V, double[]> basePreprocessor) {
+    public NormalizationPreprocessor(double[] min, double[] max, IgniteBiFunction<K, V, double[]> basePreprocessor) {
         this.min = min;
         this.max = max;
         this.basePreprocessor = basePreprocessor;

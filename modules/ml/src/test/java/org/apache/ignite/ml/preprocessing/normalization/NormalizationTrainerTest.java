@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.preprocessing.standardization;
+package org.apache.ignite.ml.preprocessing.normalization;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -29,10 +29,10 @@ import org.junit.runners.Parameterized;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
- * Tests for {@link StandardizationTrainer}.
+ * Tests for {@link NormalizationTrainer}.
  */
 @RunWith(Parameterized.class)
-public class StandardizationTrainerTest {
+public class NormalizationTrainerTest {
     /** Parameters. */
     @Parameterized.Parameters(name = "Data divided on {0} partitions")
     public static Iterable<Integer[]> data() {
@@ -62,9 +62,9 @@ public class StandardizationTrainerTest {
 
         DatasetBuilder<Integer, double[]> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
 
-        StandardizationTrainer<Integer, double[]> standardizationTrainer = new StandardizationTrainer<>();
+        NormalizationTrainer<Integer, double[]> standardizationTrainer = new NormalizationTrainer<>();
 
-        StandardizationPreprocessor<Integer, double[]> preprocessor = standardizationTrainer.fit(
+        NormalizationPreprocessor<Integer, double[]> preprocessor = standardizationTrainer.fit(
             datasetBuilder,
             (k, v) -> v,
             3

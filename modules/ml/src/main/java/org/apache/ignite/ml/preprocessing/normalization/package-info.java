@@ -19,4 +19,4 @@
  * <!-- Package description. -->
  * Contains standardization preprocessor.
  */
-package org.apache.ignite.ml.preprocessing.standardization;
+package org.apache.ignite.ml.preprocessing.normalization;

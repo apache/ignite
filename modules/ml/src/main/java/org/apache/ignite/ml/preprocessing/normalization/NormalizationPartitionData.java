@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.preprocessing.standardization;
+package org.apache.ignite.ml.preprocessing.normalization;
 
 /**
- * Partition data used in standardization preprocessor.
+ * Partition data used in normalization preprocessor.
  *
- * @see StandardizationTrainer
- * @see StandardizationPreprocessor
+ * @see NormalizationTrainer
+ * @see NormalizationPreprocessor
  */
-public class StandardizationPartitionData implements AutoCloseable {
+public class NormalizationPartitionData implements AutoCloseable {
     /** Minimal values. */
     private final double[] min;
 
@@ -31,12 +31,12 @@ public class StandardizationPartitionData implements AutoCloseable {
     private final double[] max;
 
     /**
-     * Constructs a new instance of standardization partition data.
+     * Constructs a new instance of normalization partition data.
      *
      * @param min Minimal values.
      * @param max Maximum values.
      */
-    public StandardizationPartitionData(double[] min, double[] max) {
+    public NormalizationPartitionData(double[] min, double[] max) {
         this.min = min;
         this.max = max;
     }
