@@ -15,22 +15,17 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+package org.apache.ignite.examples.ml;
 
-import templateUrl from 'views/settings/profile.tpl.pug';
+/**
+ * Some common arguments for examples in ML module.
+ */
+public class MLExamplesCommonArgs {
+    /**
+     * Unattended argument.
+     */
+    public static String UNATTENDED = "unattended";
 
-angular
-.module('ignite-console.states.profile', [
-    'ui.router'
-])
-.config(['$stateProvider', function($stateProvider) {
-    // set up the states
-    $stateProvider.state('base.settings.profile', {
-        url: '/profile',
-        templateUrl,
-        permission: 'profile',
-        tfMetaTags: {
-            title: 'User profile'
-        }
-    });
-}]);
+    /** Empty args for ML examples. */
+    public static final String[] EMPTY_ARGS_ML = new String[] {"--" + UNATTENDED};
+}
