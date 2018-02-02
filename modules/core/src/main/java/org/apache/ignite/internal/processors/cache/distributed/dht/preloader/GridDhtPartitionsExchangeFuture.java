@@ -1088,6 +1088,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
+        // It is necessary to run database callback after all topology callbacks, so partition states could be
+        // correctly restored from the persistent store.
         cctx.database().beforeExchange(this);
 
         changeWalModeIfNeeded();
