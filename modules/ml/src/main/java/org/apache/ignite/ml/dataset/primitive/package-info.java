@@ -17,8 +17,12 @@
 
 /**
  * <!-- Package description. -->
- * Base package for primitives based on dataset infrastructure such as
- * {@link org.apache.ignite.ml.dataset.primitive.SimpleDataset} and
- * {@link org.apache.ignite.ml.dataset.primitive.SimpleLabeledDataset}.
+ * Package that contains basic primitives build on top of {@link org.apache.ignite.ml.dataset.Dataset}. Primitives are
+ * simple components that can be used in other algorithms based on the dataset infrastructure or for debugging.
+ *
+ * Primitives include partition {@code context} implementations, partition {@code data} implementations and extensions
+ * of dataset. Partition {@code context} and {@code data} implementations can be used in other algorithm in case these
+ * algorithm doesn't need to keep specific data and can work with standard primitive {@code data} or {@code context}.
+ * Extensions of dataset provides basic most often used functions that can be used for debugging or data analysis.
  */
 package org.apache.ignite.ml.dataset.primitive;
