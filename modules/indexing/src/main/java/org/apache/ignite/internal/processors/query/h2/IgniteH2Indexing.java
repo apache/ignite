@@ -2441,19 +2441,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             dmlProc = new DmlStatementsProcessor();
             ddlProc = new DdlStatementsProcessor();
+            metaViewProc = new IgniteSqlMetaViewProcessor();
 
             dmlProc.start(ctx, this);
             ddlProc.start(ctx, this);
-
-            if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_DISABLE_META_VIEWS))
-                log.info("Meta views are disabled");
-            else {
-                createSchema(IgniteSqlMetaViewProcessor.SCHEMA_NAME);
-
-                metaViewProc = new IgniteSqlMetaViewProcessor();
-
-                metaViewProc.start(ctx, this);
-            }
+            metaViewProc.start(ctx, this);
         }
 
         if (JdbcUtils.serializer != null)
