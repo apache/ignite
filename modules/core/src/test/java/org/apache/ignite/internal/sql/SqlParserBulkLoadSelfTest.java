@@ -22,8 +22,7 @@ import org.apache.ignite.internal.util.typedef.X;
 /**
  * Tests for SQL parser: COPY command.
  */
-@SuppressWarnings({"UnusedReturnValue", "ThrowableNotThrown"})
-public class SqlParserCopySelfTest extends SqlParserAbstractSelfTest {
+public class SqlParserBulkLoadSelfTest extends SqlParserAbstractSelfTest {
     /**
      * Tests for COPY command.
      *

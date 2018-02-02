@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.sql.command;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadCsvFormat;
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadFormat;
-import org.apache.ignite.internal.processors.bulkload.BulkLoadParameters;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
 import org.apache.ignite.internal.sql.SqlEscapeSeqParser;
 import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.sql.SqlLexer;
@@ -46,7 +46,6 @@ import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword
  * A parser for a COPY command (called 'bulk load' in the code, since word 'copy' is too generic).
  */
 public class SqlBulkLoadCommand implements SqlCommand {
-
     /** Local file name to send from client to server. */
     private String locFileName;
 
@@ -260,8 +259,8 @@ public class SqlBulkLoadCommand implements SqlCommand {
 
                     int sz = parseInt(lex);
 
-                    if (!BulkLoadParameters.isValidBatchSize(sz))
-                        throw error(lex, BulkLoadParameters.batchSizeErrorMsg(sz));
+                    if (!BulkLoadAckClientParameters.isValidBatchSize(sz))
+                        throw error(lex, BulkLoadAckClientParameters.batchSizeErrorMsg(sz));
 
                     batchSize = sz;
 

@@ -18,33 +18,32 @@
 package org.apache.ignite.internal.processors.bulkload;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadContext;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest;
 
 import java.util.List;
 
 /**
- * Bulk load file format parser superclass + factory.
+ * Bulk load file format parser superclass + factory of known formats.
  *
- * <p>The parser uses corresponding options (see {@link BulkLoadFormat} class).
+ * <p>The parser processes a batch of input data and return a list of records.
  *
- * Parser processes a batch of input data and return a list of records.
+ * <p>The parser uses corresponding options from {@link BulkLoadFormat} subclass.
  */
 public abstract class BulkLoadParser {
     /**
-     * Processes a batch of input data. Context and request are supplied as parameters.
-     * Returns a list of records parsed (in most cases this is a list of strings).
+     * Parses a batch of input data and returns a list of records parsed
+     * (in most cases this is a list of strings).
      *
      * <p>Note that conversion between parsed and database table type is done by the other
-     * object (a subclass of {@link BulkLoadEntryConverter}) by the request processing code.
+     * object (see {@link BulkLoadProcessor#dataConverter}) by the request processing code.
      * This method is not obliged to do this conversion.
      *
-     * @param ctx Context of the bulk load operation.
-     * @param req The current request.
+     * @param batchData Data from the current batch.
+     * @param isLastBatch true if this is the last batch.
      * @return The list of records.
      * @throws IgniteCheckedException If any processing error occurs.
      */
-    public abstract Iterable<List<Object>> processBatch(JdbcBulkLoadContext ctx, JdbcBulkLoadBatchRequest req) throws IgniteCheckedException;
+    protected abstract Iterable<List<Object>> parseBatch(byte[] batchData, boolean isLastBatch)
+        throws IgniteCheckedException;
 
     /**
      * Creates a parser for a given format options.

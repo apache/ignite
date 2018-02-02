@@ -172,8 +172,11 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTaskResult> {
 
             FieldsQueryCursor<List<?>> fieldsQueryCursor = cache.withKeepBinary().query(qry);
 
-            if (fieldsQueryCursor instanceof BulkLoadContextCursor)
+            if (fieldsQueryCursor instanceof BulkLoadContextCursor) {
+                fieldsQueryCursor.close();
+                
                 throw new SQLException("COPY command is currently supported only in thin JDBC driver.");
+            }
 
             QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)fieldsQueryCursor;
 

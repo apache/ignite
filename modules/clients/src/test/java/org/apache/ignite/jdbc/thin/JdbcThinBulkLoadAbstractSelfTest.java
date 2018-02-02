@@ -44,27 +44,38 @@ import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
  * COPY statement tests.
  */
 public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractDmlStatementSelfTest {
+    /** Default table name. */
     private static final String TBL_NAME = "Person";
 
     /** JDBC statement. */
     private Statement stmt;
 
     /** A CSV file with zero records */
-
     private static final String BULKLOAD_EMPTY_CSV_FILE =
-        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload0.csv")).getAbsolutePath();
+        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload0.csv"))
+            .getAbsolutePath();
 
     /** A CSV file with one record. */
     private static final String BULKLOAD_ONE_LINE_CSV_FILE =
-        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload1.csv")).getAbsolutePath();
+        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload1.csv"))
+            .getAbsolutePath();
 
     /** A CSV file with two records. */
     private static final String BULKLOAD_TWO_LINES_CSV_FILE =
-        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload2.csv")).getAbsolutePath();
+        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload2.csv"))
+            .getAbsolutePath();
 
     /** A file with UTF records. */
     private static final String BULKLOAD_UTF_CSV_FILE =
-        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload2_utf.csv")).getAbsolutePath();
+        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload2_utf.csv"))
+            .getAbsolutePath();
+
+    /** Basic COPY statement used in majority of the tests. */
+    public static final String BASIC_SQL_COPY_STMT =
+        "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\"" +
+            " into " + TBL_NAME +
+            " (_key, age, firstName, lastName)" +
+            " format csv";
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfig() {
@@ -177,11 +188,8 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @throws SQLException If failed.
      */
-    public void testDOA() throws SQLException {
-        int updatesCnt = stmt.executeUpdate(
-            "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into " + TBL_NAME +
-                " (_key, age, firstName, lastName)" +
-                " format csv");
+    public void testBasicStatement() throws SQLException {
+        int updatesCnt = stmt.executeUpdate(BASIC_SQL_COPY_STMT);
 
         assertEquals(2, updatesCnt);
 
@@ -337,16 +345,17 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     }
 
     /**
-     * Checks that bulk load works when we create table using 'CREATE TABLE' command
-     * (the other tests use {@link CacheConfiguration#setIndexedTypes(Class[])} to create a
-     * table).
+     * Checks that bulk load works when we create table using 'CREATE TABLE' command.
+     *
+     * The majority of the tests in this class use {@link CacheConfiguration#setIndexedTypes(Class[])}
+     * to create the table.
      *
      * @throws SQLException If failed.
      */
     public void testCreateAndBulkLoadTable() throws SQLException {
         String tblName = QueryUtils.DFLT_SCHEMA + ".\"PersonTbl\"";
 
-        jdbcRun("create table " + tblName +
+        execute(conn, "create table " + tblName +
             " (id int primary key, age int, firstName varchar(30), lastName varchar(30))");
 
         int updatesCnt = stmt.executeUpdate(
@@ -360,9 +369,10 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     }
 
     /**
-     * Checks that bulk load works when we create table with {@link CacheConfiguration#setQueryEntities(Collection)}
-     * (the other tests use {@link CacheConfiguration#setIndexedTypes(Class[])} to create a
-     * table).
+     * Checks that bulk load works when we create table with {@link CacheConfiguration#setQueryEntities(Collection)}.
+     *
+     * The majority of the tests in this class use {@link CacheConfiguration#setIndexedTypes(Class[])}
+     * to create a table.
      *
      * @throws SQLException If failed.
      */
@@ -370,10 +380,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     public void testConfigureQueryEntityAndBulkLoad() throws SQLException {
         ignite(0).getOrCreateCache(cacheConfigWithQueryEntity());
 
-        int updatesCnt = stmt.executeUpdate(
-            "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into " + TBL_NAME +
-                " (_key, age, firstName, lastName)" +
-                " format csv");
+        int updatesCnt = stmt.executeUpdate(BASIC_SQL_COPY_STMT);
 
         assertEquals(2, updatesCnt);
 
@@ -387,9 +394,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      * @throws SQLException If failed.
      */
     public void testBatchSize_1() throws SQLException {
-        int updatesCnt = stmt.executeUpdate(
-            "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\"" +
-            " into " + TBL_NAME + " (_key, age, firstName, lastName) format csv batch_size 1");
+        int updatesCnt = stmt.executeUpdate(BASIC_SQL_COPY_STMT + " batch_size 1");
 
         assertEquals(2, updatesCnt);
 
@@ -404,12 +409,12 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     public void testMultipleStatement() throws SQLException {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                stmt.addBatch("copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into " + TBL_NAME +
-                    " (_key, age, firstName, lastName)" +
-                    " format csv");
+                stmt.addBatch(BASIC_SQL_COPY_STMT);
+
                 stmt.addBatch("copy from \"" + BULKLOAD_ONE_LINE_CSV_FILE + "\" into " + TBL_NAME +
                     " (_key, age, firstName, lastName)" +
                     " format csv");
+
                 stmt.addBatch("copy from \"" + BULKLOAD_UTF_CSV_FILE + "\" into " + TBL_NAME +
                     " (_key, age, firstName, lastName)" +
                     " format csv");
@@ -429,10 +434,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     public void testExecuteQuery() throws SQLException {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                stmt.executeQuery(
-                    "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into " + TBL_NAME +
-                        " (_key, age, firstName, lastName)" +
-                        " format csv");
+                stmt.executeQuery(BASIC_SQL_COPY_STMT);
 
                 return null;
             }
@@ -445,10 +447,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      * @throws SQLException If failed.
      */
     public void testExecute() throws SQLException {
-        boolean isRowSet = stmt.execute(
-            "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into " + TBL_NAME +
-                " (_key, age, firstName, lastName)" +
-                " format csv");
+        boolean isRowSet = stmt.execute(BASIC_SQL_COPY_STMT);
 
         assertFalse(isRowSet);
 
@@ -461,10 +460,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      * @throws SQLException If failed.
      */
     public void testPreparedStatementWithExecuteUpdate() throws SQLException {
-        PreparedStatement pstmt = conn.prepareStatement(
-            "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into " + TBL_NAME +
-                " (_key, age, firstName, lastName)" +
-                " format csv");
+        PreparedStatement pstmt = conn.prepareStatement(BASIC_SQL_COPY_STMT);
 
         int updatesCnt = pstmt.executeUpdate();
 
@@ -474,7 +470,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     }
 
     /**
-     * Verifies that COPY command reports error when used with PreparedStatement parameter.
+     * Verifies that COPY command reports an error when used with PreparedStatement parameter.
      *
      * @throws SQLException If failed.
      */
@@ -501,10 +497,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      * @throws SQLException If failed.
      */
     public void testPreparedStatementWithExecute() throws SQLException {
-        PreparedStatement pstmt = conn.prepareStatement(
-            "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into " + TBL_NAME +
-                " (_key, age, firstName, lastName)" +
-                " format csv");
+        PreparedStatement pstmt = conn.prepareStatement(BASIC_SQL_COPY_STMT);
 
         boolean isRowSet = pstmt.execute();
 
@@ -515,16 +508,11 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
     /**
      * Verifies that COPY command is rejected by PreparedStatement.executeQuery().
-     *
-     * @throws SQLException If failed.
      */
-    public void testPreparedStatementWithExecuteQuery() throws SQLException {
+    public void testPreparedStatementWithExecuteQuery() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                PreparedStatement pstmt = conn.prepareStatement(
-                    "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into " + TBL_NAME +
-                        " (_key, age, firstName, lastName)" +
-                        " format csv");
+                PreparedStatement pstmt = conn.prepareStatement(BASIC_SQL_COPY_STMT);
 
                 pstmt.executeQuery();
 

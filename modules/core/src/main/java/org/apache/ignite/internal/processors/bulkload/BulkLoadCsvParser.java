@@ -23,26 +23,12 @@ import org.apache.ignite.internal.processors.bulkload.pipeline.CsvLineProcessorB
 import org.apache.ignite.internal.processors.bulkload.pipeline.PipelineBlock;
 import org.apache.ignite.internal.processors.bulkload.pipeline.StrListAppenderBlock;
 import org.apache.ignite.internal.processors.bulkload.pipeline.LineSplitterBlock;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadContext;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.regex.Pattern;
-
-import static org.apache.ignite.internal.processors.bulkload.BulkLoadParameters.DEFAULT_INPUT_CHARSET;
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_CONTINUE;
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF;
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_ERROR;
 
 /** CSV parser for COPY command. */
 public class BulkLoadCsvParser extends BulkLoadParser {
-
-    /** Next batch index (for a very simple check that all batches were delivered to us). */
-    private long nextBatchIdx;
-
     /** Processing pipeline input block: a decoder for the input stream of bytes */
     private final PipelineBlock<byte[], char[]> inputBlock;
 
@@ -51,21 +37,19 @@ public class BulkLoadCsvParser extends BulkLoadParser {
 
     /**
      * Creates bulk load CSV parser.
-
-     *  @param format Format options (parsed from COPY command on the server side).
+     *
+     *  @param fmt Format options (parsed from COPY command).
      */
     public BulkLoadCsvParser(BulkLoadCsvFormat fmt) {
-        nextBatchIdx = 0;
-
-        inputBlock = new CharsetDecoderBlock(DEFAULT_INPUT_CHARSET);
+        inputBlock = new CharsetDecoderBlock(BulkLoadFormat.DEFAULT_INPUT_CHARSET);
 
         collectorBlock = new StrListAppenderBlock();
 
-        if (fmt.lineSeparatorRe() == null)
-            fmt.lineSeparatorRe(BulkLoadCsvFormat.DEFAULT_LINE_SEP_RE);
+        if (fmt.lineSeparator() == null)
+            fmt.lineSeparator(BulkLoadCsvFormat.DEFAULT_LINE_SEPARATOR);
 
-        if (fmt.fieldSeparatorRe() == null)
-            fmt.fieldSeparatorRe(BulkLoadCsvFormat.DEFAULT_FIELD_SEP_RE);
+        if (fmt.fieldSeparator() == null)
+            fmt.fieldSeparator(BulkLoadCsvFormat.DEFAULT_FIELD_SEPARATOR);
 
         if (fmt.commentChars() == null)
             fmt.commentChars(BulkLoadCsvFormat.DEFAULT_COMMENT_CHARS);
@@ -76,53 +60,21 @@ public class BulkLoadCsvParser extends BulkLoadParser {
         if (fmt.escapeChars() == null)
             fmt.escapeChars(BulkLoadCsvFormat.DEFAULT_ESCAPE_CHARS);
 
-        inputBlock.append(new LineSplitterBlock(fmt.lineSeparatorRe()))
-                  .append(new CsvLineProcessorBlock(fmt.fieldSeparatorRe(), fmt.quoteChars(),
-                      fmt.commentChars(), fmt.escapeChars()))
-                  .append(collectorBlock);
+        inputBlock.append(new LineSplitterBlock(fmt.lineSeparator()))
+            .append(new CsvLineProcessorBlock(fmt.fieldSeparator(), fmt.quoteChars(),
+                fmt.commentChars(), fmt.escapeChars()))
+            .append(collectorBlock);
     }
 
     /** {@inheritDoc} */
-    @Override public Iterable<List<Object>> processBatch(JdbcBulkLoadContext ctx, JdbcBulkLoadBatchRequest req)
+    @Override protected Iterable<List<Object>> parseBatch(byte[] batchData, boolean isLastBatch)
         throws IgniteCheckedException {
+        List<List<Object>> res = new LinkedList<>();
 
-        if (nextBatchIdx != req.batchIdx())
-            throw new IgniteSQLException("Batch #" + (nextBatchIdx + 1) +
-                " is missing. Received #" + req.batchIdx() + " instead.");
+        collectorBlock.output(res);
 
-        nextBatchIdx++;
+        inputBlock.accept(batchData, isLastBatch);
 
-        switch (req.cmd()) {
-            case CMD_FINISHED_EOF:
-                return parseBatch(req, true);
-
-            case CMD_CONTINUE:
-                return parseBatch(req, false);
-
-            case CMD_FINISHED_ERROR:
-                return Collections.emptyList();
-
-            default:
-                throw new IllegalArgumentException();
-        }
-    }
-
-    /**
-     * Parses a batch of records
-     * @param req The request with all parameters.
-     * @param isLastBatch true, if it is a last batch.
-     * @return Iterable over the parsed records.
-     * @throws IgniteCheckedException if parsing has failed.
-     */
-    private Iterable<List<Object>> parseBatch(JdbcBulkLoadBatchRequest req, boolean isLastBatch)
-        throws IgniteCheckedException {
-
-        List<List<Object>> result = new LinkedList<>();
-
-        collectorBlock.output(result);
-
-        inputBlock.accept(req.data(), isLastBatch);
-
-        return result;
+        return res;
     }
 }

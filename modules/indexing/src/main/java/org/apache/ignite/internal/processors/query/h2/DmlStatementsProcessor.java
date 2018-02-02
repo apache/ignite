@@ -44,10 +44,10 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadCacheWriter;
-import org.apache.ignite.internal.processors.bulkload.BulkLoadContext;
-import org.apache.ignite.internal.processors.bulkload.BulkLoadEntryConverter;
-import org.apache.ignite.internal.processors.bulkload.BulkLoadParameters;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadParser;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadStreamerWriter;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
+import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
@@ -988,11 +989,7 @@ public class DmlStatementsProcessor {
     public FieldsQueryCursor<List<?>> runDmlStatement(String sql, SqlCommand cmd) throws IgniteCheckedException {
         try {
             if (cmd instanceof SqlBulkLoadCommand) {
-                SqlBulkLoadCommand blCmd = ((SqlBulkLoadCommand)cmd);
-
-                BulkLoadContext ctx = bulkLoad(blCmd);
-
-                return new BulkLoadContextCursor(ctx);
+                return processBulkLoadCommand((SqlBulkLoadCommand)cmd);
             }
             else
                 throw new IgniteSQLException("Unsupported DML operation: " + sql,
@@ -1014,10 +1011,9 @@ public class DmlStatementsProcessor {
      * @return The context (which is the result of the first request/response).
      * @throws IgniteCheckedException If something failed.
      */
-    public BulkLoadContext bulkLoad(SqlBulkLoadCommand cmd) throws IgniteCheckedException {
-
+    public FieldsQueryCursor<List<?>> processBulkLoadCommand(SqlBulkLoadCommand cmd) throws IgniteCheckedException {
         if (cmd.batchSize() == null)
-            cmd.batchSize(BulkLoadParameters.DEFAULT_BATCH_SIZE);
+            cmd.batchSize(BulkLoadAckClientParameters.DEFAULT_BATCH_SIZE);
 
         GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
@@ -1025,41 +1021,23 @@ public class DmlStatementsProcessor {
             throw new IgniteSQLException("Table does not exist: " + cmd.tableName(),
                 IgniteQueryErrorCode.TABLE_NOT_FOUND);
 
-        final UpdatePlan plan = UpdatePlanBuilder.planForBulkLoad(cmd, tbl);
-        final int colCount = plan.columnNames().length;
+        UpdatePlan plan = UpdatePlanBuilder.planForBulkLoad(cmd, tbl);
 
-        BulkLoadEntryConverter dataConverter = new BulkLoadEntryConverter() {
-            @Override public IgniteBiTuple<?, ?> convertRecord(List<?> record) throws IgniteCheckedException {
-                if (record.size() < colCount) { // IGNITE-7548
-                    ArrayList<Object> newRec = new ArrayList<>(record);
-                    for (int i = record.size(); i < colCount; i++)
-                        newRec.add("");
-                    record = newRec;
-                }
-
-                return plan.processRow(record);
-            }
-        };
+        IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter = new BulkLoadDataConverter(plan);
 
         GridCacheContext cache = tbl.cache();
 
-        final IgniteDataStreamer<Object, Object> streamer = cache.grid().dataStreamer(cache.name());
+        IgniteDataStreamer<Object, Object> streamer = cache.grid().dataStreamer(cache.name());
 
-        BulkLoadCacheWriter outputWriter = new BulkLoadCacheWriter() {
-            @Override public void accept(IgniteBiTuple<?, ?> entry) {
-                streamer.addData(entry.getKey(), entry.getValue());
-            }
-
-            @Override public void close() {
-                streamer.close();
-            }
-        };
-
-        BulkLoadParameters params = new BulkLoadParameters(cmd.localFileName(), cmd.batchSize());
+        BulkLoadCacheWriter outputWriter = new BulkLoadStreamerWriter(streamer);
 
         BulkLoadParser inputParser = BulkLoadParser.createParser(cmd.inputFormat());
 
-        return new BulkLoadContext(params, inputParser, dataConverter, outputWriter);
+        BulkLoadProcessor processor = new BulkLoadProcessor(inputParser, dataConverter, outputWriter);
+
+        BulkLoadAckClientParameters params = new BulkLoadAckClientParameters(cmd.localFileName(), cmd.batchSize());
+
+        return new BulkLoadContextCursor(processor, params);
     }
 
     /** */
@@ -1176,4 +1154,31 @@ public class DmlStatementsProcessor {
         }
     }
 
+    /**
+     * Converts a row of values to actual key+value using {@link UpdatePlan#processRow(List)}.
+     */
+    private static class BulkLoadDataConverter extends IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> {
+        /** Update plan to convert incoming rows. */
+        private final UpdatePlan plan;
+
+        /**
+         * Creates the converter with the given update plan.
+         *
+         * @param plan The update plan to use.
+         */
+        public BulkLoadDataConverter(UpdatePlan plan) {
+            this.plan = plan;
+        }
+
+        /**
+         * Converts the record to a key+value.
+         *
+         * @param record The record to convert.
+         * @return The key+value.
+         * @throws IgniteCheckedException If conversion failed for some reason.
+         */
+        @Override public IgniteBiTuple<?, ?> applyx(List<?> record) throws IgniteCheckedException {
+            return plan.processRow(record);
+        }
+    }
 }

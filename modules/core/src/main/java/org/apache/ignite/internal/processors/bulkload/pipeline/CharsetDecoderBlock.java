@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.bulkload.pipeline;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteIllegalStateException;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
-import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CoderResult;
@@ -34,7 +34,6 @@ import java.util.Arrays;
  * the erroneous input, appending the coder's replacement value to the output buffer, and resuming the coding operation.
  */
 public class CharsetDecoderBlock extends PipelineBlock<byte[], char[]> {
-
     /** Charset decoder */
     private final CharsetDecoder charsetDecoder;
 
@@ -42,8 +41,8 @@ public class CharsetDecoderBlock extends PipelineBlock<byte[], char[]> {
      * or null if everything was processed. */
     private byte[] leftover;
 
-    /** True if we've met the end of input. */
-    private boolean isEof;
+    /** True once we've reached the end of input. */
+    private boolean isEndOfInput;
 
     /**
      * Creates charset decoder block.
@@ -51,32 +50,21 @@ public class CharsetDecoderBlock extends PipelineBlock<byte[], char[]> {
      * @param charset The charset encoding to decode bytes from.
      */
     public CharsetDecoderBlock(Charset charset) {
-        super();
-
         this.charsetDecoder = charset.newDecoder()
             .onMalformedInput(CodingErrorAction.REPLACE)
             .onUnmappableCharacter(CodingErrorAction.REPLACE);
 
-        isEof = false;
-
+        isEndOfInput = false;
         leftover = null;
-    }
-
-    /**
-     * Returns the eof.
-     *
-     * @return eof.
-     */
-    public boolean isEof() {
-        return isEof;
     }
 
     /** {@inheritDoc} */
     public void accept(byte[] data, boolean isLastAppend) throws IgniteCheckedException {
+        assert nextBlock != null;
 
-        assert !isEof : "convertBytes() called after EOF";
+        assert !isEndOfInput : "convertBytes() called after end of input";
 
-        isEof = isLastAppend;
+        isEndOfInput = isLastAppend;
 
         if (leftover == null && data.length == 0) {
             nextBlock.accept(new char[0], isLastAppend);
@@ -98,39 +86,47 @@ public class CharsetDecoderBlock extends PipelineBlock<byte[], char[]> {
             leftover = null;
         }
 
-        CharBuffer outBuf = CharBuffer.allocate((int) Math.ceil(charsetDecoder.maxCharsPerByte() * (data.length + 1)));
+        int outBufLen = (int)Math.ceil(charsetDecoder.maxCharsPerByte() * (data.length + 1));
+
+        assert outBufLen > 0;
+
+        CharBuffer outBuf = CharBuffer.allocate(outBufLen);
 
         for (;;) {
-            CoderResult res = charsetDecoder.decode(dataBuf, outBuf, isEof);
+            CoderResult res = charsetDecoder.decode(dataBuf, outBuf, isEndOfInput);
 
-            if (!isEof && outBuf.position() > 0) {
-                nextBlock.accept(Arrays.copyOfRange(outBuf.array(), outBuf.arrayOffset(), outBuf.position()), isEof);
-                outBuf.flip();
-            }
-
-            if (res.isUnderflow()) { // Skip the partial character at the end or wait for the next batch
-                if (!isEof && dataBuf.remaining() > 0)
+            if (res.isUnderflow()) {
+                // End of input buffer reached. Either skip the partial character at the end or wait for the next batch.
+                if (!isEndOfInput && dataBuf.remaining() > 0)
                     leftover = Arrays.copyOfRange(dataBuf.array(),
                         dataBuf.arrayOffset() + dataBuf.position(), dataBuf.limit());
+
+                if (isEndOfInput)
+                    charsetDecoder.flush(outBuf); // See {@link CharsetDecoder} class javadoc for the protocol.
+
+                if (outBuf.position() > 0)
+                    nextBlock.accept(Arrays.copyOfRange(outBuf.array(), outBuf.arrayOffset(), outBuf.position()),
+                        isEndOfInput);
 
                 break;
             }
 
-            if (res.isOverflow())
+            if (res.isOverflow()) { // Not enough space in the output buffer, flush it and retry.
+                assert outBuf.position() > 0;
+
+                nextBlock.accept(Arrays.copyOfRange(outBuf.array(), outBuf.arrayOffset(), outBuf.position()),
+                    isEndOfInput);
+
+                outBuf.flip();
+
                 continue;
+            }
 
             assert ! res.isMalformed() && ! res.isUnmappable();
 
-            if (res.isError()) {
-                try {
-                    res.throwException();
-                }
-                catch (CharacterCodingException e) {
-                    throw new IgniteCheckedException(e);
-                }
-            }
-
-            assert false : "Unknown CharsetDecoder state";
+            // We're not supposed to reach this point with the current implementation.
+            // The code below will fire exception if Oracle implementation of CharsetDecoder will be changed in future.
+            throw new IgniteIllegalStateException("Unknown CharsetDecoder state");
         }
     }
 }

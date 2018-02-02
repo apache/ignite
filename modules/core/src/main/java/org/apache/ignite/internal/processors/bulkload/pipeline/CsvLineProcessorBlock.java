@@ -30,8 +30,7 @@ import java.util.regex.Pattern;
 
 /**
  * A {@link PipelineBlock}, which splits line according to CSV format rules and unquotes fields.
- *
- * <p>The next block {@link PipelineBlock#accept(Object, boolean)} is called per-line.
+ * The next block {@link PipelineBlock#accept(Object, boolean)} is called per-line.
  */
 public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
     /** Field delimiter pattern. */

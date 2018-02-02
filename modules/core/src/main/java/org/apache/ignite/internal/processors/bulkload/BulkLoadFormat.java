@@ -25,9 +25,12 @@ import java.util.List;
 
 /** A superclass and a factory for bulk load format options. */
 public abstract class BulkLoadFormat {
+    /** The default input charset. */
+    public static final Charset DEFAULT_INPUT_CHARSET = Charset.forName("UTF-8");
 
     /**
      * Returns the format name.
+     *
      * @return The format name.
      */
     public abstract String name();
@@ -40,9 +43,7 @@ public abstract class BulkLoadFormat {
      * @throws IgniteCheckedException if the name is not recognized.
      */
     public static BulkLoadFormat createFormatFor(String name) throws IgniteCheckedException {
-
         switch (name.trim().toUpperCase()) {
-
             case BulkLoadCsvFormat.NAME:
                 return new BulkLoadCsvFormat();
 
@@ -57,8 +58,6 @@ public abstract class BulkLoadFormat {
      * @return The list of all supported format names.
      */
     public static List<String> formatNames() {
-        return Arrays.asList(
-            BulkLoadCsvFormat.NAME
-        );
+        return Arrays.asList(BulkLoadCsvFormat.NAME);
     }
 }

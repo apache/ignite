@@ -24,10 +24,11 @@ import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
-/** A JDBC request that sends a batch of a file to the server. Used when handling
- * {@link SqlBulkLoadCommand} command. */
+/**
+ * A JDBC request that sends a batch of a file to the server. Used when handling
+ * {@link SqlBulkLoadCommand} command.
+ */
 public class JdbcBulkLoadBatchRequest extends JdbcRequest {
-
     /** A sentinel to indicate that {@link #cmd} field was not initialized. */
     public static final int CMD_UNKNOWN = -1;
 
@@ -58,22 +59,37 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
     /** Data in this batch. */
     @NotNull private byte[] data;
 
+    /**
+     * Creates the request with uninitialized parameters.
+     */
     public JdbcBulkLoadBatchRequest() {
         super(BULK_LOAD_BATCH);
 
-        batchIdx = -1;
-        cmd = CMD_UNKNOWN;
-    }
-
-    public JdbcBulkLoadBatchRequest(long queryId, int num, int error) {
-        this(queryId, num, error, new byte[0]);
+        this.queryId = -1;
+        this.batchIdx = -1;
+        this.cmd = CMD_UNKNOWN;
+        this.data = null;
     }
 
     /**
-     * @param queryId
-     * @param batchIdx
-     * @param cmd
-     * @param data
+     * Creates the request with specified parameters and zero-length data.
+     * Typically used with {@link #CMD_FINISHED_ERROR} and {@link #CMD_FINISHED_EOF}.
+     *
+     * @param queryId The query ID from the {@link JdbcBulkLoadAckResult}.
+     * @param batchIdx Index of the current batch starting with 0.
+     * @param cmd The command ({@link #CMD_CONTINUE}, {@link #CMD_FINISHED_EOF}, or {@link #CMD_FINISHED_ERROR}).
+     */
+    public JdbcBulkLoadBatchRequest(long queryId, int batchIdx, int cmd) {
+        this(queryId, batchIdx, cmd, new byte[0]);
+    }
+
+    /**
+     * Creates the request with the specified parameters.
+     *
+     * @param queryId The query ID from the {@link JdbcBulkLoadAckResult}.
+     * @param batchIdx Index of the current batch starting with 0.
+     * @param cmd The command ({@link #CMD_CONTINUE}, {@link #CMD_FINISHED_EOF}, or {@link #CMD_FINISHED_ERROR}).
+     * @param data The data block (zero length is acceptable).
      */
     public JdbcBulkLoadBatchRequest(long queryId, int batchIdx, int cmd, byte[] data) {
         super(BULK_LOAD_BATCH);

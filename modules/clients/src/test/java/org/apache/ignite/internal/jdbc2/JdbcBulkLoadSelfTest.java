@@ -42,17 +42,16 @@ import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
-/**
- * Data streaming test.
- */
+/** COPY command test for the regular JDBC driver. */
 public class JdbcBulkLoadSelfTest extends GridCommonAbstractTest {
     /** JDBC URL. */
-    private static final String BASE_URL = CFG_URL_PREFIX + "cache=default@modules/clients/src/test/config/jdbc-config.xml";
+    private static final String BASE_URL = CFG_URL_PREFIX +
+        "cache=default@modules/clients/src/test/config/jdbc-config.xml";
 
     /** Connection. */
     protected Connection conn;
 
-    /** */
+    /** The logger. */
     protected transient IgniteLogger log;
 
     /** {@inheritDoc} */
@@ -105,11 +104,12 @@ public class JdbcBulkLoadSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param allowOverwrite Allow overwriting of existing keys.
+     * Establishes the JDBC connection.
+     *
      * @return Connection to use for the test.
      * @throws Exception if failed.
      */
-    private Connection createConnection(boolean allowOverwrite) throws Exception {
+    private Connection createConnection() throws Exception {
         Properties props = new Properties();
 
         return DriverManager.getConnection(BASE_URL, props);
@@ -125,31 +125,27 @@ public class JdbcBulkLoadSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * This is more a placeholder for implementation of IGNITE-7553
+     * This is more a placeholder for implementation of IGNITE-7553.
      *
      * @throws Exception if failed.
      */
     public void testBulkLoadThrows() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                conn = createConnection(false);
+                conn = createConnection();
 
-                try {
-                    Statement stmt = conn.createStatement();
+                try (Statement stmt = conn.createStatement()) {
                     stmt.executeUpdate("copy from \"dummy.csv\" into Person" +
                         " (_key, id, firstName, lastName) format csv");
 
                     return null;
-                }
-                finally {
-                    conn.close();
                 }
             }
         }, SQLException.class, "COPY command is currently supported only in thin JDBC driver.");
     }
 
     /**
-     * Person.
+     * A test class for creating a query entity.
      */
     @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
