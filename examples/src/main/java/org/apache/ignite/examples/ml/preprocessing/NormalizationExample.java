@@ -33,7 +33,11 @@ import org.apache.ignite.ml.preprocessing.normalization.NormalizationPreprocesso
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 
 /**
- * How to use dataset normalization?
+ * Example that shows how to use normalization preprocessor to normalize data.
+ *
+ * Machine learning preprocessors are built as a chain. Most often a first preprocessor is a feature extractor as shown
+ * in this example. The second preprocessor here is a normalization preprocessor which is built on top of the feature
+ * extractor and represents a chain of itself and the underlying feature extractor.
  */
 public class NormalizationExample {
     /** Run example. */
@@ -45,11 +49,13 @@ public class NormalizationExample {
 
             DatasetBuilder<Integer, Person> builder = new CacheBasedDatasetBuilder<>(ignite, persons);
 
+            // Defines first preprocessor that extracts features from an upstream data.
             IgniteBiFunction<Integer, Person, double[]> featureExtractor = (k, v) -> new double[] {
                 v.getAge(),
                 v.getSalary()
             };
 
+            // Defines second preprocessor that normalizes features.
             NormalizationPreprocessor<Integer, Person> preprocessor = new NormalizationTrainer<Integer, Person>()
                 .fit(builder, featureExtractor, 2);
 
@@ -87,13 +93,17 @@ public class NormalizationExample {
     /** */
     private static IgniteCache<Integer, Person> createCache(Ignite ignite) {
         CacheConfiguration<Integer, Person> cacheConfiguration = new CacheConfiguration<>();
+
         cacheConfiguration.setName("PERSONS");
         cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 2));
+
         IgniteCache<Integer, Person> persons = ignite.createCache(cacheConfiguration);
+
         persons.put(1, new Person("Mike", 42, 10000));
         persons.put(2, new Person("John", 32, 64000));
         persons.put(3, new Person("George", 53, 120000));
         persons.put(4, new Person("Karl", 24, 70000));
+
         return persons;
     }
 }
