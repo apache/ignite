@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Tests.Client
     public class ClientConnectionTest
     {
         /// <summary>
-        /// Fixture tear down.
+        /// Test tear down.
         /// </summary>
         [TearDown]
         public void TearDown()
@@ -411,8 +411,33 @@ namespace Apache.Ignite.Core.Tests.Client
             // Start server, next operation succeeds.
             Ignition.Start(TestUtils.GetTestConfiguration());
             Assert.AreEqual(0, client.GetCacheNames().Count);
+        }
 
-            // TODO: Test disabled reconnect, test multiple servers.
+        /// <summary>
+        /// Tests disabled reconnect behavior.
+        /// </summary>
+        [Test]
+        public void TestReconnectDisabled()
+        {
+            // Connect client and check.
+            Ignition.Start(TestUtils.GetTestConfiguration());
+            var client = Ignition.StartClient(new IgniteClientConfiguration("127.0.0.1")
+            {
+                ReconnectDisabled = true
+            });
+            Assert.AreEqual(0, client.GetCacheNames().Count);
+
+            // Stop server.
+            Ignition.StopAll(true);
+
+            // Request fails, error is detected.
+            var ex = Assert.Catch(() => client.GetCacheNames());
+            Assert.IsNotNull(GetSocketException(ex));
+
+            // Restart server, client does not reconnect.
+            Ignition.Start(TestUtils.GetTestConfiguration());
+            ex = Assert.Catch(() => client.GetCacheNames());
+            Assert.IsNotNull(GetSocketException(ex));
         }
 
         /// <summary>
