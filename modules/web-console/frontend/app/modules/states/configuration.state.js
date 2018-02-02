@@ -86,6 +86,7 @@ export default angular
 
                     return PageConfigure.onStateEnterRedirect(trans.to());
                 },
+                failState: 'signin',
                 tfMetaTags: {
                     title: 'Configuration'
                 }

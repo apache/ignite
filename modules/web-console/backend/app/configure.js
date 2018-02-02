@@ -79,12 +79,13 @@ module.exports.factory = function(settings, mongo, apis) {
             passport.use(mongo.Account.createStrategy());
         },
         socketio: (io) => {
-            const _onAuthorizeSuccess = (data, accept) => {
-                accept(null, true);
-            };
+            const _onAuthorizeSuccess = (data, accept) => accept();
 
             const _onAuthorizeFail = (data, message, error, accept) => {
-                accept(null, false);
+                if (error)
+                    accept(new Error(message));
+
+                return accept(new Error(message));
             };
 
             io.use(passportSocketIo.authorize({
