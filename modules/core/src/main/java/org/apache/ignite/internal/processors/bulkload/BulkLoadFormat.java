@@ -28,9 +28,6 @@ public abstract class BulkLoadFormat {
     /** The default input charset. */
     public static final Charset DEFAULT_INPUT_CHARSET = Charset.forName("UTF-8");
 
-    /** The default input charset. */
-    public static final Charset DEFAULT_INPUT_CHARSET = Charset.forName("UTF-8");
-
     /**
      * Returns the format name.
      *
