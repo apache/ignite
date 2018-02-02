@@ -24,7 +24,7 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * Tests for {@link NormalizationPreprocessor}.
  */
-public class NormalizationModelTrainer {
+public class NormalizationPreprocessorTest {
     /** Tests {@code apply()} method. */
     @Test
     public void testApply() {
