@@ -110,8 +110,12 @@ namespace Apache.Ignite.Core.Impl.Client
             lock (_syncRoot)
             {
                 _disposed = true;
-                _socket.Dispose();
-                _socket = null;
+                
+                if (_socket != null)
+                {
+                    _socket.Dispose();
+                    _socket = null;
+                }
             }
         }
 
