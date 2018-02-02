@@ -15,33 +15,48 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.dataset;
+package org.apache.ignite.examples.ml.preprocessing;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ml.dataset.model.Person;
+import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.DatasetFactory;
 import org.apache.ignite.ml.dataset.api.SimpleDataset;
+import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.preprocessing.standardization.StandardizationPreprocessor;
+import org.apache.ignite.ml.preprocessing.standardization.StandardizationTrainer;
 
 /**
- * How to create a local dataset from an existing local data?
+ * How to use dataset standardization?
  */
-public class LocalDatasetExample {
+public class StandardizationExample {
     /** Run example. */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            System.out.println(">>> Local Dataset example started.");
+            System.out.println(">>> Standardization example started.");
 
-            Map<Integer, Person> persons = createCache(ignite);
+            IgniteCache<Integer, Person> persons = createCache(ignite);
 
-            // Creates a local simple dataset containing features and providing standard dataset API.
+            DatasetBuilder<Integer, Person> builder = new CacheBasedDatasetBuilder<>(ignite, persons);
+
+            IgniteBiFunction<Integer, Person, double[]> featureExtractor = (k, v) -> new double[] {
+                v.getAge(),
+                v.getSalary()
+            };
+
+            StandardizationPreprocessor<Integer, Person> preprocessor = new StandardizationTrainer<Integer, Person>()
+                .fit(builder, featureExtractor, 2);
+
+            // Creates a cache based simple dataset containing features and providing standard dataset API.
             try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(
-                persons,
-                2,
-                (k, v) -> new double[]{ v.getAge(), v.getSalary() },
+                builder,
+                preprocessor,
                 2
             )) {
                 // Calculation of the mean value. This calculation will be performed in map-reduce manner.
@@ -65,13 +80,16 @@ public class LocalDatasetExample {
                     System.out.println("\t" + Arrays.toString(row));
             }
 
-            System.out.println(">>> Local Dataset example completed.");
+            System.out.println(">>> Standardization example completed.");
         }
     }
 
     /** */
-    private static Map<Integer, Person> createCache(Ignite ignite) {
-        Map<Integer, Person> persons = new HashMap<>();
+    private static IgniteCache<Integer, Person> createCache(Ignite ignite) {
+        CacheConfiguration<Integer, Person> cacheConfiguration = new CacheConfiguration<>();
+        cacheConfiguration.setName("PERSONS");
+        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 2));
+        IgniteCache<Integer, Person> persons = ignite.createCache(cacheConfiguration);
         persons.put(1, new Person("Mike", 42, 10000));
         persons.put(2, new Person("John", 32, 64000));
         persons.put(3, new Person("George", 53, 120000));

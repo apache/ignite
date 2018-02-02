@@ -34,7 +34,7 @@ public class CacheBasedDatasetExample {
     /** Run example. */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            System.out.println(">>> D-Learn Cache Dataset example started.");
+            System.out.println(">>> Cache Based Dataset example started.");
 
             IgniteCache<Integer, Person> persons = createCache(ignite);
 
@@ -64,9 +64,9 @@ public class CacheBasedDatasetExample {
                 System.out.println("Correlation matrix ");
                 for (double[] row : corr)
                     System.out.println("\t" + Arrays.toString(row));
-
-                System.out.println(">>> D-Learn Cache Dataset example completed.");
             }
+
+            System.out.println(">>> Cache Based Dataset example completed.");
         }
     }
 

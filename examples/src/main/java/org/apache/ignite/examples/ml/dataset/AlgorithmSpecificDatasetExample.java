@@ -39,7 +39,7 @@ public class AlgorithmSpecificDatasetExample {
     /** Run example. */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            System.out.println(">>> D-Learn Cache Dataset example started.");
+            System.out.println(">>> Algorithm Specific Dataset example started.");
 
             IgniteCache<Integer, Person> persons = createCache(ignite);
 
@@ -82,6 +82,8 @@ public class AlgorithmSpecificDatasetExample {
 
                 System.out.println("Linear Regression Model: " + Arrays.toString(linearRegressionMdl));
             }
+
+            System.out.println(">>> Algorithm Specific Dataset example completed.");
         }
     }
 
