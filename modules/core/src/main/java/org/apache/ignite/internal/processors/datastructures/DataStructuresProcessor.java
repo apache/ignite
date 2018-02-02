@@ -550,7 +550,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                 try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                     AtomicDataStructureValue val = cache.get(key);
-                   
+
                     if (isObsolete(val))
                         val = null;
 
@@ -1208,7 +1208,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                 if (val == null && !create)
                     return null;
-           
+
                 AtomicDataStructureValue retVal = (val == null ? new GridCacheSemaphoreState(cnt,
                     new HashMap<UUID, Integer>(), failoverSafe, ctx.discovery().gridStartTime()) : null);
 
@@ -1217,24 +1217,33 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 //check Cluster state against semaphore state
                 if (val!=null) {
                     GridCacheSemaphoreState semState=(GridCacheSemaphoreState)val;
+
                     boolean updated=false;
+
                     Map<UUID,Integer> waiters = semState.getWaiters();
+
                     Integer permit=((GridCacheSemaphoreState) val).getCount();
+
                     for (UUID nodeId:waiters.keySet()) {
+
                         ClusterNode node = ctx.cluster().get().node(nodeId);
+
                         if (node==null) {
                             permit += waiters.get(nodeId);
+
                             waiters.remove(nodeId);
+
                             updated=true;
                         }
                     }
                     if (updated) {
                         semState.setWaiters(waiters);
                         semState.setCount(permit);
+
                         retVal=semState;
                     }
                 }
-                
+
                 return new T2<>(sem0, retVal);
             }
         }, cfg, name, SEMAPHORE, create, GridCacheSemaphoreEx.class);
