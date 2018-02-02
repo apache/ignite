@@ -266,7 +266,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         this.ctx = ctx;
         this.directMemoryProvider = directMemoryProvider;
         this.sizes = sizes;
-        delayedPageEvictionTracker = new DelayedPageEvictionTracker(pageSize(), flushDirtyPage);
+        delayedPageEvictionTracker = new DelayedPageEvictionTracker(pageSize, flushDirtyPage);
         this.changeTracker = changeTracker;
         this.stateChecker = stateChecker;
         this.throttlingPlc = throttlingPlc != null ? throttlingPlc : ThrottlingPolicy.NONE;
