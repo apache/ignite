@@ -126,21 +126,26 @@ public class JdbcThinTcpIo {
      */
     public void start(int timeout) throws SQLException, IOException {
         InetAddress[] addrs;
+
         try {
             addrs = getAllAddressesByHost(connProps.getHost());
-        } catch(UnknownHostException exception) {
+        }
+        catch (UnknownHostException exception) {
             throw new SQLException("Failed to connect to server [host=" + connProps.getHost() +
                     ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, exception);
         }
 
         List<String> inaccessibleAddrs = null;
+
         List<Exception> exceptions = null;
 
         for (InetAddress addr : addrs) {
             try {
                 connect(addr, timeout);
+
                 break;
-            } catch(IOException | IgniteCheckedException exception) {
+            }
+            catch (IOException | IgniteCheckedException exception) {
                 if (inaccessibleAddrs == null)
                     inaccessibleAddrs = new ArrayList<>();
 
@@ -157,10 +162,10 @@ public class JdbcThinTcpIo {
             SQLException e = new SQLException("Failed to connect to server [host=" + connProps.getHost() + ", addresses=" +
                     inaccessibleAddrs + ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED);
 
-            if (exceptions != null)
-                for(Exception ex : exceptions) {
+            if (exceptions != null) {
+                for (Exception ex : exceptions)
                     e.addSuppressed(ex);
-                }
+            }
 
             throw e;
         }
@@ -170,6 +175,7 @@ public class JdbcThinTcpIo {
 
     /**
      * Connect to host.
+     *
      * @param addr Address.
      * @param timeout Socket connection timeout in ms.
      * @throws IOException On IO error.
@@ -191,11 +197,13 @@ public class JdbcThinTcpIo {
         endpoint = new IpcClientTcpEndpoint(sock);
 
         out = new BufferedOutputStream(endpoint.outputStream());
+
         in = new BufferedInputStream(endpoint.inputStream());
     }
 
     /**
      * Get all addresses by host name.
+     *
      * @param host Host name.
      * @return Addresses.
      * @throws UnknownHostException If host is unavailable.

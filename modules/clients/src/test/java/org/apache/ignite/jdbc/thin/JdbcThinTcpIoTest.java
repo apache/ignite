@@ -45,33 +45,44 @@ public class JdbcThinTcpIoTest extends GridCommonAbstractTest {
 
     /**
      * Create test server socket.
+     *
      * @return Server socket.
      */
     private ServerSocket createServerSocket(CountDownLatch checkConnection) {
         for (int port = SERVER_PORT_RANGE[0]; port <= SERVER_PORT_RANGE[1]; port++) {
             try {
                 final ServerSocket serverSock = new ServerSocket(port);
+
                 System.out.println("Created server socket: " + port);
+
                 if (checkConnection != null) {
                     new Thread(new Runnable() {
-                        @Override
-                        public void run() {
+                        @Override public void run() {
                             try (Socket sock = serverSock.accept()) {
                                 checkConnection.countDown();
-                            } catch (IOException ignore) {
+                            }
+                            catch (IOException ignore) {
                                 // No-op
                             }
                         }
                     }).start();
                 }
+
                 return serverSock;
-            } catch(IOException ignore) {}
+            }
+            catch (IOException ignore) {
+                // No-op
+            }
         }
+
+        fail("Server socket wasn't created.");
+
         return null;
     }
 
     /**
      * Create JdbcThinTcpIo instance.
+     *
      * @param addrs IP-addresses.
      * @param port Server socket port.
      * @return JdbcThinTcpIo instance.
@@ -81,11 +92,11 @@ public class JdbcThinTcpIoTest extends GridCommonAbstractTest {
         ConnectionPropertiesImpl connProps = new ConnectionPropertiesImpl();
 
         connProps.setHost("test.domain.name");
+
         connProps.setPort(port);
 
         return new JdbcThinTcpIo(connProps) {
-            @Override
-            protected InetAddress[] getAllAddressesByHost(String host) throws UnknownHostException {
+            @Override protected InetAddress[] getAllAddressesByHost(String host) throws UnknownHostException {
                 InetAddress[] addresses = new InetAddress[addrs.length];
 
                 for (int i = 0; i < addrs.length; i++)
@@ -94,8 +105,7 @@ public class JdbcThinTcpIoTest extends GridCommonAbstractTest {
                 return addresses;
             }
 
-            @Override
-            public void handshake(ClientListenerProtocolVersion ver) {
+            @Override public void handshake(ClientListenerProtocolVersion ver) {
                 // Skip handshake.
             }
         };
@@ -103,21 +113,25 @@ public class JdbcThinTcpIoTest extends GridCommonAbstractTest {
 
     /**
      * Test connection to host which has inaccessible A-records.
+     *
      * @throws SQLException On connection error or reject.
      * @throws IOException On IO error in handshake.
      */
     public void testHostWithManyAddresses() throws SQLException, IOException, InterruptedException {
         CountDownLatch connectionAccepted = new CountDownLatch(1);
-        try(ServerSocket sock = createServerSocket(connectionAccepted)) {
+
+        try (ServerSocket sock = createServerSocket(connectionAccepted)) {
             String[] addrs = {INACCESSIBLE_ADDRESSES[0], "127.0.0.1", INACCESSIBLE_ADDRESSES[1]};
 
             JdbcThinTcpIo jdbcThinTcpIo = createTcpIo(addrs, sock.getLocalPort());
 
             try {
                 jdbcThinTcpIo.start(500);
+
                 // Check connection
                 assertTrue(connectionAccepted.await(1000, TimeUnit.MILLISECONDS));
-            } finally {
+            }
+            finally {
                 jdbcThinTcpIo.close();
             }
         }
@@ -125,18 +139,18 @@ public class JdbcThinTcpIoTest extends GridCommonAbstractTest {
 
     /**
      * Test exception text (should contain inaccessible ip addresses list).
+     *
      * @throws SQLException On connection error or reject.
      * @throws IOException On IO error in handshake.
      */
     public void testExceptionMessage() throws SQLException, IOException {
-        try(ServerSocket sock = createServerSocket(null)) {
+        try (ServerSocket sock = createServerSocket(null)) {
             String[] addrs = {INACCESSIBLE_ADDRESSES[0], INACCESSIBLE_ADDRESSES[1]};
 
             JdbcThinTcpIo jdbcThinTcpIo = createTcpIo(addrs, sock.getLocalPort());
 
             Throwable throwable = GridTestUtils.assertThrows(null, new Callable<Object>() {
-                @Override
-                public Object call() throws Exception {
+                @Override public Object call() throws Exception {
                     jdbcThinTcpIo.start(500);
                     return null;
                 }
@@ -144,9 +158,8 @@ public class JdbcThinTcpIoTest extends GridCommonAbstractTest {
 
             String msg = throwable.getMessage();
 
-            for (String addr : addrs) {
+            for (String addr : addrs)
                 assertTrue(String.format("Exception message should contain %s", addr), msg.contains(addr));
-            }
         }
     }
 }
